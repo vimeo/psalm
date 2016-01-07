@@ -1,0 +1,21 @@
+{
+    "name": "mattb/php-codeinspector",
+    "description": "A PHP code inspection utility written in PHP",
+    "keywords": ["php", "code", "inspection"],
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Matthew Brown"
+        }
+    ],
+    "require": {
+        "php": ">=5.4",
+        "nikic/php-parser": "~2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CodeInspector\\": "lib/CodeInspector"
+        }
+    }
+}
