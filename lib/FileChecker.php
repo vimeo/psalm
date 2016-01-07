@@ -1,6 +1,6 @@
 <?php
 
-namespace Vimeo\CodeInspector;
+namespace CodeInspector;
 
 use \PhpParser;
 use \PhpParser\Error;
@@ -23,18 +23,9 @@ class FileChecker
     {
         $contents = file_get_contents($this->_file_name);
 
-        $cache = \Application::getCache();
-        $cache_key = 'parser0' . md5($contents);
+        $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $stmts = $cache->get($cache_key);
-
-        if (!$stmts) {
-            $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-            $stmts = $parser->parse($contents);
-
-            $cache->set($cache_key, $stmts);
-        }
+        $stmts = $parser->parse($contents);
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {

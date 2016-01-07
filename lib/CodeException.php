@@ -1,6 +1,6 @@
 <?php
 
-namespace Vimeo\CodeInspector;
+namespace CodeInspector;
 
 class CodeException extends \Exception
 {

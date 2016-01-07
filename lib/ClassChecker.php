@@ -1,6 +1,6 @@
 <?php
 
-namespace Vimeo\CodeInspector;
+namespace CodeInspector;
 
 use \PhpParser;
 use \PhpParser\Error;

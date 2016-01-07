@@ -1,10 +1,10 @@
 <?php
 
-namespace Vimeo\CodeInspector;
+namespace CodeInspector;
 
 ini_set('xdebug.max_nesting_level', 500);
 
-use \PhpParser, \Application;
+use \PhpParser;
 
 class FunctionChecker
 {
@@ -153,8 +153,8 @@ class FunctionChecker
                 $this->_checkExpression($stmt, $types_in_scope);
             }
             else {
-                Application::var_dump('Unrecognised statement');
-                Application::var_dump($stmt);
+                var_dump('Unrecognised statement');
+                var_dump($stmt);
             }
         }
     }
@@ -381,8 +381,8 @@ class FunctionChecker
             throw new CodeException('Use of shell_exec', $this->_file_name, $stmt->getLine());
         }
         else {
-            Application::var_dump('Unrecognised expression');
-            Application::var_dump($stmt);
+            var_dump('Unrecognised expression');
+            var_dump($stmt);
         }
     }
 
