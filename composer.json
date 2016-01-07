@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "CodeInspector\\": "lib/CodeInspector"
+            "CodeInspector\\": "lib"
         }
     }
 }
