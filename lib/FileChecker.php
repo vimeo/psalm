@@ -12,6 +12,7 @@ class FileChecker
     protected $_namespace;
     protected $_aliased_classes = [];
 
+    protected static $_cache_dir = null;
     protected static $_file_checkers = [];
 
     public function __construct($file_name)
@@ -21,11 +22,7 @@ class FileChecker
 
     public function check($check_classes = true)
     {
-        $contents = file_get_contents($this->_file_name);
-
-        $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $stmts = $parser->parse($contents);
+        $stmts = self::_getStatments($this->_file_name);
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
@@ -44,6 +41,8 @@ class FileChecker
         }
 
         self::$_file_checkers[$this->_file_name] = $this;
+
+        return $stmts;
     }
 
     public function _checkNamespace(PhpParser\Node\Stmt\Namespace_ $namespace, $check_classes)
@@ -87,5 +86,43 @@ class FileChecker
         $file_checker = new FileChecker($file_name);
         $file_checker->check(false);
         return $file_checker->getAbsoluteClass($class);
+    }
+
+    protected static function _getStatments($file_name)
+    {
+        $contents = file_get_contents($file_name);
+
+        $stmts = [];
+
+        if (self::$_cache_dir) {
+            $key = md5($contents);
+
+            $cache_location = self::$_cache_dir . '/' . $key;
+
+            if (is_readable($cache_location)) {
+                $stmts = unserialize(file_get_contents($cache_location));
+            }
+        }
+
+        if (!$stmts) {
+            $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+
+            $stmts = $parser->parse($contents);
+        }
+
+        if (self::$_cache_dir) {
+            if (!file_exists(self::$_cache_dir)) {
+                mkdir(self::$_cache_dir);
+            }
+
+            file_put_contents($cache_location, serialize($stmts));
+        }
+
+        return $stmts;
+    }
+
+    public static function setCacheDir($cache_dir)
+    {
+        self::$_cache_dir = $cache_dir;
     }
 }
