@@ -92,6 +92,8 @@ class FileChecker
 
         $stmts = [];
 
+        $from_cache = false;
+
         if (self::$_cache_dir) {
             $key = md5($contents);
 
@@ -99,6 +101,7 @@ class FileChecker
 
             if (is_readable($cache_location)) {
                 $stmts = unserialize(file_get_contents($cache_location));
+                $from_cache = true;
             }
         }
 
@@ -109,11 +112,16 @@ class FileChecker
         }
 
         if (self::$_cache_dir) {
-            if (!file_exists(self::$_cache_dir)) {
-                mkdir(self::$_cache_dir);
+            if ($from_cache) {
+                touch($cache_location);
             }
+            else {
+                if (!file_exists(self::$_cache_dir)) {
+                    mkdir(self::$_cache_dir);
+                }
 
-            file_put_contents($cache_location, serialize($stmts));
+                file_put_contents($cache_location, serialize($stmts));
+            }
         }
 
         return $stmts;
