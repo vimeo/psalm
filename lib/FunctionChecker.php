@@ -240,9 +240,7 @@ class FunctionChecker
             $this->_checkStaticCall($stmt, $types_in_scope);
         }
         else if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            if (preg_match('/^[A-Z_0-9]+$/', $stmt->name->parts[0])) {
-                $this->_checkConstFetch($stmt);
-            }
+            $this->_checkConstFetch($stmt);
         }
         else if ($stmt instanceof PhpParser\Node\Scalar\String_) {
             // do nothing
@@ -578,7 +576,12 @@ class FunctionChecker
             else if (isset($stmt->expr->returnType)) {
                 $var_name = $stmt->var->name;
 
-                if (isset($this->_known_types[$var_name])) {
+                if ($stmt->expr->returnType === 'null') {
+                    if (isset($this->_known_types[$var_name])) {
+                        $this->_known_types[$var_name] = 'mixed';
+                    }
+                }
+                else if (isset($this->_known_types[$var_name])) {
                     $existing_type = $this->_known_types[$var_name];
 
                     if ($existing_type !== 'mixed') {
@@ -734,7 +737,11 @@ class FunctionChecker
 
     protected function _checkConstFetch(PhpParser\Node\Expr\ConstFetch $stmt)
     {
-
+        if ($stmt->name instanceof PhpParser\Node\Name) {
+            if ($stmt->name->parts === ['null']) {
+                $stmt->returnType = 'null';
+            }
+        }
     }
 
     protected function _checkClassConstFetch(PhpParser\Node\Expr\ClassConstFetch $stmt, $types_in_scope)
