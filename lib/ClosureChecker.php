@@ -8,10 +8,11 @@ class ClosureChecker extends FunctionChecker
 {
     public function check()
     {
+        $use_vars = [];
         foreach ($this->_function->uses as $use) {
-            $this->_declared_variables[$use->var] = 1;
+            $use_vars[$use->var] = true;
         }
 
-        parent::check();
+        parent::check($use_vars);
     }
 }
