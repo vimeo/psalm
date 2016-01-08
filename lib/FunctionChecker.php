@@ -1064,7 +1064,7 @@ class FunctionChecker
 
     protected static function _isCorrectType($return_type, $method_id, $arg_offset)
     {
-        if ($return_type === 'mixed') {
+        if ($return_type === 'mixed' || $return_type === 'null') {
             return true;
         }
 
