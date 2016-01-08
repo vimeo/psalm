@@ -41,8 +41,6 @@ class FileChecker
         }
 
         self::$_file_checkers[$this->_file_name] = $this;
-
-        return $stmts;
     }
 
     public function _checkNamespace(PhpParser\Node\Stmt\Namespace_ $namespace, $check_classes)
