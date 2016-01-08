@@ -232,8 +232,10 @@ class FunctionChecker
                 }
             }
 
-            // only update vars if there is an else
-            $vars_in_scope = array_merge($vars_in_scope, $new_vars);
+            if ($new_vars) {
+                // only update vars if there is an else
+                $vars_in_scope = array_merge($vars_in_scope, $new_vars);
+            }
         }
     }
 
