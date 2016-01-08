@@ -28,6 +28,7 @@ class FunctionChecker
     protected static $_method_params = [];
     protected static $_method_param_types = [];
     protected static $_declaring_classes = [];
+    protected static $_existing_static_vars = [];
 
     public function __construct(PhpParser\Node\FunctionLike $function, $namespace, array $aliased_classes, $file_name, $class_name = null, PhpParser\Node\Name $class_extends = null)
     {
@@ -773,7 +774,35 @@ class FunctionChecker
 
     protected function _checkStaticPropertyFetch(PhpParser\Node\Expr\StaticPropertyFetch $stmt)
     {
+        if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            // this is when calling $some_class::staticMethod() - which is a shitty way of doing things
+            // because it can't be statically type-checked
+            return;
+        }
 
+        $method_id = null;
+        $absolute_class = null;
+
+        if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+            if ($stmt->class->parts[0] === 'parent') {
+                $absolute_class = ClassChecker::getAbsoluteClassFromName($this->_class_extends, $this->_namespace, $this->_aliased_classes);
+            }
+            else {
+                $absolute_class = ($this->_namespace ? '\\' : '') . $this->_namespace . '\\' . $this->_class_name;
+            }
+        }
+        else if ($this->_check_classes) {
+            ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name);
+            $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
+        }
+
+        if ($absolute_class && $this->_check_variables && is_string($stmt->name)) {
+            $var_id = $absolute_class . '::$' . $stmt->name;
+
+            if (!self::_staticVarExists($var_id)) {
+                throw new CodeException('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine());
+            }
+        }
     }
 
     protected function _checkReturn(PhpParser\Node\Stmt\Return_ $stmt, array &$types_in_scope)
@@ -929,6 +958,25 @@ class FunctionChecker
         catch (\ReflectionException $e) {
             return false;
         }
+    }
+
+    protected static function _staticVarExists($var_id)
+    {
+        if (isset(self::$_existing_static_vars[$var_id])) {
+            return true;
+        }
+
+        $absolute_class = explode('::', $var_id)[0];
+
+        $reflection_class = new \ReflectionClass($absolute_class);
+
+        $static_properties = $reflection_class->getStaticProperties();
+
+        foreach ($static_properties as $property => $value) {
+            self::$_existing_static_vars[$absolute_class . '::$' . $property] = 1;
+        }
+
+        return isset(self::$_existing_static_vars[$var_id]);
     }
 
     protected function _getMethodReturnTypes($method_id)
