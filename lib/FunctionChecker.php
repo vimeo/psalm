@@ -448,18 +448,22 @@ class FunctionChecker
 
     protected function _checkNew(PhpParser\Node\Expr\New_ $stmt, array &$types_in_scope)
     {
+        $absolute_class = null;
+
         if ($stmt->class instanceof PhpParser\Node\Name && !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($this->_check_classes) {
                 ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name);
-                $stmt->returnType = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
+
+                $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
+                $stmt->returnType = $absolute_class;
             }
         }
 
-        foreach ($stmt->args as $arg) {
-            $this->_checkExpression($arg->value, $types_in_scope);
+        if ($absolute_class) {
+            $method_id = $absolute_class . '::__construct';
+
+            $this->_checkMethodParams($stmt->args, $method_id, $types_in_scope);
         }
-
-
     }
 
     protected function _checkArray(PhpParser\Node\Expr\Array_ $stmt, array &$types_in_scope)
@@ -471,6 +475,8 @@ class FunctionChecker
 
             $this->_checkExpression($item->value, $types_in_scope);
         }
+
+        $stmt->returnType = 'array';
     }
 
     protected function _checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, array &$types_in_scope)
@@ -1098,7 +1104,7 @@ class FunctionChecker
         self::$_method_param_types[$method_id] = [];
         foreach ($params as $param) {
             self::$_method_params[$method_id][] = $param->isPassedByReference();
-            self::$_method_param_types[$method_id][] = $param->getClass() ? '\\' . $param->getClass()->getName() : null;
+            self::$_method_param_types[$method_id][] = $param->getClass() ? '\\' . $param->getClass()->getName() : ($param->isArray() ? 'array' : null);
         }
 
         self::$_method_comments[$method_id] = $method->getDocComment() ?: '';
