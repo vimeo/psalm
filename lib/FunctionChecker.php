@@ -13,7 +13,8 @@ class FunctionChecker
     protected $_namespace;
     protected $_file_name;
     protected $_class;
-    protected $_known_types = [];
+    protected $_all_vars = [];
+    protected $_warn_vars = [];
     protected $_check_classes = true;
     protected $_check_variables = true;
     protected $_check_methods = true;
@@ -59,6 +60,7 @@ class FunctionChecker
             }
 
             $vars_in_scope[$param->name] = true;
+            $this->_registerVar($param->name, $param->getLine());
 
             if ($param->type && is_object($param->type)) {
                 $vars_in_scope[$param->name] =
@@ -125,6 +127,7 @@ class FunctionChecker
                         if (is_string($var->name)) {
                             if ($this->_check_variables) {
                                 $vars_in_scope[$var->name] = true;
+                                $this->_registerVar($var->name, $var->getLine());
                             }
                         }
                         else {
@@ -426,6 +429,7 @@ class FunctionChecker
         else if ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
                 $vars_in_scope[$stmt->var->name] = true;
+                $this->_registerVar($stmt->var->name, $stmt->var->getLine());
             }
             else {
                 $this->_checkExpression($stmt->var, $vars_in_scope);
@@ -465,6 +469,7 @@ class FunctionChecker
                 if (strpos($method_id, '::') !== false) {
                     if (self::_isPassedByRef($method_id, $argument_offset)) {
                         $vars_in_scope[$stmt->name] = true;
+                        $this->_registerVar($stmt->name, $stmt->getLine());
                         return;
                     }
                 }
@@ -474,11 +479,22 @@ class FunctionChecker
                     // if value is passed by reference
                     if ($argument_offset < count($reflection_parameters) && $reflection_parameters[$argument_offset]->isPassedByReference()) {
                         $vars_in_scope[$stmt->name] = true;
+                        $this->_registerVar($stmt->name, $stmt->getLine());
                         return;
                     }
                 }
             }
-            throw new CodeException('Cannot find referenced variable ' . $stmt->name, $this->_file_name, $stmt->getLine());
+
+            if (isset($this->_all_vars[$stmt->name])) {
+                if (!isset($this->_warn_vars[$stmt->name])) {
+                    echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $stmt->name . ' on line ' . $stmt->getLine() . ', first seen on line ' . $this->_all_vars[$stmt->name] . PHP_EOL);
+
+                    $this->_warn_vars[$stmt->name] = true;
+                }
+            }
+            else {
+                throw new CodeException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
+            }
         }
         else {
             if (isset($vars_in_scope[$stmt->name]) && is_string($vars_in_scope[$stmt->name])) {
@@ -540,8 +556,8 @@ class FunctionChecker
         $this->_checkStatements($stmt->stmts, $vars_in_scope);
 
         foreach ($stmt->catches as $catch) {
-            $vars_in_scope[$catch->var] = true;
             $vars_in_scope[$catch->var] = ClassChecker::getAbsoluteClassFromName($catch->type, $this->_namespace, $this->_aliased_classes);
+            $this->_registerVar($catch->var, $catch->getLine());
 
             if ($this->_check_classes) {
                 ClassChecker::checkClassName($catch->type, $this->_namespace, $this->_aliased_classes, $this->_file_name);
@@ -582,10 +598,12 @@ class FunctionChecker
 
         if ($stmt->keyVar) {
             $foreach_vars[$stmt->keyVar->name] = true;
+            $this->_registerVar($stmt->keyVar->name, $stmt->getLine());
         }
 
         if ($stmt->valueVar) {
             $foreach_vars[$stmt->valueVar->name] = true;
+            $this->_registerVar($stmt->valueVar->name, $stmt->getLine());
         }
 
         $foreach_vars = array_merge($vars_in_scope, $foreach_vars);
@@ -611,17 +629,20 @@ class FunctionChecker
     {
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
             $vars_in_scope[$stmt->var->name] = true;
+            $this->_registerVar($stmt->var->name, $stmt->var->getLine());
         }
         else if ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $var) {
                 if ($var) {
                     $vars_in_scope[$var->name] = true;
+                    $this->_registerVar($var->name, $var->getLine());
                 }
             }
         }
         // if it's an array assignment
         else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
             $vars_in_scope[$stmt->var->var->name] = true;
+            $this->_registerVar($stmt->var->var->name, $stmt->var->var->getLine());
         }
 
         $this->_checkExpression($stmt->expr, $vars_in_scope);
@@ -788,6 +809,7 @@ class FunctionChecker
                 else if (is_string($arg->value->name)) {
                     // we don't know if it exists, assume it's passed by reference
                     $vars_in_scope[$arg->value->name] = true;
+                    $this->_registerVar($arg->value->name, $arg->value->getLine());
                 }
             }
             else {
@@ -1001,6 +1023,12 @@ class FunctionChecker
             foreach ($method->params as $param) {
                 self::$_method_params[$method_id][] = $param->byRef;
             }
+        }
+    }
+
+    protected function _registerVar($var_name, $line_number) {
+        if (!isset($this->_all_vars[$var_name])) {
+            $this->_all_vars[$var_name] = $line_number;
         }
     }
 
