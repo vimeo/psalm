@@ -39,6 +39,8 @@ class FunctionChecker
         $this->_class_extends = $class_extends;
         $this->_file_name = $file_name;
 
+        $this->_check_variables = substr($file_name, -4) === '.php';
+
         $this->_absolute_class = ClassChecker::getAbsoluteClass($this->_class_name, $this->_namespace, []);
 
         if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
@@ -157,6 +159,14 @@ class FunctionChecker
             }
             else if ($stmt instanceof PhpParser\Node\Expr) {
                 $this->_checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            }
+            else if ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
+                // do nothing
+            }
+            else if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                foreach ($stmt->uses as $use) {
+                    $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
+                }
             }
             else {
                 var_dump('Unrecognised statement');
@@ -344,6 +354,9 @@ class FunctionChecker
         else if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
         }
+        else if ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+            $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+        }
         else if ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             // do nothing
         }
@@ -463,6 +476,9 @@ class FunctionChecker
         }
         else if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             throw new CodeException('Use of shell_exec', $this->_file_name, $stmt->getLine());
+        }
+        else if ($stmt instanceof PhpParser\Node\Expr\Print_) {
+            $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
         }
         else {
             var_dump('Unrecognised expression');

@@ -44,6 +44,15 @@ class FileChecker
         self::$_file_checkers[$this->_file_name] = $this;
     }
 
+    public function checkWithClass($class_name)
+    {
+        $stmts = self::_getStatments($this->_file_name);
+
+        $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
+
+        (new ClassMethodChecker($class_method, '', [], $this->_file_name, $class_name))->check();
+    }
+
     public function _checkNamespace(PhpParser\Node\Stmt\Namespace_ $namespace, $check_classes)
     {
         foreach ($namespace->stmts as $stmt) {
