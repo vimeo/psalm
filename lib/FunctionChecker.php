@@ -12,6 +12,7 @@ class FunctionChecker
     protected $_aliased_classes = [];
     protected $_namespace;
     protected $_file_name;
+    protected $_is_static = false;
     protected $_class;
     protected $_all_vars = [];
     protected $_warn_vars = [];
@@ -27,6 +28,7 @@ class FunctionChecker
     protected static $_method_files = [];
     protected static $_method_params = [];
     protected static $_method_param_types = [];
+    protected static $_static_methods = [];
     protected static $_declaring_classes = [];
     protected static $_existing_static_vars = [];
 
@@ -45,6 +47,7 @@ class FunctionChecker
 
         if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
             self::_registerMethod($function);
+            $this->_is_static = $function->isStatic();
         }
     }
 
@@ -488,6 +491,10 @@ class FunctionChecker
 
     protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1)
     {
+        if ($stmt->name === 'this' && $this->_is_static) {
+            throw new CodeException('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine());
+        }
+
         if (!$this->_check_variables) {
             return;
         }
@@ -838,6 +845,16 @@ class FunctionChecker
                 throw new CodeException('Method ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
             }
 
+            if ($this->_is_static) {
+                if (!isset(self::$_static_methods[$method_id])) {
+                    self::_extractReflectionMethodInfo($method_id);
+                }
+
+                if (!self::$_static_methods[$method_id]) {
+                    throw new CodeException('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine());
+                }
+            }
+
             $return_types = $this->_getMethodReturnTypes($method_id);
 
             if ($return_types) {
@@ -1002,6 +1019,11 @@ class FunctionChecker
             }
             else if ($method->parts === ['defined']) {
                 $this->_check_consts = false;
+            }
+            else if ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
+                if (FileChecker::shouldCheckVarDumps($this->_file_name)) {
+                    throw new CodeException('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine());
+                }
             }
         }
 
@@ -1296,6 +1318,7 @@ class FunctionChecker
             self::$_method_param_types[$method_id][] = $param->getClass() ? '\\' . $param->getClass()->getName() : ($param->isArray() ? 'array' : null);
         }
 
+        self::$_static_methods[$method_id] = $method->isStatic();
         self::$_method_comments[$method_id] = $method->getDocComment() ?: '';
         self::$_method_files[$method_id] = $method->getFileName();
         self::$_declaring_classes[$method_id] = '\\' . $method->getDeclaringClass()->name;
