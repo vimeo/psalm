@@ -190,6 +190,9 @@ class FunctionChecker
 
             if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_ || $last_stmt instanceof PhpParser\Node\Stmt\Continue_)) {
                 $new_vars = array_diff_key($if_vars, $vars_in_scope);
+            }
+
+            if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
                 $new_vars_possibly_in_scope = array_merge(array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
             }
         }
@@ -203,23 +206,23 @@ class FunctionChecker
             if (count($elseif->stmts)) {
                 $last_stmt = $elseif->stmts[count($elseif->stmts) - 1];
 
-                if ($last_stmt instanceof PhpParser\Node\Stmt\Return_ || $last_stmt instanceof PhpParser\Node\Stmt\Continue_) {
-                    continue;
-                }
-            }
-
-            if ($new_vars === null) {
-                $new_vars = array_diff_key($elseif_vars, $vars_in_scope);
-            }
-            else {
-                foreach ($new_vars as $new_var => $type) {
-                    if (!isset($elseif_vars[$new_var])) {
-                        unset($new_vars[$new_var]);
+                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_ || $last_stmt instanceof PhpParser\Node\Stmt\Continue_)) {
+                    if ($new_vars === null) {
+                        $new_vars = array_diff_key($elseif_vars, $vars_in_scope);
+                    }
+                    else {
+                        foreach ($new_vars as $new_var => $type) {
+                            if (!isset($elseif_vars[$new_var])) {
+                                unset($new_vars[$new_var]);
+                            }
+                        }
                     }
                 }
-            }
 
-            $new_vars_possibly_in_scope = array_merge(array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
+                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                    $new_vars_possibly_in_scope = array_merge(array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
+                }
+            }
         }
 
         if ($stmt->else) {
@@ -243,7 +246,9 @@ class FunctionChecker
                             }
                         }
                     }
+                }
 
+                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
                     $new_vars_possibly_in_scope = array_merge(array_diff_key($else_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
                 }
             }
@@ -937,7 +942,7 @@ class FunctionChecker
         }
 
         if ($stmt->if) {
-            $this->_checkExpression($stmt->if, array_merge($vars_in_scope, $if_types));
+            $this->_checkExpression($stmt->if, array_merge($vars_in_scope, $if_types), $vars_possibly_in_scope);
         }
 
         $this->_checkExpression($stmt->else, $vars_in_scope, $vars_possibly_in_scope);
