@@ -14,11 +14,16 @@ class FileChecker
 
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
+    protected static $_ignore_var_dump_files = [];
     public static $show_notices = true;
 
-    public function __construct($file_name)
+    public function __construct($file_name, $check_var_dumps = true)
     {
         $this->_file_name = $file_name;
+
+        if (!$check_var_dumps) {
+            self::$_ignore_var_dump_files[$this->_file_name] = 1;
+        }
     }
 
     public function check($check_classes = true)
@@ -140,5 +145,10 @@ class FileChecker
     public static function setCacheDir($cache_dir)
     {
         self::$_cache_dir = $cache_dir;
+    }
+
+    public static function shouldCheckVarDumps($file_name)
+    {
+        return isset(self::$_ignore_var_dump_files[$file_name]);
     }
 }
