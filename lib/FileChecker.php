@@ -14,6 +14,7 @@ class FileChecker
 
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
+    public static $show_notices = true;
 
     public function __construct($file_name)
     {
