@@ -72,6 +72,15 @@ class FileChecker
                     $this->_checkClass($stmt, $this->_namespace, $this->_aliased_classes);
                 }
             }
+            if ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                if ($namespace->name === null) {
+                    throw new CodeException('Empty namespace', $this->_file_name, $stmt->getLine());
+                }
+
+                $this->_namespace = implode('\\', $namespace->name->parts);
+
+                // @todo check interface
+            }
             else if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
