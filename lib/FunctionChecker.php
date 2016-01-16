@@ -567,6 +567,10 @@ class FunctionChecker
         else {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
         }
+
+        if (!is_string($stmt->name)) {
+            $this->_checkExpression($stmt->name, $vars_in_scope, $vars_possibly_in_scope);
+        }
     }
 
     protected function _checkNew(PhpParser\Node\Expr\New_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
