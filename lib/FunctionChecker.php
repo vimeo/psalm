@@ -171,6 +171,19 @@ class FunctionChecker
                     $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
                 }
             }
+            else if ($stmt instanceof PhpParser\Node\Stmt\Global_) {
+                foreach ($stmt->vars as $var) {
+                    if ($var instanceof PhpParser\Node\Expr\Variable) {
+                        if (is_string($var->name)) {
+                            $vars_in_scope[$var->name] = true;
+                            $vars_possibly_in_scope[$var->name] = true;
+                        }
+                        else {
+                            $this->_checkExpression($var, $vars_in_scope, $vars_possibly_in_scope);
+                        }
+                    }
+                }
+            }
             else {
                 var_dump('Unrecognised statement');
                 var_dump($stmt);
