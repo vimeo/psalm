@@ -6,15 +6,21 @@ use \PhpParser;
 use \PhpParser\Error;
 use \PhpParser\ParserFactory;
 
-class FileChecker
+class FileChecker implements StatementsSource
 {
     protected $_file_name;
     protected $_namespace;
     protected $_aliased_classes = [];
 
+    protected $_function_params = [];
+    protected $_class_name;
+
+    protected static $_namespace_aliased_classes = [];
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
     protected static $_ignore_var_dump_files = [];
+    protected static $_functions = [];
+
     public static $show_notices = true;
 
     public function __construct($file_name, $check_var_dumps = true)
@@ -24,90 +30,74 @@ class FileChecker
         if (!$check_var_dumps) {
             self::$_ignore_var_dump_files[$this->_file_name] = 1;
         }
+
+        self::$_file_checkers[$this->_file_name] = $this;
     }
 
     public function check($check_classes = true)
     {
         $stmts = self::_getStatments($this->_file_name);
 
+        $leftover_stmts = [];
+
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 if ($check_classes) {
-                    $this->_checkClass($stmt, '');
+                    (new ClassChecker($stmt, $this, '\\' . $stmt->name))->check();
                 }
-            }
-            else if ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
-                $this->_checkNamespace($stmt, $check_classes);
-            }
-            else if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                // @todo check interfaces
+
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                // @todo check trait
+                
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                $namespace_name = implode('\\', $stmt->name->parts);
+
+                $namespace_checker = new NamespaceChecker($stmt, $this);
+                self::$_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes);
+
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
                 }
+
+            } else {
+                $leftover_stmts[] = $stmt;
             }
         }
 
-        self::$_file_checkers[$this->_file_name] = $this;
+        if ($leftover_stmts) {
+            $statments_checker = new StatementsChecker($this);
+            $existing_vars = [];
+            $existing_vars_in_scope = [];
+            $statments_checker->check($leftover_stmts, $existing_vars, $existing_vars_in_scope);
+        }
     }
 
     public function checkWithClass($class_name)
     {
         $stmts = self::_getStatments($this->_file_name);
+        $this->_class_name = $class_name;
 
         $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
 
-        (new ClassMethodChecker($class_method, '', [], $this->_file_name, $class_name))->check();
+        (new ClassMethodChecker($class_method, $this))->check();
     }
 
-    public function _checkNamespace(PhpParser\Node\Stmt\Namespace_ $namespace, $check_classes)
-    {
-        foreach ($namespace->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                if ($namespace->name === null) {
-                    throw new CodeException('Empty namespace', $this->_file_name, $stmt->getLine());
-                }
-
-                $this->_namespace = implode('\\', $namespace->name->parts);
-
-                if ($check_classes) {
-                    $this->_checkClass($stmt, $this->_namespace, $this->_aliased_classes);
-                }
-            }
-            if ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
-                if ($namespace->name === null) {
-                    throw new CodeException('Empty namespace', $this->_file_name, $stmt->getLine());
-                }
-
-                $this->_namespace = implode('\\', $namespace->name->parts);
-
-                // @todo check interface
-            }
-            else if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                foreach ($stmt->uses as $use) {
-                    $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
-                }
-            }
-        }
-    }
-
-    public function _checkClass(PhpParser\Node\Stmt\Class_ $class, $namespace = null)
-    {
-        (new ClassChecker($class, $namespace, $this->_aliased_classes, $this->_file_name))->check();
-    }
-
-    public function getAbsoluteClass($class)
-    {
-        return ClassChecker::getAbsoluteClass($class, $this->_namespace, $this->_aliased_classes);
-    }
-
-    public static function getAbsoluteClassInFile($class, $file_name)
+    public static function getAbsoluteClassFromNameInFile($class, $namespace, $file_name)
     {
         if (isset(self::$_file_checkers[$file_name])) {
-            return self::$_file_checkers[$file_name]->getAbsoluteClass($class);
+            $aliased_classes = self::$_file_checkers[$file_name]->getAliasedClasses($namespace);
+            
+        } else {
+            $file_checker = new FileChecker($file_name);
+            $file_checker->check(false);
+            $aliased_classes = $file_checker->getAliasedClasses($namespace);
         }
 
-        $file_checker = new FileChecker($file_name);
-        $file_checker->check(false);
-        return $file_checker->getAbsoluteClass($class);
+        return ClassChecker::getAbsoluteClassFromString($class, $namespace, $aliased_classes);
     }
 
     protected static function _getStatments($file_name)
@@ -138,8 +128,7 @@ class FileChecker
         if (self::$_cache_dir) {
             if ($from_cache) {
                 touch($cache_location);
-            }
-            else {
+            } else {
                 if (!file_exists(self::$_cache_dir)) {
                     mkdir(self::$_cache_dir);
                 }
@@ -159,5 +148,70 @@ class FileChecker
     public static function shouldCheckVarDumps($file_name)
     {
         return isset(self::$_ignore_var_dump_files[$file_name]);
+    }
+
+    public function registerFunction(PhpParser\Node\Stmt\Function_ $function, $absolute_class = null)
+    {
+        $function_name = ($absolute_class ? $absolute_class . '::' : '') . $function->name;
+
+        $this->_function_params[$function_name] = [];
+
+        foreach ($function->params as $param) {
+            $this->_function_params[$function_name][] = $param->byRef;
+        }
+    }
+
+    public function getNamespace()
+    {
+        return null;
+    }
+
+    public function getAliasedClasses($namespace_name = null)
+    {
+        if ($namespace_name && isset(self::$_namespace_aliased_classes[$namespace_name])) {
+            return self::$_namespace_aliased_classes[$namespace_name];
+        }
+        
+        return $this->_aliased_classes;
+    }
+
+    public function getAbsoluteClass()
+    {
+        return null;
+    }
+
+    public function getClassName()
+    {
+        return $this->_class_name;
+    }
+
+    public function getClassExtends()
+    {
+        return null;
+    }
+
+    public function getFileName()
+    {
+        return $this->_file_name;
+    }
+
+    public function isStatic()
+    {
+        return false;
+    }
+
+    public function getFileCheckerFromFileName($file_name)
+    {
+        return self::$_file_checkers[$file_name];
+    }
+
+    public function hasFunction($function_name)
+    {
+        return isset($this->_function_params[$function_name]);
+    }
+
+    public function isPassedByReference($function_name, $argument_offset)
+    {
+        return $argument_offset < count($this->_function_params[$function_name]) && $this->_function_params[$function_name][$argument_offset];
     }
 }

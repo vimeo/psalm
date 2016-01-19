@@ -6,22 +6,25 @@ use \PhpParser;
 use \PhpParser\Error;
 use \PhpParser\ParserFactory;
 
-class ClassChecker
+class ClassChecker implements StatementsSource
 {
     protected $_file_name;
     protected $_class;
     protected $_namespace;
     protected $_aliased_classes;
+    protected $_absolute_class;
+
     protected static $_existing_classes = [];
 
-    public function __construct(PhpParser\Node\Stmt\Class_ $class, $namespace, $aliased_classes, $file_name)
+    public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
         $this->_class = $class;
-        $this->_namespace = $namespace;
-        $this->_aliased_classes = $aliased_classes;
-        $this->_file_name = $file_name;
+        $this->_namespace = $source->getNamespace();
+        $this->_aliased_classes = $source->getAliasedClasses();
+        $this->_file_name = $source->getFileName();
+        $this->_absolute_class = $absolute_class;
 
-        self::$_existing_classes[self::getAbsoluteClass($class->name, $this->_namespace, [])] = 1;
+        self::$_existing_classes[$absolute_class] = 1;
     }
 
     public function check()
@@ -32,7 +35,7 @@ class ClassChecker
 
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_checker = new ClassMethodChecker($stmt, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_class->name, $this->_class->extends);
+                $method_checker = new ClassMethodChecker($stmt, $this);
                 $method_checker->check();
             }
         }
@@ -59,10 +62,11 @@ class ClassChecker
             return '\\' . implode('\\', $class_name->parts);
         }
 
-        return self::getAbsoluteClass(implode('\\', $class_name->parts), $namespace, $aliased_classes);
+        return self::getAbsoluteClassFromString(implode('\\', $class_name->parts), $namespace, $aliased_classes);
     }
 
-    public static function getAbsoluteClass($class, $namespace, array $imported_namespaces) {
+    public static function getAbsoluteClassFromString($class, $namespace, array $imported_namespaces)
+    {
         if ($class[0] === '\\') {
             return $class;
         }
@@ -74,8 +78,7 @@ class ClassChecker
             if (isset($imported_namespaces[$first_namespace])) {
                 return self::_addSlash($imported_namespaces[$first_namespace] . '\\' . implode('\\', $class_parts));
             }
-        }
-        else if (isset($imported_namespaces[$class])) {
+        } elseif (isset($imported_namespaces[$class])) {
             return self::_addSlash($imported_namespaces[$class]);
         }
 
@@ -93,5 +96,40 @@ class ClassChecker
         }
 
         return '\\' . $class;
+    }
+
+    public function getNamespace()
+    {
+        return $this->_namespace;
+    }
+
+    public function getAliasedClasses()
+    {
+        return $this->_aliased_classes;
+    }
+
+    public function getAbsoluteClass()
+    {
+        return $this->_absolute_class;
+    }
+
+    public function getClassName()
+    {
+        return $this->_class->name;
+    }
+
+    public function getClassExtends()
+    {
+        return $this->_class->extends;
+    }
+
+    public function getFileName()
+    {
+        return $this->_file_name;
+    }
+
+    public function isStatic()
+    {
+        return false;
     }
 }
