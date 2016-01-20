@@ -59,7 +59,8 @@ class StatementsChecker
 
         foreach ($stmts as $stmt) {
             if ($has_returned) {
-                throw new CodeException('Expressions after return', $this->_file_name, $stmt->getLine());
+                echo('Warning: Expressions after return in ' . $this->_file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
+                break;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
