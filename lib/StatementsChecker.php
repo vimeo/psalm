@@ -65,46 +65,46 @@ class StatementsChecker
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $this->_checkIf($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 $this->_checkTryCatch($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 $this->_checkFor($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 $this->_checkForeach($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
                 $this->_checkWhile($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
                 $this->_checkDo($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
                     $this->_checkExpression($const->value, $vars_in_scope, $vars_possibly_in_scope);
                 }
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 // do nothing
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
                 $this->_checkReturn($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $this->_checkThrow($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 $this->_checkSwitch($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 // do nothing
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Stmt\StaticVar) {
@@ -125,29 +125,29 @@ class StatementsChecker
                         $this->_checkExpression($var, $vars_in_scope, $vars_possibly_in_scope);
                     }
                 }
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
                 foreach ($stmt->exprs as $expr) {
                     $this->_checkExpression($expr, $vars_in_scope, $vars_possibly_in_scope);
                 }
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checker = new FunctionChecker($stmt, $this->_source);
                 $function_checker->check();
                 $file_checker = FileChecker::getFileCheckerFromFileName($this->_file_name);
                 $file_checker->registerFunction($stmt, $this->_absolute_class);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 $this->_checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope);
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
                 }
-            
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
@@ -159,7 +159,7 @@ class StatementsChecker
                         }
                     }
                 }
-            
+
             } else {
                 var_dump('Unrecognised statement in ' . $this->_file_name);
                 var_dump($stmt);
@@ -327,105 +327,105 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
             // do nothing
-             
+
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
-            
+
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
             // do nothing
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
             // do nothing
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             // do nothing
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             // do nothing
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             $this->_checkClassConstFetch($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
             $this->_checkPropertyFetch($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             $this->_checkStaticPropertyFetch($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
             $this->_checkExpression($stmt->right, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostInc) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostDec) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\PreInc) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\PreDec) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\New_) {
             $this->_checkNew($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
             $this->_checkArray($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Scalar\Encapsed) {
             $this->_checkEncapsulatedString($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
             $this->_checkFunctionCall($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Ternary) {
             $this->_checkTernary($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
             $this->_checkBooleanNot($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Empty_) {
             $this->_checkEmpty($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Closure) {
             $closure_checker = new ClosureChecker($stmt, $this->_source);
             $closure_checker->check();
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $this->_checkArrayAccess($stmt, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Instanceof_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
@@ -434,20 +434,20 @@ class StatementsChecker
                     ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name);
                 }
             }
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Exit_) {
             // do nothing
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
             $this->_check_classes = false;
             $this->_check_variables = false;
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Eval_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
             $this->_check_classes = false;
             $this->_check_variables = false;
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
                 $vars_in_scope[$stmt->var->name] = true;
@@ -458,16 +458,16 @@ class StatementsChecker
             }
 
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\ErrorSuppress) {
             // do nothing
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             throw new CodeException('Use of shell_exec', $this->_file_name, $stmt->getLine());
-        
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Print_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
-        
+
         } else {
             var_dump('Unrecognised expression in ' . $this->_file_name);
             var_dump($stmt);
@@ -654,10 +654,13 @@ class StatementsChecker
 
     protected function _checkAssignment(PhpParser\Node\Expr\Assign $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
+        $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
             $vars_in_scope[$stmt->var->name] = true;
             $vars_possibly_in_scope[$stmt->var->name] = true;
             $this->registerVariable($stmt->var->name, $stmt->var->getLine());
+
         } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $var) {
                 if ($var) {
@@ -666,15 +669,13 @@ class StatementsChecker
                     $this->registerVariable($var->name, $var->getLine());
                 }
             }
-        }
-        // if it's an array assignment
-        else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
+
+        } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
+            // if it's an array assignment
             $vars_in_scope[$stmt->var->var->name] = true;
             $vars_possibly_in_scope[$stmt->var->var->name] = true;
             $this->registerVariable($stmt->var->var->name, $stmt->var->var->getLine());
         }
-
-        $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
             $comments = [];
@@ -690,6 +691,7 @@ class StatementsChecker
                 if ($type[0] === strtoupper($type[0])) {
                     $vars_in_scope[$stmt->var->name] = ClassChecker::getAbsoluteClassFromString($type, $this->_namespace, $this->_aliased_classes);
                 }
+
             } elseif (isset($stmt->expr->returnType)) {
                 $var_name = $stmt->var->name;
 
@@ -697,6 +699,7 @@ class StatementsChecker
                     if (isset($vars_in_scope[$var_name])) {
                         $vars_in_scope[$var_name] = 'mixed';
                     }
+
                 } elseif (isset($vars_in_scope[$var_name])) {
                     $existing_type = $vars_in_scope[$var_name];
 
@@ -711,6 +714,7 @@ class StatementsChecker
                             $vars_in_scope[$stmt->var->name] = 'mixed';
                         }
                     }
+
                 } else {
                     $vars_in_scope[$stmt->var->name] = $stmt->expr->returnType;
                 }
@@ -969,10 +973,13 @@ class StatementsChecker
         if ($method instanceof PhpParser\Node\Name) {
             if ($method->parts === ['method_exists']) {
                 $this->_check_methods = false;
-            
+
             } elseif ($method->parts === ['defined']) {
                 $this->_check_consts = false;
-            
+
+            } elseif ($method->parts === ['extract']) {
+                $this->_check_variables = false;
+
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
                 if (FileChecker::shouldCheckVarDumps($this->_file_name)) {
                     throw new CodeException('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine());
