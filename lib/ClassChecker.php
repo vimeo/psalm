@@ -33,11 +33,23 @@ class ClassChecker implements StatementsSource
             self::checkClassName($this->_class->extends, $this->_namespace, $this->_aliased_classes, $this->_file_name);
         }
 
+        $leftover_stmts = [];
+
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_checker = new ClassMethodChecker($stmt, $this);
                 $method_checker->check();
+
+            } else {
+                $leftover_stmts[] = $stmt;
             }
+        }
+
+        if ($leftover_stmts) {
+            $scope_vars = [];
+            $possibly_in_scope_vars = [];
+
+            (new StatementsChecker($this))->check($leftover_stmts, $scope_vars, $possibly_in_scope_vars);
         }
     }
 
