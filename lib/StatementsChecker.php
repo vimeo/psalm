@@ -160,6 +160,19 @@ class StatementsChecker
                     }
                 }
 
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                foreach ($stmt->props as $prop) {
+                    if ($prop->default) {
+                        $this->_checkExpression($prop->default, $vars_in_scope, $vars_possibly_in_scope);
+                    }
+                }
+
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+
+
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                // do nothing
+
             } else {
                 var_dump('Unrecognised statement in ' . $this->_file_name);
                 var_dump($stmt);
@@ -402,6 +415,31 @@ class StatementsChecker
             $closure_checker = new ClosureChecker($stmt, $this->_source);
             $closure_checker->check();
 
+            foreach ($stmt->uses as $use) {
+                if (!isset($vars_in_scope[$use->var])) {
+                    if ($use->byRef) {
+                        $vars_in_scope[$use->var] = true;
+                        $vars_possibly_in_scope[$use->var] = true;
+                        $this->registerVariable($use->var, $use->getLine());
+
+                    } elseif (!isset($vars_possibly_in_scope[$use->var])) {
+                        throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
+
+                    } elseif (isset($this->_all_vars[$use->var])) {
+                        if (!isset($this->_warn_vars[$use->var])) {
+                            if (FileChecker::$show_notices) {
+                                echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $use->var . ' on line ' . $use->getLine() . ', first seen on line ' . $this->_all_vars[$use->var] . PHP_EOL);
+                            }
+
+                            $this->_warn_vars[$use->var] = true;
+                        }
+
+                    } else {
+                        throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
+                    }
+                }
+            }
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $this->_checkArrayAccess($stmt, $vars_in_scope, $vars_possibly_in_scope);
 
@@ -505,6 +543,7 @@ class StatementsChecker
 
             if (!isset($vars_possibly_in_scope[$stmt->name])) {
                 throw new CodeException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
+
             } elseif (isset($this->_all_vars[$stmt->name])) {
                 if (!isset($this->_warn_vars[$stmt->name])) {
                     if (FileChecker::$show_notices) {
@@ -513,9 +552,11 @@ class StatementsChecker
 
                     $this->_warn_vars[$stmt->name] = true;
                 }
+
             } else {
                 throw new CodeException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
             }
+
         } else {
             if (isset($vars_in_scope[$stmt->name]) && is_string($vars_in_scope[$stmt->name])) {
                 $stmt->returnType = $vars_in_scope[$stmt->name];
