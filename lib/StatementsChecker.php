@@ -173,6 +173,9 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 // do nothing
 
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+                // do nothing
+
             } else {
                 var_dump('Unrecognised statement in ' . $this->_file_name);
                 var_dump($stmt);
