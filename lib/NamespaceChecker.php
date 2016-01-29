@@ -11,7 +11,7 @@ class NamespaceChecker implements StatementsSource
     protected $_contained_classes = [];
     protected $_aliased_classes = [];
     protected $_file_name;
-    
+
     public function __construct(\PhpParser\Node\Stmt\Namespace_ $namespace, StatementsSource $source)
     {
         $this->_namespace = $namespace;
@@ -33,10 +33,10 @@ class NamespaceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                 // @todo check interface
-                
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                 // @todo check trait
-                
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
@@ -77,6 +77,11 @@ class NamespaceChecker implements StatementsSource
     }
 
     public function getClassName()
+    {
+        return null;
+    }
+
+    public function getClassChecker()
     {
         return null;
     }

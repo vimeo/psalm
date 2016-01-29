@@ -15,7 +15,8 @@ class FunctionChecker implements StatementsSource
     protected $_is_static = false;
     protected $_absolute_class;
     protected $_statements_checker;
-    
+    protected $_source;
+
     protected $_function_params = [];
     protected $_function_return_types = [];
 
@@ -28,6 +29,7 @@ class FunctionChecker implements StatementsSource
         $this->_class_extends = $source->getClassExtends();
         $this->_file_name = $source->getFileName();
         $this->_absolute_class = $source->getAbsoluteClass();
+        $this->_source = $source;
 
         $this->_statements_checker = new StatementsChecker($this, substr($this->_file_name, -4) === '.php');
 
@@ -86,6 +88,11 @@ class FunctionChecker implements StatementsSource
     public function getClassName()
     {
         return $this->_class_name;
+    }
+
+    public function getClassChecker()
+    {
+        return $this->_source->getClassChecker();
     }
 
     public function getClassExtends()

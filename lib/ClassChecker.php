@@ -13,6 +13,8 @@ class ClassChecker implements StatementsSource
     protected $_namespace;
     protected $_aliased_classes;
     protected $_absolute_class;
+    protected $_class_properties = [];
+    protected $_has_custom_get = false;
 
     protected static $_existing_classes = [];
 
@@ -35,12 +37,23 @@ class ClassChecker implements StatementsSource
 
         $leftover_stmts = [];
 
+        try {
+            new \ReflectionMethod($this->_absolute_class . '::__get');
+            $this->_has_custom_get = true;
+
+        } catch (\ReflectionException $e) {}
+
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_checker = new ClassMethodChecker($stmt, $this);
                 $method_checker->check();
 
             } else {
+                if ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                    foreach ($stmt->props as $property) {
+                        $this->_class_properties[] = $property->name;
+                    }
+                }
                 $leftover_stmts[] = $stmt;
             }
         }
@@ -140,8 +153,23 @@ class ClassChecker implements StatementsSource
         return $this->_file_name;
     }
 
+    public function getClassChecker()
+    {
+        return $this;
+    }
+
     public function isStatic()
     {
         return false;
+    }
+
+    public function hasCustomGet()
+    {
+        return $this->_has_custom_get;
+    }
+
+    public function getPropertyNames()
+    {
+        return $this->_class_properties;
     }
 }

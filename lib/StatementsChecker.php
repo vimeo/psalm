@@ -35,6 +35,7 @@ class StatementsChecker
     protected static $_static_methods = [];
     protected static $_declaring_classes = [];
     protected static $_existing_static_vars = [];
+    protected static $_existing_properties = [];
 
     public function __construct(StatementsSource $source = null, $check_variables = true)
     {
@@ -571,7 +572,23 @@ class StatementsChecker
     {
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if ($stmt->var->name === 'this') {
+                $class_checker = $this->_source->getClassChecker();
+                if ($class_checker) {
+                    if ($class_checker->hasCustomGet()) {
+                        // do nothing
+                    } elseif (is_string($stmt->name)) {
+                        $property_names = $class_checker->getPropertyNames();
 
+                        if (!in_array($stmt->name, $property_names)) {
+                            if (!self::_propertyExists($this->_absolute_class . '::' . $stmt->name)) {
+                                throw new CodeException('$this->' . $stmt->name . ' is not defined', $this->_file_name, $stmt->getLine());
+                            }
+                        }
+                    }
+
+                } else {
+                    throw new CodeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
+                }
             } else {
                 $this->_checkVariable($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
             }
@@ -705,23 +722,6 @@ class StatementsChecker
             $vars_possibly_in_scope[$stmt->var->name] = true;
             $this->registerVariable($stmt->var->name, $stmt->var->getLine());
 
-        } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
-            foreach ($stmt->var->vars as $var) {
-                if ($var) {
-                    $vars_in_scope[$var->name] = true;
-                    $vars_possibly_in_scope[$var->name] = true;
-                    $this->registerVariable($var->name, $var->getLine());
-                }
-            }
-
-        } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
-            // if it's an array assignment
-            $vars_in_scope[$stmt->var->var->name] = true;
-            $vars_possibly_in_scope[$stmt->var->var->name] = true;
-            $this->registerVariable($stmt->var->var->name, $stmt->var->var->getLine());
-        }
-
-        if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
             $comments = [];
             $doc_comment = $stmt->getDocComment();
 
@@ -763,6 +763,26 @@ class StatementsChecker
                     $vars_in_scope[$stmt->var->name] = $stmt->expr->returnType;
                 }
             }
+
+        } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
+            foreach ($stmt->var->vars as $var) {
+                if ($var) {
+                    $vars_in_scope[$var->name] = true;
+                    $vars_possibly_in_scope[$var->name] = true;
+                    $this->registerVariable($var->name, $var->getLine());
+                }
+            }
+
+        } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
+            // if it's an array assignment
+            $vars_in_scope[$stmt->var->var->name] = true;
+            $vars_possibly_in_scope[$stmt->var->var->name] = true;
+            $this->registerVariable($stmt->var->var->name, $stmt->var->var->getLine());
+        } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch) {
+            if ($stmt->var->var->name === 'this') {
+                self::$_existing_properties[$this->_absolute_class . '::' . $stmt->var->name] = 1;
+            }
+
         }
     }
 
@@ -1115,6 +1135,41 @@ class StatementsChecker
         if (!isset($this->_all_vars[$var_name])) {
             $this->_all_vars[$var_name] = $line_number;
         }
+    }
+
+    public static function _getClassProperties(\ReflectionClass $reflection_class, $absolute_class_name)
+    {
+        $properties = $reflection_class->getProperties();
+        $props_arr = [];
+
+        foreach ($properties as $reflection_property){
+            if ($reflection_property->isPrivate() || $reflection_property->isStatic()) {
+                continue;
+            }
+
+            self::$_existing_properties[$absolute_class_name . '::' . $reflection_property->getName()] = 1;
+        }
+
+        $parent_reflection_class = $reflection_class->getParentClass();
+
+        if ($parent_reflection_class){
+            self::_getClassProperties($parent_reflection_class, $absolute_class_name);
+        }
+    }
+
+    protected static function _propertyExists($property_id)
+    {
+        if (isset(self::$_existing_properties[$property_id])) {
+            return true;
+        }
+
+        $absolute_class = explode('::', $property_id)[0];
+
+        $reflection_class = new \ReflectionClass($absolute_class);
+
+        self::_getClassProperties($reflection_class, $absolute_class);
+
+        return isset(self::$_existing_properties[$property_id]);
     }
 
     protected static function _methodExists($method_id)

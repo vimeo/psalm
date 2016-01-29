@@ -51,7 +51,7 @@ class FileChecker implements StatementsSource
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                 // @todo check trait
-                
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = implode('\\', $stmt->name->parts);
 
@@ -90,7 +90,7 @@ class FileChecker implements StatementsSource
     {
         if (isset(self::$_file_checkers[$file_name])) {
             $aliased_classes = self::$_file_checkers[$file_name]->getAliasedClasses($namespace);
-            
+
         } else {
             $file_checker = new FileChecker($file_name);
             $file_checker->check(false);
@@ -171,7 +171,7 @@ class FileChecker implements StatementsSource
         if ($namespace_name && isset(self::$_namespace_aliased_classes[$namespace_name])) {
             return self::$_namespace_aliased_classes[$namespace_name];
         }
-        
+
         return $this->_aliased_classes;
     }
 
@@ -183,6 +183,11 @@ class FileChecker implements StatementsSource
     public function getClassName()
     {
         return $this->_class_name;
+    }
+
+    public function getClassChecker()
+    {
+        return null;
     }
 
     public function getClassExtends()
