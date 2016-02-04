@@ -148,7 +148,7 @@ class FileChecker implements StatementsSource
         return !self::$_var_dump_fn || call_user_func(self::$_var_dump_fn, $file_name);
     }
 
-    public static function shouldCheckClassProperties($file_name, ClassChecker $class_checker)
+    public static function shouldCheckClassProperties($file_name, ClassChecker $class_checker = null)
     {
         return !self::$_class_property_fn || call_user_func(self::$_class_property_fn, $file_name, $class_checker);
     }
