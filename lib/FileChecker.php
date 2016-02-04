@@ -102,8 +102,6 @@ class FileChecker implements StatementsSource
     {
         $contents = file_get_contents($file_name);
 
-        var_dump($contents);
-
         $stmts = [];
 
         $from_cache = false;
