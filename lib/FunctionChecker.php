@@ -31,11 +31,14 @@ class FunctionChecker implements StatementsSource
         $this->_absolute_class = $source->getAbsoluteClass();
         $this->_source = $source;
 
+        if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
+            $this->_is_static = $function->isStatic();
+        }
+
         $this->_statements_checker = new StatementsChecker($this, substr($this->_file_name, -4) === '.php');
 
         if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
             $this->_statements_checker->registerMethod($function);
-            $this->_is_static = $function->isStatic();
         }
     }
 
