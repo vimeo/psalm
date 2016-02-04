@@ -81,7 +81,11 @@ class FileChecker implements StatementsSource
 
         $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
 
-        (new ClassMethodChecker($class_method, $this))->check();
+        $class = new PhpParser\Node\Stmt\Class_($class_name);
+
+        $class_checker = new ClassChecker($class, $this, $class_name);
+
+        (new ClassMethodChecker($class_method, $class_checker))->check();
     }
 
     public static function getAbsoluteClassFromNameInFile($class, $namespace, $file_name)
@@ -223,11 +227,13 @@ class FileChecker implements StatementsSource
         return $argument_offset < count($this->_function_params[$function_name]) && $this->_function_params[$function_name][$argument_offset];
     }
 
-    public static function checkClassPropertiesFor(callable $fn) {
+    public static function checkClassPropertiesFor(callable $fn)
+    {
         self::$_class_property_fn = $fn;
     }
 
-    public static function checkVarDumpsFor(callable $fn) {
+    public static function checkVarDumpsFor(callable $fn)
+    {
         self::$_var_dump_fn = $fn;
     }
 }
