@@ -2,7 +2,7 @@
 
 namespace CodeInspector;
 
-use \PhpParser;
+use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
 {

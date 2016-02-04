@@ -2,9 +2,9 @@
 
 namespace CodeInspector;
 
-use \PhpParser;
-use \PhpParser\Error;
-use \PhpParser\ParserFactory;
+use PhpParser;
+use PhpParser\Error;
+use PhpParser\ParserFactory;
 
 class ClassChecker implements StatementsSource
 {

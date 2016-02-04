@@ -2,7 +2,7 @@
 
 namespace CodeInspector;
 
-use \PhpParser;
+use PhpParser;
 
 class StatementsChecker
 {
@@ -573,10 +573,10 @@ class StatementsChecker
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if ($stmt->var->name === 'this') {
                 $class_checker = $this->_source->getClassChecker();
-                if ($class_checker) {
-                    if ($class_checker->hasCustomGet()) {
-                        // do nothing
-                    } elseif (is_string($stmt->name)) {
+                if (!FileChecker::shouldCheckClassProperties($this->_file_name, $class_checker)) {
+                    // do nothing
+                } elseif ($class_checker) {
+                    if (is_string($stmt->name)) {
                         $property_names = $class_checker->getPropertyNames();
 
                         if (!in_array($stmt->name, $property_names)) {
@@ -585,7 +585,6 @@ class StatementsChecker
                             }
                         }
                     }
-
                 } else {
                     throw new CodeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
                 }
@@ -779,10 +778,11 @@ class StatementsChecker
             $vars_possibly_in_scope[$stmt->var->var->name] = true;
             $this->registerVariable($stmt->var->var->name, $stmt->var->var->getLine());
         } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if ($stmt->var->var->name === 'this') {
-                self::$_existing_properties[$this->_absolute_class . '::' . $stmt->var->name] = 1;
+            if ($stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
+                if ($stmt->var->var->name === 'this' && is_string($stmt->var->name)) {
+                    self::$_existing_properties[$this->_absolute_class . '::' . $stmt->var->name] = 1;
+                }
             }
-
         }
     }
 

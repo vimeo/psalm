@@ -2,9 +2,9 @@
 
 namespace CodeInspector;
 
-use \PhpParser;
-use \PhpParser\Error;
-use \PhpParser\ParserFactory;
+use PhpParser;
+use PhpParser\Error;
+use PhpParser\ParserFactory;
 
 class FileChecker implements StatementsSource
 {
@@ -15,21 +15,19 @@ class FileChecker implements StatementsSource
     protected $_function_params = [];
     protected $_class_name;
 
+    protected static $_class_property_fn = null;
+    protected static $_var_dump_fn = null;
+
     protected static $_namespace_aliased_classes = [];
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
-    protected static $_ignore_var_dump_files = [];
     protected static $_functions = [];
 
     public static $show_notices = true;
 
-    public function __construct($file_name, $check_var_dumps = true)
+    public function __construct($file_name)
     {
         $this->_file_name = $file_name;
-
-        if (!$check_var_dumps) {
-            self::$_ignore_var_dump_files[$this->_file_name] = 1;
-        }
 
         self::$_file_checkers[$this->_file_name] = $this;
     }
@@ -104,6 +102,8 @@ class FileChecker implements StatementsSource
     {
         $contents = file_get_contents($file_name);
 
+        var_dump($contents);
+
         $stmts = [];
 
         $from_cache = false;
@@ -147,7 +147,12 @@ class FileChecker implements StatementsSource
 
     public static function shouldCheckVarDumps($file_name)
     {
-        return isset(self::$_ignore_var_dump_files[$file_name]);
+        return !self::$_var_dump_fn || call_user_func(self::$_var_dump_fn, $file_name);
+    }
+
+    public static function shouldCheckClassProperties($file_name, ClassChecker $class_checker)
+    {
+        return !self::$_class_property_fn || call_user_func(self::$_class_property_fn, $file_name, $class_checker);
     }
 
     public function registerFunction(PhpParser\Node\Stmt\Function_ $function, $absolute_class = null)
@@ -218,5 +223,13 @@ class FileChecker implements StatementsSource
     public function isPassedByReference($function_name, $argument_offset)
     {
         return $argument_offset < count($this->_function_params[$function_name]) && $this->_function_params[$function_name][$argument_offset];
+    }
+
+    public static function checkClassPropertiesFor(callable $fn) {
+        self::$_class_property_fn = $fn;
+    }
+
+    public static function checkVarDumpsFor(callable $fn) {
+        self::$_var_dump_fn = $fn;
     }
 }

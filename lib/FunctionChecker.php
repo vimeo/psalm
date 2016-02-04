@@ -4,7 +4,7 @@ namespace CodeInspector;
 
 ini_set('xdebug.max_nesting_level', 500);
 
-use \PhpParser;
+use PhpParser;
 
 class FunctionChecker implements StatementsSource
 {
