@@ -860,6 +860,7 @@ class StatementsChecker
             } else {
                 $absolute_class = ($this->_namespace ? '\\' : '') . $this->_namespace . '\\' . $this->_class_name;
             }
+
         } elseif ($this->_check_classes) {
             ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name);
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
@@ -879,6 +880,17 @@ class StatementsChecker
 
                 if (!self::$_static_methods[$method_id]) {
                     throw new CodeException('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine());
+                }
+            }
+            else {
+                if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
+                    if (!isset(self::$_static_methods[$method_id])) {
+                        self::_extractReflectionMethodInfo($method_id);
+                    }
+
+                    if (!self::$_static_methods[$method_id]) {
+                        throw new CodeException('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine());
+                    }
                 }
             }
 
