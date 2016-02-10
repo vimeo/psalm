@@ -188,8 +188,6 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $instanceof_class = null;
-
         $if_types = [];
 
         if ($stmt->cond instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -212,7 +210,7 @@ class StatementsChecker
             }
 
             if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
-                $new_vars_possibly_in_scope = array_merge(array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
+                $new_vars_possibly_in_scope = array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope);
             }
         }
 
@@ -796,7 +794,7 @@ class StatementsChecker
     {
         $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
 
-        $absolute_class = null;
+        $class_type = null;
         $method_id = null;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
@@ -805,38 +803,39 @@ class StatementsChecker
                     throw new CodeException('Use of $this in non-class context', $this->_file_name, $stmt->getLine());
                 }
 
-                $absolute_class = $this->_absolute_class;
+                $class_type = $this->_absolute_class;
             } elseif (!is_string($stmt->var->name)) {
                 $this->_checkExpression($stmt->var->name, $vars_in_scope, $vars_possibly_in_scope);
             } elseif (isset($vars_in_scope[$stmt->var->name])) {
                 if (isset($vars_in_scope[$stmt->var->name]) && is_string($vars_in_scope[$stmt->var->name])) {
-                    $absolute_class = $vars_in_scope[$stmt->var->name];
+                    $class_type = $vars_in_scope[$stmt->var->name];
                 } else {
-                    $absolute_class = $vars_in_scope[$stmt->var->name];
+                    $class_type = $vars_in_scope[$stmt->var->name];
                 }
             }
         } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
         }
 
-        if (!$absolute_class && isset($stmt->var->returnType)) {
-            $absolute_class = $stmt->var->returnType;
+        if (!$class_type && isset($stmt->var->returnType)) {
+            $class_type = $stmt->var->returnType;
         }
 
-        if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__call')) {
-            $method_id = $absolute_class . '::' . $stmt->name;
+        if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
+            foreach (explode('|', $class_type) as $absolute_class) {
+                if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call')) {
+                    $method_id = $absolute_class . '::' . $stmt->name;
 
-            if (!self::_methodExists($method_id)) {
-                throw new CodeException('Method ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
-            }
+                    if (!self::_methodExists($method_id)) {
+                        throw new CodeException('Method ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
+                    }
 
-            $return_types = $this->_getMethodReturnTypes($method_id);
+                    $return_types = $this->_getMethodReturnTypes($method_id);
 
-            if ($return_types) {
-                // @todo should work for multiple types
-                $return_type = $return_types[0];
-
-                $stmt->returnType = $return_type;
+                    if ($return_types) {
+                        $stmt->returnType = implode('|', $return_types);
+                    }
+                }
             }
         }
 
@@ -1031,15 +1030,83 @@ class StatementsChecker
 
     protected function _checkSwitch(PhpParser\Node\Stmt\Switch_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
+        $type_candidate_var = null;
+
+        if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall &&
+            $stmt->cond->name instanceof PhpParser\Node\Name &&
+            $stmt->cond->name->parts === ['get_class']) {
+
+            $var = $stmt->cond->args[0]->value;
+
+            if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
+                $type_candidate_var = $var->name;
+            }
+        }
+
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
+
+        $case_types = [];
+
+        $new_vars_in_scope = null;
+        $new_vars_possibly_in_scope = [];
 
         foreach ($stmt->cases as $case) {
             if ($case->cond) {
                 $this->_checkCondition($case->cond, $vars_in_scope, $vars_possibly_in_scope);
+
+                if ($type_candidate_var && $case->cond instanceof PhpParser\Node\Scalar\String_) {
+                    $case_types[] = $case->cond->value;
+                }
             }
 
-            $this->check($case->stmts, $vars_in_scope, $vars_possibly_in_scope);
+            $last_stmt = null;
+
+            if ($case->stmts) {
+                $switch_vars = $type_candidate_var && !empty($case_types) ?
+                                [$type_candidate_var => implode('|', $case_types)] :
+                                [];
+
+                $switch_vars_in_scope = array_merge($vars_in_scope, $switch_vars);
+                $switch_vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $switch_vars);
+
+                $this->check($case->stmts, $switch_vars_in_scope, $switch_vars_possibly_in_scope);
+
+                $last_stmt = $case->stmts[count($case->stmts) - 1];
+
+                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                    if ($new_vars_in_scope === null) {
+                        $new_vars_in_scope = array_diff_key($switch_vars_in_scope, $vars_in_scope);
+                        $new_vars_possibly_in_scope = array_diff_key($switch_vars_possibly_in_scope, $vars_possibly_in_scope);
+                    }
+                    else {
+                        foreach ($new_vars_in_scope as $new_var => $type) {
+                            if (!isset($switch_vars_in_scope[$new_var])) {
+                                unset($new_vars_in_scope[$new_var]);
+                            }
+                        }
+
+                        $new_vars_possibly_in_scope = array_merge(
+                            array_diff_key(
+                                $switch_vars_possibly_in_scope,
+                                $vars_possibly_in_scope
+                            ),
+                            $new_vars_possibly_in_scope
+                        );
+                    }
+                }
+            }
+
+            if ($type_candidate_var && ($last_stmt instanceof PhpParser\Node\Stmt\Break_ || $last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                $case_types = [];
+            }
+
+            if ($new_vars_in_scope && $case->cond === null && !($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                // only update vars if there is a default
+                $vars_in_scope = array_merge($vars_in_scope, $new_vars_in_scope);
+            }
         }
+
+        $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
     }
 
     protected function _checkFunctionCall(PhpParser\Node\Expr\FuncCall $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -1391,7 +1458,15 @@ class StatementsChecker
             return true;
         }
 
-        return is_a($return_type, $expected_type, true) || is_a($expected_type, $return_type, true);
+        $absolute_classes = explode('|', $return_type);
+
+        foreach ($absolute_classes as $absolute_class) {
+            if (!is_a($absolute_class, $expected_type, true) && !is_a($absolute_class, $return_type, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected static function _extractReflectionMethodInfo($method_id)
