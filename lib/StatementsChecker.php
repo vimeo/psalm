@@ -36,6 +36,7 @@ class StatementsChecker
     protected static $_declaring_classes = [];
     protected static $_existing_static_vars = [];
     protected static $_existing_properties = [];
+    protected static $_check_string_fn = null;
 
     public function __construct(StatementsSource $source = null, $check_variables = true)
     {
@@ -341,7 +342,9 @@ class StatementsChecker
             $this->_checkConstFetch($stmt);
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            // do nothing
+            if (self::$_check_string_fn) {
+                call_user_func(self::$_check_string_fn, $stmt, $this->_file_name);
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
@@ -823,12 +826,11 @@ class StatementsChecker
 
         if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
             foreach (explode('|', $class_type) as $absolute_class) {
+                $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
                 if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call')) {
                     $method_id = $absolute_class . '::' . $stmt->name;
 
-                    if (!self::_methodExists($method_id)) {
-                        throw new CodeException('Method ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
-                    }
+                    self::checkMethodExists($method_id, $this->_file_name, $stmt);
 
                     $return_types = $this->_getMethodReturnTypes($method_id);
 
@@ -857,7 +859,7 @@ class StatementsChecker
             if ($stmt->class->parts[0] === 'parent') {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($this->_class_extends, $this->_namespace, $this->_aliased_classes);
             } else {
-                $absolute_class = ($this->_namespace ? '\\' : '') . $this->_namespace . '\\' . $this->_class_name;
+                $absolute_class = $this->_namespace . '\\' . $this->_class_name;
             }
 
         } elseif ($this->_check_classes) {
@@ -868,9 +870,7 @@ class StatementsChecker
         if ($absolute_class && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic')) {
             $method_id = $absolute_class . '::' . $stmt->name;
 
-            if (!self::_methodExists($method_id)) {
-                throw new CodeException('Method ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
-            }
+            self::checkMethodExists($method_id, $this->_file_name, $stmt);
 
             if ($this->_is_static) {
                 if (!isset(self::$_static_methods[$method_id])) {
@@ -1251,19 +1251,19 @@ class StatementsChecker
         return isset(self::$_existing_properties[$property_id]);
     }
 
-    protected static function _methodExists($method_id)
+    public static function checkMethodExists($method_id, $file_name, $stmt)
     {
         if (isset(self::$_existing_methods[$method_id])) {
-            return true;
+            return;
         }
 
         try {
             new \ReflectionMethod($method_id);
             self::$_existing_methods[$method_id] = 1;
-            return true;
+            return;
 
         } catch (\ReflectionException $e) {
-            return false;
+            throw new CodeException('Method ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
         }
     }
 
@@ -1323,9 +1323,7 @@ class StatementsChecker
                         $return_type = $absolute_class;
                     } elseif (self::$_declaring_classes[$method_id] === $this->_absolute_class) {
                         $return_type = ClassChecker::getAbsoluteClassFromString($return_type, $this->_namespace, $this->_aliased_classes);
-                    } else {
-                        //var_dump($method_id, $return_type);
-                        //var_dump(self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
+                    } elseif (!isset($this->_aliased_classes[$return_type]) || $absolute_class !== $this->_absolute_class) {
                         $return_type = FileChecker::getAbsoluteClassFromNameInFile($return_type, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
                     }
                 }
@@ -1486,5 +1484,10 @@ class StatementsChecker
         self::$_method_files[$method_id] = $method->getFileName();
         self::$_method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
         self::$_declaring_classes[$method_id] = '\\' . $method->getDeclaringClass()->name;
+    }
+
+    public static function customCheckString(callable $function)
+    {
+        self::$_check_string_fn = $function;
     }
 }

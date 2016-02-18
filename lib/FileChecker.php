@@ -15,10 +15,11 @@ class FileChecker implements StatementsSource
     protected $_function_params = [];
     protected $_class_name;
 
+    protected $_namespace_aliased_classes = [];
+
     protected static $_class_property_fn = null;
     protected static $_var_dump_fn = null;
 
-    protected static $_namespace_aliased_classes = [];
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
     protected static $_functions = [];
@@ -54,7 +55,7 @@ class FileChecker implements StatementsSource
                 $namespace_name = implode('\\', $stmt->name->parts);
 
                 $namespace_checker = new NamespaceChecker($stmt, $this);
-                self::$_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes);
+                $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
@@ -175,8 +176,8 @@ class FileChecker implements StatementsSource
 
     public function getAliasedClasses($namespace_name = null)
     {
-        if ($namespace_name && isset(self::$_namespace_aliased_classes[$namespace_name])) {
-            return self::$_namespace_aliased_classes[$namespace_name];
+        if ($namespace_name && isset($this->_namespace_aliased_classes[$namespace_name])) {
+            return $this->_namespace_aliased_classes[$namespace_name];
         }
 
         return $this->_aliased_classes;

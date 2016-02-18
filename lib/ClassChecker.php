@@ -74,8 +74,17 @@ class ClassChecker implements StatementsSource
 
         $absolute_class = self::getAbsoluteClassFromName($class_name, $namespace, $aliased_classes);
 
+        self::checkAbsoluteClass($absolute_class, $class_name, $file_name);
+    }
+
+    public static function checkAbsoluteClass($absolute_class, PhpParser\NodeAbstract $stmt, $file_name)
+    {
+        if (strpos($file_name, 'hoodahoop')) {
+            return;
+        }
+
         if (!isset(self::$_existing_classes[$absolute_class]) && !class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
-            throw new CodeException('Class ' . $absolute_class . ' does not exist', $file_name, $class_name->getLine());
+            throw new CodeException('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine());
         }
 
         self::$_existing_classes[$absolute_class] = 1;
@@ -84,7 +93,7 @@ class ClassChecker implements StatementsSource
     public static function getAbsoluteClassFromName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes)
     {
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
-            return '\\' . implode('\\', $class_name->parts);
+            return implode('\\', $class_name->parts);
         }
 
         return self::getAbsoluteClassFromString(implode('\\', $class_name->parts), $namespace, $aliased_classes);
@@ -93,7 +102,7 @@ class ClassChecker implements StatementsSource
     public static function getAbsoluteClassFromString($class, $namespace, array $imported_namespaces)
     {
         if ($class[0] === '\\') {
-            return $class;
+            return substr($class, 1);
         }
 
         if (strpos($class, '\\') !== false) {
@@ -101,26 +110,13 @@ class ClassChecker implements StatementsSource
             $first_namespace = array_shift($class_parts);
 
             if (isset($imported_namespaces[$first_namespace])) {
-                return self::_addSlash($imported_namespaces[$first_namespace] . '\\' . implode('\\', $class_parts));
+                return $imported_namespaces[$first_namespace] . '\\' . implode('\\', $class_parts);
             }
         } elseif (isset($imported_namespaces[$class])) {
-            return self::_addSlash($imported_namespaces[$class]);
+            return $imported_namespaces[$class];
         }
 
-        if ($namespace && substr($namespace, -1) !== '\\') {
-            $namespace .= '\\';
-        }
-
-        return self::_addSlash($namespace . $class);
-    }
-
-    protected static function _addSlash($class)
-    {
-        if ($class[0] === '\\') {
-            return $class;
-        }
-
-        return '\\' . $class;
+        return $namespace . '\\' . $class;
     }
 
     public function getNamespace()
