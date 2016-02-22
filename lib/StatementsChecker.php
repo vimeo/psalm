@@ -1263,7 +1263,7 @@ class StatementsChecker
             return;
 
         } catch (\ReflectionException $e) {
-            throw new CodeException('Method ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
+            throw new CodeException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
         }
     }
 
