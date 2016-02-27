@@ -42,7 +42,7 @@ class FileChecker implements StatementsSource
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 if ($check_classes) {
-                    (new ClassChecker($stmt, $this, '\\' . $stmt->name))->check();
+                    (new ClassChecker($stmt, $this, $stmt->name))->check();
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {

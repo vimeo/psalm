@@ -73,6 +73,11 @@ class FunctionChecker implements StatementsSource
         }
     }
 
+    public function getMethodId()
+    {
+        return $this->getAbsoluteClass() . '::' . $this->_function->name;
+    }
+
     public function getNamespace()
     {
         return $this->_namespace;

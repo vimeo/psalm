@@ -116,7 +116,7 @@ class ClassChecker implements StatementsSource
             return $imported_namespaces[$class];
         }
 
-        return $namespace . '\\' . $class;
+        return ($namespace ? $namespace . '\\' : '') . $class;
     }
 
     public function getNamespace()

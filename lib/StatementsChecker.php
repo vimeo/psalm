@@ -24,6 +24,7 @@ class StatementsChecker
     protected $_is_static;
     protected $_absolute_class;
 
+    protected static $_method_call_index = [];
     protected static $_method_return_types = [];
     protected static $_existing_methods = [];
     protected static $_reflection_functions = [];
@@ -31,7 +32,6 @@ class StatementsChecker
     protected static $_method_files = [];
     protected static $_method_params = [];
     protected static $_method_namespaces = [];
-    protected static $_method_param_types = [];
     protected static $_static_methods = [];
     protected static $_declaring_classes = [];
     protected static $_existing_static_vars = [];
@@ -744,10 +744,10 @@ class StatementsChecker
                         $vars_in_scope[$var_name] = 'mixed';
                     }
 
-                } elseif (isset($vars_in_scope[$var_name])) {
+                } elseif (isset($vars_in_scope[$var_name]) && is_string($vars_in_scope[$var_name])) {
                     $existing_type = $vars_in_scope[$var_name];
 
-                    if ($existing_type !== 'mixed') {
+                    if ($existing_type !== 'mixed' && $existing) {
                         if (is_a($existing_type, $stmt->expr->returnType, true)) {
                             // downcast
                             $vars_in_scope[$var_name] = $stmt->expr->returnType;
@@ -812,8 +812,6 @@ class StatementsChecker
             } elseif (isset($vars_in_scope[$stmt->var->name])) {
                 if (isset($vars_in_scope[$stmt->var->name]) && is_string($vars_in_scope[$stmt->var->name])) {
                     $class_type = $vars_in_scope[$stmt->var->name];
-                } else {
-                    $class_type = $vars_in_scope[$stmt->var->name];
                 }
             }
         } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
@@ -827,14 +825,28 @@ class StatementsChecker
         if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
             foreach (explode('|', $class_type) as $absolute_class) {
                 $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
+
                 if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call')) {
                     $method_id = $absolute_class . '::' . $stmt->name;
+
+                    if (!isset(self::$_method_call_index[$method_id])) {
+                        self::$_method_call_index[$method_id] = [];
+                    }
+
+                    if ($this->_source instanceof ClassMethodChecker) {
+                        self::$_method_call_index[$method_id][] = $this->_source->getMethodId();
+                    }
+                    else {
+                        self::$_method_call_index[$method_id][] = $this->_source->getFileName();
+                    }
 
                     self::checkMethodExists($method_id, $this->_file_name, $stmt);
 
                     $return_types = $this->_getMethodReturnTypes($method_id);
 
                     if ($return_types) {
+                        $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
+
                         $stmt->returnType = implode('|', $return_types);
                     }
                 }
@@ -859,7 +871,7 @@ class StatementsChecker
             if ($stmt->class->parts[0] === 'parent') {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($this->_class_extends, $this->_namespace, $this->_aliased_classes);
             } else {
-                $absolute_class = $this->_namespace . '\\' . $this->_class_name;
+                $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }
 
         } elseif ($this->_check_classes) {
@@ -869,6 +881,17 @@ class StatementsChecker
 
         if ($absolute_class && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic')) {
             $method_id = $absolute_class . '::' . $stmt->name;
+
+            if (!isset(self::$_method_call_index[$method_id])) {
+                self::$_method_call_index[$method_id] = [];
+            }
+
+            if ($this->_source instanceof ClassMethodChecker) {
+                self::$_method_call_index[$method_id][] = $this->_source->getMethodId();
+            }
+            else {
+                self::$_method_call_index[$method_id][] = $this->_source->getFileName();
+            }
 
             self::checkMethodExists($method_id, $this->_file_name, $stmt);
 
@@ -896,14 +919,43 @@ class StatementsChecker
             $return_types = $this->_getMethodReturnTypes($method_id);
 
             if ($return_types) {
-                // @todo should work for multiple types
-                $return_type = $return_types[0];
-
-                $stmt->returnType = $return_type;
+                $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
+                $stmt->returnType = implode('|', $return_types);
             }
         }
 
         $this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+    }
+
+    protected static function _fleshOutReturnTypes(array $return_types, array $args, $method_id)
+    {
+        foreach ($return_types as &$return_type) {
+            if ($return_type === '$this') {
+                $return_type = explode('::', $method_id)[0];
+            }
+            else if ($return_type[0] === '$') {
+                if (!isset(self::$_method_params[$method_id])) {
+                    self::_extractReflectionMethodInfo($method_id);
+                }
+
+                foreach ($args as $i => $arg) {
+                    $method_param = self::$_method_params[$method_id][$i];
+
+                    if ($return_type === '$' . $method_param['name']) {
+                        if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
+                            $return_type = $arg->value->value;
+                            break;
+                        }
+                    }
+                }
+
+                if ($return_type[0] === '$') {
+                    $return_type = 'mixed';
+                }
+            }
+        }
+
+        return $return_types;
     }
 
     protected function _checkMethodParams(array $args, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -923,9 +975,12 @@ class StatementsChecker
             }
 
             if ($method_id && isset($arg->value->returnType)) {
-                if (!self::_isCorrectType($arg->value->returnType, $method_id, $i)) {
-                    throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' has incorrect type of ' . $arg->value->returnType, $this->_file_name, $arg->value->getLine());
+                foreach (explode('|', $arg->value->returnType) as $return_type) {
+                    if ($return_type !== 'null' && !self::_isCorrectType($return_type, $method_id, $i)) {
+                        throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type, $this->_file_name, $arg->value->getLine());
+                    }
                 }
+
             }
         }
     }
@@ -1185,13 +1240,7 @@ class StatementsChecker
             });
 
             foreach ($return_types as &$return_type) {
-                if ($return_type[0] === strtoupper($return_type[0])) {
-                    if ($return_type === '$this') {
-                        $return_type = $this->_absolute_class;
-                    } else {
-                        $return_type = ClassChecker::getAbsoluteClassFromString($return_type, $this->_namespace, $this->_aliased_classes);
-                    }
-                }
+                $return_type = $this->_fixUpReturnType($return_type, $method_id, true);
             }
 
             self::$_method_return_types[$method_id] = $return_types;
@@ -1204,9 +1253,40 @@ class StatementsChecker
             self::$_method_params[$method_id] = [];
 
             foreach ($method->params as $param) {
-                self::$_method_params[$method_id][] = $param->byRef;
+                self::$_method_params[$method_id][] = [
+                    'by_ref' => $param->byRef,
+                    'name' => $param->name,
+                    'type' => $param->type
+                ];
             }
         }
+    }
+
+    protected function _fixUpReturnType($return_type, $method_id, $is_local = false)
+    {
+        if ($return_type[0] === strtoupper($return_type[0])) {
+            $absolute_class = explode('::', $method_id)[0];
+
+            if ($return_type === '$this') {
+                return $absolute_class;
+            }
+
+            if (isset(self::$_declaring_classes[$method_id]) && self::$_declaring_classes[$method_id] === $this->_absolute_class) {
+                return ClassChecker::getAbsoluteClassFromString($return_type, $this->_namespace, $this->_aliased_classes);
+            }
+
+            if ($is_local && $absolute_class === $this->_absolute_class) {
+                return ClassChecker::getAbsoluteClassFromString($return_type, $this->_namespace, $this->_aliased_classes);
+            }
+
+            if (!isset(self::$_method_files[$method_id])) {
+                self::_extractReflectionMethodInfo($method_id);
+            }
+
+            return FileChecker::getAbsoluteClassFromNameInFile($return_type, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
+        }
+
+        return $return_type;
     }
 
     public function registerVariable($var_name, $line_number)
@@ -1298,14 +1378,12 @@ class StatementsChecker
 
         $comments = self::_parseDocComment(self::$_method_comments[$method_id]);
 
-        $absolute_class = explode('::', $method_id)[0];
-
         $return_types = [];
 
         if (isset($comments['specials']['return'])) {
             $return_blocks = explode(' ', $comments['specials']['return'][0]);
             foreach ($return_blocks as $block) {
-                if ($block && preg_match('/^\\\?[A-Za-z0-9|\\\]+[A-Za-z0-9]$/', $block)) {
+                if ($block && preg_match('/^(\\\?[A-Za-z0-9|\\\]+[A-Za-z0-9]|\$[a-zA-Z_0-9]+)$/', $block)) {
                     $return_types = explode('|', $block);
                     break;
                 }
@@ -1318,15 +1396,7 @@ class StatementsChecker
 
         if ($return_types) {
             foreach ($return_types as &$return_type) {
-                if ($return_type[0] === strtoupper($return_type[0])) {
-                    if ($return_type === '$this') {
-                        $return_type = $absolute_class;
-                    } elseif (self::$_declaring_classes[$method_id] === $this->_absolute_class) {
-                        $return_type = ClassChecker::getAbsoluteClassFromString($return_type, $this->_namespace, $this->_aliased_classes);
-                    } elseif (!isset($this->_aliased_classes[$return_type]) || $absolute_class !== $this->_absolute_class) {
-                        $return_type = FileChecker::getAbsoluteClassFromNameInFile($return_type, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
-                    }
-                }
+                $return_type = $this->_fixUpReturnType($return_type, $method_id);
             }
         }
 
@@ -1417,7 +1487,7 @@ class StatementsChecker
                 self::_extractReflectionMethodInfo($method_id);
             }
 
-            return $argument_offset < count(self::$_method_params[$method_id]) && self::$_method_params[$method_id][$argument_offset];
+            return $argument_offset < count(self::$_method_params[$method_id]) && self::$_method_params[$method_id][$argument_offset]['by_ref'];
         }
 
         $file_checker = FileChecker::getFileCheckerFromFileName($this->_file_name);
@@ -1438,15 +1508,15 @@ class StatementsChecker
             return true;
         }
 
-        if (!isset(self::$_method_param_types[$method_id])) {
+        if (!isset(self::$_method_params[$method_id])) {
             self::_extractReflectionMethodInfo($method_id);
         }
 
-        if ($arg_offset >= count(self::$_method_param_types[$method_id])) {
+        if ($arg_offset >= count(self::$_method_params[$method_id])) {
             return true;
         }
 
-        $expected_type = self::$_method_param_types[$method_id][$arg_offset];
+        $expected_type = self::$_method_params[$method_id][$arg_offset]['type'];
 
         if (!$expected_type) {
             return true;
@@ -1473,21 +1543,65 @@ class StatementsChecker
         $params = $method->getParameters();
 
         self::$_method_params[$method_id] = [];
-        self::$_method_param_types[$method_id] = [];
         foreach ($params as $param) {
-            self::$_method_params[$method_id][] = $param->isPassedByReference();
-            self::$_method_param_types[$method_id][] = $param->getClass() ? '\\' . $param->getClass()->getName() : ($param->isArray() ? 'array' : null);
+            self::$_method_params[$method_id][] = [
+                'name' => $param->getName(),
+                'by_ref' => $param->isPassedByReference(),
+                'type' => $param->getClass() ? $param->getClass()->getName() : ($param->isArray() ? 'array' : null)
+            ];
         }
 
         self::$_static_methods[$method_id] = $method->isStatic();
         self::$_method_comments[$method_id] = $method->getDocComment() ?: '';
         self::$_method_files[$method_id] = $method->getFileName();
         self::$_method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
-        self::$_declaring_classes[$method_id] = '\\' . $method->getDeclaringClass()->name;
+        self::$_declaring_classes[$method_id] = $method->getDeclaringClass()->name;
     }
 
     public static function customCheckString(callable $function)
     {
         self::$_check_string_fn = $function;
+    }
+
+    public static function findEntryPoints($method_id)
+    {
+        $output = 'Entry points for ' . $method_id;
+        if (empty(self::$_method_call_index[$method_id])) {
+            return $output . ' - NONE';
+        }
+
+        $parents = self::$_method_call_index[$method_id];
+        $ignore = [$method_id];
+        $entry_points = [];
+
+        while (!empty($parents)) {
+            $parent_method_id = array_shift($parents);
+            $ignore[] = $parent_method_id;
+            $new_parents = self::_findParents($parent_method_id, $ignore);
+
+            if ($new_parents === null) {
+                $entry_points[] = $parent_method_id;
+            }
+            else {
+                $parents = array_merge($parents, $new_parents);
+            }
+        }
+
+        $entry_points = array_unique($entry_points);
+
+        if (count($entry_points) > 20) {
+            return $output . PHP_EOL . ' - ' . implode(PHP_EOL . ' - ', array_slice($entry_points, 0, 20)) . ' and more...';
+        }
+
+        return $output . PHP_EOL . ' - ' . implode(PHP_EOL . ' - ', $entry_points);
+    }
+
+    protected static function _findParents($method_id, array $ignore)
+    {
+        if (empty(self::$_method_call_index[$method_id])) {
+            return null;
+        }
+
+        return array_diff(array_unique(self::$_method_call_index[$method_id]), $ignore);
     }
 }
