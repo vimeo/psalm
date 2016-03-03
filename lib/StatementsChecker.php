@@ -717,51 +717,33 @@ class StatementsChecker
     {
         $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
+        $type_in_comments = null;
+        $doc_comment = $stmt->getDocComment();
+
+        if ($doc_comment) {
+            $comments = self::_parseDocComment($doc_comment);
+
+            if ($comments && isset($comments['specials']['var'][0])) {
+                $type_in_comments = explode(' ', $comments['specials']['var'][0])[0];
+
+                if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
+                    $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
+                }
+            }
+        }
+
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
             $vars_in_scope[$stmt->var->name] = true;
             $vars_possibly_in_scope[$stmt->var->name] = true;
             $this->registerVariable($stmt->var->name, $stmt->var->getLine());
 
-            $comments = [];
-            $doc_comment = $stmt->getDocComment();
-
-            if ($doc_comment) {
-                $comments = self::_parseDocComment($doc_comment);
-            }
-
-            if ($comments && isset($comments['specials']['var'][0])) {
-                $type = explode(' ', $comments['specials']['var'][0])[0];
-
-                if ($type[0] === strtoupper($type[0])) {
-                    $vars_in_scope[$stmt->var->name] = ClassChecker::getAbsoluteClassFromString($type, $this->_namespace, $this->_aliased_classes);
-                }
+            if ($type_in_comments) {
+                $vars_in_scope[$stmt->var->name] = $type_in_comments;
 
             } elseif (isset($stmt->expr->returnType)) {
                 $var_name = $stmt->var->name;
 
-                if ($stmt->expr->returnType === 'null') {
-                    if (isset($vars_in_scope[$var_name])) {
-                        $vars_in_scope[$var_name] = 'mixed';
-                    }
-
-                } elseif (isset($vars_in_scope[$var_name]) && is_string($vars_in_scope[$var_name])) {
-                    $existing_type = $vars_in_scope[$var_name];
-
-                    if ($existing_type !== 'mixed' && $existing) {
-                        if (is_a($existing_type, $stmt->expr->returnType, true)) {
-                            // downcast
-                            $vars_in_scope[$var_name] = $stmt->expr->returnType;
-                        } elseif (is_a($stmt->expr->returnType, $existing_type, true)) {
-                            // upcast, catch later
-                            $vars_in_scope[$var_name] = $stmt->expr->returnType;
-                        } else {
-                            $vars_in_scope[$stmt->var->name] = 'mixed';
-                        }
-                    }
-
-                } else {
-                    $vars_in_scope[$stmt->var->name] = $stmt->expr->returnType;
-                }
+                self::_typeAssignment($var_name, $stmt->expr, $vars_in_scope);
             }
 
         } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
@@ -781,9 +763,44 @@ class StatementsChecker
         } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch) {
             if ($stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
                 if ($stmt->var->var->name === 'this' && is_string($stmt->var->name)) {
-                    self::$_existing_properties[$this->_absolute_class . '::' . $stmt->var->name] = 1;
+                    $property_id = $this->_absolute_class . '::' . $stmt->var->name;
+                    self::$_existing_properties[$property_id] = 1;
+
+                    if ($type_in_comments) {
+                        $vars_in_scope[$property_id] = $type_in_comments;
+
+                    } elseif (isset($stmt->expr->returnType)) {
+                        self::_typeAssignment($property_id, $stmt->expr, $vars_in_scope);
+                    }
                 }
             }
+        }
+    }
+
+    protected function _typeAssignment($var_name, PhpParser\Node\Expr $expr, array &$vars_in_scope)
+    {
+        if ($expr->returnType === 'null') {
+            if (isset($vars_in_scope[$var_name])) {
+                $vars_in_scope[$var_name] = 'mixed';
+            }
+
+        } elseif (isset($vars_in_scope[$var_name]) && is_string($vars_in_scope[$var_name])) {
+            $existing_type = $vars_in_scope[$var_name];
+
+            if ($existing_type !== 'mixed') {
+                if (is_a($existing_type, $expr->returnType, true)) {
+                    // downcast
+                    $vars_in_scope[$var_name] = $expr->returnType;
+                } elseif (is_a($expr->returnType, $existing_type, true)) {
+                    // upcast, catch later
+                    $vars_in_scope[$var_name] = $expr->returnType;
+                } else {
+                    $vars_in_scope[$var_name] = 'mixed';
+                }
+            }
+
+        } else {
+            $vars_in_scope[$var_name] = $expr->returnType;
         }
     }
 
@@ -816,6 +833,18 @@ class StatementsChecker
             }
         } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
+
+            if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch &&
+                $stmt->var->var instanceof PhpParser\Node\Expr\Variable &&
+                $stmt->var->var->name === 'this' &&
+                is_string($stmt->var->name)
+            ) {
+                $property_id = $this->_absolute_class . '::' . $stmt->var->name;
+
+                if (isset($vars_in_scope[$property_id])) {
+                    $class_type = $vars_in_scope[$property_id];
+                }
+            }
         }
 
         if (!$class_type && isset($stmt->var->returnType)) {
@@ -1567,6 +1596,22 @@ class StatementsChecker
     {
         $output = 'Entry points for ' . $method_id;
         if (empty(self::$_method_call_index[$method_id])) {
+            list($absolute_class, $method_name) = explode('::', $method_id);
+
+            $reflection_class = new \ReflectionClass($absolute_class);
+            $parent_class = $reflection_class->getParentClass();
+
+            if ($parent_class) {
+                try {
+                    $parent_class->getMethod($method_name);
+                    $method_id = $parent_class->getName() . '::' . $method_name;
+                    return $output . ' - NONE - it extends ' . $method_id . ' though';
+                }
+                catch (\ReflectionException $e) {
+                    // do nothing
+                }
+            }
+
             return $output . ' - NONE';
         }
 
