@@ -4,16 +4,22 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "858af52d1bbec2aa7f5bf82ec775e113",
-    "content-hash": "e97f2d4a5fa540eb6d8bc906aadd8c0b",
+    "hash": "740e59421387f92402be536827923f89",
+    "content-hash": "8a288dd2964259c6ce38bac459477863",
     "packages": [
         {
-            "name": "stevemiketa/php-parser",
-            "version": "v2.0.2",
+            "name": "nikic/php-parser",
+            "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@github.com:stevemiketa/PHP-Parser.git",
-                "reference": "42051a95b5cc59a349fe7ab9bd7c2aa7b0e226c9"
+                "url": "https://github.com/nikic/PHP-Parser.git",
+                "reference": "06d9ba42dedcee9cda97e81aec92cd876a023e8c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/06d9ba42dedcee9cda97e81aec92cd876a023e8c",
+                "reference": "06d9ba42dedcee9cda97e81aec92cd876a023e8c",
+                "shasum": ""
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -36,6 +42,7 @@
                     "PhpParser\\": "lib/PhpParser"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "BSD-3-Clause"
             ],
@@ -49,13 +56,15 @@
                 "parser",
                 "php"
             ],
-            "time": "2016-03-03 17:24:26"
+            "time": "2016-03-03 19:52:13"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "nikic/php-parser": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

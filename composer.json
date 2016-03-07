@@ -11,17 +11,11 @@
     ],
     "require": {
         "php": ">=5.4",
-        "stevemiketa/PHP-Parser": "~2.0.0"
+        "nikic/PHP-Parser": "~2.0.0@dev"
     },
     "autoload": {
         "psr-4": {
             "CodeInspector\\": "lib"
         }
-    },
-    "repositories": [
-        {
-            "type": "git",
-            "url": "git@github.com:stevemiketa/PHP-Parser.git"
-        }
-    ]
+    }
 }
