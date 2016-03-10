@@ -26,6 +26,7 @@ class StatementsChecker
 
     protected static $_method_call_index = [];
     protected static $_method_return_types = [];
+    protected static $_method_custom_calls = [];
     protected static $_existing_methods = [];
     protected static $_reflection_functions = [];
     protected static $_method_comments = [];
@@ -743,7 +744,7 @@ class StatementsChecker
             } elseif (isset($stmt->expr->returnType)) {
                 $var_name = $stmt->var->name;
 
-                self::_typeAssignment($var_name, $stmt->expr, $vars_in_scope);
+                $this->_typeAssignment($var_name, $stmt->expr, $vars_in_scope);
             }
 
         } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
@@ -770,7 +771,7 @@ class StatementsChecker
                         $vars_in_scope[$property_id] = $type_in_comments;
 
                     } elseif (isset($stmt->expr->returnType)) {
-                        self::_typeAssignment($property_id, $stmt->expr, $vars_in_scope);
+                        $this->_typeAssignment($property_id, $stmt->expr, $vars_in_scope);
                     }
                 }
             }
@@ -878,6 +879,37 @@ class StatementsChecker
 
                         $stmt->returnType = implode('|', $return_types);
                     }
+
+                    if (!empty(self::$_method_custom_calls[$method_id])) {
+                        foreach (self::$_method_custom_calls[$method_id] as $inner_call) {
+                            $new_method_id = self::_getMethodFromCallBlock($inner_call, $stmt->args, $method_id);
+
+                            if ($new_method_id) {
+                                try {
+                                    self::checkMethodExists($new_method_id, $this->_file_name, $stmt);
+                                }
+                                catch (CodeException $e) {
+                                    /*throw $e;
+                                    if (count($stmt->args) > 1) {
+                                        throw $e;
+                                    }
+
+                                    list($new_method_class, $new_method) = explode('::', $new_method_id);
+
+                                    $view_file = str_replace('Vimeo\\Controller\\', '', $new_method_class);
+                                    $view_file = strtolower(str_replace('Controller', '', $view_file));
+
+                                    $view_file = str_replace('\\', '/', $view_file);
+
+                                    $view_file = 'views_v6/' . $view_file . '/view.' . str_replace('/', '.', $view_file) . '.' . $new_method . '.phtml';
+
+                                    if (!file_exists('/vagrant/' . $view_file)) {
+                                        throw new CodeException('Method ' . $new_method_id . ' does not have a view file', $this->_file_name, $stmt->getLine());
+                                    }*/
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -958,9 +990,11 @@ class StatementsChecker
 
     protected static function _fleshOutReturnTypes(array $return_types, array $args, $method_id)
     {
+        $absolute_class = explode('::', $method_id)[0];
+
         foreach ($return_types as &$return_type) {
             if ($return_type === '$this') {
-                $return_type = explode('::', $method_id)[0];
+                $return_type = $absolute_class;
             }
             else if ($return_type[0] === '$') {
                 if (!isset(self::$_method_params[$method_id])) {
@@ -985,6 +1019,37 @@ class StatementsChecker
         }
 
         return $return_types;
+    }
+
+    protected static function _getMethodFromCallBlock($call, array $args, $method_id)
+    {
+        $absolute_class = explode('::', $method_id)[0];
+
+        $original_call = $call;
+
+        $call = preg_replace('/^\$this(->|::)/', $absolute_class . '::', $call);
+
+        $call = preg_replace('/\(\)$/', '', $call);
+
+        if (strpos($call, '$') !== false) {
+            if (!isset(self::$_method_params[$method_id])) {
+                self::_extractReflectionMethodInfo($method_id);
+            }
+
+            foreach ($args as $i => $arg) {
+                $method_param = self::$_method_params[$method_id][$i];
+                $preg_var_name = preg_quote('$' . $method_param['name']);
+
+                if (preg_match('/::' . $preg_var_name . '$/', $call)) {
+                    if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
+                        $call = preg_replace('/' . $preg_var_name . '$/', $arg->value->value, $call);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $original_call === $call || strpos($call, '$') !== false ? null : $call;
     }
 
     protected function _checkMethodParams(array $args, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -1264,6 +1329,17 @@ class StatementsChecker
                 }
             }
 
+            if (isset($comments['specials']['call'])) {
+                self::$_method_custom_calls[$method_id] = [];
+
+                $call_blocks = $comments['specials']['call'];
+                foreach ($comments['specials']['call'] as $block) {
+                    if ($block) {
+                        self::$_method_custom_calls[$method_id][] = trim($block);
+                    }
+                }
+            }
+
             $return_types = array_filter($return_types, function ($entry) {
                 return !empty($entry) && $entry !== '[type]';
             });
@@ -1415,6 +1491,17 @@ class StatementsChecker
                 if ($block && preg_match('/^(\\\?[A-Za-z0-9|\\\]+[A-Za-z0-9]|\$[a-zA-Z_0-9]+)$/', $block)) {
                     $return_types = explode('|', $block);
                     break;
+                }
+            }
+        }
+
+        if (isset($comments['specials']['call'])) {
+            self::$_method_custom_calls[$method_id] = [];
+
+            $call_blocks = $comments['specials']['call'];
+            foreach ($comments['specials']['call'] as $block) {
+                if ($block) {
+                    self::$_method_custom_calls[$method_id][] = trim($block);
                 }
             }
         }
