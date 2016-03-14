@@ -61,7 +61,7 @@ class StatementsChecker
         $has_returned = false;
 
         foreach ($stmts as $stmt) {
-            if ($has_returned) {
+            if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop)) {
                 echo('Warning: Expressions after return in ' . $this->_file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
                 break;
             }
