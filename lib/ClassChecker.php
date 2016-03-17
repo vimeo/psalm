@@ -83,8 +83,23 @@ class ClassChecker implements StatementsSource
             return;
         }
 
-        if (!isset(self::$_existing_classes[$absolute_class]) && !class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
+        $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
+
+        if (isset(self::$_existing_classes[$absolute_class])) {
+            return;
+        }
+
+        if (!class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
             throw new CodeException('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine());
+        }
+
+        if (class_exists($absolute_class, true) && (strpos($absolute_class, 'Vimeo') === 0 || strpos($absolute_class, '\\') === false)) {
+            $reflection_class = new \ReflectionClass($absolute_class);
+
+            if ($reflection_class->getName() !== $absolute_class) {
+                var_dump($absolute_class, $reflection_class->getName());
+                throw new CodeException('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine());
+            }
         }
 
         self::$_existing_classes[$absolute_class] = 1;
