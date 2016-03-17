@@ -97,7 +97,6 @@ class ClassChecker implements StatementsSource
             $reflection_class = new \ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
-                var_dump($absolute_class, $reflection_class->getName());
                 throw new CodeException('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine());
             }
         }
