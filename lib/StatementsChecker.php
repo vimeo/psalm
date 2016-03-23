@@ -916,7 +916,7 @@ class StatementsChecker
             foreach (explode('|', $class_type) as $absolute_class) {
                 $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
-                if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call')) {
+                if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && $absolute_class !== 'Mockery\\MockInterface') {
                     $method_id = $absolute_class . '::' . $stmt->name;
 
                     if (!isset(self::$_method_call_index[$method_id])) {
