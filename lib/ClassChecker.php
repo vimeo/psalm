@@ -43,10 +43,11 @@ class ClassChecker implements StatementsSource
 
         } catch (\ReflectionException $e) {}
 
+        $method_checkers = [];
+
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_checker = new ClassMethodChecker($stmt, $this);
-                $method_checker->check();
+                $method_checkers[] = new ClassMethodChecker($stmt, $this);
 
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {
@@ -63,6 +64,11 @@ class ClassChecker implements StatementsSource
             $possibly_in_scope_vars = [];
 
             (new StatementsChecker($this))->check($leftover_stmts, $scope_vars, $possibly_in_scope_vars);
+        }
+
+        // do the method checks after all class methods have been initialised
+        foreach ($method_checkers as $method_checker) {
+            $method_checker->check();
         }
     }
 

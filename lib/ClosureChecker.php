@@ -6,7 +6,7 @@ use PhpParser;
 
 class ClosureChecker extends FunctionChecker
 {
-    public function check()
+    public function check($extra_scope_vars = [])
     {
         $use_vars = [];
         foreach ($this->_function->uses as $use) {

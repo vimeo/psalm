@@ -23,6 +23,7 @@ class FileChecker implements StatementsSource
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
     protected static $_functions = [];
+    protected static $_includes_to_ignore = [];
 
     public static $show_notices = true;
 
@@ -35,7 +36,7 @@ class FileChecker implements StatementsSource
 
     public function check($check_classes = true)
     {
-        $stmts = self::_getStatments($this->_file_name);
+        $stmts = self::getStatements($this->_file_name);
 
         $leftover_stmts = [];
 
@@ -77,7 +78,7 @@ class FileChecker implements StatementsSource
 
     public function checkWithClass($class_name)
     {
-        $stmts = self::_getStatments($this->_file_name);
+        $stmts = self::getStatements($this->_file_name);
         $this->_class_name = $class_name;
 
         $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
@@ -103,7 +104,7 @@ class FileChecker implements StatementsSource
         return ClassChecker::getAbsoluteClassFromString($class, $namespace, $aliased_classes);
     }
 
-    protected static function _getStatments($file_name)
+    public static function getStatements($file_name)
     {
         $contents = file_get_contents($file_name);
 
@@ -213,7 +214,7 @@ class FileChecker implements StatementsSource
         return false;
     }
 
-    public function getFileCheckerFromFileName($file_name)
+    public static function getFileCheckerFromFileName($file_name)
     {
         return self::$_file_checkers[$file_name];
     }
@@ -236,5 +237,15 @@ class FileChecker implements StatementsSource
     public static function checkVarDumpsFor(callable $fn)
     {
         self::$_var_dump_fn = $fn;
+    }
+
+    public static function ignoreIncludes(array $includes)
+    {
+        self::$_includes_to_ignore = $includes;
+    }
+
+    public static function getIncludesToIgnore()
+    {
+        return self::$_includes_to_ignore;
     }
 }

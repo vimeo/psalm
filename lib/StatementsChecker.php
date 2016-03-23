@@ -15,6 +15,7 @@ class StatementsChecker
     protected $_check_variables = true;
     protected $_check_methods = true;
     protected $_check_consts = true;
+    protected $_check_functions = true;
     protected $_class_name;
     protected $_class_extends;
 
@@ -24,10 +25,13 @@ class StatementsChecker
     protected $_is_static;
     protected $_absolute_class;
 
+    protected $_available_functions = [];
+
     protected static $_method_call_index = [];
     protected static $_method_return_types = [];
     protected static $_method_custom_calls = [];
     protected static $_existing_methods = [];
+    protected static $_existing_functions = [];
     protected static $_reflection_functions = [];
     protected static $_method_comments = [];
     protected static $_method_files = [];
@@ -59,6 +63,14 @@ class StatementsChecker
     public function check(array $stmts, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         $has_returned = false;
+
+        // register all functions first
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+                $file_checker = FileChecker::getFileCheckerFromFileName($this->_file_name);
+                $file_checker->registerFunction($stmt, $this->_absolute_class);
+            }
+        }
 
         foreach ($stmts as $stmt) {
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop)) {
@@ -137,8 +149,6 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checker = new FunctionChecker($stmt, $this->_source);
                 $function_checker->check();
-                $file_checker = FileChecker::getFileCheckerFromFileName($this->_file_name);
-                $file_checker->registerFunction($stmt, $this->_absolute_class);
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 $this->_checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope);
@@ -168,6 +178,8 @@ class StatementsChecker
                     if ($prop->default) {
                         $this->_checkExpression($prop->default, $vars_in_scope, $vars_possibly_in_scope);
                     }
+
+                    self::$_existing_static_vars[$this->_absolute_class . '::$' . $prop->name] = 1;
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
@@ -177,7 +189,7 @@ class StatementsChecker
                 // do nothing
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                // do nothing
+                (new ClassChecker($stmt, $this->_source, $stmt->name))->check();
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 // do nothing
@@ -487,6 +499,48 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+
+            $path_to_file = null;
+
+            if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
+                $path_to_file = $stmt->expr->value;
+
+                // attempts to resolve using get_include_path dirs
+                $include_path = self::_resolveIncludePath($path_to_file, dirname($this->_file_name));
+                $path_to_file = $include_path ? $include_path : $path_to_file;
+
+                if ($path_to_file[0] !== '/') {
+                    $path_to_file = getcwd() . '/' . $path_to_file;
+                }
+            }
+            else {
+                $path_to_file = self::_getPathTo($stmt->expr, $this->_file_name);
+            }
+
+            if ($path_to_file) {
+                $reduce_pattern = '/\/[^\/]+\/\.\.\//';
+
+                while (preg_match($reduce_pattern, $path_to_file)) {
+                    $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file);
+                }
+
+                // if the file is already included, we can't check much more
+                if (in_array($path_to_file, get_included_files())) {
+                    return;
+                }
+
+                if (in_array($path_to_file, FileChecker::getIncludesToIgnore())) {
+                    return;
+                }
+
+                if (file_exists($path_to_file)) {
+                    $include_stmts = FileChecker::getStatements($path_to_file);
+
+                    $this->check($include_stmts, $vars_in_scope, $vars_possibly_in_scope);
+                    return;
+                }
+            }
+
             $this->_check_classes = false;
             $this->_check_variables = false;
 
@@ -714,7 +768,9 @@ class StatementsChecker
     {
         $this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope);
 
-        $this->_checkCondition($stmt->cond, array_merge([], $vars_in_scope), $vars_possibly_in_scope);
+        $vars_in_scope_copy = array_merge([], $vars_in_scope);
+
+        $this->_checkCondition($stmt->cond, $vars_in_scope_copy, $vars_possibly_in_scope);
     }
 
     protected function _checkAssignment(PhpParser\Node\Expr\Assign $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -764,6 +820,7 @@ class StatementsChecker
             $vars_in_scope[$stmt->var->var->name] = true;
             $vars_possibly_in_scope[$stmt->var->var->name] = true;
             $this->registerVariable($stmt->var->var->name, $stmt->var->var->getLine());
+
         } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch) {
             if ($stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
                 if ($stmt->var->var->name === 'this' && is_string($stmt->var->name)) {
@@ -1125,7 +1182,7 @@ class StatementsChecker
             if ($stmt->class->parts[0] === 'parent') {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($this->_class_extends, $this->_namespace, $this->_aliased_classes);
             } else {
-                $absolute_class = ($this->_namespace ? '\\' : '') . $this->_namespace . '\\' . $this->_class_name;
+                $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }
         } elseif ($this->_check_classes) {
             ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name);
@@ -1159,7 +1216,8 @@ class StatementsChecker
         }
 
         if ($stmt->if) {
-            $this->_checkExpression($stmt->if, array_merge($vars_in_scope, $if_types), $vars_possibly_in_scope);
+            $if_types = array_merge($vars_in_scope, $if_types);
+            $this->_checkExpression($stmt->if, $if_types, $vars_possibly_in_scope);
         }
 
         $this->_checkExpression($stmt->else, $vars_in_scope, $vars_possibly_in_scope);
@@ -1269,6 +1327,9 @@ class StatementsChecker
             if ($method->parts === ['method_exists']) {
                 $this->_check_methods = false;
 
+            } elseif ($method->parts === ['function_exists']) {
+                $this->_check_functions = false;
+
             } elseif ($method->parts === ['defined']) {
                 $this->_check_consts = false;
 
@@ -1282,10 +1343,21 @@ class StatementsChecker
             }
         }
 
+        $method_id = null;
+
+        if ($stmt->name instanceof PhpParser\Node\Name && $this->_check_functions) {
+            $method_id = implode('', $stmt->name->parts);
+
+            if ($this->_absolute_class) {
+                $method_id = $this->_absolute_class . '::' . $method_id;
+            }
+
+            $this->_checkFunctionExists($method_id, $stmt);
+        }
+
         foreach ($stmt->args as $i => $arg) {
             if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
-                if ($method instanceof PhpParser\Node\Name) {
-                    $method_id = implode('', $stmt->name->parts);
+                if ($method_id) {
                     $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i);
                 } else {
                     $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope);
@@ -1314,6 +1386,14 @@ class StatementsChecker
     public function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
         $method_id = $this->_absolute_class . '::' . $method->name;
+
+        self::$_declaring_classes[$method_id] = $this->_absolute_class;
+        self::$_static_methods[$method_id] = $method->isStatic();
+        self::$_method_comments[$method_id] = $method->getDocComment() ?: '';
+
+        self::$_method_namespaces[$method_id] = $this->_namespace;
+        self::$_method_files[$method_id] = $this->_file_name;
+        self::$_existing_methods[$method_id] = 1;
 
         if (!isset(self::$_method_return_types[$method_id])) {
             $comments = self::_parseDocComment($method->getDocComment());
@@ -1348,30 +1428,40 @@ class StatementsChecker
             });
 
             foreach ($return_types as &$return_type) {
-                $return_type = $this->_fixUpReturnType($return_type, $method_id, true);
+                $return_type = $this->_fixUpLocalReturnType($return_type, $method_id, $this->_namespace, $this->_aliased_classes);
             }
 
             self::$_method_return_types[$method_id] = $return_types;
         }
 
-        self::$_method_namespaces[$method_id] = $this->_namespace;
-        self::$_method_files[$method_id] = $this->_file_name;
+        self::$_method_params[$method_id] = [];
 
-        if (!isset(self::$_method_params[$method_id])) {
-            self::$_method_params[$method_id] = [];
+        foreach ($method->getParams() as $param) {
+            $param_type = null;
 
-            foreach ($method->params as $param) {
-                self::$_method_params[$method_id][] = [
-                    'by_ref' => $param->byRef,
-                    'name' => $param->name,
-                    'type' => $param->type
-                ];
+            if ($param->type) {
+                if (is_string($param->type)) {
+                    $param_type = $param->type;
+                }
+                else {
+                    $param_type = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                }
             }
+
+            self::$_method_params[$method_id][] = [
+                'name' => $param->name,
+                'by_ref' => $param->byRef,
+                'type' => $param_type
+            ];
         }
     }
 
-    protected function _fixUpReturnType($return_type, $method_id, $is_local = false)
+    protected static function _fixUpLocalReturnType($return_type, $method_id, $namespace, $aliased_classes)
     {
+        if ($return_type[0] === '\\') {
+            return $return_type;
+        }
+
         if ($return_type[0] === strtoupper($return_type[0])) {
             $absolute_class = explode('::', $method_id)[0];
 
@@ -1379,16 +1469,23 @@ class StatementsChecker
                 return $absolute_class;
             }
 
-            if (isset(self::$_declaring_classes[$method_id]) && self::$_declaring_classes[$method_id] === $this->_absolute_class) {
-                return ClassChecker::getAbsoluteClassFromString($return_type, $this->_namespace, $this->_aliased_classes);
-            }
+            return ClassChecker::getAbsoluteClassFromString($return_type, $namespace, $aliased_classes);
+        }
 
-            if ($is_local && $absolute_class === $this->_absolute_class) {
-                return ClassChecker::getAbsoluteClassFromString($return_type, $this->_namespace, $this->_aliased_classes);
-            }
+        return $return_type;
+    }
 
-            if (!isset(self::$_method_files[$method_id])) {
-                self::_extractReflectionMethodInfo($method_id);
+    protected static function _fixUpReturnType($return_type, $method_id)
+    {
+        if ($return_type[0] === '\\') {
+            return $return_type;
+        }
+
+        if ($return_type[0] === strtoupper($return_type[0])) {
+            $absolute_class = explode('::', $method_id)[0];
+
+            if ($return_type === '$this') {
+                return $absolute_class;
             }
 
             return FileChecker::getAbsoluteClassFromNameInFile($return_type, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
@@ -1455,6 +1552,32 @@ class StatementsChecker
         }
     }
 
+    public function _checkFunctionExists($method_id, $stmt)
+    {
+        if (isset(self::$_existing_functions[$method_id])) {
+            return;
+        }
+
+        $file_checker = FileChecker::getFileCheckerFromFileName($this->_file_name);
+
+        if ($file_checker->hasFunction($method_id)) {
+            return;
+        }
+
+        if (strpos($method_id, '::') !== false) {
+            $method_id = preg_replace('/^[^:]+::/', '', $method_id);
+        }
+
+        try {
+            (new \ReflectionFunction($method_id));
+        }
+        catch (\ReflectionException $e) {
+            throw new CodeException('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
+        }
+
+        self::$_existing_functions[$method_id] = 1;
+    }
+
     protected static function _staticVarExists($var_id)
     {
         if (isset(self::$_existing_static_vars[$var_id])) {
@@ -1463,7 +1586,12 @@ class StatementsChecker
 
         $absolute_class = explode('::', $var_id)[0];
 
-        $reflection_class = new \ReflectionClass($absolute_class);
+        try {
+            $reflection_class = new \ReflectionClass($absolute_class);
+        }
+        catch (\ReflectionException $e) {
+            return false;
+        }
 
         $static_properties = $reflection_class->getStaticProperties();
 
@@ -1476,50 +1604,11 @@ class StatementsChecker
 
     protected function _getMethodReturnTypes($method_id)
     {
-        if (isset(self::$_method_return_types[$method_id])) {
-            return self::$_method_return_types[$method_id];
-        }
-
-        if (!isset(self::$_method_comments[$method_id])) {
+        if (!isset(self::$_method_return_types[$method_id])) {
             self::_extractReflectionMethodInfo($method_id);
         }
 
-        $comments = self::_parseDocComment(self::$_method_comments[$method_id]);
-
-        $return_types = [];
-
-        if (isset($comments['specials']['return'])) {
-            $return_blocks = explode(' ', $comments['specials']['return'][0]);
-            foreach ($return_blocks as $block) {
-                if ($block && preg_match('/^(\\\?[A-Za-z0-9|\\\]+[A-Za-z0-9]|\$[a-zA-Z_0-9]+)$/', $block)) {
-                    $return_types = explode('|', $block);
-                    break;
-                }
-            }
-        }
-
-        if (isset($comments['specials']['call'])) {
-            self::$_method_custom_calls[$method_id] = [];
-
-            $call_blocks = $comments['specials']['call'];
-            foreach ($comments['specials']['call'] as $block) {
-                if ($block) {
-                    self::$_method_custom_calls[$method_id][] = trim($block);
-                }
-            }
-        }
-
-        $return_types = array_filter($return_types, function ($entry) {
-            return !empty($entry) && $entry !== '[type]';
-        });
-
-        if ($return_types) {
-            foreach ($return_types as &$return_type) {
-                $return_type = $this->_fixUpReturnType($return_type, $method_id);
-            }
-        }
-
-        self::$_method_return_types[$method_id] = $return_types;
+        $return_types = self::$_method_return_types[$method_id];
 
         return $return_types;
     }
@@ -1602,17 +1691,26 @@ class StatementsChecker
     protected function _isPassedByReference($method_id, $argument_offset)
     {
         if (strpos($method_id, '::') !== false) {
-            if (!isset(self::$_method_params[$method_id])) {
-                self::_extractReflectionMethodInfo($method_id);
-            }
+            try {
+                if (!isset(self::$_method_params[$method_id])) {
+                    self::_extractReflectionMethodInfo($method_id);
+                }
 
-            return $argument_offset < count(self::$_method_params[$method_id]) && self::$_method_params[$method_id][$argument_offset]['by_ref'];
+                return $argument_offset < count(self::$_method_params[$method_id]) && self::$_method_params[$method_id][$argument_offset]['by_ref'];
+            }
+            catch (\ReflectionException $e) {
+                // we fall through to the functions below
+            }
         }
 
         $file_checker = FileChecker::getFileCheckerFromFileName($this->_file_name);
 
         if ($file_checker->hasFunction($method_id)) {
             return $file_checker->isPassedByReference($method_id, $argument_offset);
+        }
+
+        if (strpos($method_id, '::') !== false) {
+            $method_id = preg_replace('/^[^:]+::/', '', $method_id);
         }
 
         $reflection_parameters = (new \ReflectionFunction($method_id))->getParameters();
@@ -1659,22 +1757,74 @@ class StatementsChecker
     protected static function _extractReflectionMethodInfo($method_id)
     {
         $method = new \ReflectionMethod($method_id);
+
+        self::$_static_methods[$method_id] = $method->isStatic();
+        self::$_method_files[$method_id] = $method->getFileName();
+        self::$_method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
+        self::$_declaring_classes[$method_id] = $method->getDeclaringClass()->name;
+
         $params = $method->getParameters();
 
         self::$_method_params[$method_id] = [];
         foreach ($params as $param) {
+            $param_type = null;
+
+            if ($param->isArray()) {
+                $param_type = 'array';
+
+            } elseif ($param->getClass() && self::$_method_files[$method_id]) {
+                $param_type = FileChecker::getAbsoluteClassFromNameInFile(
+                    $param->getClass()->getName(),
+                    self::$_method_namespaces[$method_id],
+                    self::$_method_files[$method_id]
+                );
+            }
+
             self::$_method_params[$method_id][] = [
                 'name' => $param->getName(),
                 'by_ref' => $param->isPassedByReference(),
-                'type' => $param->getClass() ? $param->getClass()->getName() : ($param->isArray() ? 'array' : null)
+                'type' => $param_type
             ];
         }
 
-        self::$_static_methods[$method_id] = $method->isStatic();
-        self::$_method_comments[$method_id] = $method->getDocComment() ?: '';
-        self::$_method_files[$method_id] = $method->getFileName();
-        self::$_method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
-        self::$_declaring_classes[$method_id] = $method->getDeclaringClass()->name;
+        $return_types = [];
+
+        $comments = self::_parseDocComment($method->getDocComment() ?: '');
+
+        if ($comments) {
+            if (isset($comments['specials']['return'])) {
+                $return_blocks = explode(' ', $comments['specials']['return'][0]);
+                foreach ($return_blocks as $block) {
+                    if ($block && preg_match('/^(\\\?[A-Za-z0-9|\\\]+[A-Za-z0-9]|\$[a-zA-Z_0-9]+)$/', $block)) {
+                        $return_types = explode('|', $block);
+                        break;
+                    }
+                }
+            }
+
+            if (isset($comments['specials']['call'])) {
+                self::$_method_custom_calls[$method_id] = [];
+
+                $call_blocks = $comments['specials']['call'];
+                foreach ($comments['specials']['call'] as $block) {
+                    if ($block) {
+                        self::$_method_custom_calls[$method_id][] = trim($block);
+                    }
+                }
+            }
+
+            $return_types = array_filter($return_types, function ($entry) {
+                return !empty($entry) && $entry !== '[type]';
+            });
+
+            if ($return_types) {
+                foreach ($return_types as &$return_type) {
+                    $return_type = self::_fixUpReturnType($return_type, $method_id);
+                }
+            }
+        }
+
+        self::$_method_return_types[$method_id] = $return_types;
     }
 
     public static function customCheckString(callable $function)
@@ -1738,5 +1888,74 @@ class StatementsChecker
         }
 
         return array_diff(array_unique(self::$_method_call_index[$method_id]), $ignore);
+    }
+
+    protected static function _getPathTo(PhpParser\Node\Expr $stmt, $file_name)
+    {
+        if ($file_name[0] !== '/') {
+            $file_name = getcwd() . '/' . $file_name;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\String_) {
+            return $stmt->value;
+
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            $left_string = self::_getPathTo($stmt->left, $file_name);
+            $right_string = self::_getPathTo($stmt->right, $file_name);
+
+            if ($left_string && $right_string) {
+                return $left_string . $right_string;
+            }
+
+        } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
+            $stmt->name instanceof PhpParser\Node\Name &&
+            $stmt->name->parts === ['dirname']) {
+
+            if ($stmt->args) {
+                $evaled_path = self::_getPathTo($stmt->args[0]->value, $file_name);
+
+                if (!$evaled_path) {
+                    return;
+                }
+
+                return dirname($evaled_path);
+            }
+
+        } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name instanceof PhpParser\Node\Name) {
+            $const_name = implode('', $stmt->name->parts);
+
+            if (defined($const_name)) {
+                return constant($const_name);
+            }
+
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
+            return dirname($file_name);
+
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File) {
+            return $file_name;
+        }
+
+        return null;
+    }
+
+    protected static function _resolveIncludePath($file_name, $current_directory)
+    {
+        $paths = PATH_SEPARATOR == ':' ?
+            preg_split('#(?<!phar):#', get_include_path()) :
+            explode(PATH_SEPARATOR, get_include_path());
+
+        foreach ($paths as $prefix) {
+            $ds = substr($prefix, -1) == DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
+
+            if ($prefix === '.') {
+                $prefix = $current_directory;
+            }
+
+            $file = $prefix . $ds . $file_name;
+
+            if (file_exists($file)) {
+                return $file;
+            }
+        }
     }
 }
