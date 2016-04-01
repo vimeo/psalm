@@ -42,6 +42,7 @@ class StatementsChecker
     protected static $_existing_static_vars = [];
     protected static $_existing_properties = [];
     protected static $_check_string_fn = null;
+    protected static $_mock_interfaces = [];
 
     public function __construct(StatementsSource $source = null, $check_variables = true)
     {
@@ -916,7 +917,7 @@ class StatementsChecker
             foreach (explode('|', $class_type) as $absolute_class) {
                 $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
-                if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && $absolute_class !== 'Mockery\\MockInterface') {
+                if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::_isMock($absolute_class)) {
                     $method_id = $absolute_class . '::' . $stmt->name;
 
                     if (!isset(self::$_method_call_index[$method_id])) {
@@ -1000,7 +1001,7 @@ class StatementsChecker
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
 
-        if ($absolute_class && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic')) {
+        if ($absolute_class && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::_isMock($absolute_class)) {
             $method_id = $absolute_class . '::' . $stmt->name;
 
             if (!isset(self::$_method_call_index[$method_id])) {
@@ -1189,7 +1190,7 @@ class StatementsChecker
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
 
-        if ($absolute_class && $this->_check_variables && is_string($stmt->name)) {
+        if ($absolute_class && $this->_check_variables && is_string($stmt->name) && !self::_isMock($absolute_class)) {
             $var_id = $absolute_class . '::$' . $stmt->name;
 
             if (!self::_staticVarExists($var_id)) {
@@ -1746,6 +1747,10 @@ class StatementsChecker
         $absolute_classes = explode('|', $return_type);
 
         foreach ($absolute_classes as $absolute_class) {
+            if (self::_isMock($absolute_class)) {
+                continue;
+            }
+
             if (!is_a($absolute_class, $expected_type, true) && !is_a($absolute_class, $return_type, true)) {
                 return false;
             }
@@ -1957,5 +1962,14 @@ class StatementsChecker
                 return $file;
             }
         }
+    }
+
+    public static function setMockInterfaces(array $classes) {
+        self::$_mock_interfaces = $classes;
+    }
+
+    protected static function _isMock($absolute_class)
+    {
+        return in_array($absolute_class, self::$_mock_interfaces);
     }
 }
