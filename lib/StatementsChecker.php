@@ -245,7 +245,7 @@ class StatementsChecker
 
             $elseif_types = $this->_getTypeAssertions($elseif->cond, true);
 
-            if (!($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)) {
+            if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)) {
                 $negated_types = array_merge($negated_types, self::_negateTypes($elseif_types));
             }
 
