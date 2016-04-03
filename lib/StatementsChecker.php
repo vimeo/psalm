@@ -74,8 +74,8 @@ class StatementsChecker
         }
 
         foreach ($stmts as $stmt) {
-            if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop)) {
-                echo('Warning: Expressions after return in ' . $this->_file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
+            if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)) {
+                echo('Warning: Expressions after return/throw/continue in ' . $this->_file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
                 break;
             }
 
@@ -110,6 +110,7 @@ class StatementsChecker
                 $this->_checkReturn($stmt, $vars_in_scope, $vars_possibly_in_scope);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+                $has_returned = true;
                 $this->_checkThrow($stmt, $vars_in_scope, $vars_possibly_in_scope);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
@@ -119,28 +120,10 @@ class StatementsChecker
                 // do nothing
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
-                // do nothing
+                $has_returned = true;
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
-                foreach ($stmt->vars as $var) {
-                    if ($var instanceof PhpParser\Node\Stmt\StaticVar) {
-                        if (is_string($var->name)) {
-                            if ($this->_check_variables) {
-                                $vars_in_scope[$var->name] = true;
-                                $vars_possibly_in_scope[$var->name] = true;
-                                $this->registerVariable($var->name, $var->getLine());
-                            }
-                        } else {
-                            $this->_checkExpression($var->name, $vars_in_scope, $vars_possibly_in_scope);
-                        }
-
-                        if ($var->default) {
-                            $this->_checkExpression($var->default, $vars_in_scope, $vars_possibly_in_scope);
-                        }
-                    } else {
-                        $this->_checkExpression($var, $vars_in_scope, $vars_possibly_in_scope);
-                    }
-                }
+                $this->_checkStatic($stmt, $vars_in_scope, $vars_possibly_in_scope);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
                 foreach ($stmt->exprs as $expr) {
@@ -206,14 +189,10 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = [];
+        $if_types = $this->_getTypeAssertions($stmt);
 
-        if ($stmt->cond instanceof PhpParser\Node\Expr\Instanceof_) {
-            $if_types = $this->_getInstanceOfTypes($stmt->cond);
-        }
-
-        $if_vars = array_merge($vars_in_scope, $if_types);
-        $if_vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $if_types);
+        $if_vars = self::_combineTypes($if_types, $vars_in_scope);
+        $if_vars_possibly_in_scope = self::_combineTypes($vars_possibly_in_scope, $if_types);
 
         $this->check($stmt->stmts, $if_vars, $if_vars_possibly_in_scope);
 
@@ -221,13 +200,15 @@ class StatementsChecker
         $new_vars_possibly_in_scope = [];
 
         if (count($stmt->stmts)) {
-            $last_stmt = $stmt->stmts[count($stmt->stmts) - 1];
+            $has_leaving_statments = self::_doesLeaveBlock($stmt->stmts, true);
 
-            if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_ || $last_stmt instanceof PhpParser\Node\Stmt\Continue_)) {
+            if (!$has_leaving_statments) {
                 $new_vars = array_diff_key($if_vars, $vars_in_scope);
             }
 
-            if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+            $has_ending_statments = $has_leaving_statments && self::_doesLeaveBlock($stmt->stmts, false);
+
+            if (!$has_ending_statments) {
                 $new_vars_possibly_in_scope = array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope);
             }
         }
@@ -239,9 +220,9 @@ class StatementsChecker
             $this->_checkElseIf($elseif, $elseif_vars, $elseif_vars_possibly_in_scope);
 
             if (count($elseif->stmts)) {
-                $last_stmt = $elseif->stmts[count($elseif->stmts) - 1];
+                $has_leaving_statments = self::_doesLeaveBlock($elseif->stmts, true);
 
-                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_ || $last_stmt instanceof PhpParser\Node\Stmt\Continue_)) {
+                if (!$has_leaving_statments) {
                     if ($new_vars === null) {
                         $new_vars = array_diff_key($elseif_vars, $vars_in_scope);
                     } else {
@@ -253,7 +234,10 @@ class StatementsChecker
                     }
                 }
 
-                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                // has a return/throw at end
+                $has_ending_statments = $has_leaving_statments && self::_doesLeaveBlock($elseif->stmts, false);
+
+                if (!$has_ending_statments) {
                     $new_vars_possibly_in_scope = array_merge(array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
                 }
             }
@@ -266,9 +250,9 @@ class StatementsChecker
             $this->_checkElse($stmt->else, $else_vars, $else_vars_possibly_in_scope);
 
             if (count($stmt->else->stmts)) {
-                $last_stmt = $stmt->else->stmts[count($stmt->else->stmts) - 1];
+                $has_leaving_statments = self::_doesLeaveBlock($stmt->else->stmts, true);
 
-                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_ || $last_stmt instanceof PhpParser\Node\Stmt\Continue_)) {
+                if (!$has_leaving_statments) {
                     // if it doesn't end in a return
                     if ($new_vars === null) {
                         $new_vars = array_diff_key($else_vars, $vars_in_scope);
@@ -281,7 +265,10 @@ class StatementsChecker
                     }
                 }
 
-                if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                // has a return/throw at end
+                $has_ending_statments = $has_leaving_statments && self::_doesLeaveBlock($stmt->else->stmts, false);
+
+                if (!$has_ending_statments) {
                     $new_vars_possibly_in_scope = array_merge(array_diff_key($else_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
                 }
             }
@@ -293,19 +280,28 @@ class StatementsChecker
         }
 
         $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
+
+        /**
+         * let's get the type assertions from the condition if it's a terminator
+         * so that we can negate them going forward
+         */
+        if ($if_types && self::_doesLeaveBlock($stmt->stmts)) {
+            $negated_if_types = array_map(function ($if_type) {
+                return $if_type[0] === '!' ? substr($if_type, 1) : '!' . $if_type;
+            }, $if_types);
+
+            $vars_in_scope = self::_combineTypes($negated_if_types, $vars_in_scope);
+            $vars_possibly_in_scope = self::_combineTypes($negated_if_types, $vars_possibly_in_scope);
+        }
     }
 
     protected function _checkElseIf(PhpParser\Node\Stmt\ElseIf_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = [];
+        $if_types = $this->_getTypeAssertions($stmt);
 
-        if ($stmt->cond instanceof PhpParser\Node\Expr\Instanceof_) {
-            $if_types = $this->_getInstanceOfTypes($stmt->cond);
-        }
-
-        $elseif_vars = array_merge($vars_in_scope, $if_types);
+        $elseif_vars = self::_combineTypes($if_types, $vars_in_scope);
 
         $this->check($stmt->stmts, $elseif_vars, $vars_possibly_in_scope);
 
@@ -322,20 +318,125 @@ class StatementsChecker
         $this->_checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope);
     }
 
-    protected function _getInstanceOfTypes(PhpParser\Node\Expr $stmt)
+    /**
+     * Gets all the type assertions in a conditional
+     *
+     * @param  PhpParser\Node\Expr\Ternary|PhpParser\Node\Stmt\If_|PhpParser\Node\Stmt\ElseIf_ $stmt
+     * @return array
+     */
+    protected function _getTypeAssertions(PhpParser\Node $stmt)
     {
         $if_types = [];
 
-        if ($stmt->expr instanceof PhpParser\Node\Expr\Variable && is_string($stmt->expr->name) && $stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
-                $instanceof_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                $if_types[$stmt->expr->name] = $instanceof_class;
-            } elseif ($stmt->class->parts === ['self']) {
-                $if_types[$stmt->expr->name] = $this->_absolute_class;
+        $conditional = $stmt->cond;
+
+        if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
+            $instanceof_type = $this->_getInstanceOfTypes($conditional);
+
+            if ($instanceof_type) {
+                $if_types[$conditional->expr->name] = $instanceof_type;
             }
+        }
+        else if ($conditional instanceof PhpParser\Node\Expr\Variable) {
+            if (is_string($conditional->name)) {
+                $if_types[$conditional->name] = '!empty';
+            }
+        }
+        else if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
+            if ($conditional->expr instanceof PhpParser\Node\Expr\Instanceof_) {
+                $instanceof_type = $this->_getInstanceOfTypes($conditional->expr);
+
+                if ($instanceof_type) {
+                    $if_types[$conditional->expr->expr->name] = '!' . $instanceof_type;
+                }
+            }
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\Variable) {
+                if (is_string($conditional->expr->name)) {
+                    $if_types[$conditional->expr->name] = 'empty';
+                }
+            }
+            else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                if (self::_hasNullVariable($conditional)) {
+                    $if_types[$conditional->left->name] = '!null';
+                }
+            }
+            else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                if (self::_hasNullVariable($conditional)) {
+                    $if_types[$conditional->left->name] = 'null';
+                }
+            }
+            else if ($conditional instanceof PhpParser\Node\Expr\Empty_ && $conditional->expr instanceof PhpParser\Node\Expr\Variable && is_string($conditional->expr->name)) {
+                $if_types[$conditional->expr->name] = '!empty';
+            }
+        }
+        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+            if (self::_hasNullVariable($conditional)) {
+                $if_types[$conditional->left->name] = 'null';
+            }
+        }
+        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            if (self::_hasNullVariable($conditional)) {
+                $if_types[$conditional->left->name] = '!null';
+            }
+        }
+        else if ($conditional instanceof PhpParser\Node\Expr\Empty_ && $conditional->expr instanceof PhpParser\Node\Expr\Variable && is_string($conditional->expr->name)) {
+            $if_types[$conditional->expr->name] = 'empty';
         }
 
         return $if_types;
+    }
+
+    protected function _getInstanceOfTypes(PhpParser\Node\Expr\Instanceof_ $stmt)
+    {
+        if ($stmt->expr instanceof PhpParser\Node\Expr\Variable && is_string($stmt->expr->name) && $stmt->class instanceof PhpParser\Node\Name) {
+            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+                $instanceof_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
+                return $instanceof_class;
+
+            } elseif ($stmt->class->parts === ['self']) {
+                return $this->_absolute_class;
+            }
+        }
+
+        return null;
+    }
+
+    protected static function _hasNullVariable(PhpParser\Node\Expr $conditional)
+    {
+        if ($conditional->left instanceof PhpParser\Node\Expr\Variable) {
+            if (is_string($conditional->left->name) &&
+                $conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
+                $conditional->right->name instanceof PhpParser\Node\Name &&
+                $conditional->right->name->parts === ['null']
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function _checkStatic(PhpParser\Node\Stmt\Static_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope = [])
+    {
+        foreach ($stmt->vars as $var) {
+            if ($var instanceof PhpParser\Node\Stmt\StaticVar) {
+                if (is_string($var->name)) {
+                    if ($this->_check_variables) {
+                        $vars_in_scope[$var->name] = true;
+                        $vars_possibly_in_scope[$var->name] = true;
+                        $this->registerVariable($var->name, $var->getLine());
+                    }
+                } else {
+                    $this->_checkExpression($var->name, $vars_in_scope, $vars_possibly_in_scope);
+                }
+
+                if ($var->default) {
+                    $this->_checkExpression($var->default, $vars_in_scope, $vars_possibly_in_scope);
+                }
+            } else {
+                $this->_checkExpression($var, $vars_in_scope, $vars_possibly_in_scope);
+            }
+        }
     }
 
     protected function _checkExpression(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope = [])
@@ -437,30 +538,7 @@ class StatementsChecker
             $closure_checker = new ClosureChecker($stmt, $this->_source);
             $closure_checker->check();
 
-            foreach ($stmt->uses as $use) {
-                if (!isset($vars_in_scope[$use->var])) {
-                    if ($use->byRef) {
-                        $vars_in_scope[$use->var] = true;
-                        $vars_possibly_in_scope[$use->var] = true;
-                        $this->registerVariable($use->var, $use->getLine());
-
-                    } elseif (!isset($vars_possibly_in_scope[$use->var])) {
-                        throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
-
-                    } elseif (isset($this->_all_vars[$use->var])) {
-                        if (!isset($this->_warn_vars[$use->var])) {
-                            if (FileChecker::$show_notices) {
-                                echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $use->var . ' on line ' . $use->getLine() . ', first seen on line ' . $this->_all_vars[$use->var] . PHP_EOL);
-                            }
-
-                            $this->_warn_vars[$use->var] = true;
-                        }
-
-                    } else {
-                        throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
-                    }
-                }
-            }
+            $this->_checkClosureUses($stmt, $vars_in_scope, $vars_possibly_in_scope);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $this->_checkArrayAccess($stmt, $vars_in_scope, $vars_possibly_in_scope);
@@ -978,6 +1056,34 @@ class StatementsChecker
         $this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope);
     }
 
+    protected function _checkClosureUses(PhpParser\Node\Expr\Closure $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    {
+        foreach ($stmt->uses as $use) {
+            if (!isset($vars_in_scope[$use->var])) {
+                if ($use->byRef) {
+                    $vars_in_scope[$use->var] = true;
+                    $vars_possibly_in_scope[$use->var] = true;
+                    $this->registerVariable($use->var, $use->getLine());
+
+                } elseif (!isset($vars_possibly_in_scope[$use->var])) {
+                    throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
+
+                } elseif (isset($this->_all_vars[$use->var])) {
+                    if (!isset($this->_warn_vars[$use->var])) {
+                        if (FileChecker::$show_notices) {
+                            echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $use->var . ' on line ' . $use->getLine() . ', first seen on line ' . $this->_all_vars[$use->var] . PHP_EOL);
+                        }
+
+                        $this->_warn_vars[$use->var] = true;
+                    }
+
+                } else {
+                    throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
+                }
+            }
+        }
+    }
+
     protected function _checkStaticCall(PhpParser\Node\Expr\StaticCall $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -1131,8 +1237,8 @@ class StatementsChecker
 
             if ($method_id && isset($arg->value->returnType)) {
                 foreach (explode('|', $arg->value->returnType) as $return_type) {
-                    if ($return_type !== 'null' && !self::_isCorrectType($return_type, $method_id, $i)) {
-                        throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type, $this->_file_name, $arg->value->getLine());
+                    if (!self::_isCorrectType($return_type, $method_id, $i)) {
+                        throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' has incorrect type of ' . $arg->value->returnType, $this->_file_name, $arg->value->getLine());
                     }
                 }
 
@@ -1210,14 +1316,10 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = [];
-
-        if ($stmt->cond instanceof PhpParser\Node\Expr\Instanceof_) {
-            $if_types = $this->_getInstanceOfTypes($stmt->cond);
-        }
+        $if_types = $this->_getTypeAssertions($stmt);
 
         if ($stmt->if) {
-            $if_types = array_merge($vars_in_scope, $if_types);
+            $if_types = self::_combineTypes($if_types, $vars_in_scope);
             $this->_checkExpression($stmt->if, $if_types, $vars_possibly_in_scope);
         }
 
@@ -1449,10 +1551,16 @@ class StatementsChecker
                 }
             }
 
+            $is_nullable = $param->default !== null &&
+                            $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
+                            $param->default->name instanceof PhpParser\Node\Name &&
+                            $param->default->name->parts = ['null'];
+
             self::$_method_params[$method_id][] = [
                 'name' => $param->name,
                 'by_ref' => $param->byRef,
-                'type' => $param_type
+                'type' => $param_type,
+                'is_nullable' => $is_nullable
             ];
         }
     }
@@ -1722,7 +1830,7 @@ class StatementsChecker
 
     protected static function _isCorrectType($return_type, $method_id, $arg_offset)
     {
-        if ($return_type === 'mixed' || $return_type === 'null') {
+        if ($return_type === 'mixed') {
             return true;
         }
 
@@ -1740,20 +1848,22 @@ class StatementsChecker
             return true;
         }
 
+        if ($return_type === 'null') {
+            return self::$_method_params[$method_id][$arg_offset]['is_nullable'];
+        }
+
         if ($return_type === $expected_type) {
             return true;
         }
 
         $absolute_classes = explode('|', $return_type);
 
-        foreach ($absolute_classes as $absolute_class) {
-            if (self::_isMock($absolute_class)) {
-                continue;
-            }
+        if (self::_isMock($return_type)) {
+            continue;
+        }
 
-            if (!is_a($absolute_class, $expected_type, true) && !is_a($absolute_class, $return_type, true)) {
-                return false;
-            }
+        if (!is_a($return_type, $expected_type, true) && !is_a($return_type, $return_type, true)) {
+            return false;
         }
 
         return true;
@@ -1785,10 +1895,20 @@ class StatementsChecker
                 );
             }
 
+            $is_nullable = false;
+
+            try {
+                $is_nullable = $param->getDefaultValue() === null;
+            }
+            catch (\ReflectionException $e) {
+                // do nothing
+            }
+
             self::$_method_params[$method_id][] = [
                 'name' => $param->getName(),
                 'by_ref' => $param->isPassedByReference(),
-                'type' => $param_type
+                'type' => $param_type,
+                'is_nullable' => $is_nullable
             ];
         }
 
@@ -1964,12 +2084,122 @@ class StatementsChecker
         }
     }
 
-    public static function setMockInterfaces(array $classes) {
+    public static function setMockInterfaces(array $classes)
+    {
         self::$_mock_interfaces = $classes;
     }
 
     protected static function _isMock($absolute_class)
     {
         return in_array($absolute_class, self::$_mock_interfaces);
+    }
+
+    /**
+     * Do all code paths in this list of statements exit the block (return/throw)
+     *
+     * @param  array<PhpParser\Node\Stmt>  $stmts
+     * @param  bool $check_continue - also looks for a continue
+     * @return bool
+     */
+    protected static function _doesLeaveBlock(array $stmts, $check_continue = true)
+    {
+        for ($i = count($stmts) - 1; $i > 0; $i--) {
+            $stmt = $stmts[$i];
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
+                $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
+                ($check_continue && $stmt instanceof PhpParser\Node\Stmt\Continue_)) {
+
+                return true;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\If_) {
+                if ($stmt->else && self::_doesLeaveBlock($stmt->stmts, $check_continue) && self::_doesLeaveBlock($stmt->else->stmts, $check_continue)) {
+                    if (empty($stmt->elseifs)) {
+                        return true;
+                    }
+
+                    $all_elseifs_terminate = true;
+
+                    foreach ($stmt->elseifs as $elseif) {
+                        if (!self::_doesLeaveBlock($elsif->stmts, $check_continue)) {
+                            $all_elseifs_terminate = false;
+                            break;
+                        }
+                    }
+
+                    if ($all_elseifs_terminate) {
+                        return true;
+                    }
+                }
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Takes two arrays and consolidates them, removing null values from existing types where applicable
+     *
+     * @param  array  $new_types
+     * @param  array  $existing_types
+     * @return array
+     */
+    protected static function _combineTypes(array $new_types, array $existing_types)
+    {
+        $keys = array_merge(array_keys($new_types), array_keys($existing_types));
+        $keys = array_unique($keys);
+
+        $result_types = [];
+
+        if (empty($new_types)) {
+            return $existing_types;
+        }
+
+        foreach ($keys as $key) {
+            $existing_type = isset($existing_types[$key]) && is_string($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
+
+            if (isset($new_types[$key])) {
+                if ($new_types[$key][0] === '!') {
+                    if ($existing_type) {
+                        if ($new_types[$key] === '!empty' || $new_types[$key] === '!null') {
+                            $null_pos = array_search('null', $existing_type);
+
+                            if ($null_pos !== false) {
+                                array_splice($existing_type, $null_pos, 1);
+                                $result_types[$key] = implode('|', $existing_type);
+                            }
+                        }
+                        else {
+                            $negated_type = substr($new_types[$key], 1);
+
+                            $type_pos = array_search($negated_type, $existing_type);
+
+                            if ($type_pos !== false) {
+                                array_splice($existing_type, $type_pos, 1);
+                                $result_types[$key] = implode('|', $existing_type);
+                            }
+                        }
+                    }
+                    else if (isset($existing_types[$key])) {
+                        $result_types[$key] = $existing_types[$key];
+                    }
+                }
+                else {
+                    $result_types[$key] = $new_types[$key];
+                }
+            }
+            else {
+                $result_types[$key] = $existing_types[$key];
+            }
+        }
+
+        return $result_types;
     }
 }
