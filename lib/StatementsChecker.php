@@ -61,7 +61,7 @@ class StatementsChecker
         $this->_class_extends = $this->_source->getClassExtends();
     }
 
-    public function check(array $stmts, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    public function check(array $stmts, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope = [])
     {
         $has_returned = false;
 
@@ -80,7 +80,7 @@ class StatementsChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $this->_checkIf($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkIf($stmt, $vars_in_scope, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 $this->_checkTryCatch($stmt, $vars_in_scope, $vars_possibly_in_scope);
@@ -185,16 +185,29 @@ class StatementsChecker
         }
     }
 
-    protected function _checkIf(PhpParser\Node\Stmt\If_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkIf(PhpParser\Node\Stmt\If_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = $this->_getTypeAssertions($stmt);
+        $if_types = $this->_getTypeAssertions($stmt->cond, true);
+        $elseif_types = [];
 
-        $if_vars = self::_combineTypes($if_types, $vars_in_scope);
-        $if_vars_possibly_in_scope = self::_combineTypes($vars_possibly_in_scope, $if_types);
+        $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
 
-        $this->check($stmt->stmts, $if_vars, $if_vars_possibly_in_scope);
+        $negated_types = $if_types && $can_negate_if_types ? self::_negateTypes($if_types) : [];
+        $negated_if_types = $negated_types;
+
+        // if the if has an or as the main component, we cannot safely reason about it
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            $if_vars = array_merge([], $vars_in_scope);
+            $if_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
+        }
+        else {
+            $if_vars = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            $if_vars_possibly_in_scope = self::_reconcileTypes($if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
+        }
+
+        $this->check($stmt->stmts, $if_vars, $if_vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
         $new_vars = null;
         $new_vars_possibly_in_scope = [];
@@ -206,23 +219,42 @@ class StatementsChecker
                 $new_vars = array_diff_key($if_vars, $vars_in_scope);
             }
 
-            $has_ending_statments = $has_leaving_statments && self::_doesLeaveBlock($stmt->stmts, false);
+            $has_ending_statments = self::_doesLeaveBlock($stmt->stmts, false);
 
             if (!$has_ending_statments) {
-                $new_vars_possibly_in_scope = array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope);
+                $vars = array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope);
+
+                if ($has_leaving_statments) {
+                    $for_vars_possibly_in_scope = array_merge($for_vars_possibly_in_scope, $vars);
+                }
+                else {
+                    $new_vars_possibly_in_scope = $vars;
+                }
             }
         }
 
         foreach ($stmt->elseifs as $elseif) {
-            $elseif_vars = array_merge([], $vars_in_scope);
+            if ($negated_types) {
+                $elseif_vars = self::_reconcileTypes($negated_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            }
+            else {
+                $elseif_vars = array_merge([], $vars_in_scope);
+            }
+
             $elseif_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
 
-            $this->_checkElseIf($elseif, $elseif_vars, $elseif_vars_possibly_in_scope);
+            $elseif_types = $this->_getTypeAssertions($elseif->cond, true);
+
+            if (!($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)) {
+                $negated_types = array_merge($negated_types, self::_negateTypes($elseif_types));
+            }
+
+            $this->_checkElseIf($elseif, $elseif_vars, $elseif_vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
             if (count($elseif->stmts)) {
-                $has_leaving_statments = self::_doesLeaveBlock($elseif->stmts, true);
+                $has_leaving_statements = self::_doesLeaveBlock($elseif->stmts, true);
 
-                if (!$has_leaving_statments) {
+                if (!$has_leaving_statements) {
                     if ($new_vars === null) {
                         $new_vars = array_diff_key($elseif_vars, $vars_in_scope);
                     } else {
@@ -235,24 +267,37 @@ class StatementsChecker
                 }
 
                 // has a return/throw at end
-                $has_ending_statments = $has_leaving_statments && self::_doesLeaveBlock($elseif->stmts, false);
+                $has_ending_statments = self::_doesLeaveBlock($elseif->stmts, false);
 
                 if (!$has_ending_statments) {
-                    $new_vars_possibly_in_scope = array_merge(array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
+                    $vars = array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope);
+
+                    if ($has_leaving_statements) {
+                        $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
+                    }
+                    else {
+                        $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
+                    }
                 }
             }
         }
 
         if ($stmt->else) {
-            $else_vars = array_merge([], $vars_in_scope);
+            if ($negated_types) {
+                $else_vars = self::_reconcileTypes($negated_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            }
+            else {
+                $else_vars = array_merge([], $vars_in_scope);
+            }
+
             $else_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
 
-            $this->_checkElse($stmt->else, $else_vars, $else_vars_possibly_in_scope);
+            $this->_checkElse($stmt->else, $else_vars, $else_vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
             if (count($stmt->else->stmts)) {
-                $has_leaving_statments = self::_doesLeaveBlock($stmt->else->stmts, true);
+                $has_leaving_statements = self::_doesLeaveBlock($stmt->else->stmts, true);
 
-                if (!$has_leaving_statments) {
+                if (!$has_leaving_statements) {
                     // if it doesn't end in a return
                     if ($new_vars === null) {
                         $new_vars = array_diff_key($else_vars, $vars_in_scope);
@@ -266,10 +311,18 @@ class StatementsChecker
                 }
 
                 // has a return/throw at end
-                $has_ending_statments = $has_leaving_statments && self::_doesLeaveBlock($stmt->else->stmts, false);
+                $has_ending_statments = self::_doesLeaveBlock($stmt->else->stmts, false);
 
                 if (!$has_ending_statments) {
-                    $new_vars_possibly_in_scope = array_merge(array_diff_key($else_vars_possibly_in_scope, $vars_possibly_in_scope), $new_vars_possibly_in_scope);
+                    $vars = array_diff_key($else_vars_possibly_in_scope, $vars_possibly_in_scope);
+
+                    if ($has_leaving_statements) {
+                        $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
+                    }
+                    else {
+                        $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
+                    }
+
                 }
             }
 
@@ -281,36 +334,58 @@ class StatementsChecker
 
         $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
 
-        /**
-         * let's get the type assertions from the condition if it's a terminator
-         * so that we can negate them going forward
-         */
-        if ($if_types && self::_doesLeaveBlock($stmt->stmts)) {
-            $negated_if_types = array_map(function ($if_type) {
-                return $if_type[0] === '!' ? substr($if_type, 1) : '!' . $if_type;
-            }, $if_types);
+        if ($if_types) {
+            /**
+             * let's get the type assertions from the condition if it's a terminator
+             * so that we can negate them going forward
+             */
+            if (self::_doesLeaveBlock($stmt->stmts, false) && $negated_if_types) {
+                $vars_in_scope = self::_reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+                $vars_possibly_in_scope = self::_reconcileTypes($negated_if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
+            }
+            else {
+                foreach ($if_types as $var => $type) {
+                    if (in_array($type, ['empty', 'null']) && isset($if_vars[$var])) {
+                        // check to see whether this variable was assigned within the if statement
+                        // @todo clean up this logic - it's not reusable for elsifs, and should be
+                        $contains_assignment = false;
 
-            $vars_in_scope = self::_combineTypes($negated_if_types, $vars_in_scope);
-            $vars_possibly_in_scope = self::_combineTypes($negated_if_types, $vars_possibly_in_scope);
+                        foreach ($stmt->stmts as $if_stmt) {
+                            if ($if_stmt instanceof PhpParser\Node\Expr\Assign &&
+                                $if_stmt->var instanceof PhpParser\Node\Expr\Variable &&
+                                is_string($if_stmt->var->name) &&
+                                $if_stmt->var->name === $var) {
+
+                                $contains_assignment = true;
+                                break;
+                            }
+                        }
+
+                        if ($contains_assignment) {
+                            $vars_in_scope[$var] = $if_vars[$var];
+                        }
+                    }
+                }
+            }
         }
     }
 
-    protected function _checkElseIf(PhpParser\Node\Stmt\ElseIf_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkElseIf(PhpParser\Node\Stmt\ElseIf_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = $this->_getTypeAssertions($stmt);
+        $if_types = $this->_getTypeAssertions($stmt->cond);
 
-        $elseif_vars = self::_combineTypes($if_types, $vars_in_scope);
+        $elseif_vars = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
 
-        $this->check($stmt->stmts, $elseif_vars, $vars_possibly_in_scope);
+        $this->check($stmt->stmts, $elseif_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
         $vars_in_scope = $elseif_vars;
     }
 
-    protected function _checkElse(PhpParser\Node\Stmt\Else_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkElse(PhpParser\Node\Stmt\Else_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
     {
-        $this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope);
+        $this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
     }
 
     protected function _checkCondition(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -321,14 +396,12 @@ class StatementsChecker
     /**
      * Gets all the type assertions in a conditional
      *
-     * @param  PhpParser\Node\Expr\Ternary|PhpParser\Node\Stmt\If_|PhpParser\Node\Stmt\ElseIf_ $stmt
+     * @param  PhpParser\Node\Expr $stmt
      * @return array
      */
-    protected function _getTypeAssertions(PhpParser\Node $stmt)
+    protected function _getTypeAssertions(PhpParser\Node\Expr $conditional, $check_boolean_and = false)
     {
         $if_types = [];
-
-        $conditional = $stmt->cond;
 
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
             $instanceof_type = $this->_getInstanceOfTypes($conditional);
@@ -355,18 +428,24 @@ class StatementsChecker
                     $if_types[$conditional->expr->name] = 'empty';
                 }
             }
-            else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                if (self::_hasNullVariable($conditional)) {
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                if (self::_hasNullVariable($conditional->expr)) {
                     $if_types[$conditional->left->name] = '!null';
                 }
             }
-            else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-                if (self::_hasNullVariable($conditional)) {
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                if (self::_hasNullVariable($conditional->expr)) {
                     $if_types[$conditional->left->name] = 'null';
                 }
             }
-            else if ($conditional instanceof PhpParser\Node\Expr\Empty_ && $conditional->expr instanceof PhpParser\Node\Expr\Variable && is_string($conditional->expr->name)) {
-                $if_types[$conditional->expr->name] = '!empty';
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\Empty_ &&
+                    $conditional->expr->expr instanceof PhpParser\Node\Expr\Variable &&
+                    is_string($conditional->expr->expr->name)) {
+
+                $if_types[$conditional->expr->expr->name] = '!empty';
+            }
+            else if (self::_hasNullCheck($conditional->expr)) {
+                $if_types[$conditional->expr->args[0]->value->name] = '!null';
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
@@ -379,8 +458,54 @@ class StatementsChecker
                 $if_types[$conditional->left->name] = '!null';
             }
         }
+        else if (self::_hasNullCheck($conditional)) {
+            $if_types[$conditional->args[0]->value->name] = 'null';
+        }
         else if ($conditional instanceof PhpParser\Node\Expr\Empty_ && $conditional->expr instanceof PhpParser\Node\Expr\Variable && is_string($conditional->expr->name)) {
             $if_types[$conditional->expr->name] = 'empty';
+        }
+        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            $left_assertions = $this->_getTypeAssertions($conditional->left, false);
+            $right_assertions = $this->_getTypeAssertions($conditional->right, false);
+
+            $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
+            $keys = array_unique($keys);
+
+            foreach ($keys as $key) {
+                if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
+                    $if_types[$key] = $left_assertions[$key] . '|' . $right_assertions[$key];
+                }
+                else if (isset($left_assertions[$key])) {
+                    $if_types[$key] = $left_assertions[$key];
+                }
+                else {
+                    $if_types[$key] = $right_assertions[$key];
+                }
+            }
+        }
+        else if ($check_boolean_and && $conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            $left_assertions = $this->_getTypeAssertions($conditional->left, $check_boolean_and);
+            $right_assertions = $this->_getTypeAssertions($conditional->right, $check_boolean_and);
+
+            $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
+            $keys = array_unique($keys);
+
+            foreach ($keys as $key) {
+                if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
+                    if ($left_assertions[$key][0] !== '!' && $right_assertions[$key][0] !== '!') {
+                        $if_types[$key] = $left_assertions[$key] . '&' . $right_assertions[$key];
+                    }
+                    else {
+                        $if_types[$key] = $right_assertions[$key];
+                    }
+                }
+                else if (isset($left_assertions[$key])) {
+                    $if_types[$key] = $left_assertions[$key];
+                }
+                else {
+                    $if_types[$key] = $right_assertions[$key];
+                }
+            }
         }
 
         return $if_types;
@@ -409,6 +534,17 @@ class StatementsChecker
                 $conditional->right->name instanceof PhpParser\Node\Name &&
                 $conditional->right->name->parts === ['null']
             ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected static function _hasNullCheck(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_null']) {
+            if ($stmt->args[0]->value instanceof PhpParser\Node\Expr\Variable && is_string($stmt->args[0]->value->name)) {
                 return true;
             }
         }
@@ -498,8 +634,7 @@ class StatementsChecker
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
-            $this->_checkExpression($stmt->right, $vars_in_scope, $vars_possibly_in_scope);
+            $this->_checkBinaryOp($stmt, $vars_in_scope, $vars_possibly_in_scope);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostInc) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
@@ -808,7 +943,11 @@ class StatementsChecker
             $this->_checkExpression($expr, $for_vars, $vars_possibly_in_scope);
         }
 
-        $this->check($stmt->stmts, $for_vars, $vars_possibly_in_scope);
+        $for_vars_possibly_in_scope = [];
+
+        $this->check($stmt->stmts, $for_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
+
+        $vars_possibly_in_scope = self::_reconcileTypes($for_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
     }
 
     protected function _checkForeach(PhpParser\Node\Stmt\Foreach_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -831,7 +970,11 @@ class StatementsChecker
 
         $foreach_vars = array_merge($vars_in_scope, $foreach_vars);
 
-        $this->check($stmt->stmts, $foreach_vars, $vars_possibly_in_scope);
+        $foreach_vars_possibly_in_scope = [];
+
+        $this->check($stmt->stmts, $foreach_vars, $vars_possibly_in_scope, $foreach_vars_possibly_in_scope);
+
+        $vars_possibly_in_scope = self::_reconcileTypes($foreach_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
     }
 
     protected function _checkWhile(PhpParser\Node\Stmt\While_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -850,6 +993,38 @@ class StatementsChecker
         $vars_in_scope_copy = array_merge([], $vars_in_scope);
 
         $this->_checkCondition($stmt->cond, $vars_in_scope_copy, $vars_possibly_in_scope);
+    }
+
+    protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            $left_type_assertions = $this->_getTypeAssertions($stmt->left, true);
+
+            $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
+
+            // while in an and, we allow scope to boil over to support
+            // statements of the form if ($x && $x->foo())
+            $op_vars_in_scope = self::_reconcileTypes($left_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+
+            $this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope);
+        }
+        else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            $left_type_assertions = $this->_getTypeAssertions($stmt->left, true);
+
+            $negated_type_assertions = self::_negateTypes($left_type_assertions);
+
+            $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
+
+            // while in an or, we allow scope to boil over to support
+            // statements of the form if ($x === null || $x->foo())
+            $op_vars_in_scope = self::_reconcileTypes($negated_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+
+            $this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope);
+        }
+        else {
+            $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
+            $this->_checkExpression($stmt->right, $vars_in_scope, $vars_possibly_in_scope);
+        }
     }
 
     protected function _checkAssignment(PhpParser\Node\Expr\Assign $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -1316,10 +1491,10 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = $this->_getTypeAssertions($stmt);
+        $if_types = $this->_getTypeAssertions($stmt->cond);
 
         if ($stmt->if) {
-            $if_types = self::_combineTypes($if_types, $vars_in_scope);
+            $if_types = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
             $this->_checkExpression($stmt->if, $if_types, $vars_possibly_in_scope);
         }
 
@@ -2103,12 +2278,12 @@ class StatementsChecker
      */
     protected static function _doesLeaveBlock(array $stmts, $check_continue = true)
     {
-        for ($i = count($stmts) - 1; $i > 0; $i--) {
+        for ($i = count($stmts) - 1; $i >= 0; $i--) {
             $stmt = $stmts[$i];
 
             if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
                 $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
-                ($check_continue && $stmt instanceof PhpParser\Node\Stmt\Continue_)) {
+                ($check_continue && ($stmt instanceof PhpParser\Node\Stmt\Continue_ || $stmt instanceof PhpParser\Node\Stmt\Break_))) {
 
                 return true;
             }
@@ -2119,19 +2294,26 @@ class StatementsChecker
                         return true;
                     }
 
-                    $all_elseifs_terminate = true;
-
                     foreach ($stmt->elseifs as $elseif) {
                         if (!self::_doesLeaveBlock($elsif->stmts, $check_continue)) {
-                            $all_elseifs_terminate = false;
-                            break;
+                            return false;
                         }
                     }
 
-                    if ($all_elseifs_terminate) {
-                        return true;
+                    return true;
+                }
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Switch_ && $stmt->cases[count($stmt->cases) - 1]->cond === null) {
+                $all_cases_terminate = true;
+
+                foreach ($stmt->cases as $case) {
+                    if (!self::_doesLeaveBlock($case->stmts, false)) {
+                        return false;
                     }
                 }
+
+                return true;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
@@ -2151,7 +2333,7 @@ class StatementsChecker
      * @param  array  $existing_types
      * @return array
      */
-    protected static function _combineTypes(array $new_types, array $existing_types)
+    protected static function _reconcileTypes(array $new_types, array $existing_types, $strict, $file_name, $line_number)
     {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
         $keys = array_unique($keys);
@@ -2166,14 +2348,28 @@ class StatementsChecker
             $existing_type = isset($existing_types[$key]) && is_string($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
 
             if (isset($new_types[$key])) {
-                if ($new_types[$key][0] === '!') {
+                if (is_string($new_types[$key]) && $new_types[$key][0] === '!') {
                     if ($existing_type) {
                         if ($new_types[$key] === '!empty' || $new_types[$key] === '!null') {
                             $null_pos = array_search('null', $existing_type);
 
                             if ($null_pos !== false) {
                                 array_splice($existing_type, $null_pos, 1);
-                                $result_types[$key] = implode('|', $existing_type);
+
+                                if (empty($existing_type)) {
+                                    if ($strict) {
+                                        throw new CodeException('Cannot resolve types for ' . $key, $file_name, $line_number);
+                                    }
+
+                                    $result_types[$key] = $existing_types[$key];
+                                }
+                                else {
+                                    $result_types[$key] = implode('|', $existing_type);
+                                }
+                            }
+                            else {
+                                // if we cannot find a null declaration to remove, just use existing type
+                                $result_types[$key] = $existing_types[$key];
                             }
                         }
                         else {
@@ -2183,7 +2379,19 @@ class StatementsChecker
 
                             if ($type_pos !== false) {
                                 array_splice($existing_type, $type_pos, 1);
+
+                                if (empty($existing_type)) {
+                                    if ($strict) {
+                                        throw new CodeException('Cannot resolve types for ' . $key, $file_name, $line_number);
+                                    }
+
+                                    $result_types[$key] = $existing_types[$key];
+                                }
                                 $result_types[$key] = implode('|', $existing_type);
+                            }
+                            else {
+                                // if we cannot find a type to negate, just use the existing type
+                                $result_types[$key] = $existing_types[$key];
                             }
                         }
                     }
@@ -2201,5 +2409,12 @@ class StatementsChecker
         }
 
         return $result_types;
+    }
+
+    protected static function _negateTypes(array $types)
+    {
+        return array_map(function ($type) {
+            return $type[0] === '!' ? substr($type, 1) : '!' . $type;
+        }, $types);
     }
 }

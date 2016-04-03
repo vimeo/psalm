@@ -57,6 +57,11 @@ class FunctionChecker implements StatementsSource
                     }
                 }
 
+                $is_nullable = $param->default !== null &&
+                                $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
+                                $param->default->name instanceof PhpParser\Node\Name &&
+                                $param->default->name->parts = ['null'];
+
                 $vars_in_scope[$param->name] = true;
                 $vars_possibly_in_scope[$param->name] = true;
                 $this->_statements_checker->registerVariable($param->name, $param->getLine());
@@ -66,6 +71,10 @@ class FunctionChecker implements StatementsSource
                         $param->type->parts === ['self'] ?
                             $this->_absolute_class :
                             ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
+
+                    if ($is_nullable) {
+                        $vars_in_scope[$param->name] .= '|null';
+                    }
                 }
             }
 
