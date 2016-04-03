@@ -198,7 +198,7 @@ class StatementsChecker
         $negated_if_types = $negated_types;
 
         // if the if has an or as the main component, we cannot safely reason about it
-        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->cond)) {
             $if_vars = array_merge([], $vars_in_scope);
             $if_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
         }
@@ -2409,6 +2409,20 @@ class StatementsChecker
         }
 
         return $result_types;
+    }
+
+    protected static function _containsBooleanOr(PhpParser\Node\Expr\BinaryOp $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            return true;
+        }
+
+        if (($stmt->left instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->left)) ||
+            ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->right))) {
+            return true;
+        }
+
+        return false;
     }
 
     protected static function _negateTypes(array $types)
