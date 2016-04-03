@@ -17,6 +17,8 @@ class FileChecker implements StatementsSource
 
     protected $_namespace_aliased_classes = [];
 
+    protected $_preloaded_statements = [];
+
     protected static $_class_property_fn = null;
     protected static $_var_dump_fn = null;
 
@@ -27,16 +29,22 @@ class FileChecker implements StatementsSource
 
     public static $show_notices = true;
 
-    public function __construct($file_name)
+    public function __construct($file_name, array $preloaded_statements = [])
     {
         $this->_file_name = $file_name;
 
         self::$_file_checkers[$this->_file_name] = $this;
+
+        if ($preloaded_statements) {
+            $this->_preloaded_statements = $preloaded_statements;
+        }
     }
 
     public function check($check_classes = true)
     {
-        $stmts = self::getStatements($this->_file_name);
+        $stmts = $this->_preloaded_statements ?
+                    $this->_preloaded_statements :
+                    self::getStatements($this->_file_name);
 
         $leftover_stmts = [];
 
