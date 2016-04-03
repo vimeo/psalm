@@ -15,7 +15,12 @@
     },
     "autoload": {
         "psr-4": {
-            "CodeInspector\\": "lib"
+            "CodeInspector\\": "src/CodeInspector",
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CodeInspector\\Tests": "tests"
         }
     }
 }
