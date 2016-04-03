@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "CodeInspector\\": "src/CodeInspector",
+            "CodeInspector\\": "src/CodeInspector"
         }
     },
     "autoload-dev": {
