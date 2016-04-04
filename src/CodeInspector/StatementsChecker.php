@@ -1587,15 +1587,22 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = $this->_getTypeAssertions($stmt->cond);
+        $if_types = $this->_getTypeAssertions($stmt->cond, true);
+
+        $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
 
         if ($stmt->if) {
             $t_if_vars_in_scope = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
             $this->_checkExpression($stmt->if, $t_if_vars_in_scope, $vars_possibly_in_scope);
         }
 
-        $negated_if_types = self::_negateTypes($if_types);
-        $t_else_vars_in_scope = self::_reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+        if ($can_negate_if_types) {
+            $negated_if_types = self::_negateTypes($if_types);
+            $t_else_vars_in_scope = self::_reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+        }
+        else {
+            $t_else_vars_in_scope = $vars_in_scope;
+        }
 
         $this->_checkExpression($stmt->else, $t_else_vars_in_scope, $vars_possibly_in_scope);
     }
@@ -2484,11 +2491,9 @@ class StatementsChecker
                                 array_splice($existing_type, $null_pos, 1);
 
                                 if (empty($existing_type)) {
-                                    if ($strict) {
-                                        throw new CodeException('Cannot resolve types for ' . $key, $file_name, $line_number);
-                                    }
-
-                                    $result_types[$key] = $existing_types[$key];
+                                    // @todo - I think there's a better way to handle this, but for the moment
+                                    // mixed will have to do.
+                                    $result_types[$key] = 'mixed';
                                 }
                                 else {
                                     $result_types[$key] = implode('|', $existing_type);
