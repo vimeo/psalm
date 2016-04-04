@@ -2,7 +2,7 @@
 
 namespace CodeInspector;
 
-ini_set('xdebug.max_nesting_level', 1024);
+ini_set('xdebug.max_nesting_level', 512);
 
 use PhpParser;
 

@@ -1070,9 +1070,12 @@ class StatementsChecker
         $this->_checkCondition($stmt->cond, $vars_in_scope_copy, $vars_possibly_in_scope);
     }
 
-    protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $nesting = 0)
     {
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
+            // ignore deeply-nested string concatenation
+        }
+        else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
             $left_type_assertions = $this->_getTypeAssertions($stmt->left, true);
 
             $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
@@ -1097,8 +1100,19 @@ class StatementsChecker
             $this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope);
         }
         else {
-            $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
-            $this->_checkExpression($stmt->right, $vars_in_scope, $vars_possibly_in_scope);
+            if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
+                $this->_checkBinaryOp($stmt->left, $vars_in_scope, $vars_possibly_in_scope, ++$nesting);
+            }
+            else {
+                $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
+            }
+
+            if ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp) {
+                $this->_checkBinaryOp($stmt->right, $vars_in_scope, $vars_possibly_in_scope, ++$nesting);
+            }
+            else {
+                $this->_checkExpression($stmt->right, $vars_in_scope, $vars_possibly_in_scope);
+            }
         }
     }
 
