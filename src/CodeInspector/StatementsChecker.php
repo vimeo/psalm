@@ -364,9 +364,6 @@ class StatementsChecker
                         }
                     }
                 }
-                else {
-                    $redefined_vars = null;
-                }
 
                 // has a return/throw at end
                 $has_ending_statments = self::_doesLeaveBlock($stmt->else->stmts, false);

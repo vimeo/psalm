@@ -69,6 +69,40 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testNullableMethodWithTernaryEmptyGuard()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(A $a = null) {
+                $b = empty($a) ? null : $a->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithTernaryIsNullGuard()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(A $a = null) {
+                $b = is_null($a) ? null : $a->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testNullableMethodWithIfGuard()
     {
         $stmts = self::$_parser->parse('<?php
@@ -287,10 +321,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
-    public function testNullableMethodWithIfGuardBefore()
+
+    public function testNullableMethodInConditionWithIfGuardBefore()
     {
         $stmts = self::$_parser->parse('<?php
         class One {
+            public $a;
+
             public function foo() {}
         }
 
@@ -304,7 +341,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
                     return;
                 }
 
-                $one->foo();
+                if (!$one->a && $one->foo()) {
+                    // do something
+                }
             }
         }');
 
@@ -550,10 +589,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
-    /**
-     * @expectedException CodeInspector\CodeException
-     */
-    public function testNullableMethodWithGuardedNestedRedefinitionWithBadReturn()
+    public function testNullableMethodWithGuardedNestedRedefinitionWithElseReturn()
     {
         $stmts = self::$_parser->parse('<?php
         class One {
@@ -575,6 +611,81 @@ class TypeTest extends PHPUnit_Framework_TestCase
                     else {
                         $one = new One();
                         return;
+                    }
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\CodeException
+     */
+    public function testNullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null, Two $two = null) {
+                $a = 4;
+
+                if ($one === null) {
+                    if ($a === 4) {
+                        $one = new One();
+                    }
+                    else if ($a === 3) {
+                        // do nothing
+                    }
+                    else {
+                        $one = new One();
+                        return;
+                    }
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithGuardedNestedRedefinitionWithElseifReturn()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null, Two $two = null) {
+                $a = 4;
+
+                if ($one === null) {
+                    if ($a === 4) {
+                        $one = new One();
+                    }
+                    else if ($a === 3) {
+                        // do nothing
+                        return;
+                    }
+                    else {
+                        $one = new One();
                     }
                 }
 
