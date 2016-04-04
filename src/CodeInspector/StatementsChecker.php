@@ -207,16 +207,27 @@ class StatementsChecker
             $if_vars_possibly_in_scope = self::_reconcileTypes($if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
         }
 
+        $old_if_vars = $if_vars;
+
         $this->check($stmt->stmts, $if_vars, $if_vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
         $new_vars = null;
         $new_vars_possibly_in_scope = [];
+        $redefined_vars = null;
 
         if (count($stmt->stmts)) {
             $has_leaving_statments = self::_doesLeaveBlock($stmt->stmts, true);
 
             if (!$has_leaving_statments) {
                 $new_vars = array_diff_key($if_vars, $vars_in_scope);
+
+                $redefined_vars = [];
+
+                foreach ($old_if_vars as $if_var => $type) {
+                    if ($if_vars[$if_var] !== $type) {
+                        $redefined_vars[$if_var] = $if_vars[$if_var];
+                    }
+                }
             }
 
             $has_ending_statments = self::_doesLeaveBlock($stmt->stmts, false);
@@ -241,6 +252,8 @@ class StatementsChecker
                 $elseif_vars = array_merge([], $vars_in_scope);
             }
 
+            $old_elseif_vars = $elseif_vars;
+
             $elseif_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
 
             $elseif_types = $this->_getTypeAssertions($elseif->cond, true);
@@ -255,9 +268,29 @@ class StatementsChecker
                 $has_leaving_statements = self::_doesLeaveBlock($elseif->stmts, true);
 
                 if (!$has_leaving_statements) {
+                    $elseif_redefined_vars = [];
+
+                    foreach ($old_elseif_vars as $elseif_var => $type) {
+                        if ($elseif_vars[$elseif_var] !== $type) {
+                            $elseif_redefined_vars[$elseif_var] = $elseif_vars[$elseif_var];
+                        }
+                    }
+
+                    if ($redefined_vars === null) {
+                        $redefined_vars = $elseif_redefined_vars;
+                    }
+                    else {
+                        foreach ($redefined_vars as $redefined_var => $type) {
+                            if (!isset($elseif_redefined_vars[$redefined_var])) {
+                                unset($redefined_vars[$redefined_var]);
+                            }
+                        }
+                    }
+
                     if ($new_vars === null) {
                         $new_vars = array_diff_key($elseif_vars, $vars_in_scope);
-                    } else {
+                    }
+                    else {
                         foreach ($new_vars as $new_var => $type) {
                             if (!isset($elseif_vars[$new_var])) {
                                 unset($new_vars[$new_var]);
@@ -290,6 +323,8 @@ class StatementsChecker
                 $else_vars = array_merge([], $vars_in_scope);
             }
 
+            $old_else_vars = $else_vars;
+
             $else_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
 
             $this->_checkElse($stmt->else, $else_vars, $else_vars_possibly_in_scope, $for_vars_possibly_in_scope);
@@ -297,17 +332,40 @@ class StatementsChecker
             if (count($stmt->else->stmts)) {
                 $has_leaving_statements = self::_doesLeaveBlock($stmt->else->stmts, true);
 
+                // if it doesn't end in a return
                 if (!$has_leaving_statements) {
-                    // if it doesn't end in a return
+                    $else_redefined_vars = [];
+
+                    foreach ($old_else_vars as $else_var => $type) {
+                        if ($else_vars[$else_var] !== $type) {
+                            $else_redefined_vars[$else_var] = $else_vars[$else_var];
+                        }
+                    }
+
+                    if ($redefined_vars === null) {
+                        $redefined_vars = $else_redefined_vars;
+                    }
+                    else {
+                        foreach ($redefined_vars as $redefined_var => $type) {
+                            if (!isset($else_redefined_vars[$redefined_var])) {
+                                unset($redefined_vars[$redefined_var]);
+                            }
+                        }
+                    }
+
                     if ($new_vars === null) {
                         $new_vars = array_diff_key($else_vars, $vars_in_scope);
-                    } else {
+                    }
+                    else {
                         foreach ($new_vars as $new_var => $type) {
                             if (!isset($else_vars[$new_var])) {
                                 unset($new_vars[$new_var]);
                             }
                         }
                     }
+                }
+                else {
+                    $redefined_vars = null;
                 }
 
                 // has a return/throw at end
@@ -322,13 +380,20 @@ class StatementsChecker
                     else {
                         $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
                     }
-
+                }
+                else {
+                    $new_vars = null;
                 }
             }
 
             if ($new_vars) {
                 // only update vars if there is an else
                 $vars_in_scope = array_merge($vars_in_scope, $new_vars);
+            }
+
+            if ($redefined_vars) {
+                $vars_in_scope = array_merge($vars_in_scope, $redefined_vars);
+                $redefined_vars = null;
             }
         }
 
@@ -343,26 +408,11 @@ class StatementsChecker
                 $vars_in_scope = self::_reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
                 $vars_possibly_in_scope = self::_reconcileTypes($negated_if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
             }
-            else {
+            else if ($redefined_vars) {
                 foreach ($if_types as $var => $type) {
-                    if (in_array($type, ['empty', 'null']) && isset($if_vars[$var])) {
-                        // check to see whether this variable was assigned within the if statement
-                        // @todo clean up this logic - it's not reusable for elsifs, and should be
-                        $contains_assignment = false;
-
-                        foreach ($stmt->stmts as $if_stmt) {
-                            if ($if_stmt instanceof PhpParser\Node\Expr\Assign &&
-                                $if_stmt->var instanceof PhpParser\Node\Expr\Variable &&
-                                is_string($if_stmt->var->name) &&
-                                $if_stmt->var->name === $var) {
-
-                                $contains_assignment = true;
-                                break;
-                            }
-                        }
-
-                        if ($contains_assignment) {
-                            $vars_in_scope[$var] = $if_vars[$var];
+                    if (in_array($type, ['empty', 'null'])) {
+                        if (isset($redefined_vars[$var])) {
+                            $vars_in_scope[$var] = $redefined_vars[$var];
                         }
                     }
                 }
