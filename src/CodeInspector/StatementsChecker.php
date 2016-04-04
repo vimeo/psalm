@@ -457,62 +457,82 @@ class StatementsChecker
             $instanceof_type = $this->_getInstanceOfTypes($conditional);
 
             if ($instanceof_type) {
-                $if_types[$conditional->expr->name] = $instanceof_type;
+                $var_name = $this->_getVariable($conditional->expr);
+                if ($var_name) {
+                    $if_types[$var_name] = $instanceof_type;
+                }
             }
         }
-        else if ($conditional instanceof PhpParser\Node\Expr\Variable) {
-            if (is_string($conditional->name)) {
-                $if_types[$conditional->name] = '!empty';
-            }
+        else if ($var_name = $this->_getVariable($conditional)) {
+            $if_types[$var_name] = '!empty';
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
             if ($conditional->expr instanceof PhpParser\Node\Expr\Instanceof_) {
                 $instanceof_type = $this->_getInstanceOfTypes($conditional->expr);
 
                 if ($instanceof_type) {
-                    $if_types[$conditional->expr->expr->name] = '!' . $instanceof_type;
+                    $var_name = $this->_getVariable($conditional->expr->expr);
+                    if ($var_name) {
+                        $if_types[$var_name] = '!' . $instanceof_type;
+                    }
                 }
             }
-            else if ($conditional->expr instanceof PhpParser\Node\Expr\Variable) {
-                if (is_string($conditional->expr->name)) {
-                    $if_types[$conditional->expr->name] = 'empty';
-                }
+            else if ($var_name = $this->_getVariable($conditional->expr)) {
+                $if_types[$var_name] = 'empty';
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                 if (self::_hasNullVariable($conditional->expr)) {
-                    $if_types[$conditional->left->name] = '!null';
+                    $var_name = $this->_getVariable($conditional->expr->left);
+                    if ($var_name) {
+                        $if_types[$var_name] = '!null';
+                    }
                 }
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                 if (self::_hasNullVariable($conditional->expr)) {
-                    $if_types[$conditional->left->name] = 'null';
+                    $var_name = $this->_getVariable($conditional->expr->left);
+                    if ($var_name) {
+                        $if_types[$var_name] = 'null';
+                    }
                 }
             }
-            else if ($conditional->expr instanceof PhpParser\Node\Expr\Empty_ &&
-                    $conditional->expr->expr instanceof PhpParser\Node\Expr\Variable &&
-                    is_string($conditional->expr->expr->name)) {
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\Empty_) {
+                $var_name = $this->_getVariable($conditional->expr->expr);
 
-                $if_types[$conditional->expr->expr->name] = '!empty';
+                if ($var_name) {
+                    $if_types[$var_name] = '!empty';
+                }
             }
             else if (self::_hasNullCheck($conditional->expr)) {
-                $if_types[$conditional->expr->args[0]->value->name] = '!null';
+                $var_name = $this->_getVariable($conditional->expr->args[0]->value);
+                $if_types[$var_name] = '!null';
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
             if (self::_hasNullVariable($conditional)) {
-                $if_types[$conditional->left->name] = 'null';
+                $var_name = $this->_getVariable($conditional->left);
+                if ($var_name) {
+                    $if_types[$var_name] = 'null';
+                }
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
             if (self::_hasNullVariable($conditional)) {
-                $if_types[$conditional->left->name] = '!null';
+                $var_name = $this->_getVariable($conditional->left);
+                if ($var_name) {
+                    $if_types[$var_name] = '!null';
+                }
             }
         }
         else if (self::_hasNullCheck($conditional)) {
-            $if_types[$conditional->args[0]->value->name] = 'null';
+            $var_name = $this->_getVariable($conditional->args[0]->value);
+            $if_types[$var_name] = 'null';
         }
-        else if ($conditional instanceof PhpParser\Node\Expr\Empty_ && $conditional->expr instanceof PhpParser\Node\Expr\Variable && is_string($conditional->expr->name)) {
-            $if_types[$conditional->expr->name] = 'empty';
+        else if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
+            $var_name = $this->_getVariable($conditional->expr);
+            if ($var_name) {
+                $if_types[$var_name] = 'empty';
+            }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             $left_assertions = $this->_getTypeAssertions($conditional->left, false);
@@ -563,7 +583,7 @@ class StatementsChecker
 
     protected function _getInstanceOfTypes(PhpParser\Node\Expr\Instanceof_ $stmt)
     {
-        if ($stmt->expr instanceof PhpParser\Node\Expr\Variable && is_string($stmt->expr->name) && $stmt->class instanceof PhpParser\Node\Name) {
+        if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 $instanceof_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
                 return $instanceof_class;
@@ -576,27 +596,32 @@ class StatementsChecker
         return null;
     }
 
-    protected static function _hasNullVariable(PhpParser\Node\Expr $conditional)
+    protected function _getVariable(PhpParser\Node\Expr $stmt)
     {
-        if ($conditional->left instanceof PhpParser\Node\Expr\Variable) {
-            if (is_string($conditional->left->name) &&
-                $conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
-                $conditional->right->name instanceof PhpParser\Node\Name &&
-                $conditional->right->name->parts === ['null']
-            ) {
-                return true;
-            }
+        if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
+            return $stmt->name;
+        }
+        else if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch &&
+                $stmt->var instanceof PhpParser\Node\Expr\Variable &&
+                $stmt->var->name === 'this' &&
+                is_string($stmt->name)) {
+            return $this->_absolute_class . '::' . $stmt->name;
         }
 
-        return false;
+        return null;
+    }
+
+    protected static function _hasNullVariable(PhpParser\Node\Expr $conditional)
+    {
+        return $conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
+                $conditional->right->name instanceof PhpParser\Node\Name &&
+                $conditional->right->name->parts === ['null'];
     }
 
     protected static function _hasNullCheck(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_null']) {
-            if ($stmt->args[0]->value instanceof PhpParser\Node\Expr\Variable && is_string($stmt->args[0]->value->name)) {
-                return true;
-            }
+            return true;
         }
 
         return false;
@@ -1199,12 +1224,15 @@ class StatementsChecker
         } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
 
+
             if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch &&
                 $stmt->var->var instanceof PhpParser\Node\Expr\Variable &&
                 $stmt->var->var->name === 'this' &&
                 is_string($stmt->var->name)
             ) {
                 $property_id = $this->_absolute_class . '::' . $stmt->var->name;
+
+
 
                 if (isset($vars_in_scope[$property_id])) {
                     $class_type = $vars_in_scope[$property_id];
@@ -2470,12 +2498,14 @@ class StatementsChecker
 
     protected static function _containsBooleanOr(PhpParser\Node\Expr\BinaryOp $stmt)
     {
+        // we only want to discount expressions where either the whole thing is an or
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             return true;
         }
 
-        if (($stmt->left instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->left)) ||
-            ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->right))) {
+        // or both sides are ors
+        if (($stmt->left instanceof PhpParser\Node\Expr\BinaryOp && $stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) &&
+            ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp && $stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)) {
             return true;
         }
 

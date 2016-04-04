@@ -91,6 +91,84 @@ class TypeTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException CodeInspector\CodeException
      */
+    public function testNullableMethodCallWithThis()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(A $a = null) {
+                $this->a = $a;
+                $this->a->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithTernaryGuardWithThis()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(A $a = null) {
+                $this->a = $a;
+                $b = $this->a ? $this->a->foo() : null;
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithTernaryIfNullGuardWithThis()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(A $a = null) {
+                $this->a = $a;
+                $b = $this->a === null ? null : $this->a->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithIfGuardWithThis()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(A $a = null) {
+                $this->a = $a;
+
+                if ($this->a) {
+                    $this->a->foo();
+                }
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\CodeException
+     */
     public function testNullableMethodWithWrongIfGuard()
     {
         $stmts = self::$_parser->parse('<?php
@@ -155,6 +233,52 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function bar(One $one = null, Two $two = null) {
                 if ($one && $two) {
                     $two->foo();
+                }
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithNonNullBooleanIfGuard()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null, Two $two = null) {
+                if ($one !== null && $two) {
+                    $one->foo();
+                }
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithNonNullBooleanIfGuardAndBooleanAnd()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null, Two $two = null) {
+                if ($one !== null && ($two || 1 + 1 === 3)) {
+                    $one->foo();
                 }
             }
         }');
@@ -420,6 +544,33 @@ class TypeTest extends PHPUnit_Framework_TestCase
                 }
 
                 $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithGuardedRedefinitionOnThis()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null, Two $two = null) {
+                $this->one = $one;
+
+                if ($this->one === null) {
+                    $this->one = new One();
+                }
+
+                $this->one->foo();
             }
         }');
 
