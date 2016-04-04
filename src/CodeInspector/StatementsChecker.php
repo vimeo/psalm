@@ -1170,6 +1170,10 @@ class StatementsChecker
             foreach (explode('|', $class_type) as $absolute_class) {
                 $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
+                if ($absolute_class === 'null') {
+                    throw new CodeException('Cannot call method on nullable variable', $this->_file_name, $stmt->getLine());
+                }
+
                 if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::_isMock($absolute_class)) {
                     $method_id = $absolute_class . '::' . $stmt->name;
 
@@ -1494,11 +1498,14 @@ class StatementsChecker
         $if_types = $this->_getTypeAssertions($stmt->cond);
 
         if ($stmt->if) {
-            $if_types = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
-            $this->_checkExpression($stmt->if, $if_types, $vars_possibly_in_scope);
+            $t_if_vars_in_scope = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            $this->_checkExpression($stmt->if, $t_if_vars_in_scope, $vars_possibly_in_scope);
         }
 
-        $this->_checkExpression($stmt->else, $vars_in_scope, $vars_possibly_in_scope);
+        $negated_if_types = self::_negateTypes($if_types);
+        $t_else_vars_in_scope = self::_reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+
+        $this->_checkExpression($stmt->else, $t_else_vars_in_scope, $vars_possibly_in_scope);
     }
 
     protected function _checkBooleanNot(PhpParser\Node\Expr\BooleanNot $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
