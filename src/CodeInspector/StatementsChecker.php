@@ -1637,6 +1637,8 @@ class StatementsChecker
         $new_vars_in_scope = null;
         $new_vars_possibly_in_scope = [];
 
+        $redefined_vars = null;
+
         foreach ($stmt->cases as $case) {
             if ($case->cond) {
                 $this->_checkCondition($case->cond, $vars_in_scope, $vars_possibly_in_scope);
@@ -1653,28 +1655,48 @@ class StatementsChecker
                                 [$type_candidate_var => implode('|', $case_types)] :
                                 [];
 
-                $switch_vars_in_scope = array_merge($vars_in_scope, $switch_vars);
-                $switch_vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $switch_vars);
+                $case_vars_in_scope = array_merge($vars_in_scope, $switch_vars);
+                $old_case_vars = $case_vars_in_scope;
+                $case_vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $switch_vars);
 
-                $this->check($case->stmts, $switch_vars_in_scope, $switch_vars_possibly_in_scope);
+                $this->check($case->stmts, $case_vars_in_scope, $case_vars_possibly_in_scope);
 
                 $last_stmt = $case->stmts[count($case->stmts) - 1];
 
                 if (!($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                    $case_redefined_vars = [];
+
+                    foreach ($old_case_vars as $case_var => $type) {
+                        if ($case_vars_in_scope[$case_var] !== $type) {
+                            $case_redefined_vars[$case_var] = $case_vars_in_scope[$case_var];
+                        }
+                    }
+
+                    if ($redefined_vars === null) {
+                        $redefined_vars = $case_redefined_vars;
+                    }
+                    else {
+                        foreach ($redefined_vars as $redefined_var => $type) {
+                            if (!isset($case_redefined_vars[$redefined_var])) {
+                                unset($redefined_vars[$redefined_var]);
+                            }
+                        }
+                    }
+
                     if ($new_vars_in_scope === null) {
-                        $new_vars_in_scope = array_diff_key($switch_vars_in_scope, $vars_in_scope);
-                        $new_vars_possibly_in_scope = array_diff_key($switch_vars_possibly_in_scope, $vars_possibly_in_scope);
+                        $new_vars_in_scope = array_diff_key($case_vars_in_scope, $vars_in_scope);
+                        $new_vars_possibly_in_scope = array_diff_key($case_vars_possibly_in_scope, $vars_possibly_in_scope);
                     }
                     else {
                         foreach ($new_vars_in_scope as $new_var => $type) {
-                            if (!isset($switch_vars_in_scope[$new_var])) {
+                            if (!isset($case_vars_in_scope[$new_var])) {
                                 unset($new_vars_in_scope[$new_var]);
                             }
                         }
 
                         $new_vars_possibly_in_scope = array_merge(
                             array_diff_key(
-                                $switch_vars_possibly_in_scope,
+                                $case_vars_possibly_in_scope,
                                 $vars_possibly_in_scope
                             ),
                             $new_vars_possibly_in_scope
@@ -1687,9 +1709,16 @@ class StatementsChecker
                 $case_types = [];
             }
 
-            if ($new_vars_in_scope && $case->cond === null && !($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
-                // only update vars if there is a default
-                $vars_in_scope = array_merge($vars_in_scope, $new_vars_in_scope);
+            // only update vars if there is a default
+            if ($case->cond === null && !($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
+                var_dump($redefined_vars);
+                if ($new_vars_in_scope) {
+                    $vars_in_scope = array_merge($vars_in_scope, $new_vars_in_scope);
+                }
+
+                if ($redefined_vars) {
+                    $vars_in_scope = array_merge($vars_in_scope, $redefined_vars);
+                }
             }
         }
 
