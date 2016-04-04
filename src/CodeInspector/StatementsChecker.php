@@ -1171,7 +1171,7 @@ class StatementsChecker
                 $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
                 if ($absolute_class === 'null') {
-                    throw new CodeException('Cannot call method on nullable variable', $this->_file_name, $stmt->getLine());
+                    throw new CodeException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine());
                 }
 
                 if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::_isMock($absolute_class)) {
