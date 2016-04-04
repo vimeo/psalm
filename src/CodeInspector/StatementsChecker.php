@@ -1711,7 +1711,6 @@ class StatementsChecker
 
             // only update vars if there is a default
             if ($case->cond === null && !($last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
-                var_dump($redefined_vars);
                 if ($new_vars_in_scope) {
                     $vars_in_scope = array_merge($vars_in_scope, $new_vars_in_scope);
                 }
