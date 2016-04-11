@@ -17,6 +17,7 @@ class ClassChecker implements StatementsSource
     protected $_has_custom_get = false;
 
     protected static $_existing_classes = [];
+    protected static $_implementing_classes = [];
 
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
@@ -187,5 +188,26 @@ class ClassChecker implements StatementsSource
     public function getPropertyNames()
     {
         return $this->_class_properties;
+    }
+
+    public function classImplements($absolute_class, $interface)
+    {
+        if (isset($_implementing_classes[$absolute_class][$interface])) {
+            return true;
+        }
+
+        if (isset($_implementing_classes[$absolute_class])) {
+            return false;
+        }
+
+        $class_implementations = class_implements($absolute_class);
+
+        if (!isset($class_implementations[$interface])) {
+            return false;
+        }
+
+        $_implementing_classes[$absolute_class] = $class_implementations;
+
+        return true;
     }
 }

@@ -44,7 +44,7 @@ class StatementsChecker
     protected static $_check_string_fn = null;
     protected static $_mock_interfaces = [];
 
-    public function __construct(StatementsSource $source = null, $check_variables = true)
+    public function __construct(StatementsSource $source, $check_variables = true)
     {
         $this->_source = $source;
         $this->_check_classes = true;
@@ -1035,7 +1035,37 @@ class StatementsChecker
         }
 
         if ($stmt->valueVar) {
-            $foreach_vars[$stmt->valueVar->name] = true;
+            $value_type = null;
+
+            if (property_exists($stmt->expr, 'returnType')) {
+                foreach (explode('|', $stmt->expr->returnType) as $return_type) {
+                    if ($return_type === 'mixed') {
+                        // ugh do nothing
+                    }
+                    elseif ($return_type === 'array') {
+                        // do nothing
+                    }
+                    elseif (in_array($return_type, ['string', 'void', 'int'])) {
+                        throw new CodeException('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine());
+                    }
+                    else {
+                        if (strpos($return_type, '<') !== false && strpos($return_type, '>') !== false) {
+                            $value_type = substr($return_type, strpos($return_type, '<') + 1, -1);
+                            $return_type = str_replace('<' . $value_type . '>', '', $return_type);
+                        }
+
+                        if ($return_type !== 'array' && $return_type !== 'Traversable') {
+                            ClassChecker::checkAbsoluteClass($return_type, $stmt, $this->_file_name);
+
+                            if (!ClassChecker::classImplements($return_type, 'Traversable')) {
+                                throw new CodeException('Class ' . $return_type . ' does not implement the Traversable interface', $this->_file_name, $stmt->getLine());
+                            }
+                        }
+                    }
+                }
+            }
+
+            $foreach_vars[$stmt->valueVar->name] = $value_type ? $value_type : true;
             $vars_possibly_in_scope[$stmt->valueVar->name] = true;
             $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
         }
@@ -1258,6 +1288,9 @@ class StatementsChecker
         if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
             foreach (explode('|', $class_type) as $absolute_class) {
                 $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
+
+                // strip out generics
+                $absolute_class = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $absolute_class);
 
                 if ($absolute_class === 'null') {
                     throw new CodeException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine());
@@ -1813,7 +1846,7 @@ class StatementsChecker
                 $return_blocks = explode(' ', $comments['specials']['return'][0]);
                 foreach ($return_blocks as $block) {
                     if ($block) {
-                        if ($block && preg_match('/^\\\?[A-Za-z0-9|\\\]+[A-Za-z0-9]$/', $block)) {
+                        if ($block && preg_match('/^(\\\?[A-Za-z0-9\<\>|\\\]+[A-Za-z0-9\<\>]|\$[a-zA-Z_0-9\<\>]+)$/', $block)) {
                             $return_types = explode('|', $block);
                             break;
                         }
@@ -1892,21 +1925,42 @@ class StatementsChecker
 
     protected static function _fixUpReturnType($return_type, $method_id)
     {
-        if ($return_type[0] === '\\') {
-            return $return_type;
-        }
+        $return_type_parts = [''];
+        $was_char = false;
 
-        if ($return_type[0] === strtoupper($return_type[0])) {
-            $absolute_class = explode('::', $method_id)[0];
-
-            if ($return_type === '$this') {
-                return $absolute_class;
+        foreach (str_split($return_type) as $char) {
+            if ($was_char) {
+                $return_type_parts[] = '';
             }
 
-            return FileChecker::getAbsoluteClassFromNameInFile($return_type, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
+            if ($char === '<' || $char === '>') {
+                $return_type_parts[] = $char;
+                $was_char = true;
+            }
+            else {
+                $return_type_parts[count($return_type_parts) - 1] .= $char;
+                $was_char = false;
+            }
         }
 
-        return $return_type;
+        foreach ($return_type_parts as &$return_type_part) {
+            if (in_array($return_type_part, ['<', '>']) || $return_type_part[0] === '\\') {
+                continue;
+            }
+
+            if ($return_type_part[0] === strtoupper($return_type_part[0])) {
+                $absolute_class = explode('::', $method_id)[0];
+
+                if ($return_type_part === '$this') {
+                    $return_type_part = $absolute_class;
+                    continue;
+                }
+
+                $return_type_part = FileChecker::getAbsoluteClassFromNameInFile($return_type_part, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
+            }
+        }
+
+        return implode('', $return_type_parts);
     }
 
     public function registerVariable($var_name, $line_number)
@@ -2158,6 +2212,9 @@ class StatementsChecker
             return self::$_method_params[$method_id][$arg_offset]['is_nullable'];
         }
 
+        // Remove generic type
+        $return_type = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $return_type);
+
         if ($return_type === $expected_type) {
             return true;
         }
@@ -2226,7 +2283,7 @@ class StatementsChecker
             if (isset($comments['specials']['return'])) {
                 $return_blocks = explode(' ', $comments['specials']['return'][0]);
                 foreach ($return_blocks as $block) {
-                    if ($block && preg_match('/^(\\\?[A-Za-z0-9|\\\]+[A-Za-z0-9]|\$[a-zA-Z_0-9]+)$/', $block)) {
+                    if ($block && preg_match('/^(\\\?[A-Za-z0-9\<\>|\\\]+[A-Za-z0-9\<\>]|\$[a-zA-Z_0-9\<\>]+)$/', $block)) {
                         $return_types = explode('|', $block);
                         break;
                     }
@@ -2426,7 +2483,7 @@ class StatementsChecker
                     }
 
                     foreach ($stmt->elseifs as $elseif) {
-                        if (!self::_doesLeaveBlock($elsif->stmts, $check_continue)) {
+                        if (!self::_doesLeaveBlock($elseif->stmts, $check_continue)) {
                             return false;
                         }
                     }
