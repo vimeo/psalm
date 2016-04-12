@@ -1059,8 +1059,10 @@ class StatementsChecker
         if ($stmt->valueVar) {
             $value_type = null;
 
-            if (property_exists($stmt->expr, 'returnType')) {
-                foreach (explode('|', $stmt->expr->returnType) as $return_type) {
+            $iterator_type = $this->_getType($stmt->expr, $vars_in_scope);
+
+            if ($iterator_type) {
+                foreach (explode('|', $iterator_type) as $return_type) {
                     if ($return_type === 'mixed') {
                         // ugh do nothing
                     }
@@ -1070,13 +1072,16 @@ class StatementsChecker
                     elseif (in_array($return_type, ['string', 'void', 'int'])) {
                         throw new CodeException('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine());
                     }
+                    elseif ($return_type === 'null') {
+                        throw new CodeException('Cannot iterate over null', $this->_file_name, $stmt->getLine());
+                    }
                     else {
                         if (strpos($return_type, '<') !== false && strpos($return_type, '>') !== false) {
                             $value_type = substr($return_type, strpos($return_type, '<') + 1, -1);
-                            $return_type = str_replace('<' . $value_type . '>', '', $return_type);
+                            $return_type = preg_replace('/\<' . preg_quote($value_type) . '\>/', '', $return_type, 1);
                         }
 
-                        if ($return_type !== 'array' && $return_type !== 'Traversable') {
+                        if ($return_type !== 'array' && $return_type !== 'Traversable' && $return_type !== $this->_class_name) {
                             ClassChecker::checkAbsoluteClass($return_type, $stmt, $this->_file_name);
 
                             if (!ClassChecker::classImplements($return_type, 'Traversable')) {
@@ -1221,8 +1226,8 @@ class StatementsChecker
 
                     if ($type_in_comments) {
                         $vars_in_scope[$property_id] = $type_in_comments;
-
-                    } elseif (isset($stmt->expr->returnType)) {
+                    }
+                    elseif (isset($stmt->expr->returnType)) {
                         $this->_typeAssignment($property_id, $stmt->expr, $vars_in_scope);
                     }
                 }
@@ -1271,40 +1276,21 @@ class StatementsChecker
         $method_id = null;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            if ($stmt->var->name === 'this') {
-                if (!$this->_class_name) {
-                    throw new CodeException('Use of $this in non-class context', $this->_file_name, $stmt->getLine());
-                }
-
-                $class_type = $this->_absolute_class;
-            } elseif (!is_string($stmt->var->name)) {
+            if (!is_string($stmt->var->name)) {
                 $this->_checkExpression($stmt->var->name, $vars_in_scope, $vars_possibly_in_scope);
-            } elseif (isset($vars_in_scope[$stmt->var->name])) {
-                if (isset($vars_in_scope[$stmt->var->name]) && is_string($vars_in_scope[$stmt->var->name])) {
-                    $class_type = $vars_in_scope[$stmt->var->name];
-                }
+            }
+            else if ($stmt->var->name === 'this' && !$this->_class_name) {
+                throw new CodeException('Use of $this in non-class context', $this->_file_name, $stmt->getLine());
             }
         } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
-
-
-            if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch &&
-                $stmt->var->var instanceof PhpParser\Node\Expr\Variable &&
-                $stmt->var->var->name === 'this' &&
-                is_string($stmt->var->name)
-            ) {
-                $property_id = $this->_absolute_class . '::' . $stmt->var->name;
-
-
-
-                if (isset($vars_in_scope[$property_id])) {
-                    $class_type = $vars_in_scope[$property_id];
-                }
-            }
         }
 
-        if (!$class_type && isset($stmt->var->returnType)) {
-            $class_type = $stmt->var->returnType;
+        $class_type = $this->_getType($stmt->var, $vars_in_scope);
+
+        // make sure we stay vague here
+        if (!$class_type) {
+            $stmt->returnType = 'mixed';
         }
 
         if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
@@ -1316,6 +1302,10 @@ class StatementsChecker
 
                 if ($absolute_class === 'null') {
                     throw new CodeException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine());
+                }
+
+                if (in_array($absolute_class, ['int', 'bool', 'array'])) {
+                    throw new CodeException('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine());
                 }
 
                 if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::_isMock($absolute_class)) {
@@ -1476,6 +1466,35 @@ class StatementsChecker
         }
 
         $this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+    }
+
+    protected function _getType(PhpParser\Node\Expr $stmt, array $vars_in_scope)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
+            if ($stmt->name === 'this') {
+                return $this->_absolute_class;
+            }
+            elseif (isset($vars_in_scope[$stmt->name]) && is_string($vars_in_scope[$stmt->name])) {
+                return $vars_in_scope[$stmt->name];
+            }
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch &&
+            $stmt->var instanceof PhpParser\Node\Expr\Variable &&
+            $stmt->var->name === 'this' &&
+            is_string($stmt->name)
+        ) {
+            $property_id = $this->_absolute_class . '::' . $stmt->name;
+
+            if (isset($vars_in_scope[$property_id])) {
+                return $vars_in_scope[$property_id];
+            }
+        }
+
+        if (isset($stmt->returnType)) {
+            return $stmt->returnType;
+        }
+
+        return null;
     }
 
     protected static function _fleshOutReturnTypes(array $return_types, array $args, $method_id)
@@ -1817,6 +1836,8 @@ class StatementsChecker
             }
 
             $this->_checkFunctionExists($method_id, $stmt);
+
+            $stmt->returnType = 'mixed';
         }
 
         foreach ($stmt->args as $i => $arg) {
@@ -1935,7 +1956,12 @@ class StatementsChecker
         $return_type_tokens = self::_getReturnTypeTokens($return_type);
 
         foreach ($return_type_tokens as &$return_type_token) {
-            if (in_array($return_type_token, ['<', '>']) || $return_type_token[0] === '\\') {
+            if ($return_type_token[0] === '\\') {
+                $return_type_token = substr($return_type_token, 1);
+                continue;
+            }
+
+            if (in_array($return_type_token, ['<', '>'])) {
                 continue;
             }
 
@@ -1963,7 +1989,12 @@ class StatementsChecker
         $return_type_tokens = self::_getReturnTypeTokens($return_type);
 
         foreach ($return_type_tokens as &$return_type_token) {
-            if (in_array($return_type_token, ['<', '>']) || $return_type_token[0] === '\\') {
+            if ($return_type_token[0] === '\\') {
+                $return_type_token = substr($return_type_token, 1);
+                continue;
+            }
+
+            if (in_array($return_type_token, ['<', '>'])) {
                 continue;
             }
 
