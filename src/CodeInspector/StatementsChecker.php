@@ -1932,21 +1932,26 @@ class StatementsChecker
             $return_type = self::_convertSquareBrackets($return_type);
         }
 
-        if ($return_type[0] === '\\') {
-            return $return_type;
-        }
+        $return_type_tokens = self::_getReturnTypeTokens($return_type);
 
-        if ($return_type[0] === strtoupper($return_type[0])) {
-            $absolute_class = explode('::', $method_id)[0];
-
-            if ($return_type === '$this') {
-                return $absolute_class;
+        foreach ($return_type_tokens as &$return_type_token) {
+            if (in_array($return_type_token, ['<', '>']) || $return_type_token[0] === '\\') {
+                continue;
             }
 
-            return ClassChecker::getAbsoluteClassFromString($return_type, $namespace, $aliased_classes);
+            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
+                $absolute_class = explode('::', $method_id)[0];
+
+                if ($return_type === '$this') {
+                    $return_type_token = $absolute_class;
+                    continue;
+                }
+
+                $return_type_token = ClassChecker::getAbsoluteClassFromString($return_type_token, $namespace, $aliased_classes);
+            }
         }
 
-        return $return_type;
+        return implode('', $return_type_tokens);
     }
 
     protected static function _fixUpReturnType($return_type, $method_id)
@@ -1955,42 +1960,26 @@ class StatementsChecker
             $return_type = self::_convertSquareBrackets($return_type);
         }
 
-        $return_type_parts = [''];
-        $was_char = false;
+        $return_type_tokens = self::_getReturnTypeTokens($return_type);
 
-        foreach (str_split($return_type) as $char) {
-            if ($was_char) {
-                $return_type_parts[] = '';
-            }
-
-            if ($char === '<' || $char === '>') {
-                $return_type_parts[] = $char;
-                $was_char = true;
-            }
-            else {
-                $return_type_parts[count($return_type_parts) - 1] .= $char;
-                $was_char = false;
-            }
-        }
-
-        foreach ($return_type_parts as &$return_type_part) {
-            if (in_array($return_type_part, ['<', '>']) || $return_type_part[0] === '\\') {
+        foreach ($return_type_tokens as &$return_type_token) {
+            if (in_array($return_type_token, ['<', '>']) || $return_type_token[0] === '\\') {
                 continue;
             }
 
-            if ($return_type_part[0] === strtoupper($return_type_part[0])) {
+            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
                 $absolute_class = explode('::', $method_id)[0];
 
-                if ($return_type_part === '$this') {
-                    $return_type_part = $absolute_class;
+                if ($return_type_token === '$this') {
+                    $return_type_token = $absolute_class;
                     continue;
                 }
 
-                $return_type_part = FileChecker::getAbsoluteClassFromNameInFile($return_type_part, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
+                $return_type_token = FileChecker::getAbsoluteClassFromNameInFile($return_type_token, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
             }
         }
 
-        return implode('', $return_type_parts);
+        return implode('', $return_type_tokens);
     }
 
     public function _convertSquareBrackets($type)
@@ -2010,6 +1999,34 @@ class StatementsChecker
             },
             $type
         );
+    }
+
+    public function _getReturnTypeTokens($return_type) {
+        $return_type_tokens = [''];
+        $was_char = false;
+
+        foreach (str_split($return_type) as $char) {
+            if ($was_char) {
+                $return_type_tokens[] = '';
+            }
+
+            if ($char === '<' || $char === '>') {
+                if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
+                    $return_type_tokens[count($return_type_tokens) - 1] = $char;
+                }
+                else {
+                    $return_type_tokens[] = $char;
+                }
+
+                $was_char = true;
+            }
+            else {
+                $return_type_tokens[count($return_type_tokens) - 1] .= $char;
+                $was_char = false;
+            }
+        }
+
+        return $return_type_tokens;
     }
 
     public function registerVariable($var_name, $line_number)

@@ -86,6 +86,10 @@ class ClassChecker implements StatementsSource
 
     public static function checkAbsoluteClass($absolute_class, PhpParser\NodeAbstract $stmt, $file_name)
     {
+        if (empty($absolute_class)) {
+            throw new \InvalidArgumentException('$class cannot be empty');
+        }
+
         if (strpos($file_name, 'hoodahoop')) {
             return;
         }
@@ -122,6 +126,10 @@ class ClassChecker implements StatementsSource
 
     public static function getAbsoluteClassFromString($class, $namespace, array $imported_namespaces)
     {
+        if (empty($class)) {
+            throw new \InvalidArgumentException('$class cannot be empty');
+        }
+
         if ($class[0] === '\\') {
             return substr($class, 1);
         }
