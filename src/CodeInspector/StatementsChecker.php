@@ -414,7 +414,7 @@ class StatementsChecker
                             $vars_in_scope[$var] = $redefined_vars[$var];
                         }
                     }
-                    elseif ($type === '!array' && $redefined_vars[$var] === 'array') {
+                    elseif ($type === '!array' && isset($redefined_vars[$var]) && $redefined_vars[$var] === 'array') {
                         $vars_in_scope[$var] = $redefined_vars[$var];
                     }
                 }
