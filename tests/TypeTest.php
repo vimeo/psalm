@@ -723,4 +723,42 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    public function testArrayUnionTypeAssertion()
+    {
+        $stmts = self::$_parser->parse('<?php
+            /** @var array|null */
+            $ids = (1 + 1 === 2) ? [] : null;
+
+            if ($ids === null) {
+                $ids = [];
+            }
+
+            foreach ($ids as $id) {
+
+            }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testArrayUnionTypeAssertionWithIsArray()
+    {
+        $stmts = self::$_parser->parse('<?php
+            /** @var array|null */
+            $ids = (1 + 1 === 2) ? [] : null;
+
+            if (!is_array($ids)) {
+                $ids = [];
+            }
+
+            foreach ($ids as $id) {
+
+            }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }

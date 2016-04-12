@@ -44,6 +44,8 @@ class StatementsChecker
     protected static $_check_string_fn = null;
     protected static $_mock_interfaces = [];
 
+    const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\[\]]+)';
+
     public function __construct(StatementsSource $source, $check_variables = true)
     {
         $this->_source = $source;
@@ -412,6 +414,9 @@ class StatementsChecker
                             $vars_in_scope[$var] = $redefined_vars[$var];
                         }
                     }
+                    elseif ($type === '!array' && $redefined_vars[$var] === 'array') {
+                        $vars_in_scope[$var] = $redefined_vars[$var];
+                    }
                 }
             }
         }
@@ -504,6 +509,10 @@ class StatementsChecker
                 $var_name = $this->_getVariable($conditional->expr->args[0]->value);
                 $if_types[$var_name] = '!null';
             }
+            else if (self::_hasArrayCheck($conditional->expr)) {
+                $var_name = $this->_getVariable($conditional->expr->args[0]->value);
+                $if_types[$var_name] = '!array';
+            }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
             if (self::_hasNullVariable($conditional)) {
@@ -524,6 +533,10 @@ class StatementsChecker
         else if (self::_hasNullCheck($conditional)) {
             $var_name = $this->_getVariable($conditional->args[0]->value);
             $if_types[$var_name] = 'null';
+        }
+        else if (self::_hasArrayCheck($conditional)) {
+            $var_name = $this->_getVariable($conditional->args[0]->value);
+            $if_types[$var_name] = 'array';
         }
         else if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
             $var_name = $this->_getVariable($conditional->expr);
@@ -618,6 +631,15 @@ class StatementsChecker
     protected static function _hasNullCheck(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_null']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected static function _hasArrayCheck(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_array']) {
             return true;
         }
 
@@ -1846,7 +1868,7 @@ class StatementsChecker
                 $return_blocks = explode(' ', $comments['specials']['return'][0]);
                 foreach ($return_blocks as $block) {
                     if ($block) {
-                        if ($block && preg_match('/^(\\\?[A-Za-z0-9\<\>|\\\]+[A-Za-z0-9\<\>]|\$[a-zA-Z_0-9\<\>]+)$/', $block)) {
+                        if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
                             $return_types = explode('|', $block);
                             break;
                         }
@@ -1906,6 +1928,10 @@ class StatementsChecker
 
     protected static function _fixUpLocalReturnType($return_type, $method_id, $namespace, $aliased_classes)
     {
+        if (strpos($return_type, '[') !== false) {
+            $return_type = self::_convertSquareBrackets($return_type);
+        }
+
         if ($return_type[0] === '\\') {
             return $return_type;
         }
@@ -1925,6 +1951,10 @@ class StatementsChecker
 
     protected static function _fixUpReturnType($return_type, $method_id)
     {
+        if (strpos($return_type, '[') !== false) {
+            $return_type = self::_convertSquareBrackets($return_type);
+        }
+
         $return_type_parts = [''];
         $was_char = false;
 
@@ -1961,6 +1991,25 @@ class StatementsChecker
         }
 
         return implode('', $return_type_parts);
+    }
+
+    public function _convertSquareBrackets($type)
+    {
+        return preg_replace_callback(
+            '/([a-zA-Z\<\>]+)((\[\])+)/',
+            function($matches) {
+                $inner_type = $matches[1];
+
+                $dimensionality = strlen($matches[2]) / 2;
+
+                for ($i = 0; $i < $dimensionality; $i++) {
+                    $inner_type = 'array<' . $inner_type . '>';
+                }
+
+                return $inner_type;
+            },
+            $type
+        );
     }
 
     public function registerVariable($var_name, $line_number)
@@ -2283,7 +2332,7 @@ class StatementsChecker
             if (isset($comments['specials']['return'])) {
                 $return_blocks = explode(' ', $comments['specials']['return'][0]);
                 foreach ($return_blocks as $block) {
-                    if ($block && preg_match('/^(\\\?[A-Za-z0-9\<\>|\\\]+[A-Za-z0-9\<\>]|\$[a-zA-Z_0-9\<\>]+)$/', $block)) {
+                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
                         $return_types = explode('|', $block);
                         break;
                     }
