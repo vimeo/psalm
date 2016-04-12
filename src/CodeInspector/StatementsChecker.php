@@ -2319,7 +2319,7 @@ class StatementsChecker
         $absolute_classes = explode('|', $return_type);
 
         if (self::_isMock($return_type)) {
-            continue;
+            return true;
         }
 
         if (!is_a($return_type, $expected_type, true) && !is_a($return_type, $return_type, true)) {
