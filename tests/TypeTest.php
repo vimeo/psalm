@@ -761,4 +761,117 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    public function testVariableReassignment()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function bar() {}
+        }
+
+        $one = new One();
+
+        $one = new Two();
+
+        $one->bar();
+
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testVariableReassignmentInIf()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function bar() {}
+        }
+
+        $one = new One();
+
+        if (1 + 1 === 2) {
+            $one = new Two();
+
+            $one->bar();
+        }
+
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\CodeException
+     */
+    public function testVariableReassignmentInIfWithOutsideCall()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function bar() {}
+        }
+
+        $one = new One();
+
+        if (1 + 1 === 2) {
+            $one = new Two();
+
+            $one->bar();
+        }
+
+        $one->bar();
+
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testUnionTypeFlow()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function bar() {}
+        }
+
+        class Three {
+            public function baz() {}
+        }
+
+        /** @var One|Two|Three|null */
+        $var = null;
+
+        if ($var instanceof One) {
+            $var->foo();
+        }
+        else {
+            if ($var instanceof Two) {
+                $var->bar();
+            }
+            else if ($var) {
+                $var->baz();
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }
