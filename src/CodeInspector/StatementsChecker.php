@@ -1579,10 +1579,7 @@ class StatementsChecker
 
             if ($method_id && isset($arg->value->returnType)) {
                 foreach (explode('|', $arg->value->returnType) as $return_type) {
-                    $expected_type = '';
-                    if (!self::_isCorrectType($return_type, $method_id, $i, $this->_absolute_class, $expected_type)) {
-                        throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' has incorrect type of ' . $arg->value->returnType . ', expecting ' . $expected_type, $this->_file_name, $arg->value->getLine());
-                    }
+                    self::_checkType($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine());
                 }
 
             }
@@ -2291,7 +2288,7 @@ class StatementsChecker
         return $argument_offset < count($reflection_parameters) && $reflection_parameters[$argument_offset]->isPassedByReference();
     }
 
-    protected static function _isCorrectType($return_type, $method_id, $arg_offset, $current_class, &$expected_type = null)
+    protected static function _checkType($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
     {
         if ($return_type === 'mixed') {
             return true;
@@ -2312,7 +2309,11 @@ class StatementsChecker
         }
 
         if ($return_type === 'null') {
-            return self::$_method_params[$method_id][$arg_offset]['is_nullable'];
+            if (self::$_method_params[$method_id][$arg_offset]['is_nullable']) {
+                return true;
+            }
+
+            throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied', $file_name, $line_number);
         }
 
         // Remove generic type
@@ -2327,7 +2328,12 @@ class StatementsChecker
         }
 
         if (!is_subclass_of($return_type, $expected_type, true)) {
-            return false;
+            if (is_subclass_of($expected_type, $return_type, true)) {
+                echo('Warning: dangerous type coercion in ' . $file_name . ' on line ' . $line_number . PHP_EOL);
+                return true;
+            }
+
+            throw new CodeException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type, $file_name, $line_number);
         }
 
         return true;
