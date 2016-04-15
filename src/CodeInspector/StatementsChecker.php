@@ -1930,7 +1930,12 @@ class StatementsChecker
                     $param_type = $param->type;
                 }
                 else {
-                    $param_type = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                    if ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
+                        $param_type = implode('\\', $param->type->parts);
+                    }
+                    else {
+                        $param_type = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                    }
                 }
             }
 
