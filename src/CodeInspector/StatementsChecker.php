@@ -2329,7 +2329,7 @@ class StatementsChecker
 
         if (!is_subclass_of($return_type, $expected_type, true)) {
             if (is_subclass_of($expected_type, $return_type, true)) {
-                echo('Warning: dangerous type coercion in ' . $file_name . ' on line ' . $line_number . PHP_EOL);
+                //echo('Warning: dangerous type coercion in ' . $file_name . ' on line ' . $line_number . PHP_EOL);
                 return true;
             }
 
