@@ -1502,7 +1502,7 @@ class StatementsChecker
         $absolute_class = explode('::', $method_id)[0];
 
         foreach ($return_types as &$return_type) {
-            if ($return_type === '$this') {
+            if ($return_type === '$this' || $return_type === 'static') {
                 $return_type = $absolute_class;
             }
             else if ($return_type[0] === '$') {
@@ -1579,8 +1579,9 @@ class StatementsChecker
 
             if ($method_id && isset($arg->value->returnType)) {
                 foreach (explode('|', $arg->value->returnType) as $return_type) {
-                    if (!self::_isCorrectType($return_type, $method_id, $i)) {
-                        throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' has incorrect type of ' . $arg->value->returnType, $this->_file_name, $arg->value->getLine());
+                    $expected_type = '';
+                    if (!self::_isCorrectType($return_type, $method_id, $i, $this->_absolute_class, $expected_type)) {
+                        throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' has incorrect type of ' . $arg->value->returnType . ', expecting ' . $expected_type, $this->_file_name, $arg->value->getLine());
                     }
                 }
 
@@ -2285,7 +2286,7 @@ class StatementsChecker
         return $argument_offset < count($reflection_parameters) && $reflection_parameters[$argument_offset]->isPassedByReference();
     }
 
-    protected static function _isCorrectType($return_type, $method_id, $arg_offset)
+    protected static function _isCorrectType($return_type, $method_id, $arg_offset, $current_class, &$expected_type = null)
     {
         if ($return_type === 'mixed') {
             return true;
@@ -2316,13 +2317,11 @@ class StatementsChecker
             return true;
         }
 
-        $absolute_classes = explode('|', $return_type);
-
         if (self::_isMock($return_type)) {
             return true;
         }
 
-        if (!is_a($return_type, $expected_type, true) && !is_a($return_type, $return_type, true)) {
+        if (!is_subclass_of($return_type, $expected_type, true)) {
             return false;
         }
 
@@ -2348,11 +2347,7 @@ class StatementsChecker
                 $param_type = 'array';
 
             } elseif ($param->getClass() && self::$_method_files[$method_id]) {
-                $param_type = FileChecker::getAbsoluteClassFromNameInFile(
-                    $param->getClass()->getName(),
-                    self::$_method_namespaces[$method_id],
-                    self::$_method_files[$method_id]
-                );
+                $param_type = $param->getClass()->getName();
             }
 
             $is_nullable = false;
