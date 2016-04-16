@@ -24,27 +24,19 @@ class StatementsChecker
     protected $_file_name;
     protected $_is_static;
     protected $_absolute_class;
+    protected $_type_checker;
 
     protected $_available_functions = [];
 
     protected static $_method_call_index = [];
-    protected static $_method_return_types = [];
     protected static $_method_custom_calls = [];
-    protected static $_existing_methods = [];
     protected static $_existing_functions = [];
     protected static $_reflection_functions = [];
-    protected static $_method_comments = [];
-    protected static $_method_files = [];
-    protected static $_method_params = [];
-    protected static $_method_namespaces = [];
-    protected static $_static_methods = [];
-    protected static $_declaring_classes = [];
+
     protected static $_existing_static_vars = [];
     protected static $_existing_properties = [];
     protected static $_check_string_fn = null;
     protected static $_mock_interfaces = [];
-
-    const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\[\]]+)';
 
     public function __construct(StatementsSource $source, $check_variables = true)
     {
@@ -61,6 +53,8 @@ class StatementsChecker
         $this->_absolute_class = $this->_source->getAbsoluteClass();
         $this->_class_name = $this->_source->getClassName();
         $this->_class_extends = $this->_source->getClassExtends();
+
+        $this->_type_checker = new TypeChecker($source, $this);
     }
 
     public function check(array $stmts, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope = [])
@@ -191,12 +185,12 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = $this->_getTypeAssertions($stmt->cond, true);
+        $if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
         $elseif_types = [];
 
         $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
 
-        $negated_types = $if_types && $can_negate_if_types ? self::_negateTypes($if_types) : [];
+        $negated_types = $if_types && $can_negate_if_types ? TypeChecker::negateTypes($if_types) : [];
         $negated_if_types = $negated_types;
 
         // if the if has an or as the main component, we cannot safely reason about it
@@ -205,8 +199,8 @@ class StatementsChecker
             $if_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
         }
         else {
-            $if_vars = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
-            $if_vars_possibly_in_scope = self::_reconcileTypes($if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
+            $if_vars = TypeChecker::reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            $if_vars_possibly_in_scope = TypeChecker::reconcileTypes($if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
         }
 
         $old_if_vars = $if_vars;
@@ -248,7 +242,7 @@ class StatementsChecker
 
         foreach ($stmt->elseifs as $elseif) {
             if ($negated_types) {
-                $elseif_vars = self::_reconcileTypes($negated_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+                $elseif_vars = TypeChecker::reconcileTypes($negated_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
             }
             else {
                 $elseif_vars = array_merge([], $vars_in_scope);
@@ -258,10 +252,10 @@ class StatementsChecker
 
             $elseif_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
 
-            $elseif_types = $this->_getTypeAssertions($elseif->cond, true);
+            $elseif_types = $this->_type_checker->getTypeAssertions($elseif->cond, true);
 
             if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)) {
-                $negated_types = array_merge($negated_types, self::_negateTypes($elseif_types));
+                $negated_types = array_merge($negated_types, TypeChecker::negateTypes($elseif_types));
             }
 
             $this->_checkElseIf($elseif, $elseif_vars, $elseif_vars_possibly_in_scope, $for_vars_possibly_in_scope);
@@ -319,7 +313,7 @@ class StatementsChecker
 
         if ($stmt->else) {
             if ($negated_types) {
-                $else_vars = self::_reconcileTypes($negated_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+                $else_vars = TypeChecker::reconcileTypes($negated_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
             }
             else {
                 $else_vars = array_merge([], $vars_in_scope);
@@ -401,8 +395,8 @@ class StatementsChecker
              * so that we can negate them going forward
              */
             if (self::_doesLeaveBlock($stmt->stmts, false) && $negated_if_types) {
-                $vars_in_scope = self::_reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
-                $vars_possibly_in_scope = self::_reconcileTypes($negated_if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
+                $vars_in_scope = TypeChecker::reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+                $vars_possibly_in_scope = TypeChecker::reconcileTypes($negated_if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
             }
             else if ($redefined_vars) {
                 foreach ($if_types as $var => $type) {
@@ -423,9 +417,9 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = $this->_getTypeAssertions($stmt->cond);
+        $if_types = $this->_type_checker->getTypeAssertions($stmt->cond);
 
-        $elseif_vars = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+        $elseif_vars = TypeChecker::reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
 
         $this->check($stmt->stmts, $elseif_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
@@ -440,207 +434,6 @@ class StatementsChecker
     protected function _checkCondition(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         $this->_checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope);
-    }
-
-    /**
-     * Gets all the type assertions in a conditional
-     *
-     * @param  PhpParser\Node\Expr $stmt
-     * @return array
-     */
-    protected function _getTypeAssertions(PhpParser\Node\Expr $conditional, $check_boolean_and = false)
-    {
-        $if_types = [];
-
-        if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
-            $instanceof_type = $this->_getInstanceOfTypes($conditional);
-
-            if ($instanceof_type) {
-                $var_name = $this->_getVariable($conditional->expr);
-                if ($var_name) {
-                    $if_types[$var_name] = $instanceof_type;
-                }
-            }
-        }
-        else if ($var_name = $this->_getVariable($conditional)) {
-            $if_types[$var_name] = '!empty';
-        }
-        else if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
-            if ($conditional->expr instanceof PhpParser\Node\Expr\Instanceof_) {
-                $instanceof_type = $this->_getInstanceOfTypes($conditional->expr);
-
-                if ($instanceof_type) {
-                    $var_name = $this->_getVariable($conditional->expr->expr);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!' . $instanceof_type;
-                    }
-                }
-            }
-            else if ($var_name = $this->_getVariable($conditional->expr)) {
-                $if_types[$var_name] = 'empty';
-            }
-            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                if (self::_hasNullVariable($conditional->expr)) {
-                    $var_name = $this->_getVariable($conditional->expr->left);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!null';
-                    }
-                }
-            }
-            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-                if (self::_hasNullVariable($conditional->expr)) {
-                    $var_name = $this->_getVariable($conditional->expr->left);
-                    if ($var_name) {
-                        $if_types[$var_name] = 'null';
-                    }
-                }
-            }
-            else if ($conditional->expr instanceof PhpParser\Node\Expr\Empty_) {
-                $var_name = $this->_getVariable($conditional->expr->expr);
-
-                if ($var_name) {
-                    $if_types[$var_name] = '!empty';
-                }
-            }
-            else if (self::_hasNullCheck($conditional->expr)) {
-                $var_name = $this->_getVariable($conditional->expr->args[0]->value);
-                $if_types[$var_name] = '!null';
-            }
-            else if (self::_hasArrayCheck($conditional->expr)) {
-                $var_name = $this->_getVariable($conditional->expr->args[0]->value);
-                $if_types[$var_name] = '!array';
-            }
-        }
-        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-            if (self::_hasNullVariable($conditional)) {
-                $var_name = $this->_getVariable($conditional->left);
-                if ($var_name) {
-                    $if_types[$var_name] = 'null';
-                }
-            }
-        }
-        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-            if (self::_hasNullVariable($conditional)) {
-                $var_name = $this->_getVariable($conditional->left);
-                if ($var_name) {
-                    $if_types[$var_name] = '!null';
-                }
-            }
-        }
-        else if (self::_hasNullCheck($conditional)) {
-            $var_name = $this->_getVariable($conditional->args[0]->value);
-            $if_types[$var_name] = 'null';
-        }
-        else if (self::_hasArrayCheck($conditional)) {
-            $var_name = $this->_getVariable($conditional->args[0]->value);
-            $if_types[$var_name] = 'array';
-        }
-        else if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
-            $var_name = $this->_getVariable($conditional->expr);
-            if ($var_name) {
-                $if_types[$var_name] = 'empty';
-            }
-        }
-        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            $left_assertions = $this->_getTypeAssertions($conditional->left, false);
-            $right_assertions = $this->_getTypeAssertions($conditional->right, false);
-
-            $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
-            $keys = array_unique($keys);
-
-            foreach ($keys as $key) {
-                if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
-                    $if_types[$key] = $left_assertions[$key] . '|' . $right_assertions[$key];
-                }
-                else if (isset($left_assertions[$key])) {
-                    $if_types[$key] = $left_assertions[$key];
-                }
-                else {
-                    $if_types[$key] = $right_assertions[$key];
-                }
-            }
-        }
-        else if ($check_boolean_and && $conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-            $left_assertions = $this->_getTypeAssertions($conditional->left, $check_boolean_and);
-            $right_assertions = $this->_getTypeAssertions($conditional->right, $check_boolean_and);
-
-            $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
-            $keys = array_unique($keys);
-
-            foreach ($keys as $key) {
-                if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
-                    if ($left_assertions[$key][0] !== '!' && $right_assertions[$key][0] !== '!') {
-                        $if_types[$key] = $left_assertions[$key] . '&' . $right_assertions[$key];
-                    }
-                    else {
-                        $if_types[$key] = $right_assertions[$key];
-                    }
-                }
-                else if (isset($left_assertions[$key])) {
-                    $if_types[$key] = $left_assertions[$key];
-                }
-                else {
-                    $if_types[$key] = $right_assertions[$key];
-                }
-            }
-        }
-
-        return $if_types;
-    }
-
-    protected function _getInstanceOfTypes(PhpParser\Node\Expr\Instanceof_ $stmt)
-    {
-        if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
-                $instanceof_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                return $instanceof_class;
-
-            } elseif ($stmt->class->parts === ['self']) {
-                return $this->_absolute_class;
-            }
-        }
-
-        return null;
-    }
-
-    protected function _getVariable(PhpParser\Node\Expr $stmt)
-    {
-        if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
-            return $stmt->name;
-        }
-        else if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch &&
-                $stmt->var instanceof PhpParser\Node\Expr\Variable &&
-                $stmt->var->name === 'this' &&
-                is_string($stmt->name)) {
-            return $this->_absolute_class . '::' . $stmt->name;
-        }
-
-        return null;
-    }
-
-    protected static function _hasNullVariable(PhpParser\Node\Expr $conditional)
-    {
-        return $conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
-                $conditional->right->name instanceof PhpParser\Node\Name &&
-                $conditional->right->name->parts === ['null'];
-    }
-
-    protected static function _hasNullCheck(PhpParser\Node\Expr $stmt)
-    {
-        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_null']) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function _hasArrayCheck(PhpParser\Node\Expr $stmt)
-    {
-        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_array']) {
-            return true;
-        }
-
-        return false;
     }
 
     protected function _checkStatic(PhpParser\Node\Stmt\Static_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope = [])
@@ -1038,7 +831,7 @@ class StatementsChecker
 
         $this->check($stmt->stmts, $for_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
-        $vars_possibly_in_scope = self::_reconcileTypes($for_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
+        $vars_possibly_in_scope = TypeChecker::reconcileTypes($for_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
     }
 
     protected function _checkForeach(PhpParser\Node\Stmt\Foreach_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -1056,7 +849,7 @@ class StatementsChecker
         if ($stmt->valueVar) {
             $value_type = null;
 
-            $iterator_type = $this->_getType($stmt->expr, $vars_in_scope);
+            $iterator_type = $this->_type_checker->getType($stmt->expr, $vars_in_scope);
 
             if ($iterator_type) {
                 foreach (explode('|', $iterator_type) as $return_type) {
@@ -1100,7 +893,7 @@ class StatementsChecker
 
         $this->check($stmt->stmts, $foreach_vars, $vars_possibly_in_scope, $foreach_vars_possibly_in_scope);
 
-        $vars_possibly_in_scope = self::_reconcileTypes($foreach_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
+        $vars_possibly_in_scope = TypeChecker::reconcileTypes($foreach_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
     }
 
     protected function _checkWhile(PhpParser\Node\Stmt\While_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -1127,26 +920,26 @@ class StatementsChecker
             // ignore deeply-nested string concatenation
         }
         else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-            $left_type_assertions = $this->_getTypeAssertions($stmt->left, true);
+            $left_type_assertions = $this->_type_checker->getTypeAssertions($stmt->left, true);
 
             $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
 
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            $op_vars_in_scope = self::_reconcileTypes($left_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            $op_vars_in_scope = TypeChecker::reconcileTypes($left_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
 
             $this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope);
         }
         else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            $left_type_assertions = $this->_getTypeAssertions($stmt->left, true);
+            $left_type_assertions = $this->_type_checker->getTypeAssertions($stmt->left, true);
 
-            $negated_type_assertions = self::_negateTypes($left_type_assertions);
+            $negated_type_assertions = TypeChecker::negateTypes($left_type_assertions);
 
             $this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope);
 
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
-            $op_vars_in_scope = self::_reconcileTypes($negated_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            $op_vars_in_scope = TypeChecker::reconcileTypes($negated_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
 
             $this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope);
         }
@@ -1175,7 +968,7 @@ class StatementsChecker
         $doc_comment = $stmt->getDocComment();
 
         if ($doc_comment) {
-            $comments = self::_parseDocComment($doc_comment);
+            $comments = self::parseDocComment($doc_comment);
 
             if ($comments && isset($comments['specials']['var'][0])) {
                 $type_in_comments = explode(' ', $comments['specials']['var'][0])[0];
@@ -1283,7 +1076,7 @@ class StatementsChecker
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
         }
 
-        $class_type = $this->_getType($stmt->var, $vars_in_scope);
+        $class_type = $this->_type_checker->getType($stmt->var, $vars_in_scope);
 
         // make sure we stay vague here
         if (!$class_type) {
@@ -1305,7 +1098,7 @@ class StatementsChecker
                     throw new CodeException('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine());
                 }
 
-                if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::_isMock($absolute_class)) {
+                if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
                     ClassChecker::checkAbsoluteClass($absolute_class, $stmt, $this->_file_name);
 
                     $method_id = $absolute_class . '::' . $stmt->name;
@@ -1321,9 +1114,9 @@ class StatementsChecker
                         self::$_method_call_index[$method_id][] = $this->_source->getFileName();
                     }
 
-                    self::checkMethodExists($method_id, $this->_file_name, $stmt);
+                    ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
 
-                    $return_types = $this->_getMethodReturnTypes($method_id);
+                    $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
                     if ($return_types) {
                         $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
@@ -1337,7 +1130,7 @@ class StatementsChecker
 
                             if ($new_method_id) {
                                 try {
-                                    self::checkMethodExists($new_method_id, $this->_file_name, $stmt);
+                                    ClassMethodChecker::checkMethodExists($new_method_id, $this->_file_name, $stmt);
                                 }
                                 catch (CodeException $e) {
                                     /*throw $e;
@@ -1419,7 +1212,7 @@ class StatementsChecker
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
 
-        if ($absolute_class && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::_isMock($absolute_class)) {
+        if ($absolute_class && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::isMock($absolute_class)) {
             $method_id = $absolute_class . '::' . $stmt->name;
 
             if (!isset(self::$_method_call_index[$method_id])) {
@@ -1433,30 +1226,22 @@ class StatementsChecker
                 self::$_method_call_index[$method_id][] = $this->_source->getFileName();
             }
 
-            self::checkMethodExists($method_id, $this->_file_name, $stmt);
+            ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
 
             if ($this->_is_static) {
-                if (!isset(self::$_static_methods[$method_id])) {
-                    self::_extractReflectionMethodInfo($method_id);
-                }
-
-                if (!self::$_static_methods[$method_id]) {
+                if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
                     throw new CodeException('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine());
                 }
             }
             else {
                 if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
-                    if (!isset(self::$_static_methods[$method_id])) {
-                        self::_extractReflectionMethodInfo($method_id);
-                    }
-
-                    if (!self::$_static_methods[$method_id]) {
+                    if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
                         throw new CodeException('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine());
                     }
                 }
             }
 
-            $return_types = $this->_getMethodReturnTypes($method_id);
+            $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
             if ($return_types) {
                 $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
@@ -1465,35 +1250,6 @@ class StatementsChecker
         }
 
         $this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope);
-    }
-
-    protected function _getType(PhpParser\Node\Expr $stmt, array $vars_in_scope)
-    {
-        if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
-            if ($stmt->name === 'this') {
-                return $this->_absolute_class;
-            }
-            elseif (isset($vars_in_scope[$stmt->name]) && is_string($vars_in_scope[$stmt->name])) {
-                return $vars_in_scope[$stmt->name];
-            }
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch &&
-            $stmt->var instanceof PhpParser\Node\Expr\Variable &&
-            $stmt->var->name === 'this' &&
-            is_string($stmt->name)
-        ) {
-            $property_id = $this->_absolute_class . '::' . $stmt->name;
-
-            if (isset($vars_in_scope[$property_id])) {
-                return $vars_in_scope[$property_id];
-            }
-        }
-
-        if (isset($stmt->returnType)) {
-            return $stmt->returnType;
-        }
-
-        return null;
     }
 
     protected static function _fleshOutReturnTypes(array $return_types, array $args, $method_id)
@@ -1505,12 +1261,10 @@ class StatementsChecker
                 $return_type = $absolute_class;
             }
             else if ($return_type[0] === '$') {
-                if (!isset(self::$_method_params[$method_id])) {
-                    self::_extractReflectionMethodInfo($method_id);
-                }
+                $method_params = ClassMethodChecker::getMethodParams($method_id);
 
                 foreach ($args as $i => $arg) {
-                    $method_param = self::$_method_params[$method_id][$i];
+                    $method_param = $method_params[$i];
 
                     if ($return_type === '$' . $method_param['name']) {
                         if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
@@ -1540,12 +1294,10 @@ class StatementsChecker
         $call = preg_replace('/\(\)$/', '', $call);
 
         if (strpos($call, '$') !== false) {
-            if (!isset(self::$_method_params[$method_id])) {
-                self::_extractReflectionMethodInfo($method_id);
-            }
+            $method_params = ClassMethodChecker::getMethodParams($method_id);
 
             foreach ($args as $i => $arg) {
-                $method_param = self::$_method_params[$method_id][$i];
+                $method_param = $method_params[$i];
                 $preg_var_name = preg_quote('$' . $method_param['name']);
 
                 if (preg_match('/::' . $preg_var_name . '$/', $call)) {
@@ -1578,7 +1330,7 @@ class StatementsChecker
 
             if ($method_id && isset($arg->value->returnType)) {
                 foreach (explode('|', $arg->value->returnType) as $return_type) {
-                    self::_checkType($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine());
+                    TypeChecker::check($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine());
                 }
 
             }
@@ -1636,7 +1388,7 @@ class StatementsChecker
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
 
-        if ($absolute_class && $this->_check_variables && is_string($stmt->name) && !self::_isMock($absolute_class)) {
+        if ($absolute_class && $this->_check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
             $var_id = $absolute_class . '::$' . $stmt->name;
 
             if (!self::_staticVarExists($var_id)) {
@@ -1656,18 +1408,18 @@ class StatementsChecker
     {
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
-        $if_types = $this->_getTypeAssertions($stmt->cond, true);
+        $if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
 
         $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
 
         if ($stmt->if) {
-            $t_if_vars_in_scope = self::_reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            $t_if_vars_in_scope = TypeChecker::reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
             $this->_checkExpression($stmt->if, $t_if_vars_in_scope, $vars_possibly_in_scope);
         }
 
         if ($can_negate_if_types) {
-            $negated_if_types = self::_negateTypes($if_types);
-            $t_else_vars_in_scope = self::_reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+            $negated_if_types = TypeChecker::negateTypes($if_types);
+            $t_else_vars_in_scope = TypeChecker::reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
         }
         else {
             $t_else_vars_in_scope = $vars_in_scope;
@@ -1866,203 +1618,6 @@ class StatementsChecker
         }
     }
 
-    public function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
-    {
-        $method_id = $this->_absolute_class . '::' . $method->name;
-
-        self::$_declaring_classes[$method_id] = $this->_absolute_class;
-        self::$_static_methods[$method_id] = $method->isStatic();
-        self::$_method_comments[$method_id] = $method->getDocComment() ?: '';
-
-        self::$_method_namespaces[$method_id] = $this->_namespace;
-        self::$_method_files[$method_id] = $this->_file_name;
-        self::$_existing_methods[$method_id] = 1;
-
-        if (!isset(self::$_method_return_types[$method_id])) {
-            $comments = self::_parseDocComment($method->getDocComment());
-
-            $return_types = [];
-
-            if (isset($comments['specials']['return'])) {
-                $return_blocks = explode(' ', $comments['specials']['return'][0]);
-                foreach ($return_blocks as $block) {
-                    if ($block) {
-                        if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
-                            $return_types = explode('|', $block);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (isset($comments['specials']['call'])) {
-                self::$_method_custom_calls[$method_id] = [];
-
-                $call_blocks = $comments['specials']['call'];
-                foreach ($comments['specials']['call'] as $block) {
-                    if ($block) {
-                        self::$_method_custom_calls[$method_id][] = trim($block);
-                    }
-                }
-            }
-
-            $return_types = array_filter($return_types, function ($entry) {
-                return !empty($entry) && $entry !== '[type]';
-            });
-
-            foreach ($return_types as &$return_type) {
-                $return_type = $this->_fixUpLocalReturnType($return_type, $method_id, $this->_namespace, $this->_aliased_classes);
-            }
-
-            self::$_method_return_types[$method_id] = $return_types;
-        }
-
-        self::$_method_params[$method_id] = [];
-
-        foreach ($method->getParams() as $param) {
-            $param_type = null;
-
-            if ($param->type) {
-                if (is_string($param->type)) {
-                    $param_type = $param->type;
-                }
-                else {
-                    if ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
-                        $param_type = implode('\\', $param->type->parts);
-                    }
-                    else {
-                        $param_type = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
-                    }
-                }
-            }
-
-            $is_nullable = $param->default !== null &&
-                            $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
-                            $param->default->name instanceof PhpParser\Node\Name &&
-                            $param->default->name->parts = ['null'];
-
-            self::$_method_params[$method_id][] = [
-                'name' => $param->name,
-                'by_ref' => $param->byRef,
-                'type' => $param_type,
-                'is_nullable' => $is_nullable
-            ];
-        }
-    }
-
-    protected static function _fixUpLocalReturnType($return_type, $method_id, $namespace, $aliased_classes)
-    {
-        if (strpos($return_type, '[') !== false) {
-            $return_type = self::_convertSquareBrackets($return_type);
-        }
-
-        $return_type_tokens = self::_getReturnTypeTokens($return_type);
-
-        foreach ($return_type_tokens as &$return_type_token) {
-            if ($return_type_token[0] === '\\') {
-                $return_type_token = substr($return_type_token, 1);
-                continue;
-            }
-
-            if (in_array($return_type_token, ['<', '>'])) {
-                continue;
-            }
-
-            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
-                $absolute_class = explode('::', $method_id)[0];
-
-                if ($return_type === '$this') {
-                    $return_type_token = $absolute_class;
-                    continue;
-                }
-
-                $return_type_token = ClassChecker::getAbsoluteClassFromString($return_type_token, $namespace, $aliased_classes);
-            }
-        }
-
-        return implode('', $return_type_tokens);
-    }
-
-    protected static function _fixUpReturnType($return_type, $method_id)
-    {
-        if (strpos($return_type, '[') !== false) {
-            $return_type = self::_convertSquareBrackets($return_type);
-        }
-
-        $return_type_tokens = self::_getReturnTypeTokens($return_type);
-
-        foreach ($return_type_tokens as &$return_type_token) {
-            if ($return_type_token[0] === '\\') {
-                $return_type_token = substr($return_type_token, 1);
-                continue;
-            }
-
-            if (in_array($return_type_token, ['<', '>'])) {
-                continue;
-            }
-
-            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
-                $absolute_class = explode('::', $method_id)[0];
-
-                if ($return_type_token === '$this') {
-                    $return_type_token = $absolute_class;
-                    continue;
-                }
-
-                $return_type_token = FileChecker::getAbsoluteClassFromNameInFile($return_type_token, self::$_method_namespaces[$method_id], self::$_method_files[$method_id]);
-            }
-        }
-
-        return implode('', $return_type_tokens);
-    }
-
-    public function _convertSquareBrackets($type)
-    {
-        return preg_replace_callback(
-            '/([a-zA-Z\<\>]+)((\[\])+)/',
-            function($matches) {
-                $inner_type = $matches[1];
-
-                $dimensionality = strlen($matches[2]) / 2;
-
-                for ($i = 0; $i < $dimensionality; $i++) {
-                    $inner_type = 'array<' . $inner_type . '>';
-                }
-
-                return $inner_type;
-            },
-            $type
-        );
-    }
-
-    public function _getReturnTypeTokens($return_type) {
-        $return_type_tokens = [''];
-        $was_char = false;
-
-        foreach (str_split($return_type) as $char) {
-            if ($was_char) {
-                $return_type_tokens[] = '';
-            }
-
-            if ($char === '<' || $char === '>') {
-                if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
-                    $return_type_tokens[count($return_type_tokens) - 1] = $char;
-                }
-                else {
-                    $return_type_tokens[] = $char;
-                }
-
-                $was_char = true;
-            }
-            else {
-                $return_type_tokens[count($return_type_tokens) - 1] .= $char;
-                $was_char = false;
-            }
-        }
-
-        return $return_type_tokens;
-    }
-
     public function registerVariable($var_name, $line_number)
     {
         if (!isset($this->_all_vars[$var_name])) {
@@ -2103,22 +1658,6 @@ class StatementsChecker
         self::_getClassProperties($reflection_class, $absolute_class);
 
         return isset(self::$_existing_properties[$property_id]);
-    }
-
-    public static function checkMethodExists($method_id, $file_name, $stmt)
-    {
-        if (isset(self::$_existing_methods[$method_id])) {
-            return;
-        }
-
-        try {
-            new \ReflectionMethod($method_id);
-            self::$_existing_methods[$method_id] = 1;
-            return;
-
-        } catch (\ReflectionException $e) {
-            throw new CodeException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
-        }
     }
 
     public function _checkFunctionExists($method_id, $stmt)
@@ -2171,17 +1710,6 @@ class StatementsChecker
         return isset(self::$_existing_static_vars[$var_id]);
     }
 
-    protected function _getMethodReturnTypes($method_id)
-    {
-        if (!isset(self::$_method_return_types[$method_id])) {
-            self::_extractReflectionMethodInfo($method_id);
-        }
-
-        $return_types = self::$_method_return_types[$method_id];
-
-        return $return_types;
-    }
-
     /**
      * Parse a docblock comment into its parts.
      *
@@ -2190,7 +1718,7 @@ class StatementsChecker
      *
      * @return array Array of the main comment and specials
      */
-    public static function _parseDocComment($docblock)
+    public static function parseDocComment($docblock)
     {
         // Strip off comments.
         $docblock = trim($docblock);
@@ -2261,11 +1789,9 @@ class StatementsChecker
     {
         if (strpos($method_id, '::') !== false) {
             try {
-                if (!isset(self::$_method_params[$method_id])) {
-                    self::_extractReflectionMethodInfo($method_id);
-                }
+                $method_params = ClassMethodChecker::getMethodParams($method_id);
 
-                return $argument_offset < count(self::$_method_params[$method_id]) && self::$_method_params[$method_id][$argument_offset]['by_ref'];
+                return $argument_offset < count($method_params) && $method_params[$argument_offset]['by_ref'];
             }
             catch (\ReflectionException $e) {
                 // we fall through to the functions below
@@ -2288,135 +1814,7 @@ class StatementsChecker
         return $argument_offset < count($reflection_parameters) && $reflection_parameters[$argument_offset]->isPassedByReference();
     }
 
-    protected static function _checkType($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
-    {
-        if ($return_type === 'mixed') {
-            return true;
-        }
 
-        if (!isset(self::$_method_params[$method_id])) {
-            self::_extractReflectionMethodInfo($method_id);
-        }
-
-        if ($arg_offset >= count(self::$_method_params[$method_id])) {
-            return true;
-        }
-
-        $expected_type = self::$_method_params[$method_id][$arg_offset]['type'];
-
-        if (!$expected_type) {
-            return true;
-        }
-
-        if ($return_type === 'null') {
-            if (self::$_method_params[$method_id][$arg_offset]['is_nullable']) {
-                return true;
-            }
-
-            throw new CodeException('Argument ' . ($i + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied', $file_name, $line_number);
-        }
-
-        // Remove generic type
-        $return_type = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $return_type);
-
-        if ($return_type === $expected_type) {
-            return true;
-        }
-
-        if (self::_isMock($return_type)) {
-            return true;
-        }
-
-        if (!is_subclass_of($return_type, $expected_type, true)) {
-            if (is_subclass_of($expected_type, $return_type, true)) {
-                //echo('Warning: dangerous type coercion in ' . $file_name . ' on line ' . $line_number . PHP_EOL);
-                return true;
-            }
-
-            throw new CodeException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type, $file_name, $line_number);
-        }
-
-        return true;
-    }
-
-    protected static function _extractReflectionMethodInfo($method_id)
-    {
-        $method = new \ReflectionMethod($method_id);
-
-        self::$_static_methods[$method_id] = $method->isStatic();
-        self::$_method_files[$method_id] = $method->getFileName();
-        self::$_method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
-        self::$_declaring_classes[$method_id] = $method->getDeclaringClass()->name;
-
-        $params = $method->getParameters();
-
-        self::$_method_params[$method_id] = [];
-        foreach ($params as $param) {
-            $param_type = null;
-
-            if ($param->isArray()) {
-                $param_type = 'array';
-
-            } elseif ($param->getClass() && self::$_method_files[$method_id]) {
-                $param_type = $param->getClass()->getName();
-            }
-
-            $is_nullable = false;
-
-            try {
-                $is_nullable = $param->getDefaultValue() === null;
-            }
-            catch (\ReflectionException $e) {
-                // do nothing
-            }
-
-            self::$_method_params[$method_id][] = [
-                'name' => $param->getName(),
-                'by_ref' => $param->isPassedByReference(),
-                'type' => $param_type,
-                'is_nullable' => $is_nullable
-            ];
-        }
-
-        $return_types = [];
-
-        $comments = self::_parseDocComment($method->getDocComment() ?: '');
-
-        if ($comments) {
-            if (isset($comments['specials']['return'])) {
-                $return_blocks = explode(' ', $comments['specials']['return'][0]);
-                foreach ($return_blocks as $block) {
-                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
-                        $return_types = explode('|', $block);
-                        break;
-                    }
-                }
-            }
-
-            if (isset($comments['specials']['call'])) {
-                self::$_method_custom_calls[$method_id] = [];
-
-                $call_blocks = $comments['specials']['call'];
-                foreach ($comments['specials']['call'] as $block) {
-                    if ($block) {
-                        self::$_method_custom_calls[$method_id][] = trim($block);
-                    }
-                }
-            }
-
-            $return_types = array_filter($return_types, function ($entry) {
-                return !empty($entry) && $entry !== '[type]';
-            });
-
-            if ($return_types) {
-                foreach ($return_types as &$return_type) {
-                    $return_type = self::_fixUpReturnType($return_type, $method_id);
-                }
-            }
-        }
-
-        self::$_method_return_types[$method_id] = $return_types;
-    }
 
     public static function customCheckString(callable $function)
     {
@@ -2555,7 +1953,7 @@ class StatementsChecker
         self::$_mock_interfaces = $classes;
     }
 
-    protected static function _isMock($absolute_class)
+    public static function isMock($absolute_class)
     {
         return in_array($absolute_class, self::$_mock_interfaces);
     }
@@ -2617,89 +2015,6 @@ class StatementsChecker
         return false;
     }
 
-    /**
-     * Takes two arrays and consolidates them, removing null values from existing types where applicable
-     *
-     * @param  array  $new_types
-     * @param  array  $existing_types
-     * @return array
-     */
-    protected static function _reconcileTypes(array $new_types, array $existing_types, $strict, $file_name, $line_number)
-    {
-        $keys = array_merge(array_keys($new_types), array_keys($existing_types));
-        $keys = array_unique($keys);
-
-        $result_types = [];
-
-        if (empty($new_types)) {
-            return $existing_types;
-        }
-
-        foreach ($keys as $key) {
-            $existing_type = isset($existing_types[$key]) && is_string($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
-
-            if (isset($new_types[$key])) {
-                if (is_string($new_types[$key]) && $new_types[$key][0] === '!') {
-                    if ($existing_type) {
-                        if ($new_types[$key] === '!empty' || $new_types[$key] === '!null') {
-                            $null_pos = array_search('null', $existing_type);
-
-                            if ($null_pos !== false) {
-                                array_splice($existing_type, $null_pos, 1);
-
-                                if (empty($existing_type)) {
-                                    // @todo - I think there's a better way to handle this, but for the moment
-                                    // mixed will have to do.
-                                    $result_types[$key] = 'mixed';
-                                }
-                                else {
-                                    $result_types[$key] = implode('|', $existing_type);
-                                }
-                            }
-                            else {
-                                // if we cannot find a null declaration to remove, just use existing type
-                                $result_types[$key] = $existing_types[$key];
-                            }
-                        }
-                        else {
-                            $negated_type = substr($new_types[$key], 1);
-
-                            $type_pos = array_search($negated_type, $existing_type);
-
-                            if ($type_pos !== false) {
-                                array_splice($existing_type, $type_pos, 1);
-
-                                if (empty($existing_type)) {
-                                    if ($strict) {
-                                        throw new CodeException('Cannot resolve types for ' . $key, $file_name, $line_number);
-                                    }
-
-                                    $result_types[$key] = $existing_types[$key];
-                                }
-                                $result_types[$key] = implode('|', $existing_type);
-                            }
-                            else {
-                                // if we cannot find a type to negate, just use the existing type
-                                $result_types[$key] = $existing_types[$key];
-                            }
-                        }
-                    }
-                    else if (isset($existing_types[$key])) {
-                        $result_types[$key] = $existing_types[$key];
-                    }
-                }
-                else {
-                    $result_types[$key] = $new_types[$key];
-                }
-            }
-            else {
-                $result_types[$key] = $existing_types[$key];
-            }
-        }
-
-        return $result_types;
-    }
-
     protected static function _containsBooleanOr(PhpParser\Node\Expr\BinaryOp $stmt)
     {
         // we only want to discount expressions where either the whole thing is an or
@@ -2716,10 +2031,8 @@ class StatementsChecker
         return false;
     }
 
-    protected static function _negateTypes(array $types)
+    public function getAliasedClasses()
     {
-        return array_map(function ($type) {
-            return $type[0] === '!' ? substr($type, 1) : '!' . $type;
-        }, $types);
+        return $this->_aliased_classes;
     }
 }

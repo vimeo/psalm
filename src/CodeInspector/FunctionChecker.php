@@ -36,10 +36,6 @@ class FunctionChecker implements StatementsSource
         }
 
         $this->_statements_checker = new StatementsChecker($this, substr($this->_file_name, -4) === '.php');
-
-        if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
-            $this->_statements_checker->registerMethod($function);
-        }
     }
 
     public function check($extra_scope_vars = [])
