@@ -90,10 +90,6 @@ class ClassChecker implements StatementsSource
             throw new \InvalidArgumentException('$class cannot be empty');
         }
 
-        if (strpos($file_name, 'hoodahoop')) {
-            return;
-        }
-
         $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
         if (isset(self::$_existing_classes[$absolute_class])) {
@@ -104,7 +100,7 @@ class ClassChecker implements StatementsSource
             throw new CodeException('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine());
         }
 
-        if (class_exists($absolute_class, true) && (strpos($absolute_class, 'Vimeo') === 0 || strpos($absolute_class, '\\') === false)) {
+        if (class_exists($absolute_class, true) && strpos($absolute_class, '\\') === false) {
             $reflection_class = new \ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {

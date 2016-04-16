@@ -1306,6 +1306,8 @@ class StatementsChecker
                 }
 
                 if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::_isMock($absolute_class)) {
+                    ClassChecker::checkAbsoluteClass($absolute_class, $stmt, $this->_file_name);
+
                     $method_id = $absolute_class . '::' . $stmt->name;
 
                     if (!isset(self::$_method_call_index[$method_id])) {
@@ -1599,6 +1601,7 @@ class StatementsChecker
                 $absolute_class = $this->_absolute_class;
             } else {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
+                ClassChecker::checkAbsoluteClass($absolute_class, $stmt, $this->_file_name);
             }
 
             $const_id = $absolute_class . '::' . $stmt->name;
