@@ -380,9 +380,6 @@ class StatementsChecker
                         $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
                     }
                 }
-                else {
-                    $new_vars = null;
-                }
             }
 
             if ($new_vars) {
