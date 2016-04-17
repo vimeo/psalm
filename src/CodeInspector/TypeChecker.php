@@ -10,6 +10,9 @@ class TypeChecker
     protected $_namespace;
     protected $_checker;
 
+    const ASSIGNMENT_TO_RIGHT = 1;
+    const ASSIGNMENT_TO_LEFT = -1;
+
     public function __construct(StatementsSource $source, StatementsChecker $statements_checker)
     {
         $this->_absolute_class = $source->getAbsoluteClass();
@@ -133,16 +136,38 @@ class TypeChecker
                 $if_types[$var_name] = 'empty';
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                if (self::_hasNullVariable($conditional->expr)) {
-                    $var_name = $this->_getVariable($conditional->expr->left);
+                $null_position = self::_hasNullVariable($conditional->expr);
+
+                if ($null_position !== null) {
+                    if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
+                        $var_name = $this->_getVariable($conditional->expr->left);
+                    }
+                    else if ($null_position === self::ASSIGNMENT_TO_LEFT) {
+                        $var_name = $this->_getVariable($conditional->epxr->right);
+                    }
+                    else {
+                        throw new \InvalidArgumentException('Bad null variable position');
+                    }
+
                     if ($var_name) {
                         $if_types[$var_name] = '!null';
                     }
                 }
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-                if (self::_hasNullVariable($conditional->expr)) {
-                    $var_name = $this->_getVariable($conditional->expr->left);
+                $null_position = self::_hasNullVariable($conditional->expr);
+
+                if ($null_position !== null) {
+                    if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
+                        $var_name = $this->_getVariable($conditional->expr->left);
+                    }
+                    else if ($null_position === self::ASSIGNMENT_TO_LEFT) {
+                        $var_name = $this->_getVariable($conditional->epxr->right);
+                    }
+                    else {
+                        throw new \InvalidArgumentException('Bad null variable position');
+                    }
+
                     if ($var_name) {
                         $if_types[$var_name] = 'null';
                     }
@@ -165,16 +190,38 @@ class TypeChecker
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-            if (self::_hasNullVariable($conditional)) {
-                $var_name = $this->_getVariable($conditional->left);
+            $null_position = self::_hasNullVariable($conditional);
+
+            if ($null_position !== null) {
+                if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $var_name = $this->_getVariable($conditional->left);
+                }
+                else if ($null_position === self::ASSIGNMENT_TO_LEFT) {
+                    $var_name = $this->_getVariable($conditional->right);
+                }
+                else {
+                    throw new \InvalidArgumentException('Bad null variable position');
+                }
+
                 if ($var_name) {
                     $if_types[$var_name] = 'null';
                 }
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-            if (self::_hasNullVariable($conditional)) {
-                $var_name = $this->_getVariable($conditional->left);
+            $null_position = self::_hasNullVariable($conditional);
+
+            if ($null_position !== null) {
+                if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $var_name = $this->_getVariable($conditional->left);
+                }
+                else if ($null_position === self::ASSIGNMENT_TO_LEFT) {
+                    $var_name = $this->_getVariable($conditional->right);
+                }
+                else {
+                    throw new \InvalidArgumentException('Bad null variable position');
+                }
+
                 if ($var_name) {
                     $if_types[$var_name] = '!null';
                 }
@@ -273,9 +320,19 @@ class TypeChecker
 
     protected static function _hasNullVariable(PhpParser\Node\Expr $conditional)
     {
-        return $conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
-                $conditional->right->name instanceof PhpParser\Node\Name &&
-                $conditional->right->name->parts === ['null'];
+        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
+            $conditional->right->name instanceof PhpParser\Node\Name &&
+            $conditional->right->name->parts === ['null']) {
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
+            $conditional->left->name instanceof PhpParser\Node\Name &&
+            $conditional->left->name->parts === ['null']) {
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return null;
     }
 
     protected static function _hasNullCheck(PhpParser\Node\Expr $stmt)
