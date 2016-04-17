@@ -5,6 +5,9 @@ namespace CodeInspector;
 use PhpParser;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionMethod;
 
 class ClassChecker implements StatementsSource
 {
@@ -16,8 +19,13 @@ class ClassChecker implements StatementsSource
     protected $_class_properties = [];
     protected $_has_custom_get = false;
 
+    /** @var string|null */
+    protected $_parent_class;
+
     protected static $_existing_classes = [];
     protected static $_implementing_classes = [];
+
+    protected static $_class_methods = [];
 
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
@@ -27,22 +35,26 @@ class ClassChecker implements StatementsSource
         $this->_file_name = $source->getFileName();
         $this->_absolute_class = $absolute_class;
 
+        $this->_parent_class = $this->_class->extends ? ClassChecker::getAbsoluteClassFromName($this->_class->extends, $this->_namespace, $this->_aliased_classes) : null;
+
         self::$_existing_classes[$absolute_class] = 1;
     }
 
     public function check()
     {
-        if ($this->_class->extends instanceof PhpParser\Node\Name) {
-            self::checkClassName($this->_class->extends, $this->_namespace, $this->_aliased_classes, $this->_file_name);
+        if ($this->_parent_class) {
+            self::checkAbsoluteClass($this->_parent_class, $this->_class, $this->_file_name);
+
+            $this->_registerInheritedMethods();
         }
 
         $leftover_stmts = [];
 
         try {
-            new \ReflectionMethod($this->_absolute_class . '::__get');
+            new ReflectionMethod($this->_absolute_class . '::__get');
             $this->_has_custom_get = true;
 
-        } catch (\ReflectionException $e) {}
+        } catch (ReflectionException $e) {}
 
         $method_checkers = [];
 
@@ -101,7 +113,7 @@ class ClassChecker implements StatementsSource
         }
 
         if (class_exists($absolute_class, true) && strpos($absolute_class, '\\') === false) {
-            $reflection_class = new \ReflectionClass($absolute_class);
+            $reflection_class = new ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
                 throw new CodeException('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine());
@@ -164,9 +176,9 @@ class ClassChecker implements StatementsSource
         return $this->_class->name;
     }
 
-    public function getClassExtends()
+    public function getParentClass()
     {
-        return $this->_class->extends;
+        return $this->_parent_class;
     }
 
     public function getFileName()
@@ -213,5 +225,29 @@ class ClassChecker implements StatementsSource
         $_implementing_classes[$absolute_class] = $class_implementations;
 
         return true;
+    }
+
+    protected function _registerInheritedMethods()
+    {
+        if (!isset($_class_methods[$this->_parent_class])) {
+            $class_methods = [];
+
+            $reflection_class = new ReflectionClass($this->_parent_class);
+
+            $reflection_methods = $reflection_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
+
+            foreach ($reflection_methods as $reflection_method) {
+                $class_methods[] = $reflection_method->getName();
+            }
+        }
+        else {
+            $class_methods = $_class_methods[$this->_parent_class];
+        }
+
+        foreach ($class_methods as $method_name) {
+            $parent_class_method = $this->_parent_class . '::' . $method_name;
+            ClassMethodChecker::extractReflectionMethodInfo($parent_class_method);
+            ClassMethodChecker::copyToChildMethod($parent_class_method, $this->_absolute_class . '::' . $method_name);
+        }
     }
 }

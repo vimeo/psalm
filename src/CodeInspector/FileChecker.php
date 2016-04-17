@@ -207,7 +207,7 @@ class FileChecker implements StatementsSource
         return null;
     }
 
-    public function getClassExtends()
+    public function getParentClass()
     {
         return null;
     }

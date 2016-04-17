@@ -14,6 +14,7 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_static_methods = [];
     protected static $_declaring_classes = [];
     protected static $_existing_methods = [];
+    protected static $_have_reflected = [];
 
     const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\[\]]+)';
 
@@ -27,7 +28,7 @@ class ClassMethodChecker extends FunctionChecker
     public static function getMethodParams($method_id)
     {
         if (!isset(self::$_method_params[$method_id])) {
-            self::_extractReflectionMethodInfo($method_id);
+            self::extractReflectionMethodInfo($method_id);
         }
 
         return self::$_method_params[$method_id];
@@ -36,7 +37,7 @@ class ClassMethodChecker extends FunctionChecker
     public static function getMethodReturnTypes($method_id)
     {
         if (!isset(self::$_method_return_types[$method_id])) {
-            self::_extractReflectionMethodInfo($method_id);
+            self::extractReflectionMethodInfo($method_id);
         }
 
         $return_types = self::$_method_return_types[$method_id];
@@ -44,9 +45,14 @@ class ClassMethodChecker extends FunctionChecker
         return $return_types;
     }
 
-    protected static function _extractReflectionMethodInfo($method_id)
+    public static function extractReflectionMethodInfo($method_id)
     {
+        if (isset(self::$_have_reflected[$method_id])) {
+            return;
+        }
+
         $method = new \ReflectionMethod($method_id);
+        self::$_have_reflected[$method_id] = true;
 
         self::$_static_methods[$method_id] = $method->isStatic();
         self::$_method_files[$method_id] = $method->getFileName();
@@ -123,6 +129,17 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_return_types[$method_id] = $return_types;
     }
 
+    public static function copyToChildMethod($method_id, $child_method_id)
+    {
+        self::$_method_files[$child_method_id] = self::$_method_files[$method_id];
+        self::$_method_params[$child_method_id] = self::$_method_params[$method_id];
+        self::$_method_namespaces[$child_method_id] = self::$_method_namespaces[$method_id];
+        self::$_method_return_types[$child_method_id] = self::$_method_return_types[$method_id];
+
+        self::$_declaring_classes[$child_method_id] = self::$_declaring_classes[$method_id];
+        self::$_existing_methods[$child_method_id] = 1;
+    }
+
     /**
      * Determines whether a given method is static or not
      * @param  string  $method_id
@@ -131,7 +148,7 @@ class ClassMethodChecker extends FunctionChecker
     public static function isGivenMethodStatic($method_id)
     {
         if (!isset(self::$_static_methods[$method_id])) {
-            self::_extractReflectionMethodInfo($method_id);
+            self::extractReflectionMethodInfo($method_id);
         }
 
         return self::$_static_methods[$method_id];
@@ -149,44 +166,42 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_files[$method_id] = $this->_file_name;
         self::$_existing_methods[$method_id] = 1;
 
-        if (!isset(self::$_method_return_types[$method_id])) {
-            $comments = StatementsChecker::parseDocComment($method->getDocComment());
+        $comments = StatementsChecker::parseDocComment($method->getDocComment());
 
-            $return_types = [];
+        $return_types = [];
 
-            if (isset($comments['specials']['return'])) {
-                $return_blocks = explode(' ', $comments['specials']['return'][0]);
-                foreach ($return_blocks as $block) {
-                    if ($block) {
-                        if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
-                            $return_types = explode('|', $block);
-                            break;
-                        }
+        if (isset($comments['specials']['return'])) {
+            $return_blocks = explode(' ', $comments['specials']['return'][0]);
+            foreach ($return_blocks as $block) {
+                if ($block) {
+                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
+                        $return_types = explode('|', $block);
+                        break;
                     }
                 }
             }
-
-            if (isset($comments['specials']['call'])) {
-                self::$_method_custom_calls[$method_id] = [];
-
-                $call_blocks = $comments['specials']['call'];
-                foreach ($comments['specials']['call'] as $block) {
-                    if ($block) {
-                        self::$_method_custom_calls[$method_id][] = trim($block);
-                    }
-                }
-            }
-
-            $return_types = array_filter($return_types, function ($entry) {
-                return !empty($entry) && $entry !== '[type]';
-            });
-
-            foreach ($return_types as &$return_type) {
-                $return_type = $this->_fixUpLocalReturnType($return_type, $method_id, $this->_namespace, $this->_aliased_classes);
-            }
-
-            self::$_method_return_types[$method_id] = $return_types;
         }
+
+        if (isset($comments['specials']['call'])) {
+            self::$_method_custom_calls[$method_id] = [];
+
+            $call_blocks = $comments['specials']['call'];
+            foreach ($comments['specials']['call'] as $block) {
+                if ($block) {
+                    self::$_method_custom_calls[$method_id][] = trim($block);
+                }
+            }
+        }
+
+        $return_types = array_filter($return_types, function ($entry) {
+            return !empty($entry) && $entry !== '[type]';
+        });
+
+        foreach ($return_types as &$return_type) {
+            $return_type = $this->_fixUpLocalReturnType($return_type, $method_id, $this->_namespace, $this->_aliased_classes);
+        }
+
+        self::$_method_return_types[$method_id] = $return_types;
 
         self::$_method_params[$method_id] = [];
 

@@ -17,7 +17,7 @@ interface StatementsSource
     /**
      * @return \PhpParser\Node\Name
      */
-    public function getClassExtends();
+    public function getParentClass();
 
     public function getFileName();
 

@@ -54,7 +54,7 @@ class StatementsChecker
         $this->_is_static = $this->_source->isStatic();
         $this->_absolute_class = $this->_source->getAbsoluteClass();
         $this->_class_name = $this->_source->getClassName();
-        $this->_class_extends = $this->_source->getClassExtends();
+        $this->_class_extends = $this->_source->getParentClass();
 
         $this->_type_checker = new TypeChecker($source, $this);
     }
@@ -1216,7 +1216,7 @@ class StatementsChecker
                     throw new CodeException('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine());
                 }
 
-                $absolute_class = ClassChecker::getAbsoluteClassFromName($this->_class_extends, $this->_namespace, $this->_aliased_classes);
+                $absolute_class = $this->_class_extends;
             } else {
                 $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }
@@ -1393,7 +1393,7 @@ class StatementsChecker
 
         if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($stmt->class->parts[0] === 'parent') {
-                $absolute_class = ClassChecker::getAbsoluteClassFromName($this->_class_extends, $this->_namespace, $this->_aliased_classes);
+                $absolute_class = $this->_class_extends;
             } else {
                 $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }

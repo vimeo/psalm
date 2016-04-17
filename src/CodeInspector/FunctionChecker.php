@@ -26,7 +26,7 @@ class FunctionChecker implements StatementsSource
         $this->_aliased_classes = $source->getAliasedClasses();
         $this->_namespace = $source->getNamespace();
         $this->_class_name = $source->getClassName();
-        $this->_class_extends = $source->getClassExtends();
+        $this->_class_extends = $source->getParentClass();
         $this->_file_name = $source->getFileName();
         $this->_absolute_class = $source->getAbsoluteClass();
         $this->_source = $source;
@@ -108,7 +108,7 @@ class FunctionChecker implements StatementsSource
         return $this->_source->getClassChecker();
     }
 
-    public function getClassExtends()
+    public function getParentClass()
     {
         return $this->_class_extends;
     }
