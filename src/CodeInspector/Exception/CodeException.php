@@ -1,8 +1,8 @@
 <?php
 
-namespace CodeInspector;
+namespace CodeInspector\Exception;
 
-class CodeException extends \Exception
+abstract class CodeException extends \Exception
 {
     const CODE_EXCEPTION = 1;
     public $line_number;

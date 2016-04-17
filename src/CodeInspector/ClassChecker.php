@@ -2,6 +2,8 @@
 
 namespace CodeInspector;
 
+use CodeInspector\Exception\InvalidClassException;
+use CodeInspector\Exception\UndefinedClassException;
 use PhpParser;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
@@ -109,14 +111,14 @@ class ClassChecker implements StatementsSource
         }
 
         if (!class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
-            throw new CodeException('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine());
+            throw new UndefinedClassException('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine());
         }
 
         if (class_exists($absolute_class, true) && strpos($absolute_class, '\\') === false) {
             $reflection_class = new ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
-                throw new CodeException('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine());
+                throw new InvalidClassException('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine());
             }
         }
 

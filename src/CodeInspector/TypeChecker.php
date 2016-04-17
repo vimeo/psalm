@@ -2,6 +2,8 @@
 
 namespace CodeInspector;
 
+use CodeInspector\Exception\InvalidArgumentException;
+use CodeInspector\Exception\TypeResolutionException;
 use PhpParser;
 
 class TypeChecker
@@ -43,7 +45,7 @@ class TypeChecker
                 return true;
             }
 
-            throw new CodeException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied', $file_name, $line_number);
+            throw new InvalidArgumentException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied', $file_name, $line_number);
         }
 
         // Remove generic type
@@ -63,7 +65,7 @@ class TypeChecker
                 return true;
             }
 
-            throw new CodeException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type, $file_name, $line_number);
+            throw new InvalidArgumentException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type, $file_name, $line_number);
         }
 
         return true;
@@ -407,7 +409,7 @@ class TypeChecker
 
                                 if (empty($existing_type)) {
                                     if ($strict) {
-                                        throw new CodeException('Cannot resolve types for ' . $key, $file_name, $line_number);
+                                        throw new TypeResolutionException('Cannot resolve types for ' . $key, $file_name, $line_number);
                                     }
 
                                     $result_types[$key] = $existing_types[$key];

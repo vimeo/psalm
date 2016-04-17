@@ -2,6 +2,7 @@
 
 namespace CodeInspector;
 
+use CodeInspector\Exception\UndefinedMethodException;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
@@ -338,7 +339,7 @@ class ClassMethodChecker extends FunctionChecker
             return;
 
         } catch (\ReflectionException $e) {
-            throw new CodeException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
+            throw new UndefinedMethodException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
         }
     }
 

@@ -4,6 +4,19 @@ namespace CodeInspector;
 
 use PhpParser;
 
+use CodeInspector\Exception\ForbiddenCodeException;
+use CodeInspector\Exception\InvalidArgumentException;
+use CodeInspector\Exception\InvalidNamespaceException;
+use CodeInspector\Exception\IteratorException;
+use CodeInspector\Exception\ParentNotFoundException;
+use CodeInspector\Exception\ScopeException;
+use CodeInspector\Exception\StaticInvocationException;
+use CodeInspector\Exception\StaticVariableException;
+use CodeInspector\Exception\UndefinedConstantException;
+use CodeInspector\Exception\UndefinedFunctionException;
+use CodeInspector\Exception\UndefinedPropertyException;
+use CodeInspector\Exception\UndefinedVariableException;
+
 class StatementsChecker
 {
     protected $_stmts;
@@ -177,7 +190,7 @@ class StatementsChecker
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 if ($this->_namespace) {
-                    throw new CodeException('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine());
+                    throw new InvalidNamespaceException('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine());
                 }
 
                 $namespace_checker = new NamespaceChecker($stmt, $this->_source);
@@ -671,7 +684,7 @@ class StatementsChecker
             // do nothing
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
-            throw new CodeException('Use of shell_exec', $this->_file_name, $stmt->getLine());
+            throw new ForbiddenCodeException('Use of shell_exec', $this->_file_name, $stmt->getLine());
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Print_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
@@ -685,7 +698,7 @@ class StatementsChecker
     protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1)
     {
         if ($stmt->name === 'this' && $this->_is_static) {
-            throw new CodeException('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine());
+            throw new StaticVariableException('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine());
         }
 
         if (!$this->_check_variables) {
@@ -712,7 +725,7 @@ class StatementsChecker
             }
 
             if (!isset($vars_possibly_in_scope[$stmt->name])) {
-                throw new CodeException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
+                throw new UndefinedVariableException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
 
             } elseif (isset($this->_all_vars[$stmt->name])) {
                 if (!isset($this->_warn_vars[$stmt->name])) {
@@ -724,7 +737,7 @@ class StatementsChecker
                 }
 
             } else {
-                throw new CodeException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
+                throw new UndefinedVariableException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
             }
 
         } else {
@@ -747,12 +760,12 @@ class StatementsChecker
 
                         if (!in_array($stmt->name, $property_names)) {
                             if (!self::_propertyExists($this->_absolute_class . '::' . $stmt->name)) {
-                                throw new CodeException('$this->' . $stmt->name . ' is not defined', $this->_file_name, $stmt->getLine());
+                                throw new UndefinedPropertyException('$this->' . $stmt->name . ' is not defined', $this->_file_name, $stmt->getLine());
                             }
                         }
                     }
                 } else {
-                    throw new CodeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
+                    throw new ScopeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
                 }
             } else {
                 $this->_checkVariable($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
@@ -869,10 +882,10 @@ class StatementsChecker
                         // do nothing
                     }
                     elseif (in_array($return_type, ['string', 'void', 'int'])) {
-                        throw new CodeException('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine());
+                        throw new IteratorException('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine());
                     }
                     elseif ($return_type === 'null') {
-                        throw new CodeException('Cannot iterate over null', $this->_file_name, $stmt->getLine());
+                        throw new IteratorException('Cannot iterate over null', $this->_file_name, $stmt->getLine());
                     }
                     else {
                         if (strpos($return_type, '<') !== false && strpos($return_type, '>') !== false) {
@@ -884,7 +897,7 @@ class StatementsChecker
                             ClassChecker::checkAbsoluteClass($return_type, $stmt, $this->_file_name);
 
                             if (!ClassChecker::classImplements($return_type, 'Traversable')) {
-                                throw new CodeException('Class ' . $return_type . ' does not implement the Traversable interface', $this->_file_name, $stmt->getLine());
+                                throw new IteratorException('Class ' . $return_type . ' does not implement the Traversable interface', $this->_file_name, $stmt->getLine());
                             }
                         }
                     }
@@ -1079,7 +1092,7 @@ class StatementsChecker
                 $this->_checkExpression($stmt->var->name, $vars_in_scope, $vars_possibly_in_scope);
             }
             else if ($stmt->var->name === 'this' && !$this->_class_name) {
-                throw new CodeException('Use of $this in non-class context', $this->_file_name, $stmt->getLine());
+                throw new ScopeException('Use of $this in non-class context', $this->_file_name, $stmt->getLine());
             }
         } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
             $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
@@ -1100,11 +1113,11 @@ class StatementsChecker
                 $absolute_class = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $absolute_class);
 
                 if ($absolute_class === 'null') {
-                    throw new CodeException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine());
+                    throw new InvalidArgumentException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine());
                 }
 
                 if (in_array($absolute_class, ['int', 'bool', 'array'])) {
-                    throw new CodeException('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine());
+                    throw new InvalidArgumentException('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine());
                 }
 
                 if ($absolute_class && $absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
@@ -1149,7 +1162,7 @@ class StatementsChecker
                     $this->registerVariable($use->var, $use->getLine());
 
                 } elseif (!isset($vars_possibly_in_scope[$use->var])) {
-                    throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
+                    throw new UndefinedVariableException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
 
                 } elseif (isset($this->_all_vars[$use->var])) {
                     if (!isset($this->_warn_vars[$use->var])) {
@@ -1161,7 +1174,7 @@ class StatementsChecker
                     }
 
                 } else {
-                    throw new CodeException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
+                    throw new UndefinedVariableException('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine());
                 }
             }
         }
@@ -1181,7 +1194,7 @@ class StatementsChecker
         if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($stmt->class->parts[0] === 'parent') {
                 if ($this->_class_extends === null) {
-                    throw new CodeException('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine());
+                    throw new ParentNotFoundException('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine());
                 }
 
                 $absolute_class = $this->_class_extends;
@@ -1212,13 +1225,13 @@ class StatementsChecker
 
             if ($this->_is_static) {
                 if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
-                    throw new CodeException('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine());
+                    throw new StaticInvocationException('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine());
                 }
             }
             else {
                 if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
                     if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
-                        throw new CodeException('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine());
+                        throw new StaticInvocationException('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine());
                     }
                 }
             }
@@ -1341,7 +1354,7 @@ class StatementsChecker
             $const_id = $absolute_class . '::' . $stmt->name;
 
             if (!defined($const_id)) {
-                throw new CodeException('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine());
+                throw new UndefinedConstantException('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine());
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Expr) {
             $this->_checkExpression($stmt->class, $vars_in_scope, $vars_possibly_in_scope);
@@ -1374,7 +1387,7 @@ class StatementsChecker
             $var_id = $absolute_class . '::$' . $stmt->name;
 
             if (!self::_staticVarExists($var_id)) {
-                throw new CodeException('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine());
+                throw new UndefinedVariableException('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine());
             }
         }
     }
@@ -1553,7 +1566,7 @@ class StatementsChecker
 
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
                 if (FileChecker::shouldCheckVarDumps($this->_file_name)) {
-                    throw new CodeException('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine());
+                    throw new ForbiddenCodeException('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine());
                 }
             }
         }
@@ -1662,7 +1675,7 @@ class StatementsChecker
             (new \ReflectionFunction($method_id));
         }
         catch (\ReflectionException $e) {
-            throw new CodeException('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
+            throw new UndefinedFunctionException('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine());
         }
 
         self::$_existing_functions[$method_id] = 1;
