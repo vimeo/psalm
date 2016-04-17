@@ -15,6 +15,7 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_declaring_classes = [];
     protected static $_existing_methods = [];
     protected static $_have_reflected = [];
+    protected static $_method_custom_calls = [];
 
     const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\[\]]+)';
 

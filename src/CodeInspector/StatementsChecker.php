@@ -31,7 +31,6 @@ class StatementsChecker
     protected $_require_file_name = null;
 
     protected static $_method_call_index = [];
-    protected static $_method_custom_calls = [];
     protected static $_existing_functions = [];
     protected static $_reflection_functions = [];
 
@@ -1132,37 +1131,6 @@ class StatementsChecker
                         $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
 
                         $stmt->returnType = implode('|', $return_types);
-                    }
-
-                    if (!empty(self::$_method_custom_calls[$method_id])) {
-                        foreach (self::$_method_custom_calls[$method_id] as $inner_call) {
-                            $new_method_id = self::_getMethodFromCallBlock($inner_call, $stmt->args, $method_id);
-
-                            if ($new_method_id) {
-                                try {
-                                    ClassMethodChecker::checkMethodExists($new_method_id, $this->_file_name, $stmt);
-                                }
-                                catch (CodeException $e) {
-                                    /*throw $e;
-                                    if (count($stmt->args) > 1) {
-                                        throw $e;
-                                    }
-
-                                    list($new_method_class, $new_method) = explode('::', $new_method_id);
-
-                                    $view_file = str_replace('Vimeo\\Controller\\', '', $new_method_class);
-                                    $view_file = strtolower(str_replace('Controller', '', $view_file));
-
-                                    $view_file = str_replace('\\', '/', $view_file);
-
-                                    $view_file = 'views_v6/' . $view_file . '/view.' . str_replace('/', '.', $view_file) . '.' . $new_method . '.phtml';
-
-                                    if (!file_exists('/vagrant/' . $view_file)) {
-                                        throw new CodeException('Method ' . $new_method_id . ' does not have a view file', $this->_file_name, $stmt->getLine());
-                                    }*/
-                                }
-                            }
-                        }
                     }
                 }
             }
