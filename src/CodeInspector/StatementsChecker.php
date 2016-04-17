@@ -28,6 +28,8 @@ class StatementsChecker
 
     protected $_available_functions = [];
 
+    protected $_require_file_name = null;
+
     protected static $_method_call_index = [];
     protected static $_method_custom_calls = [];
     protected static $_existing_functions = [];
@@ -174,6 +176,13 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 // do nothing
 
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                if ($this->_namespace) {
+                    throw new CodeException('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine());
+                }
+
+                $namespace_checker = new NamespaceChecker($stmt, $this->_source);
+                $namespace_checker->check(true);
             } else {
                 var_dump('Unrecognised statement in ' . $this->_file_name);
                 var_dump($stmt);
@@ -634,6 +643,7 @@ class StatementsChecker
                 if (file_exists($path_to_file)) {
                     $include_stmts = FileChecker::getStatements($path_to_file);
 
+                    $this->_require_file_name = $path_to_file;
                     $this->check($include_stmts, $vars_in_scope, $vars_possibly_in_scope);
                     return;
                 }
@@ -1202,6 +1212,10 @@ class StatementsChecker
 
         if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($stmt->class->parts[0] === 'parent') {
+                if ($this->_class_extends === null) {
+                    throw new CodeException('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine());
+                }
+
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($this->_class_extends, $this->_namespace, $this->_aliased_classes);
             } else {
                 $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
