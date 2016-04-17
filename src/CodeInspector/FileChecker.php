@@ -167,9 +167,9 @@ class FileChecker implements StatementsSource
         return !self::$_class_property_fn || call_user_func(self::$_class_property_fn, $file_name, $class_checker);
     }
 
-    public function registerFunction(PhpParser\Node\Stmt\Function_ $function, $absolute_class = null)
+    public function registerFunction(PhpParser\Node\Stmt\Function_ $function)
     {
-        $function_name = ($absolute_class ? $absolute_class . '::' : '') . $function->name;
+        $function_name = $function->name;
 
         $this->_function_params[$function_name] = [];
 

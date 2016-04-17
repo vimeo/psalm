@@ -66,7 +66,7 @@ class StatementsChecker
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $file_checker = FileChecker::getFileCheckerFromFileName($this->_file_name);
-                $file_checker->registerFunction($stmt, $this->_absolute_class);
+                $file_checker->registerFunction($stmt);
             }
         }
 
