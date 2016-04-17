@@ -229,7 +229,7 @@ class ClassChecker implements StatementsSource
 
     protected function _registerInheritedMethods()
     {
-        if (!isset($_class_methods[$this->_parent_class])) {
+        if (!isset(self::$_class_methods[$this->_parent_class])) {
             $class_methods = [];
 
             $reflection_class = new ReflectionClass($this->_parent_class);
@@ -237,17 +237,19 @@ class ClassChecker implements StatementsSource
             $reflection_methods = $reflection_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
 
             foreach ($reflection_methods as $reflection_method) {
-                $class_methods[] = $reflection_method->getName();
+                $method_name = $reflection_method->getName();
+                $class_methods[] = $method_name;
             }
+
+            self::$_class_methods[$this->_parent_class] = $class_methods;
         }
         else {
-            $class_methods = $_class_methods[$this->_parent_class];
+            $class_methods = self::$_class_methods[$this->_parent_class];
         }
 
         foreach ($class_methods as $method_name) {
             $parent_class_method = $this->_parent_class . '::' . $method_name;
-            ClassMethodChecker::extractReflectionMethodInfo($parent_class_method);
-            ClassMethodChecker::copyToChildMethod($parent_class_method, $this->_absolute_class . '::' . $method_name);
+            ClassMethodChecker::registerInheritedMethod($this->_parent_class . '::' . $method_name, $this->_absolute_class . '::' . $method_name);
         }
     }
 }

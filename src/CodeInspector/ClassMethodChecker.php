@@ -15,7 +15,9 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_declaring_classes = [];
     protected static $_existing_methods = [];
     protected static $_have_reflected = [];
+    protected static $_have_registered = [];
     protected static $_method_custom_calls = [];
+    protected static $_inherited_methods = [];
 
     const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\[\]]+)';
 
@@ -29,7 +31,12 @@ class ClassMethodChecker extends FunctionChecker
     public static function getMethodParams($method_id)
     {
         if (!isset(self::$_method_params[$method_id])) {
-            self::extractReflectionMethodInfo($method_id);
+            if (isset(self::$_inherited_methods[$method_id])) {
+                self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
+            }
+            else {
+                self::extractReflectionMethodInfo($method_id);
+            }
         }
 
         return self::$_method_params[$method_id];
@@ -38,7 +45,12 @@ class ClassMethodChecker extends FunctionChecker
     public static function getMethodReturnTypes($method_id)
     {
         if (!isset(self::$_method_return_types[$method_id])) {
-            self::extractReflectionMethodInfo($method_id);
+            if (isset(self::$_inherited_methods[$method_id])) {
+                self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
+            }
+            else {
+                self::extractReflectionMethodInfo($method_id);
+            }
         }
 
         $return_types = self::$_method_return_types[$method_id];
@@ -130,12 +142,17 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_return_types[$method_id] = $return_types;
     }
 
-    public static function copyToChildMethod($method_id, $child_method_id)
+    protected static function _copyToChildMethod($method_id, $child_method_id)
     {
+        if (!isset(self::$_have_registered[$method_id]) && !isset(self::$_have_reflected[$method_id])) {
+            self::extractReflectionMethodInfo($method_id);
+        }
+
         self::$_method_files[$child_method_id] = self::$_method_files[$method_id];
         self::$_method_params[$child_method_id] = self::$_method_params[$method_id];
         self::$_method_namespaces[$child_method_id] = self::$_method_namespaces[$method_id];
         self::$_method_return_types[$child_method_id] = self::$_method_return_types[$method_id];
+        self::$_static_methods[$child_method_id] = self::$_static_methods[$method_id];
 
         self::$_declaring_classes[$child_method_id] = self::$_declaring_classes[$method_id];
         self::$_existing_methods[$child_method_id] = 1;
@@ -149,7 +166,12 @@ class ClassMethodChecker extends FunctionChecker
     public static function isGivenMethodStatic($method_id)
     {
         if (!isset(self::$_static_methods[$method_id])) {
-            self::extractReflectionMethodInfo($method_id);
+            if (isset(self::$_inherited_methods[$method_id])) {
+                self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
+            }
+            else {
+                self::extractReflectionMethodInfo($method_id);
+            }
         }
 
         return self::$_static_methods[$method_id];
@@ -158,6 +180,7 @@ class ClassMethodChecker extends FunctionChecker
     protected function _registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
         $method_id = $this->_absolute_class . '::' . $method->name;
+        self::$_have_registered[$method_id] = true;
 
         self::$_declaring_classes[$method_id] = $this->_absolute_class;
         self::$_static_methods[$method_id] = $method->isStatic();
@@ -317,5 +340,11 @@ class ClassMethodChecker extends FunctionChecker
         } catch (\ReflectionException $e) {
             throw new CodeException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
         }
+    }
+
+    public static function registerInheritedMethod($parent_method_id, $method_id)
+    {
+        self::$_inherited_methods[$method_id] = $parent_method_id;
+        self::$_existing_methods[$method_id] = 1;
     }
 }

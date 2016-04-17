@@ -1564,7 +1564,7 @@ class StatementsChecker
             $method_id = implode('', $stmt->name->parts);
 
             if ($this->_absolute_class) {
-                $method_id = $this->_absolute_class . '::' . $method_id;
+                //$method_id = $this->_absolute_class . '::' . $method_id;
             }
 
             $this->_checkFunctionExists($method_id, $stmt);
