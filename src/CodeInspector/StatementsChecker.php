@@ -1137,6 +1137,7 @@ class StatementsChecker
                     }
 
                     ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
+                    ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine());
 
                     $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
@@ -1222,6 +1223,7 @@ class StatementsChecker
             }
 
             ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
+            ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine());
 
             if ($this->_is_static) {
                 if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {

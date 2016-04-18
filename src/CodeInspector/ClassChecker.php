@@ -60,9 +60,12 @@ class ClassChecker implements StatementsSource
 
         $method_checkers = [];
 
+        self::$_class_methods[$this->_absolute_class] = [];
+
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_checkers[] = new ClassMethodChecker($stmt, $this);
+                self::$_class_methods[$this->_absolute_class][] = $stmt->name;
 
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {

@@ -3,6 +3,7 @@
 namespace CodeInspector;
 
 use CodeInspector\Exception\UndefinedMethodException;
+use CodeInspector\Exception\InaccessibleMethodException;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
@@ -19,6 +20,11 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_have_registered = [];
     protected static $_method_custom_calls = [];
     protected static $_inherited_methods = [];
+    protected static $_method_visibility = [];
+
+    const VISIBILITY_PUBLIC = 1;
+    const VISIBILITY_PROTECTED = 2;
+    const VISIBILITY_PRIVATE = 3;
 
     const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\[\]]+)';
 
@@ -31,28 +37,14 @@ class ClassMethodChecker extends FunctionChecker
 
     public static function getMethodParams($method_id)
     {
-        if (!isset(self::$_method_params[$method_id])) {
-            if (isset(self::$_inherited_methods[$method_id])) {
-                self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
-            }
-            else {
-                self::extractReflectionMethodInfo($method_id);
-            }
-        }
+        self::_populateData($method_id);
 
         return self::$_method_params[$method_id];
     }
 
     public static function getMethodReturnTypes($method_id)
     {
-        if (!isset(self::$_method_return_types[$method_id])) {
-            if (isset(self::$_inherited_methods[$method_id])) {
-                self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
-            }
-            else {
-                self::extractReflectionMethodInfo($method_id);
-            }
-        }
+        self::_populateData($method_id);
 
         $return_types = self::$_method_return_types[$method_id];
 
@@ -72,6 +64,9 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_files[$method_id] = $method->getFileName();
         self::$_method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
         self::$_declaring_classes[$method_id] = $method->getDeclaringClass()->name;
+        self::$_method_visibility[$method_id] = $method->isPrivate() ?
+                                                    self::VISIBILITY_PRIVATE :
+                                                    ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
 
         $params = $method->getParameters();
 
@@ -149,14 +144,17 @@ class ClassMethodChecker extends FunctionChecker
             self::extractReflectionMethodInfo($method_id);
         }
 
-        self::$_method_files[$child_method_id] = self::$_method_files[$method_id];
-        self::$_method_params[$child_method_id] = self::$_method_params[$method_id];
-        self::$_method_namespaces[$child_method_id] = self::$_method_namespaces[$method_id];
-        self::$_method_return_types[$child_method_id] = self::$_method_return_types[$method_id];
-        self::$_static_methods[$child_method_id] = self::$_static_methods[$method_id];
+        if (self::$_method_visibility[$method_id] !== self::VISIBILITY_PRIVATE) {
+            self::$_method_files[$child_method_id] = self::$_method_files[$method_id];
+            self::$_method_params[$child_method_id] = self::$_method_params[$method_id];
+            self::$_method_namespaces[$child_method_id] = self::$_method_namespaces[$method_id];
+            self::$_method_return_types[$child_method_id] = self::$_method_return_types[$method_id];
+            self::$_static_methods[$child_method_id] = self::$_static_methods[$method_id];
+            self::$_method_visibility[$child_method_id] = self::$_method_visibility[$method_id];
 
-        self::$_declaring_classes[$child_method_id] = self::$_declaring_classes[$method_id];
-        self::$_existing_methods[$child_method_id] = 1;
+            self::$_declaring_classes[$child_method_id] = self::$_declaring_classes[$method_id];
+            self::$_existing_methods[$child_method_id] = 1;
+        }
     }
 
     /**
@@ -166,14 +164,7 @@ class ClassMethodChecker extends FunctionChecker
      */
     public static function isGivenMethodStatic($method_id)
     {
-        if (!isset(self::$_static_methods[$method_id])) {
-            if (isset(self::$_inherited_methods[$method_id])) {
-                self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
-            }
-            else {
-                self::extractReflectionMethodInfo($method_id);
-            }
-        }
+        self::_populateData($method_id);
 
         return self::$_static_methods[$method_id];
     }
@@ -190,6 +181,9 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_namespaces[$method_id] = $this->_namespace;
         self::$_method_files[$method_id] = $this->_file_name;
         self::$_existing_methods[$method_id] = 1;
+        self::$_method_visibility[$method_id] = $method->isPrivate() ?
+                                                    self::VISIBILITY_PRIVATE :
+                                                    ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
 
         $comments = StatementsChecker::parseDocComment($method->getDocComment());
 
@@ -333,19 +327,65 @@ class ClassMethodChecker extends FunctionChecker
             return;
         }
 
-        try {
-            new \ReflectionMethod($method_id);
+        $method_parts = explode('::', $method_id);
+
+        if (method_exists($method_parts[0], $method_parts[1])) {
             self::$_existing_methods[$method_id] = 1;
             return;
+        }
 
-        } catch (\ReflectionException $e) {
-            throw new UndefinedMethodException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
+        throw new UndefinedMethodException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
+    }
+
+    protected static function _populateData($method_id)
+    {
+        if (!isset(self::$_have_registered[$method_id]) && !isset(self::$_have_registered[$method_id])) {
+            if (isset(self::$_inherited_methods[$method_id])) {
+                self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
+            }
+            else {
+                self::extractReflectionMethodInfo($method_id);
+            }
+        }
+    }
+
+    public static function checkMethodVisibility($method_id, $calling_context, $file_name, $line_number)
+    {
+        self::_populateData($method_id);
+
+        $method_class = explode('::', $method_id)[0];
+
+        if (!isset(self::$_method_visibility[$method_id])) {
+            throw new InaccessibleMethodException('Cannot access method ' . $method_id, $file_name, $line_number);
+        }
+
+        switch (self::$_method_visibility[$method_id]) {
+            case self::VISIBILITY_PUBLIC:
+                return;
+
+            case self::VISIBILITY_PRIVATE:
+                if (!$calling_context || $method_class !== $calling_context) {
+                    throw new InaccessibleMethodException('Cannot access private method ' . $method_id, $file_name, $line_number);
+                }
+                return;
+
+            case self::VISIBILITY_PROTECTED:
+                if ($method_class === $calling_context) {
+                    return;
+                }
+
+                if (!$calling_context) {
+                    throw new InaccessibleMethodException('Cannot access protected method ' . $method_id, $file_name, $line_number);
+                }
+
+                if (!is_subclass_of($calling_context, $method_class)) {
+                    throw new InaccessibleMethodException('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number);
+                }
         }
     }
 
     public static function registerInheritedMethod($parent_method_id, $method_id)
     {
         self::$_inherited_methods[$method_id] = $parent_method_id;
-        self::$_existing_methods[$method_id] = 1;
     }
 }
