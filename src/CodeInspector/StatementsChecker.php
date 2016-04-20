@@ -752,8 +752,9 @@ class StatementsChecker
     {
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if ($stmt->var->name === 'this') {
-                $class_checker = $this->_source->getClassChecker();
-                if ($class_checker) {
+                if (!FileChecker::shouldCheckClassProperties($this->_file_name)) {
+                    // ignore this property
+                } elseif ($class_checker = $this->_source->getClassChecker()) {
                     if (is_string($stmt->name)) {
                         $property_names = $class_checker->getPropertyNames();
 
@@ -894,10 +895,6 @@ class StatementsChecker
 
                         if ($return_type !== 'array' && $return_type !== 'Traversable' && $return_type !== $this->_class_name) {
                             ClassChecker::checkAbsoluteClass($return_type, $stmt, $this->_file_name);
-
-                            if (!ClassChecker::classImplements($return_type, 'Traversable')) {
-                                throw new IteratorException('Class ' . $return_type . ' does not implement the Traversable interface', $this->_file_name, $stmt->getLine());
-                            }
                         }
                     }
                 }
