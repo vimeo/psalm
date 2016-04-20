@@ -1252,27 +1252,33 @@ class StatementsChecker
         $absolute_class = explode('::', $method_id)[0];
 
         foreach ($return_types as &$return_type) {
-            if ($return_type === '$this' || $return_type === 'static') {
-                $return_type = $absolute_class;
-            }
-            else if ($return_type[0] === '$') {
-                $method_params = ClassMethodChecker::getMethodParams($method_id);
+            $return_type_parts = TypeChecker::tokenize($return_type);
 
-                foreach ($args as $i => $arg) {
-                    $method_param = $method_params[$i];
+            foreach ($return_type_parts as &$return_type_part) {
+                if ($return_type_part === '$this' || $return_type_part === 'static') {
+                    $return_type_part = $absolute_class;
+                }
+                else if ($return_type_part[0] === '$') {
+                    $method_params = ClassMethodChecker::getMethodParams($method_id);
 
-                    if ($return_type === '$' . $method_param['name']) {
-                        if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
-                            $return_type = $arg->value->value;
-                            break;
+                    foreach ($args as $i => $arg) {
+                        $method_param = $method_params[$i];
+
+                        if ($return_type_part === '$' . $method_param['name']) {
+                            if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
+                                $return_type_part = $arg->value->value;
+                                break;
+                            }
                         }
                     }
-                }
 
-                if ($return_type[0] === '$') {
-                    $return_type = 'mixed';
+                    if ($return_type_part[0] === '$') {
+                        $return_type_part = 'mixed';
+                    }
                 }
             }
+
+            $return_type = implode('', $return_type_parts);
         }
 
         return $return_types;
