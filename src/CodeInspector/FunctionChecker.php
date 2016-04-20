@@ -30,12 +30,6 @@ class FunctionChecker implements StatementsSource
         $this->_file_name = $source->getFileName();
         $this->_absolute_class = $source->getAbsoluteClass();
         $this->_source = $source;
-
-        if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
-            $this->_is_static = $function->isStatic();
-        }
-
-        $this->_statements_checker = new StatementsChecker($this, substr($this->_file_name, -4) === '.php');
     }
 
     public function check($extra_scope_vars = [])
@@ -43,6 +37,8 @@ class FunctionChecker implements StatementsSource
         if ($this->_function->stmts) {
             $vars_in_scope = $extra_scope_vars;
             $vars_possibly_in_scope = $extra_scope_vars;
+
+            $statements_checker = new StatementsChecker($this, substr($this->_file_name, -4) === '.php');
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {
@@ -60,7 +56,7 @@ class FunctionChecker implements StatementsSource
 
                 $vars_in_scope[$param->name] = true;
                 $vars_possibly_in_scope[$param->name] = true;
-                $this->_statements_checker->registerVariable($param->name, $param->getLine());
+                $statements_checker->registerVariable($param->name, $param->getLine());
 
                 if ($param->type && is_object($param->type)) {
                     $vars_in_scope[$param->name] =
@@ -74,7 +70,7 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            $this->_statements_checker->check($this->_function->stmts, $vars_in_scope, $vars_possibly_in_scope);
+            $statements_checker->check($this->_function->stmts, $vars_in_scope, $vars_possibly_in_scope);
         }
     }
 
