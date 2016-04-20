@@ -32,7 +32,10 @@ class ClassMethodChecker extends FunctionChecker
     {
         parent::__construct($function, $source);
 
-        $this->_registerMethod($function);
+        if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
+            $this->_registerMethod($function);
+            $this->_is_static = $function->isStatic();
+        }
     }
 
     public static function getMethodParams($method_id)
