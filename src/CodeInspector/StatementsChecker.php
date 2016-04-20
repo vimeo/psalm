@@ -12,6 +12,7 @@ use CodeInspector\Exception\ParentNotFoundException;
 use CodeInspector\Exception\ScopeException;
 use CodeInspector\Exception\StaticInvocationException;
 use CodeInspector\Exception\StaticVariableException;
+use CodeInspector\Exception\TypeResolutionException;
 use CodeInspector\Exception\UndefinedConstantException;
 use CodeInspector\Exception\UndefinedFunctionException;
 use CodeInspector\Exception\UndefinedPropertyException;
@@ -752,9 +753,7 @@ class StatementsChecker
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if ($stmt->var->name === 'this') {
                 $class_checker = $this->_source->getClassChecker();
-                if (!FileChecker::shouldCheckClassProperties($this->_file_name, $class_checker)) {
-                    // do nothing
-                } elseif ($class_checker) {
+                if ($class_checker) {
                     if (is_string($stmt->name)) {
                         $property_names = $class_checker->getPropertyNames();
 
@@ -1054,6 +1053,8 @@ class StatementsChecker
                 $vars_in_scope[$var_name] = 'mixed';
             }
 
+        } elseif ($expr->returnType === 'void') {
+            throw new TypeResolutionException('Cannot assign $' . $var_name . ' to type void', $this->_file_name, $expr->getLine());
         } elseif (isset($vars_in_scope[$var_name]) && is_string($vars_in_scope[$var_name])) {
             $existing_type = $vars_in_scope[$var_name];
 
@@ -1327,7 +1328,7 @@ class StatementsChecker
 
             if ($method_id && isset($arg->value->returnType)) {
                 foreach (explode('|', $arg->value->returnType) as $return_type) {
-                    TypeChecker::check($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine());
+                    TypeChecker::checkMethodParam($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine());
                 }
 
             }

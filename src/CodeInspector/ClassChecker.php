@@ -52,12 +52,6 @@ class ClassChecker implements StatementsSource
 
         $leftover_stmts = [];
 
-        try {
-            new ReflectionMethod($this->_absolute_class . '::__get');
-            $this->_has_custom_get = true;
-
-        } catch (ReflectionException $e) {}
-
         $method_checkers = [];
 
         self::$_class_methods[$this->_absolute_class] = [];
@@ -75,6 +69,10 @@ class ClassChecker implements StatementsSource
                 }
                 $leftover_stmts[] = $stmt;
             }
+        }
+
+        if (method_exists($this->_absolute_class, '__get')) {
+            $this->_has_custom_get = true;
         }
 
         if ($leftover_stmts) {

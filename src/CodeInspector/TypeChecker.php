@@ -22,10 +22,14 @@ class TypeChecker
         $this->_checker = $statements_checker;
     }
 
-    public static function check($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
+    public static function checkMethodParam($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
     {
         if ($return_type === 'mixed') {
             return true;
+        }
+
+        if ($return_type === 'void') {
+            throw new TypeResolutionException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be void, but possibly void value was supplied', $file_name, $line_number);
         }
 
         $method_params = ClassMethodChecker::getMethodParams($method_id);
