@@ -208,7 +208,6 @@ class StatementsChecker
         $this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope);
 
         $if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
-        $elseif_types = [];
 
         $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
 
@@ -278,6 +277,9 @@ class StatementsChecker
 
             if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)) {
                 $negated_types = array_merge($negated_types, TypeChecker::negateTypes($elseif_types));
+            }
+            else {
+                $elseif_vars = TypeChecker::reconcileTypes($elseif_types, $elseif_vars, true, $this->_file_name, $stmt->getLine());
             }
 
             $this->_checkElseIf($elseif, $elseif_vars, $elseif_vars_possibly_in_scope, $for_vars_possibly_in_scope);
