@@ -68,7 +68,7 @@ class ClassMethodChecker extends FunctionChecker
                             continue;
                         }
 
-                        $token = '\\' . $return_type;
+                        $token = '\\' . $token;
                     }
 
                     return implode('', $type_tokens);
