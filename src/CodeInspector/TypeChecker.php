@@ -22,6 +22,9 @@ class TypeChecker
         $this->_checker = $statements_checker;
     }
 
+    /**
+     * @return bool
+     */
     public static function checkMethodParam($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
     {
         if ($return_type === 'mixed') {
@@ -341,6 +344,9 @@ class TypeChecker
         return null;
     }
 
+    /**
+     * @return bool
+     */
     protected static function _hasNullCheck(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_null']) {
@@ -350,6 +356,9 @@ class TypeChecker
         return false;
     }
 
+    /**
+     * @return bool
+     */
     protected static function _hasArrayCheck(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_array']) {
@@ -449,6 +458,9 @@ class TypeChecker
         }, $types);
     }
 
+    /**
+     * @return array
+     */
     public static function tokenize($return_type)
     {
         $return_type_tokens = [''];

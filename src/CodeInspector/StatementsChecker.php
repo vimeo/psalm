@@ -505,6 +505,9 @@ class StatementsChecker
         }
     }
 
+    /**
+     * @return void
+     */
     protected function _checkExpression(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope = [])
     {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
@@ -727,6 +730,9 @@ class StatementsChecker
         }
     }
 
+    /**
+     * @return void
+     */
     protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1)
     {
         if ($stmt->name === 'this' && $this->_is_static) {
@@ -1228,6 +1234,9 @@ class StatementsChecker
         }
     }
 
+    /**
+     * @return void
+     */
     protected function _checkStaticCall(PhpParser\Node\Expr\StaticCall $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -1423,6 +1432,9 @@ class StatementsChecker
         }
     }
 
+    /**
+     * @return void
+     */
     protected function _checkStaticPropertyFetch(PhpParser\Node\Expr\StaticPropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -1727,6 +1739,9 @@ class StatementsChecker
         return isset(self::$_existing_properties[$property_id]);
     }
 
+    /**
+     * @return void
+     */
     public function _checkFunctionExists($method_id, $stmt)
     {
         if (isset(self::$_existing_functions[$method_id])) {
@@ -1852,6 +1867,9 @@ class StatementsChecker
         return array('description' => $docblock, 'specials' => $special);
     }
 
+    /**
+     * @return string
+     */
     public static function renderDocComment(array $parsed_doc_comment)
     {
         $doc_comment_text = '/**' . PHP_EOL;
@@ -1920,6 +1938,9 @@ class StatementsChecker
         self::$_check_string_fn = $function;
     }
 
+    /**
+     * @return string
+     */
     public static function findEntryPoints($method_id)
     {
         $output = 'Entry points for ' . $method_id;
@@ -2026,6 +2047,9 @@ class StatementsChecker
         return null;
     }
 
+    /**
+     * @return string
+     */
     protected static function _resolveIncludePath($file_name, $current_directory)
     {
         $paths = PATH_SEPARATOR == ':' ?
@@ -2114,6 +2138,9 @@ class StatementsChecker
         return false;
     }
 
+    /**
+     * @return bool
+     */
     protected static function _containsBooleanOr(PhpParser\Node\Expr\BinaryOp $stmt)
     {
         // we only want to discount expressions where either the whole thing is an or

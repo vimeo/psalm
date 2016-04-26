@@ -39,6 +39,9 @@ class ClassMethodChecker extends FunctionChecker
         }
     }
 
+    /**
+     * @return void
+     */
     public function checkEffects()
     {
         if (!isset(self::$_new_docblocks[$this->_file_name])) {
@@ -107,6 +110,9 @@ class ClassMethodChecker extends FunctionChecker
         return $return_types;
     }
 
+    /**
+     * @return void
+     */
     public static function extractReflectionMethodInfo($method_id)
     {
         if (isset(self::$_have_reflected[$method_id])) {
@@ -377,6 +383,9 @@ class ClassMethodChecker extends FunctionChecker
         return implode('', $return_type_tokens);
     }
 
+    /**
+     * @return void
+     */
     public static function checkMethodExists($method_id, $file_name, $stmt)
     {
         if (isset(self::$_existing_methods[$method_id])) {
@@ -405,6 +414,9 @@ class ClassMethodChecker extends FunctionChecker
         }
     }
 
+    /**
+     * @return void
+     */
     public static function checkMethodVisibility($method_id, $calling_context, $file_name, $line_number)
     {
         self::_populateData($method_id);

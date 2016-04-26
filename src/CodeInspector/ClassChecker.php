@@ -89,6 +89,9 @@ class ClassChecker implements StatementsSource
         }
     }
 
+    /**
+     * @return void
+     */
     public static function checkClassName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes, $file_name)
     {
         if ($class_name->parts[0] === 'static') {
@@ -100,6 +103,9 @@ class ClassChecker implements StatementsSource
         self::checkAbsoluteClass($absolute_class, $class_name, $file_name);
     }
 
+    /**
+     * @return void
+     */
     public static function checkAbsoluteClass($absolute_class, PhpParser\NodeAbstract $stmt, $file_name)
     {
         if (empty($absolute_class)) {
@@ -195,6 +201,9 @@ class ClassChecker implements StatementsSource
         return $this;
     }
 
+    /**
+     * @return bool
+     */
     public function isStatic()
     {
         return false;
@@ -210,6 +219,9 @@ class ClassChecker implements StatementsSource
         return $this->_class_properties;
     }
 
+    /**
+     * @return bool
+     */
     public function classImplements($absolute_class, $interface)
     {
         if (isset($_implementing_classes[$absolute_class][$interface])) {

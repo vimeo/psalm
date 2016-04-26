@@ -71,21 +71,33 @@ class NamespaceChecker implements StatementsSource
         return $this->_aliased_classes;
     }
 
+    /**
+     * @return null
+     */
     public function getAbsoluteClass()
     {
         return null;
     }
 
+    /**
+     * @return null
+     */
     public function getClassName()
     {
         return null;
     }
 
+    /**
+     * @return null
+     */
     public function getClassChecker()
     {
         return null;
     }
 
+    /**
+     * @return null
+     */
     public function getParentClass()
     {
         return null;
@@ -96,6 +108,9 @@ class NamespaceChecker implements StatementsSource
         return $this->_file_name;
     }
 
+    /**
+     * @return bool
+     */
     public function isStatic()
     {
         return false;

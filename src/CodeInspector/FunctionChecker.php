@@ -74,6 +74,9 @@ class FunctionChecker implements StatementsSource
         }
     }
 
+    /**
+     * @return string
+     */
     public function getMethodId()
     {
         return $this->getAbsoluteClass() . '::' . $this->_function->name;

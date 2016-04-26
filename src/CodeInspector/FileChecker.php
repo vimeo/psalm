@@ -114,6 +114,9 @@ class FileChecker implements StatementsSource
         return ClassChecker::getAbsoluteClassFromString($class, $namespace, $aliased_classes);
     }
 
+    /**
+     * @return array<\PhpParser\Node>
+     */
     public static function getStatements($file_name)
     {
         $contents = file_get_contents($file_name);
@@ -163,11 +166,17 @@ class FileChecker implements StatementsSource
         self::$_cache_dir = $cache_dir;
     }
 
+    /**
+     * @return bool
+     */
     public static function shouldCheckVarDumps($file_name)
     {
         return !self::$_var_dump_fn || call_user_func(self::$_var_dump_fn, $file_name);
     }
 
+    /**
+     * @return bool
+     */
     public static function shouldCheckClassProperties($file_name)
     {
         return !self::$_class_property_fn || call_user_func(self::$_class_property_fn, $file_name);
@@ -184,6 +193,9 @@ class FileChecker implements StatementsSource
         }
     }
 
+    /**
+     * @return null
+     */
     public function getNamespace()
     {
         return null;
@@ -198,6 +210,9 @@ class FileChecker implements StatementsSource
         return $this->_aliased_classes;
     }
 
+    /**
+     * @return null
+     */
     public function getAbsoluteClass()
     {
         return null;
@@ -208,11 +223,17 @@ class FileChecker implements StatementsSource
         return $this->_class_name;
     }
 
+    /**
+     * @return null
+     */
     public function getClassChecker()
     {
         return null;
     }
 
+    /**
+     * @return null
+     */
     public function getParentClass()
     {
         return null;
@@ -223,6 +244,9 @@ class FileChecker implements StatementsSource
         return $this->_file_name;
     }
 
+    /**
+     * @return bool
+     */
     public function isStatic()
     {
         return false;
@@ -238,6 +262,9 @@ class FileChecker implements StatementsSource
         return isset($this->_function_params[$function_name]);
     }
 
+    /**
+     * @return bool
+     */
     public function isPassedByReference($function_name, $argument_offset)
     {
         return $argument_offset < count($this->_function_params[$function_name]) && $this->_function_params[$function_name][$argument_offset];
