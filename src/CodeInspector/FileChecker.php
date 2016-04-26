@@ -82,6 +82,8 @@ class FileChecker implements StatementsSource
             $existing_vars_in_scope = [];
             $statments_checker->check($leftover_stmts, $existing_vars, $existing_vars_in_scope);
         }
+
+        return $stmts;
     }
 
     public function checkWithClass($class_name)

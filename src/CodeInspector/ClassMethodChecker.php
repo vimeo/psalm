@@ -21,6 +21,7 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_method_custom_calls = [];
     protected static $_inherited_methods = [];
     protected static $_method_visibility = [];
+    protected static $_new_docblocks = [];
 
     const VISIBILITY_PUBLIC = 1;
     const VISIBILITY_PROTECTED = 2;
@@ -35,6 +36,52 @@ class ClassMethodChecker extends FunctionChecker
         if ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
             $this->_registerMethod($function);
             $this->_is_static = $function->isStatic();
+        }
+    }
+
+    public function checkEffects()
+    {
+        if (!isset(self::$_new_docblocks[$this->_file_name])) {
+            self::$_new_docblocks[$this->_file_name] = [];
+        }
+
+        if (!$this->_function->stmts) {
+            return;
+        }
+
+        $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts);
+
+        if ($return_types && !in_array('mixed', $return_types)) {
+            $method_id = $this->_absolute_class . '::' . $this->_function->name;
+            $existing_return_types = self::getMethodReturnTypes($method_id);
+            $simple_existing_return_types = array_map(function($value) { return preg_replace('/<.*$/', '', $value);}, $existing_return_types);
+
+            if (count(array_diff($return_types, $simple_existing_return_types)) && count(array_diff($return_types, $existing_return_types))) {
+                $doc_comment = $this->_function->getDocComment();
+
+                // add leading namespace separator to classes
+                $return_types = array_map(function($return_type) {
+                    if (strpos($return_type, '\\') !== false || $return_type[0] === strtoupper($return_type[0])) {
+                        return '\\' . $return_type;
+                    }
+
+                    return $return_type;
+                }, $return_types);
+
+                if ($doc_comment) {
+                    $parsed_doc_comment = StatementsChecker::parseDocComment($doc_comment->getText());
+                    $parsed_doc_comment['specials']['return'] = [implode('|', $return_types)];
+                    $new_doc_comment_text = StatementsChecker::renderDocComment($parsed_doc_comment);
+                }
+                else {
+                    $new_doc_comment_text = "/**\n * @return " . implode('|', $return_types) . "\n */";
+                }
+
+                $start_at = $doc_comment ? $doc_comment->getLine() : $this->_function->getLine();
+                $old_line_count = $doc_comment ? substr_count($doc_comment->getText(), PHP_EOL) + 1 : 0;
+
+                self::$_new_docblocks[$this->_file_name][$start_at] = ['new_text' => $new_doc_comment_text, 'old_line_count' => $old_line_count];
+            }
         }
     }
 
@@ -163,7 +210,7 @@ class ClassMethodChecker extends FunctionChecker
     /**
      * Determines whether a given method is static or not
      * @param  string  $method_id
-     * @return boolean
+     * @return bool
      */
     public static function isGivenMethodStatic($method_id)
     {
@@ -390,5 +437,10 @@ class ClassMethodChecker extends FunctionChecker
     public static function registerInheritedMethod($parent_method_id, $method_id)
     {
         self::$_inherited_methods[$method_id] = $parent_method_id;
+    }
+
+    public static function getNewDocblocksForFile($file_name)
+    {
+        return isset(self::$_new_docblocks[$file_name]) ? self::$_new_docblocks[$file_name] : [];
     }
 }
