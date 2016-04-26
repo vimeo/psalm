@@ -232,6 +232,8 @@ class StatementsChecker
         $new_vars_possibly_in_scope = [];
         $redefined_vars = null;
 
+        $post_type_assertions = [];
+
         if (count($stmt->stmts)) {
             $has_leaving_statments = self::_doesLeaveBlock($stmt->stmts, true);
 
@@ -245,6 +247,9 @@ class StatementsChecker
                         $redefined_vars[$if_var] = $if_vars[$if_var];
                     }
                 }
+            }
+            else {
+                $post_type_assertions = $negated_types;
             }
 
             $has_ending_statments = self::_doesLeaveBlock($stmt->stmts, false);
@@ -317,6 +322,9 @@ class StatementsChecker
                             }
                         }
                     }
+                }
+                else {
+                    $post_type_assertions = $negated_types;
                 }
 
                 // has a return/throw at end
@@ -435,6 +443,20 @@ class StatementsChecker
                 }
             }
         }
+        else if ($redefined_vars) {
+            foreach ($redefined_vars as $var => $type) {
+                if (is_string($vars_in_scope[$var]) && is_string($type)) {
+                    $vars_in_scope[$var] .= '|' . $type;
+                }
+                else {
+                    $vars_in_scope[$var] = 'mixed';
+                }
+            }
+        }
+
+        if ($post_type_assertions) {
+            $vars_in_scope = TypeChecker::reconcileTypes($post_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+        }
     }
 
     protected function _checkElseIf(PhpParser\Node\Stmt\ElseIf_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
@@ -507,6 +529,7 @@ class StatementsChecker
             if (self::$_check_string_fn) {
                 call_user_func(self::$_check_string_fn, $stmt, $this->_file_name);
             }
+            $stmt->returnType = 'string';
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
@@ -515,10 +538,10 @@ class StatementsChecker
             // do nothing
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            // do nothing
+            $stmt->returnType = 'int';
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            // do nothing
+            $stmt->returnType = 'float';
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
@@ -588,21 +611,27 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            $stmt->returnType = 'int';
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            $stmt->returnType = 'double';
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            $stmt->returnType = 'bool';
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            $stmt->returnType = 'string';
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            $stmt->returnType = 'object';
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            $stmt->returnType = 'array';
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
@@ -964,6 +993,10 @@ class StatementsChecker
             $this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope);
         }
         else {
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+                $stmt->returnType = 'string';
+            }
+
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
                 $this->_checkBinaryOp($stmt->left, $vars_in_scope, $vars_possibly_in_scope, ++$nesting);
             }
@@ -977,6 +1010,20 @@ class StatementsChecker
             else {
                 $this->_checkExpression($stmt->right, $vars_in_scope, $vars_possibly_in_scope);
             }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+        ) {
+            $stmt->returnType = 'bool';
         }
     }
 
@@ -1343,8 +1390,15 @@ class StatementsChecker
     protected function _checkConstFetch(PhpParser\Node\Expr\ConstFetch $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name) {
-            if ($stmt->name->parts === ['null']) {
-                $stmt->returnType = 'null';
+            switch ($stmt->name->parts) {
+                case ['null']:
+                    $stmt->returnType = 'null';
+                    break;
+
+                case ['true']:
+                case ['false']:
+                    $stmt->returnType = 'bool';
+                    break;
             }
         }
     }
@@ -1404,6 +1458,16 @@ class StatementsChecker
     {
         if ($stmt->expr) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+
+            if (isset($stmt->expr->returnType)) {
+                $stmt->returnType = $stmt->expr->returnType;
+            }
+            else {
+                $stmt->returnType = 'mixed';
+            }
+        }
+        else {
+            $stmt->returnType = 'void';
         }
     }
 
@@ -1786,6 +1850,38 @@ class StatementsChecker
         $docblock = preg_replace('/^\s*\n/', '', $docblock);
 
         return array('description' => $docblock, 'specials' => $special);
+    }
+
+    public static function renderDocComment(array $parsed_doc_comment)
+    {
+        $doc_comment_text = '/**' . PHP_EOL;
+
+        $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
+
+        foreach ($description_lines as $line) {
+            $doc_comment_text .= ' * ' . $line . PHP_EOL;
+        }
+
+        if ($description_lines && $parsed_doc_comment['specials']) {
+            $doc_comment_text .= ' *' . PHP_EOL;
+        }
+
+        if ($parsed_doc_comment['specials']) {
+            $type_lengths = array_map('strlen', array_keys($parsed_doc_comment['specials']));
+            $type_width = max($type_lengths) + 1;
+
+            foreach ($parsed_doc_comment['specials'] as $type => $lines) {
+                foreach ($lines as $line) {
+                    $doc_comment_text .= ' * @' . str_pad($type, $type_width) . $line . PHP_EOL;
+                }
+            }
+        }
+
+
+
+        $doc_comment_text .= ' */';
+
+        return $doc_comment_text;
     }
 
     protected function _isPassedByReference($method_id, $argument_offset)
