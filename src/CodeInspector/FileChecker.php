@@ -151,6 +151,10 @@ class FileChecker implements StatementsSource
             }
         }
 
+        if (!$stmts) {
+            throw new \InvalidArgumentException('File has no statements');
+        }
+
         return $stmts;
     }
 

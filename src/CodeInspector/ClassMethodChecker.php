@@ -61,11 +61,17 @@ class ClassMethodChecker extends FunctionChecker
 
                 // add leading namespace separator to classes
                 $return_types = array_map(function($return_type) {
-                    if (strpos($return_type, '\\') !== false || $return_type[0] === strtoupper($return_type[0])) {
-                        return '\\' . $return_type;
+                    $type_tokens = TypeChecker::tokenize($return_type);
+
+                    foreach ($type_tokens as &$token) {
+                        if ($token === '<' || $token === '>' || $token[0] !== strtoupper($token[0])) {
+                            continue;
+                        }
+
+                        $token = '\\' . $return_type;
                     }
 
-                    return $return_type;
+                    return implode('', $type_tokens);
                 }, $return_types);
 
                 if ($doc_comment) {
