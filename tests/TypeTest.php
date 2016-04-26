@@ -697,6 +697,37 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testNullableMethodWithGuardedSwitchBreak()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null, Two $two = null) {
+                $a = 4;
+
+                switch ($a) {
+                    case 4:
+                        if ($one === null) {
+                            break;
+                        }
+
+                        $one->foo();
+                        break;
+                }
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testNullableMethodWithGuardedRedefinitionOnThis()
     {
         $stmts = self::$_parser->parse('<?php
@@ -873,5 +904,31 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
+    }
+
+    public function testTypeAdjustment()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo(){
+                $var = 0;
+
+                if (5 + 3 === 8) {
+                    $var = "hello";
+                }
+
+                return $var;
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $stmts = $file_checker->check();
+
+        $method_stmts = $stmts[0]->stmts[0]->stmts;
+
+        $return_stmt = array_pop($method_stmts);
+
+        $this->assertSame('int|string', $return_stmt->returnType);
     }
 }
