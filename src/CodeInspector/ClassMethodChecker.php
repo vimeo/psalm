@@ -62,8 +62,12 @@ class ClassMethodChecker extends FunctionChecker
             if (count(array_diff($return_types, $simple_existing_return_types)) && count(array_diff($return_types, $existing_return_types))) {
                 $doc_comment = $this->_function->getDocComment();
 
+                $inverted_aliased_classes = array_flip($this->_aliased_classes);
+                $absolute_class = $this->_absolute_class;
+                $class_name = array_pop(explode('\\', $absolute_class));
+
                 // add leading namespace separator to classes
-                $return_types = array_map(function($return_type) {
+                $return_types = array_map(function($return_type) use ($inverted_aliased_classes, $absolute_class, $class_name) {
                     $type_tokens = TypeChecker::tokenize($return_type);
 
                     foreach ($type_tokens as &$token) {
@@ -71,7 +75,15 @@ class ClassMethodChecker extends FunctionChecker
                             continue;
                         }
 
-                        $token = '\\' . $token;
+                        if (isset($inverted_aliased_classes[$token])) {
+                            $token = $inverted_aliased_classes[$token];
+                        }
+                        else if ($token === $absolute_class) {
+                            $token = $class_name;
+                        }
+                        else {
+                            $token = '\\' . $token;
+                        }
                     }
 
                     return implode('', $type_tokens);
