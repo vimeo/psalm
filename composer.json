@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": ">=5.4",
-        "nikic/PHP-Parser": "dev-master"
+        "nikic/PHP-Parser": "2.1.0"
     },
     "autoload": {
         "psr-4": {
