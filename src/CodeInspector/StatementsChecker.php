@@ -1950,10 +1950,15 @@ class StatementsChecker
             $method_id = preg_replace('/^[^:]+::/', '', $method_id);
         }
 
-        $reflection_parameters = (new \ReflectionFunction($method_id))->getParameters();
+        try {
+            $reflection_parameters = (new \ReflectionFunction($method_id))->getParameters();
 
-        // if value is passed by reference
-        return $argument_offset < count($reflection_parameters) && $reflection_parameters[$argument_offset]->isPassedByReference();
+            // if value is passed by reference
+            return $argument_offset < count($reflection_parameters) && $reflection_parameters[$argument_offset]->isPassedByReference();
+        }
+        catch (\ReflectionException $e) {
+            return false;
+        }
     }
 
 
