@@ -1897,7 +1897,9 @@ class StatementsChecker
 
         $description_lines = null;
 
-        if (!empty(trim($parsed_doc_comment['description']))) {
+        $trimmed_description = trim($parsed_doc_comment['description']);
+
+        if (!empty($trimmed_description)) {
             $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
 
             foreach ($description_lines as $line) {
