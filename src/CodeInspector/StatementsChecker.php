@@ -160,7 +160,7 @@ class StatementsChecker
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
                         if (is_string($var->name)) {
-                            $vars_in_scope[$var->name] = true;
+                            $vars_in_scope[$var->name] = 'mixed';
                             $vars_possibly_in_scope[$var->name] = true;
                         } else {
                             $this->_checkExpression($var, $vars_in_scope, $vars_possibly_in_scope);
@@ -231,6 +231,7 @@ class StatementsChecker
         $new_vars = null;
         $new_vars_possibly_in_scope = [];
         $redefined_vars = null;
+        $possibly_redefined_vars = null;
 
         $post_type_assertions = [];
 
@@ -247,6 +248,8 @@ class StatementsChecker
                         $redefined_vars[$if_var] = $if_vars[$if_var];
                     }
                 }
+
+                $possibly_redefined_vars = $redefined_vars;
             }
             else {
                 $post_type_assertions = $negated_types;
@@ -303,11 +306,24 @@ class StatementsChecker
 
                     if ($redefined_vars === null) {
                         $redefined_vars = $elseif_redefined_vars;
+                        $possibly_redefined_vars = $redefined_vars;
                     }
                     else {
                         foreach ($redefined_vars as $redefined_var => $type) {
                             if (!isset($elseif_redefined_vars[$redefined_var])) {
                                 unset($redefined_vars[$redefined_var]);
+                            }
+                        }
+
+                        foreach ($elseif_redefined_vars as $var => $type) {
+                            if ($type === 'mixed') {
+                                $possibly_redefined_vars[$var] = 'mixed';
+                            }
+                            else if (isset($possibly_redefined_vars[$var])) {
+                                $possibly_redefined_vars[$var] = $type . '|' . $possibly_redefined_vars[$var];
+                            }
+                            else {
+                                $possibly_redefined_vars[$var] = $type;
                             }
                         }
                     }
@@ -372,11 +388,24 @@ class StatementsChecker
 
                     if ($redefined_vars === null) {
                         $redefined_vars = $else_redefined_vars;
+                        $possibly_redefined_vars = $redefined_vars;
                     }
                     else {
                         foreach ($redefined_vars as $redefined_var => $type) {
                             if (!isset($else_redefined_vars[$redefined_var])) {
                                 unset($redefined_vars[$redefined_var]);
+                            }
+                        }
+
+                        foreach ($else_redefined_vars as $var => $type) {
+                            if ($type === 'mixed') {
+                                $possibly_redefined_vars[$var] = 'mixed';
+                            }
+                            else if (isset($possibly_redefined_vars[$var])) {
+                                $possibly_redefined_vars[$var] = $type . '|' . $possibly_redefined_vars[$var];
+                            }
+                            else {
+                                $possibly_redefined_vars[$var] = $type;
                             }
                         }
                     }
@@ -406,16 +435,16 @@ class StatementsChecker
                         $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
                     }
                 }
-            }
 
-            if ($new_vars) {
-                // only update vars if there is an else
-                $vars_in_scope = array_merge($vars_in_scope, $new_vars);
-            }
+                if ($new_vars) {
+                    // only update vars if there is an else
+                    $vars_in_scope = array_merge($vars_in_scope, $new_vars);
+                }
 
-            if ($redefined_vars) {
-                $vars_in_scope = array_merge($vars_in_scope, $redefined_vars);
-                $redefined_vars = null;
+                if ($redefined_vars) {
+                    $vars_in_scope = array_merge($vars_in_scope, $redefined_vars);
+                    $redefined_vars = null;
+                }
             }
         }
 
@@ -435,21 +464,30 @@ class StatementsChecker
                     if (in_array($type, ['empty', 'null'])) {
                         if (isset($redefined_vars[$var])) {
                             $vars_in_scope[$var] = $redefined_vars[$var];
+                            unset($redefined_vars[$var]);
                         }
                     }
                     elseif ($type === '!array' && isset($redefined_vars[$var]) && $redefined_vars[$var] === 'array') {
                         $vars_in_scope[$var] = $redefined_vars[$var];
+                        unset($redefined_vars[$var]);
                     }
                 }
             }
         }
-        else if ($redefined_vars) {
-            foreach ($redefined_vars as $var => $type) {
-                if (is_string($vars_in_scope[$var]) && is_string($type)) {
-                    $vars_in_scope[$var] .= '|' . $type;
-                }
-                else {
-                    $vars_in_scope[$var] = 'mixed';
+
+        if ($possibly_redefined_vars) {
+            foreach ($possibly_redefined_vars as $var => $type) {
+                if (isset($vars_in_scope[$var])) {
+                    if ($vars_in_scope[$var] !== 'mixed' && $type !== 'mixed') {
+                        $existing_types = explode('|', $vars_in_scope[$var]);
+                        $new_types = explode('|', $type);
+                        $new_types = array_merge($new_types, $existing_types);
+                        $new_types = array_unique($new_types);
+                        $vars_in_scope[$var] = implode('|', $new_types);
+                    }
+                    else {
+                        $vars_in_scope[$var] = 'mixed';
+                    }
                 }
             }
         }
@@ -488,7 +526,7 @@ class StatementsChecker
             if ($var instanceof PhpParser\Node\Stmt\StaticVar) {
                 if (is_string($var->name)) {
                     if ($this->_check_variables) {
-                        $vars_in_scope[$var->name] = true;
+                        $vars_in_scope[$var->name] = 'mixed';
                         $vars_possibly_in_scope[$var->name] = true;
                         $this->registerVariable($var->name, $var->getLine());
                     }
@@ -706,7 +744,7 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-                $vars_in_scope[$stmt->var->name] = true;
+                $vars_in_scope[$stmt->var->name] = 'mixed';
                 $vars_possibly_in_scope[$stmt->var->name] = true;
                 $this->registerVariable($stmt->var->name, $stmt->var->getLine());
             } else {
@@ -752,36 +790,31 @@ class StatementsChecker
             return;
         }
 
-        if (!isset($vars_in_scope[$stmt->name])) {
-            if ($method_id) {
-                if ($this->_isPassedByReference($method_id, $argument_offset)) {
-                    $vars_in_scope[$stmt->name] = true;
-                    $vars_possibly_in_scope[$stmt->name] = true;
-                    $this->registerVariable($stmt->name, $stmt->getLine());
-                    return;
-                }
+        if ($method_id && $this->_isPassedByReference($method_id, $argument_offset)) {
+            if (!isset($vars_in_scope[$stmt->name])) {
+                $vars_possibly_in_scope[$stmt->name] = true;
+                $this->registerVariable($stmt->name, $stmt->getLine());
             }
 
-            if (!isset($vars_possibly_in_scope[$stmt->name])) {
+            $vars_in_scope[$stmt->name] = 'mixed';
+
+            return;
+        }
+
+        if (!isset($vars_in_scope[$stmt->name])) {
+            if (!isset($vars_possibly_in_scope[$stmt->name]) || !isset($this->_all_vars[$stmt->name])) {
                 throw new UndefinedVariableException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
 
-            } elseif (isset($this->_all_vars[$stmt->name])) {
-                if (!isset($this->_warn_vars[$stmt->name])) {
-                    if (FileChecker::$show_notices) {
-                        echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $stmt->name . ' on line ' . $stmt->getLine() . ', first seen on line ' . $this->_all_vars[$stmt->name] . PHP_EOL);
-                    }
-
-                    $this->_warn_vars[$stmt->name] = true;
+            } elseif (isset($this->_all_vars[$stmt->name]) && !isset($this->_warn_vars[$stmt->name])) {
+                if (FileChecker::$show_notices) {
+                    echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $stmt->name . ' on line ' . $stmt->getLine() . ', first seen on line ' . $this->_all_vars[$stmt->name] . PHP_EOL);
                 }
 
-            } else {
-                throw new UndefinedVariableException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
+                $this->_warn_vars[$stmt->name] = true;
             }
 
         } else {
-            if (isset($vars_in_scope[$stmt->name]) && is_string($vars_in_scope[$stmt->name])) {
-                $stmt->returnType = $vars_in_scope[$stmt->name];
-            }
+            $stmt->returnType = $vars_in_scope[$stmt->name];
         }
     }
 
@@ -900,7 +933,7 @@ class StatementsChecker
         $foreach_vars = [];
 
         if ($stmt->keyVar) {
-            $foreach_vars[$stmt->keyVar->name] = true;
+            $foreach_vars[$stmt->keyVar->name] = 'mixed';
             $vars_possibly_in_scope[$stmt->keyVar->name] = true;
             $this->registerVariable($stmt->keyVar->name, $stmt->getLine());
         }
@@ -937,7 +970,7 @@ class StatementsChecker
                 }
             }
 
-            $foreach_vars[$stmt->valueVar->name] = $value_type ? $value_type : true;
+            $foreach_vars[$stmt->valueVar->name] = $value_type ? $value_type : 'mixed';
             $vars_possibly_in_scope[$stmt->valueVar->name] = true;
             $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
         }
@@ -1053,23 +1086,24 @@ class StatementsChecker
         }
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
-            $vars_in_scope[$stmt->var->name] = true;
-            $vars_possibly_in_scope[$stmt->var->name] = true;
-            $this->registerVariable($stmt->var->name, $stmt->var->getLine());
-
             if ($type_in_comments) {
                 $vars_in_scope[$stmt->var->name] = $type_in_comments;
 
             } elseif (isset($stmt->expr->returnType)) {
                 $var_name = $stmt->var->name;
-
                 $this->_typeAssignment($var_name, $stmt->expr, $vars_in_scope);
             }
+            else {
+                $vars_in_scope[$stmt->var->name] = 'mixed';
+            }
+
+            $vars_possibly_in_scope[$stmt->var->name] = true;
+            $this->registerVariable($stmt->var->name, $stmt->var->getLine());
 
         } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $var) {
                 if ($var) {
-                    $vars_in_scope[$var->name] = true;
+                    $vars_in_scope[$var->name] = 'mixed';
                     $vars_possibly_in_scope[$var->name] = true;
                     $this->registerVariable($var->name, $var->getLine());
                 }
@@ -1077,7 +1111,7 @@ class StatementsChecker
 
         } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
             // if it's an array assignment
-            $vars_in_scope[$stmt->var->var->name] = true;
+            $vars_in_scope[$stmt->var->var->name] = 'mixed';
             $vars_possibly_in_scope[$stmt->var->var->name] = true;
             $this->registerVariable($stmt->var->var->name, $stmt->var->var->getLine());
 
@@ -1093,6 +1127,9 @@ class StatementsChecker
                     elseif (isset($stmt->expr->returnType)) {
                         $this->_typeAssignment($property_id, $stmt->expr, $vars_in_scope);
                     }
+                    else {
+                        $vars_in_scope[$property_id] = 'mixed';
+                    }
                 }
             }
         }
@@ -1100,28 +1137,8 @@ class StatementsChecker
 
     protected function _typeAssignment($var_name, PhpParser\Node\Expr $expr, array &$vars_in_scope)
     {
-        if ($expr->returnType === 'null') {
-            if (isset($vars_in_scope[$var_name])) {
-                $vars_in_scope[$var_name] = 'mixed';
-            }
-
-        } elseif ($expr->returnType === 'void') {
+        if ($expr->returnType === 'void') {
             throw new TypeResolutionException('Cannot assign $' . $var_name . ' to type void', $this->_file_name, $expr->getLine());
-        } elseif (isset($vars_in_scope[$var_name]) && is_string($vars_in_scope[$var_name])) {
-            $existing_type = $vars_in_scope[$var_name];
-
-            if ($existing_type !== 'mixed') {
-                if (is_a($existing_type, $expr->returnType, true)) {
-                    // downcast
-                    $vars_in_scope[$var_name] = $expr->returnType;
-                } elseif (is_a($expr->returnType, $existing_type, true)) {
-                    // upcast, catch later
-                    $vars_in_scope[$var_name] = $expr->returnType;
-                } else {
-                    $vars_in_scope[$var_name] = 'mixed';
-                }
-            }
-
         } else {
             $vars_in_scope[$var_name] = $expr->returnType;
         }
@@ -1211,7 +1228,7 @@ class StatementsChecker
         foreach ($stmt->uses as $use) {
             if (!isset($vars_in_scope[$use->var])) {
                 if ($use->byRef) {
-                    $vars_in_scope[$use->var] = true;
+                    $vars_in_scope[$use->var] = 'mixed';
                     $vars_possibly_in_scope[$use->var] = true;
                     $this->registerVariable($use->var, $use->getLine());
 
@@ -1379,7 +1396,7 @@ class StatementsChecker
                     $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i);
                 } elseif (is_string($arg->value->name)) {
                     // we don't know if it exists, assume it's passed by reference
-                    $vars_in_scope[$arg->value->name] = true;
+                    $vars_in_scope[$arg->value->name] = 'mixed';
                     $vars_possibly_in_scope[$arg->value->name] = true;
                     $this->registerVariable($arg->value->name, $arg->value->getLine());
                 }
@@ -1404,8 +1421,12 @@ class StatementsChecker
                     $stmt->returnType = 'null';
                     break;
 
-                case ['true']:
                 case ['false']:
+                    // false is a subtype of bool
+                    $stmt->returnType = 'false';
+                    break;
+
+                case ['true']:
                     $stmt->returnType = 'bool';
                     break;
             }
@@ -1874,10 +1895,14 @@ class StatementsChecker
     {
         $doc_comment_text = '/**' . PHP_EOL;
 
-        $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
+        $description_lines = null;
 
-        foreach ($description_lines as $line) {
-            $doc_comment_text .= ' * ' . $line . PHP_EOL;
+        if (!empty(trim($parsed_doc_comment['description']))) {
+            $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
+
+            foreach ($description_lines as $line) {
+                $doc_comment_text .= ' * ' . $line . PHP_EOL;
+            }
         }
 
         if ($description_lines && $parsed_doc_comment['specials']) {

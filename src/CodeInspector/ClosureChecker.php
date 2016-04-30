@@ -10,7 +10,7 @@ class ClosureChecker extends FunctionChecker
     {
         $use_vars = [];
         foreach ($this->_function->uses as $use) {
-            $use_vars[$use->var] = true;
+            $use_vars[$use->var] = 'mixed';
         }
 
         parent::check($use_vars);

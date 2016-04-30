@@ -55,9 +55,19 @@ class ClassMethodChecker extends FunctionChecker
         $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts);
 
         if ($return_types && !in_array('mixed', $return_types)) {
+            if ($return_types === ['false']) {
+                $return_types = ['bool'];
+            }
+
             $method_id = $this->_absolute_class . '::' . $this->_function->name;
             $existing_return_types = self::getMethodReturnTypes($method_id);
-            $simple_existing_return_types = array_map(function($value) { return preg_replace('/<.*$/', '', $value);}, $existing_return_types);
+
+            $simple_existing_return_types = array_map(
+                function($value) {
+                    return preg_replace('/<.*$/', '', $value);
+                },
+                $existing_return_types
+            );
 
             if (count(array_diff($return_types, $simple_existing_return_types)) && count(array_diff($return_types, $existing_return_types))) {
                 $doc_comment = $this->_function->getDocComment();
@@ -434,6 +444,7 @@ class ClassMethodChecker extends FunctionChecker
         self::_populateData($method_id);
 
         $method_class = explode('::', $method_id)[0];
+        $method_name = explode('::', $method_id)[1];
 
         if (!isset(self::$_method_visibility[$method_id])) {
             throw new InaccessibleMethodException('Cannot access method ' . $method_id, $file_name, $line_number);
@@ -456,6 +467,10 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!$calling_context) {
                     throw new InaccessibleMethodException('Cannot access protected method ' . $method_id, $file_name, $line_number);
+                }
+
+                if (is_subclass_of($method_class, $calling_context) && method_exists($calling_context, $method_name)) {
+                    return;
                 }
 
                 if (!is_subclass_of($calling_context, $method_class)) {

@@ -54,10 +54,6 @@ class FunctionChecker implements StatementsSource
                                 $param->default->name instanceof PhpParser\Node\Name &&
                                 $param->default->name->parts = ['null'];
 
-                $vars_in_scope[$param->name] = true;
-                $vars_possibly_in_scope[$param->name] = true;
-                $statements_checker->registerVariable($param->name, $param->getLine());
-
                 if ($param->type && is_object($param->type)) {
                     $vars_in_scope[$param->name] =
                         $param->type->parts === ['self'] ?
@@ -68,6 +64,12 @@ class FunctionChecker implements StatementsSource
                         $vars_in_scope[$param->name] .= '|null';
                     }
                 }
+                else {
+                    $vars_in_scope[$param->name] = 'mixed';
+                }
+
+                $vars_possibly_in_scope[$param->name] = true;
+                $statements_checker->registerVariable($param->name, $param->getLine());
             }
 
             $statements_checker->check($this->_function->stmts, $vars_in_scope, $vars_possibly_in_scope);

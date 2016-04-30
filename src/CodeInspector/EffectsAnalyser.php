@@ -78,14 +78,17 @@ class EffectsAnalyser
             $return_types = [];
         }
 
-        // remove duplicates
-        $return_types = array_unique($return_types);
+        $return_types = array_flip($return_types);
 
-        if (count($return_types) > 1 && in_array('void', $return_types)) {
-            // turn voids into mulls because we void must live alone
-            $return_types = array_map(function($value) { return $value === 'void' ? 'null' : $value; }, $return_types);
+        if (count($return_types) > 1 && isset($return_types['void'])) {
+            unset($return_types['void']);
+            $return_types['null'] = 1;
         }
 
-        return array_values($return_types);
+        if (count($return_types) > 1 && isset($return_types['false']) && isset($return_types['bool'])) {
+            unset($return_types['false']);
+        }
+
+        return array_keys($return_types);
     }
 }

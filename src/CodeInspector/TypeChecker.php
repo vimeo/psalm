@@ -84,7 +84,7 @@ class TypeChecker
             if ($stmt->name === 'this') {
                 return $this->_absolute_class;
             }
-            elseif (isset($vars_in_scope[$stmt->name]) && is_string($vars_in_scope[$stmt->name])) {
+            elseif (isset($vars_in_scope[$stmt->name])) {
                 return $vars_in_scope[$stmt->name];
             }
         }
@@ -259,7 +259,8 @@ class TypeChecker
 
             foreach ($keys as $key) {
                 if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
-                    $if_types[$key] = $left_assertions[$key] . '|' . $right_assertions[$key];
+                    $type_assertions = array_merge(explode('|', $left_assertions[$key]), explode('|', $right_assertions[$key]));
+                    $if_types[$key] = implode('|', array_unique($type_assertions));
                 }
                 else if (isset($left_assertions[$key])) {
                     $if_types[$key] = $left_assertions[$key];
@@ -387,65 +388,78 @@ class TypeChecker
         }
 
         foreach ($keys as $key) {
-            $existing_type = isset($existing_types[$key]) && is_string($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
+            $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
+            $result_var_types = null;
 
             if (isset($new_types[$key])) {
-                if (is_string($new_types[$key]) && $new_types[$key][0] === '!') {
-                    if ($existing_type) {
+                if ($new_types[$key][0] === '!') {
+                    if ($existing_var_types) {
                         if ($new_types[$key] === '!empty' || $new_types[$key] === '!null') {
-                            $null_pos = array_search('null', $existing_type);
+                            $null_pos = array_search('null', $existing_var_types);
 
                             if ($null_pos !== false) {
-                                array_splice($existing_type, $null_pos, 1);
+                                array_splice($existing_var_types, $null_pos, 1);
+                            }
 
-                                if (empty($existing_type)) {
-                                    // @todo - I think there's a better way to handle this, but for the moment
-                                    // mixed will have to do.
-                                    $result_types[$key] = 'mixed';
-                                }
-                                else {
-                                    $result_types[$key] = implode('|', $existing_type);
+                            if ($new_types[$key] === '!empty') {
+                                $false_pos = array_search('false', $existing_var_types);
+
+                                if ($false_pos !== false) {
+                                    array_splice($existing_var_types, $false_pos, 1);
                                 }
                             }
+
+                            if (empty($existing_var_types)) {
+                                // @todo - I think there's a better way to handle this, but for the moment
+                                // mixed will have to do.
+                                $result_var_types = ['mixed'];
+                            }
                             else {
-                                // if we cannot find a null declaration to remove, just use existing type
-                                $result_types[$key] = $existing_types[$key];
+                                $result_var_types = $existing_var_types;
                             }
                         }
                         else {
                             $negated_type = substr($new_types[$key], 1);
 
-                            $type_pos = array_search($negated_type, $existing_type);
+                            $type_pos = array_search($negated_type, $existing_var_types);
 
                             if ($type_pos !== false) {
-                                array_splice($existing_type, $type_pos, 1);
+                                array_splice($existing_var_types, $type_pos, 1);
 
-                                if (empty($existing_type)) {
+                                if (empty($existing_var_types)) {
                                     if ($strict) {
                                         throw new TypeResolutionException('Cannot resolve types for ' . $key, $file_name, $line_number);
                                     }
-
-                                    $result_types[$key] = $existing_types[$key];
                                 }
-                                $result_types[$key] = implode('|', $existing_type);
                             }
-                            else {
-                                // if we cannot find a type to negate, just use the existing type
-                                $result_types[$key] = $existing_types[$key];
-                            }
+
+                            $result_var_types = $existing_var_types;
                         }
                     }
-                    else if (isset($existing_types[$key])) {
-                        $result_types[$key] = $existing_types[$key];
+                    else {
+                        // possibly undefined variable
+                        $result_var_types = ['mixed'];
                     }
                 }
+                else if ($existing_var_types && $new_types[$key] === 'empty') {
+                    $bool_pos = array_search('bool', $existing_var_types);
+
+                    if ($bool_pos !== false) {
+                        array_splice($existing_var_types, $bool_pos, 1);
+                        $existing_var_types[] = 'false';
+                    }
+
+                    $result_var_types = $existing_var_types;
+                }
                 else {
-                    $result_types[$key] = $new_types[$key];
+                    $result_var_types = [$new_types[$key]];
                 }
             }
             else {
-                $result_types[$key] = $existing_types[$key];
+                $result_var_types = $existing_var_types;
             }
+
+            $result_types[$key] = implode('|', $result_var_types);
         }
 
         return $result_types;

@@ -929,6 +929,34 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $return_stmt = array_pop($method_stmts);
 
-        $this->assertSame('int|string', $return_stmt->returnType);
+        $this->assertSame('string|int', $return_stmt->returnType);
+    }
+
+    public function testTypeMixedAdjustment()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo(){
+                $var = 0;
+
+                $arr = ["hello"];
+
+                if (5 + 3 === 8) {
+                    $var = $arr[0];
+                }
+
+                return $var;
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $stmts = $file_checker->check();
+
+        $method_stmts = $stmts[0]->stmts[0]->stmts;
+
+        $return_stmt = array_pop($method_stmts);
+
+        $this->assertSame('mixed', $return_stmt->returnType);
     }
 }
