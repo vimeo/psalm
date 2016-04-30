@@ -778,6 +778,13 @@ class StatementsChecker
         }
 
         if (!$this->_check_variables) {
+            $stmt->returnType = 'mixed';
+
+            if (is_string($stmt->name)) {
+                $vars_in_scope[$stmt->name] = 'mixed';
+                $vars_possibly_in_scope[$stmt->name] = true;
+            }
+
             return;
         }
 
