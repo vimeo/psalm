@@ -677,6 +677,10 @@ class StatementsChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
+            if (property_exists($stmt->expr, 'returnType')) {
+                $stmt->returnType = $stmt->expr->returnType;
+            }
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\Instanceof_) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
@@ -930,6 +934,17 @@ class StatementsChecker
 
         $this->check($stmt->stmts, $for_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
+        foreach ($vars_in_scope as $var => $type) {
+            if ($for_vars[$var] !== $type) {
+                if ($type === 'mixed' || $for_vars[$var] === 'mixed') {
+                    $vars_in_scope[$var] = 'mixed';
+                }
+                elseif (strpos($type, $for_vars[$var]) === false) {
+                    $vars_in_scope[$var] = $type . '|' . $for_vars[$var];
+                }
+            }
+        }
+
         $vars_possibly_in_scope = TypeChecker::reconcileTypes($for_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
     }
 
@@ -988,6 +1003,17 @@ class StatementsChecker
 
         $this->check($stmt->stmts, $foreach_vars, $vars_possibly_in_scope, $foreach_vars_possibly_in_scope);
 
+        foreach ($vars_in_scope as $var => $type) {
+            if ($foreach_vars[$var] !== $type) {
+                if ($type === 'mixed' || $foreach_vars[$var] === 'mixed') {
+                    $vars_in_scope[$var] = 'mixed';
+                }
+                elseif (strpos($type, $foreach_vars[$var]) === false) {
+                    $vars_in_scope[$var] = $type . '|' . $foreach_vars[$var];
+                }
+            }
+        }
+
         $vars_possibly_in_scope = TypeChecker::reconcileTypes($foreach_vars_possibly_in_scope, $vars_possibly_in_scope, false, $stmt, $stmt->getLine());
     }
 
@@ -997,7 +1023,28 @@ class StatementsChecker
 
         $while_vars_in_scope = array_merge([], $vars_in_scope);
 
+        $while_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
+
+        // if the while has an or as the main component, we cannot safely reason about it
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->cond)) {
+            $while_vars_in_scope = array_merge([], $vars_in_scope);
+        }
+        else {
+            $while_vars_in_scope = TypeChecker::reconcileTypes($while_types, $while_vars_in_scope, true, $this->_file_name, $stmt->getLine());
+        }
+
         $this->check($stmt->stmts, $while_vars_in_scope, $vars_possibly_in_scope);
+
+        foreach ($vars_in_scope as $var => $type) {
+            if ($while_vars_in_scope[$var] !== $type) {
+                if ($type === 'mixed' || $while_vars_in_scope[$var] === 'mixed') {
+                    $vars_in_scope[$var] = 'mixed';
+                }
+                elseif (strpos($type, $while_vars_in_scope[$var]) === false) {
+                    $vars_in_scope[$var] = $type . '|' . $while_vars_in_scope[$var];
+                }
+            }
+        }
     }
 
     protected function _checkDo(PhpParser\Node\Stmt\Do_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -1496,10 +1543,28 @@ class StatementsChecker
 
     protected function _checkReturn(PhpParser\Node\Stmt\Return_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
+        $type_in_comments = null;
+        $doc_comment = $stmt->getDocComment();
+
+        if ($doc_comment) {
+            $comments = self::parseDocComment($doc_comment);
+
+            if ($comments && isset($comments['specials']['var'][0])) {
+                $type_in_comments = explode(' ', $comments['specials']['var'][0])[0];
+
+                if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
+                    $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
+                }
+            }
+        }
+
         if ($stmt->expr) {
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
-            if (isset($stmt->expr->returnType)) {
+            if ($type_in_comments) {
+                $stmt->returnType = $type_in_comments;
+            }
+            elseif (isset($stmt->expr->returnType)) {
                 $stmt->returnType = $stmt->expr->returnType;
             }
             else {
