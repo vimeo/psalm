@@ -348,8 +348,11 @@ class ClassMethodChecker extends FunctionChecker
                 else {
                     if ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
                         $param_type = implode('\\', $param->type->parts);
-                    }
-                    else {
+
+                    } elseif ($param->type->parts === ['self']) {
+                        $param_type = $this->_absolute_class;
+
+                    } else {
                         $param_type = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
                     }
                 }
