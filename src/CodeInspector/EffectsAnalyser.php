@@ -16,16 +16,12 @@ class EffectsAnalyser
      * @param  array<PhpParser\Node\Stmt>  $stmts
      * @return array<string>    a list of return types
      */
-    public static function getReturnTypes(array $stmts)
+    public static function getReturnTypes(array $stmts, $collapse_types = false)
     {
         $return_types = [];
 
-        foreach ($stmts as $stmt)
-        {
+        foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                if ($stmt->returnType === 'mixed') {
-                    //var_dump($stmt);
-                }
                 $return_types[] = $stmt->returnType;
 
                 break;
@@ -89,6 +85,16 @@ class EffectsAnalyser
             unset($return_types['false']);
         }
 
-        return array_keys($return_types);
+        if ($collapse_types && isset($return_types['mixed'])) {
+            return ['mixed'];
+        }
+
+        $return_type_keys = array_keys($return_types);
+
+        if ($collapse_types && $return_type_keys === ['false']) {
+            $return_type_keys = ['bool'];
+        }
+
+        return $return_type_keys;
     }
 }

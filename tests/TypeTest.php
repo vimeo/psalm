@@ -226,6 +226,51 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testNullableMethodWithExceptionThrown()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null) {
+                if (!$one) {
+                    throw new Exception();
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithRedefinitionAndElse()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null) {
+                if (!$one) {
+                    $one = new One();
+                }
+                else {
+                    $one->two = 3;
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     /**
      * @expectedException CodeInspector\Exception\CodeException
      */

@@ -38,7 +38,9 @@ class FunctionChecker implements StatementsSource
             $vars_in_scope = $extra_scope_vars;
             $vars_possibly_in_scope = $extra_scope_vars;
 
-            $statements_checker = new StatementsChecker($this, substr($this->_file_name, -4) === '.php');
+            $check_variables = substr($this->_file_name, -4) === '.php' || $this->_function->params;
+
+            $statements_checker = new StatementsChecker($this, $check_variables);
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {
@@ -81,6 +83,10 @@ class FunctionChecker implements StatementsSource
      */
     public function getMethodId()
     {
+        if ($this->_function instanceof PhpParser\Node\Expr\Closure) {
+            return null;
+        }
+
         return $this->getAbsoluteClass() . '::' . $this->_function->name;
     }
 

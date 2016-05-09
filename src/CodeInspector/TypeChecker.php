@@ -144,7 +144,7 @@ class TypeChecker
             else if ($var_name = $this->_getVariable($conditional->expr)) {
                 $if_types[$var_name] = 'empty';
             }
-            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
                 $null_position = self::_hasNullVariable($conditional->expr);
 
                 if ($null_position !== null) {
@@ -159,11 +159,17 @@ class TypeChecker
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = '!null';
+                        if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                            $if_types[$var_name] = '!null';
+                        }
+                        else {
+                            // we do this because == null gives us a weaker idea than === null
+                            $if_types[$var_name] = '!empty';
+                        }
                     }
                 }
             }
-            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotEqual) {
                 $null_position = self::_hasNullVariable($conditional->expr);
 
                 if ($null_position !== null) {
@@ -178,7 +184,12 @@ class TypeChecker
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = 'null';
+                        if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                            $if_types[$var_name] = 'null';
+                        }
+                        else {
+                            $if_types[$var_name] = 'empty';
+                        }
                     }
                 }
             }
@@ -198,7 +209,7 @@ class TypeChecker
                 $if_types[$var_name] = '!array';
             }
         }
-        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
             $null_position = self::_hasNullVariable($conditional);
 
             if ($null_position !== null) {
@@ -213,11 +224,16 @@ class TypeChecker
                 }
 
                 if ($var_name) {
-                    $if_types[$var_name] = 'null';
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        $if_types[$var_name] = 'null';
+                    }
+                    else {
+                        $if_types[$var_name] = 'empty';
+                    }
                 }
             }
         }
-        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual) {
             $null_position = self::_hasNullVariable($conditional);
 
             if ($null_position !== null) {
@@ -232,7 +248,12 @@ class TypeChecker
                 }
 
                 if ($var_name) {
-                    $if_types[$var_name] = '!null';
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                        $if_types[$var_name] = '!null';
+                    }
+                    else {
+                        $if_types[$var_name] = '!empty';
+                    }
                 }
             }
         }
@@ -460,6 +481,75 @@ class TypeChecker
             }
 
             $result_types[$key] = implode('|', $result_var_types);
+        }
+
+        return $result_types;
+    }
+
+    public static function isNegation($type, $existing_type)
+    {
+        if ($type === 'mixed' || 'existing_type' === 'mixed') {
+            return false;
+        }
+
+        if ($type === '!' . $existing_type || $existing_type === $existing_type) {
+            return true;
+        }
+
+        if (in_array($type, ['empty', 'false', 'null']) && !in_array($existing_type, ['empty', 'false', 'null'])) {
+            return true;
+        }
+
+        if (in_array($existing_type, ['empty', 'false', 'null']) && !in_array($type, ['empty', 'false', 'null'])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Takes two arrays of types and merges them
+     *
+     * @param  array  $new_types
+     * @param  array  $existing_types
+     * @return array
+     */
+    public static function combineTypes(array $new_types, array $existing_types)
+    {
+        $keys = array_merge(array_keys($new_types), array_keys($existing_types));
+        $keys = array_unique($keys);
+
+        $result_types = [];
+
+        if (empty($new_types)) {
+            return $existing_types;
+        }
+
+        if (empty($existing_types)) {
+            return $new_types;
+        }
+
+        foreach ($keys as $key) {
+            if (!isset($existing_types[$key])) {
+                $result_types[$key] = $new_types[$key];
+                continue;
+            }
+
+            if (!isset($new_types[$key])) {
+                $result_types[$key] = $existing_types[$key];
+                continue;
+            }
+
+            $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
+            $new_var_types = isset($new_types[$key]) ? explode('|', $new_types[$key]) : null;
+
+            if (in_array('mixed', $existing_var_types) || in_array('mixed', $new_var_types)) {
+                $result_types[$key] = 'mixed';
+                continue;
+            }
+
+            $all_types = array_merge($existing_var_types, $new_var_types);
+            $result_types[$key] = implode('|', array_unique($all_types));
         }
 
         return $result_types;

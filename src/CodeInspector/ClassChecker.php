@@ -85,7 +85,7 @@ class ClassChecker implements StatementsSource
         // do the method checks after all class methods have been initialised
         foreach ($method_checkers as $method_checker) {
             $method_checker->check();
-            //$method_checker->checkEffects();
+            //$method_checker->checkReturnTypes();
         }
     }
 

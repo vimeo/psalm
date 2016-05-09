@@ -4,6 +4,7 @@ namespace CodeInspector;
 
 use CodeInspector\Exception\UndefinedMethodException;
 use CodeInspector\Exception\InaccessibleMethodException;
+use CodeInspector\Exception\ReturnTypeException;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
@@ -27,7 +28,7 @@ class ClassMethodChecker extends FunctionChecker
     const VISIBILITY_PROTECTED = 2;
     const VISIBILITY_PRIVATE = 3;
 
-    const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\[\]]+)';
+    const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\|\[\]]+)';
 
     public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source)
     {
@@ -42,78 +43,107 @@ class ClassMethodChecker extends FunctionChecker
     /**
      * @return void
      */
-    public function checkEffects()
+    public function checkReturnTypes($update_doc_comment = false)
     {
-        if (!isset(self::$_new_docblocks[$this->_file_name])) {
-            self::$_new_docblocks[$this->_file_name] = [];
-        }
-
         if (!$this->_function->stmts) {
             return;
         }
 
-        $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts);
+        if (!isset(self::$_new_docblocks[$this->_file_name])) {
+            self::$_new_docblocks[$this->_file_name] = [];
+        }
 
-        if ($return_types && !in_array('mixed', $return_types)) {
-            if ($return_types === ['false']) {
-                $return_types = ['bool'];
-            }
+        $method_id = $this->_absolute_class . '::' . $this->_function->name;
 
-            $method_id = $this->_absolute_class . '::' . $this->_function->name;
-            $existing_return_types = self::getMethodReturnTypes($method_id);
+        $existing_return_types = self::getMethodReturnTypes($method_id);
 
-            $simple_existing_return_types = array_map(
-                function($value) {
-                    return preg_replace('/<.*$/', '', $value);
-                },
-                $existing_return_types
-            );
+        if ($existing_return_types) {
+            $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
-            if (count(array_diff($return_types, $simple_existing_return_types)) && count(array_diff($return_types, $existing_return_types))) {
-                $doc_comment = $this->_function->getDocComment();
+            if ($return_types && $return_types !== ['mixed']) {
+                $simple_existing_return_types = array_map(
+                    function ($value) {
+                        return preg_replace('/<.*$/', '', $value);
+                    },
+                    $existing_return_types
+                );
 
-                $inverted_aliased_classes = array_flip($this->_aliased_classes);
-                $absolute_class = $this->_absolute_class;
-                $class_name = array_pop(explode('\\', $absolute_class));
+                if (count(array_diff($return_types, $simple_existing_return_types)) && count(array_diff($return_types, $existing_return_types))) {
+                    if ($update_doc_comment) {
+                        $doc_comment = $this->_function->getDocComment();
 
-                // add leading namespace separator to classes
-                $return_types = array_map(function($return_type) use ($inverted_aliased_classes, $absolute_class, $class_name) {
-                    $type_tokens = TypeChecker::tokenize($return_type);
-
-                    foreach ($type_tokens as &$token) {
-                        if ($token === '<' || $token === '>' || $token[0] !== strtoupper($token[0])) {
-                            continue;
-                        }
-
-                        if (isset($inverted_aliased_classes[$token])) {
-                            $token = $inverted_aliased_classes[$token];
-                        }
-                        else if ($token === $absolute_class) {
-                            $token = $class_name;
-                        }
-                        else {
-                            $token = '\\' . $token;
-                        }
+                        $this->_registerNewDocComment($return_types, $doc_comment);
                     }
-
-                    return implode('', $type_tokens);
-                }, $return_types);
-
-                if ($doc_comment) {
-                    $parsed_doc_comment = StatementsChecker::parseDocComment($doc_comment->getText());
-                    $parsed_doc_comment['specials']['return'] = [implode('|', $return_types)];
-                    $new_doc_comment_text = StatementsChecker::renderDocComment($parsed_doc_comment);
+                    else {
+                        throw new ReturnTypeException(
+                            'The given return type for ' . $method_id . ' is incorrect, expecting ' . implode('|', $return_types),
+                            $this->_file_name,
+                            $this->_function->getLine()
+                        );
+                    }
                 }
-                else {
-                    $new_doc_comment_text = "/**\n * @return " . implode('|', $return_types) . "\n */";
-                }
-
-                $start_at = $doc_comment ? $doc_comment->getLine() : $this->_function->getLine();
-                $old_line_count = $doc_comment ? substr_count($doc_comment->getText(), PHP_EOL) + 1 : 0;
-
-                self::$_new_docblocks[$this->_file_name][$start_at] = ['new_text' => $new_doc_comment_text, 'old_line_count' => $old_line_count];
             }
         }
+        else if ($update_doc_comment) {
+            $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
+
+            if ($return_types && $return_types !== ['mixed']) {
+                $doc_comment = $this->_function->getDocComment();
+
+                $this->_registerNewDocComment($return_types, $doc_comment);
+            }
+        }
+    }
+
+    /**
+     * @param  \PhpParser\Comment\Doc|null $doc_comment
+     * @return string
+     */
+    protected function _registerNewDocComment(array $return_types, \PhpParser\Comment\Doc $doc_comment = null)
+    {
+        $inverted_aliased_classes = array_flip($this->_aliased_classes);
+        $absolute_class = $this->_absolute_class;
+        $class_name = array_pop(explode('\\', $absolute_class));
+
+        // add leading namespace separator to classes
+        $return_types = array_map(
+            function ($return_type) use ($inverted_aliased_classes, $absolute_class, $class_name) {
+                $type_tokens = TypeChecker::tokenize($return_type);
+
+                foreach ($type_tokens as &$token) {
+                    if ($token === '<' || $token === '>' || $token[0] !== strtoupper($token[0])) {
+                        continue;
+                    }
+
+                    if (isset($inverted_aliased_classes[$token])) {
+                        $token = $inverted_aliased_classes[$token];
+                    }
+                    else if ($token === $absolute_class) {
+                        $token = $class_name;
+                    }
+                    else {
+                        $token = '\\' . $token;
+                    }
+                }
+
+                return implode('', $type_tokens);
+            },
+            $return_types
+        );
+
+        if ($doc_comment) {
+            $parsed_doc_comment = StatementsChecker::parseDocComment($doc_comment->getText());
+            $parsed_doc_comment['specials']['return'] = [implode('|', $return_types)];
+            $new_doc_comment_text = StatementsChecker::renderDocComment($parsed_doc_comment);
+        }
+        else {
+            $new_doc_comment_text = "/**\n * @return " . implode('|', $return_types) . "\n */";
+        }
+
+        $start_at = $doc_comment ? $doc_comment->getLine() : $this->_function->getLine();
+        $old_line_count = $doc_comment ? substr_count($doc_comment->getText(), PHP_EOL) + 1 : 0;
+
+        self::$_new_docblocks[$this->_file_name][$start_at] = ['new_text' => $new_doc_comment_text, 'old_line_count' => $old_line_count];
     }
 
     public static function getMethodParams($method_id)

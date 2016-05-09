@@ -47,6 +47,8 @@ class StatementsChecker
     protected static $_method_call_index = [];
     protected static $_existing_functions = [];
     protected static $_reflection_functions = [];
+    protected static $_this_assignments = [];
+    protected static $_this_calls = [];
 
     protected static $_existing_static_vars = [];
     protected static $_existing_properties = [];
@@ -232,11 +234,11 @@ class StatementsChecker
         $new_vars_possibly_in_scope = [];
         $redefined_vars = null;
         $possibly_redefined_vars = null;
-
+        $has_left = false;
         $post_type_assertions = [];
 
         if (count($stmt->stmts)) {
-            $has_leaving_statments = self::_doesLeaveBlock($stmt->stmts, true);
+            $has_leaving_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, true);
 
             if (!$has_leaving_statments) {
                 $new_vars = array_diff_key($if_vars, $vars_in_scope);
@@ -250,12 +252,19 @@ class StatementsChecker
                 }
 
                 $possibly_redefined_vars = $redefined_vars;
+
+                foreach ($redefined_vars as $redefined_var => $type) {
+                    if (isset($if_types[$redefined_var]) && TypeChecker::isNegation($redefined_var, $if_types[$redefined_var])) {
+                        $post_type_assertions[$redefined_var] = $type;
+                    }
+                }
             }
             else {
+                $has_left = true;
                 $post_type_assertions = $negated_types;
             }
 
-            $has_ending_statments = self::_doesLeaveBlock($stmt->stmts, false);
+            $has_ending_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, false);
 
             if (!$has_ending_statments) {
                 $vars = array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope);
@@ -293,7 +302,7 @@ class StatementsChecker
             $this->_checkElseIf($elseif, $elseif_vars, $elseif_vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
             if (count($elseif->stmts)) {
-                $has_leaving_statements = self::_doesLeaveBlock($elseif->stmts, true);
+                $has_leaving_statements = ScopeChecker::doesLeaveBlock($elseif->stmts, true);
 
                 if (!$has_leaving_statements) {
                     $elseif_redefined_vars = [];
@@ -307,6 +316,12 @@ class StatementsChecker
                     if ($redefined_vars === null) {
                         $redefined_vars = $elseif_redefined_vars;
                         $possibly_redefined_vars = $redefined_vars;
+
+                        foreach ($redefined_vars as $redefined_var => $type) {
+                            if (isset($elseif_types[$redefined_var]) && TypeChecker::isNegation($redefined_var, $if_types[$redefined_var])) {
+                                $post_type_assertions[$redefined_var] = $type;
+                            }
+                        }
                     }
                     else {
                         foreach ($redefined_vars as $redefined_var => $type) {
@@ -344,7 +359,7 @@ class StatementsChecker
                 }
 
                 // has a return/throw at end
-                $has_ending_statments = self::_doesLeaveBlock($elseif->stmts, false);
+                $has_ending_statments = ScopeChecker::doesLeaveBlock($elseif->stmts, false);
 
                 if (!$has_ending_statments) {
                     $vars = array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope);
@@ -374,7 +389,7 @@ class StatementsChecker
             $this->_checkElse($stmt->else, $else_vars, $else_vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
             if (count($stmt->else->stmts)) {
-                $has_leaving_statements = self::_doesLeaveBlock($stmt->else->stmts, true);
+                $has_leaving_statements = ScopeChecker::doesLeaveBlock($stmt->else->stmts, true);
 
                 // if it doesn't end in a return
                 if (!$has_leaving_statements) {
@@ -423,7 +438,7 @@ class StatementsChecker
                 }
 
                 // has a return/throw at end
-                $has_ending_statments = self::_doesLeaveBlock($stmt->else->stmts, false);
+                $has_ending_statments = ScopeChecker::doesLeaveBlock($stmt->else->stmts, false);
 
                 if (!$has_ending_statments) {
                     $vars = array_diff_key($else_vars_possibly_in_scope, $vars_possibly_in_scope);
@@ -455,11 +470,11 @@ class StatementsChecker
              * let's get the type assertions from the condition if it's a terminator
              * so that we can negate them going forward
              */
-            if (self::_doesLeaveBlock($stmt->stmts, false) && $negated_if_types) {
+            if (ScopeChecker::doesLeaveBlock($stmt->stmts, false) && $negated_if_types) {
                 $vars_in_scope = TypeChecker::reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
                 $vars_possibly_in_scope = TypeChecker::reconcileTypes($negated_if_types, $vars_possibly_in_scope, false, $this->_file_name, $stmt->getLine());
             }
-            else if ($redefined_vars) {
+            elseif ($redefined_vars) {
                 foreach ($if_types as $var => $type) {
                     if (in_array($type, ['empty', 'null'])) {
                         if (isset($redefined_vars[$var])) {
@@ -835,18 +850,22 @@ class StatementsChecker
             if ($stmt->var->name === 'this') {
                 if (!FileChecker::shouldCheckClassProperties($this->_file_name)) {
                     // ignore this property
-                } elseif ($class_checker = $this->_source->getClassChecker()) {
-                    if (is_string($stmt->name)) {
-                        $property_names = $class_checker->getPropertyNames();
+                } else {
+                    $class_checker = $this->_source->getClassChecker();
 
-                        if (!in_array($stmt->name, $property_names)) {
-                            if (!self::_propertyExists($this->_absolute_class . '::' . $stmt->name)) {
-                                throw new UndefinedPropertyException('$this->' . $stmt->name . ' is not defined', $this->_file_name, $stmt->getLine());
+                    if ($class_checker) {
+                        if (is_string($stmt->name)) {
+                            $property_names = $class_checker->getPropertyNames();
+
+                            if (!in_array($stmt->name, $property_names)) {
+                                if (!self::_propertyExists($this->_absolute_class . '::' . $stmt->name)) {
+                                    throw new UndefinedPropertyException('$this->' . $stmt->name . ' is not defined', $this->_file_name, $stmt->getLine());
+                                }
                             }
                         }
+                    } else {
+                        throw new ScopeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
                     }
-                } else {
-                    throw new ScopeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
                 }
             } else {
                 $this->_checkVariable($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
@@ -1172,6 +1191,12 @@ class StatementsChecker
         } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch) {
             if ($stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
                 if ($stmt->var->var->name === 'this' && is_string($stmt->var->name)) {
+                    $method_id = $this->_source->getMethodId();
+
+                    if (!isset(self::$_this_assignments[$method_id])) {
+                        self::$_this_assignments[$method_id] = [];
+                    }
+
                     $property_id = $this->_absolute_class . '::' . $stmt->var->name;
                     self::$_existing_properties[$property_id] = 1;
 
@@ -1184,6 +1209,8 @@ class StatementsChecker
                     else {
                         $vars_in_scope[$property_id] = 'mixed';
                     }
+
+                    self::$_this_assignments[$method_id][$stmt->var->name] = $vars_in_scope[$property_id];
                 }
             }
         }
@@ -1227,6 +1254,16 @@ class StatementsChecker
         // make sure we stay vague here
         if (!$class_type) {
             $stmt->returnType = 'mixed';
+        }
+
+        if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this' && is_string($stmt->name)) {
+            $this_method_id = $this->_source->getMethodId();
+
+            if (!isset(self::$_this_calls[$this_method_id])) {
+                self::$_this_calls[$this_method_id] = [];
+            }
+
+            self::$_this_calls[$this_method_id][] = $stmt->name;
         }
 
         if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
@@ -2186,63 +2223,6 @@ class StatementsChecker
     }
 
     /**
-     * Do all code paths in this list of statements exit the block (return/throw)
-     *
-     * @param  array<PhpParser\Node\Stmt>  $stmts
-     * @param  bool $check_continue - also looks for a continue
-     * @return bool
-     */
-    protected static function _doesLeaveBlock(array $stmts, $check_continue = true)
-    {
-        for ($i = count($stmts) - 1; $i >= 0; $i--) {
-            $stmt = $stmts[$i];
-
-            if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
-                ($check_continue && ($stmt instanceof PhpParser\Node\Stmt\Continue_ || $stmt instanceof PhpParser\Node\Stmt\Break_))) {
-
-                return true;
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                if ($stmt->else && self::_doesLeaveBlock($stmt->stmts, $check_continue) && self::_doesLeaveBlock($stmt->else->stmts, $check_continue)) {
-                    if (empty($stmt->elseifs)) {
-                        return true;
-                    }
-
-                    foreach ($stmt->elseifs as $elseif) {
-                        if (!self::_doesLeaveBlock($elseif->stmts, $check_continue)) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\Switch_ && $stmt->cases[count($stmt->cases) - 1]->cond === null) {
-                $all_cases_terminate = true;
-
-                foreach ($stmt->cases as $case) {
-                    if (!self::_doesLeaveBlock($case->stmts, false)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-                continue;
-            }
-
-            return false;
-        }
-
-        return false;
-    }
-
-    /**
      * @return bool
      */
     protected static function _containsBooleanOr(PhpParser\Node\Expr\BinaryOp $stmt)
@@ -2264,5 +2244,29 @@ class StatementsChecker
     public function getAliasedClasses()
     {
         return $this->_aliased_classes;
+    }
+
+    public static function getThisAssignments($method_id, $include_constructor = false)
+    {
+        $absolute_class = explode('::', $method_id)[0];
+
+        $this_assignments = [];
+
+        if ($include_constructor && isset(self::$_this_assignments[$absolute_class . '::__construct'])) {
+            $this_assignments = self::$_this_assignments[$absolute_class . '::__construct'];
+        }
+
+        if (isset(self::$_this_assignments[$method_id])) {
+            $this_assignments = TypeChecker::combineTypes($this_assignments, self::$_this_assignments[$method_id]);
+        }
+
+        if (isset(self::$_this_calls[$method_id])) {
+            foreach (self::$_this_calls[$method_id] as $call) {
+                $call_assingments = self::getThisAssignments($absolute_class . '::' . $call);
+                $this_assignments = TypeChecker::combineTypes($this_assignments, $call_assingments);
+            }
+        }
+
+        return $this_assignments;
     }
 }
