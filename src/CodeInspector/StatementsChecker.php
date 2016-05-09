@@ -1210,7 +1210,9 @@ class StatementsChecker
                         $vars_in_scope[$property_id] = 'mixed';
                     }
 
-                    self::$_this_assignments[$method_id][$stmt->var->name] = $vars_in_scope[$property_id];
+                    // right now we have to settle for mixed
+                    self::$_this_assignments[$method_id][$stmt->var->name] = 'mixed';
+                    //self::$_this_assignments[$method_id][$stmt->var->name] = $vars_in_scope[$property_id];
                 }
             }
         }

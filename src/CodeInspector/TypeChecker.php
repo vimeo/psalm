@@ -412,6 +412,11 @@ class TypeChecker
             $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
             $result_var_types = null;
 
+            if (isset($existing_types[$key]) && $existing_types[$key] === 'mixed') {
+                $result_types[$key] = 'mixed';
+                continue;
+            }
+
             if (isset($new_types[$key])) {
                 if ($new_types[$key][0] === '!') {
                     if ($existing_var_types) {
@@ -433,36 +438,38 @@ class TypeChecker
                             if (empty($existing_var_types)) {
                                 // @todo - I think there's a better way to handle this, but for the moment
                                 // mixed will have to do.
-                                $result_var_types = ['mixed'];
+                                $result_types[$key] = 'mixed';
+                                continue;
                             }
-                            else {
-                                $result_var_types = $existing_var_types;
-                            }
+
+                            $result_types[$key] = implode('|', $existing_var_types);
+                            continue;
                         }
-                        else {
-                            $negated_type = substr($new_types[$key], 1);
 
-                            $type_pos = array_search($negated_type, $existing_var_types);
+                        $negated_type = substr($new_types[$key], 1);
 
-                            if ($type_pos !== false) {
-                                array_splice($existing_var_types, $type_pos, 1);
+                        $type_pos = array_search($negated_type, $existing_var_types);
 
-                                if (empty($existing_var_types)) {
-                                    if ($strict) {
-                                        throw new TypeResolutionException('Cannot resolve types for ' . $key, $file_name, $line_number);
-                                    }
+                        if ($type_pos !== false) {
+                            array_splice($existing_var_types, $type_pos, 1);
+
+                            if (empty($existing_var_types)) {
+                                if ($strict) {
+                                    throw new TypeResolutionException('Cannot resolve types for ' . $key, $file_name, $line_number);
                                 }
                             }
-
-                            $result_var_types = $existing_var_types;
                         }
+
+                        $result_types[$key] = implode('|', $existing_var_types);
+                        continue;
                     }
-                    else {
-                        // possibly undefined variable
-                        $result_var_types = ['mixed'];
-                    }
+
+                    // possibly undefined variable
+                    $result_types[$key] = 'mixed';
+                    continue;
                 }
-                else if ($existing_var_types && $new_types[$key] === 'empty') {
+
+                if ($existing_var_types && $new_types[$key] === 'empty') {
                     $bool_pos = array_search('bool', $existing_var_types);
 
                     if ($bool_pos !== false) {
@@ -470,17 +477,15 @@ class TypeChecker
                         $existing_var_types[] = 'false';
                     }
 
-                    $result_var_types = $existing_var_types;
+                    $result_types[$key] = implode('|', $existing_var_types);
+                    continue;
                 }
-                else {
-                    $result_var_types = [$new_types[$key]];
-                }
-            }
-            else {
-                $result_var_types = $existing_var_types;
+
+                $result_types[$key] = $new_types[$key];
+                continue;
             }
 
-            $result_types[$key] = implode('|', $result_var_types);
+            $result_types[$key] = $existing_types[$key];
         }
 
         return $result_types;
