@@ -38,9 +38,7 @@ class FunctionChecker implements StatementsSource
             $vars_in_scope = $extra_scope_vars;
             $vars_possibly_in_scope = $extra_scope_vars;
 
-            $check_variables = substr($this->_file_name, -4) === '.php' || $this->_function->params;
-
-            $statements_checker = new StatementsChecker($this, $check_variables);
+            $statements_checker = new StatementsChecker($this, !empty($this->_function->params));
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {

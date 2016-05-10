@@ -55,12 +55,12 @@ class StatementsChecker
     protected static $_check_string_fn = null;
     protected static $_mock_interfaces = [];
 
-    public function __construct(StatementsSource $source, $check_variables = true)
+    public function __construct(StatementsSource $source, $enforce_variable_checks = false)
     {
         $this->_source = $source;
         $this->_check_classes = true;
         $this->_check_methods = true;
-        $this->_check_variables = $check_variables;
+
         $this->_check_consts = true;
 
         $this->_file_name = $this->_source->getFileName();
@@ -70,6 +70,9 @@ class StatementsChecker
         $this->_absolute_class = $this->_source->getAbsoluteClass();
         $this->_class_name = $this->_source->getClassName();
         $this->_class_extends = $this->_source->getParentClass();
+
+        $this->_check_variables = FileChecker::shouldCheckVariables($this->_file_name) || $enforce_variable_checks;
+        $this->_check_nulls = FileChecker::shouldCheckNulls($this->_file_name);
 
         $this->_type_checker = new TypeChecker($source, $this);
     }
@@ -1304,7 +1307,11 @@ class StatementsChecker
                 $absolute_class = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $absolute_class);
 
                 if ($absolute_class === 'null') {
-                    throw new InvalidArgumentException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine());
+                    if ($this->_check_nulls) {
+                        throw new InvalidArgumentException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine());
+                    }
+
+                    return;
                 }
 
                 if (in_array($absolute_class, ['int', 'bool', 'array'])) {

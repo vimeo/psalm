@@ -27,6 +27,9 @@ class FileChecker implements StatementsSource
     protected static $_functions = [];
     protected static $_includes_to_ignore = [];
 
+    protected static $_ignore_check_nulls_pattern = null;
+    protected static $_ignore_check_variables_pattern = null;
+
     public static $show_notices = true;
 
     public function __construct($file_name, array $preloaded_statements = [])
@@ -294,5 +297,25 @@ class FileChecker implements StatementsSource
     public static function getIncludesToIgnore()
     {
         return self::$_includes_to_ignore;
+    }
+
+    public static function ignoreNullChecksFor($pattern)
+    {
+        self::$_ignore_check_nulls_pattern = $pattern;
+    }
+
+    public static function ignoreVariableChecksFor($pattern)
+    {
+        self::$_ignore_check_variables_pattern = $pattern;
+    }
+
+    public static function shouldCheckVariables($file_name)
+    {
+        return !self::$_ignore_check_variables_pattern || !preg_match(self::$_ignore_check_variables_pattern, $file_name);
+    }
+
+    public static function shouldCheckNulls($file_name)
+    {
+        return !self::$_ignore_check_nulls_pattern || !preg_match(self::$_ignore_check_nulls_pattern, $file_name);
     }
 }
