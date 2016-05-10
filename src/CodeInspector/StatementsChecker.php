@@ -790,10 +790,14 @@ class StatementsChecker
     /**
      * @return void
      */
-    protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1)
+    protected function _checkVariable(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1)
     {
-        if ($stmt->name === 'this' && $this->_is_static) {
-            throw new StaticVariableException('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine());
+        if ($this->_is_static) {
+            if (($stmt instanceof PhpParser\Node\Expr\Variable && $stmt->name === 'this') ||
+                ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->var->name === 'this')) {
+
+                throw new StaticVariableException('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine());
+            }
         }
 
         if (!$this->_check_variables) {
@@ -807,40 +811,64 @@ class StatementsChecker
             return;
         }
 
-        if (in_array($stmt->name, ['this', '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv'])) {
+        if ($stmt instanceof PhpParser\Node\Expr\Variable &&
+            in_array($stmt->name, ['this', '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv'])) {
+
             return;
         }
 
-        if (!is_string($stmt->name)) {
+        if ($stmt instanceof PhpParser\Node\Expr\Variable && !is_string($stmt->name)) {
             $this->_checkExpression($stmt->name, $vars_in_scope, $vars_possibly_in_scope);
             return;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Variable) {
+            $property_id = $stmt->name;
+        }
+        else if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->var->name === 'this') {
+            $property_id = $this->_absolute_class . '::' . $stmt->name;
+        }
+        else {
+            throw new \InvalidArgumentException('Bad property passed to _checkVariable');
+        }
+
         if ($method_id && $this->_isPassedByReference($method_id, $argument_offset)) {
-            if (!isset($vars_in_scope[$stmt->name])) {
-                $vars_possibly_in_scope[$stmt->name] = true;
-                $this->registerVariable($stmt->name, $stmt->getLine());
+            if (!isset($vars_in_scope[$property_id])) {
+                $vars_possibly_in_scope[$property_id] = true;
+                $this->registerVariable($property_id, $stmt->getLine());
+
+                if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $this->_source->getMethodId()) {
+                    $this_method_id = $this->_source->getMethodId();
+
+                    if (!isset(self::$_this_assignments[$this_method_id])) {
+                        self::$_this_assignments[$this_method_id] = [];
+                    }
+
+                    self::$_this_assignments[$this_method_id][$stmt->name] = 'mixed';
+                }
             }
 
-            $vars_in_scope[$stmt->name] = 'mixed';
+            $vars_in_scope[$property_id] = 'mixed';
 
             return;
         }
 
-        if (!isset($vars_in_scope[$stmt->name])) {
-            if (!isset($vars_possibly_in_scope[$stmt->name]) || !isset($this->_all_vars[$stmt->name])) {
-                throw new UndefinedVariableException('Cannot find referenced variable $' . $stmt->name, $this->_file_name, $stmt->getLine());
+        if ($stmt instanceof PhpParser\Node\Expr\Variable) {
+            if (!isset($vars_in_scope[$property_id])) {
+                if (!isset($vars_possibly_in_scope[$property_id]) || !isset($this->_all_vars[$property_id])) {
+                    throw new UndefinedVariableException('Cannot find referenced variable $' . $property_id, $this->_file_name, $stmt->getLine());
 
-            } elseif (isset($this->_all_vars[$stmt->name]) && !isset($this->_warn_vars[$stmt->name])) {
-                if (FileChecker::$show_notices) {
-                    echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $stmt->name . ' on line ' . $stmt->getLine() . ', first seen on line ' . $this->_all_vars[$stmt->name] . PHP_EOL);
+                } elseif (isset($this->_all_vars[$property_id]) && !isset($this->_warn_vars[$property_id])) {
+                    if (FileChecker::$show_notices) {
+                        echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $property_id . ' on line ' . $stmt->getLine() . ', first seen on line ' . $this->_all_vars[$property_id] . PHP_EOL);
+                    }
+
+                    $this->_warn_vars[$property_id] = true;
                 }
 
-                $this->_warn_vars[$stmt->name] = true;
+            } else {
+                $stmt->returnType = $vars_in_scope[$property_id];
             }
-
-        } else {
-            $stmt->returnType = $vars_in_scope[$stmt->name];
         }
     }
 
@@ -1484,7 +1512,23 @@ class StatementsChecker
     protected function _checkMethodParams(array $args, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         foreach ($args as $i => $arg) {
-            if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
+            if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch &&
+                $arg->value->var instanceof PhpParser\Node\Expr\Variable &&
+                $arg->value->var->name === 'this' &&
+                is_string($arg->value->name)) {
+
+                if ($method_id) {
+                    $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i);
+
+                } else {
+                    $property_id = $this->_absolute_class . '::' . $arg->value->name;
+                    // we don't know if it exists, assume it's passed by reference
+                    $vars_in_scope[$property_id] = 'mixed';
+                    $vars_possibly_in_scope[$property_id] = true;
+                    $this->registerVariable($property_id, $arg->value->getLine());
+                }
+            }
+            elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                 if ($method_id) {
                     $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i);
                 } elseif (is_string($arg->value->name)) {
