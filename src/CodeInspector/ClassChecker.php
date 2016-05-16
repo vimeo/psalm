@@ -337,8 +337,10 @@ class ClassChecker implements StatementsSource
             $reflection_methods = $reflection_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
 
             foreach ($reflection_methods as $reflection_method) {
-                $method_name = $reflection_method->getName();
-                $class_methods[] = $method_name;
+                if (!$reflection_method->isAbstract()) {
+                    $method_name = $reflection_method->getName();
+                    $class_methods[] = $method_name;
+                }
             }
 
             self::$_class_methods[$parent_class] = $class_methods;

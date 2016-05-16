@@ -19,6 +19,8 @@ class FunctionChecker implements StatementsSource
     protected $_return_vars_in_scope = [];
     protected $_return_vars_possibly_in_scope = [];
 
+    protected static $_no_effects_hashes = [];
+
     protected $_function_params = [];
 
     public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source)
@@ -36,6 +38,15 @@ class FunctionChecker implements StatementsSource
     public function check(&$vars_in_scope = [], &$vars_possibly_in_scope = [])
     {
         if ($this->_function->stmts) {
+            if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
+                $hash = md5($this->getMethodId() . json_encode($vars_in_scope) . ' ' . json_encode($vars_possibly_in_scope));
+
+                // if we know that the function has no effects on vars, we don't bother checking
+                if (isset(self::$_no_effects_hashes[$hash])) {
+                    return;
+                }
+            }
+
             $statements_checker = new StatementsChecker($this, !empty($this->_function->params));
 
             foreach ($this->_function->params as $param) {
@@ -86,9 +97,17 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            foreach ($vars_in_scope as $var => $type) {
+            foreach ($vars_possibly_in_scope as $var => $type) {
                 if (strpos($var, 'this->') !== 0) {
                     unset($vars_possibly_in_scope[$var]);
+                }
+            }
+
+            if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
+                $new_hash = md5($this->getMethodId() . json_encode($vars_in_scope) . ' ' . json_encode($vars_possibly_in_scope));
+
+                if ($hash === $new_hash) {
+                    self::$_no_effects_hashes[$hash] = true;
                 }
             }
         }
