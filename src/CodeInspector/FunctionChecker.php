@@ -16,9 +16,10 @@ class FunctionChecker implements StatementsSource
     protected $_absolute_class;
     protected $_statements_checker;
     protected $_source;
+    protected $_return_vars_in_scope = [];
+    protected $_return_vars_possibly_in_scope = [];
 
     protected $_function_params = [];
-    protected $_function_return_types = [];
 
     public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source)
     {
@@ -32,12 +33,9 @@ class FunctionChecker implements StatementsSource
         $this->_source = $source;
     }
 
-    public function check(&$extra_scope_vars = [])
+    public function check(&$vars_in_scope = [], &$vars_possibly_in_scope = [])
     {
         if ($this->_function->stmts) {
-            $vars_in_scope = $extra_scope_vars;
-            $vars_possibly_in_scope = $extra_scope_vars;
-
             $statements_checker = new StatementsChecker($this, !empty($this->_function->params));
 
             foreach ($this->_function->params as $param) {
@@ -74,7 +72,42 @@ class FunctionChecker implements StatementsSource
 
             $statements_checker->check($this->_function->stmts, $vars_in_scope, $vars_possibly_in_scope);
 
-            $extra_scope_vars = $vars_in_scope;
+            if (isset($this->_return_vars_in_scope[''])) {
+                $vars_in_scope = TypeChecker::combineTypes($vars_in_scope, $this->_return_vars_in_scope['']);
+            }
+
+            if (isset($this->_return_vars_possibly_in_scope[''])) {
+                $vars_possibly_in_scope = TypeChecker::combineTypes($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope['']);
+            }
+
+            foreach ($vars_in_scope as $var => $type) {
+                if (strpos($var, 'this->') !== 0) {
+                    unset($vars_in_scope[$var]);
+                }
+            }
+
+            foreach ($vars_in_scope as $var => $type) {
+                if (strpos($var, 'this->') !== 0) {
+                    unset($vars_possibly_in_scope[$var]);
+                }
+            }
+        }
+    }
+
+    public function addReturnTypes($return_type, $vars_in_scope, $vars_possibly_in_scope)
+    {
+        if (isset($this->_return_vars_in_scope[$return_type])) {
+            $this->_return_vars_in_scope[$return_type] = TypeChecker::combineTypes($vars_in_scope, $this->_return_vars_in_scope[$return_type]);
+        }
+        else {
+            $this->_return_vars_in_scope[$return_type] = $vars_in_scope;
+        }
+
+        if (isset($this->_return_vars_possibly_in_scope[$return_type])) {
+            $this->_return_vars_possibly_in_scope[$return_type] = TypeChecker::combineTypes($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope[$return_type]);
+        }
+        else {
+            $this->_return_vars_possibly_in_scope[$return_type] = $vars_possibly_in_scope;
         }
     }
 

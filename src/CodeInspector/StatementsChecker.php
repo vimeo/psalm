@@ -269,6 +269,7 @@ class StatementsChecker
             if (!$has_ending_statments) {
                 $vars = array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope);
 
+                // if we're leaving this block, add vars to outer for loop scope
                 if ($has_leaving_statments) {
                     $for_vars_possibly_in_scope = array_merge($for_vars_possibly_in_scope, $vars);
                 }
@@ -364,6 +365,7 @@ class StatementsChecker
                 if (!$has_ending_statments) {
                     $vars = array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope);
 
+                    // if we're leaving this block, add vars to outer for loop scope
                     if ($has_leaving_statements) {
                         $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
                     }
@@ -902,7 +904,7 @@ class StatementsChecker
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if ($stmt->var->name === 'this') {
                 if (is_string($stmt->name)) {
-                    if (!FileChecker::shouldCheckClassProperties($this->_file_name)) {
+                    if (!ClassChecker::getThisClass() && !FileChecker::shouldCheckClassProperties($this->_file_name)) {
                         // ignore this property
                     } else {
                         $class_checker = $this->_source->getClassChecker();
@@ -915,7 +917,7 @@ class StatementsChecker
                                     $property_id = $this->_absolute_class . '::' . $stmt->name;
                                     $var_id = $stmt->var->name . '->' . $stmt->name;
 
-                                    $var_defined = isset($vars_in_scope[$var_id]);
+                                    $var_defined = isset($vars_in_scope[$var_id]) || isset($vars_possibly_in_scope[$var_id]);
 
                                     if ((ClassChecker::getThisClass() && !$var_defined) || (!ClassChecker::getThisClass() && !$var_defined && !self::_propertyExists($property_id))) {
                                         throw new UndefinedPropertyException('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine());
@@ -1277,6 +1279,8 @@ class StatementsChecker
                         $vars_in_scope[$var_id] = 'mixed';
                     }
 
+                    $vars_possibly_in_scope[$var_id] = true;
+
                     // right now we have to settle for mixed
                     self::$_this_assignments[$method_id][$stmt->var->name] = 'mixed';
                     //self::$_this_assignments[$method_id][$stmt->var->name] = $vars_in_scope[$property_id];
@@ -1338,24 +1342,26 @@ class StatementsChecker
 
                 $method_id = ClassChecker::getThisClass() . '::' . $stmt->name;
 
-                $this_vars_in_scope = [];
-
-                foreach ($vars_in_scope as $var => $type) {
-                    if (strpos($var, 'this->') === 0) {
-                        $this_vars_in_scope[$var] = $type;
-                    }
-                }
-
                 $method_checker = ClassChecker::getMethodChecker($method_id);
 
                 if ($method_checker->getMethodId() !== $this->_source->getMethodId()) {
-                    $method_checker->check($this_vars_in_scope);
+                    $this_vars_in_scope = [];
 
-                    foreach ($this_vars_in_scope as $var => $type) {
+                    $this_vars_possibly_in_scope = [];
+
+                    foreach ($vars_possibly_in_scope as $var => $type) {
                         if (strpos($var, 'this->') === 0) {
-                            $vars_in_scope[$var] = $type;
+                            $this_vars_possibly_in_scope[$var] = true;
                         }
                     }
+
+                    foreach ($vars_in_scope as $var => $type) {
+                        if (strpos($var, 'this->') === 0) {
+                            $this_vars_in_scope[$var] = $type;
+                        }
+                    }
+
+                    $method_checker->check($this_vars_in_scope, $this_vars_possibly_in_scope);
                 }
             }
         }
@@ -1731,6 +1737,10 @@ class StatementsChecker
         }
         else {
             $stmt->returnType = 'void';
+        }
+
+        if ($this->_source instanceof FunctionChecker) {
+            $this->_source->addReturnTypes($stmt->expr ? $stmt->returnType : '', $vars_in_scope, $vars_possibly_in_scope);
         }
     }
 

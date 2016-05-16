@@ -96,7 +96,6 @@ class FileChecker implements StatementsSource
     public function checkWithClass($class_name, $method_vars = [])
     {
         $stmts = self::getStatements($this->_file_name);
-        $this->_class_name = $class_name;
 
         $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
 

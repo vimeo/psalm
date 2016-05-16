@@ -359,6 +359,8 @@ class ClassChecker implements StatementsSource
     public static function setThisClass($this_class)
     {
         self::$_this_class = $this_class;
+
+        self::$_class_checkers = [];
     }
 
     public static function getThisClass()
