@@ -43,7 +43,7 @@ class FileChecker implements StatementsSource
         }
     }
 
-    public function check($check_classes = true)
+    public function check($check_classes = true, $check_class_statements = true)
     {
         $stmts = $this->_preloaded_statements ?
                     $this->_preloaded_statements :
@@ -54,20 +54,24 @@ class FileChecker implements StatementsSource
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 if ($check_classes) {
-                    (new ClassChecker($stmt, $this, $stmt->name))->check();
+                    $class_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
+                    $class_checker->check($check_class_statements);
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                 // @todo check interfaces
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                // @todo check trait
+                if ($check_classes) {
+                    $trait_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
+                    $trait_checker->check($check_class_statements);
+                }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = implode('\\', $stmt->name->parts);
 
                 $namespace_checker = new NamespaceChecker($stmt, $this);
-                $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes);
+                $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_statements);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
@@ -261,9 +265,30 @@ class FileChecker implements StatementsSource
         return false;
     }
 
+    public function getSource()
+    {
+        return null;
+    }
+
     public static function getFileCheckerFromFileName($file_name)
     {
         return self::$_file_checkers[$file_name];
+    }
+
+    public static function getClassCheckerFromClass($class_name)
+    {
+        $file_name = (new \ReflectionClass($class_name))->getFileName();
+
+        if (isset(self::$_file_checkers[$file_name])) {
+            $file_checker = self::$_file_checkers[$file_name];
+        }
+        else {
+            $file_checker = new FileChecker($file_name);
+        }
+
+        $file_checker->check(true, false);
+
+        return ClassChecker::getClassCheckerFromClass($class_name);
     }
 
     public function hasFunction($function_name)

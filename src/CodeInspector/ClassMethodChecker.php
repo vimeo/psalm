@@ -30,7 +30,7 @@ class ClassMethodChecker extends FunctionChecker
 
     const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\|\[\]]+)';
 
-    public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source)
+    public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source, array $this_vars = [])
     {
         parent::__construct($function, $source);
 
@@ -515,6 +515,21 @@ class ClassMethodChecker extends FunctionChecker
     public static function registerInheritedMethod($parent_method_id, $method_id)
     {
         self::$_inherited_methods[$method_id] = $parent_method_id;
+    }
+
+    public static function getDefiningParentMethod($method_id)
+    {
+        if (isset(self::$_inherited_methods[$method_id])) {
+            return self::$_inherited_methods[$method_id];
+        }
+
+        $method_name = explode('::', $method_id)[1];
+
+        $parent_method_id = (new \ReflectionMethod($method_id))->getDeclaringClass()->getName() . '::' . $method_name;
+
+        self::$_inherited_methods[$method_id] = $parent_method_id;
+
+        return $parent_method_id;
     }
 
     public static function getNewDocblocksForFile($file_name)

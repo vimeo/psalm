@@ -22,4 +22,6 @@ interface StatementsSource
     public function getFileName();
 
     public function isStatic();
+
+    public function getSource();
 }

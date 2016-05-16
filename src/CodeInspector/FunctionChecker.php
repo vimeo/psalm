@@ -32,7 +32,7 @@ class FunctionChecker implements StatementsSource
         $this->_source = $source;
     }
 
-    public function check($extra_scope_vars = [])
+    public function check(&$extra_scope_vars = [])
     {
         if ($this->_function->stmts) {
             $vars_in_scope = $extra_scope_vars;
@@ -73,6 +73,8 @@ class FunctionChecker implements StatementsSource
             }
 
             $statements_checker->check($this->_function->stmts, $vars_in_scope, $vars_possibly_in_scope);
+
+            $extra_scope_vars = $vars_in_scope;
         }
     }
 
@@ -126,5 +128,10 @@ class FunctionChecker implements StatementsSource
     public function isStatic()
     {
         return $this->_is_static;
+    }
+
+    public function getSource()
+    {
+        return $this->_source;
     }
 }

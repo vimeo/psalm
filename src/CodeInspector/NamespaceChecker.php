@@ -19,7 +19,7 @@ class NamespaceChecker implements StatementsSource
         $this->_file_name = $source->getFileName();
     }
 
-    public function check($check_classes)
+    public function check($check_classes = true, $check_class_statements = true)
     {
         $leftover_stmts = [];
 
@@ -29,13 +29,19 @@ class NamespaceChecker implements StatementsSource
                 $this->_contained_classes[$absolute_class] = 1;
 
                 if ($check_classes) {
-                    (new ClassChecker($stmt, $this, $absolute_class))->check();
+                    $class_checker = ClassChecker::getClassCheckerFromClass($absolute_class) ?: new ClassChecker($stmt, $this, $absolute_class);
+                    $class_checker->check($check_class_statements);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                 // @todo check interface
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                // @todo check trait
+                $absolute_class = ClassChecker::getAbsoluteClassFromString($stmt->name, $this->_namespace_name, []);
+
+                if ($check_classes) {
+                    $trait_checker = ClassChecker::getClassCheckerFromClass($absolute_class) ?: new TraitChecker($stmt, $this, $absolute_class);
+                    $trait_checker->check($check_class_statements);
+                }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
@@ -114,5 +120,10 @@ class NamespaceChecker implements StatementsSource
     public function isStatic()
     {
         return false;
+    }
+
+    public function getSource()
+    {
+        return null;
     }
 }

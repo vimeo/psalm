@@ -11,6 +11,7 @@ class TypeChecker
     protected $_absolute_class;
     protected $_namespace;
     protected $_checker;
+    protected $_check_nulls;
 
     const ASSIGNMENT_TO_RIGHT = 1;
     const ASSIGNMENT_TO_LEFT = -1;
@@ -25,7 +26,7 @@ class TypeChecker
     /**
      * @return bool
      */
-    public static function checkMethodParam($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
+    public static function checkMethodParam($return_type, $method_id, $arg_offset, $current_class, $check_nulls, $file_name, $line_number)
     {
         if ($return_type === 'mixed') {
             return true;
@@ -52,7 +53,15 @@ class TypeChecker
                 return true;
             }
 
-            throw new InvalidArgumentException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied', $file_name, $line_number);
+            if ($check_nulls) {
+                throw new InvalidArgumentException(
+                    'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied',
+                    $file_name,
+                    $line_number
+                );
+            }
+
+            return true;
         }
 
         // Remove generic type
@@ -82,7 +91,7 @@ class TypeChecker
     {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             if ($stmt->name === 'this') {
-                return $this->_absolute_class;
+                return ClassChecker::getThisClass() ?: $this->_absolute_class;
             }
             elseif (isset($vars_in_scope[$stmt->name])) {
                 return $vars_in_scope[$stmt->name];
@@ -93,7 +102,7 @@ class TypeChecker
             $stmt->var->name === 'this' &&
             is_string($stmt->name)
         ) {
-            $property_id = $this->_absolute_class . '::' . $stmt->name;
+            $property_id = 'this' . '->' . $stmt->name;
 
             if (isset($vars_in_scope[$property_id])) {
                 return $vars_in_scope[$property_id];
@@ -343,7 +352,7 @@ class TypeChecker
                 $stmt->var instanceof PhpParser\Node\Expr\Variable &&
                 $stmt->var->name === 'this' &&
                 is_string($stmt->name)) {
-            return $this->_absolute_class . '::' . $stmt->name;
+            return $stmt->var->name . '->' . $stmt->name;
         }
 
         return null;

@@ -185,9 +185,6 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
 
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                // do nothing
-
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 (new ClassChecker($stmt, $this->_source, $stmt->name))->check();
 
@@ -609,7 +606,17 @@ class StatementsChecker
             $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
-            // do nothing
+            foreach ($stmt->vars as $isset_var) {
+                if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch &&
+                    $isset_var->var instanceof PhpParser\Node\Expr\Variable &&
+                    $isset_var->var->name === 'this' &&
+                    is_string($isset_var->name)
+                ) {
+                    $property_id = 'this->' . $isset_var->name;
+                    $vars_in_scope[$property_id] = 'mixed';
+                    $vars_possibly_in_scope[$property_id] = true;
+                }
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             $this->_checkClassConstFetch($stmt, $vars_in_scope, $vars_possibly_in_scope);
@@ -661,9 +668,26 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Closure) {
             $closure_checker = new ClosureChecker($stmt, $this->_source);
-            $closure_checker->check();
 
             $this->_checkClosureUses($stmt, $vars_in_scope, $vars_possibly_in_scope);
+
+            $use_vars = [];
+
+            if (!$this->_is_static) {
+                $use_vars['this'] = ClassChecker::getThisClass() ?: $this->_absolute_class;
+            }
+
+            foreach ($vars_in_scope as $var => $type) {
+                if (strpos($var, 'this->') === 0) {
+                    $use_vars[$var] = $type;
+                }
+            }
+
+            foreach ($stmt->uses as $use) {
+                $use_vars[$use->var] = isset($vars_in_scope[$use->var]) ? $vars_in_scope[$use->var] : 'mixed';
+            }
+
+            $closure_checker->check($use_vars);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $this->_checkArrayAccess($stmt, $vars_in_scope, $vars_possibly_in_scope);
@@ -793,14 +817,10 @@ class StatementsChecker
     /**
      * @return void
      */
-    protected function _checkVariable(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1)
+    protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1)
     {
-        if ($this->_is_static) {
-            if (($stmt instanceof PhpParser\Node\Expr\Variable && $stmt->name === 'this') ||
-                ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->var->name === 'this')) {
-
-                throw new StaticVariableException('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine());
-            }
+        if ($this->_is_static && $stmt->name === 'this') {
+            throw new StaticVariableException('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine());
         }
 
         if (!$this->_check_variables) {
@@ -814,90 +834,103 @@ class StatementsChecker
             return;
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Variable &&
-            in_array($stmt->name, ['this', '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv'])) {
-
+        if (in_array($stmt->name, ['this', '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv'])) {
             return;
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Variable && !is_string($stmt->name)) {
+        if (!is_string($stmt->name)) {
             $this->_checkExpression($stmt->name, $vars_in_scope, $vars_possibly_in_scope);
             return;
         }
 
+        if ($method_id && $this->_isPassedByReference($method_id, $argument_offset)) {
+            $this->_checkMethodParam($stmt, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+            return;
+        }
+
+        $var_name = $stmt->name;
+
+        if (!isset($vars_in_scope[$var_name])) {
+            if (!isset($vars_possibly_in_scope[$var_name]) || !isset($this->_all_vars[$var_name])) {
+                throw new UndefinedVariableException('Cannot find referenced variable $' . $var_name, $this->_file_name, $stmt->getLine());
+
+            } elseif (isset($this->_all_vars[$var_name]) && !isset($this->_warn_vars[$var_name])) {
+                if (FileChecker::$show_notices) {
+                    echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $var_name . ' on line ' . $stmt->getLine() . ', first seen on line ' . $this->_all_vars[$var_name] . PHP_EOL);
+                }
+
+                $this->_warn_vars[$var_name] = true;
+            }
+
+        } else {
+            $stmt->returnType = $vars_in_scope[$var_name];
+        }
+    }
+
+    protected function _checkMethodParam(PhpParser\Node\Expr $stmt, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             $property_id = $stmt->name;
         }
         else if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->var->name === 'this') {
-            $property_id = $this->_absolute_class . '::' . $stmt->name;
+            $property_id = $stmt->var->name . '->' . $stmt->name;
         }
         else {
-            throw new \InvalidArgumentException('Bad property passed to _checkVariable');
+            throw new \InvalidArgumentException('Bad property passed to _checkMethodParam');
         }
 
-        if ($method_id && $this->_isPassedByReference($method_id, $argument_offset)) {
-            if (!isset($vars_in_scope[$property_id])) {
-                $vars_possibly_in_scope[$property_id] = true;
-                $this->registerVariable($property_id, $stmt->getLine());
+        if (!isset($vars_in_scope[$property_id])) {
+            $vars_possibly_in_scope[$property_id] = true;
+            $this->registerVariable($property_id, $stmt->getLine());
 
-                if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $this->_source->getMethodId()) {
-                    $this_method_id = $this->_source->getMethodId();
+            if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $this->_source->getMethodId()) {
+                $this_method_id = $this->_source->getMethodId();
 
-                    if (!isset(self::$_this_assignments[$this_method_id])) {
-                        self::$_this_assignments[$this_method_id] = [];
-                    }
-
-                    self::$_this_assignments[$this_method_id][$stmt->name] = 'mixed';
-                }
-            }
-
-            $vars_in_scope[$property_id] = 'mixed';
-
-            return;
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            if (!isset($vars_in_scope[$property_id])) {
-                if (!isset($vars_possibly_in_scope[$property_id]) || !isset($this->_all_vars[$property_id])) {
-                    throw new UndefinedVariableException('Cannot find referenced variable $' . $property_id, $this->_file_name, $stmt->getLine());
-
-                } elseif (isset($this->_all_vars[$property_id]) && !isset($this->_warn_vars[$property_id])) {
-                    if (FileChecker::$show_notices) {
-                        echo('Notice: ' . $this->_file_name . ' - possibly undefined variable $' . $property_id . ' on line ' . $stmt->getLine() . ', first seen on line ' . $this->_all_vars[$property_id] . PHP_EOL);
-                    }
-
-                    $this->_warn_vars[$property_id] = true;
+                if (!isset(self::$_this_assignments[$this_method_id])) {
+                    self::$_this_assignments[$this_method_id] = [];
                 }
 
-            } else {
-                $stmt->returnType = $vars_in_scope[$property_id];
+                self::$_this_assignments[$this_method_id][$stmt->name] = 'mixed';
             }
         }
+
+        $vars_in_scope[$property_id] = 'mixed';
     }
 
     protected function _checkPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if ($stmt->var->name === 'this') {
-                if (!FileChecker::shouldCheckClassProperties($this->_file_name)) {
-                    // ignore this property
-                } else {
-                    $class_checker = $this->_source->getClassChecker();
+                if (is_string($stmt->name)) {
+                    if (!FileChecker::shouldCheckClassProperties($this->_file_name)) {
+                        // ignore this property
+                    } else {
+                        $class_checker = $this->_source->getClassChecker();
 
-                    if ($class_checker) {
-                        if (is_string($stmt->name)) {
-                            $property_names = $class_checker->getPropertyNames();
+                        if ($class_checker) {
+                            if (is_string($stmt->name)) {
+                                $property_names = $class_checker->getPropertyNames();
 
-                            if (!in_array($stmt->name, $property_names)) {
-                                if (!self::_propertyExists($this->_absolute_class . '::' . $stmt->name)) {
-                                    throw new UndefinedPropertyException('$this->' . $stmt->name . ' is not defined', $this->_file_name, $stmt->getLine());
+                                if (!in_array($stmt->name, $property_names)) {
+                                    $property_id = $this->_absolute_class . '::' . $stmt->name;
+                                    $var_id = $stmt->var->name . '->' . $stmt->name;
+
+                                    $var_defined = isset($vars_in_scope[$var_id]);
+
+                                    if ((ClassChecker::getThisClass() && !$var_defined) || (!ClassChecker::getThisClass() && !$var_defined && !self::_propertyExists($property_id))) {
+                                        throw new UndefinedPropertyException('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine());
+                                    }
                                 }
                             }
+                        } else {
+                            throw new ScopeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
                         }
-                    } else {
-                        throw new ScopeException('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine());
                     }
                 }
+                else {
+                    $this->_checkExpression($stmt->name, $vars_in_scope, $vars_possibly_in_scope);
+                }
+
             } else {
                 $this->_checkVariable($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
             }
@@ -1027,7 +1060,9 @@ class StatementsChecker
                         throw new IteratorException('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine());
                     }
                     elseif ($return_type === 'null') {
-                        throw new IteratorException('Cannot iterate over null', $this->_file_name, $stmt->getLine());
+                        if ($this->_check_nulls) {
+                            throw new IteratorException('Cannot iterate over null', $this->_file_name, $stmt->getLine());
+                        }
                     }
                     else {
                         if (strpos($return_type, '<') !== false && strpos($return_type, '>') !== false) {
@@ -1229,16 +1264,17 @@ class StatementsChecker
                     }
 
                     $property_id = $this->_absolute_class . '::' . $stmt->var->name;
+                    $var_id = $stmt->var->var->name . '->' . $stmt->var->name;
                     self::$_existing_properties[$property_id] = 1;
 
                     if ($type_in_comments) {
-                        $vars_in_scope[$property_id] = $type_in_comments;
+                        $vars_in_scope[$var_id] = $type_in_comments;
                     }
                     elseif (isset($stmt->expr->returnType)) {
-                        $this->_typeAssignment($property_id, $stmt->expr, $vars_in_scope);
+                        $this->_typeAssignment($var_id, $stmt->expr, $vars_in_scope);
                     }
                     else {
-                        $vars_in_scope[$property_id] = 'mixed';
+                        $vars_in_scope[$var_id] = 'mixed';
                     }
 
                     // right now we have to settle for mixed
@@ -1297,6 +1333,31 @@ class StatementsChecker
             }
 
             self::$_this_calls[$this_method_id][] = $stmt->name;
+
+            if (ClassChecker::getThisClass()) {
+
+                $method_id = ClassChecker::getThisClass() . '::' . $stmt->name;
+
+                $this_vars_in_scope = [];
+
+                foreach ($vars_in_scope as $var => $type) {
+                    if (strpos($var, 'this->') === 0) {
+                        $this_vars_in_scope[$var] = $type;
+                    }
+                }
+
+                $method_checker = ClassChecker::getMethodChecker($method_id);
+
+                if ($method_checker->getMethodId() !== $this->_source->getMethodId()) {
+                    $method_checker->check($this_vars_in_scope);
+
+                    foreach ($this_vars_in_scope as $var => $type) {
+                        if (strpos($var, 'this->') === 0) {
+                            $vars_in_scope[$var] = $type;
+                        }
+                    }
+                }
+            }
         }
 
         if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
@@ -1335,7 +1396,10 @@ class StatementsChecker
                     }
 
                     ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
-                    ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine());
+
+                    if (!($this->_source->getSource() instanceof TraitChecker)) {
+                        ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine());
+                    }
 
                     $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
@@ -1525,10 +1589,14 @@ class StatementsChecker
                 is_string($arg->value->name)) {
 
                 if ($method_id) {
-                    $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i);
-
+                    if ($this->_isPassedByReference($method_id, $i)) {
+                        $this->_checkMethodParam($arg->value, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+                    }
+                    else {
+                        $this->_checkPropertyFetch($arg->value, $vars_in_scope, $vars_possibly_in_scope);
+                    }
                 } else {
-                    $property_id = $this->_absolute_class . '::' . $arg->value->name;
+                    $property_id = 'this' . '->' . $arg->value->name;
                     // we don't know if it exists, assume it's passed by reference
                     $vars_in_scope[$property_id] = 'mixed';
                     $vars_possibly_in_scope[$property_id] = true;
@@ -1550,7 +1618,7 @@ class StatementsChecker
 
             if ($method_id && isset($arg->value->returnType)) {
                 foreach (explode('|', $arg->value->returnType) as $return_type) {
-                    TypeChecker::checkMethodParam($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine());
+                    TypeChecker::checkMethodParam($return_type, $method_id, $i, $this->_absolute_class, $this->_check_nulls, $this->_file_name, $arg->value->getLine());
                 }
 
             }

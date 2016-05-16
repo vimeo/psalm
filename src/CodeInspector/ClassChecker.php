@@ -20,14 +20,20 @@ class ClassChecker implements StatementsSource
     protected $_absolute_class;
     protected $_class_properties = [];
     protected $_has_custom_get = false;
+    protected $_source;
+
+    protected static $_method_checkers = [];
 
     /** @var string|null */
     protected $_parent_class;
+
+    protected static $_this_class = null;
 
     protected static $_existing_classes = [];
     protected static $_implementing_classes = [];
 
     protected static $_class_methods = [];
+    protected static $_class_checkers = [];
 
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
@@ -40,14 +46,18 @@ class ClassChecker implements StatementsSource
         $this->_parent_class = $this->_class->extends ? ClassChecker::getAbsoluteClassFromName($this->_class->extends, $this->_namespace, $this->_aliased_classes) : null;
 
         self::$_existing_classes[$absolute_class] = 1;
+
+        if (self::$_this_class) {
+            self::$_class_checkers[$absolute_class] = $this;
+        }
     }
 
-    public function check()
+    public function check($check_statements = true, $method_id = null)
     {
         if ($this->_parent_class) {
             self::checkAbsoluteClass($this->_parent_class, $this->_class, $this->_file_name);
 
-            $this->_registerInheritedMethods();
+            $this->_registerInheritedMethods($this->_parent_class);
         }
 
         $leftover_stmts = [];
@@ -58,8 +68,36 @@ class ClassChecker implements StatementsSource
 
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_checkers[] = new ClassMethodChecker($stmt, $this);
+                $method_id = $this->_absolute_class . '::' . $stmt->name;
+
+                if (!isset(self::$_method_checkers[$method_id])) {
+                    $method_checker = new ClassMethodChecker($stmt, $this);
+                    $method_checkers[$stmt->name] = $method_checker;
+
+                    if (self::$_this_class && !$check_statements) {
+                        self::$_method_checkers[$method_id] = $method_checker;
+                    }
+                }
+                else {
+                    $method_checker = self::$_method_checkers[$method_id];
+                }
+
                 self::$_class_methods[$this->_absolute_class][] = $stmt->name;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                $method_map = [];
+                foreach ($stmt->adaptations as $adaptation) {
+                    if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
+                        $method_map[$adaptation->method] = $adaptation->newName;
+                    }
+                }
+
+                foreach ($stmt->traits as $trait) {
+                    $trait_name = self::getAbsoluteClassFromName($trait, $this->_namespace, $this->_aliased_classes);
+                    if (!trait_exists($trait_name)) {
+                        throw new UndefinedTraitException('Trait ' . $trait_name . ' does not exist', $this->_file_name, $trait->getLine());
+                    }
+                    $this->_registerInheritedMethods($trait_name, $method_map);
+                }
 
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {
@@ -82,11 +120,52 @@ class ClassChecker implements StatementsSource
             (new StatementsChecker($this))->check($leftover_stmts, $scope_vars, $possibly_in_scope_vars);
         }
 
-        // do the method checks after all class methods have been initialised
-        foreach ($method_checkers as $method_checker) {
-            $method_checker->check();
-            //$method_checker->checkReturnTypes();
+        if ($check_statements) {
+            // do the method checks after all class methods have been initialised
+            foreach ($method_checkers as $method_checker) {
+                $method_checker->check();
+                //$method_checker->checkReturnTypes();
+            }
         }
+
+
+    }
+
+    /**
+     * Used in deep method evaluation, we get method checkers on the current or parent
+     * classes
+     *
+     * @param  string $method_id
+     * @return ClassMethodChecker
+     */
+    public static function getMethodChecker($method_id)
+    {
+        if (isset(self::$_method_checkers[$method_id])) {
+            return self::$_method_checkers[$method_id];
+        }
+
+        $parent_method_id = ClassMethodChecker::getDefiningParentMethod($method_id);
+
+        $parent_class = explode('::', $parent_method_id)[0];
+
+        $class_checker = FileChecker::getClassCheckerFromClass($parent_class);
+
+        // this is now set
+        return self::$_method_checkers[$parent_method_id];
+    }
+
+    /**
+     * Returns a class checker for the given class, if one has already been registered
+     * @param  string $class_name
+     * @return ClassChecker|null
+     */
+    public static function getClassCheckerFromClass($class_name)
+    {
+        if (isset(self::$_class_checkers[$class_name])) {
+            return self::$_class_checkers[$class_name];
+        }
+
+        return null;
     }
 
     /**
@@ -219,6 +298,11 @@ class ClassChecker implements StatementsSource
         return $this->_class_properties;
     }
 
+    public function getSource()
+    {
+        return null;
+    }
+
     /**
      * @return bool
      */
@@ -243,12 +327,12 @@ class ClassChecker implements StatementsSource
         return true;
     }
 
-    protected function _registerInheritedMethods()
+    protected function _registerInheritedMethods($parent_class, array $method_map = null)
     {
-        if (!isset(self::$_class_methods[$this->_parent_class])) {
+        if (!isset(self::$_class_methods[$parent_class])) {
             $class_methods = [];
 
-            $reflection_class = new ReflectionClass($this->_parent_class);
+            $reflection_class = new ReflectionClass($parent_class);
 
             $reflection_methods = $reflection_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
 
@@ -257,15 +341,28 @@ class ClassChecker implements StatementsSource
                 $class_methods[] = $method_name;
             }
 
-            self::$_class_methods[$this->_parent_class] = $class_methods;
+            self::$_class_methods[$parent_class] = $class_methods;
         }
         else {
-            $class_methods = self::$_class_methods[$this->_parent_class];
+            $class_methods = self::$_class_methods[$parent_class];
         }
 
         foreach ($class_methods as $method_name) {
-            $parent_class_method = $this->_parent_class . '::' . $method_name;
-            ClassMethodChecker::registerInheritedMethod($this->_parent_class . '::' . $method_name, $this->_absolute_class . '::' . $method_name);
+            $parent_class_method = $parent_class . '::' . $method_name;
+            ClassMethodChecker::registerInheritedMethod(
+                $parent_class . '::' . $method_name,
+                $this->_absolute_class . '::' . (isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name)
+            );
         }
+    }
+
+    public static function setThisClass($this_class)
+    {
+        self::$_this_class = $this_class;
+    }
+
+    public static function getThisClass()
+    {
+        return self::$_this_class;
     }
 }
