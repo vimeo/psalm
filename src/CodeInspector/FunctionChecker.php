@@ -39,10 +39,12 @@ class FunctionChecker implements StatementsSource
     {
         if ($this->_function->stmts) {
             if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
-                $hash = md5($this->getMethodId() . json_encode($vars_in_scope) . ' ' . json_encode($vars_possibly_in_scope));
+                $hash = $this->getMethodId() . json_encode([$vars_in_scope, $vars_possibly_in_scope]);
 
                 // if we know that the function has no effects on vars, we don't bother checking
                 if (isset(self::$_no_effects_hashes[$hash])) {
+                    list($vars_in_scope, $vars_possibly_in_scope) = self::$_no_effects_hashes[$hash];
+
                     return;
                 }
             }
@@ -104,11 +106,7 @@ class FunctionChecker implements StatementsSource
             }
 
             if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
-                $new_hash = md5($this->getMethodId() . json_encode($vars_in_scope) . ' ' . json_encode($vars_possibly_in_scope));
-
-                if ($hash === $new_hash) {
-                    self::$_no_effects_hashes[$hash] = true;
-                }
+                self::$_no_effects_hashes[$hash] = [$vars_in_scope, $vars_possibly_in_scope];
             }
         }
     }

@@ -676,7 +676,9 @@ class StatementsChecker
             $use_vars = [];
 
             if (!$this->_is_static) {
-                $use_vars['this'] = ClassChecker::getThisClass() ?: $this->_absolute_class;
+                $use_vars['this'] = ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ?
+                    ClassChecker::getThisClass() :
+                    $this->_absolute_class;
             }
 
             foreach ($vars_in_scope as $var => $type) {
@@ -1338,9 +1340,14 @@ class StatementsChecker
 
             self::$_this_calls[$this_method_id][] = $stmt->name;
 
-            if (ClassChecker::getThisClass()) {
+            if (ClassChecker::getThisClass() &&
+                (
+                    ClassChecker::getThisClass() === $this->_absolute_class ||
+                    is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ||
+                    trait_exists($this->_absolute_class)
+                )) {
 
-                $method_id = ClassChecker::getThisClass() . '::' . $stmt->name;
+                $method_id = $this->_absolute_class . '::' . $stmt->name;
 
                 $method_checker = ClassChecker::getMethodChecker($method_id);
 
