@@ -21,6 +21,7 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_have_registered = [];
     protected static $_method_custom_calls = [];
     protected static $_inherited_methods = [];
+    protected static $_implementing_methods = [];
     protected static $_method_visibility = [];
     protected static $_new_docblocks = [];
 
@@ -489,7 +490,7 @@ class ClassMethodChecker extends FunctionChecker
 
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $method_class !== $calling_context) {
-                    throw new InaccessibleMethodException('Cannot access private method ' . $method_id, $file_name, $line_number);
+                    throw new InaccessibleMethodException('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number);
                 }
                 return;
 
@@ -519,15 +520,15 @@ class ClassMethodChecker extends FunctionChecker
 
     public static function getDefiningParentMethod($method_id)
     {
-        if (isset(self::$_inherited_methods[$method_id])) {
-            return self::$_inherited_methods[$method_id];
+        if (isset(self::$_implementing_methods[$method_id])) {
+            return self::$_implementing_methods[$method_id];
         }
 
         $method_name = explode('::', $method_id)[1];
 
         $parent_method_id = (new \ReflectionMethod($method_id))->getDeclaringClass()->getName() . '::' . $method_name;
 
-        self::$_inherited_methods[$method_id] = $parent_method_id;
+        self::$_implementing_methods[$method_id] = $parent_method_id;
 
         return $parent_method_id;
     }
