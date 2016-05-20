@@ -1411,7 +1411,13 @@ class StatementsChecker
                     ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
 
                     if (!($this->_source->getSource() instanceof TraitChecker)) {
-                        ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine());
+                        $calling_context = $this->_absolute_class;
+
+                        if (ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class)) {
+                            $calling_context = $this->_absolute_class;
+                        }
+
+                        ClassMethodChecker::checkMethodVisibility($method_id, $calling_context, $this->_file_name, $stmt->getLine());
                     }
 
                     $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
