@@ -144,7 +144,7 @@ class ClassChecker implements StatementsSource
             return self::$_method_checkers[$method_id];
         }
 
-        $parent_method_id = ClassMethodChecker::getDefiningParentMethod($method_id);
+        $parent_method_id = ClassMethodChecker::getDeclaringMethod($method_id);
 
         $parent_class = explode('::', $parent_method_id)[0];
 
@@ -350,11 +350,10 @@ class ClassChecker implements StatementsSource
         }
 
         foreach ($class_methods as $method_name) {
-            $parent_class_method = $parent_class . '::' . $method_name;
-            ClassMethodChecker::registerInheritedMethod(
-                $parent_class . '::' . $method_name,
-                $this->_absolute_class . '::' . (isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name)
-            );
+            $parent_method_id = $parent_class . '::' . $method_name;
+            $implemented_method_id = $this->_absolute_class . '::' . (isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name);
+
+            ClassMethodChecker::registerInheritedMethod($parent_method_id, $implemented_method_id);
         }
     }
 

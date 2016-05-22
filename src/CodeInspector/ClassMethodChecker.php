@@ -21,7 +21,7 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_have_registered = [];
     protected static $_method_custom_calls = [];
     protected static $_inherited_methods = [];
-    protected static $_implementing_methods = [];
+    protected static $_declaring_class = [];
     protected static $_method_visibility = [];
     protected static $_new_docblocks = [];
 
@@ -168,7 +168,7 @@ class ClassMethodChecker extends FunctionChecker
      */
     public static function extractReflectionMethodInfo($method_id)
     {
-        if (isset(self::$_have_reflected[$method_id])) {
+        if (isset(self::$_have_reflected[$method_id]) || isset(self::$_have_registered[$method_id])) {
             return;
         }
 
@@ -178,7 +178,7 @@ class ClassMethodChecker extends FunctionChecker
         self::$_static_methods[$method_id] = $method->isStatic();
         self::$_method_files[$method_id] = $method->getFileName();
         self::$_method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
-        self::$_declaring_classes[$method_id] = $method->getDeclaringClass()->name;
+        self::$_declaring_classes[$method_id] = $method->getDeclaringClass()->name . '::' . $method->getName();
         self::$_method_visibility[$method_id] = $method->isPrivate() ?
                                                     self::VISIBILITY_PRIVATE :
                                                     ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
@@ -287,9 +287,14 @@ class ClassMethodChecker extends FunctionChecker
     protected function _registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
         $method_id = $this->_absolute_class . '::' . $method->name;
+
+        if (isset(self::$_have_reflected[$method_id]) || isset(self::$_have_registered[$method_id])) {
+            return;
+        }
+
         self::$_have_registered[$method_id] = true;
 
-        self::$_declaring_classes[$method_id] = $this->_absolute_class;
+        self::$_declaring_classes[$method_id] = $method_id;
         self::$_static_methods[$method_id] = $method->isStatic();
         self::$_method_comments[$method_id] = $method->getDocComment() ?: '';
 
@@ -460,7 +465,7 @@ class ClassMethodChecker extends FunctionChecker
 
     protected static function _populateData($method_id)
     {
-        if (!isset(self::$_have_registered[$method_id]) && !isset(self::$_have_registered[$method_id])) {
+        if (!isset(self::$_have_reflected[$method_id]) && !isset(self::$_have_registered[$method_id])) {
             if (isset(self::$_inherited_methods[$method_id])) {
                 self::_copyToChildMethod(self::$_inherited_methods[$method_id], $method_id);
             }
@@ -515,20 +520,25 @@ class ClassMethodChecker extends FunctionChecker
 
     public static function registerInheritedMethod($parent_method_id, $method_id)
     {
+        // only register the method if it's not already there
+        if (!isset(self::$_declaring_classes[$method_id])) {
+            self::$_declaring_classes[$method_id] = $parent_method_id;
+        }
+
         self::$_inherited_methods[$method_id] = $parent_method_id;
     }
 
-    public static function getDefiningParentMethod($method_id)
+    public static function getDeclaringMethod($method_id)
     {
-        if (isset(self::$_implementing_methods[$method_id])) {
-            return self::$_implementing_methods[$method_id];
+        if (isset(self::$_declaring_classes[$method_id])) {
+            return self::$_declaring_classes[$method_id];
         }
 
         $method_name = explode('::', $method_id)[1];
 
         $parent_method_id = (new \ReflectionMethod($method_id))->getDeclaringClass()->getName() . '::' . $method_name;
 
-        self::$_implementing_methods[$method_id] = $parent_method_id;
+        self::$_declaring_classes[$method_id] = $parent_method_id;
 
         return $parent_method_id;
     }
