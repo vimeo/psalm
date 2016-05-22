@@ -49,7 +49,7 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            $statements_checker = new StatementsChecker($this, !empty($this->_function->params));
+            $statements_checker = new StatementsChecker($this, ClassChecker::getThisClass() || !empty($this->_function->params));
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {
@@ -75,8 +75,8 @@ class FunctionChecker implements StatementsSource
                         $vars_in_scope[$param->name] .= '|null';
                     }
                 }
-                else {
-                    $vars_in_scope[$param->name] = 'mixed';
+                elseif (is_string($param->type)) {
+                    $vars_in_scope[$param->name] = $param->type;
                 }
 
                 $vars_possibly_in_scope[$param->name] = true;
