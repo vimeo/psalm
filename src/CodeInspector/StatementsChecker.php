@@ -1616,20 +1616,27 @@ class StatementsChecker
                     }
                 } else {
                     $property_id = 'this' . '->' . $arg->value->name;
-                    // we don't know if it exists, assume it's passed by reference
-                    $vars_in_scope[$property_id] = 'mixed';
-                    $vars_possibly_in_scope[$property_id] = true;
-                    $this->registerVariable($property_id, $arg->value->getLine());
+
+                    if (false || !isset($vars_in_scope[$property_id]) || $vars_in_scope[$property_id] === 'null') {
+                        // we don't know if it exists, assume it's passed by reference
+                        $vars_in_scope[$property_id] = 'mixed';
+                        $vars_possibly_in_scope[$property_id] = true;
+                        $this->registerVariable($property_id, $arg->value->getLine());
+                    }
+
                 }
             }
             elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                 if ($method_id) {
                     $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i);
                 } elseif (is_string($arg->value->name)) {
-                    // we don't know if it exists, assume it's passed by reference
-                    $vars_in_scope[$arg->value->name] = 'mixed';
-                    $vars_possibly_in_scope[$arg->value->name] = true;
-                    $this->registerVariable($arg->value->name, $arg->value->getLine());
+
+                    if (false || !isset($vars_in_scope[$arg->value->name]) || $vars_in_scope[$arg->value->name] === 'null') {
+                        // we don't know if it exists, assume it's passed by reference
+                        $vars_in_scope[$arg->value->name] = 'mixed';
+                        $vars_possibly_in_scope[$arg->value->name] = true;
+                        $this->registerVariable($arg->value->name, $arg->value->getLine());
+                    }
                 }
             } else {
                 $this->_checkExpression($arg->value, $vars_in_scope, $vars_possibly_in_scope);
