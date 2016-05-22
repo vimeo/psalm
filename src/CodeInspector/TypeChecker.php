@@ -217,6 +217,14 @@ class TypeChecker
                 $var_name = $this->_getVariable($conditional->expr->args[0]->value);
                 $if_types[$var_name] = '!array';
             }
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
+                foreach ($conditional->expr->vars as $isset_var) {
+                    $var_name = $this->_getVariable($isset_var);
+                    if ($var_name) {
+                        $if_types[$var_name] = '!null';
+                    }
+                }
+            }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
             $null_position = self::_hasNullVariable($conditional);
@@ -278,6 +286,14 @@ class TypeChecker
             $var_name = $this->_getVariable($conditional->expr);
             if ($var_name) {
                 $if_types[$var_name] = 'empty';
+            }
+        }
+        else if ($conditional instanceof PhpParser\Node\Expr\Isset_) {
+            foreach ($conditional->vars as $isset_var) {
+                $var_name = $this->_getVariable($isset_var);
+                if ($var_name) {
+                    $if_types[$var_name] = '!null';
+                }
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
