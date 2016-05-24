@@ -838,7 +838,7 @@ class StatementsChecker
             return;
         }
 
-        if (in_array($stmt->name, ['this', '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv'])) {
+        if (in_array($stmt->name, ['_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv'])) {
             return;
         }
 
@@ -847,8 +847,16 @@ class StatementsChecker
             return;
         }
 
+        if ($method_id && isset($vars_in_scope[$stmt->name]) && $vars_in_scope[$stmt->name] !== 'mixed') {
+            self::_checkFunctionArgumentType($method_id, $argument_offset, $vars_in_scope[$stmt->name], $this->_file_name, $stmt->getLine());
+        }
+
+        if ($stmt->name === 'this') {
+            return;
+        }
+
         if ($method_id && $this->_isPassedByReference($method_id, $argument_offset)) {
-            $this->_checkMethodParam($stmt, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+            $this->_assignByRefParam($stmt, $method_id, $vars_in_scope, $vars_possibly_in_scope);
             return;
         }
 
@@ -871,7 +879,7 @@ class StatementsChecker
         }
     }
 
-    protected function _checkMethodParam(PhpParser\Node\Expr $stmt, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _assignByRefParam(PhpParser\Node\Expr $stmt, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             $property_id = $stmt->name;
@@ -1613,17 +1621,22 @@ class StatementsChecker
             if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch &&
                 $arg->value->var instanceof PhpParser\Node\Expr\Variable &&
                 $arg->value->var->name === 'this' &&
-                is_string($arg->value->name)) {
+                is_string($arg->value->name)
+            ) {
+                $property_id = 'this' . '->' . $arg->value->name;
 
                 if ($method_id) {
+                    if (isset($vars_in_scope[$property_id]) && $vars_in_scope[$property_id] !== 'mixed') {
+                        self::_checkFunctionArgumentType($method_id, $i, $vars_in_scope[$property_id], $this->_file_name, $arg->getLine());
+                    }
+
                     if ($this->_isPassedByReference($method_id, $i)) {
-                        $this->_checkMethodParam($arg->value, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+                        $this->_assignByRefParam($arg->value, $method_id, $vars_in_scope, $vars_possibly_in_scope);
                     }
                     else {
                         $this->_checkPropertyFetch($arg->value, $vars_in_scope, $vars_possibly_in_scope);
                     }
                 } else {
-                    $property_id = 'this' . '->' . $arg->value->name;
 
                     if (false || !isset($vars_in_scope[$property_id]) || $vars_in_scope[$property_id] === 'null') {
                         // we don't know if it exists, assume it's passed by reference
@@ -1637,6 +1650,7 @@ class StatementsChecker
             elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                 if ($method_id) {
                     $this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i);
+
                 } elseif (is_string($arg->value->name)) {
 
                     if (false || !isset($vars_in_scope[$arg->value->name]) || $vars_in_scope[$arg->value->name] === 'null') {
@@ -1918,6 +1932,43 @@ class StatementsChecker
         }
 
         $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
+    }
+
+    protected function _checkFunctionArgumentType($method_id, $argument_offset, $type, $file_name, $line_number)
+    {
+        if (strpos($method_id, '::') !== false) {
+            $method_params = ClassMethodChecker::getMethodParams($method_id);
+
+            if (isset($method_params[$argument_offset])) {
+                $method_param_type = $method_params[$argument_offset]['type'];
+                $is_nullable = $method_params[$argument_offset]['is_nullable'];
+
+                if ($method_param_type) {
+                    $input_types = explode('|', $type);
+                    $input_types = array_flip($input_types);
+
+                    if (isset($input_types['null']) && !$is_nullable) {
+                        throw new InvalidArgumentException(
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
+                            $file_name,
+                            $line_number
+                        );
+                    }
+
+                    unset($input_types['null']);
+
+                    $type = implode('|', array_keys($input_types));
+
+                    if ($type !== $method_param_type) {
+                        throw new InvalidArgumentException(
+                            'Argument ' . ($argument_offset + 1) . ' expects ' . $method_param_type . ', ' . $type . ' provided',
+                            $file_name,
+                            $line_number
+                        );
+                    }
+                }
+            }
+        }
     }
 
     protected function _checkFunctionCall(PhpParser\Node\Expr\FuncCall $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
