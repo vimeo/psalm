@@ -1369,6 +1369,14 @@ class StatementsChecker
                     }
 
                     $method_checker->check($this_vars_in_scope, $this_vars_possibly_in_scope);
+
+                    foreach ($this_vars_in_scope as $var => $type) {
+                        $vars_possibly_in_scope[$var] = true;
+                    }
+
+                    foreach ($this_vars_in_scope as $var => $type) {
+                        $vars_in_scope[$var] = $type;
+                    }
                 }
             }
         }
