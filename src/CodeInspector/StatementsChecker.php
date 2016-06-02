@@ -1584,7 +1584,7 @@ class StatementsChecker
 
                         if ($return_type_part === '$' . $method_param['name']) {
                             if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
-                                $return_type_part = $arg->value->value;
+                                $return_type_part = preg_replace('/^\\\/', '', $arg->value->value);
                                 break;
                             }
                         }
