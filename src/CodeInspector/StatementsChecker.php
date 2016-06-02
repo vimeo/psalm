@@ -1979,16 +1979,14 @@ class StatementsChecker
 
                     foreach ($input_types as &$input_type) {
                         $input_type = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $input_type);
-                    }
 
-                    $type = implode('|', $input_types);
-
-                    if ($type !== $method_param_type && !is_subclass_of($type, $method_param_type)) {
-                        throw new InvalidArgumentException(
-                            'Argument ' . ($argument_offset + 1) . ' expects ' . $method_param_type . ', ' . $type . ' provided',
-                            $file_name,
-                            $line_number
-                        );
+                        if ($input_type !== $method_param_type && !is_subclass_of($input_type, $method_param_type)) {
+                            throw new InvalidArgumentException(
+                                'Argument ' . ($argument_offset + 1) . ' expects ' . $method_param_type . ', ' . $type . ' provided',
+                                $file_name,
+                                $line_number
+                            );
+                        }
                     }
                 }
             }
