@@ -35,7 +35,7 @@ class FunctionChecker implements StatementsSource
         $this->_source = $source;
     }
 
-    public function check(&$vars_in_scope = [], &$vars_possibly_in_scope = [])
+    public function check(&$vars_in_scope = [], &$vars_possibly_in_scope = [], $check_methods = true)
     {
         if ($this->_function->stmts) {
             if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
@@ -49,7 +49,7 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            $statements_checker = new StatementsChecker($this, ClassChecker::getThisClass() || !empty($this->_function->params));
+            $statements_checker = new StatementsChecker($this, ClassChecker::getThisClass() || !empty($this->_function->params), $check_methods);
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {

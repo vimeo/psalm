@@ -55,11 +55,11 @@ class StatementsChecker
     protected static $_check_string_fn = null;
     protected static $_mock_interfaces = [];
 
-    public function __construct(StatementsSource $source, $enforce_variable_checks = false)
+    public function __construct(StatementsSource $source, $enforce_variable_checks = false, $check_methods = true)
     {
         $this->_source = $source;
         $this->_check_classes = true;
-        $this->_check_methods = true;
+        $this->_check_methods = $check_methods;
 
         $this->_check_consts = true;
 
@@ -674,6 +674,7 @@ class StatementsChecker
             $this->_checkClosureUses($stmt, $vars_in_scope, $vars_possibly_in_scope);
 
             $use_vars = [];
+            $use_vars_possibly_in_scope = [];
 
             if (!$this->_is_static) {
                 $use_vars['this'] = ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ?
@@ -687,11 +688,18 @@ class StatementsChecker
                 }
             }
 
-            foreach ($stmt->uses as $use) {
-                $use_vars[$use->var] = isset($vars_in_scope[$use->var]) ? $vars_in_scope[$use->var] : 'mixed';
+            foreach ($vars_possibly_in_scope as $var => $type) {
+                if (strpos($var, 'this->') === 0) {
+                    $use_vars_possibly_in_scope[$var] = true;
+                }
             }
 
-            $closure_checker->check($use_vars);
+            foreach ($stmt->uses as $use) {
+                $use_vars[$use->var] = isset($vars_in_scope[$use->var]) ? $vars_in_scope[$use->var] : 'mixed';
+                $use_vars_possibly_in_scope[$use->var] = true;
+            }
+
+            $closure_checker->check($use_vars, $use_vars_possibly_in_scope, $this->_check_methods);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $this->_checkArrayAccess($stmt, $vars_in_scope, $vars_possibly_in_scope);
@@ -848,7 +856,7 @@ class StatementsChecker
         }
 
         if ($method_id && isset($vars_in_scope[$stmt->name]) && $vars_in_scope[$stmt->name] !== 'mixed') {
-            self::_checkFunctionArgumentType($method_id, $argument_offset, $vars_in_scope[$stmt->name], $this->_file_name, $stmt->getLine());
+            $this->_checkFunctionArgumentType($method_id, $argument_offset, $vars_in_scope[$stmt->name], $this->_file_name, $stmt->getLine());
         }
 
         if ($stmt->name === 'this') {
@@ -1389,7 +1397,11 @@ class StatementsChecker
             }
         }
 
-        if ($class_type && $this->_check_methods && is_string($stmt->name) && is_string($class_type)) {
+        if (!$this->_check_methods) {
+            return;
+        }
+
+        if ($class_type && is_string($stmt->name) && is_string($class_type)) {
             foreach (explode('|', $class_type) as $absolute_class) {
                 $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
@@ -1508,7 +1520,11 @@ class StatementsChecker
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
 
-        if ($absolute_class && $this->_check_methods && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::isMock($absolute_class)) {
+        if (!$this->_check_methods) {
+            return;
+        }
+
+        if ($absolute_class && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::isMock($absolute_class)) {
             $method_id = $absolute_class . '::' . $stmt->name;
 
             if (!isset(self::$_method_call_index[$method_id])) {
@@ -1627,7 +1643,7 @@ class StatementsChecker
 
                 if ($method_id) {
                     if (isset($vars_in_scope[$property_id]) && $vars_in_scope[$property_id] !== 'mixed') {
-                        self::_checkFunctionArgumentType($method_id, $i, $vars_in_scope[$property_id], $this->_file_name, $arg->getLine());
+                        $this->_checkFunctionArgumentType($method_id, $i, $vars_in_scope[$property_id], $this->_file_name, $arg->getLine());
                     }
 
                     if ($this->_isPassedByReference($method_id, $i)) {
@@ -1947,19 +1963,27 @@ class StatementsChecker
                     $input_types = explode('|', $type);
                     $input_types = array_flip($input_types);
 
-                    if (isset($input_types['null']) && !$is_nullable) {
-                        throw new InvalidArgumentException(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
-                            $file_name,
-                            $line_number
-                        );
+                    if ($this->_check_nulls) {
+                        if (isset($input_types['null']) && !$is_nullable) {
+                            throw new InvalidArgumentException(
+                                'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
+                                $file_name,
+                                $line_number
+                            );
+                        }
                     }
 
                     unset($input_types['null']);
 
-                    $type = implode('|', array_keys($input_types));
+                    $input_types = array_keys($input_types);
 
-                    if ($type !== $method_param_type) {
+                    foreach ($input_types as &$input_type) {
+                        $input_type = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $input_type);
+                    }
+
+                    $type = implode('|', $input_types);
+
+                    if ($type !== $method_param_type && !is_subclass_of($type, $method_param_type)) {
                         throw new InvalidArgumentException(
                             'Argument ' . ($argument_offset + 1) . ' expects ' . $method_param_type . ', ' . $type . ' provided',
                             $file_name,
