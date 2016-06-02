@@ -4,6 +4,7 @@ namespace CodeInspector;
 
 use CodeInspector\Exception\InvalidClassException;
 use CodeInspector\Exception\UndefinedClassException;
+use CodeInspector\Exception\UndefinedTraitException;
 use PhpParser;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
@@ -145,7 +146,6 @@ class ClassChecker implements StatementsSource
         }
 
         $parent_method_id = ClassMethodChecker::getDeclaringMethod($method_id);
-
         $parent_class = explode('::', $parent_method_id)[0];
 
         $class_checker = FileChecker::getClassCheckerFromClass($parent_class);
@@ -337,7 +337,7 @@ class ClassChecker implements StatementsSource
             $reflection_methods = $reflection_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
 
             foreach ($reflection_methods as $reflection_method) {
-                if (!$reflection_method->isAbstract()) {
+                if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $parent_class) {
                     $method_name = $reflection_method->getName();
                     $class_methods[] = $method_name;
                 }
