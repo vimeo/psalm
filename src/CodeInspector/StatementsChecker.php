@@ -1365,35 +1365,7 @@ class StatementsChecker
 
                 $method_id = $this->_absolute_class . '::' . $stmt->name;
 
-                $method_checker = ClassChecker::getMethodChecker($method_id);
-
-                if ($method_checker->getMethodId() !== $this->_source->getMethodId()) {
-                    $this_vars_in_scope = [];
-
-                    $this_vars_possibly_in_scope = [];
-
-                    foreach ($vars_possibly_in_scope as $var => $type) {
-                        if (strpos($var, 'this->') === 0) {
-                            $this_vars_possibly_in_scope[$var] = true;
-                        }
-                    }
-
-                    foreach ($vars_in_scope as $var => $type) {
-                        if (strpos($var, 'this->') === 0) {
-                            $this_vars_in_scope[$var] = $type;
-                        }
-                    }
-
-                    $method_checker->check($this_vars_in_scope, $this_vars_possibly_in_scope);
-
-                    foreach ($this_vars_in_scope as $var => $type) {
-                        $vars_possibly_in_scope[$var] = true;
-                    }
-
-                    foreach ($this_vars_in_scope as $var => $type) {
-                        $vars_in_scope[$var] = $type;
-                    }
-                }
+                $this->_checkInsideMethod($method_id, $vars_in_scope, $vars_possibly_in_scope);
             }
         }
 
@@ -1462,6 +1434,39 @@ class StatementsChecker
         $this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope);
     }
 
+    protected function _checkInsideMethod($method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    {
+        $method_checker = ClassChecker::getMethodChecker($method_id);
+
+        if ($method_checker && $method_checker->getMethodId() !== $this->_source->getMethodId()) {
+            $this_vars_in_scope = [];
+
+            $this_vars_possibly_in_scope = [];
+
+            foreach ($vars_possibly_in_scope as $var => $type) {
+                if (strpos($var, 'this->') === 0) {
+                    $this_vars_possibly_in_scope[$var] = true;
+                }
+            }
+
+            foreach ($vars_in_scope as $var => $type) {
+                if (strpos($var, 'this->') === 0) {
+                    $this_vars_in_scope[$var] = $type;
+                }
+            }
+
+            $method_checker->check($this_vars_in_scope, $this_vars_possibly_in_scope);
+
+            foreach ($this_vars_in_scope as $var => $type) {
+                $vars_possibly_in_scope[$var] = true;
+            }
+
+            foreach ($this_vars_in_scope as $var => $type) {
+                $vars_in_scope[$var] = $type;
+            }
+        }
+    }
+
     protected function _checkClosureUses(PhpParser\Node\Expr\Closure $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         foreach ($stmt->uses as $use) {
@@ -1522,6 +1527,14 @@ class StatementsChecker
 
         if (!$this->_check_methods) {
             return;
+        }
+
+        if ($stmt->class->parts === ['parent'] && is_string($stmt->name)) {
+            if (ClassChecker::getThisClass()) {
+                $method_id = $absolute_class . '::' . $stmt->name;
+
+                $this->_checkInsideMethod($method_id, $vars_in_scope, $vars_possibly_in_scope);
+            }
         }
 
         if ($absolute_class && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::isMock($absolute_class)) {
