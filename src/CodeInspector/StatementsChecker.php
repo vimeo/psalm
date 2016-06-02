@@ -1980,7 +1980,12 @@ class StatementsChecker
                     foreach ($input_types as &$input_type) {
                         $input_type = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $input_type);
 
-                        if ($input_type !== $method_param_type && !is_subclass_of($input_type, $method_param_type)) {
+                        if ($input_type !== $method_param_type && !is_subclass_of($input_type, $method_param_type) && !self::isMock($input_type)) {
+                            if (is_subclass_of($method_param_type, $input_type)) {
+                                // @todo handle coercion
+                                return;
+                            }
+
                             throw new InvalidArgumentException(
                                 'Argument ' . ($argument_offset + 1) . ' expects ' . $method_param_type . ', ' . $type . ' provided',
                                 $file_name,
