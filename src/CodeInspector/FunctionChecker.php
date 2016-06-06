@@ -41,7 +41,7 @@ class FunctionChecker implements StatementsSource
             if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
                 $hash = $this->getMethodId() . json_encode([$vars_in_scope, $vars_possibly_in_scope]);
 
-                // if we know that the function has no effects on vars, we don't bother checking
+                // if we know that the function has no effects on vars, we don't bother rechecking
                 if (isset(self::$_no_effects_hashes[$hash])) {
                     list($vars_in_scope, $vars_possibly_in_scope) = self::$_no_effects_hashes[$hash];
 
@@ -66,10 +66,9 @@ class FunctionChecker implements StatementsSource
                                 $param->default->name->parts = ['null'];
 
                 if ($param->type && is_object($param->type)) {
-                    $vars_in_scope[$param->name] =
-                        $param->type->parts === ['self'] ?
-                            $this->_absolute_class :
-                            ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
+                    $vars_in_scope[$param->name] = $param->type->parts === ['self'] ?
+                                                    $this->_absolute_class :
+                                                    ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
 
                     if ($is_nullable) {
                         $vars_in_scope[$param->name] .= '|null';
@@ -77,6 +76,9 @@ class FunctionChecker implements StatementsSource
                 }
                 elseif (is_string($param->type)) {
                     $vars_in_scope[$param->name] = $param->type;
+                }
+                else {
+                    $vars_in_scope[$param->name] = 'mixed';
                 }
 
                 $vars_possibly_in_scope[$param->name] = true;

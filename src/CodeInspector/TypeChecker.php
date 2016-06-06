@@ -4,6 +4,7 @@ namespace CodeInspector;
 
 use CodeInspector\Exception\InvalidArgumentException;
 use CodeInspector\Exception\TypeResolutionException;
+use CodeInspector\ExceptionHandler;
 use PhpParser;
 
 class TypeChecker
@@ -33,7 +34,15 @@ class TypeChecker
         }
 
         if ($return_type === 'void') {
-            throw new TypeResolutionException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be void, but possibly void value was supplied', $file_name, $line_number);
+            if (ExceptionHandler::accepts(
+                new TypeResolutionException(
+                    'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be void, but possibly void value was supplied',
+                    $file_name,
+                    $line_number
+                )
+            )) {
+                return false;
+            }
         }
 
         $method_params = ClassMethodChecker::getMethodParams($method_id);
@@ -53,12 +62,14 @@ class TypeChecker
                 return true;
             }
 
-            if ($check_nulls) {
-                throw new InvalidArgumentException(
+            if (ExceptionHandler::accepts(
+                new InvalidArgumentException(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied',
                     $file_name,
                     $line_number
-                );
+                )
+            )) {
+                return false;
             }
 
             return true;
@@ -81,7 +92,15 @@ class TypeChecker
                 return true;
             }
 
-            throw new InvalidArgumentException('Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type, $file_name, $line_number);
+            if (ExceptionHandler::accepts(
+                new InvalidArgumentException(
+                    'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type,
+                    $file_name,
+                    $line_number
+                )
+            )) {
+                return false;
+            }
         }
 
         return true;
@@ -480,7 +499,11 @@ class TypeChecker
 
                             if (empty($existing_var_types)) {
                                 if ($strict) {
-                                    throw new TypeResolutionException('Cannot resolve types for ' . $key, $file_name, $line_number);
+                                    if (ExceptionHandler::accepts(
+                                        new TypeResolutionException('Cannot resolve types for ' . $key, $file_name, $line_number)
+                                    )) {
+                                        return false;
+                                    }
                                 }
                             }
                         }

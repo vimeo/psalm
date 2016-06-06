@@ -74,18 +74,26 @@ class ClassMethodChecker extends FunctionChecker
                         $doc_comment = $this->_function->getDocComment();
 
                         $this->_registerNewDocComment($return_types, $doc_comment);
+
+                        return;
                     }
-                    else {
-                        throw new ReturnTypeException(
+
+                    if (ExceptionHandler::accepts(
+                        new ReturnTypeException(
                             'The given return type for ' . $method_id . ' is incorrect, expecting ' . implode('|', $return_types),
                             $this->_file_name,
                             $this->_function->getLine()
-                        );
+                        )
+                    )) {
+                        return false;
                     }
                 }
             }
+
+            return;
         }
-        else if ($update_doc_comment) {
+
+        if ($update_doc_comment) {
             $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
             if ($return_types && $return_types !== ['mixed']) {
@@ -460,7 +468,11 @@ class ClassMethodChecker extends FunctionChecker
             return;
         }
 
-        throw new UndefinedMethodException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine());
+        if (ExceptionHandler::accepts(
+            new UndefinedMethodException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine())
+        )) {
+            return false;
+        }
     }
 
     protected static function _populateData($method_id)
@@ -486,7 +498,11 @@ class ClassMethodChecker extends FunctionChecker
         $method_name = explode('::', $method_id)[1];
 
         if (!isset(self::$_method_visibility[$method_id])) {
-            throw new InaccessibleMethodException('Cannot access method ' . $method_id, $file_name, $line_number);
+            if (ExceptionHandler::accepts(
+                new InaccessibleMethodException('Cannot access method ' . $method_id, $file_name, $line_number)
+            )) {
+                return false;
+            }
         }
 
         switch (self::$_method_visibility[$method_id]) {
@@ -495,7 +511,11 @@ class ClassMethodChecker extends FunctionChecker
 
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $method_class !== $calling_context) {
-                    throw new InaccessibleMethodException('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number);
+                    if (ExceptionHandler::accepts(
+                        new InaccessibleMethodException('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                    )) {
+                        return false;
+                    }
                 }
                 return;
 
@@ -505,7 +525,11 @@ class ClassMethodChecker extends FunctionChecker
                 }
 
                 if (!$calling_context) {
-                    throw new InaccessibleMethodException('Cannot access protected method ' . $method_id, $file_name, $line_number);
+                    if (ExceptionHandler::accepts(
+                        new InaccessibleMethodException('Cannot access protected method ' . $method_id, $file_name, $line_number)
+                    )) {
+                        return false;
+                    }
                 }
 
                 if (is_subclass_of($method_class, $calling_context) && method_exists($calling_context, $method_name)) {
@@ -513,7 +537,11 @@ class ClassMethodChecker extends FunctionChecker
                 }
 
                 if (!is_subclass_of($calling_context, $method_class)) {
-                    throw new InaccessibleMethodException('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number);
+                    if (ExceptionHandler::accepts(
+                        new InaccessibleMethodException('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                    )) {
+                        return false;
+                    }
                 }
         }
     }
