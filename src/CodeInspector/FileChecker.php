@@ -19,15 +19,11 @@ class FileChecker implements StatementsSource
 
     protected $_preloaded_statements = [];
 
-    protected static $_class_property_fn = null;
-    protected static $_var_dump_fn = null;
-
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
     protected static $_functions = [];
     protected static $_includes_to_ignore = [];
 
-    protected static $_ignore_check_nulls_pattern = null;
     protected static $_ignore_check_variables_pattern = null;
 
     public static $show_notices = true;
@@ -178,22 +174,6 @@ class FileChecker implements StatementsSource
         self::$_cache_dir = $cache_dir;
     }
 
-    /**
-     * @return bool
-     */
-    public static function shouldCheckVarDumps($file_name)
-    {
-        return !self::$_var_dump_fn || call_user_func(self::$_var_dump_fn, $file_name);
-    }
-
-    /**
-     * @return bool
-     */
-    public static function shouldCheckClassProperties($file_name)
-    {
-        return !self::$_class_property_fn || call_user_func(self::$_class_property_fn, $file_name);
-    }
-
     public function registerFunction(PhpParser\Node\Stmt\Function_ $function)
     {
         $function_name = $function->name;
@@ -303,16 +283,6 @@ class FileChecker implements StatementsSource
         return $argument_offset < count($this->_function_params[$function_name]) && $this->_function_params[$function_name][$argument_offset];
     }
 
-    public static function checkClassPropertiesFor(callable $fn)
-    {
-        self::$_class_property_fn = $fn;
-    }
-
-    public static function checkVarDumpsFor(callable $fn)
-    {
-        self::$_var_dump_fn = $fn;
-    }
-
     public static function ignoreIncludes(array $includes)
     {
         self::$_includes_to_ignore = $includes;
@@ -323,11 +293,6 @@ class FileChecker implements StatementsSource
         return self::$_includes_to_ignore;
     }
 
-    public static function ignoreNullChecksFor($pattern)
-    {
-        self::$_ignore_check_nulls_pattern = $pattern;
-    }
-
     public static function ignoreVariableChecksFor($pattern)
     {
         self::$_ignore_check_variables_pattern = $pattern;
@@ -336,10 +301,5 @@ class FileChecker implements StatementsSource
     public static function shouldCheckVariables($file_name)
     {
         return !self::$_ignore_check_variables_pattern || !preg_match(self::$_ignore_check_variables_pattern, $file_name);
-    }
-
-    public static function shouldCheckNulls($file_name)
-    {
-        return !self::$_ignore_check_nulls_pattern || !preg_match(self::$_ignore_check_nulls_pattern, $file_name);
     }
 }

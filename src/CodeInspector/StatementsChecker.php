@@ -1050,7 +1050,7 @@ class StatementsChecker
 
     protected function _checkThisPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
-        if (!ClassChecker::getThisClass() && !FileChecker::shouldCheckClassProperties($this->_file_name)) {
+        if (!ClassChecker::getThisClass()) {
             // ignore this property
             return;
         }
