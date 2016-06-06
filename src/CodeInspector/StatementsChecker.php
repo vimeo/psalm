@@ -74,7 +74,6 @@ class StatementsChecker
         $this->_class_extends = $this->_source->getParentClass();
 
         $this->_check_variables = FileChecker::shouldCheckVariables($this->_file_name) || $enforce_variable_checks;
-        $this->_check_nulls = FileChecker::shouldCheckNulls($this->_file_name);
 
         $this->_type_checker = new TypeChecker($source, $this);
     }
@@ -1957,7 +1956,7 @@ class StatementsChecker
 
             if ($method_id && isset($arg->value->returnType)) {
                 foreach (explode('|', $arg->value->returnType) as $return_type) {
-                    if (TypeChecker::checkMethodParam($return_type, $method_id, $i, $this->_absolute_class, $this->_check_nulls, $this->_file_name, $arg->value->getLine()) === false) {
+                    if (TypeChecker::checkMethodParam($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine()) === false) {
                         return false;
                     }
                 }
@@ -2270,17 +2269,15 @@ class StatementsChecker
                     $input_types = explode('|', $type);
                     $input_types = array_flip($input_types);
 
-                    if ($this->_check_nulls) {
-                        if (isset($input_types['null']) && !$is_nullable) {
-                            if (ExceptionHandler::accepts(
-                                new InvalidArgumentException(
-                                    'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
-                                    $file_name,
-                                    $line_number
-                                )
-                            )) {
-                                return false;
-                            }
+                    if (isset($input_types['null']) && !$is_nullable) {
+                        if (ExceptionHandler::accepts(
+                            new InvalidArgumentException(
+                                'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
+                                $file_name,
+                                $line_number
+                            )
+                        )) {
+                            return false;
                         }
                     }
 

@@ -27,7 +27,7 @@ class TypeChecker
     /**
      * @return bool
      */
-    public static function checkMethodParam($return_type, $method_id, $arg_offset, $current_class, $check_nulls, $file_name, $line_number)
+    public static function checkMethodParam($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
     {
         if ($return_type === 'mixed') {
             return true;
