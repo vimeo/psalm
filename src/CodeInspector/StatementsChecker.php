@@ -9,6 +9,7 @@ use CodeInspector\Exception\ForbiddenCodeException;
 use CodeInspector\Exception\InvalidArgumentException;
 use CodeInspector\Exception\InvalidNamespaceException;
 use CodeInspector\Exception\IteratorException;
+use CodeInspector\Exception\NullReferenceException;
 use CodeInspector\Exception\ParentNotFoundException;
 use CodeInspector\Exception\PossiblyUndefinedVariableException;
 use CodeInspector\Exception\ScopeException;
@@ -73,7 +74,7 @@ class StatementsChecker
         $this->_class_name = $this->_source->getClassName();
         $this->_class_extends = $this->_source->getParentClass();
 
-        $this->_check_variables = FileChecker::shouldCheckVariables($this->_file_name) || $enforce_variable_checks;
+        $this->_check_variables = !Config::getInstance()->doesInheritVariables($this->_file_name) || $enforce_variable_checks;
 
         $this->_type_checker = new TypeChecker($source, $this);
     }
@@ -1216,7 +1217,7 @@ class StatementsChecker
 
                         case 'null':
                             if (ExceptionHandler::accepts(
-                                new IteratorException('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine())
+                                new NullReferenceException('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine())
                             )) {
                                 return false;
                             }
@@ -1587,7 +1588,7 @@ class StatementsChecker
                 switch ($absolute_class) {
                     case 'null':
                         if (ExceptionHandler::accepts(
-                            new InvalidArgumentException('Cannot call method ' . $stmt->name . ' on nullable variable ' . $class_type, $this->_file_name, $stmt->getLine())
+                            new NullReferenceException('Cannot call method ' . $stmt->name . ' on possibly null variable' . $class_type, $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
                         }
@@ -2271,7 +2272,7 @@ class StatementsChecker
 
                     if (isset($input_types['null']) && !$is_nullable) {
                         if (ExceptionHandler::accepts(
-                            new InvalidArgumentException(
+                            new NullReferenceException(
                                 'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
                                 $file_name,
                                 $line_number
