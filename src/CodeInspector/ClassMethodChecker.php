@@ -2,9 +2,9 @@
 
 namespace CodeInspector;
 
-use CodeInspector\Exception\UndefinedMethodException;
-use CodeInspector\Exception\InaccessibleMethodException;
-use CodeInspector\Exception\ReturnTypeException;
+use CodeInspector\Issue\UndefinedMethodError;
+use CodeInspector\Issue\InaccessibleMethodError;
+use CodeInspector\Issue\ReturnTypeError;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
@@ -79,7 +79,7 @@ class ClassMethodChecker extends FunctionChecker
                     }
 
                     if (ExceptionHandler::accepts(
-                        new ReturnTypeException(
+                        new ReturnTypeError(
                             'The given return type for ' . $method_id . ' is incorrect, expecting ' . implode('|', $return_types),
                             $this->_file_name,
                             $this->_function->getLine()
@@ -469,7 +469,7 @@ class ClassMethodChecker extends FunctionChecker
         }
 
         if (ExceptionHandler::accepts(
-            new UndefinedMethodException('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine())
+            new UndefinedMethodError('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine())
         )) {
             return false;
         }
@@ -499,7 +499,7 @@ class ClassMethodChecker extends FunctionChecker
 
         if (!isset(self::$_method_visibility[$method_id])) {
             if (ExceptionHandler::accepts(
-                new InaccessibleMethodException('Cannot access method ' . $method_id, $file_name, $line_number)
+                new InaccessibleMethodError('Cannot access method ' . $method_id, $file_name, $line_number)
             )) {
                 return false;
             }
@@ -512,7 +512,7 @@ class ClassMethodChecker extends FunctionChecker
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $method_class !== $calling_context) {
                     if (ExceptionHandler::accepts(
-                        new InaccessibleMethodException('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                        new InaccessibleMethodError('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
                     )) {
                         return false;
                     }
@@ -526,7 +526,7 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!$calling_context) {
                     if (ExceptionHandler::accepts(
-                        new InaccessibleMethodException('Cannot access protected method ' . $method_id, $file_name, $line_number)
+                        new InaccessibleMethodError('Cannot access protected method ' . $method_id, $file_name, $line_number)
                     )) {
                         return false;
                     }
@@ -538,7 +538,7 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!is_subclass_of($calling_context, $method_class)) {
                     if (ExceptionHandler::accepts(
-                        new InaccessibleMethodException('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                        new InaccessibleMethodError('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
                     )) {
                         return false;
                     }

@@ -2,8 +2,8 @@
 
 namespace CodeInspector;
 
-use CodeInspector\Exception\InvalidArgumentException;
-use CodeInspector\Exception\TypeResolutionException;
+use CodeInspector\Issue\InvalidArgumentError;
+use CodeInspector\Issue\TypeResolutionError;
 use CodeInspector\ExceptionHandler;
 use PhpParser;
 
@@ -35,7 +35,7 @@ class TypeChecker
 
         if ($return_type === 'void') {
             if (ExceptionHandler::accepts(
-                new TypeResolutionException(
+                new TypeResolutionError(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be void, but possibly void value was supplied',
                     $file_name,
                     $line_number
@@ -63,7 +63,7 @@ class TypeChecker
             }
 
             if (ExceptionHandler::accepts(
-                new InvalidArgumentException(
+                new InvalidArgumentError(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied',
                     $file_name,
                     $line_number
@@ -93,7 +93,7 @@ class TypeChecker
             }
 
             if (ExceptionHandler::accepts(
-                new InvalidArgumentException(
+                new InvalidArgumentError(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type,
                     $file_name,
                     $line_number
@@ -500,7 +500,7 @@ class TypeChecker
                             if (empty($existing_var_types)) {
                                 if ($strict) {
                                     if (ExceptionHandler::accepts(
-                                        new TypeResolutionException('Cannot resolve types for ' . $key, $file_name, $line_number)
+                                        new TypeResolutionError('Cannot resolve types for ' . $key, $file_name, $line_number)
                                     )) {
                                         return false;
                                     }

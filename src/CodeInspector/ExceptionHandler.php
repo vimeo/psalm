@@ -4,9 +4,18 @@ namespace CodeInspector;
 
 class ExceptionHandler
 {
-    public static function accepts(Exception\CodeException $e)
+    public static function accepts(Issue\CodeIssue $e)
     {
-        throw $e;
-        //return true;
+        $config = Config::getInstance();
+
+        if ($config->stopOnError) {
+            die($e->getMessage());
+        }
+
+        if ($config->excludeIssueInFile(get_class($e), $e->getFileName())) {
+            return false;
+        }
+
+
     }
 }
