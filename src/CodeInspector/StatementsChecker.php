@@ -2067,10 +2067,14 @@ class StatementsChecker
             $comments = self::parseDocComment($doc_comment);
 
             if ($comments && isset($comments['specials']['var'][0])) {
-                $type_in_comments = explode(' ', $comments['specials']['var'][0])[0];
+                $var_parts = preg_split('/[\s\t]+/', $comments['specials']['var'][0]);
 
-                if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
-                    $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
+                if (isset($var_parts[0]) && (!isset($var_parts[1]) || $var_parts[1][0] !== '$')) {
+                    $type_in_comments = $var_parts[0];
+
+                    if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
+                        $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
+                    }
                 }
             }
         }

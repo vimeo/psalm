@@ -8,7 +8,8 @@ use PhpParser\ParserFactory;
 
 class FileChecker implements StatementsSource
 {
-    protected $_file_name;
+    protected $_real_file_name;
+    protected $_short_file_name;
     protected $_namespace;
     protected $_aliased_classes = [];
 
@@ -30,9 +31,10 @@ class FileChecker implements StatementsSource
 
     public function __construct($file_name, array $preloaded_statements = [])
     {
-        $this->_file_name = $file_name;
+        $this->_real_file_name = $file_name;
+        $this->_short_file_name = Config::getInstance()->shortenFileName($file_name);
 
-        self::$_file_checkers[$this->_file_name] = $this;
+        self::$_file_checkers[$this->_short_file_name] = $this;
 
         if ($preloaded_statements) {
             $this->_preloaded_statements = $preloaded_statements;
@@ -43,7 +45,7 @@ class FileChecker implements StatementsSource
     {
         $stmts = $this->_preloaded_statements ?
                     $this->_preloaded_statements :
-                    self::getStatements($this->_file_name);
+                    self::getStatements($this->_real_file_name);
 
         $leftover_stmts = [];
 
@@ -91,7 +93,7 @@ class FileChecker implements StatementsSource
 
     public function checkWithClass($class_name, $method_vars = [])
     {
-        $stmts = self::getStatements($this->_file_name);
+        $stmts = self::getStatements($this->_real_file_name);
 
         $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
 
@@ -233,7 +235,7 @@ class FileChecker implements StatementsSource
 
     public function getFileName()
     {
-        return $this->_file_name;
+        return $this->_short_file_name;
     }
 
     /**

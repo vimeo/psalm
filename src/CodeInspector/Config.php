@@ -40,7 +40,7 @@ class Config
         $config_xml = new SimpleXMLElement($file_contents);
 
         if (isset($config_xml['stopOnError'])) {
-            $config->stop_on_error = (bool) $config_xml['stopOnError'];
+            $config->stop_on_error = $config_xml['stopOnError'] === 'true' || $config_xml['stopOnError'] === '1';
         }
 
         if (isset($config_xml['useDocblockReturnType'])) {
@@ -86,10 +86,15 @@ class Config
         return new self();
     }
 
+    public function shortenFileName($file_name)
+    {
+        return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
+    }
+
     public function excludeIssueInFile($issue_type, $file_name)
     {
         $issue_type = array_pop(explode('\\', $issue_type));
-        $file_name = preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
+        $file_name = $this->shortenFileName($file_name);
 
         if (!isset($this->issue_handlers[$issue_type])) {
             return false;

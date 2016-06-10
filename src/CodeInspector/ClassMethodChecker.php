@@ -61,7 +61,7 @@ class ClassMethodChecker extends FunctionChecker
         if ($existing_return_types) {
             $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
-            if ($return_types && $return_types !== ['mixed']) {
+            if ($return_types && $return_types !== ['mixed'] && $existing_return_types !== ['mixed']) {
                 $simple_existing_return_types = array_map(
                     function ($value) {
                         return preg_replace('/<.*$/', '', $value);
@@ -78,14 +78,37 @@ class ClassMethodChecker extends FunctionChecker
                         return;
                     }
 
-                    if (ExceptionHandler::accepts(
-                        new ReturnTypeError(
-                            'The given return type for ' . $method_id . ' is incorrect, expecting ' . implode('|', $return_types),
-                            $this->_file_name,
-                            $this->_function->getLine()
-                        )
-                    )) {
-                        return false;
+                    $differing_types = array_diff($return_types, $simple_existing_return_types);
+
+                    // check whether the differing types are subclasses of declared return types
+                    $truly_different = false;
+                    foreach ($differing_types as $differing_type) {
+                        $is_match = false;
+
+                        foreach ($simple_existing_return_types as $existing_return_type) {
+                            if (is_subclass_of($differing_type, $existing_return_type) ||
+                                (in_array($differing_type, ['float', 'double', 'int']) && in_array($existing_return_type, ['float', 'double', 'int'])) ||
+                                (in_array($differing_type, ['boolean', 'bool']) && in_array($existing_return_type, ['boolean', 'bool']))) {
+                                $is_match = true;
+                                break;
+                            }
+                        }
+
+                        if (!$is_match) {
+                            $truly_different = true;
+                        }
+                    }
+
+                    if ($truly_different) {
+                        if (ExceptionHandler::accepts(
+                            new ReturnTypeError(
+                                'The given return type for ' . $method_id . ' is incorrect, expecting ' . implode('|', $return_types),
+                                $this->_file_name,
+                                $this->_function->getLine()
+                            )
+                        )) {
+                            return false;
+                        }
                     }
                 }
             }
