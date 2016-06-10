@@ -13,26 +13,29 @@ class ScopeChecker
      * @param  bool $check_continue - also looks for a continue
      * @return bool
      */
-    public static function doesLeaveBlock(array $stmts, $check_continue = true)
+    public static function doesLeaveBlock(array $stmts, $check_continue = true, $check_break = true)
     {
         for ($i = count($stmts) - 1; $i >= 0; $i--) {
             $stmt = $stmts[$i];
 
             if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
                 $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
-                ($check_continue && ($stmt instanceof PhpParser\Node\Stmt\Continue_ || $stmt instanceof PhpParser\Node\Stmt\Break_))) {
+                ($check_continue && $stmt instanceof PhpParser\Node\Stmt\Continue_) ||
+                ($check_break && $stmt instanceof PhpParser\Node\Stmt\Break_)) {
 
                 return true;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                if ($stmt->else && self::doesLeaveBlock($stmt->stmts, $check_continue) && self::doesLeaveBlock($stmt->else->stmts, $check_continue)) {
+                if ($stmt->else && self::doesLeaveBlock($stmt->stmts, $check_continue, $check_break) &&
+                    self::doesLeaveBlock($stmt->else->stmts, $check_continue, $check_break)) {
+
                     if (empty($stmt->elseifs)) {
                         return true;
                     }
 
                     foreach ($stmt->elseifs as $elseif) {
-                        if (!self::doesLeaveBlock($elseif->stmts, $check_continue)) {
+                        if (!self::doesLeaveBlock($elseif->stmts, $check_continue, $check_break)) {
                             return false;
                         }
                     }

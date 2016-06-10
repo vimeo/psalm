@@ -16,7 +16,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodCall()
     {
@@ -123,7 +123,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodCallWithThis()
     {
@@ -201,7 +201,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodWithWrongIfGuard()
     {
@@ -272,7 +272,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuard()
     {
@@ -397,7 +397,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodWithWrongIfGuardBefore()
     {
@@ -450,7 +450,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuardBefore()
     {
@@ -503,7 +503,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodWithGuardedNestedIncompleteRedefinition()
     {
@@ -668,7 +668,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testNullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn()
     {
@@ -887,7 +887,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException CodeInspector\CodeException
      */
     public function testVariableReassignmentInIfWithOutsideCall()
     {
@@ -1003,5 +1003,31 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $return_stmt = array_pop($method_stmts);
 
         $this->assertSame('mixed', $return_stmt->returnType);
+    }
+
+    public function testSwitchVariableWithContinue()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B {
+            public function bar() {
+                foreach ([\'a\', \'b\', \'c\'] as $letter) {
+                    switch ($letter) {
+                        case \'a\':
+                            $foo = 1;
+                            break;
+                        case \'b\':
+                            $foo = 2;
+                            break;
+                        default:
+                            continue;
+                    }
+
+                    $moo = $foo;
+                }
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
     }
 }

@@ -39,47 +39,27 @@ class FileFilter
             $filter->inclusive = true;
 
             if ($e->directory) {
-                if ($e->directory instanceof \SimpleXMLElement) {
-                    $filter->include_dirs[] = self::slashify($e->directory['name']);
-                }
-                else {
-                    foreach ($e->directory as $directory) {
-                        $filter->include_dirs[] = self::slashify($directory['name']);
-                    }
+                foreach ($e->directory as $directory) {
+                    $filter->include_dirs[] = self::slashify($directory['name']);
                 }
             }
 
             if ($e->file) {
-                if ($e->file instanceof \SimpleXMLElement) {
-                    $filter->include_files[] = $e->file['name'];
-                }
-                else {
-                    foreach ($e->file as $file) {
-                        $filter->include_files[] = $file['name'];
-                    }
+                foreach ($e->file as $file) {
+                    $filter->include_files[] = $file['name'];
                 }
             }
         }
         else {
             if ($e->directory) {
-                if ($e->directory instanceof \SimpleXMLElement) {
-                    $filter->exclude_dirs[] = self::slashify($e->directory['name']);
-                }
-                else {
-                    foreach ($e->directory as $directory) {
-                        $filter->exclude_dirs[] = self::slashify($directory['name']);
-                    }
+                foreach ($e->directory as $directory) {
+                    $filter->exclude_dirs[] = self::slashify($directory['name']);
                 }
             }
 
             if ($e->file) {
-                if ($e->file instanceof \SimpleXMLElement) {
-                    $filter->exclude_files[] = $e->file['name'];
-                }
-                else {
-                    foreach ($e->file as $file) {
-                        $filter->exclude_files[] = $file['name'];
-                    }
+                foreach ($e->file as $file) {
+                    $filter->exclude_files[] = $file['name'];
                 }
             }
         }
@@ -96,7 +76,7 @@ class FileFilter
     {
         if ($this->inclusive) {
             foreach ($this->include_dirs as $include_dir) {
-                if (strpos($file_name, $include_dir) !== false) {
+                if (strpos($file_name, $include_dir) === 0) {
                     return true;
                 }
             }
@@ -110,7 +90,7 @@ class FileFilter
 
         // exclusive
         foreach ($this->exclude_dirs as $exclude_dir) {
-            if (strpos($file_name, $exclude_dir) !== false) {
+            if (strpos($file_name, $exclude_dir) === 0) {
                 return false;
             }
 
@@ -120,5 +100,25 @@ class FileFilter
         }
 
         return true;
+    }
+
+    public function getIncludeDirs()
+    {
+        return $this->include_dirs;
+    }
+
+    public function getExcludeDirs()
+    {
+        return $this->exclude_dirs;
+    }
+
+    public function getIncludeFiles()
+    {
+        return $this->include_files;
+    }
+
+    public function getExcludeFiles()
+    {
+        return $this->exclude_files;
     }
 }

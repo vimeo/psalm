@@ -8,12 +8,12 @@ class ExceptionHandler
     {
         $config = Config::getInstance();
 
-        if ($config->stopOnError) {
-            die($e->getMessage());
-        }
-
         if ($config->excludeIssueInFile(get_class($e), $e->getFileName())) {
             return false;
+        }
+
+        if ($config->stop_on_error) {
+            throw new CodeException($e->getMessage());
         }
 
 

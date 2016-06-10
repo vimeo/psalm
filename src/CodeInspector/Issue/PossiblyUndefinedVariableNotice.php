@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class PossiblyUndefinedVariableError extends CodeError
+class PossiblyUndefinedVariableNotice extends CodeIssue
 {
 }
