@@ -1588,7 +1588,7 @@ class StatementsChecker
                 switch ($absolute_class) {
                     case 'null':
                         if (ExceptionHandler::accepts(
-                            new NullReferenceError('Cannot call method ' . $stmt->name . ' on possibly null variable' . $class_type, $this->_file_name, $stmt->getLine())
+                            new NullReferenceError('Cannot call method ' . $stmt->name . ' on possibly null variable ' . $class_type, $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
                         }
@@ -2067,9 +2067,9 @@ class StatementsChecker
             $comments = self::parseDocComment($doc_comment);
 
             if ($comments && isset($comments['specials']['var'][0])) {
-                $var_parts = preg_split('/[\s\t]+/', $comments['specials']['var'][0]);
+                $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
 
-                if (isset($var_parts[0]) && (!isset($var_parts[1]) || $var_parts[1][0] !== '$')) {
+                if ($var_parts && (count($var_parts) === 1 || $var_parts[1][0] !== '$')) {
                     $type_in_comments = $var_parts[0];
 
                     if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {

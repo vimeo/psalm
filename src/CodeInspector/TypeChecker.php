@@ -232,6 +232,10 @@ class TypeChecker
                 $var_name = $this->_getVariable($conditional->expr->args[0]->value);
                 $if_types[$var_name] = '!null';
             }
+            else if (self::_hasIsACheck($conditional->expr)) {
+                $var_name = $this->_getVariable($conditional->expr->args[0]->value);
+                $if_types[$var_name] = '!' . $conditional->expr->args[1]->value->value;
+            }
             else if (self::_hasArrayCheck($conditional->expr)) {
                 $var_name = $this->_getVariable($conditional->expr->args[0]->value);
                 $if_types[$var_name] = '!array';
@@ -296,6 +300,10 @@ class TypeChecker
         else if (self::_hasNullCheck($conditional)) {
             $var_name = $this->_getVariable($conditional->args[0]->value);
             $if_types[$var_name] = 'null';
+        }
+        else if (self::_hasIsACheck($conditional)) {
+            $var_name = $this->_getVariable($conditional->args[0]->value);
+            $if_types[$var_name] = $conditional->args[1]->value->value;
         }
         else if (self::_hasArrayCheck($conditional)) {
             $var_name = $this->_getVariable($conditional->args[0]->value);
@@ -416,6 +424,20 @@ class TypeChecker
     protected static function _hasNullCheck(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_null']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function _hasIsACheck(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
+            $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_a'] &&
+            $stmt->args[1]->value instanceof PhpParser\Node\Scalar\String_) {
             return true;
         }
 
