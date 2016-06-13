@@ -3,8 +3,6 @@
 namespace CodeInspector;
 
 use CodeInspector\Config\FileFilter;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use SimpleXMLElement;
 
 class Config
@@ -108,27 +106,19 @@ class Config
         return false;
     }
 
-    public function getFilesToCheck()
+    public function getIncludeDirs()
     {
-        $files = $this->inspect_files->getIncludeFiles();
+        return $this->inspect_files->getIncludeDirs();
+    }
 
-        foreach ($this->inspect_files->getIncludeDirs() as $dir) {
-            /** @var RecursiveDirectoryIterator */
-            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->base_dir . '/' . $dir));
-            $iterator->rewind();
+    public function getBaseDir()
+    {
+        return $this->base_dir;
+    }
 
-            while ($iterator->valid()) {
-                if (!$iterator->isDot()) {
-                    if (in_array($iterator->getExtension(), $this->file_extensions)) {
-                        $files[] = $iterator->getRealPath();
-                    }
-                }
-
-                $iterator->next();
-            }
-        }
-
-        return $files;
+    public function getFileExtensions()
+    {
+        return $this->file_extensions;
     }
 
     public function getMockClasses()
