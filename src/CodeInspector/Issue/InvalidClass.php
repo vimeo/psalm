@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class IteratorError extends CodeError
+class InvalidClass extends CodeError
 {
 }

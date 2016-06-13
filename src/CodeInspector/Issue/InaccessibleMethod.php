@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class ForbiddenCodeError extends CodeError
+class InaccessibleMethod extends CodeError
 {
 }

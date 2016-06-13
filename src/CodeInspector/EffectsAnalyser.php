@@ -74,6 +74,12 @@ class EffectsAnalyser
             $return_types = [];
         }
 
+        $return_types = TypeChecker::reduceTypes($return_types);
+
+        $array_return_types = array_filter($return_types, function($return_type) {
+            return preg_match('/^array(\<|$)/', $return_type);
+        });
+
         $return_types = array_flip($return_types);
 
         if (count($return_types) > 1 && isset($return_types['void'])) {

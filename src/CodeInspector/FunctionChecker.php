@@ -88,11 +88,11 @@ class FunctionChecker implements StatementsSource
             $statements_checker->check($this->_function->stmts, $vars_in_scope, $vars_possibly_in_scope);
 
             if (isset($this->_return_vars_in_scope[''])) {
-                $vars_in_scope = TypeChecker::combineTypes($vars_in_scope, $this->_return_vars_in_scope['']);
+                $vars_in_scope = TypeChecker::combineKeyedTypes($vars_in_scope, $this->_return_vars_in_scope['']);
             }
 
             if (isset($this->_return_vars_possibly_in_scope[''])) {
-                $vars_possibly_in_scope = TypeChecker::combineTypes($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope['']);
+                $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope['']);
             }
 
             foreach ($vars_in_scope as $var => $type) {
@@ -116,14 +116,14 @@ class FunctionChecker implements StatementsSource
     public function addReturnTypes($return_type, $vars_in_scope, $vars_possibly_in_scope)
     {
         if (isset($this->_return_vars_in_scope[$return_type])) {
-            $this->_return_vars_in_scope[$return_type] = TypeChecker::combineTypes($vars_in_scope, $this->_return_vars_in_scope[$return_type]);
+            $this->_return_vars_in_scope[$return_type] = TypeChecker::combineKeyedTypes($vars_in_scope, $this->_return_vars_in_scope[$return_type]);
         }
         else {
             $this->_return_vars_in_scope[$return_type] = $vars_in_scope;
         }
 
         if (isset($this->_return_vars_possibly_in_scope[$return_type])) {
-            $this->_return_vars_possibly_in_scope[$return_type] = TypeChecker::combineTypes($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope[$return_type]);
+            $this->_return_vars_possibly_in_scope[$return_type] = array_merge($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope[$return_type]);
         }
         else {
             $this->_return_vars_possibly_in_scope[$return_type] = $vars_possibly_in_scope;
@@ -131,7 +131,7 @@ class FunctionChecker implements StatementsSource
     }
 
     /**
-     * @return string
+     * @return null|string
      */
     public function getMethodId()
     {

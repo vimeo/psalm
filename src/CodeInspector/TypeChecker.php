@@ -2,8 +2,8 @@
 
 namespace CodeInspector;
 
-use CodeInspector\Issue\InvalidArgumentError;
-use CodeInspector\Issue\TypeResolutionError;
+use CodeInspector\Issue\InvalidArgument;
+use CodeInspector\Issue\FailedTypeResolution;
 use CodeInspector\ExceptionHandler;
 use PhpParser;
 
@@ -35,7 +35,7 @@ class TypeChecker
 
         if ($return_type === 'void') {
             if (ExceptionHandler::accepts(
-                new TypeResolutionError(
+                new FailedTypeResolution(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be void, but possibly void value was supplied',
                     $file_name,
                     $line_number
@@ -63,7 +63,7 @@ class TypeChecker
             }
 
             if (ExceptionHandler::accepts(
-                new InvalidArgumentError(
+                new InvalidArgument(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied',
                     $file_name,
                     $line_number
@@ -93,7 +93,7 @@ class TypeChecker
             }
 
             if (ExceptionHandler::accepts(
-                new InvalidArgumentError(
+                new InvalidArgument(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type,
                     $file_name,
                     $line_number
@@ -174,6 +174,7 @@ class TypeChecker
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
                 $null_position = self::_hasNullVariable($conditional->expr);
+                $false_position = self::_hasNullVariable($conditional->expr);
 
                 if ($null_position !== null) {
                     if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -196,9 +197,31 @@ class TypeChecker
                         }
                     }
                 }
+                elseif ($false_position !== null) {
+                    if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
+                        $var_name = $this->_getVariable($conditional->expr->left);
+                    }
+                    else if ($false_position === self::ASSIGNMENT_TO_LEFT) {
+                        $var_name = $this->_getVariable($conditional->epxr->right);
+                    }
+                    else {
+                        throw new \InvalidArgumentException('Bad null variable position');
+                    }
+
+                    if ($var_name) {
+                        if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                            $if_types[$var_name] = '!false';
+                        }
+                        else {
+                            // we do this because == null gives us a weaker idea than === null
+                            $if_types[$var_name] = '!empty';
+                        }
+                    }
+                }
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotEqual) {
                 $null_position = self::_hasNullVariable($conditional->expr);
+                $false_position = self::_hasNullVariable($conditional->expr);
 
                 if ($null_position !== null) {
                     if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -216,6 +239,27 @@ class TypeChecker
                             $if_types[$var_name] = 'null';
                         }
                         else {
+                            $if_types[$var_name] = 'empty';
+                        }
+                    }
+                }
+                elseif ($false_position !== null) {
+                    if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
+                        $var_name = $this->_getVariable($conditional->expr->left);
+                    }
+                    else if ($false_position === self::ASSIGNMENT_TO_LEFT) {
+                        $var_name = $this->_getVariable($conditional->epxr->right);
+                    }
+                    else {
+                        throw new \InvalidArgumentException('Bad null variable position');
+                    }
+
+                    if ($var_name) {
+                        if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                            $if_types[$var_name] = 'false';
+                        }
+                        else {
+                            // we do this because == null gives us a weaker idea than === null
                             $if_types[$var_name] = 'empty';
                         }
                     }
@@ -251,6 +295,7 @@ class TypeChecker
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
             $null_position = self::_hasNullVariable($conditional);
+            $false_position = self::_hasFalseVariable($conditional);
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -272,9 +317,30 @@ class TypeChecker
                     }
                 }
             }
+            elseif ($false_position) {
+                if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $var_name = $this->_getVariable($conditional->left);
+                }
+                else if ($false_position === self::ASSIGNMENT_TO_LEFT) {
+                    $var_name = $this->_getVariable($conditional->right);
+                }
+                else {
+                    throw new \InvalidArgumentException('Bad null variable position');
+                }
+
+                if ($var_name) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        $if_types[$var_name] = 'false';
+                    }
+                    else {
+                        $if_types[$var_name] = 'empty';
+                    }
+                }
+            }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual) {
             $null_position = self::_hasNullVariable($conditional);
+            $false_position = self::_hasFalseVariable($conditional);
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -290,6 +356,26 @@ class TypeChecker
                 if ($var_name) {
                     if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                         $if_types[$var_name] = '!null';
+                    }
+                    else {
+                        $if_types[$var_name] = '!empty';
+                    }
+                }
+            }
+            elseif ($false_position) {
+                if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $var_name = $this->_getVariable($conditional->left);
+                }
+                else if ($false_position === self::ASSIGNMENT_TO_LEFT) {
+                    $var_name = $this->_getVariable($conditional->right);
+                }
+                else {
+                    throw new \InvalidArgumentException('Bad null variable position');
+                }
+
+                if ($var_name) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        $if_types[$var_name] = '!false';
                     }
                     else {
                         $if_types[$var_name] = '!empty';
@@ -418,6 +504,23 @@ class TypeChecker
         return null;
     }
 
+    protected static function _hasFalseVariable(PhpParser\Node\Expr $conditional)
+    {
+        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
+            $conditional->right->name instanceof PhpParser\Node\Name &&
+            $conditional->right->name->parts === ['false']) {
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
+            $conditional->left->name instanceof PhpParser\Node\Name &&
+            $conditional->left->name->parts === ['false']) {
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return null;
+    }
+
     /**
      * @return bool
      */
@@ -461,7 +564,7 @@ class TypeChecker
      *
      * @param  array  $new_types
      * @param  array  $existing_types
-     * @return array
+     * @return array|false
      */
     public static function reconcileTypes(array $new_types, array $existing_types, $strict, $file_name, $line_number)
     {
@@ -508,7 +611,7 @@ class TypeChecker
                                 continue;
                             }
 
-                            $result_types[$key] = implode('|', $existing_var_types);
+                            $result_types[$key] = implode('|', self::reduceTypes($existing_var_types));
                             continue;
                         }
 
@@ -522,7 +625,7 @@ class TypeChecker
                             if (empty($existing_var_types)) {
                                 if ($strict) {
                                     if (ExceptionHandler::accepts(
-                                        new TypeResolutionError('Cannot resolve types for ' . $key, $file_name, $line_number)
+                                        new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number)
                                     )) {
                                         return false;
                                     }
@@ -530,7 +633,7 @@ class TypeChecker
                             }
                         }
 
-                        $result_types[$key] = implode('|', $existing_var_types);
+                        $result_types[$key] = implode('|', self::reduceTypes($existing_var_types));
                         continue;
                     }
 
@@ -547,7 +650,7 @@ class TypeChecker
                         $existing_var_types[] = 'false';
                     }
 
-                    $result_types[$key] = implode('|', $existing_var_types);
+                    $result_types[$key] = implode('|', self::reduceTypes($existing_var_types));
                     continue;
                 }
 
@@ -589,7 +692,7 @@ class TypeChecker
      * @param  array  $existing_types
      * @return array
      */
-    public static function combineTypes(array $new_types, array $existing_types)
+    public static function combineKeyedTypes(array $new_types, array $existing_types)
     {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
         $keys = array_unique($keys);
@@ -615,19 +718,49 @@ class TypeChecker
                 continue;
             }
 
-            $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
-            $new_var_types = isset($new_types[$key]) ? explode('|', $new_types[$key]) : null;
-
-            if (in_array('mixed', $existing_var_types) || in_array('mixed', $new_var_types)) {
-                $result_types[$key] = 'mixed';
-                continue;
+            if (!is_string($existing_types[$key]) || !is_string($new_types[$key])) {
+                throw new \InvalidArgumentException('combineTypes operates only on strings');
             }
 
-            $all_types = array_merge($existing_var_types, $new_var_types);
-            $result_types[$key] = implode('|', array_unique($all_types));
+            $existing_var_types = explode('|', $existing_types[$key]);
+            $new_var_types = explode('|', $new_types[$key]);
+
+            if ($new_var_types === $existing_var_types) {
+                $combined_var_types = $new_var_types;
+            }
+            else {
+                $combined_var_types = self::reduceTypes(array_unique(array_merge($new_var_types, $existing_var_types)));
+            }
+
+            $result_types[$key] = implode('|', $combined_var_types);
         }
 
         return $result_types;
+    }
+
+    public static function reduceTypes(array $all_types)
+    {
+        if (in_array('mixed', $all_types)) {
+            return ['mixed'];
+        }
+
+        $array_types = array_filter($all_types, function($type) {
+            return preg_match('/^array(\<|$)/', $type);
+        });
+
+        $all_types = array_flip($all_types);
+
+        if (isset($all_types['array<empty>']) && count($array_types) > 1) {
+            unset($all_types['array<empty>']);
+        }
+
+        if (isset($all_types['array<mixed>'])) {
+            unset($all_types['array<mixed>']);
+
+            $all_types['array'] = true;
+        }
+
+        return array_keys($all_types);
     }
 
     public static function negateTypes(array $types)

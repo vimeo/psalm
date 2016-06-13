@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class InvalidClassError extends CodeError
+class UndefinedTrait extends CodeError
 {
 }

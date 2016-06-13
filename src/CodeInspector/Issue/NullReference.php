@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class ReturnTypeError extends CodeError
+class NullReference extends CodeError
 {
 }

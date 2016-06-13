@@ -5,21 +5,21 @@ namespace CodeInspector;
 use PhpParser;
 
 use CodeInspector\ExceptionHandler;
-use CodeInspector\Issue\ForbiddenCodeError;
-use CodeInspector\Issue\InvalidArgumentError;
-use CodeInspector\Issue\InvalidNamespaceError;
-use CodeInspector\Issue\IteratorError;
-use CodeInspector\Issue\NullReferenceError;
-use CodeInspector\Issue\ParentNotFoundError;
-use CodeInspector\Issue\PossiblyUndefinedVariableNotice;
-use CodeInspector\Issue\ScopeError;
-use CodeInspector\Issue\StaticInvocationError;
-use CodeInspector\Issue\StaticVariableError;
-use CodeInspector\Issue\TypeResolutionError;
-use CodeInspector\Issue\UndefinedConstantError;
-use CodeInspector\Issue\UndefinedFunctionError;
-use CodeInspector\Issue\UndefinedPropertyError;
-use CodeInspector\Issue\UndefinedVariableError;
+use CodeInspector\Issue\ForbiddenCode;
+use CodeInspector\Issue\InvalidArgument;
+use CodeInspector\Issue\InvalidNamespace;
+use CodeInspector\Issue\InvalidIterator;
+use CodeInspector\Issue\NullReference;
+use CodeInspector\Issue\ParentNotFound;
+use CodeInspector\Issue\PossiblyUndefinedVariable;
+use CodeInspector\Issue\InvalidScope;
+use CodeInspector\Issue\InvalidStaticInvocation;
+use CodeInspector\Issue\InvalidStaticVariable;
+use CodeInspector\Issue\FailedTypeResolution;
+use CodeInspector\Issue\UndefinedConstant;
+use CodeInspector\Issue\UndefinedFunction;
+use CodeInspector\Issue\UndefinedProperty;
+use CodeInspector\Issue\UndefinedVariable;
 
 class StatementsChecker
 {
@@ -196,7 +196,7 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 if ($this->_namespace) {
                     if (ExceptionHandler::accepts(
-                        new InvalidNamespaceError('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine())
+                        new InvalidNamespace('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine())
                     )) {
                         return false;
                     }
@@ -254,7 +254,7 @@ class StatementsChecker
         $new_vars = null;
         $new_vars_possibly_in_scope = [];
         $redefined_vars = null;
-        $possibly_redefined_vars = null;
+        $possibly_redefined_vars = [];
         $has_left = false;
         $post_type_assertions = [];
 
@@ -540,9 +540,8 @@ class StatementsChecker
                     if ($vars_in_scope[$var] !== 'mixed' && $type !== 'mixed') {
                         $existing_types = explode('|', $vars_in_scope[$var]);
                         $new_types = explode('|', $type);
-                        $new_types = array_merge($new_types, $existing_types);
-                        $new_types = array_unique($new_types);
-                        $vars_in_scope[$var] = implode('|', $new_types);
+                        $new_types = array_unique(array_merge($new_types, $existing_types));
+                        $vars_in_scope[$var] = implode('|', TypeChecker::reduceTypes($new_types));
                     }
                     else {
                         $vars_in_scope[$var] = 'mixed';
@@ -909,7 +908,7 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (ExceptionHandler::accepts(
-                new ForbiddenCodeError('Use of shell_exec', $this->_file_name, $stmt->getLine())
+                new ForbiddenCode('Use of shell_exec', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
             }
@@ -932,7 +931,7 @@ class StatementsChecker
     {
         if ($this->_is_static && $stmt->name === 'this') {
             if (ExceptionHandler::accepts(
-                new StaticVariableError('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine())
+                new InvalidStaticVariable('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
             }
@@ -977,7 +976,7 @@ class StatementsChecker
         if (!isset($vars_in_scope[$var_name])) {
             if (!isset($vars_possibly_in_scope[$var_name]) || !isset($this->_all_vars[$var_name])) {
                 if (ExceptionHandler::accepts(
-                    new UndefinedVariableError('Cannot find referenced variable $' . $var_name, $this->_file_name, $stmt->getLine())
+                    new UndefinedVariable('Cannot find referenced variable $' . $var_name, $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
                 }
@@ -987,7 +986,7 @@ class StatementsChecker
                 $this->_warn_vars[$var_name] = true;
 
                 if (ExceptionHandler::accepts(
-                    new PossiblyUndefinedVariableNotice(
+                    new PossiblyUndefinedVariable(
                         'Possibly undefined variable $' . $var_name .', first seen on line ' . $this->_all_vars[$var_name],
                         $this->_file_name,
                         $stmt->getLine()
@@ -1065,7 +1064,7 @@ class StatementsChecker
 
         if (!$class_checker) {
             if (ExceptionHandler::accepts(
-                new ScopeError('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine())
+                new InvalidScope('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
             }
@@ -1081,7 +1080,7 @@ class StatementsChecker
 
             if ((ClassChecker::getThisClass() && !$var_defined) || (!ClassChecker::getThisClass() && !$var_defined && !self::_propertyExists($property_id))) {
                 if (ExceptionHandler::accepts(
-                    new UndefinedPropertyError('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine())
+                    new UndefinedProperty('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
                 }
@@ -1115,6 +1114,12 @@ class StatementsChecker
 
     protected function _checkArray(PhpParser\Node\Expr\Array_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
+        // if the array is empty, this special type allows us to match any other array type against it
+        if (empty($stmt->items)) {
+            $stmt->returnType = 'array<empty>';
+            return;
+        }
+
         foreach ($stmt->items as $item) {
             if ($item->key) {
                 if ($this->_checkExpression($item->key, $vars_in_scope, $vars_possibly_in_scope) === false) {
@@ -1222,7 +1227,7 @@ class StatementsChecker
 
                         case 'null':
                             if (ExceptionHandler::accepts(
-                                new NullReferenceError('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine())
+                                new NullReference('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine())
                             )) {
                                 return false;
                             }
@@ -1232,7 +1237,7 @@ class StatementsChecker
                         case 'void':
                         case 'int':
                             if (ExceptionHandler::accepts(
-                                new IteratorError('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine())
+                                new InvalidIterator('Cannot iterate over ' . $return_type, $this->_file_name, $stmt->getLine())
                             )) {
                                 return false;
                             }
@@ -1345,6 +1350,10 @@ class StatementsChecker
             // statements of the form if ($x && $x->foo())
             $op_vars_in_scope = TypeChecker::reconcileTypes($left_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
 
+            if ($op_vars_in_scope === false) {
+                return false;
+            }
+
             if ($this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
@@ -1361,6 +1370,10 @@ class StatementsChecker
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
             $op_vars_in_scope = TypeChecker::reconcileTypes($negated_type_assertions, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+
+            if ($op_vars_in_scope === false) {
+                return false;
+            }
 
             if ($this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
@@ -1422,30 +1435,34 @@ class StatementsChecker
             $comments = self::parseDocComment($doc_comment);
 
             if ($comments && isset($comments['specials']['var'][0])) {
-                $type_in_comments = explode(' ', $comments['specials']['var'][0])[0];
+                $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
 
-                if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
-                    $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
+                if ($var_parts && (count($var_parts) === 1 || $var_parts[1][0] !== '$')) {
+                    $type_in_comments = $var_parts[0];
+
+                    if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
+                        $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
+                    }
                 }
             }
         }
 
+        $var_id = self::_getVarId($stmt->var);
+
+        if ($type_in_comments) {
+            $return_type = $type_in_comments;
+        }
+        elseif (isset($stmt->expr->returnType)) {
+            $return_type = $stmt->expr->returnType;
+        }
+        else {
+            $return_type = 'mixed';
+        }
+
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
-            if ($type_in_comments) {
-                $vars_in_scope[$stmt->var->name] = $type_in_comments;
-
-            } elseif (isset($stmt->expr->returnType)) {
-                $var_name = $stmt->var->name;
-                if ($this->_typeAssignment($var_name, $stmt->expr, $vars_in_scope) === false) {
-                    return false;
-                }
-            }
-            else {
-                $vars_in_scope[$stmt->var->name] = 'mixed';
-            }
-
-            $vars_possibly_in_scope[$stmt->var->name] = true;
-            $this->registerVariable($stmt->var->name, $stmt->var->getLine());
+            $vars_in_scope[$var_id] = $return_type;
+            $vars_possibly_in_scope[$var_id] = true;
+            $this->registerVariable($var_id, $stmt->var->getLine());
 
         } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $var) {
@@ -1456,58 +1473,116 @@ class StatementsChecker
                 }
             }
 
-        } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
-            // if it's an array assignment
-            $vars_in_scope[$stmt->var->var->name] = 'mixed';
-            $vars_possibly_in_scope[$stmt->var->var->name] = true;
-            $this->registerVariable($stmt->var->var->name, $stmt->var->var->getLine());
+        } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            if ($this->_checkArrayAssignment($stmt->var, $vars_in_scope, $vars_possibly_in_scope, $return_type) == false) {
+                return false;
+            }
 
-        } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if ($stmt->var->var instanceof PhpParser\Node\Expr\Variable) {
-                if ($stmt->var->var->name === 'this' && is_string($stmt->var->name)) {
-                    $method_id = $this->_source->getMethodId();
+        } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch &&
+                    $stmt->var->var instanceof PhpParser\Node\Expr\Variable &&
+                    $stmt->var->var->name === 'this' &&
+                    is_string($stmt->var->name)) {
 
-                    if (!isset(self::$_this_assignments[$method_id])) {
-                        self::$_this_assignments[$method_id] = [];
-                    }
+            $method_id = $this->_source->getMethodId();
 
-                    $property_id = $this->_absolute_class . '::' . $stmt->var->name;
-                    $var_id = $stmt->var->var->name . '->' . $stmt->var->name;
-                    self::$_existing_properties[$property_id] = 1;
+            if (!isset(self::$_this_assignments[$method_id])) {
+                self::$_this_assignments[$method_id] = [];
+            }
 
-                    if ($type_in_comments) {
-                        $vars_in_scope[$var_id] = $type_in_comments;
-                    }
-                    elseif (isset($stmt->expr->returnType)) {
-                        if ($this->_typeAssignment($var_id, $stmt->expr, $vars_in_scope) === false) {
-                            return false;
-                        }
-                    }
-                    else {
-                        $vars_in_scope[$var_id] = 'mixed';
-                    }
+            $property_id = $this->_absolute_class . '::' . $stmt->var->name;
+            self::$_existing_properties[$property_id] = 1;
 
-                    $vars_possibly_in_scope[$var_id] = true;
+            $vars_in_scope[$var_id] = $return_type;
+            $vars_possibly_in_scope[$var_id] = true;
 
-                    // right now we have to settle for mixed
-                    self::$_this_assignments[$method_id][$stmt->var->name] = 'mixed';
-                    //self::$_this_assignments[$method_id][$stmt->var->name] = $vars_in_scope[$property_id];
-                }
+            // right now we have to settle for mixed
+            self::$_this_assignments[$method_id][$stmt->var->name] = 'mixed';
+        }
+
+        if ($var_id && isset($vars_in_scope[$var_id]) && $vars_in_scope[$var_id] === 'void') {
+            if (ExceptionHandler::accepts(
+                new FailedTypeResolution('Cannot assign $' . $var_id . ' to type void', $this->_file_name, $stmt->getLine())
+            )) {
+                return false;
             }
         }
     }
 
-    protected function _typeAssignment($var_name, PhpParser\Node\Expr $expr, array &$vars_in_scope)
+    protected static function _getVarId(PhpParser\Node\Expr $stmt)
     {
-        if ($expr->returnType === 'void') {
-            if (ExceptionHandler::accepts(
-                new TypeResolutionError('Cannot assign $' . $var_name . ' to type void', $this->_file_name, $expr->getLine())
-            )) {
-                return false;
+        if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
+            return $stmt->name;
+        }
+        else if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch &&
+            $stmt->var instanceof PhpParser\Node\Expr\Variable &&
+            is_string($stmt->var->name)) {
+
+            $object_id = self::_getVarId($stmt->var);
+
+            if (!$object_id) {
+                return null;
             }
 
-        } else {
-            $vars_in_scope[$var_name] = $expr->returnType;
+            return $object_id . '->' . $stmt->var->name;
+        }
+
+        return null;
+    }
+
+    protected function _checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $assignment_type)
+    {
+        if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            return false;
+        }
+
+        $var_id = self::_getVarId($stmt->var);
+
+        if (isset($stmt->var->returnType)) {
+            $return_type = $stmt->var->returnType;
+
+            if ($return_type !== 'mixed') {
+                if (preg_match('/^array\<(.*)\>$/', $return_type, $matches)) {
+                    $array_type = $matches[0];
+
+                    if ($array_type === 'empty') {
+                        $array_type = $assignment_type;
+                    }
+                    else if ($array_type !== $assignment_type) {
+                        $array_type = 'mixed';
+                    }
+
+                    $vars_in_scope[$var_id] = 'array<' . $array_type . '>';
+                }
+                else {
+                    $type_parts = explode('|', $return_type);
+
+                    foreach ($type_parts as $type) {
+                        if ($type === 'array' || strpos($type, 'array<') === 0) {
+                            continue;
+                        }
+
+                        if ($type === 'null') {
+                            if (ExceptionHandler::accepts(
+                                new NullReference('Cannot assign value on possibly null array ' . $var_id, $this->_file_name, $stmt->getLine())
+                            )) {
+                                return false;
+                            }
+
+                            continue;
+                        }
+
+                        if (!ClassChecker::classImplements($type, 'ArrayAccess')) {
+                            if (ExceptionHandler::accepts(
+                                new InvalidArrayAssignment('Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess', $this->_file_name, $stmt->getLine())
+                            )) {
+                                return false;
+                            }
+
+                            continue;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1537,7 +1612,7 @@ class StatementsChecker
             }
             else if ($stmt->var->name === 'this' && !$this->_class_name) {
                 if (ExceptionHandler::accepts(
-                    new ScopeError('Use of $this in non-class context', $this->_file_name, $stmt->getLine())
+                    new InvalidScope('Use of $this in non-class context', $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
                 }
@@ -1593,7 +1668,7 @@ class StatementsChecker
                 switch ($absolute_class) {
                     case 'null':
                         if (ExceptionHandler::accepts(
-                            new NullReferenceError('Cannot call method ' . $stmt->name . ' on possibly null variable ' . $class_type, $this->_file_name, $stmt->getLine())
+                            new NullReference('Cannot call method ' . $stmt->name . ' on possibly null variable ' . $class_type, $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
                         }
@@ -1603,7 +1678,7 @@ class StatementsChecker
                     case 'bool':
                     case 'array':
                         if (ExceptionHandler::accepts(
-                            new InvalidArgumentError('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine())
+                            new InvalidArgument('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
                         }
@@ -1706,7 +1781,7 @@ class StatementsChecker
 
                 if (!isset($vars_possibly_in_scope[$use->var])) {
                     if (ExceptionHandler::accepts(
-                        new UndefinedVariableError('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
+                        new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
                     )) {
                         return false;
                     }
@@ -1716,7 +1791,7 @@ class StatementsChecker
                     if (!isset($this->_warn_vars[$use->var])) {
                         $this->_warn_vars[$use->var] = true;
                         if (ExceptionHandler::accepts(
-                            new PossiblyUndefinedVariableNotice(
+                            new PossiblyUndefinedVariable(
                                 'Possibly undefined variable $' . $use->var . ', first seen on line ' . $this->_all_vars[$use->var],
                                 $this->_file_name,
                                 $use->getLine()
@@ -1730,7 +1805,7 @@ class StatementsChecker
                 }
 
                 if (ExceptionHandler::accepts(
-                    new UndefinedVariableError('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
+                    new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
                 )) {
                     return false;
                 }
@@ -1756,7 +1831,7 @@ class StatementsChecker
             if ($stmt->class->parts[0] === 'parent') {
                 if ($this->_class_extends === null) {
                     if (ExceptionHandler::accepts(
-                        new ParentNotFoundError('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine())
+                        new ParentNotFound('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine())
                     )) {
                         return false;
                     }
@@ -1808,7 +1883,7 @@ class StatementsChecker
             if ($this->_is_static) {
                 if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
                     if (ExceptionHandler::accepts(
-                        new StaticInvocationError('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine())
+                        new InvalidStaticInvocation('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine())
                     )) {
                         return false;
                     }
@@ -1818,7 +1893,7 @@ class StatementsChecker
                 if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
                     if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
                         if (ExceptionHandler::accepts(
-                            new StaticInvocationError('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine())
+                            new InvalidStaticInvocation('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
                         }
@@ -2007,7 +2082,7 @@ class StatementsChecker
 
             if (!defined($const_id)) {
                 if (ExceptionHandler::accepts(
-                    new UndefinedConstantError('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine())
+                    new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
                 }
@@ -2055,7 +2130,7 @@ class StatementsChecker
 
             if (!self::_staticVarExists($var_id)) {
                 if (ExceptionHandler::accepts(
-                    new UndefinedVariableError('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine())
+                    new UndefinedVariable('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
                 }
@@ -2120,6 +2195,11 @@ class StatementsChecker
 
         if ($stmt->if) {
             $t_if_vars_in_scope = TypeChecker::reconcileTypes($if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+
+            if ($t_if_vars_in_scope === false) {
+                return false;
+            }
+
             if ($this->_checkExpression($stmt->if, $t_if_vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
@@ -2128,6 +2208,10 @@ class StatementsChecker
         if ($can_negate_if_types) {
             $negated_if_types = TypeChecker::negateTypes($if_types);
             $t_else_vars_in_scope = TypeChecker::reconcileTypes($negated_if_types, $vars_in_scope, true, $this->_file_name, $stmt->getLine());
+
+            if ($t_else_vars_in_scope === false) {
+                return false;
+            }
         }
         else {
             $t_else_vars_in_scope = $vars_in_scope;
@@ -2193,9 +2277,9 @@ class StatementsChecker
             $last_stmt = null;
 
             if ($case->stmts) {
-                $switch_vars = $type_candidate_var && !empty($case_types) ?
-                                [$type_candidate_var => implode('|', $case_types)] :
-                                [];
+                $switch_vars = $type_candidate_var && !empty($case_types)
+                                ? [$type_candidate_var => implode('|', $case_types)]
+                                : [];
 
                 $case_vars_in_scope = array_merge($vars_in_scope, $switch_vars);
                 $old_case_vars = $case_vars_in_scope;
@@ -2295,7 +2379,7 @@ class StatementsChecker
 
                     if (isset($input_types['null']) && !$is_nullable) {
                         if (ExceptionHandler::accepts(
-                            new NullReferenceError(
+                            new NullReference(
                                 'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
                                 $file_name,
                                 $line_number
@@ -2319,7 +2403,7 @@ class StatementsChecker
                             }
 
                             if (ExceptionHandler::accepts(
-                                new InvalidArgumentError(
+                                new InvalidArgument(
                                     'Argument ' . ($argument_offset + 1) . ' expects ' . $method_param_type . ', ' . $type . ' provided',
                                     $file_name,
                                     $line_number
@@ -2353,7 +2437,7 @@ class StatementsChecker
 
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
                 if (ExceptionHandler::accepts(
-                    new ForbiddenCodeError('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine())
+                    new ForbiddenCode('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
                 }
@@ -2482,7 +2566,7 @@ class StatementsChecker
         }
         catch (\ReflectionException $e) {
             if (ExceptionHandler::accepts(
-                new UndefinedFunctionError('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine())
+                new UndefinedFunction('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
             }
@@ -2850,13 +2934,13 @@ class StatementsChecker
         }
 
         if (isset(self::$_this_assignments[$method_id])) {
-            $this_assignments = TypeChecker::combineTypes($this_assignments, self::$_this_assignments[$method_id]);
+            $this_assignments = TypeChecker::combineKeyedTypes($this_assignments, self::$_this_assignments[$method_id]);
         }
 
         if (isset(self::$_this_calls[$method_id])) {
             foreach (self::$_this_calls[$method_id] as $call) {
                 $call_assingments = self::getThisAssignments($absolute_class . '::' . $call);
-                $this_assignments = TypeChecker::combineTypes($this_assignments, $call_assingments);
+                $this_assignments = TypeChecker::combineKeyedTypes($this_assignments, $call_assingments);
             }
         }
 

@@ -135,6 +135,8 @@ class FileChecker implements StatementsSource
 
         $from_cache = false;
 
+        $cache_location = null;
+
         if (self::$_cache_dir) {
             $key = md5($contents);
 

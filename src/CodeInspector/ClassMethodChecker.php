@@ -2,9 +2,9 @@
 
 namespace CodeInspector;
 
-use CodeInspector\Issue\UndefinedMethodError;
-use CodeInspector\Issue\InaccessibleMethodError;
-use CodeInspector\Issue\ReturnTypeError;
+use CodeInspector\Issue\UndefinedMethod;
+use CodeInspector\Issue\InaccessibleMethod;
+use CodeInspector\Issue\InvalidReturnType;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
@@ -42,7 +42,7 @@ class ClassMethodChecker extends FunctionChecker
     }
 
     /**
-     * @return void
+     * @return false|null
      */
     public function checkReturnTypes($update_doc_comment = false)
     {
@@ -101,7 +101,7 @@ class ClassMethodChecker extends FunctionChecker
 
                     if ($truly_different) {
                         if (ExceptionHandler::accepts(
-                            new ReturnTypeError(
+                            new InvalidReturnType(
                                 'The given return type for ' . $method_id . ' is incorrect, expecting ' . implode('|', $return_types),
                                 $this->_file_name,
                                 $this->_function->getLine()
@@ -476,7 +476,7 @@ class ClassMethodChecker extends FunctionChecker
     }
 
     /**
-     * @return void
+     * @return false|null
      */
     public static function checkMethodExists($method_id, $file_name, $stmt)
     {
@@ -492,7 +492,7 @@ class ClassMethodChecker extends FunctionChecker
         }
 
         if (ExceptionHandler::accepts(
-            new UndefinedMethodError('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine())
+            new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine())
         )) {
             return false;
         }
@@ -511,7 +511,7 @@ class ClassMethodChecker extends FunctionChecker
     }
 
     /**
-     * @return void
+     * @return false|null
      */
     public static function checkMethodVisibility($method_id, $calling_context, $file_name, $line_number)
     {
@@ -522,7 +522,7 @@ class ClassMethodChecker extends FunctionChecker
 
         if (!isset(self::$_method_visibility[$method_id])) {
             if (ExceptionHandler::accepts(
-                new InaccessibleMethodError('Cannot access method ' . $method_id, $file_name, $line_number)
+                new InaccessibleMethod('Cannot access method ' . $method_id, $file_name, $line_number)
             )) {
                 return false;
             }
@@ -535,7 +535,7 @@ class ClassMethodChecker extends FunctionChecker
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $method_class !== $calling_context) {
                     if (ExceptionHandler::accepts(
-                        new InaccessibleMethodError('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                        new InaccessibleMethod('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
                     )) {
                         return false;
                     }
@@ -549,7 +549,7 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!$calling_context) {
                     if (ExceptionHandler::accepts(
-                        new InaccessibleMethodError('Cannot access protected method ' . $method_id, $file_name, $line_number)
+                        new InaccessibleMethod('Cannot access protected method ' . $method_id, $file_name, $line_number)
                     )) {
                         return false;
                     }
@@ -561,7 +561,7 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!is_subclass_of($calling_context, $method_class)) {
                     if (ExceptionHandler::accepts(
-                        new InaccessibleMethodError('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                        new InaccessibleMethod('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
                     )) {
                         return false;
                     }

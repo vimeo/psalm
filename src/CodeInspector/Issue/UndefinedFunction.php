@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class ScopeError extends CodeError
+class UndefinedFunction extends CodeError
 {
 }

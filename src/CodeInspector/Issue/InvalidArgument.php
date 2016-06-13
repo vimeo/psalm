@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class NullReferenceError extends CodeError
+class InvalidArgument extends CodeError
 {
 }
