@@ -12,6 +12,7 @@ use CodeInspector\Issue\InvalidIterator;
 use CodeInspector\Issue\NullReference;
 use CodeInspector\Issue\ParentNotFound;
 use CodeInspector\Issue\PossiblyUndefinedVariable;
+use CodeInspector\Issue\InvalidArrayAssignment;
 use CodeInspector\Issue\InvalidScope;
 use CodeInspector\Issue\InvalidStaticInvocation;
 use CodeInspector\Issue\InvalidStaticVariable;
