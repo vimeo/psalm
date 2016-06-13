@@ -219,12 +219,19 @@ class StatementsChecker
 
         $if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
 
+        $has_leaving_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, true, true);
+
+        // we only need to negate the if types if there are throw/return/break/continue or else/elseif blocks
+        $need_to_negate_if_types = $has_leaving_statments || $stmt->elseifs || $stmt->else;
+
         $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
 
-        $negated_types = $if_types && $can_negate_if_types ? TypeChecker::negateTypes($if_types) : [];
+        $negated_types = $if_types && $need_to_negate_if_types && $can_negate_if_types
+                            ? TypeChecker::negateTypes($if_types)
+                            : [];
         $negated_if_types = $negated_types;
 
-        // if the if has an or as the main component, we cannot safely reason about it
+        // if the if has an || in the conditional, we cannot easily reason about it
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->cond)) {
             $if_vars = array_merge([], $vars_in_scope);
             $if_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
@@ -252,8 +259,6 @@ class StatementsChecker
         $post_type_assertions = [];
 
         if (count($stmt->stmts)) {
-            $has_leaving_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, true, true);
-
             if (!$has_leaving_statments) {
                 $new_vars = array_diff_key($if_vars, $vars_in_scope);
 

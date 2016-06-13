@@ -15,6 +15,10 @@ class ScopeChecker
      */
     public static function doesLeaveBlock(array $stmts, $check_continue = true, $check_break = true)
     {
+        if (empty($stmts)) {
+            return false;
+        }
+
         for ($i = count($stmts) - 1; $i >= 0; $i--) {
             $stmt = $stmts[$i];
 

@@ -951,6 +951,66 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testUnnecessaryInstanceof()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function bar() {}
+        }
+
+        class Three {
+            public function baz() {}
+        }
+
+
+        $var = new One();
+
+        if ($var instanceof One) {
+            $var->foo();
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\CodeException
+     */
+    public function testUnNegatableInstanceof()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function bar() {}
+        }
+
+        class Three {
+            public function baz() {}
+        }
+
+
+        $var = new One();
+
+        if ($var instanceof One) {
+            $var->foo();
+        }
+        else {
+            // do something
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testTypeAdjustment()
     {
         $stmts = self::$_parser->parse('<?php
