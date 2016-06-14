@@ -143,7 +143,7 @@ class ClassMethodChecker extends FunctionChecker
                 $type_tokens = TypeChecker::tokenize($return_type);
 
                 foreach ($type_tokens as &$token) {
-                    if ($token === '<' || $token === '>' || $token[0] !== strtoupper($token[0])) {
+                    if ($token === '<' || $token === '>' || $token === '|' || $token[0] !== strtoupper($token[0])) {
                         continue;
                     }
 
@@ -423,7 +423,7 @@ class ClassMethodChecker extends FunctionChecker
                 continue;
             }
 
-            if (in_array($return_type_token, ['<', '>'])) {
+            if (in_array($return_type_token, ['<', '>', '|'])) {
                 continue;
             }
 
@@ -456,7 +456,7 @@ class ClassMethodChecker extends FunctionChecker
                 continue;
             }
 
-            if (in_array($return_type_token, ['<', '>'])) {
+            if (in_array($return_type_token, ['<', '>', '|'])) {
                 continue;
             }
 

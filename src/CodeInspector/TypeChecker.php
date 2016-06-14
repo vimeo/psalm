@@ -771,7 +771,7 @@ class TypeChecker
     }
 
     /**
-     * @return array
+     * @return array<string>
      */
     public static function tokenize($return_type)
     {
@@ -783,7 +783,7 @@ class TypeChecker
                 $return_type_tokens[] = '';
             }
 
-            if ($char === '<' || $char === '>') {
+            if ($char === '<' || $char === '>' || $char === '|') {
                 if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
                     $return_type_tokens[count($return_type_tokens) - 1] = $char;
                 }
