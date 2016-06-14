@@ -319,7 +319,7 @@ class ClassChecker implements StatementsSource
     /**
      * @return bool
      */
-    public function classImplements($absolute_class, $interface)
+    public static function classImplements($absolute_class, $interface)
     {
         if (isset(self::$_implementing_classes[$absolute_class][$interface])) {
             return true;

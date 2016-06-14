@@ -38,14 +38,19 @@ class FunctionChecker implements StatementsSource
     public function check(&$vars_in_scope = [], &$vars_possibly_in_scope = [], $check_methods = true)
     {
         if ($this->_function->stmts) {
-            if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
-                $hash = $this->getMethodId() . json_encode([$vars_in_scope, $vars_possibly_in_scope]);
+            if ($this instanceof ClassMethodChecker) {
+                if (ClassChecker::getThisClass()) {
+                    $hash = $this->getMethodId() . json_encode([$vars_in_scope, $vars_possibly_in_scope]);
 
-                // if we know that the function has no effects on vars, we don't bother rechecking
-                if (isset(self::$_no_effects_hashes[$hash])) {
-                    list($vars_in_scope, $vars_possibly_in_scope) = self::$_no_effects_hashes[$hash];
+                    // if we know that the function has no effects on vars, we don't bother rechecking
+                    if (isset(self::$_no_effects_hashes[$hash])) {
+                        list($vars_in_scope, $vars_possibly_in_scope) = self::$_no_effects_hashes[$hash];
 
-                    return;
+                        return;
+                    }
+                }
+                else {
+                    $vars_in_scope['this'] = $this->_absolute_class;
                 }
             }
 

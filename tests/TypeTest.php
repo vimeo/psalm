@@ -15,6 +15,32 @@ class TypeTest extends PHPUnit_Framework_TestCase
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    public function testReconciliation()
+    {
+        $this->assertEquals('Object', \CodeInspector\TypeChecker::reconcileTypes('!null', ['Object']));
+        $this->assertEquals('Object', \CodeInspector\TypeChecker::reconcileTypes('!null', ['Object', 'null']));
+        $this->assertEquals('Object|false', \CodeInspector\TypeChecker::reconcileTypes('!null', ['Object', 'false']));
+        $this->assertEquals('Object', \CodeInspector\TypeChecker::reconcileTypes('!empty', ['Object']));
+        $this->assertEquals('Object', \CodeInspector\TypeChecker::reconcileTypes('!empty', ['Object', 'null']));
+        $this->assertEquals('Object', \CodeInspector\TypeChecker::reconcileTypes('!empty', ['Object', 'false']));
+        $this->assertEquals('null', \CodeInspector\TypeChecker::reconcileTypes('null', ['Object', 'null']));
+        $this->assertEquals('null', \CodeInspector\TypeChecker::reconcileTypes('null', ['Object']));
+        $this->assertEquals('null', \CodeInspector\TypeChecker::reconcileTypes('null', ['Object', 'false']));
+        $this->assertEquals('null', \CodeInspector\TypeChecker::reconcileTypes('empty', ['Object']));
+        $this->assertEquals('false', \CodeInspector\TypeChecker::reconcileTypes('empty', ['Object', 'false']));
+        $this->assertEquals('false', \CodeInspector\TypeChecker::reconcileTypes('empty', ['Object', 'bool']));
+
+        $this->assertEquals('bool', \CodeInspector\TypeChecker::reconcileTypes('!Object', ['Object', 'bool']));
+        $this->assertEquals('Object', \CodeInspector\TypeChecker::reconcileTypes('Object', ['Object', 'bool']));
+        $this->assertEquals('null', \CodeInspector\TypeChecker::reconcileTypes('!Object', ['Object', 'null']));
+        $this->assertEquals('ObjectA', \CodeInspector\TypeChecker::reconcileTypes('ObjectA', ['ObjectA', 'ObjectB']));
+        $this->assertEquals('ObjectB', \CodeInspector\TypeChecker::reconcileTypes('!ObjectA', ['ObjectA', 'ObjectB']));
+
+        $this->assertEquals('mixed', \CodeInspector\TypeChecker::reconcileTypes('!empty', ['mixed']));
+        $this->assertEquals('mixed', \CodeInspector\TypeChecker::reconcileTypes('!null', ['mixed']));
+        $this->assertEquals('mixed', \CodeInspector\TypeChecker::reconcileTypes('mixed', ['mixed']));
+    }
+
     /**
      * @expectedException CodeInspector\CodeException
      */

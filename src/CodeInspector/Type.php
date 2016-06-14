@@ -14,7 +14,7 @@ abstract class Type
      * @param  string $string
      * @return self
      */
-    public static function parseString($type_string)
+    public static function parseString($type_string, $enclose_with_union = true)
     {
         $type_tokens = TypeChecker::tokenize($type_string);
 
@@ -98,7 +98,13 @@ abstract class Type
             }
         }
 
-        return self::getTypeFromTree($parse_tree);
+        $parsed_type = self::getTypeFromTree($parse_tree);
+
+        if ($enclose_with_union && !($parsed_type instanceof Union)) {
+            $parsed_type = new Union([$parsed_type]);
+        }
+
+        return $parsed_type;
     }
 
     private static function getTypeFromTree(ParseTree $parse_tree)
@@ -117,7 +123,9 @@ abstract class Type
                 throw new \InvalidArgumentException('No generic params provided for type');
             }
 
-            return new Generic($generic_type->value, $generic_params);
+            $is_empty = count($generic_params) === 1 && $generic_params[0]->value === 'empty';
+
+            return new Generic($generic_type->value, $generic_params, $is_empty);
         }
 
         if ($parse_tree->value === ParseTree::UNION) {
@@ -132,5 +140,124 @@ abstract class Type
         }
 
         return new Atomic($parse_tree->value);
+    }
+
+    public static function getInt($enclose_with_union = true)
+    {
+        $type = new Atomic('int');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public static function getString($enclose_with_union = true)
+    {
+        $type = new Atomic('string');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public static function getMixed($enclose_with_union = true)
+    {
+        $type = new Atomic('mixed');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public function getBool($enclose_with_union = true)
+    {
+        $type = new Atomic('bool');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public static function getDouble($enclose_with_union = true)
+    {
+        $type = new Atomic('double');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public static function getFloat($enclose_with_union = true)
+    {
+        $type = new Atomic('float');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public static function getObject($enclose_with_union = true)
+    {
+        $type = new Atomic('object');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public static function getArray($enclose_with_union = true)
+    {
+        $type = new Atomic('array');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public function isMixed()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'mixed';
+        }
+
+        if ($this instanceof Union) {
+            return $this->types[0]->isMixed();
+        }
+    }
+
+    public static function combineTypes(Union $type_1, Union $type_2)
+    {
+        if (!$type_1->isMixed && !$type_2->isMixed()) {
+            $mapped_types = [];
+
+            foreach ($type_1->types as $type) {
+                $mapped_types[(string) $type] = $type;
+            }
+
+            foreach ($type_2->types as $type) {
+                $mapped_types[(string) $type] = $type;
+            }
+
+            $new_types = array_values($mapped_types);
+            return new Union($new_types);
+        }
+
+        return Type::getMixed();
     }
 }

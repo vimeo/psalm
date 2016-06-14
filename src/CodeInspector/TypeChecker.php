@@ -27,13 +27,13 @@ class TypeChecker
     /**
      * @return bool
      */
-    public static function checkMethodParam($return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
+    public static function checkMethodParam(Type\Atomic $return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
     {
-        if ($return_type === 'mixed') {
+        if ($return_type->value === 'mixed') {
             return true;
         }
 
-        if ($return_type === 'void') {
+        if ($return_type->value === 'void') {
             if (ExceptionHandler::accepts(
                 new FailedTypeResolution(
                     'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be void, but possibly void value was supplied',
@@ -57,7 +57,7 @@ class TypeChecker
             return true;
         }
 
-        if ($return_type === 'null') {
+        if ($return_type->value === 'null') {
             if ($method_params[$arg_offset]['is_nullable']) {
                 return true;
             }
@@ -75,19 +75,16 @@ class TypeChecker
             return true;
         }
 
-        // Remove generic type
-        $return_type = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $return_type);
-
-        if ($return_type === $expected_type) {
+        if ($return_type->value === $expected_type) {
             return true;
         }
 
-        if (StatementsChecker::isMock($return_type)) {
+        if (StatementsChecker::isMock($return_type->value)) {
             return true;
         }
 
-        if (!is_subclass_of($return_type, $expected_type, true)) {
-            if (is_subclass_of($expected_type, $return_type, true)) {
+        if (!is_subclass_of($return_type->value, $expected_type, true)) {
+            if (is_subclass_of($expected_type, $return_type->value, true)) {
                 //echo('Warning: dangerous type coercion in ' . $file_name . ' on line ' . $line_number . PHP_EOL);
                 return true;
             }
@@ -104,35 +101,6 @@ class TypeChecker
         }
 
         return true;
-    }
-
-    public function getType(PhpParser\Node\Expr $stmt, array $vars_in_scope)
-    {
-        if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
-            if ($stmt->name === 'this') {
-                return ClassChecker::getThisClass() ?: $this->_absolute_class;
-            }
-            elseif (isset($vars_in_scope[$stmt->name])) {
-                return $vars_in_scope[$stmt->name];
-            }
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch &&
-            $stmt->var instanceof PhpParser\Node\Expr\Variable &&
-            $stmt->var->name === 'this' &&
-            is_string($stmt->name)
-        ) {
-            $property_id = 'this' . '->' . $stmt->name;
-
-            if (isset($vars_in_scope[$property_id])) {
-                return $vars_in_scope[$property_id];
-            }
-        }
-
-        if (isset($stmt->returnType)) {
-            return $stmt->returnType;
-        }
-
-        return null;
     }
 
     /**
@@ -288,7 +256,7 @@ class TypeChecker
                 foreach ($conditional->expr->vars as $isset_var) {
                     $var_name = $this->_getVariable($isset_var);
                     if ($var_name) {
-                        $if_types[$var_name] = '!null';
+                        $if_types[$var_name] = 'null';
                     }
                 }
             }
@@ -566,7 +534,7 @@ class TypeChecker
      * @param  array  $existing_types
      * @return array|false
      */
-    public static function reconcileTypes(array $new_types, array $existing_types, $strict, $file_name, $line_number)
+    public static function reconcileKeyedTypes(array $new_types, array $existing_types, $file_name, $line_number)
     {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
         $keys = array_unique($keys);
@@ -578,95 +546,115 @@ class TypeChecker
         }
 
         foreach ($keys as $key) {
-            $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : null;
-            $result_var_types = null;
-
-            if (isset($existing_types[$key]) && $existing_types[$key] === 'mixed') {
-                $result_types[$key] = 'mixed';
+            if (!isset($new_types[$key])) {
+                $result_types[$key] = $existing_types[$key];
                 continue;
             }
 
-            if (isset($new_types[$key])) {
-                if ($new_types[$key][0] === '!') {
-                    if ($existing_var_types) {
-                        if ($new_types[$key] === '!empty' || $new_types[$key] === '!null') {
-                            $null_pos = array_search('null', $existing_var_types);
+            $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : [];
 
-                            if ($null_pos !== false) {
-                                array_splice($existing_var_types, $null_pos, 1);
-                            }
+            $result_type = self::reconcileTypes($new_types[$key], $existing_var_types, $key, $file_name, $line_number);
 
-                            if ($new_types[$key] === '!empty') {
-                                $false_pos = array_search('false', $existing_var_types);
-
-                                if ($false_pos !== false) {
-                                    array_splice($existing_var_types, $false_pos, 1);
-                                }
-                            }
-
-                            if (empty($existing_var_types)) {
-                                // @todo - I think there's a better way to handle this, but for the moment
-                                // mixed will have to do.
-                                $result_types[$key] = 'mixed';
-                                continue;
-                            }
-
-                            $result_types[$key] = implode('|', self::reduceTypes($existing_var_types));
-                            continue;
-                        }
-
-                        $negated_type = substr($new_types[$key], 1);
-
-                        $type_pos = array_search($negated_type, $existing_var_types);
-
-                        if ($type_pos !== false) {
-                            array_splice($existing_var_types, $type_pos, 1);
-
-                            if (empty($existing_var_types)) {
-                                if ($strict) {
-                                    if (ExceptionHandler::accepts(
-                                        new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number)
-                                    )) {
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-
-                        $result_types[$key] = implode('|', self::reduceTypes($existing_var_types));
-                        continue;
-                    }
-
-                    // possibly undefined variable
-                    $result_types[$key] = 'mixed';
-                    continue;
-                }
-
-                if ($existing_var_types && $new_types[$key] === 'empty') {
-                    $bool_pos = array_search('bool', $existing_var_types);
-
-                    if ($bool_pos !== false) {
-                        array_splice($existing_var_types, $bool_pos, 1);
-                        $existing_var_types[] = 'false';
-                    }
-
-                    $result_types[$key] = implode('|', self::reduceTypes($existing_var_types));
-                    continue;
-                }
-
-                $result_types[$key] = $new_types[$key];
-                continue;
+            if ($result_type === false) {
+                return false;
             }
 
-            $result_types[$key] = $existing_types[$key];
+            $result_types[$key] = $result_type;
         }
 
         return $result_types;
     }
 
+    /**
+     * Reconciles types
+     *
+     * think of this as a set of functions e.g. empty(T), notEmpty(T), null(T), notNull(T) etc. where
+     * empty(Object) => null,
+     * empty(bool) => false,
+     * notEmpty(Object|null) => Object,
+     * notEmpty(Object|false) => Object
+     *
+     * @param  string $new_var_type
+     * @param  array  $existing_var_types
+     * @param  string $key
+     * @param  string $file_name
+     * @param  int    $line_number
+     * @return string|false
+     */
+    public static function reconcileTypes($new_var_type, array $existing_var_types, $key = null, $file_name = null, $line_number = null)
+    {
+        $result_var_types = null;
+
+        if ($new_var_type === 'mixed' && $existing_var_types === ['mixed']) {
+            return 'mixed';
+        }
+
+        $existing_var_types = array_flip($existing_var_types);
+
+        if ($new_var_type[0] === '!') {
+            if (!$existing_var_types) {
+                // possibly undefined variable
+                return 'mixed';
+            }
+
+            if ($new_var_type === '!empty' || $new_var_type === '!null') {
+                unset($existing_var_types['null']);
+
+                if ($new_var_type === '!empty') {
+                    unset($existing_var_types['false']);
+                }
+
+                if (empty($existing_var_types)) {
+                    // @todo - I think there's a better way to handle this, but for the moment
+                    // mixed will have to do.
+                    return 'mixed';
+                }
+
+                return implode('|', self::reduceTypes(array_keys($existing_var_types)));
+            }
+
+            $negated_type = substr($new_var_type, 1);
+
+            unset($existing_var_types[$negated_type]);
+
+            if (empty($existing_var_types)) {
+                if ($key) {
+                    if (ExceptionHandler::accepts(
+                        new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number)
+                    )) {
+                        return false;
+                    }
+                }
+            }
+
+            return implode('|', self::reduceTypes(array_keys($existing_var_types)));
+        }
+
+        if ($existing_var_types && $new_var_type === 'empty') {
+            if (isset($existing_var_types['bool'])) {
+                unset($existing_var_types['bool']);
+                $existing_var_types['false'] = true;
+            }
+
+            foreach (array_keys($existing_var_types) as $type) {
+                if ($type[0] === strtoupper($type[0])) {
+                    unset($existing_var_types[$type]);
+                }
+            }
+
+            if (empty($existing_var_types)) {
+                return 'null';
+            }
+
+            return implode('|', self::reduceTypes(array_keys($existing_var_types)));
+        }
+
+        return $new_var_type;
+    }
+
     public static function isNegation($type, $existing_type)
     {
-        if ($type === 'mixed' || 'existing_type' === 'mixed') {
+        if ($type === 'mixed' || $existing_type === 'mixed') {
             return false;
         }
 
@@ -766,6 +754,10 @@ class TypeChecker
     public static function negateTypes(array $types)
     {
         return array_map(function ($type) {
+            if ($type === 'mixed') {
+                return $type;
+            }
+
             return $type[0] === '!' ? substr($type, 1) : '!' . $type;
         }, $types);
     }

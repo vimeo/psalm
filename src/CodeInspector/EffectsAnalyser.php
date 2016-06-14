@@ -67,14 +67,14 @@ class EffectsAnalyser
             }
         }
 
+        var_dump($return_types);
+
         // expand any nested return types
         $return_types = explode('|', implode('|', $return_types));
 
         if ($return_types === ['']) {
             $return_types = [];
         }
-
-        $return_types = TypeChecker::reduceTypes($return_types);
 
         $array_return_types = array_filter($return_types, function($return_type) {
             return preg_match('/^array(\<|$)/', $return_type);
@@ -95,10 +95,23 @@ class EffectsAnalyser
             return ['mixed'];
         }
 
+        if ($collapse_types && isset($return_types['array<empty>'])) {
+            unset($return_types['array<empty>']);
+
+            // if that special entity was the only array entry
+            if (count($array_return_types) === 1) {
+                $return_types['array'] = 1;
+            }
+        }
+
         $return_type_keys = array_keys($return_types);
 
         if ($collapse_types && $return_type_keys === ['false']) {
             $return_type_keys = ['bool'];
+        }
+
+        if ($collapse_types) {
+            $return_type_keys = TypeChecker::reduceTypes($return_type_keys);
         }
 
         return $return_type_keys;

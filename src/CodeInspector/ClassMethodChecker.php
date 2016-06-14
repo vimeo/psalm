@@ -58,6 +58,8 @@ class ClassMethodChecker extends FunctionChecker
 
         $existing_return_types = self::getMethodReturnTypes($method_id);
 
+        var_dump($existing_return_types);
+
         if ($existing_return_types) {
             $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
@@ -244,7 +246,7 @@ class ClassMethodChecker extends FunctionChecker
             ];
         }
 
-        $return_types = [];
+        $return_types = null;
 
         $comments = StatementsChecker::parseDocComment($method->getDocComment() ?: '');
 
@@ -253,7 +255,7 @@ class ClassMethodChecker extends FunctionChecker
                 $return_blocks = explode(' ', $comments['specials']['return'][0]);
                 foreach ($return_blocks as $block) {
                     if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
-                        $return_types = explode('|', $block);
+                        $return_types = $block;
                         break;
                     }
                 }
@@ -270,18 +272,12 @@ class ClassMethodChecker extends FunctionChecker
                 }
             }
 
-            $return_types = array_filter($return_types, function ($entry) {
-                return !empty($entry) && $entry !== '[type]';
-            });
-
             if ($return_types) {
-                foreach ($return_types as &$return_type) {
-                    $return_type = self::_fixUpReturnType($return_type, $method_id);
-                }
+                $return_types = self::_fixUpReturnType($return_types, $method_id);
             }
         }
 
-        self::$_method_return_types[$method_id] = $return_types;
+        self::$_method_return_types[$method_id] = $return_types ? Type::parseString($return_types) : null;
     }
 
     protected static function _copyToChildMethod($method_id, $child_method_id)
@@ -338,14 +334,14 @@ class ClassMethodChecker extends FunctionChecker
 
         $comments = StatementsChecker::parseDocComment($method->getDocComment());
 
-        $return_types = [];
+        $return_types = null;
 
         if (isset($comments['specials']['return'])) {
             $return_blocks = explode(' ', $comments['specials']['return'][0]);
             foreach ($return_blocks as $block) {
                 if ($block) {
                     if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
-                        $return_types = explode('|', $block);
+                        $return_types = $block;
                         break;
                     }
                 }
@@ -363,15 +359,11 @@ class ClassMethodChecker extends FunctionChecker
             }
         }
 
-        $return_types = array_filter($return_types, function ($entry) {
-            return !empty($entry) && $entry !== '[type]';
-        });
-
-        foreach ($return_types as &$return_type) {
-            $return_type = $this->_fixUpLocalReturnType($return_type, $method_id, $this->_namespace, $this->_aliased_classes);
+        if ($return_types) {
+            $return_types = $this->_fixUpLocalReturnType($return_types, $method_id, $this->_namespace, $this->_aliased_classes);
         }
 
-        self::$_method_return_types[$method_id] = $return_types;
+        self::$_method_return_types[$method_id] = $return_types ? Type::parseString($return_types) : null;
 
         self::$_method_params[$method_id] = [];
 

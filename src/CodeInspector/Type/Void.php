@@ -2,9 +2,9 @@
 
 namespace CodeInspector\Type;
 
-class Mixed extends Type
+class Void extends Type
 {
-    /** @var null|Mixed */
+    /** @var null|Void */
     private static $instance;
 
     private function __construct()
