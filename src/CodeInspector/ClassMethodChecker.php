@@ -50,6 +50,11 @@ class ClassMethodChecker extends FunctionChecker
             return;
         }
 
+        if ($this->_function->name === '__construct') {
+            // we know that constructors always return this
+            return;
+        }
+
         if (!isset(self::$_new_docblocks[$this->_file_name])) {
             self::$_new_docblocks[$this->_file_name] = [];
         }
@@ -62,16 +67,23 @@ class ClassMethodChecker extends FunctionChecker
             $inferred_return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
             if (!$inferred_return_types) {
-                if ($declared_return_type->types[0]->value !== 'void') {
-                    if (ExceptionHandler::accepts(
-                        new InvalidReturnType(
-                            'No return type was found for method ' . $method_id . ' but return type ' . $declared_return_type . ' was expected',
-                            $this->_file_name,
-                            $this->_function->getLine()
-                        )
-                    )) {
-                        return false;
-                    }
+                if ($declared_return_type->types[0]->value === 'void') {
+                    return;
+                }
+
+                if (ScopeChecker::onlyThrows($this->_function->stmts)) {
+                    // if there's a single throw statement, it's presumably an exception saying this method is not to be used
+                    return;
+                }
+
+                if (ExceptionHandler::accepts(
+                    new InvalidReturnType(
+                        'No return type was found for method ' . $method_id . ' but return type ' . $declared_return_type . ' was expected',
+                        $this->_file_name,
+                        $this->_function->getLine()
+                    )
+                )) {
+                    return false;
                 }
 
                 return;

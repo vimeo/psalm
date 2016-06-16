@@ -212,6 +212,31 @@ class StatementsChecker
         }
     }
 
+    /**
+     * IF
+     * all if/elseif/else blocks within an if block that
+     * bleed out into the following scope redefine a variable
+     * THEN
+     * set the aggregated type of that variable afterwards
+     *
+     * these variables are stored in $redefined_vars
+     *
+     * ELSE IF
+     * all if/elseif/else blocks within an if block that bleed out into
+     * the following scope refute the if's conditional
+     * OR
+     * they agree with the if's conditional (without necessarily setting the variable)
+     * THEN
+     * set the aggregated type of that variable afterwards
+     *
+     * these variables are stored in $refuting_vars and $agreeing_vars
+     *
+     * @param  PhpParser\Node\Stmt\If_ $stmt
+     * @param  array                   &$vars_in_scope
+     * @param  array                   &$vars_possibly_in_scope
+     * @param  array                   &$for_vars_possibly_in_scope
+     * @return null|false
+     */
     protected function _checkIf(PhpParser\Node\Stmt\If_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
     {
         if ($this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope) === false) {
@@ -256,21 +281,19 @@ class StatementsChecker
         $new_vars = null;
         $new_vars_possibly_in_scope = [];
         $redefined_vars = null;
+        $refuting_vars = null;
+        $agreeing_vars = null;
         $possibly_redefined_vars = [];
-        $has_left = false;
         $post_type_assertions = [];
+
+        $visited_if = false;
+        $visited_elseifs = false;
 
         if (count($stmt->stmts)) {
             if (!$has_leaving_statments) {
                 $new_vars = array_diff_key($if_vars, $vars_in_scope);
 
                 $redefined_vars = [];
-
-                foreach (array_keys($if_types) as $if_type_var) {
-                    if (isset($if_vars[$if_type_var])) {
-                        $redefined_vars[$if_type_var] = isset($if_vars[$if_type_var]) ? $if_vars[$if_type_var] : Type::getMixed();
-                    }
-                }
 
                 foreach ($old_if_vars as $if_var => $type) {
                     if ((string)$if_vars[$if_var] !== (string)$type) {
@@ -280,25 +303,37 @@ class StatementsChecker
 
                 $possibly_redefined_vars = $redefined_vars;
 
-                foreach ($redefined_vars as $redefined_var => $type) {
-                    // are we negating all parts of this type?
-                    if (isset($if_types[$redefined_var])) {
+                $refuting_vars = [];
+                $agreeing_vars = [];
+
+                foreach ($if_vars as $if_var => $type) {
+                    // are we refuting or agreeing with all parts of this type?
+                    if (isset($if_types[$if_var])) {
                         $is_negation = true;
+                        $is_confirmation = true;
 
                         foreach ($type->types as $redefined_type_part) {
-                            if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$redefined_var])) {
+                            if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$if_var])) {
                                 $is_negation = false;
+                            }
+                            else {
+                                $is_confirmation = false;
                             }
                         }
 
                         if ($is_negation) {
-                            $post_type_assertions[$redefined_var] = $type;
+                            $refuting_vars[$if_var] = $type;
+                        }
+
+                        if ($is_confirmation) {
+                            $agreeing_vars[$if_var] = $type;
                         }
                     }
                 }
+
+                $visited_ifs = true;
             }
             else {
-                $has_left = true;
                 $post_type_assertions = $negated_types;
             }
 
@@ -365,17 +400,14 @@ class StatementsChecker
                     if ($redefined_vars === null) {
                         $redefined_vars = $elseif_redefined_vars;
                         $possibly_redefined_vars = $redefined_vars;
-
-                        foreach ($redefined_vars as $redefined_var => $type) {
-                            if (isset($elseif_types[$redefined_var]) && TypeChecker::isNegation($redefined_var, $if_types[$redefined_var])) {
-                                $post_type_assertions[$redefined_var] = $type;
-                            }
-                        }
                     }
                     else {
                         foreach ($redefined_vars as $redefined_var => $type) {
                             if (!isset($elseif_redefined_vars[$redefined_var])) {
                                 unset($redefined_vars[$redefined_var]);
+                            }
+                            else {
+                                $redefined_vars[$redefined_var] = Type::combineUnionTypes($redefined_vars[$redefined_var], $type);
                             }
                         }
 
@@ -388,6 +420,62 @@ class StatementsChecker
                             }
                             else {
                                 $possibly_redefined_vars[$var] = $type;
+                            }
+                        }
+                    }
+
+                    $elseif_refuting_vars = [];
+                    $elseif_agreeing_vars = [];
+
+                    foreach ($elseif_vars as $elseif_var => $type) {
+                        // are we refuting or agreeing with all parts of this type?
+                        if (isset($if_types[$elseif_var])) {
+                            $is_negation = true;
+                            $is_confirmation = true;
+
+                            foreach ($type->types as $redefined_type_part) {
+                                if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$elseif_var])) {
+                                    $is_negation = false;
+                                }
+                                else {
+                                    $is_confirmation = false;
+                                }
+                            }
+
+                            if ($is_negation) {
+                                $elseif_refuting_vars[$elseif_var] = $type;
+                            }
+
+                            if ($is_confirmation) {
+                                $elseif_agreeing_vars[$elseif_var] = $type;
+                            }
+                        }
+                    }
+
+                    if ($refuting_vars === null) {
+                        $refuting_vars = $elseif_refuting_vars;
+                    }
+                    else {
+                        foreach ($refuting_vars as $var => $type) {
+                            if (isset($elseif_refuting_vars[$var])) {
+                                $refuting_vars[$var] = Type::combineUnionTypes($elseif_refuting_vars[$var], $type);
+                            }
+                            else {
+                                unset($refuting_vars[$var]);
+                            }
+                        }
+                    }
+
+                    if ($agreeing_vars === null) {
+                        $agreeing_vars = $elseif_agreeing_vars;
+                    }
+                    else {
+                        foreach ($agreeing_vars as $var => $type) {
+                            if (isset($elseif_agreeing_vars[$var])) {
+                                $agreeing_vars[$var] = Type::combineUnionTypes($elseif_agreeing_vars[$var], $type);
+                            }
+                            else {
+                                unset($agreeing_vars[$var]);
                             }
                         }
                     }
@@ -405,6 +493,8 @@ class StatementsChecker
                             }
                         }
                     }
+
+                    $visited_elseifs = true;
                 }
                 else {
                     $post_type_assertions = $negated_types;
@@ -469,9 +559,16 @@ class StatementsChecker
                             if (!isset($else_redefined_vars[$redefined_var])) {
                                 unset($redefined_vars[$redefined_var]);
                             }
+                            else {
+                                $redefined_vars[$redefined_var] = Type::combineUnionTypes($redefined_vars[$redefined_var], $type);
+                            }
                         }
 
                         foreach ($else_redefined_vars as $var => $type) {
+                            if (isset($post_type_assertions[$var])) {
+                                continue;
+                            }
+
                             if ($type->isMixed()) {
                                 $possibly_redefined_vars[$var] = $type;
                             }
@@ -480,6 +577,62 @@ class StatementsChecker
                             }
                             else {
                                 $possibly_redefined_vars[$var] = $type;
+                            }
+                        }
+                    }
+
+                    $else_refuting_vars = [];
+                    $else_agreeing_vars = [];
+
+                    foreach ($else_vars as $else_var => $type) {
+                        // are we refuting or agreeing with all parts of this type?
+                        if (isset($if_types[$else_var])) {
+                            $is_negation = true;
+                            $is_confirmation = true;
+
+                            foreach ($type->types as $redefined_type_part) {
+                                if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$else_var])) {
+                                    $is_negation = false;
+                                }
+                                else {
+                                    $is_confirmation = false;
+                                }
+                            }
+
+                            if ($is_negation) {
+                                $else_refuting_vars[$else_var] = $type;
+                            }
+
+                            if ($is_confirmation) {
+                                $else_agreeing_vars[$else_var] = $type;
+                            }
+                        }
+                    }
+
+                    if ($refuting_vars === null) {
+                        $refuting_vars = $else_refuting_vars;
+                    }
+                    else {
+                        foreach ($refuting_vars as $var => $type) {
+                            if (isset($else_refuting_vars[$var])) {
+                                $refuting_vars[$var] = Type::combineUnionTypes($else_refuting_vars[$var], $type);
+                            }
+                            else {
+                                unset($refuting_vars[$var]);
+                            }
+                        }
+                    }
+
+                    if ($agreeing_vars === null) {
+                        $agreeing_vars = $else_agreeing_vars;
+                    }
+                    else {
+                        foreach ($agreeing_vars as $var => $type) {
+                            if (isset($else_agreeing_vars[$var])) {
+                                $agreeing_vars[$var] = Type::combineUnionTypes($else_agreeing_vars[$var], $type);
+                            }
+                            else {
+                                unset($agreeing_vars[$var]);
                             }
                         }
                     }
@@ -497,6 +650,10 @@ class StatementsChecker
                             }
                         }
                     }
+                }
+                else {
+                    $refuting_vars = [];
+                    $agreeing_vars = [];
                 }
 
                 // has a return/throw at end
@@ -524,6 +681,14 @@ class StatementsChecker
                 }
             }
         }
+        else {
+            if ($visited_elseifs) {
+                $refuting_vars = [];
+            }
+
+            $redefined_vars = [];
+            $agreeing_vars = [];
+        }
 
         $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
 
@@ -543,19 +708,25 @@ class StatementsChecker
 
                 $vars_possibly_in_scope = array_merge($negated_if_types, $vars_possibly_in_scope);
             }
-            elseif ($redefined_vars) {
 
+            if ($redefined_vars) {
                 foreach ($if_types as $var => $type) {
-                    if (in_array((string) $type, ['empty', 'null'])) {
-                        if (isset($redefined_vars[$var]) && !$redefined_vars[$var]->isNull() && (!isset($vars_in_scope[$var]) || !$vars_in_scope[$var]->isMixed())
-                        ) {
-                            $vars_in_scope[$var] = $redefined_vars[$var];
-                            unset($redefined_vars[$var]);
-                        }
+                    $vars_in_scope[$var] = $redefined_vars[$var];
+                }
+            }
+
+            if ($agreeing_vars) {
+                foreach ($agreeing_vars as $var => $type) {
+                    if (!isset($redefined_vars[$var])) {
+                        $vars_in_scope[$var] = $type;
                     }
-                    elseif ((string) $type === '!array' && isset($redefined_vars[$var]) && (string)$redefined_vars[$var] === 'array') {
-                        $vars_in_scope[$var] = $redefined_vars[$var];
-                        unset($redefined_vars[$var]);
+                }
+            }
+
+            if ($refuting_vars) {
+                foreach ($refuting_vars as $var => $type) {
+                    if (!isset($redefined_vars[$var])) {
+                        $vars_in_scope[$var] = $type;
                     }
                 }
             }
@@ -563,7 +734,7 @@ class StatementsChecker
 
         if ($possibly_redefined_vars) {
             foreach ($possibly_redefined_vars as $var => $type) {
-                if (isset($vars_in_scope[$var])) {
+                if (isset($vars_in_scope[$var]) && !isset($refuting_vars[$var]) && !isset($agreeing_vars[$var]) && !isset($redefined_vars[$var])) {
                     $vars_in_scope[$var] = Type::combineUnionTypes($vars_in_scope[$var], $type);
                 }
             }
@@ -1181,6 +1352,7 @@ class StatementsChecker
         $this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope);
 
         foreach ($stmt->catches as $catch) {
+            $catch_vars_in_scope = array_merge([], $vars_in_scope);
             $vars_in_scope[$catch->var] = new Type\Union([
                 new Type\Atomic(ClassChecker::getAbsoluteClassFromName($catch->type, $this->_namespace, $this->_aliased_classes))
             ]);
@@ -1193,7 +1365,13 @@ class StatementsChecker
                 }
             }
 
-            $this->check($catch->stmts, $vars_in_scope, $vars_possibly_in_scope);
+            $this->check($catch->stmts, $catch_vars_in_scope, $vars_possibly_in_scope);
+
+            foreach ($catch_vars_in_scope as $catch_var => $type) {
+                if (isset($vars_in_scope[$catch_var]) && (string) $vars_in_scope[$catch_var] !== (string) $type) {
+                    $vars_in_scope[$catch_var] = Type::combineUnionTypes($vars_in_scope[$catch_var], $type);
+                }
+            }
         }
 
         if ($stmt->finallyStmts) {
@@ -1512,6 +1690,8 @@ class StatementsChecker
             $return_type = Type::getMixed();
         }
 
+        $stmt->inferredType = $return_type;
+
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
             $vars_in_scope[$var_id] = $return_type;
             $vars_possibly_in_scope[$var_id] = true;
@@ -1528,7 +1708,7 @@ class StatementsChecker
 
         } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
 
-            if ($this->_checkArrayAssignment($stmt->var, $vars_in_scope, $vars_possibly_in_scope, $return_type) == false) {
+            if ($this->_checkArrayAssignment($stmt->var, $vars_in_scope, $vars_possibly_in_scope, $return_type) === false) {
                 return false;
             }
 

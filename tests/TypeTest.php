@@ -512,12 +512,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 if ($one === null) {
                     $one = new One();
                 }
@@ -538,12 +534,33 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 if ($one) {
                     // do nothing
                 }
                 else {
                     $one = new One();
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testMethodWithMeaninglessCheck()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one) {
+                if (!$one) {
+                    // do nothing
                 }
 
                 $one->foo();
@@ -598,7 +615,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $a = 4;
 
                 if ($one === null) {
@@ -625,12 +642,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $a = 4;
 
                 if ($one === null) {
@@ -660,12 +673,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $a = 4;
 
                 if ($one === null) {
@@ -693,12 +702,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $a = 4;
 
                 if ($one === null) {
@@ -729,12 +734,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $a = 4;
 
                 if ($one === null) {
@@ -765,12 +766,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $a = 4;
 
                 if ($one === null) {
@@ -801,12 +798,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $a = 4;
 
                 switch ($a) {
@@ -832,12 +825,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
-            public function bar(One $one = null, Two $two = null) {
+            public function bar(One $one = null) {
                 $this->one = $one;
 
                 if ($this->one === null) {
@@ -1141,5 +1130,30 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
+    }
+
+    public function testTryCatchVar()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $worked = true;
+
+        try {
+            // something
+        }
+        catch (\Exception $e) {
+            $worked = false;
+        }
+
+        if ($worked) {
+
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+
+        $conditional = $stmts[2]->cond;
+
+        $this->assertSame('bool', (string) $conditional->inferredType);
     }
 }

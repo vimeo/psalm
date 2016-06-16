@@ -69,4 +69,27 @@ class ScopeChecker
 
         return false;
     }
+
+    public static function onlyThrows(array $stmts)
+    {
+        if (empty($stmts)) {
+            return false;
+        }
+
+        for ($i = count($stmts) - 1; $i >= 0; $i--) {
+            $stmt = $stmts[$i];
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+                return true;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
 }
