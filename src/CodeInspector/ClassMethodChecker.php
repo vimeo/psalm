@@ -101,6 +101,8 @@ class ClassMethodChecker extends FunctionChecker
                 // gets elements A△B
                 $differing_types = array_diff($simple_inferred_return_types, $simple_declared_return_types);
 
+                var_dump($simple_inferred_return_types, $simple_declared_return_types);
+
                 if (count($differing_types) && (string) $inferred_return_type !== (string) $declared_return_type) {
                     if ($update_doc_comment) {
                         $doc_comment = $this->_function->getDocComment();

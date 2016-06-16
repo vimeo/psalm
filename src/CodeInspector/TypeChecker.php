@@ -510,6 +510,10 @@ class TypeChecker
             return 'mixed';
         }
 
+        if (empty($existing_var_types)) {
+            return 'mixed';
+        }
+
         $existing_var_types = array_flip($existing_var_types);
 
         if ($new_var_type[0] === '!') {

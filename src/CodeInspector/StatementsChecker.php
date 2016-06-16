@@ -267,7 +267,9 @@ class StatementsChecker
                 $redefined_vars = [];
 
                 foreach (array_keys($if_types) as $if_type_var) {
-                    $redefined_vars[$if_type_var] = $if_vars[$if_type_var];
+                    if (isset($if_vars[$if_type_var])) {
+                        $redefined_vars[$if_type_var] = isset($if_vars[$if_type_var]) ? $if_vars[$if_type_var] : Type::getMixed();
+                    }
                 }
 
                 foreach ($old_if_vars as $if_var => $type) {
@@ -533,7 +535,7 @@ class StatementsChecker
             elseif ($redefined_vars) {
                 foreach ($if_types as $var => $type) {
                     if (in_array($type, ['empty', 'null'])) {
-                        if (isset($redefined_vars[$var])) {
+                        if (isset($redefined_vars[$var]) && (!isset($vars_in_scope[$var]) || !$vars_in_scope[$var]->isMixed())) {
                             $vars_in_scope[$var] = $redefined_vars[$var];
                             unset($redefined_vars[$var]);
                         }
@@ -1071,11 +1073,6 @@ class StatementsChecker
 
     protected function _checkThisPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $array_assignment = false)
     {
-        if (!ClassChecker::getThisClass()) {
-            // ignore this property
-            return;
-        }
-
         $class_checker = $this->_source->getClassChecker();
 
         if (!$class_checker) {
@@ -1086,13 +1083,15 @@ class StatementsChecker
             }
         }
 
+        $var_id = self::_getVarId($stmt);
         $property_names = $class_checker->getPropertyNames();
 
-        var_dump($property_names);
+        if (isset($vars_in_scope[$var_id])) {
+            $stmt->returnType = $vars_in_scope[$var_id];
+        }
 
         if (!in_array($stmt->name, $property_names)) {
             $property_id = $this->_absolute_class . '::' . $stmt->name;
-            $var_id = self::_getVarId($stmt);
 
             $var_defined = isset($vars_in_scope[$var_id]) || isset($vars_possibly_in_scope[$var_id]);
 
