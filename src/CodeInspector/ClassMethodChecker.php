@@ -65,7 +65,7 @@ class ClassMethodChecker extends FunctionChecker
                 if ($declared_return_type->types[0]->value !== 'void') {
                     if (ExceptionHandler::accepts(
                         new InvalidReturnType(
-                            'The given return type for ' . $method_id . ' is incorrect, expecting ' . $declared_return_type,
+                            'No return type was found for method ' . $method_id . ' but return type ' . $declared_return_type . ' was expected',
                             $this->_file_name,
                             $this->_function->getLine()
                         )
@@ -80,6 +80,10 @@ class ClassMethodChecker extends FunctionChecker
             $inferred_return_type = Type::combineTypes($inferred_return_types);
 
             if ($inferred_return_type && !$inferred_return_type->isMixed() && !$declared_return_type->isMixed()) {
+                if ($inferred_return_type->isNull() && $declared_return_type->isVoid()) {
+                    return;
+                }
+
                 $simple_declared_return_types = array_map(
                     function ($return_type) {
                         return $return_type->value;
@@ -94,7 +98,10 @@ class ClassMethodChecker extends FunctionChecker
                     $inferred_return_type->types
                 );
 
-                if ($simple_inferred_return_types != $simple_declared_return_types && (string) $inferred_return_type !== (string) $declared_return_type) {
+                // gets elements A△B
+                $differing_types = array_diff($simple_inferred_return_types, $simple_declared_return_types);
+
+                if (count($differing_types) && (string) $inferred_return_type !== (string) $declared_return_type) {
                     if ($update_doc_comment) {
                         $doc_comment = $this->_function->getDocComment();
 
@@ -102,8 +109,6 @@ class ClassMethodChecker extends FunctionChecker
 
                         return;
                     }
-
-                    $differing_types = array_diff($simple_declared_return_types, $simple_inferred_return_types);
 
                     // check whether the differing types are subclasses of declared return types
                     $truly_different = false;
@@ -113,7 +118,8 @@ class ClassMethodChecker extends FunctionChecker
                         foreach ($simple_declared_return_types as $simple_declared_return_type) {
                             if (is_subclass_of($differing_type, $simple_declared_return_type) ||
                                 (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_return_type, ['float', 'double', 'int'])) ||
-                                (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_return_type, ['boolean', 'bool']))) {
+                                (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_return_type, ['boolean', 'bool']))
+                            ) {
                                 $is_match = true;
                                 break;
                             }
@@ -127,7 +133,7 @@ class ClassMethodChecker extends FunctionChecker
                     if ($truly_different) {
                         if (ExceptionHandler::accepts(
                             new InvalidReturnType(
-                                'The given return type for ' . $method_id . ' is incorrect, expecting ' . $declared_return_type,
+                                'The given return type ' . $declared_return_type . ' for ' . $method_id . ' is incorrect, got ' . $inferred_return_type,
                                 $this->_file_name,
                                 $this->_function->getLine()
                             )
@@ -214,9 +220,7 @@ class ClassMethodChecker extends FunctionChecker
     {
         self::_populateData($method_id);
 
-        $return_types = self::$_method_return_types[$method_id];
-
-        return $return_types;
+        return self::$_method_return_types[$method_id] ? clone self::$_method_return_types[$method_id] : null;
     }
 
     /**

@@ -18,6 +18,13 @@ class Union extends Type
         $this->types = $types;
     }
 
+    public function __clone()
+    {
+        foreach ($this->types as &$type) {
+            $type = clone $type;
+        }
+    }
+
     public function __toString()
     {
         return implode(

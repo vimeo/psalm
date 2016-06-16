@@ -530,6 +530,34 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testNullableMethodWithGuardedRedefinitionInElse()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class Two {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null, Two $two = null) {
+                if ($one) {
+                    // do nothing
+                }
+                else {
+                    $one = new One();
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     /**
      * @expectedException CodeInspector\CodeException
      */

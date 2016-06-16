@@ -291,6 +291,17 @@ abstract class Type
         }
     }
 
+    public function isVoid()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'void';
+        }
+
+        if ($this instanceof Union) {
+            return $this->types[0]->isVoid();
+        }
+    }
+
     public function isNullable()
     {
         if ($this instanceof Atomic) {
@@ -306,6 +317,18 @@ abstract class Type
         }
 
         return false;
+    }
+
+    public function isScalar()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'int' ||
+                    $this->value === 'string' ||
+                    $this->value === 'double' ||
+                    $this->value === 'float' ||
+                    $this->value === 'bool' ||
+                    $this->value === 'false';
+        }
     }
 
     /**
@@ -383,6 +406,12 @@ abstract class Type
 
             // @todo this doesn't support multiple type params right now
             $value_types[$type->value][(string) $type] = $type instanceof Generic ? $type->type_params[0] : null;
+        }
+
+        if (count($value_types) === 1) {
+            if (isset($value_types['false'])) {
+                return self::getBool();
+            }
         }
 
         $new_types = [];

@@ -101,17 +101,6 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testArrayNestedCombination()
-    {
-        $this->assertEquals(
-            'array<array<int>>',
-            (string) Type::combineTypes([
-                Type::parseString('array<array<empty>>', false),
-                Type::parseString('array<array<int>>', false)
-            ])
-        );
-    }
-
     public function testFalseDestruction()
     {
         $this->assertEquals(
@@ -128,6 +117,17 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'bool',
             (string) Type::combineTypes([
+                Type::parseString('false', false)
+            ])
+        );
+    }
+
+    public function testFalseFalseDestruction()
+    {
+        $this->assertEquals(
+            'bool',
+            (string) Type::combineTypes([
+                Type::parseString('false', false),
                 Type::parseString('false', false)
             ])
         );

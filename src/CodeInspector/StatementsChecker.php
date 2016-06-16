@@ -266,6 +266,10 @@ class StatementsChecker
 
                 $redefined_vars = [];
 
+                foreach (array_keys($if_types) as $if_type_var) {
+                    $redefined_vars[$if_type_var] = $if_vars[$if_type_var];
+                }
+
                 foreach ($old_if_vars as $if_var => $type) {
                     if ($if_vars[$if_var] !== $type) {
                         $redefined_vars[$if_var] = $if_vars[$if_var];
@@ -383,6 +387,9 @@ class StatementsChecker
                             if (!isset($elseif_vars[$new_var])) {
                                 unset($new_vars[$new_var]);
                             }
+                            else {
+                                $new_vars[$new_var] = Type::combineUnionTypes($type, $elseif_vars[$new_var]);
+                            }
                         }
                     }
                 }
@@ -471,6 +478,9 @@ class StatementsChecker
                         foreach ($new_vars as $new_var => $type) {
                             if (!isset($else_vars[$new_var])) {
                                 unset($new_vars[$new_var]);
+                            }
+                            else {
+                                $new_vars[$new_var] = Type::combineUnionTypes($type, $else_vars[$new_var]);
                             }
                         }
                     }
@@ -1078,6 +1088,8 @@ class StatementsChecker
 
         $property_names = $class_checker->getPropertyNames();
 
+        var_dump($property_names);
+
         if (!in_array($stmt->name, $property_names)) {
             $property_id = $this->_absolute_class . '::' . $stmt->name;
             $var_id = self::_getVarId($stmt);
@@ -1273,7 +1285,7 @@ class StatementsChecker
                             }
 
                             if ($return_type->value !== 'array' && $return_type->value !== 'Traversable' && $return_type->value !== $this->_class_name) {
-                                if (ClassChecker::checkAbsoluteClass($return_type, $stmt, $this->_file_name) === false) {
+                                if (ClassChecker::checkAbsoluteClass($return_type->value, $stmt, $this->_file_name) === false) {
                                     return false;
                                 }
                             }
@@ -1573,6 +1585,15 @@ class StatementsChecker
             if (!$return_type->isMixed()) {
 
                 foreach ($return_type->types as &$type) {
+                    if ($type->isScalar()) {
+                        if (ExceptionHandler::accepts(
+                            new InvalidArrayAssignment('Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value, $this->_file_name, $stmt->getLine())
+                        )) {
+                            return false;
+                        }
+
+                        continue;
+                    }
                     $refined_type = $this->_refineArrayType($type, $assignment_type, $var_id, $stmt->getLine());
 
                     if ($refined_type === false) {
@@ -1968,8 +1989,8 @@ class StatementsChecker
 
     protected static function _fleshOutReturnTypes(Type\Union $return_type, array $args, $method_id)
     {
-        foreach ($return_type->types as $return_type) {
-            $return_type = self::_fleshOutAtomicReturnType($return_type, $args, $method_id);
+        foreach ($return_type->types as $return_type_part) {
+            $return_type_part = self::_fleshOutAtomicReturnType($return_type_part, $args, $method_id);
         }
 
         return $return_type;
