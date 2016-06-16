@@ -15,6 +15,11 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    public function setUp()
+    {
+        \CodeInspector\ClassMethodChecker::clearCache();
+    }
+
     public function testGenericArrayCreation()
     {
         $stmts = self::$_parser->parse('<?php

@@ -363,11 +363,11 @@ class StatementsChecker
                         }
 
                         foreach ($elseif_redefined_vars as $var => $type) {
-                            if ($type === 'mixed') {
-                                $possibly_redefined_vars[$var] = 'mixed';
+                            if ($type->isMixed()) {
+                                $possibly_redefined_vars[$var] = $type;
                             }
                             else if (isset($possibly_redefined_vars[$var])) {
-                                $possibly_redefined_vars[$var] = $type . '|' . $possibly_redefined_vars[$var];
+                                $possibly_redefined_vars[$var] = Type::combineUnionTypes($type, $possibly_redefined_vars[$var]);
                             }
                             else {
                                 $possibly_redefined_vars[$var] = $type;
@@ -452,11 +452,11 @@ class StatementsChecker
                         }
 
                         foreach ($else_redefined_vars as $var => $type) {
-                            if ($type === 'mixed') {
-                                $possibly_redefined_vars[$var] = 'mixed';
+                            if ($type->isMixed()) {
+                                $possibly_redefined_vars[$var] = $type;
                             }
                             else if (isset($possibly_redefined_vars[$var])) {
-                                $possibly_redefined_vars[$var] = $type . '|' . $possibly_redefined_vars[$var];
+                                $possibly_redefined_vars[$var] = Type::combineUnionTypes($type, $possibly_redefined_vars[$var]);
                             }
                             else {
                                 $possibly_redefined_vars[$var] = $type;
@@ -539,7 +539,7 @@ class StatementsChecker
         if ($possibly_redefined_vars) {
             foreach ($possibly_redefined_vars as $var => $type) {
                 if (isset($vars_in_scope[$var])) {
-                    $vars_in_scope[$var] = Type::combineTypes($vars_in_scope[$var], $type);
+                    $vars_in_scope[$var] = Type::combineUnionTypes($vars_in_scope[$var], $type);
                 }
             }
         }
@@ -594,7 +594,7 @@ class StatementsChecker
             if ($var instanceof PhpParser\Node\Stmt\StaticVar) {
                 if (is_string($var->name)) {
                     if ($this->_check_variables) {
-                        $vars_in_scope[$var->name] = 'mixed';
+                        $vars_in_scope[$var->name] = Type::getMixed();
                         $vars_possibly_in_scope[$var->name] = true;
                         $this->registerVariable($var->name, $var->getLine());
                     }
@@ -671,9 +671,9 @@ class StatementsChecker
                     $isset_var->var->name === 'this' &&
                     is_string($isset_var->name)
                 ) {
-                    $property_id = 'this->' . $isset_var->name;
-                    $vars_in_scope[$property_id] = 'mixed';
-                    $vars_possibly_in_scope[$property_id] = true;
+                    $var_id = 'this->' . $isset_var->name;
+                    $vars_in_scope[$var_id] = Type::getMixed();
+                    $vars_possibly_in_scope[$var_id] = true;
                 }
             }
 
@@ -736,9 +736,11 @@ class StatementsChecker
             $use_vars_possibly_in_scope = [];
 
             if (!$this->_is_static) {
-                $use_vars['this'] = ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ?
+                $this_class = ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ?
                     ClassChecker::getThisClass() :
                     $this->_absolute_class;
+
+                $use_vars['this'] = new Type\Union([new Type\Atomic($this_class)]);
             }
 
             foreach ($vars_in_scope as $var => $type) {
@@ -884,7 +886,7 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-                $vars_in_scope[$stmt->var->name] = 'mixed';
+                $vars_in_scope[$stmt->var->name] = Type::getMixed();
                 $vars_possibly_in_scope[$stmt->var->name] = true;
                 $this->registerVariable($stmt->var->name, $stmt->var->getLine());
             } else {
@@ -935,7 +937,7 @@ class StatementsChecker
             $stmt->returnType = Type::getMixed();
 
             if (is_string($stmt->name)) {
-                $vars_in_scope[$stmt->name] = 'mixed';
+                $vars_in_scope[$stmt->name] = Type::getMixed();
                 $vars_possibly_in_scope[$stmt->name] = true;
             }
 
@@ -950,8 +952,8 @@ class StatementsChecker
             return $this->_checkExpression($stmt->name, $vars_in_scope, $vars_possibly_in_scope);
         }
 
-        if ($method_id && isset($vars_in_scope[$stmt->name]) && $vars_in_scope[$stmt->name] !== 'mixed') {
-            if ($this->_checkFunctionArgumentType($method_id, $argument_offset, $vars_in_scope[$stmt->name], $this->_file_name, $stmt->getLine()) === false) {
+        if ($method_id && isset($vars_in_scope[$stmt->name]) && !$vars_in_scope[$stmt->name]->isMixed()) {
+            if ($this->_checkFunctionArgumentType($vars_in_scope[$stmt->name], $method_id, $argument_offset, $this->_file_name, $stmt->getLine()) === false) {
                 return false;
             }
         }
@@ -959,8 +961,6 @@ class StatementsChecker
         if ($stmt->name === 'this') {
             return;
         }
-
-
 
         if ($method_id && $this->_isPassedByReference($method_id, $argument_offset)) {
             $this->_assignByRefParam($stmt, $method_id, $vars_in_scope, $vars_possibly_in_scope);
@@ -1030,11 +1030,11 @@ class StatementsChecker
                     self::$_this_assignments[$this_method_id] = [];
                 }
 
-                self::$_this_assignments[$this_method_id][$stmt->name] = 'mixed';
+                self::$_this_assignments[$this_method_id][$stmt->name] = Type::getMixed();
             }
         }
 
-        $vars_in_scope[$property_id] = 'mixed';
+        $vars_in_scope[$property_id] = Type::getMixed();
     }
 
     protected function _checkPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $array_assignment = false)
@@ -1116,7 +1116,7 @@ class StatementsChecker
                 }
 
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                $stmt->returnType = new Type\Union(new Type\Atomic($absolute_class));
+                $stmt->returnType = new Type\Union([new Type\Atomic($absolute_class)]);
             }
         }
 
@@ -1157,7 +1157,9 @@ class StatementsChecker
         $this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope);
 
         foreach ($stmt->catches as $catch) {
-            $vars_in_scope[$catch->var] = ClassChecker::getAbsoluteClassFromName($catch->type, $this->_namespace, $this->_aliased_classes);
+            $vars_in_scope[$catch->var] = new Type\Union([
+                new Type\Atomic(ClassChecker::getAbsoluteClassFromName($catch->type, $this->_namespace, $this->_aliased_classes))
+            ]);
             $vars_possibly_in_scope[$catch->var] = true;
             $this->registerVariable($catch->var, $catch->getLine());
 
@@ -1202,13 +1204,16 @@ class StatementsChecker
         $this->check($stmt->stmts, $for_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
         foreach ($vars_in_scope as $var => $type) {
-            if ($for_vars[$var] !== $type) {
-                if ($type === 'mixed' || $for_vars[$var]->value === 'mixed') {
-                    $vars_in_scope[$var] = Type::getMixed();
-                }
-                elseif (strpos($type, $for_vars[$var]) === false) {
-                    $vars_in_scope[$var]->types = array_merge($vars_in_scope[$var]->types, $for_vars[$var]->types);
-                }
+            if ($type->isMixed()) {
+                continue;
+            }
+
+            if ($for_vars[$var]->isMixed()) {
+                $vars_in_scope[$var] = $for_vars[$var];
+            }
+
+            if ((string) $for_vars[$var] !== (string) $type) {
+                $vars_in_scope[$var] = Type::combineUnionTypes($vars_in_scope[$var], $for_vars[$var]);
             }
         }
 
@@ -1288,13 +1293,16 @@ class StatementsChecker
         $this->check($stmt->stmts, $foreach_vars, $vars_possibly_in_scope, $foreach_vars_possibly_in_scope);
 
         foreach ($vars_in_scope as $var => $type) {
-            if ($foreach_vars[$var] !== $type) {
-                if ($type === 'mixed' || $foreach_vars[$var]->value === 'mixed') {
-                    $vars_in_scope[$var] = Type::getMixed();
-                }
-                elseif (strpos($type, $foreach_vars[$var]) === false) {
-                    $vars_in_scope[$var]->types = array_merge($vars_in_scope[$var]->types, $foreach_vars[$var]->types);
-                }
+            if ($type->isMixed()) {
+                continue;
+            }
+
+            if ($foreach_vars[$var]->isMixed()) {
+                $vars_in_scope[$var] = $foreach_vars[$var];
+            }
+
+            if ((string) $foreach_vars[$var] !== (string) $type) {
+                $vars_in_scope[$var] = Type::combineUnionTypes($vars_in_scope[$var], $foreach_vars[$var]);
             }
         }
 
@@ -1307,36 +1315,39 @@ class StatementsChecker
             return false;
         }
 
-        $while_vars_in_scope = array_merge([], $vars_in_scope);
+        $while_vars = array_merge([], $vars_in_scope);
 
         $while_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
 
         // if the while has an or as the main component, we cannot safely reason about it
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->cond)) {
-            $while_vars_in_scope = array_merge([], $vars_in_scope);
+            $while_vars = array_merge([], $vars_in_scope);
         }
         else {
-            $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($while_types, $while_vars_in_scope, $this->_file_name, $stmt->getLine());
+            $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($while_types, $while_vars, $this->_file_name, $stmt->getLine());
 
             if ($while_vars_in_scope_reconciled === false) {
                 return false;
             }
 
-            $while_vars_in_scope = $while_vars_in_scope_reconciled;
+            $while_vars = $while_vars_in_scope_reconciled;
         }
 
-        if ($this->check($stmt->stmts, $while_vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->check($stmt->stmts, $while_vars, $vars_possibly_in_scope) === false) {
             return false;
         }
 
         foreach ($vars_in_scope as $var => $type) {
-            if ($while_vars_in_scope[$var] !== $type) {
-                if ($type === 'mixed' || $while_vars_in_scope[$var]->value === 'mixed') {
-                    $vars_in_scope[$var] = Type::getMixed();
-                }
-                elseif (strpos($type, $while_vars_in_scope[$var]) === false) {
-                     $vars_in_scope[$var]->types = array_merge($vars_in_scope[$var]->types, $while_vars[$var]->types);
-                }
+            if ($type->isMixed()) {
+                continue;
+            }
+
+            if ($while_vars[$var]->isMixed()) {
+                $vars_in_scope[$var] = $while_vars[$var];
+            }
+
+            if ($while_vars[$var] !== $type) {
+                $vars_in_scope[$var]->types = array_merge($vars_in_scope[$var]->types, $while_vars[$var]->types);
             }
         }
     }
@@ -1468,7 +1479,7 @@ class StatementsChecker
         $var_id = self::_getVarId($stmt->var);
 
         if ($type_in_comments) {
-            $return_type = $type_in_comments;
+            $return_type = Type::parseString($type_in_comments);
         }
         elseif (isset($stmt->expr->returnType)) {
             $return_type = $stmt->expr->returnType;
@@ -1492,6 +1503,7 @@ class StatementsChecker
             }
 
         } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+
             if ($this->_checkArrayAssignment($stmt->var, $vars_in_scope, $vars_possibly_in_scope, $return_type) == false) {
                 return false;
             }
@@ -1514,7 +1526,7 @@ class StatementsChecker
             $vars_possibly_in_scope[$var_id] = true;
 
             // right now we have to settle for mixed
-            self::$_this_assignments[$method_id][$stmt->var->name] = 'mixed';
+            self::$_this_assignments[$method_id][$stmt->var->name] = Type::getMixed();
         }
 
         if ($var_id && isset($vars_in_scope[$var_id]) && $vars_in_scope[$var_id] instanceof Type\Void) {
@@ -1547,7 +1559,7 @@ class StatementsChecker
         return null;
     }
 
-    protected function _checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, Type\Atomic $assignment_type)
+    protected function _checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, Type\Union $assignment_type)
     {
         if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope, true) === false) {
             return false;
@@ -1555,27 +1567,24 @@ class StatementsChecker
 
         $var_id = self::_getVarId($stmt->var);
 
-        var_dump($var_id . ' ' . $assignment_type . ' ' . $stmt->var->returnType);
-
         if (isset($stmt->var->returnType)) {
             $return_type = $stmt->var->returnType;
 
-            foreach ($return_type->types as &$type) {
-                $refined_type = $this->_refineArrayType($type, $assignment_type, $var_id, $stmt->getLine());
+            if (!$return_type->isMixed()) {
 
-                if ($refined_type === false) {
-                    return false;
+                foreach ($return_type->types as &$type) {
+                    $refined_type = $this->_refineArrayType($type, $assignment_type, $var_id, $stmt->getLine());
+
+                    if ($refined_type === false) {
+                        return false;
+                    }
+
+                    $type = $refined_type;
                 }
 
-                $type = $refined_type;
-            }
-
-            if ($return_type !== 'mixed') {
-                $vars_in_scope[$var_id] = $parsed_type;
+                $vars_in_scope[$var_id] = $return_type;
             }
         }
-
-        var_dump($vars_in_scope[$var_id]);
     }
 
     /**
@@ -1585,7 +1594,7 @@ class StatementsChecker
      * @param  int         $line_number
      * @return Type\Atomic
      */
-    protected function _refineArrayType(Type\Atomic $type, Type\Atomic $assignment_type, $var_id, $line_number)
+    protected function _refineArrayType(Type\Atomic $type, Type\Union $assignment_type, $var_id, $line_number)
     {
         if ($type->value === 'null') {
             if (ExceptionHandler::accepts(
@@ -1610,21 +1619,24 @@ class StatementsChecker
         if ($type instanceof Type\Generic) {
             if ($type->is_empty) {
                 // boil this down to a regular array
-                if ($assignment_type === 'mixed') {
+                if ($assignment_type->isMixed()) {
                     return new Type\Atomic($type->value);
                 }
 
-                $type->param_types = [$assignment_type];
+                $type->type_params = $assignment_type->types;
+                $type->is_empty = false;
                 return $type;
             }
 
-            $array_type = $type->param_types[0]->value;
+            $array_type = $type->type_params[0] instanceof Type\Union ? $type->type_params[0] : new Type\Union([$type->type_params[0]]);
 
-            if ($array_type !== $assignment_type) {
-                $type->param_types[0]->value = 'mixed';
+            if ((string) $array_type !== (string) $assignment_type) {
+                $type->type_params[0] = Type::combineUnionTypes($array_type, $assignment_type);
                 return $type;
             }
         }
+
+
 
         return $type;
     }
@@ -1703,12 +1715,9 @@ class StatementsChecker
             return;
         }
 
-        if ($class_type && is_string($stmt->name) && is_string($class_type)) {
-            foreach (explode('|', $class_type) as $absolute_class) {
-                $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
-
-                // strip out generics
-                $absolute_class = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $absolute_class);
+        if ($class_type && is_string($stmt->name)) {
+            foreach ($class_type->types as $type) {
+                $absolute_class = $type->value;
 
                 switch ($absolute_class) {
                     case 'null':
@@ -1987,7 +1996,7 @@ class StatementsChecker
             }
 
             if ($return_type->value[0] === '$') {
-                $return_type->value = 'mixed';
+                $return_type = Type::getMixed();
             }
         }
 
@@ -2043,8 +2052,8 @@ class StatementsChecker
                 $property_id = 'this' . '->' . $arg->value->name;
 
                 if ($method_id) {
-                    if (isset($vars_in_scope[$property_id]) && $vars_in_scope[$property_id]->value !== 'mixed') {
-                        if ($this->_checkFunctionArgumentType($method_id, $i, $vars_in_scope[$property_id], $this->_file_name, $arg->getLine()) === false) {
+                    if (isset($vars_in_scope[$property_id]) && !$vars_in_scope[$property_id]->isMixed()) {
+                        if ($this->_checkFunctionArgumentType($vars_in_scope[$property_id], $method_id, $i, $this->_file_name, $arg->getLine()) === false) {
                             return false;
                         }
                     }
@@ -2059,7 +2068,7 @@ class StatementsChecker
                     }
                 } else {
 
-                    if (false || !isset($vars_in_scope[$property_id]) || $vars_in_scope[$property_id]->value === 'null') {
+                    if (false || !isset($vars_in_scope[$property_id]) || $vars_in_scope[$property_id]->isNull()) {
                         // we don't know if it exists, assume it's passed by reference
                         $vars_in_scope[$property_id] = Type::getMixed();
                         $vars_possibly_in_scope[$property_id] = true;
@@ -2076,7 +2085,7 @@ class StatementsChecker
 
                 } elseif (is_string($arg->value->name)) {
 
-                    if (false || !isset($vars_in_scope[$arg->value->name]) || $vars_in_scope[$arg->value->name]->value === 'null') {
+                    if (false || !isset($vars_in_scope[$arg->value->name]) || $vars_in_scope[$arg->value->name]->isNull()) {
                         // we don't know if it exists, assume it's passed by reference
                         $vars_in_scope[$arg->value->name] = Type::getMixed();
                         $vars_possibly_in_scope[$arg->value->name] = true;
@@ -2090,12 +2099,9 @@ class StatementsChecker
             }
 
             if ($method_id && isset($arg->value->returnType)) {
-                foreach ($arg->value->returnType->types as $return_type) {
-                    if (TypeChecker::checkMethodParam($return_type, $method_id, $i, $this->_absolute_class, $this->_file_name, $arg->value->getLine()) === false) {
-                        return false;
-                    }
+                if ($this->_checkFunctionArgumentType($arg->value->returnType, $method_id, $i, $this->_file_name, $arg->value->getLine()) === false) {
+                    return false;
                 }
-
             }
         }
     }
@@ -2105,16 +2111,16 @@ class StatementsChecker
         if ($stmt->name instanceof PhpParser\Node\Name) {
             switch ($stmt->name->parts) {
                 case ['null']:
-                    $stmt->returnType = new Type\Atomic('null');
+                    $stmt->returnType = Type::getNull();
                     break;
 
                 case ['false']:
                     // false is a subtype of bool
-                    $stmt->returnType =  new Type\Atomic('false');
+                    $stmt->returnType = Type::getFalse();
                     break;
 
                 case ['true']:
-                    $stmt->returnType =  new Type\Atomic('bool');
+                    $stmt->returnType = Type::getBool();
                     break;
             }
         }
@@ -2229,11 +2235,11 @@ class StatementsChecker
             }
         }
         else {
-            $stmt->returnType = Type\Void::getInstance();
+            $stmt->returnType = Type::getVoid();
         }
 
         if ($this->_source instanceof FunctionChecker) {
-            $this->_source->addReturnTypes($stmt->expr ? $stmt->returnType : '', $vars_in_scope, $vars_possibly_in_scope);
+            $this->_source->addReturnTypes($stmt->expr ? (string) $stmt->returnType : '', $vars_in_scope, $vars_possibly_in_scope);
         }
     }
 
@@ -2418,47 +2424,60 @@ class StatementsChecker
         $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
     }
 
-    protected function _checkFunctionArgumentType($method_id, $argument_offset, $type, $file_name, $line_number)
+    protected function _checkFunctionArgumentType(Type\Union $input_type, $method_id, $argument_offset, $file_name, $line_number)
     {
         if (strpos($method_id, '::') !== false) {
             $method_params = ClassMethodChecker::getMethodParams($method_id);
 
             if (isset($method_params[$argument_offset])) {
-                $method_param_type = $method_params[$argument_offset]['type'];
-                $is_nullable = $method_params[$argument_offset]['is_nullable'];
+                $param_type = $method_params[$argument_offset]['type'];
 
-                if ($method_param_type) {
-                    $input_types = explode('|', $type);
-                    $input_types = array_flip($input_types);
+                if (!$param_type) {
+                    return;
+                }
 
-                    if (isset($input_types['null']) && !$is_nullable) {
-                        if (ExceptionHandler::accepts(
-                            new NullReference(
-                                'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
-                                $file_name,
-                                $line_number
-                            )
-                        )) {
-                            return false;
-                        }
+                if ($param_type->isMixed()) {
+                    return;
+                }
+
+                if ($input_type->isMixed()) {
+                    // @todo make this a config
+                    return;
+                }
+
+                if ($param_type->isNullable() && !$param_type->isNullable()) {
+                    if (ExceptionHandler::accepts(
+                        new NullReference(
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
+                            $file_name,
+                            $line_number
+                        )
+                    )) {
+                        return false;
+                    }
+                }
+
+                foreach ($input_type->types as $input_type_part) {
+                    if ($input_type_part->isNull()) {
+                        continue;
                     }
 
-                    unset($input_types['null']);
+                    foreach ($param_type->types as $param_type_part) {
+                        if ($param_type_part->isNull()) {
+                            continue;
+                        }
 
-                    $input_types = array_keys($input_types);
-
-                    foreach ($input_types as &$input_type) {
-                        $input_type = preg_replace('/\<[A-Za-z0-9' . '\\\\' . ']+\>/', '', $input_type);
-
-                        if ($input_type !== $method_param_type && !is_subclass_of($input_type, $method_param_type) && !self::isMock($input_type)) {
-                            if (is_subclass_of($method_param_type, $input_type)) {
+                        if ($input_type_part->value !== $param_type_part->value && !is_subclass_of($input_type_part->value, $param_type_part->value) && !self::isMock($input_type_part->value)) {
+                            if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
                                 // @todo handle coercion
                                 return;
                             }
 
+                            var_dump($input_type_part->value, $param_type_part->value);
+
                             if (ExceptionHandler::accepts(
                                 new InvalidArgument(
-                                    'Argument ' . ($argument_offset + 1) . ' expects ' . $method_param_type . ', ' . $type . ' provided',
+                                    'Argument ' . ($argument_offset + 1) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                                     $file_name,
                                     $line_number
                                 )

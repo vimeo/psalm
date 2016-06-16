@@ -25,85 +25,6 @@ class TypeChecker
     }
 
     /**
-     * @return bool
-     */
-    public static function checkMethodParam(Type\Atomic $return_type, $method_id, $arg_offset, $current_class, $file_name, $line_number)
-    {
-        if ($return_type->value === 'mixed') {
-            return true;
-        }
-
-        if ($return_type->value === 'void') {
-            if (ExceptionHandler::accepts(
-                new FailedTypeResolution(
-                    'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be void, but possibly void value was supplied',
-                    $file_name,
-                    $line_number
-                )
-            )) {
-                return false;
-            }
-        }
-
-        $method_params = ClassMethodChecker::getMethodParams($method_id);
-
-        if ($arg_offset >= count($method_params)) {
-            return true;
-        }
-
-        $expected_type = $method_params[$arg_offset]['type'];
-
-        if (!$expected_type) {
-            return true;
-        }
-
-        if ($return_type->value === 'null') {
-            if ($method_params[$arg_offset]['is_nullable']) {
-                return true;
-            }
-
-            if (ExceptionHandler::accepts(
-                new InvalidArgument(
-                    'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' cannot be null, but possibly null value was supplied',
-                    $file_name,
-                    $line_number
-                )
-            )) {
-                return false;
-            }
-
-            return true;
-        }
-
-        if ($return_type->value === $expected_type) {
-            return true;
-        }
-
-        if (StatementsChecker::isMock($return_type->value)) {
-            return true;
-        }
-
-        if (!is_subclass_of($return_type->value, $expected_type, true)) {
-            if (is_subclass_of($expected_type, $return_type->value, true)) {
-                //echo('Warning: dangerous type coercion in ' . $file_name . ' on line ' . $line_number . PHP_EOL);
-                return true;
-            }
-
-            if (ExceptionHandler::accepts(
-                new InvalidArgument(
-                    'Argument ' . ($arg_offset + 1) . ' of ' . $method_id . ' has incorrect type of ' . $return_type . ', expecting ' . $expected_type,
-                    $file_name,
-                    $line_number
-                )
-            )) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * Gets all the type assertions in a conditional
      *
      * @param  PhpParser\Node\Expr $stmt
@@ -553,13 +474,13 @@ class TypeChecker
 
             $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : [];
 
-            $result_type = self::reconcileTypes($new_types[$key], $existing_var_types, $key, $file_name, $line_number);
+            $result_type = self::reconcileTypes((string) $new_types[$key], $existing_var_types, $key, $file_name, $line_number);
 
             if ($result_type === false) {
                 return false;
             }
 
-            $result_types[$key] = $result_type;
+            $result_types[$key] = Type::parseString($result_type);
         }
 
         return $result_types;
@@ -676,8 +597,8 @@ class TypeChecker
     /**
      * Takes two arrays of types and merges them
      *
-     * @param  array  $new_types
-     * @param  array  $existing_types
+     * @param  array<UnionType>  $new_types
+     * @param  array<UnionType>  $existing_types
      * @return array
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types)
@@ -706,21 +627,15 @@ class TypeChecker
                 continue;
             }
 
-            if (!is_string($existing_types[$key]) || !is_string($new_types[$key])) {
-                throw new \InvalidArgumentException('combineTypes operates only on strings');
-            }
+            $existing_var_types = $existing_types[$key];
+            $new_var_types = $new_types[$key];
 
-            $existing_var_types = explode('|', $existing_types[$key]);
-            $new_var_types = explode('|', $new_types[$key]);
-
-            if ($new_var_types === $existing_var_types) {
-                $combined_var_types = $new_var_types;
+            if ((string) $new_var_types === (string) $existing_var_types) {
+                $result_types[$key] = $new_var_types;
             }
             else {
-                $combined_var_types = self::reduceTypes(array_unique(array_merge($new_var_types, $existing_var_types)));
+                $result_types[$key] = Type::combineUnionTypes($new_var_types, $existing_var_types);
             }
-
-            $result_types[$key] = implode('|', $combined_var_types);
         }
 
         return $result_types;

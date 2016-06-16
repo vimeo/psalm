@@ -2,6 +2,8 @@
 
 namespace CodeInspector\Tests;
 
+use CodeInspector\Type;
+
 use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
@@ -1060,7 +1062,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $return_stmt = array_pop($method_stmts);
 
-        $this->assertSame('string|int', $return_stmt->returnType);
+        $this->assertSame('int|string', (string) $return_stmt->returnType);
     }
 
     public function testTypeMixedAdjustment()
@@ -1088,7 +1090,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $return_stmt = array_pop($method_stmts);
 
-        $this->assertSame('mixed', $return_stmt->returnType);
+        $this->assertSame('mixed', (string) $return_stmt->returnType);
     }
 
     public function testSwitchVariableWithContinue()

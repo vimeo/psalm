@@ -50,7 +50,7 @@ class FunctionChecker implements StatementsSource
                     }
                 }
                 else {
-                    $vars_in_scope['this'] = $this->_absolute_class;
+                    $vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->_absolute_class)]);
                 }
             }
 
@@ -71,19 +71,23 @@ class FunctionChecker implements StatementsSource
                                 $param->default->name->parts = ['null'];
 
                 if ($param->type && is_object($param->type)) {
-                    $vars_in_scope[$param->name] = $param->type->parts === ['self'] ?
+                    $param_class = $param->type->parts === ['self'] ?
                                                     $this->_absolute_class :
                                                     ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
 
+                    $param_type = new Type\Union([new Type\Atomic($param_class)]);
+
                     if ($is_nullable) {
-                        $vars_in_scope[$param->name] .= '|null';
+                        $param_type->types[] = Type::getNull(false);
                     }
+
+                    $vars_in_scope[$param->name] = $param_type;
                 }
                 elseif (is_string($param->type)) {
-                    $vars_in_scope[$param->name] = $param->type;
+                    $vars_in_scope[$param->name] = Type::parseString($param->type);
                 }
                 else {
-                    $vars_in_scope[$param->name] = 'mixed';
+                    $vars_in_scope[$param->name] = Type::getMixed();
                 }
 
                 $vars_possibly_in_scope[$param->name] = true;
@@ -118,6 +122,12 @@ class FunctionChecker implements StatementsSource
         }
     }
 
+    /**
+     * Adds return types for the given function
+     * @param string        $return_type
+     * @param array<Type>   $vars_in_scope
+     * @param array<bool>   $vars_possibly_in_scope
+     */
     public function addReturnTypes($return_type, $vars_in_scope, $vars_possibly_in_scope)
     {
         if (isset($this->_return_vars_in_scope[$return_type])) {

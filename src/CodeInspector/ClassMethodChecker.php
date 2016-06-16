@@ -56,22 +56,45 @@ class ClassMethodChecker extends FunctionChecker
 
         $method_id = $this->_absolute_class . '::' . $this->_function->name;
 
-        $existing_return_types = self::getMethodReturnTypes($method_id);
+        $declared_return_type = self::getMethodReturnTypes($method_id);
 
-        var_dump($existing_return_types);
+        if ($declared_return_type) {
+            $inferred_return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
-        if ($existing_return_types) {
-            $return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
+            if (!$inferred_return_types) {
+                if ($declared_return_type->types[0]->value !== 'void') {
+                    if (ExceptionHandler::accepts(
+                        new InvalidReturnType(
+                            'The given return type for ' . $method_id . ' is incorrect, expecting ' . $declared_return_type,
+                            $this->_file_name,
+                            $this->_function->getLine()
+                        )
+                    )) {
+                        return false;
+                    }
+                }
 
-            if ($return_types && $return_types !== ['mixed'] && $existing_return_types !== ['mixed']) {
-                $simple_existing_return_types = array_map(
-                    function ($value) {
-                        return preg_replace('/<.*$/', '', $value);
+                return;
+            }
+
+            $inferred_return_type = Type::combineTypes($inferred_return_types);
+
+            if ($inferred_return_type && !$inferred_return_type->isMixed() && !$declared_return_type->isMixed()) {
+                $simple_declared_return_types = array_map(
+                    function ($return_type) {
+                        return $return_type->value;
                     },
-                    $existing_return_types
+                    $declared_return_type->types
                 );
 
-                if (count(array_diff($return_types, $simple_existing_return_types)) && count(array_diff($return_types, $existing_return_types))) {
+                $simple_inferred_return_types = array_map(
+                    function ($return_type) {
+                        return $return_type->value;
+                    },
+                    $inferred_return_type->types
+                );
+
+                if ($simple_inferred_return_types != $simple_declared_return_types && (string) $inferred_return_type !== (string) $declared_return_type) {
                     if ($update_doc_comment) {
                         $doc_comment = $this->_function->getDocComment();
 
@@ -80,17 +103,17 @@ class ClassMethodChecker extends FunctionChecker
                         return;
                     }
 
-                    $differing_types = array_diff($return_types, $simple_existing_return_types);
+                    $differing_types = array_diff($simple_declared_return_types, $simple_inferred_return_types);
 
                     // check whether the differing types are subclasses of declared return types
                     $truly_different = false;
                     foreach ($differing_types as $differing_type) {
                         $is_match = false;
 
-                        foreach ($simple_existing_return_types as $existing_return_type) {
-                            if (is_subclass_of($differing_type, $existing_return_type) ||
-                                (in_array($differing_type, ['float', 'double', 'int']) && in_array($existing_return_type, ['float', 'double', 'int'])) ||
-                                (in_array($differing_type, ['boolean', 'bool']) && in_array($existing_return_type, ['boolean', 'bool']))) {
+                        foreach ($simple_declared_return_types as $simple_declared_return_type) {
+                            if (is_subclass_of($differing_type, $simple_declared_return_type) ||
+                                (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_return_type, ['float', 'double', 'int'])) ||
+                                (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_return_type, ['boolean', 'bool']))) {
                                 $is_match = true;
                                 break;
                             }
@@ -104,7 +127,7 @@ class ClassMethodChecker extends FunctionChecker
                     if ($truly_different) {
                         if (ExceptionHandler::accepts(
                             new InvalidReturnType(
-                                'The given return type for ' . $method_id . ' is incorrect, expecting ' . implode('|', $return_types),
+                                'The given return type for ' . $method_id . ' is incorrect, expecting ' . $declared_return_type,
                                 $this->_file_name,
                                 $this->_function->getLine()
                             )
@@ -233,6 +256,10 @@ class ClassMethodChecker extends FunctionChecker
 
             try {
                 $is_nullable = $param->getDefaultValue() === null;
+
+                if ($param_type) {
+                    $param_type = '|null';
+                }
             }
             catch (\ReflectionException $e) {
                 // do nothing
@@ -241,7 +268,7 @@ class ClassMethodChecker extends FunctionChecker
             self::$_method_params[$method_id][] = [
                 'name' => $param->getName(),
                 'by_ref' => $param->isPassedByReference(),
-                'type' => $param_type,
+                'type' => $param_type ? Type::parseString($param_type) : Type::getMixed(),
                 'is_nullable' => $is_nullable
             ];
         }
@@ -254,7 +281,7 @@ class ClassMethodChecker extends FunctionChecker
             if (isset($comments['specials']['return'])) {
                 $return_blocks = explode(' ', $comments['specials']['return'][0]);
                 foreach ($return_blocks as $block) {
-                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
+                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block) && !preg_match('/\[[^\]]+\]/', $block)) {
                         $return_types = $block;
                         break;
                     }
@@ -340,7 +367,7 @@ class ClassMethodChecker extends FunctionChecker
             $return_blocks = explode(' ', $comments['specials']['return'][0]);
             foreach ($return_blocks as $block) {
                 if ($block) {
-                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block)) {
+                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block) && !preg_match('/\[[^\]]+\]/', $block)) {
                         $return_types = $block;
                         break;
                     }
@@ -392,10 +419,14 @@ class ClassMethodChecker extends FunctionChecker
                             $param->default->name instanceof PhpParser\Node\Name &&
                             $param->default->name->parts = ['null'];
 
+            if ($is_nullable && $param_type) {
+                $param_type .= '|null';
+            }
+
             self::$_method_params[$method_id][] = [
                 'name' => $param->name,
                 'by_ref' => $param->byRef,
-                'type' => $param_type,
+                'type' => $param_type ? Type::parseString($param_type) : Type::getMixed(),
                 'is_nullable' => $is_nullable
             ];
         }
@@ -589,5 +620,24 @@ class ClassMethodChecker extends FunctionChecker
     public static function getNewDocblocksForFile($file_name)
     {
         return isset(self::$_new_docblocks[$file_name]) ? self::$_new_docblocks[$file_name] : [];
+    }
+
+    public static function clearCache()
+    {
+        self::$_method_comments = [];
+        self::$_method_files = [];
+        self::$_method_params = [];
+        self::$_method_namespaces = [];
+        self::$_method_return_types = [];
+        self::$_static_methods = [];
+        self::$_declaring_classes = [];
+        self::$_existing_methods = [];
+        self::$_have_reflected = [];
+        self::$_have_registered = [];
+        self::$_method_custom_calls = [];
+        self::$_inherited_methods = [];
+        self::$_declaring_class = [];
+        self::$_method_visibility = [];
+        self::$_new_docblocks = [];
     }
 }

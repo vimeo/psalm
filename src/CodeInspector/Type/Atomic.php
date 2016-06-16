@@ -20,6 +20,6 @@ class Atomic extends Type
 
     public function __toString()
     {
-        return ($this->negated ? '!' : '') . $this->value;
+        return $this->value;
     }
 }

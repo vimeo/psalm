@@ -27,8 +27,7 @@ class Generic extends Atomic
 
     public function __toString()
     {
-        return ($this->negated ? '!' : '') .
-                $this->value .
+        return $this->value .
                 '<' .
                 implode(
                     ',',

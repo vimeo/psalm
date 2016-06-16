@@ -19,7 +19,13 @@ abstract class Type
         $type_tokens = TypeChecker::tokenize($type_string);
 
         if (count($type_tokens) === 1) {
-            return new Atomic($type_tokens[0]);
+            $parsed_type = new Atomic($type_tokens[0]);
+
+            if ($enclose_with_union) {
+                $parsed_type = new Union([$parsed_type]);
+            }
+
+            return $parsed_type;
         }
 
         // We construct a parse tree corresponding to the type
@@ -164,6 +170,17 @@ abstract class Type
         return $type;
     }
 
+    public static function getNull($enclose_with_union = true)
+    {
+        $type = new Atomic('null');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
     public static function getMixed($enclose_with_union = true)
     {
         $type = new Atomic('mixed');
@@ -175,7 +192,7 @@ abstract class Type
         return $type;
     }
 
-    public function getBool($enclose_with_union = true)
+    public static function getBool($enclose_with_union = true)
     {
         $type = new Atomic('bool');
 
@@ -230,6 +247,28 @@ abstract class Type
         return $type;
     }
 
+    public static function getVoid($enclose_with_union = true)
+    {
+        $type = new Atomic('void');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
+    public static function getFalse($enclose_with_union = true)
+    {
+        $type = new Atomic('false');
+
+        if ($enclose_with_union) {
+            return new Union([$type]);
+        }
+
+        return $type;
+    }
+
     public function isMixed()
     {
         if ($this instanceof Atomic) {
@@ -241,23 +280,136 @@ abstract class Type
         }
     }
 
-    public static function combineTypes(Union $type_1, Union $type_2)
+    public function isNull()
     {
-        if (!$type_1->isMixed && !$type_2->isMixed()) {
-            $mapped_types = [];
-
-            foreach ($type_1->types as $type) {
-                $mapped_types[(string) $type] = $type;
-            }
-
-            foreach ($type_2->types as $type) {
-                $mapped_types[(string) $type] = $type;
-            }
-
-            $new_types = array_values($mapped_types);
-            return new Union($new_types);
+        if ($this instanceof Atomic) {
+            return $this->value === 'null';
         }
 
-        return Type::getMixed();
+        if ($this instanceof Union) {
+            return $this->types[0]->isNull();
+        }
+    }
+
+    public function isNullable()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'mixed';
+        }
+
+        if ($this instanceof Union) {
+            foreach ($this->types as $type) {
+                if ($type->value === 'null') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Combines two union types into one
+     * @param  Union  $type_1
+     * @param  Union  $type_2
+     * @return Union
+     */
+    public static function combineUnionTypes(Union $type_1, Union $type_2)
+    {
+        return self::combineTypes(array_merge($type_1->types, $type_2->types));
+    }
+
+    /**
+     * Combines types together
+     * so int + string = int|string
+     * so array<int> + array<string> = array<int|string>
+     * and array<int> + string = array<int>|string
+     * and array<empty> + array<empty> = array<empty>
+     * and array<string> + array<empty> = array<string>
+     * and array + array<string> = array<mixed>
+     *
+     * @param  array<Atomic>    $types
+     * @return Union
+     */
+    public static function combineTypes(array $types)
+    {
+        if (in_array(null, $types)) {
+            return Type::getMixed();
+        }
+
+        if (count($types) === 1) {
+            if ($types[0]->value === 'false') {
+                $types[0]->value = 'bool';
+            }
+
+            return new Union([$types[0]]);
+        }
+
+        if (!$types) {
+            throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
+        }
+
+        $value_types = [];
+
+        foreach ($types as $type) {
+            if ($type instanceof Union) {
+                throw new \InvalidArgumentException('Union type not expected here');
+            }
+
+            // if we see the magic empty value and there's more than one type, ignore it
+            if ($type->value === 'empty') {
+                continue;
+            }
+
+            if ($type->value === 'mixed') {
+                return Type::getMixed();
+            }
+
+            if ($type->value === 'void') {
+                $type->value = 'null';
+            }
+
+            // deal with false|bool => bool
+            if ($type->value === 'false' && isset($value_types['bool'])) {
+                continue;
+            }
+            elseif ($type->value === 'bool' && isset($value_types['false'])) {
+                unset($value_types['false']);
+            }
+
+            if (!isset($value_types[$type->value])) {
+                $value_types[$type->value] = [];
+            }
+
+            // @todo this doesn't support multiple type params right now
+            $value_types[$type->value][(string) $type] = $type instanceof Generic ? $type->type_params[0] : null;
+        }
+
+        $new_types = [];
+
+        foreach ($value_types as $key => $value_type) {
+            if (count($value_type) === 1) {
+                $value_type_param = array_values($value_type)[0];
+                $new_types[] = $value_type_param ? new Generic($key, [$value_type_param]) : new Atomic($key);
+                continue;
+            }
+
+            $expanded_value_types = [];
+
+            foreach ($value_types[$key] as $expandable_value_type) {
+                if ($expandable_value_type instanceof Union) {
+                    $expanded_value_types = array_merge($expanded_value_types, $expandable_value_type->types);
+                    continue;
+                }
+
+                $expanded_value_types[] = $expandable_value_type;
+            }
+
+            // we have a generic type with
+            $new_types[] = new Generic($key, [self::combineTypes($expanded_value_types)]);
+        }
+
+        $new_types = array_values($new_types);
+        return new Union($new_types);
     }
 }

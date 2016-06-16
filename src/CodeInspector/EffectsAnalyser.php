@@ -14,7 +14,7 @@ class EffectsAnalyser
      * Gets the return types from a list of statements
      *
      * @param  array<PhpParser\Node\Stmt>  $stmts
-     * @return array<string>    a list of return types
+     * @return array<AtomicType>    a list of return types
      */
     public static function getReturnTypes(array $stmts, $collapse_types = false)
     {
@@ -22,7 +22,7 @@ class EffectsAnalyser
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                $return_types[] = $stmt->returnType;
+                $return_types = array_merge($stmt->returnType->types, $return_types);
 
                 break;
 
@@ -67,53 +67,6 @@ class EffectsAnalyser
             }
         }
 
-        var_dump($return_types);
-
-        // expand any nested return types
-        $return_types = explode('|', implode('|', $return_types));
-
-        if ($return_types === ['']) {
-            $return_types = [];
-        }
-
-        $array_return_types = array_filter($return_types, function($return_type) {
-            return preg_match('/^array(\<|$)/', $return_type);
-        });
-
-        $return_types = array_flip($return_types);
-
-        if (count($return_types) > 1 && isset($return_types['void'])) {
-            unset($return_types['void']);
-            $return_types['null'] = 1;
-        }
-
-        if (count($return_types) > 1 && isset($return_types['false']) && isset($return_types['bool'])) {
-            unset($return_types['false']);
-        }
-
-        if ($collapse_types && isset($return_types['mixed'])) {
-            return ['mixed'];
-        }
-
-        if ($collapse_types && isset($return_types['array<empty>'])) {
-            unset($return_types['array<empty>']);
-
-            // if that special entity was the only array entry
-            if (count($array_return_types) === 1) {
-                $return_types['array'] = 1;
-            }
-        }
-
-        $return_type_keys = array_keys($return_types);
-
-        if ($collapse_types && $return_type_keys === ['false']) {
-            $return_type_keys = ['bool'];
-        }
-
-        if ($collapse_types) {
-            $return_type_keys = TypeChecker::reduceTypes($return_type_keys);
-        }
-
-        return $return_type_keys;
+        return $return_types;
     }
 }
