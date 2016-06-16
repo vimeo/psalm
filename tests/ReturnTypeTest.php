@@ -118,4 +118,39 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    public function testReturnTypeAfterUselessNullcheck()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public $baz;
+
+            /**
+             * @return One|null
+             */
+            public function bar() {
+                $baz = rand(0,100) > 50 ? new One() : null;
+
+                // should have no effect
+                if ($baz === null) {
+                    $baz = null;
+                }
+
+                return $baz;
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+
+        $method_stmts = $stmts[1]->stmts[1]->stmts;
+
+        $return_stmt = array_pop($method_stmts);
+
+        $this->assertSame('One|null', (string) $return_stmt->returnType);
+    }
 }

@@ -537,10 +537,6 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        class Two {
-            public function foo() {}
-        }
-
         class B {
             public function bar(One $one = null, Two $two = null) {
                 if ($one) {
