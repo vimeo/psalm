@@ -18,5 +18,7 @@ class ExceptionHandler
 
         echo get_class($e) . PHP_EOL;
         echo $e->getMessage() . PHP_EOL;
+
+        return true;
     }
 }
