@@ -273,7 +273,7 @@ class StatementsChecker
                 }
 
                 foreach ($old_if_vars as $if_var => $type) {
-                    if ($if_vars[$if_var] !== $type) {
+                    if ((string)$if_vars[$if_var] !== (string)$type) {
                         $redefined_vars[$if_var] = $if_vars[$if_var];
                     }
                 }
@@ -281,8 +281,19 @@ class StatementsChecker
                 $possibly_redefined_vars = $redefined_vars;
 
                 foreach ($redefined_vars as $redefined_var => $type) {
-                    if (isset($if_types[$redefined_var]) && TypeChecker::isNegation($redefined_var, $if_types[$redefined_var])) {
-                        $post_type_assertions[$redefined_var] = $type;
+                    // are we negating all parts of this type?
+                    if (isset($if_types[$redefined_var])) {
+                        $is_negation = true;
+
+                        foreach ($type->types as $redefined_type_part) {
+                            if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$redefined_var])) {
+                                $is_negation = false;
+                            }
+                        }
+
+                        if ($is_negation) {
+                            $post_type_assertions[$redefined_var] = $type;
+                        }
                     }
                 }
             }
@@ -533,14 +544,16 @@ class StatementsChecker
                 $vars_possibly_in_scope = array_merge($negated_if_types, $vars_possibly_in_scope);
             }
             elseif ($redefined_vars) {
+
                 foreach ($if_types as $var => $type) {
-                    if (in_array($type, ['empty', 'null'])) {
-                        if (isset($redefined_vars[$var]) && (!isset($vars_in_scope[$var]) || !$vars_in_scope[$var]->isMixed())) {
+                    if (in_array((string) $type, ['empty', 'null'])) {
+                        if (isset($redefined_vars[$var]) && !$redefined_vars[$var]->isNull() && (!isset($vars_in_scope[$var]) || !$vars_in_scope[$var]->isMixed())
+                        ) {
                             $vars_in_scope[$var] = $redefined_vars[$var];
                             unset($redefined_vars[$var]);
                         }
                     }
-                    elseif ($type === '!array' && isset($redefined_vars[$var]) && $redefined_vars[$var] === 'array') {
+                    elseif ((string) $type === '!array' && isset($redefined_vars[$var]) && (string)$redefined_vars[$var] === 'array') {
                         $vars_in_scope[$var] = $redefined_vars[$var];
                         unset($redefined_vars[$var]);
                     }
@@ -2298,6 +2311,26 @@ class StatementsChecker
 
         if ($this->_checkExpression($stmt->else, $t_else_vars_in_scope, $vars_possibly_in_scope) === false) {
             return false;
+        }
+
+        $lhs_type = null;
+
+        if ($stmt->if) {
+            if (isset($stmt->if->returnType)) {
+                $lhs = $stmt->if->returnType;
+            }
+        }
+        elseif ($stmt->cond) {
+            if (isset($stmt->cond->returnType)) {
+                $lhs = $stmt->cond->returnType;
+            }
+        }
+
+        if (!$lhs_type || !isset($stmt->else->returnType)) {
+            $stmt->returnType = Type::getMixed();
+        }
+        else {
+            $stmt->returnType = Type::combineUnionTypes($lhs_type, $stmt->else->returnType);
         }
     }
 

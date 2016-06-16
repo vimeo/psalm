@@ -583,7 +583,7 @@ class TypeChecker
             return false;
         }
 
-        if ($type === '!' . $existing_type || $existing_type === $existing_type) {
+        if ($type === '!' . $existing_type || $existing_type === '!' . $type) {
             return true;
         }
 
