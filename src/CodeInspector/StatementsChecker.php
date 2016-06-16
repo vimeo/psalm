@@ -2084,7 +2084,6 @@ class StatementsChecker
                     }
 
                 } elseif (is_string($arg->value->name)) {
-
                     if (false || !isset($vars_in_scope[$arg->value->name]) || $vars_in_scope[$arg->value->name]->isNull()) {
                         // we don't know if it exists, assume it's passed by reference
                         $vars_in_scope[$arg->value->name] = Type::getMixed();
@@ -2338,7 +2337,7 @@ class StatementsChecker
 
             if ($case->stmts) {
                 $switch_vars = $type_candidate_var && !empty($case_types)
-                                ? [$type_candidate_var => implode('|', $case_types)]
+                                ? [$type_candidate_var => Type::parseString(implode('|', $case_types))]
                                 : [];
 
                 $case_vars_in_scope = array_merge($vars_in_scope, $switch_vars);
@@ -2472,8 +2471,6 @@ class StatementsChecker
                                 // @todo handle coercion
                                 return;
                             }
-
-                            var_dump($input_type_part->value, $param_type_part->value);
 
                             if (ExceptionHandler::accepts(
                                 new InvalidArgument(
