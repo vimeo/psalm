@@ -1793,7 +1793,9 @@ class StatementsChecker
                                 self::$_method_call_index[$method_id][] = $this->_source->getFileName();
                             }
 
-                            ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
+                            if (ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt) === false) {
+                                return false;
+                            }
 
                             if (!($this->_source->getSource() instanceof TraitChecker)) {
                                 $calling_context = $this->_absolute_class;
@@ -2317,12 +2319,12 @@ class StatementsChecker
 
         if ($stmt->if) {
             if (isset($stmt->if->inferredType)) {
-                $lhs = $stmt->if->inferredType;
+                $lhs_type = $stmt->if->inferredType;
             }
         }
         elseif ($stmt->cond) {
             if (isset($stmt->cond->inferredType)) {
-                $lhs = $stmt->cond->inferredType;
+                $lhs_type = $stmt->cond->inferredType;
             }
         }
 
