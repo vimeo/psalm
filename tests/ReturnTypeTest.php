@@ -151,6 +151,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $return_stmt = array_pop($method_stmts);
 
-        $this->assertSame('One|null', (string) $return_stmt->returnType);
+        $this->assertSame('One|null', (string) $return_stmt->inferredType);
     }
 }

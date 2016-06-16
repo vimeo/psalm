@@ -22,7 +22,7 @@ class EffectsAnalyser
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                $return_types = array_merge($stmt->returnType->types, $return_types);
+                $return_types = array_merge($stmt->inferredType->types, $return_types);
 
                 break;
 

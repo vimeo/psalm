@@ -1086,7 +1086,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $return_stmt = array_pop($method_stmts);
 
-        $this->assertSame('int|string', (string) $return_stmt->returnType);
+        $this->assertSame('int|string', (string) $return_stmt->inferredType);
     }
 
     public function testTypeMixedAdjustment()
@@ -1114,7 +1114,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $return_stmt = array_pop($method_stmts);
 
-        $this->assertSame('mixed', (string) $return_stmt->returnType);
+        $this->assertSame('mixed', (string) $return_stmt->inferredType);
     }
 
     public function testSwitchVariableWithContinue()

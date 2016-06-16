@@ -669,7 +669,7 @@ class StatementsChecker
             if (self::$_check_string_fn) {
                 call_user_func(self::$_check_string_fn, $stmt, $this->_file_name);
             }
-            $stmt->returnType = Type::getString();
+            $stmt->inferredType = Type::getString();
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
@@ -678,10 +678,10 @@ class StatementsChecker
             // do nothing
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            $stmt->returnType = Type::getInt();
+            $stmt->inferredType = Type::getInt();
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            $stmt->returnType = Type::getFloat();
+            $stmt->inferredType = Type::getFloat();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
             return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
@@ -794,45 +794,45 @@ class StatementsChecker
             if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
-            $stmt->returnType = Type::getInt();
+            $stmt->inferredType = Type::getInt();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
-            $stmt->returnType = Type::getDouble();
+            $stmt->inferredType = Type::getDouble();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
-            $stmt->returnType = Type::getBool();
+            $stmt->inferredType = Type::getBool();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
             if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
-            $stmt->returnType = Type::getString();
+            $stmt->inferredType = Type::getString();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
-            $stmt->returnType = Type::getObject();
+            $stmt->inferredType = Type::getObject();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
-            $stmt->returnType = Type::getArray();
+            $stmt->inferredType = Type::getArray();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
             if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
 
-            if (property_exists($stmt->expr, 'returnType')) {
-                $stmt->returnType = $stmt->expr->returnType;
+            if (property_exists($stmt->expr, 'inferredType')) {
+                $stmt->inferredType = $stmt->expr->inferredType;
             }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -959,7 +959,7 @@ class StatementsChecker
         }
 
         if (!$this->_check_variables) {
-            $stmt->returnType = Type::getMixed();
+            $stmt->inferredType = Type::getMixed();
 
             if (is_string($stmt->name)) {
                 $vars_in_scope[$stmt->name] = Type::getMixed();
@@ -1028,7 +1028,7 @@ class StatementsChecker
             }
 
         } else {
-            $stmt->returnType = $vars_in_scope[$var_name];
+            $stmt->inferredType = $vars_in_scope[$var_name];
         }
     }
 
@@ -1100,7 +1100,7 @@ class StatementsChecker
         $property_names = $class_checker->getPropertyNames();
 
         if (isset($vars_in_scope[$var_id])) {
-            $stmt->returnType = $vars_in_scope[$var_id];
+            $stmt->inferredType = $vars_in_scope[$var_id];
         }
 
         if (!in_array($stmt->name, $property_names)) {
@@ -1140,7 +1140,7 @@ class StatementsChecker
                 }
 
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                $stmt->returnType = new Type\Union([new Type\Atomic($absolute_class)]);
+                $stmt->inferredType = new Type\Union([new Type\Atomic($absolute_class)]);
             }
         }
 
@@ -1157,7 +1157,7 @@ class StatementsChecker
     {
         // if the array is empty, this special type allows us to match any other array type against it
         if (empty($stmt->items)) {
-            $stmt->returnType = new Type\Union([new Type\Generic('array', [new Type\Atomic('empty')], true)]);
+            $stmt->inferredType = new Type\Union([new Type\Generic('array', [new Type\Atomic('empty')], true)]);
             return;
         }
 
@@ -1173,7 +1173,7 @@ class StatementsChecker
             }
         }
 
-        $stmt->returnType = Type::getArray();
+        $stmt->inferredType = Type::getArray();
     }
 
     protected function _checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
@@ -1434,7 +1434,7 @@ class StatementsChecker
         }
         else {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-                $stmt->returnType = Type::getString();
+                $stmt->inferredType = Type::getString();
             }
 
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
@@ -1471,7 +1471,7 @@ class StatementsChecker
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
-            $stmt->returnType = Type::getBool();
+            $stmt->inferredType = Type::getBool();
         }
     }
 
@@ -1505,8 +1505,8 @@ class StatementsChecker
         if ($type_in_comments) {
             $return_type = Type::parseString($type_in_comments);
         }
-        elseif (isset($stmt->expr->returnType)) {
-            $return_type = $stmt->expr->returnType;
+        elseif (isset($stmt->expr->inferredType)) {
+            $return_type = $stmt->expr->inferredType;
         }
         else {
             $return_type = Type::getMixed();
@@ -1591,8 +1591,8 @@ class StatementsChecker
 
         $var_id = self::_getVarId($stmt->var);
 
-        if (isset($stmt->var->returnType)) {
-            $return_type = $stmt->var->returnType;
+        if (isset($stmt->var->inferredType)) {
+            $return_type = $stmt->var->inferredType;
 
             if (!$return_type->isMixed()) {
 
@@ -1717,7 +1717,7 @@ class StatementsChecker
 
         // make sure we stay vague here
         if (!$class_type) {
-            $stmt->returnType = Type::getMixed();
+            $stmt->inferredType = Type::getMixed();
         }
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this' && is_string($stmt->name)) {
@@ -1810,7 +1810,7 @@ class StatementsChecker
                             if ($return_types) {
                                 $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
 
-                                $stmt->returnType = $return_types;
+                                $stmt->inferredType = $return_types;
                             }
                         }
                 }
@@ -1992,7 +1992,7 @@ class StatementsChecker
 
             if ($return_types) {
                 $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
-                $stmt->returnType = $return_types;
+                $stmt->inferredType = $return_types;
             }
         }
 
@@ -2130,8 +2130,8 @@ class StatementsChecker
                 }
             }
 
-            if ($method_id && isset($arg->value->returnType)) {
-                if ($this->_checkFunctionArgumentType($arg->value->returnType, $method_id, $i, $this->_file_name, $arg->value->getLine()) === false) {
+            if ($method_id && isset($arg->value->inferredType)) {
+                if ($this->_checkFunctionArgumentType($arg->value->inferredType, $method_id, $i, $this->_file_name, $arg->value->getLine()) === false) {
                     return false;
                 }
             }
@@ -2143,16 +2143,16 @@ class StatementsChecker
         if ($stmt->name instanceof PhpParser\Node\Name) {
             switch ($stmt->name->parts) {
                 case ['null']:
-                    $stmt->returnType = Type::getNull();
+                    $stmt->inferredType = Type::getNull();
                     break;
 
                 case ['false']:
                     // false is a subtype of bool
-                    $stmt->returnType = Type::getFalse();
+                    $stmt->inferredType = Type::getFalse();
                     break;
 
                 case ['true']:
-                    $stmt->returnType = Type::getBool();
+                    $stmt->inferredType = Type::getBool();
                     break;
             }
         }
@@ -2257,21 +2257,21 @@ class StatementsChecker
             }
 
             if ($type_in_comments) {
-                $stmt->returnType = Type::parseString($type_in_comments);
+                $stmt->inferredType = Type::parseString($type_in_comments);
             }
-            elseif (isset($stmt->expr->returnType)) {
-                $stmt->returnType = $stmt->expr->returnType;
+            elseif (isset($stmt->expr->inferredType)) {
+                $stmt->inferredType = $stmt->expr->inferredType;
             }
             else {
-                $stmt->returnType = Type::getMixed();
+                $stmt->inferredType = Type::getMixed();
             }
         }
         else {
-            $stmt->returnType = Type::getVoid();
+            $stmt->inferredType = Type::getVoid();
         }
 
         if ($this->_source instanceof FunctionChecker) {
-            $this->_source->addReturnTypes($stmt->expr ? (string) $stmt->returnType : '', $vars_in_scope, $vars_possibly_in_scope);
+            $this->_source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $vars_in_scope, $vars_possibly_in_scope);
         }
     }
 
@@ -2316,21 +2316,21 @@ class StatementsChecker
         $lhs_type = null;
 
         if ($stmt->if) {
-            if (isset($stmt->if->returnType)) {
-                $lhs = $stmt->if->returnType;
+            if (isset($stmt->if->inferredType)) {
+                $lhs = $stmt->if->inferredType;
             }
         }
         elseif ($stmt->cond) {
-            if (isset($stmt->cond->returnType)) {
-                $lhs = $stmt->cond->returnType;
+            if (isset($stmt->cond->inferredType)) {
+                $lhs = $stmt->cond->inferredType;
             }
         }
 
-        if (!$lhs_type || !isset($stmt->else->returnType)) {
-            $stmt->returnType = Type::getMixed();
+        if (!$lhs_type || !isset($stmt->else->inferredType)) {
+            $stmt->inferredType = Type::getMixed();
         }
         else {
-            $stmt->returnType = Type::combineUnionTypes($lhs_type, $stmt->else->returnType);
+            $stmt->inferredType = Type::combineUnionTypes($lhs_type, $stmt->else->inferredType);
         }
     }
 
@@ -2580,7 +2580,7 @@ class StatementsChecker
                 return false;
             }
 
-            $stmt->returnType = Type::getMixed();
+            $stmt->inferredType = Type::getMixed();
         }
 
         foreach ($stmt->args as $i => $arg) {
