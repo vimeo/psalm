@@ -407,7 +407,7 @@ class StatementsChecker
                                 unset($redefined_vars[$redefined_var]);
                             }
                             else {
-                                $redefined_vars[$redefined_var] = Type::combineUnionTypes($redefined_vars[$redefined_var], $type);
+                                $redefined_vars[$redefined_var] = Type::combineUnionTypes($elseif_redefined_vars[$redefined_var], $type);
                             }
                         }
 
@@ -560,7 +560,7 @@ class StatementsChecker
                                 unset($redefined_vars[$redefined_var]);
                             }
                             else {
-                                $redefined_vars[$redefined_var] = Type::combineUnionTypes($redefined_vars[$redefined_var], $type);
+                                $redefined_vars[$redefined_var] = Type::combineUnionTypes($else_redefined_vars[$redefined_var], $type);
                             }
                         }
 
@@ -1267,7 +1267,7 @@ class StatementsChecker
             }
         }
 
-        $var_id = self::_getVarId($stmt);
+        $var_id = self::getVarId($stmt);
         $property_names = $class_checker->getPropertyNames();
 
         if (isset($vars_in_scope[$var_id])) {
@@ -1447,7 +1447,7 @@ class StatementsChecker
         if ($stmt->valueVar) {
             $value_type = null;
 
-            $var_id = self::_getVarId($stmt->expr);
+            $var_id = self::getVarId($stmt->expr);
 
             $iterator_type = isset($vars_in_scope[$var_id]) ? $vars_in_scope[$var_id] : null;
 
@@ -1521,28 +1521,19 @@ class StatementsChecker
 
     protected function _checkWhile(PhpParser\Node\Stmt\While_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
-        if ($this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        $while_vars = array_merge([], $vars_in_scope);
+
+        if ($this->_checkCondition($stmt->cond, $while_vars, $vars_possibly_in_scope) === false) {
             return false;
         }
-
-        $while_vars = array_merge([], $vars_in_scope);
 
         $while_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
 
         // if the while has an or as the main component, we cannot safely reason about it
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->cond)) {
-            $while_vars = array_merge([], $vars_in_scope);
+            // do nothing
         }
         else {
-            // if the while is an assignment, it cannot be empty
-            if ($stmt->cond instanceof PhpParser\Node\Expr\Assign) {
-                $var_id = self::_getVarId($stmt->cond->var);
-
-                if (isset($while_vars[$var_id])) {
-                    $while_vars[$var_id] = TypeChecker::reconcileTypes('!empty', $while_vars[$var_id]);
-                }
-            }
-
             $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($while_types, $while_vars, $this->_file_name, $stmt->getLine());
 
             if ($while_vars_in_scope_reconciled === false) {
@@ -1702,7 +1693,7 @@ class StatementsChecker
             }
         }
 
-        $var_id = self::_getVarId($stmt->var);
+        $var_id = self::getVarId($stmt->var);
 
         if ($type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
             if (isset($vars_in_scope[$type_in_comments_var_id])) {
@@ -1774,7 +1765,7 @@ class StatementsChecker
         }
     }
 
-    protected static function _getVarId(PhpParser\Node\Expr $stmt)
+    public static function getVarId(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return $stmt->name;
@@ -1783,7 +1774,7 @@ class StatementsChecker
             $stmt->var instanceof PhpParser\Node\Expr\Variable &&
             is_string($stmt->name)) {
 
-            $object_id = self::_getVarId($stmt->var);
+            $object_id = self::getVarId($stmt->var);
 
             if (!$object_id) {
                 return null;
@@ -1801,7 +1792,7 @@ class StatementsChecker
             return false;
         }
 
-        $var_id = self::_getVarId($stmt->var);
+        $var_id = self::getVarId($stmt->var);
 
         if (isset($stmt->var->inferredType)) {
             $return_type = $stmt->var->inferredType;
@@ -1868,7 +1859,7 @@ class StatementsChecker
                     return new Type\Atomic($type->value);
                 }
 
-                $type->type_params = $assignment_type->types;
+                $type->type_params = array_values($assignment_type->types);
                 $type->is_empty = false;
                 return $type;
             }
@@ -1923,7 +1914,7 @@ class StatementsChecker
             }
         }
 
-        $var_id = self::_getVarId($stmt->var);
+        $var_id = self::getVarId($stmt->var);
 
         $class_type = isset($vars_in_scope[$var_id]) ? $vars_in_scope[$var_id] : null;
 

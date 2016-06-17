@@ -67,7 +67,7 @@ class ClassMethodChecker extends FunctionChecker
             $inferred_return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
             if (!$inferred_return_types) {
-                if ($declared_return_type->types[0]->value === 'void') {
+                if ($declared_return_type->isVoid()) {
                     return;
                 }
 

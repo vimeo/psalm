@@ -22,12 +22,12 @@ class EffectsAnalyser
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                $return_types = array_merge(
-                    isset($stmt->inferredType) ? $stmt->inferredType->types : [Type::getMixed(false)],
-                    $return_types
-                );
-
-                break;
+                if ($stmt->inferredType) {
+                    $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
+                }
+                else {
+                    $return_types[] = Type::getMixed(false);
+                }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts));
