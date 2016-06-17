@@ -78,7 +78,7 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (ExceptionHandler::accepts(
                     new InvalidReturnType(
-                        'No return type was found for method ' . $method_id . ' but return type ' . $declared_return_type . ' was expected',
+                        'No return type was found for method ' . $method_id . ' but return type \'' . $declared_return_type . '\' was expected',
                         $this->_file_name,
                         $this->_function->getLine()
                     )
@@ -145,7 +145,7 @@ class ClassMethodChecker extends FunctionChecker
                     if ($truly_different) {
                         if (ExceptionHandler::accepts(
                             new InvalidReturnType(
-                                'The given return type ' . $declared_return_type . ' for ' . $method_id . ' is incorrect, got ' . $inferred_return_type,
+                                'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
                                 $this->_file_name,
                                 $this->_function->getLine()
                             )
@@ -251,7 +251,7 @@ class ClassMethodChecker extends FunctionChecker
             // maybe it's an old-timey constructor
 
             $absolute_class = explode('::', $method_id)[0];
-            $class_name = array_pop(explode('\'', $absolute_class));
+            $class_name = array_pop(explode('\\', $absolute_class));
 
             $alt_method_id = $absolute_class . '::' . $class_name;
 
