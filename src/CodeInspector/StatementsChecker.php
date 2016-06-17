@@ -13,6 +13,7 @@ use CodeInspector\Issue\NullReference;
 use CodeInspector\Issue\ParentNotFound;
 use CodeInspector\Issue\PossiblyUndefinedVariable;
 use CodeInspector\Issue\InvalidArrayAssignment;
+use CodeInspector\Issue\InvalidArrayAccess;
 use CodeInspector\Issue\InvalidScope;
 use CodeInspector\Issue\InvalidStaticInvocation;
 use CodeInspector\Issue\InvalidStaticVariable;
@@ -1842,6 +1843,16 @@ class StatementsChecker
             return $type;
         }
 
+        foreach ($assignment_type->types as $at) {
+            if ($type->value === 'string' && $at->isString()) {
+                if (ExceptionHandler::accepts(
+                    new InvalidArrayAssignment('Cannot assign value on variable ' . $var_id . ' using string offset', $this->_file_name, $line_number)
+                )) {
+                    return false;
+                }
+            }
+        }
+
         if ($type->value !== 'array' && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
             if (ExceptionHandler::accepts(
                 new InvalidArrayAssignment('Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess', $this->_file_name, $line_number)
@@ -2818,14 +2829,47 @@ class StatementsChecker
         }
     }
 
+    /**
+     * @param  PhpParser\Node\Expr\ArrayDimFetch $stmt
+     * @param  array                             &$vars_in_scope
+     * @param  array                             &$vars_possibly_in_scope
+     * @return false|null
+     */
     protected function _checkArrayAccess(PhpParser\Node\Expr\ArrayDimFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope) === false) {
             return false;
         }
+
+        $var_type = null;
+
+        if (isset($stmt->var->inferredType)) {
+            $var_type = $stmt->var->inferredType;
+
+            if ($var_type instanceof Type\Generic) {
+                // create a union type to pass back to the statement
+                $array_type = $var_type->type_params[0] instanceof Type\Union ? $var_type->type_params[0] : new Type\Union([$var_type->type_params[0]]);
+                $stmt->inferredType = $array_type;
+            }
+        }
+
         if ($stmt->dim) {
             if ($this->_checkExpression($stmt->dim, $vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
+            }
+
+            if (isset($stmt->dim->inferredType) && $var_type && $var_type->isString()) {
+                foreach ($stmt->dim->inferredType->types as $at) {
+                    if ($at->isString()) {
+                        $var_id = self::getVarId($stmt->var);
+
+                        if (ExceptionHandler::accepts(
+                            new InvalidArrayAccess('Cannot access value on string variable ' . $var_id . ' using string offset', $this->_file_name, $stmt->getLine())
+                        )) {
+                            return false;
+                        }
+                    }
+                }
             }
         }
     }

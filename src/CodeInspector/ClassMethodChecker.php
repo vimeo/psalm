@@ -244,7 +244,20 @@ class ClassMethodChecker extends FunctionChecker
             return;
         }
 
-        $method = new \ReflectionMethod($method_id);
+        try {
+            $method = new \ReflectionMethod($method_id);
+        }
+        catch (\ReflectionException $e) {
+            // maybe it's an old-timey constructor
+
+            $absolute_class = explode('::', $method_id)[0];
+            $class_name = array_pop(explode('\'', $absolute_class));
+
+            $alt_method_id = $absolute_class . '::' . $class_name;
+
+            $method = new \ReflectionMethod($alt_method_id);
+        }
+
         self::$_have_reflected[$method_id] = true;
 
         self::$_static_methods[$method_id] = $method->isStatic();

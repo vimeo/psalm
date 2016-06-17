@@ -291,6 +291,17 @@ abstract class Type
         }
     }
 
+    public function isString()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'string';
+        }
+
+        if ($this instanceof Union) {
+            return count($this->types) === 1 && isset($this->types['string']);
+        }
+    }
+
     public function isVoid()
     {
         if ($this instanceof Atomic) {

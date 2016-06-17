@@ -16,7 +16,6 @@ class ExceptionHandler
             throw new CodeException($e->getMessage());
         }
 
-        echo get_class($e) . PHP_EOL;
         echo $e->getMessage() . PHP_EOL;
 
         return true;

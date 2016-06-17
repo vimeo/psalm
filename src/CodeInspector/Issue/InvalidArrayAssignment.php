@@ -2,6 +2,6 @@
 
 namespace CodeInspector\Issue;
 
-class InvalidArrayAssignment extends CodeIssue
+class InvalidArrayAssignment extends CodeArray
 {
 }
