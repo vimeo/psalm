@@ -2217,14 +2217,14 @@ class StatementsChecker
 
     protected static function _fleshOutReturnTypes(Type\Union $return_type, array $args, $method_id)
     {
-        foreach ($return_type->types as $return_type_part) {
-            $return_type_part = self::_fleshOutAtomicReturnType($return_type_part, $args, $method_id);
+        foreach ($return_type->types as &$return_type_part) {
+            self::_fleshOutAtomicReturnType($return_type_part, $args, $method_id);
         }
 
         return $return_type;
     }
 
-    protected static function _fleshOutAtomicReturnType(Type\Atomic $return_type, array $args, $method_id)
+    protected static function _fleshOutAtomicReturnType(Type\Atomic &$return_type, array $args, $method_id)
     {
         if ($return_type->value === '$this' || $return_type->value === 'static') {
             $absolute_class = explode('::', $method_id)[0];
@@ -2245,7 +2245,7 @@ class StatementsChecker
             }
 
             if ($return_type->value[0] === '$') {
-                $return_type = Type::getMixed();
+                $return_type = Type::getMixed(false);
             }
         }
 
