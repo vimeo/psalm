@@ -2516,15 +2516,33 @@ class StatementsChecker
 
         $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
 
-        if ($stmt->if) {
-            $t_if_vars_in_scope = TypeChecker::reconcileKeyedTypes($if_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
+        $if_return_type = null;
 
-            if ($t_if_vars_in_scope === false) {
+        $t_if_vars_in_scope = TypeChecker::reconcileKeyedTypes($if_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
+
+        if ($t_if_vars_in_scope === false) {
+            return false;
+        }
+
+        if ($stmt->if) {
+            if ($this->_checkExpression($stmt->if, $t_if_vars_in_scope, $vars_possibly_in_scope) === false) {
                 return false;
             }
 
-            if ($this->_checkExpression($stmt->if, $t_if_vars_in_scope, $vars_possibly_in_scope) === false) {
-                return false;
+            $if_return_type = isset($stmt->if->inferredType) ? $stmt->if->inferredType : Type::getMixed();
+        }
+        else {
+            if (isset($stmt->cond->inferredType)) {
+                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, $this->_file_name, $stmt->getLine());
+
+                if ($if_return_type_reconciled === false) {
+                    return false;
+                }
+
+                $if_return_type = $if_return_type_reconciled;
+            }
+            else {
+                $if_return_type = Type::getMixed();
             }
         }
 
