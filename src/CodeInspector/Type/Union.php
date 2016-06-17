@@ -7,7 +7,7 @@ use CodeInspector\Type;
 class Union extends Type
 {
     /** @var array<Type> */
-    public $types;
+    public $types = [];
 
     /**
      * Constructs an Union instance
@@ -15,7 +15,9 @@ class Union extends Type
      */
     public function __construct(array $types)
     {
-        $this->types = $types;
+        foreach ($types as $type) {
+            $this->types[$type->value] = $type;
+        }
     }
 
     public function __clone()
@@ -36,5 +38,21 @@ class Union extends Type
                 $this->types
             )
         );
+    }
+
+    public function removeType($type_string) {
+        unset($this->types[$type_string]);
+    }
+
+    public function hasType($type_string) {
+        return isset($this->types[$type_string]);
+    }
+
+    public function removeObjects() {
+        foreach ($this->types as $key => $type) {
+            if ($key[0] === strtoupper($key[0])) {
+                unset($this->types[$key]);
+            }
+        }
     }
 }

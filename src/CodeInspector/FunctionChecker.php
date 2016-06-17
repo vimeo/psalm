@@ -78,7 +78,7 @@ class FunctionChecker implements StatementsSource
                     $param_type = new Type\Union([new Type\Atomic($param_class)]);
 
                     if ($is_nullable) {
-                        $param_type->types[] = Type::getNull(false);
+                        $param_type->types['null'] = Type::getNull(false);
                     }
 
                     $vars_in_scope[$param->name] = $param_type;

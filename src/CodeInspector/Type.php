@@ -276,7 +276,7 @@ abstract class Type
         }
 
         if ($this instanceof Union) {
-            return $this->types[0]->isMixed();
+            return isset($this->types['mixed']);
         }
     }
 
@@ -287,7 +287,7 @@ abstract class Type
         }
 
         if ($this instanceof Union) {
-            return $this->types[0]->isNull();
+            return count($this->types) === 1 && isset($this->types['null']);
         }
     }
 
@@ -298,22 +298,18 @@ abstract class Type
         }
 
         if ($this instanceof Union) {
-            return $this->types[0]->isVoid();
+            return isset($this->types['void']);
         }
     }
 
     public function isNullable()
     {
         if ($this instanceof Atomic) {
-            return $this->value === 'mixed';
+            return $this->value === 'null';
         }
 
         if ($this instanceof Union) {
-            foreach ($this->types as $type) {
-                if ($type->value === 'null') {
-                    return true;
-                }
-            }
+            return isset($this->types['null']);
         }
 
         return false;
@@ -339,7 +335,7 @@ abstract class Type
      */
     public static function combineUnionTypes(Union $type_1, Union $type_2)
     {
-        return self::combineTypes(array_merge($type_1->types, $type_2->types));
+        return self::combineTypes(array_merge(array_values($type_1->types), array_values($type_2->types)));
     }
 
     /**

@@ -1353,10 +1353,18 @@ class StatementsChecker
 
         foreach ($stmt->catches as $catch) {
             $catch_vars_in_scope = array_merge([], $vars_in_scope);
-            $vars_in_scope[$catch->var] = new Type\Union([
-                new Type\Atomic(ClassChecker::getAbsoluteClassFromName($catch->type, $this->_namespace, $this->_aliased_classes))
-            ]);
+
+            if ($catch->type) {
+                $catch_vars_in_scope[$catch->var] = new Type\Union([
+                    new Type\Atomic(ClassChecker::getAbsoluteClassFromName($catch->type, $this->_namespace, $this->_aliased_classes))
+                ]);
+            }
+            else {
+                $catch_vars_in_scope[$catch->var] = Type::getMixed();
+            }
+
             $vars_possibly_in_scope[$catch->var] = true;
+
             $this->registerVariable($catch->var, $catch->getLine());
 
             if ($this->_check_classes) {
@@ -1368,7 +1376,7 @@ class StatementsChecker
             $this->check($catch->stmts, $catch_vars_in_scope, $vars_possibly_in_scope);
 
             foreach ($catch_vars_in_scope as $catch_var => $type) {
-                if (isset($vars_in_scope[$catch_var]) && (string) $vars_in_scope[$catch_var] !== (string) $type) {
+                if ($catch->var !== $catch_var && isset($vars_in_scope[$catch_var]) && (string) $vars_in_scope[$catch_var] !== (string) $type) {
                     $vars_in_scope[$catch_var] = Type::combineUnionTypes($vars_in_scope[$catch_var], $type);
                 }
             }
@@ -1526,6 +1534,15 @@ class StatementsChecker
             $while_vars = array_merge([], $vars_in_scope);
         }
         else {
+            // if the while is an assignment, it cannot be empty
+            if ($stmt->cond instanceof PhpParser\Node\Expr\Assign) {
+                $var_id = self::_getVarId($stmt->cond->var);
+
+                if (isset($while_vars[$var_id])) {
+                    $while_vars[$var_id] = TypeChecker::reconcileTypes('!empty', $while_vars[$var_id]);
+                }
+            }
+
             $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($while_types, $while_vars, $this->_file_name, $stmt->getLine());
 
             if ($while_vars_in_scope_reconciled === false) {
@@ -1660,6 +1677,7 @@ class StatementsChecker
         }
 
         $type_in_comments = null;
+        $type_in_comments_var_id = null;
         $doc_comment = $stmt->getDocComment();
 
         if ($doc_comment) {
@@ -1668,17 +1686,31 @@ class StatementsChecker
             if ($comments && isset($comments['specials']['var'][0])) {
                 $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
 
-                if ($var_parts && (count($var_parts) === 1 || $var_parts[1][0] !== '$')) {
+                if ($var_parts) {
                     $type_in_comments = $var_parts[0];
 
                     if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
                         $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
+                    }
+
+                    // support PHPStorm-style docblocks like
+                    // @var Type $variable
+                    if (count($var_parts) > 1 && $var_parts[1][0] === '$') {
+                        $type_in_comments_var_id = substr($var_parts[1], 1);
                     }
                 }
             }
         }
 
         $var_id = self::_getVarId($stmt->var);
+
+        if ($type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
+            if (isset($vars_in_scope[$type_in_comments_var_id])) {
+                $vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
+            }
+
+            $type_in_comments = null;
+        }
 
         if ($type_in_comments) {
             $return_type = Type::parseString($type_in_comments);
@@ -2415,6 +2447,7 @@ class StatementsChecker
     protected function _checkReturn(PhpParser\Node\Stmt\Return_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
     {
         $type_in_comments = null;
+        $type_in_comments_var_id = null;
         $doc_comment = $stmt->getDocComment();
 
         if ($doc_comment) {
@@ -2423,14 +2456,28 @@ class StatementsChecker
             if ($comments && isset($comments['specials']['var'][0])) {
                 $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
 
-                if ($var_parts && (count($var_parts) === 1 || $var_parts[1][0] !== '$')) {
+                if ($var_parts) {
                     $type_in_comments = $var_parts[0];
 
                     if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
                         $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
                     }
+
+                    // support PHPStorm-style docblocks like
+                    // @var Type $variable
+                    if (count($var_parts) > 1 && $var_parts[1][0] === '$') {
+                        $type_in_comments_var_id = substr($var_parts[1], 1);
+                    }
                 }
             }
+        }
+
+        if ($type_in_comments_var_id) {
+            if (isset($vars_in_scope[$type_in_comments_var_id])) {
+                $vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
+            }
+
+            $type_in_comments = null;
         }
 
         if ($stmt->expr) {
@@ -2665,10 +2712,6 @@ class StatementsChecker
 
             if (isset($method_params[$argument_offset])) {
                 $param_type = $method_params[$argument_offset]['type'];
-
-                if (!$param_type) {
-                    return;
-                }
 
                 if ($param_type->isMixed()) {
                     return;

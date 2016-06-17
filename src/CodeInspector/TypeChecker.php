@@ -472,15 +472,19 @@ class TypeChecker
                 continue;
             }
 
-            $existing_var_types = isset($existing_types[$key]) ? explode('|', $existing_types[$key]) : [];
-
-            $result_type = self::reconcileTypes((string) $new_types[$key], $existing_var_types, $key, $file_name, $line_number);
+            $result_type = self::reconcileTypes(
+                (string) $new_types[$key],
+                isset($existing_types[$key]) ? $existing_types[$key] : null,
+                $key,
+                $file_name,
+                $line_number
+            );
 
             if ($result_type === false) {
                 return false;
             }
 
-            $result_types[$key] = Type::parseString($result_type);
+            $result_types[$key] = $result_type;
         }
 
         return $result_types;
@@ -495,86 +499,81 @@ class TypeChecker
      * notEmpty(Object|null) => Object,
      * notEmpty(Object|false) => Object
      *
-     * @param  string $new_var_type
-     * @param  array  $existing_var_types
-     * @param  string $key
-     * @param  string $file_name
-     * @param  int    $line_number
-     * @return string|false
+     * @param  string       $new_var_type
+     * @param  Type\Union   $existing_var_types
+     * @param  string       $key
+     * @param  string       $file_name
+     * @param  int          $line_number
+     * @return Type\Union|false
      */
-    public static function reconcileTypes($new_var_type, array $existing_var_types, $key = null, $file_name = null, $line_number = null)
+    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type = null, $key = null, $file_name = null, $line_number = null)
     {
         $result_var_types = null;
 
-        if ($new_var_type === 'mixed' && $existing_var_types === ['mixed']) {
-            return 'mixed';
+        if (!$existing_var_type) {
+            return Type::getMixed();
         }
 
-        if (empty($existing_var_types)) {
-            return 'mixed';
+        if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
+            return $existing_var_type;
         }
 
-        $existing_var_types = array_flip($existing_var_types);
+        if ($new_var_type === 'null') {
+            return Type::getNull();
+        }
 
         if ($new_var_type[0] === '!') {
-            if (!$existing_var_types) {
-                // possibly undefined variable
-                return 'mixed';
-            }
-
-            if ($new_var_type === '!empty' || $new_var_type === '!null') {
-                unset($existing_var_types['null']);
+            if (in_array($new_var_type, ['!empty', '!null'])) {
+                $existing_var_type->removeType('null');
 
                 if ($new_var_type === '!empty') {
-                    unset($existing_var_types['false']);
+                    $existing_var_type->removeType('false');
                 }
 
-                if (empty($existing_var_types)) {
+                if (empty($existing_var_type->types)) {
                     // @todo - I think there's a better way to handle this, but for the moment
                     // mixed will have to do.
-                    return 'mixed';
+                    return Type::getMixed();
                 }
 
-                return implode('|', self::reduceTypes(array_keys($existing_var_types)));
+                return $existing_var_type;
             }
 
             $negated_type = substr($new_var_type, 1);
 
-            unset($existing_var_types[$negated_type]);
+            $existing_var_type->removeType($negated_type);
 
-            if (empty($existing_var_types)) {
+            if (empty($existing_var_type->types)) {
                 if ($key) {
                     if (ExceptionHandler::accepts(
                         new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number)
                     )) {
                         return false;
                     }
+
+                    return Type::getMixed();
                 }
             }
 
-            return implode('|', self::reduceTypes(array_keys($existing_var_types)));
+            return $existing_var_type;
         }
 
-        if ($existing_var_types && $new_var_type === 'empty') {
-            if (isset($existing_var_types['bool'])) {
-                unset($existing_var_types['bool']);
-                $existing_var_types['false'] = true;
+        if ($new_var_type === 'empty') {
+            if ($existing_var_type->hasType('bool')) {
+                $existing_var_type->removeType('bool');
+                $existing_var_type->types['false'] = Type::getFalse();
             }
 
-            foreach (array_keys($existing_var_types) as $type) {
-                if ($type[0] === strtoupper($type[0])) {
-                    unset($existing_var_types[$type]);
-                }
+            $existing_var_type->removeObjects();
+
+            if (empty($existing_var_type->types)) {
+                return Type::getNull();
             }
 
-            if (empty($existing_var_types)) {
-                return 'null';
-            }
-
-            return implode('|', self::reduceTypes(array_keys($existing_var_types)));
+            return $existing_var_type;
         }
 
-        return $new_var_type;
+        return Type::parseString($new_var_type);
     }
 
     public static function isNegation($type, $existing_type)
