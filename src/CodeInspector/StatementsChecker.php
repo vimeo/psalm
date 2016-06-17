@@ -952,7 +952,7 @@ class StatementsChecker
             }
 
             foreach ($stmt->uses as $use) {
-                $use_vars[$use->var] = isset($vars_in_scope[$use->var]) ? $vars_in_scope[$use->var] : 'mixed';
+                $use_vars[$use->var] = isset($vars_in_scope[$use->var]) ? $vars_in_scope[$use->var] : Type::getMixed();
                 $use_vars_possibly_in_scope[$use->var] = true;
             }
 
