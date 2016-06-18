@@ -57,7 +57,6 @@ class StatementsChecker
 
     protected static $_existing_static_vars = [];
     protected static $_existing_properties = [];
-    protected static $_check_string_fn = null;
     protected static $_mock_interfaces = [];
 
     public function __construct(StatementsSource $source, $enforce_variable_checks = false, $check_methods = true)
@@ -81,6 +80,14 @@ class StatementsChecker
         $this->_type_checker = new TypeChecker($source, $this);
     }
 
+    /**
+     * Checks an array of statements for validity
+     *
+     * @param  array<PhpParser\Node>        $stmts
+     * @param  array<Type\Union>            &$vars_in_scope
+     * @param  array                        &$vars_possibly_in_scope
+     * @return null|false
+     */
     public function check(array $stmts, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope = [])
     {
         $has_returned = false;
@@ -94,6 +101,12 @@ class StatementsChecker
         }
 
         foreach ($stmts as $stmt) {
+            foreach (Config::getInstance()->getPlugins() as $plugin) {
+                if ($plugin->checkStatement($stmt, $vars_in_scope, $vars_possibly_in_scope, $this->_file_name) === false) {
+                    return false;
+                }
+            }
+
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)) {
                 echo('Warning: Expressions after return/throw/continue in ' . $this->_file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
                 break;
@@ -819,6 +832,13 @@ class StatementsChecker
      */
     protected function _checkExpression(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope = [], $array_assignment = false)
     {
+        foreach (Config::getInstance()->getPlugins() as $plugin) {
+
+            if ($plugin->checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope, $this->_file_name) === false) {
+                return false;
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             return $this->_checkVariable($stmt, $vars_in_scope, $vars_possibly_in_scope, null, -1, $array_assignment);
 
@@ -838,9 +858,6 @@ class StatementsChecker
             return $this->_checkConstFetch($stmt);
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            if (self::$_check_string_fn) {
-                call_user_func(self::$_check_string_fn, $stmt, $this->_file_name);
-            }
             $stmt->inferredType = Type::getString();
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
@@ -3148,13 +3165,6 @@ class StatementsChecker
         catch (\ReflectionException $e) {
             return false;
         }
-    }
-
-
-
-    public static function customCheckString(callable $function)
-    {
-        self::$_check_string_fn = $function;
     }
 
     /**

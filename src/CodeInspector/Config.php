@@ -22,6 +22,12 @@ class Config
 
     protected $mock_classes = [];
 
+    /**
+     * CodeInspector plugins
+     * @var array<Plugin>
+     */
+    protected $plugins = [];
+
     private function __construct()
     {
         self::$_config = $this;
@@ -60,6 +66,24 @@ class Config
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = $mock_class['name'];
+            }
+        }
+
+        // this plugin loading system borrows heavily from etsy/phan
+        if (isset($config_xml->plugins) && isset($config_xml->plugins->plugin)) {
+            foreach ($config_xml->plugins->plugin as $plugin) {
+                $plugin_file_name = $plugin['filename'];
+                $loaded_plugin = require($config->base_dir . $plugin_file_name);
+
+                if (!$loaded_plugin) {
+                    throw new \InvalidArgumentException('Plugins must return an instance of that plugin at the end of the file - ' . $plugin_file_name . ' does not');
+                }
+
+                if (!($loaded_plugin instanceof Plugin)) {
+                    throw new \InvalidArgumentException('Plugins must extend \CodeInspector\Plugin - ' . $plugin_file_name . ' does not');
+                }
+
+                $config->plugins[] = $loaded_plugin;
             }
         }
 
@@ -124,5 +148,10 @@ class Config
     public function getMockClasses()
     {
         return $this->mock_classes;
+    }
+
+    public function getPlugins()
+    {
+        return $this->plugins;
     }
 }

@@ -43,9 +43,7 @@ class FileChecker implements StatementsSource
 
     public function check($check_classes = true, $check_class_statements = true)
     {
-        $stmts = $this->_preloaded_statements ?
-                    $this->_preloaded_statements :
-                    self::getStatements($this->_real_file_name);
+        $stmts = $this->getStatements();
 
         $leftover_stmts = [];
 
@@ -127,7 +125,17 @@ class FileChecker implements StatementsSource
     /**
      * @return array<\PhpParser\Node>
      */
-    public static function getStatements($file_name)
+    protected function getStatements()
+    {
+        return $this->_preloaded_statements ?
+                    $this->_preloaded_statements :
+                    self::getStatementsForFile($this->_real_file_name);
+    }
+
+    /**
+     * @return array<\PhpParser\Node>
+     */
+    public static function getStatementsForFile($file_name)
     {
         $contents = file_get_contents($file_name);
 
