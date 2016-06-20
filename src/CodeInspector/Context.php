@@ -8,6 +8,8 @@ class Context
 
     public $vars_possibly_in_scope = [];
 
+    public $in_loop = false;
+
     public function __clone()
     {
         foreach ($this->vars_in_scope as $key => &$type) {

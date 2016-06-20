@@ -1189,6 +1189,7 @@ class StatementsChecker
     protected function _checkFor(PhpParser\Node\Stmt\For_ $stmt, Context $context)
     {
         $for_context = clone $context;
+        $for_context->in_loop = true;
 
         foreach ($stmt->init as $init) {
             if ($this->_checkExpression($init, $for_context) === false) {
@@ -1208,7 +1209,7 @@ class StatementsChecker
             }
         }
 
-        $this->check($stmt->stmts, $for_context);
+        $this->check($stmt->stmts, $for_context, $for_context->vars_possibly_in_scope);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -1234,6 +1235,7 @@ class StatementsChecker
         }
 
         $foreach_context = clone $context;
+        $foreach_context->in_loop = true;
 
         if ($stmt->keyVar) {
             $foreach_context->vars_in_scope[$stmt->keyVar->name] = Type::getMixed();
@@ -1293,7 +1295,7 @@ class StatementsChecker
             $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
         }
 
-        $this->check($stmt->stmts, $foreach_context);
+        $this->check($stmt->stmts, $foreach_context, $foreach_context->vars_possibly_in_scope);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
