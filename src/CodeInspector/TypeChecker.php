@@ -65,6 +65,10 @@ class TypeChecker
             else if ($var_name = StatementsChecker::getVarId($conditional->expr)) {
                 $if_types[$var_name] = 'empty';
             }
+            else if ($conditional->expr instanceof PhpParser\Node\Expr\Assign) {
+                $var_name = StatementsChecker::getVarId($conditional->expr->var);
+                $if_types[$var_name] = 'empty';
+            }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
                 $null_position = self::_hasNullVariable($conditional->expr);
                 $false_position = self::_hasNullVariable($conditional->expr);

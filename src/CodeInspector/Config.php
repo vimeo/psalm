@@ -194,4 +194,9 @@ class Config
     {
         return $this->plugins;
     }
+
+    public function setIssueHandler($issue_name, FileFilter $filter = null)
+    {
+        $this->issue_handlers[$issue_name] = $filter;
+    }
 }

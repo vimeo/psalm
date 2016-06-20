@@ -93,10 +93,10 @@ class FileFilter
             if (strpos($file_name, $exclude_dir) === 0) {
                 return false;
             }
+        }
 
-            if (in_array($file_name, $this->exclude_files)) {
-                return false;
-            }
+        if (in_array($file_name, $this->exclude_files)) {
+            return false;
         }
 
         return true;
@@ -120,5 +120,15 @@ class FileFilter
     public function getExcludeFiles()
     {
         return $this->exclude_files;
+    }
+
+    public function makeExclusive()
+    {
+        $this->inclusive = false;
+    }
+
+    public function addExcludeFile($file_name)
+    {
+        $this->exclude_files[] = $file_name;
     }
 }

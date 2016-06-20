@@ -291,6 +291,7 @@ class StatementsChecker
         }
 
         $old_if_context = clone $if_context;
+        $context->vars_possibly_in_scope = array_merge($if_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
         if ($this->check($stmt->stmts, $if_context, $for_vars_possibly_in_scope) === false) {
             return false;
@@ -326,7 +327,7 @@ class StatementsChecker
                 $context->update($old_if_context, $if_context, $has_leaving_statments, $updated_vars);
             }
 
-            $has_ending_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, false, false);
+            $has_ending_statments = ScopeChecker::doesReturnOrThrow($stmt->stmts);
 
             if (!$has_ending_statments) {
                 $vars = array_diff_key($if_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
@@ -438,7 +439,7 @@ class StatementsChecker
                 }
 
                 // has a return/throw at end
-                $has_ending_statments = ScopeChecker::doesLeaveBlock($elseif->stmts, false, false);
+                $has_ending_statments = ScopeChecker::doesReturnOrThrow($elseif->stmts);
 
                 if (!$has_ending_statments) {
                     $vars = array_diff_key($elseif_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
@@ -526,7 +527,7 @@ class StatementsChecker
                 }
 
                 // has a return/throw at end
-                $has_ending_statments = ScopeChecker::doesLeaveBlock($stmt->else->stmts, false, false);
+                $has_ending_statments = ScopeChecker::doesReturnOrThrow($stmt->else->stmts);
 
                 if (!$has_ending_statments) {
                     $vars = array_diff_key($else_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
@@ -1139,8 +1140,11 @@ class StatementsChecker
 
     protected function _checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, Context $context)
     {
-        $original_context = clone $context;
         $this->check($stmt->stmts, $context);
+
+        // clone context for catches after running the try block, as
+        // we optimistically assume it only failed at the very end
+        $original_context = clone $context;
 
         foreach ($stmt->catches as $catch) {
             $catch_context = clone $original_context;
@@ -1166,10 +1170,14 @@ class StatementsChecker
 
             $this->check($catch->stmts, $catch_context);
 
-            foreach ($catch_context->vars_in_scope as $catch_var => $type) {
-                if ($catch->var !== $catch_var && isset($context->vars_in_scope[$catch_var]) && (string) $context->vars_in_scope[$catch_var] !== (string) $type) {
-                    $context->vars_in_scope[$catch_var] = Type::combineUnionTypes($context->vars_in_scope[$catch_var], $type);
+            if (!ScopeChecker::doesReturnOrThrow($catch->stmts, false, false)) {
+                foreach ($catch_context->vars_in_scope as $catch_var => $type) {
+                    if ($catch->var !== $catch_var && isset($context->vars_in_scope[$catch_var]) && (string) $context->vars_in_scope[$catch_var] !== (string) $type) {
+                        $context->vars_in_scope[$catch_var] = Type::combineUnionTypes($context->vars_in_scope[$catch_var], $type);
+                    }
                 }
+
+                $context->vars_possibly_in_scope = array_merge($catch_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
             }
         }
 
@@ -1341,21 +1349,22 @@ class StatementsChecker
                 $context->vars_in_scope[$var] = $while_context->vars_in_scope[$var];
             }
 
-            if ($while_context->vars_in_scope[$var] !== $type) {
-                $context->vars_in_scope[$var]->types = array_merge($context->vars_in_scope[$var]->types, $while_context->vars_in_scope[$var]->types);
+            if ((string) $while_context->vars_in_scope[$var] !== (string) $type) {
+                $context->vars_in_scope[$var] = Type::combineUnionTypes($while_context->vars_in_scope[$var], $type);
             }
         }
+
+        $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $while_context->vars_possibly_in_scope);
     }
 
     protected function _checkDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
-        $do_context = clone $context;
-
-        if ($this->check($stmt->stmts, $do_context) === false) {
+        // do not clone context for do, because it executes in current scope always
+        if ($this->check($stmt->stmts, $context) === false) {
             return false;
         }
 
-        return $this->_checkCondition($stmt->cond, $do_context);
+        return $this->_checkCondition($stmt->cond, $context);
     }
 
     protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, Context $context, $nesting = 0)
@@ -1378,12 +1387,33 @@ class StatementsChecker
                 return false;
             }
 
-            $new_context = clone $context;
-            $new_context->vars_in_scope = $op_vars_in_scope;
+            $op_context = clone $context;
+            $op_context->vars_in_scope = $op_vars_in_scope;
 
-            if ($this->_checkExpression($stmt->right, $new_context) === false) {
+            if ($this->_checkExpression($stmt->right, $op_context) === false) {
                 return false;
             }
+
+            foreach ($op_context->vars_in_scope as $var => $type) {
+                if (!isset($context->vars_in_scope[$var])) {
+                    $context->vars_in_scope[$var] = $type;
+                    continue;
+                }
+
+                if ($type->isMixed()) {
+                    continue;
+                }
+
+                if ($context->vars_in_scope[$var]->isMixed()) {
+                    $context->vars_in_scope[$var] = $op_context->vars_in_scope[$var];
+                }
+
+                if ((string) $op_context->vars_in_scope[$var] !== (string) $type) {
+                    $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $op_context->vars_in_scope[$var]);
+                }
+            }
+
+            $context->vars_possibly_in_scope = array_merge($op_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
         }
         else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             $left_type_assertions = $this->_type_checker->getTypeAssertions($stmt->left, true);
@@ -1402,12 +1432,14 @@ class StatementsChecker
                 return false;
             }
 
-            $new_context = clone $context;
-            $new_context->vars_in_scope = $op_vars_in_scope;
+            $op_context = clone $context;
+            $op_context->vars_in_scope = $op_vars_in_scope;
 
-            if ($this->_checkExpression($stmt->right, $new_context) === false) {
+            if ($this->_checkExpression($stmt->right, $op_context) === false) {
                 return false;
             }
+
+            $context->vars_possibly_in_scope = array_merge($op_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
         }
         else {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -2447,7 +2479,7 @@ class StatementsChecker
                 $last_stmt = $case->stmts[count($case->stmts) - 1];
 
                 // has a return/throw at end
-                $has_ending_statments = ScopeChecker::doesLeaveBlock($case->stmts, false, false);
+                $has_ending_statments = ScopeChecker::doesReturnOrThrow($case->stmts);
 
                 if (!$has_ending_statments) {
                     $vars = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
