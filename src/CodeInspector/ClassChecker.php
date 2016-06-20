@@ -125,11 +125,16 @@ class ClassChecker implements StatementsSource
             (new StatementsChecker($this))->check($leftover_stmts, $context);
         }
 
+        $config = Config::getInstance();
+
         if ($check_statements) {
             // do the method checks after all class methods have been initialised
             foreach ($method_checkers as $method_checker) {
                 $method_checker->check(new Context());
-                $method_checker->checkReturnTypes();
+
+                if (!$config->excludeIssueInFile('CodeInspector\Issue\InvalidReturnType', $this->_file_name)) {
+                    $method_checker->checkReturnTypes();
+                }
             }
         }
 
