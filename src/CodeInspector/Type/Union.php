@@ -61,6 +61,10 @@ class Union extends Type
 
     public function substitute(Union $old_type, Union $new_type = null)
     {
+        if ($this->isMixed()) {
+            return;
+        }
+
         foreach ($old_type->types as $old_type_part) {
             $this->removeType($old_type_part->value);
         }
