@@ -1476,7 +1476,12 @@ class StatementsChecker
 
     protected function _checkAssignment(PhpParser\Node\Expr\Assign $stmt, Context $context)
     {
+        $var_id = self::getVarId($stmt->var);
+
         if ($this->_checkExpression($stmt->expr, $context) === false) {
+            // if we're not exiting immediately, make everything mixed
+            $context->vars_in_scope[$var_id] = Type::getMixed();
+
             return false;
         }
 
@@ -1505,8 +1510,6 @@ class StatementsChecker
                 }
             }
         }
-
-        $var_id = self::getVarId($stmt->var);
 
         if ($type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
             if (isset($context->vars_in_scope[$type_in_comments_var_id])) {
