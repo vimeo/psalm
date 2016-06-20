@@ -11,10 +11,17 @@ use PHPUnit_Framework_TestCase;
 class ScopeTest extends PHPUnit_Framework_TestCase
 {
     protected static $_parser;
+    protected static $_file_filter;
 
     public static function setUpBeforeClass()
     {
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+
+        $filter = new \CodeInspector\Config\FileFilter();
+        $filter->addExcludeFile('somefile.php');
+        $filter->makeExclusive();
+
+        self::$_file_filter = $filter;
     }
 
     public function setUp()
@@ -105,11 +112,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        $filter = new \CodeInspector\Config\FileFilter();
-        $filter->addExcludeFile('somefile.php');
-        $filter->makeExclusive();
-
-        \CodeInspector\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', $filter);
+        \CodeInspector\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
 
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
@@ -270,6 +273,25 @@ class ScopeTest extends PHPUnit_Framework_TestCase
             echo $matches[0];
         }
         ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testPossiblyUndefinedVariableInForeachAndIf()
+    {
+        $stmts = self::$_parser->parse('<?php
+        foreach ([1,2,3,4] as $i) {
+            if ($i === 1) {
+                $a = true;
+                break;
+            }
+        }
+
+        echo $a;
+        ');
+
+        \CodeInspector\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
 
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
