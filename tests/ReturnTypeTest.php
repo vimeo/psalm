@@ -153,4 +153,25 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $this->assertSame('One|null', (string) $return_stmt->inferredType);
     }
+
+    public function testTryCatchReturnType()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return bool */
+            public function foo() {
+                try {
+                    // do a thing
+                    return true;
+                }
+                catch (\Exception $e) {
+                    throw $e;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }
