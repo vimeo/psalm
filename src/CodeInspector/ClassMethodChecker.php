@@ -135,6 +135,10 @@ class ClassMethodChecker extends FunctionChecker
                     }
 
                     if ($truly_different) {
+                        if ($inferred_return_type->isNull()) {
+                            $inferred_return_type = Type::getVoid();
+                        }
+
                         if (ExceptionHandler::accepts(
                             new InvalidReturnType(
                                 'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
