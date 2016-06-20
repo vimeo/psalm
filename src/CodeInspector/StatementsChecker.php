@@ -1401,18 +1401,6 @@ class StatementsChecker
                     $context->vars_in_scope[$var] = $type;
                     continue;
                 }
-
-                if ($type->isMixed()) {
-                    continue;
-                }
-
-                if ($context->vars_in_scope[$var]->isMixed()) {
-                    $context->vars_in_scope[$var] = $op_context->vars_in_scope[$var];
-                }
-
-                if ((string) $op_context->vars_in_scope[$var] !== (string) $type) {
-                    $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $op_context->vars_in_scope[$var]);
-                }
             }
 
             $context->vars_possibly_in_scope = array_merge($op_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
