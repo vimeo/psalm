@@ -723,7 +723,9 @@ class StatementsChecker
                     ClassChecker::getThisClass() :
                     $this->_absolute_class;
 
-                $use_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this_class)]);
+                if ($this_class) {
+                    $use_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this_class)]);
+                }
             }
 
             foreach ($context->vars_in_scope as $var => $type) {
@@ -1198,9 +1200,7 @@ class StatementsChecker
             }
         }
 
-        $for_vars_possibly_in_scope = [];
-
-        $this->check($stmt->stmts, $for_context, $for_vars_possibly_in_scope);
+        $this->check($stmt->stmts, $for_context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -1216,7 +1216,7 @@ class StatementsChecker
             }
         }
 
-        $context->vars_possibly_in_scope = array_merge($for_vars_possibly_in_scope, $context->vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge($for_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
     }
 
     protected function _checkForeach(PhpParser\Node\Stmt\Foreach_ $stmt, Context $context)
@@ -1225,11 +1225,11 @@ class StatementsChecker
             return false;
         }
 
-        $foreach_vars = [];
+        $foreach_context = clone $context;
 
         if ($stmt->keyVar) {
-            $foreach_vars[$stmt->keyVar->name] = Type::getMixed();
-            $context->vars_possibly_in_scope[$stmt->keyVar->name] = true;
+            $foreach_context->vars_in_scope[$stmt->keyVar->name] = Type::getMixed();
+            $foreach_context->vars_possibly_in_scope[$stmt->keyVar->name] = true;
             $this->registerVariable($stmt->keyVar->name, $stmt->getLine());
         }
 
@@ -1238,7 +1238,7 @@ class StatementsChecker
 
             $var_id = self::getVarId($stmt->expr);
 
-            $iterator_type = isset($context->vars_in_scope[$var_id]) ? $context->vars_in_scope[$var_id] : null;
+            $iterator_type = isset($foreach_context->vars_in_scope[$var_id]) ? $foreach_context->vars_in_scope[$var_id] : null;
 
             if ($iterator_type) {
                 foreach ($iterator_type->types as $return_type) {
@@ -1280,19 +1280,12 @@ class StatementsChecker
                 }
             }
 
-            $foreach_vars[$stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
-            $context->vars_possibly_in_scope[$stmt->valueVar->name] = true;
+            $foreach_context->vars_in_scope[$stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
+            $foreach_context->vars_possibly_in_scope[$stmt->valueVar->name] = true;
             $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
         }
 
-        $foreach_vars = array_merge($context->vars_in_scope, $foreach_vars);
-
-        $foreach_vars_possibly_in_scope = [];
-
-        $foreach_context = clone $context;
-        $foreach_context->vars_in_scope = $foreach_vars;
-
-        $this->check($stmt->stmts, $foreach_context, $foreach_vars_possibly_in_scope);
+        $this->check($stmt->stmts, $foreach_context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -1300,7 +1293,7 @@ class StatementsChecker
             }
 
             if ($foreach_context->vars_in_scope[$var]->isMixed()) {
-                $context->vars_in_scope[$var] = $foreach_vars[$var];
+                $context->vars_in_scope[$var] = $foreach_context->vars_in_scope[$var];
             }
 
             if ((string) $foreach_context->vars_in_scope[$var] !== (string) $type) {
@@ -1308,7 +1301,7 @@ class StatementsChecker
             }
         }
 
-        $context->vars_possibly_in_scope = array_merge($foreach_vars_possibly_in_scope, $context->vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge($foreach_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
     }
 
     protected function _checkWhile(PhpParser\Node\Stmt\While_ $stmt, Context $context)
@@ -1356,13 +1349,13 @@ class StatementsChecker
 
     protected function _checkDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
-        if ($this->check($stmt->stmts, $context) === false) {
+        $do_context = clone $context;
+
+        if ($this->check($stmt->stmts, $do_context) === false) {
             return false;
         }
 
-        $context->vars_in_scope_copy = array_merge([], $context->vars_in_scope);
-
-        return $this->_checkCondition($stmt->cond, $context->vars_in_scope_copy, $context->vars_possibly_in_scope);
+        return $this->_checkCondition($stmt->cond, $do_context);
     }
 
     protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, Context $context, $nesting = 0)

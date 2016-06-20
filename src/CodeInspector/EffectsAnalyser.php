@@ -28,7 +28,7 @@ class EffectsAnalyser
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                if ($stmt->inferredType) {
+                if (isset($stmt->inferredType)) {
                     $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
                 }
                 else {
