@@ -17,8 +17,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    public function setUp()
+    {
+        \CodeInspector\ClassMethodChecker::clearCache();
+    }
+
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodCall()
     {
@@ -125,7 +130,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodCallWithThis()
     {
@@ -203,7 +208,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodWithWrongIfGuard()
     {
@@ -274,7 +279,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuard()
     {
@@ -399,7 +404,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodWithWrongIfGuardBefore()
     {
@@ -452,7 +457,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuardBefore()
     {
@@ -524,6 +529,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
     public function testMethodWithMeaninglessCheck()
     {
         $stmts = self::$_parser->parse('<?php
@@ -546,7 +554,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodWithGuardedNestedIncompleteRedefinition()
     {
@@ -699,7 +707,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testNullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn()
     {
@@ -902,7 +910,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testVariableReassignmentInIfWithOutsideCall()
     {
@@ -994,7 +1002,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException CodeInspector\CodeException
+     * @expectedException CodeInspector\Exception\CodeException
      */
     public function testUnNegatableInstanceof()
     {
@@ -1029,55 +1037,66 @@ class TypeTest extends PHPUnit_Framework_TestCase
     public function testTypeAdjustment()
     {
         $stmts = self::$_parser->parse('<?php
-        class One {
-            public function foo(){
-                $var = 0;
+        $var = 0;
 
-                if (5 + 3 === 8) {
-                    $var = "hello";
-                }
-
-                return $var;
-            }
+        if (5 + 3 === 8) {
+            $var = "hello";
         }
+
+        echo $var;
         ');
 
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
-        $stmts = $file_checker->check();
+        $file_checker->check();
 
-        $method_stmts = $stmts[0]->stmts[0]->stmts;
+        $return_stmt = array_pop($stmts);
 
-        $return_stmt = array_pop($method_stmts);
-
-        $this->assertSame('int|string', (string) $return_stmt->inferredType);
+        $this->assertSame('int|string', (string) $return_stmt->exprs[0]->inferredType);
     }
 
     public function testTypeMixedAdjustment()
     {
         $stmts = self::$_parser->parse('<?php
-        class One {
-            public function foo(){
-                $var = 0;
+        $var = 0;
 
-                $arr = ["hello"];
+        $arr = ["hello"];
 
-                if (5 + 3 === 8) {
-                    $var = $arr[0];
-                }
-
-                return $var;
-            }
+        if (5 + 3 === 8) {
+            $var = $arr[0];
         }
+
+        echo $var;
         ');
 
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
-        $stmts = $file_checker->check();
+        $file_checker->check();
 
-        $method_stmts = $stmts[0]->stmts[0]->stmts;
+        $return_stmt = array_pop($stmts);
 
-        $return_stmt = array_pop($method_stmts);
+        $this->assertSame('mixed', (string) $return_stmt->exprs[0]->inferredType);
+    }
 
-        $this->assertSame('mixed', (string) $return_stmt->inferredType);
+    public function testTypeAdjustmentIfNull()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+        class B {}
+
+        $var = rand(0,10) > 5 ? new A : null;
+
+        if ($var === null) {
+            $var = new B;
+        }
+
+        echo $var;
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+
+        $return_stmt = array_pop($stmts);
+
+        $this->assertSame('A|B', (string) $return_stmt->exprs[0]->inferredType);
     }
 
     public function testSwitchVariableWithContinue()
@@ -1148,6 +1167,203 @@ class TypeTest extends PHPUnit_Framework_TestCase
                 }
             }
         }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testWrongParam()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+
+        class B {
+            public function bar(A $a) {}
+        }
+
+        $b = new B();
+        $b->bar(5);
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testPassingParam()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+
+        class B {
+            public function bar(A $a) {}
+        }
+
+        $b = new B();
+        $b->bar(new A);
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullToNullableParam()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+
+        class B {
+            public function bar(A $a = null) {}
+        }
+
+        $b = new B();
+        $b->bar(null);
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testIntToNullableObjectParam()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+
+        class B {
+            public function bar(A $a = null) {}
+        }
+
+        $b = new B();
+        $b->bar(5);
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testObjectToNullableObjectParam()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+
+        class B {
+            public function bar(A $a = null) {}
+        }
+
+        $b = new B();
+        $b->bar(new A);
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testParamCoercionWithBadArg()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+        class B extends A {
+            public function blab() {}
+        }
+
+        class C {
+            function foo(A $a) {
+                if ($a instanceof B) {
+                    $a->bar();
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testParamCoercion()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+        class B extends A {
+            public function bar() {}
+        }
+
+        class C {
+            function foo(A $a) {
+                if ($a instanceof B) {
+                    $a->bar();
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testParamElseifCoercion()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {}
+        class B extends A {
+            public function bar() {}
+        }
+        class C extends A {
+            public function baz() {}
+        }
+
+        class D {
+            function foo(A $a) {
+                if ($a instanceof B) {
+                    $a->bar();
+                }
+                elseif ($a instanceof C) {
+                    $a->baz();
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNewVarInIf()
+    {
+        $stmts = self::$_parser->parse('<?php
+        if (rand(0,100) === 10) {
+            $badge = "hello";
+        }
+        else {
+            $badge = "goodbye";
+        }
+
+        echo $badge;
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNewVarInIfWithElseReturn()
+    {
+        $stmts = self::$_parser->parse('<?php
+        if (rand(0,100) === 10) {
+            $badge = "hello";
+        }
+        else {
+            throw new \Exception();
+        }
+
+        echo $badge;
         ');
 
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);

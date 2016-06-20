@@ -20,7 +20,13 @@ class EffectsAnalyser
     {
         $return_types = [];
 
+        $last_stmt = null;
+
         foreach ($stmts as $stmt) {
+            if (!$stmt instanceof PhpParser\Node\Stmt\Nop) {
+                $last_stmt = $stmt;
+            }
+
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 if ($stmt->inferredType) {
                     $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
@@ -68,6 +74,11 @@ class EffectsAnalyser
                     $return_types = array_merge($return_types, self::getReturnTypes($case->stmts));
                 }
             }
+        }
+
+        // if we're at the top level and we're not ending in a return, make sure to add possible null
+        if ($collapse_types && !$last_stmt instanceof PhpParser\Node\Stmt\Return_ && !ScopeChecker::doesLeaveBlock($stmts, false, false)) {
+            $return_types[] = Type::getNull(false);
         }
 
         return $return_types;

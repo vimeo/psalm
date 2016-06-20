@@ -123,7 +123,7 @@ class Config
                 $path = $this->base_dir . $extension['filetypeHandler'];
 
                 if (!file_exists($path)) {
-                    throw new \ConfigException('Error parsing config: cannot find file ' . $path);
+                    throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
                 $declared_classes = FileChecker::getDeclaredClassesInFile($path);

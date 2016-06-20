@@ -31,6 +31,7 @@ abstract class Type
         // We construct a parse tree corresponding to the type
         $parse_tree = new ParseTree(null, null);
 
+        $current_parent = null;
         $current_leaf = $parse_tree;
 
         while ($type_tokens) {
@@ -129,7 +130,7 @@ abstract class Type
                 throw new \InvalidArgumentException('No generic params provided for type');
             }
 
-            $is_empty = count($generic_params) === 1 && $generic_params[0]->value === 'empty';
+            $is_empty = count($generic_params) === 1 && $generic_params[0] instanceof Atomic && $generic_params[0]->value === 'empty';
 
             return new Generic($generic_type->value, $generic_params, $is_empty);
         }
@@ -434,7 +435,7 @@ abstract class Type
 
             foreach ($value_types[$key] as $expandable_value_type) {
                 if ($expandable_value_type instanceof Union) {
-                    $expanded_value_types = array_merge($expanded_value_types, $expandable_value_type->types);
+                    $expanded_value_types = array_merge($expanded_value_types, array_values($expandable_value_type->types));
                     continue;
                 }
 

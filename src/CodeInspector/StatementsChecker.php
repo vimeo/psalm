@@ -1056,13 +1056,14 @@ class StatementsChecker
 
         $var_id = self::getVarId($stmt);
         $property_names = $class_checker->getPropertyNames();
+        $this_class = $context->vars_in_scope['this'];
 
         if (isset($context->vars_in_scope[$var_id])) {
             $stmt->inferredType = $context->vars_in_scope[$var_id];
         }
 
         if (!in_array($stmt->name, $property_names)) {
-            $property_id = $this->_absolute_class . '::' . $stmt->name;
+            $property_id = $this_class . '::' . $stmt->name;
 
             $var_defined = isset($context->vars_in_scope[$var_id]) || isset($context->vars_possibly_in_scope[$var_id]);
 
@@ -1177,41 +1178,41 @@ class StatementsChecker
 
     protected function _checkFor(PhpParser\Node\Stmt\For_ $stmt, Context $context)
     {
-        $for_vars = array_merge([], $context->vars_in_scope);
+        $for_context = clone $context;
 
         foreach ($stmt->init as $init) {
-            if ($this->_checkExpression($init, $for_vars, $context->vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($init, $for_context) === false) {
                 return false;
             }
         }
 
         foreach ($stmt->cond as $condition) {
-            if ($this->_checkCondition($condition, $for_vars, $context->vars_possibly_in_scope) === false) {
+            if ($this->_checkCondition($condition, $for_context) === false) {
                 return false;
             }
         }
 
         foreach ($stmt->loop as $expr) {
-            if ($this->_checkExpression($expr, $for_vars, $context->vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($expr, $for_context) === false) {
                 return false;
             }
         }
 
         $for_vars_possibly_in_scope = [];
 
-        $this->check($stmt->stmts, $for_vars, $context->vars_possibly_in_scope, $for_vars_possibly_in_scope);
+        $this->check($stmt->stmts, $for_context, $for_vars_possibly_in_scope);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
                 continue;
             }
 
-            if ($for_vars[$var]->isMixed()) {
-                $context->vars_in_scope[$var] = $for_vars[$var];
+            if ($for_context->vars_in_scope[$var]->isMixed()) {
+                $context->vars_in_scope[$var] = $for_context->vars_in_scope[$var];
             }
 
-            if ((string) $for_vars[$var] !== (string) $type) {
-                $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $for_vars[$var]);
+            if ((string) $for_context->vars_in_scope[$var] !== (string) $type) {
+                $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $for_context->vars_in_scope[$var]);
             }
         }
 
@@ -3054,7 +3055,7 @@ class StatementsChecker
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     protected static function _resolveIncludePath($file_name, $current_directory)
     {

@@ -54,9 +54,7 @@ class NamespaceChecker implements StatementsSource
 
         if ($leftover_stmts) {
             $statments_checker = new StatementsChecker($this);
-            $existing_vars = [];
-            $existing_vars_in_scope = [];
-            $statments_checker->check($leftover_stmts, $existing_vars, $existing_vars_in_scope);
+            $statments_checker->check($leftover_stmts, new Context());
         }
 
         return $this->_aliased_classes;
