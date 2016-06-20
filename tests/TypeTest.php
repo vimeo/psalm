@@ -1369,4 +1369,58 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
+     */
+    public function testPossiblyUndefinedArrayInIf()
+    {
+        $stmts = self::$_parser->parse('<?php
+        if (rand(0,100) === 10) {
+            $array[] = "hello";
+        }
+
+        echo $array;
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
+     */
+    public function testPossiblyUndefinedArrayInForeach()
+    {
+        $stmts = self::$_parser->parse('<?php
+        foreach ([1, 2, 3, 4] as $b) {
+            $array[] = "hello";
+        }
+
+        echo $array;
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $car, first seen on line 3
+     */
+    public function testPossiblyUndefinedVariableInForeach()
+    {
+        $stmts = self::$_parser->parse('<?php
+        foreach ([1, 2, 3, 4] as $b) {
+            $car = "Volvo";
+        }
+
+        echo $car;
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }
