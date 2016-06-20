@@ -9,8 +9,7 @@ abstract class Plugin
     /**
      * checks an expression
      * @param  PhpParser\Node\Expr  $stmt
-     * @param  array<Type\Union>    &$vars_in_scope
-     * @param  array                &$vars_possibly_in_scope
+     * @param  Context              $context
      * @param  string               $file_name
      * @return null|false
      */
@@ -22,8 +21,7 @@ abstract class Plugin
     /**
      * checks a statement
      * @param  PhpParser\Node       $stmt
-     * @param  array<Type\Union>    &$vars_in_scope
-     * @param  array                &$vars_possibly_in_scope
+     * @param  Context              $context
      * @param  string               $file_name
      * @return null|false
      */

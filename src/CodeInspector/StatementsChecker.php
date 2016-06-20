@@ -1854,6 +1854,8 @@ class StatementsChecker
                 }
             }
 
+            $this_context->vars_in_scope['this'] = $context->vars_in_scope['this'];
+
             $method_checker->check($this_context);
 
             foreach ($this_context->vars_in_scope as $var => $type) {

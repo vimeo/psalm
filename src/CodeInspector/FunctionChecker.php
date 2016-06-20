@@ -38,6 +38,7 @@ class FunctionChecker implements StatementsSource
     public function check(Context $context, $check_methods = true)
     {
         if ($this->_function->stmts) {
+            $has_context = (bool) count($context->vars_in_scope);
             if ($this instanceof ClassMethodChecker) {
                 if (ClassChecker::getThisClass()) {
                     $hash = $this->getMethodId() . json_encode([$context->vars_in_scope, $context->vars_possibly_in_scope]);
@@ -54,7 +55,7 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            $statements_checker = new StatementsChecker($this, ClassChecker::getThisClass() || !empty($this->_function->params), $check_methods);
+            $statements_checker = new StatementsChecker($this, ClassChecker::getThisClass(), $check_methods);
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {
