@@ -4,7 +4,7 @@ namespace CodeInspector;
 
 use CodeInspector\Issue\InvalidArgument;
 use CodeInspector\Issue\FailedTypeResolution;
-use CodeInspector\ExceptionHandler;
+use CodeInspector\IssueHandler;
 use PhpParser;
 
 class TypeChecker
@@ -538,7 +538,7 @@ class TypeChecker
 
             if (empty($existing_var_type->types)) {
                 if ($key) {
-                    if (ExceptionHandler::accepts(
+                    if (IssueHandler::accepts(
                         new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number)
                     )) {
                         return false;

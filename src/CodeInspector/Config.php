@@ -9,7 +9,7 @@ class Config
 {
     protected static $_config;
 
-    public $stop_on_error = true;
+    public $stop_on_first_error = true;
     public $use_docblock_return_type = false;
 
     protected $inspect_files;
@@ -22,7 +22,17 @@ class Config
 
     protected $issue_handlers = [];
 
+    protected $custom_error_levels = [];
+
     protected $mock_classes = [];
+
+    const REPORT_INFO = 'info';
+    const REPORT_ERROR = 'error';
+
+    const ERROR_LEVELS = [
+        self::REPORT_INFO,
+        self::REPORT_ERROR,
+    ];
 
     /**
      * CodeInspector plugins
@@ -35,35 +45,38 @@ class Config
         self::$_config = $this;
     }
 
-    public function loadFromXML($file_name)
+    public static function loadFromXML($file_name)
     {
         $file_contents = file_get_contents($file_name);
 
-        $this->base_dir = dirname($file_name) . '/';
+        $config = new self();
+
+        $config->base_dir = dirname($file_name) . '/';
 
         $config_xml = new SimpleXMLElement($file_contents);
 
-        if (isset($config_xml['stopOnError'])) {
-            $this->stop_on_error = $config_xml['stopOnError'] === 'true' || $config_xml['stopOnError'] === '1';
+        if (isset($config_xml['stopOnFirstError'])) {
+            $attribute_text = (string) $config_xml['stopOnError'];
+            $config->stop_on_first_error = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['useDocblockReturnType'])) {
-            $this->use_docblock_return_type = (bool) $config_xml['useDocblockReturnType'];
+            $config->use_docblock_return_type = (bool) $config_xml['useDocblockReturnType'];
         }
 
         if (isset($config_xml->inspectFiles)) {
-            $this->inspect_files = FileFilter::loadFromXML($config_xml->inspectFiles, true);
+            $config->inspect_files = FileFilter::loadFromXML($config_xml->inspectFiles, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
-            $this->file_extensions = [];
+            $config->file_extensions = [];
 
-            $this->loadFileExtensions($config_xml->fileExtensions->extension);
+            $config->loadFileExtensions($config_xml->fileExtensions->extension);
         }
 
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
             foreach ($config_xml->mockClasses->class as $mock_class) {
-                $this->mock_classes[] = $mock_class['name'];
+                $config->mock_classes[] = $mock_class['name'];
             }
         }
 
@@ -72,7 +85,7 @@ class Config
             foreach ($config_xml->plugins->plugin as $plugin) {
                 $plugin_file_name = $plugin['filename'];
 
-                $path = $this->base_dir . $plugin_file_name;
+                $path = $config->base_dir . $plugin_file_name;
 
                 if (!file_exists($path)) {
                     throw new \InvalidArgumentException('Cannot find file ' . $path);
@@ -88,14 +101,24 @@ class Config
                     throw new \InvalidArgumentException('Plugins must extend \CodeInspector\Plugin - ' . $plugin_file_name . ' does not');
                 }
 
-                $this->plugins[] = $loaded_plugin;
+                $config->plugins[] = $loaded_plugin;
             }
         }
 
         if (isset($config_xml->issueHandler)) {
             foreach ($config_xml->issueHandler->children() as $key => $issue_handler) {
+                if (isset($issue_handler['errorLevel'])) {
+                    $error_level = (string) $issue_handler['errorLevel'];
+
+                    if (!in_array($error_level, self::ERROR_LEVELS)) {
+                        throw new \InvalidArgumentException('Error level ' . $error_level . ' could not be recognised');
+                    }
+
+                    $config->custom_error_levels[$key] = $error_level;
+                }
+
                 if (isset($issue_handler->excludeFiles)) {
-                    $this->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->excludeFiles, false);
+                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->excludeFiles, false);
                 }
             }
         }
@@ -158,6 +181,16 @@ class Config
         }
 
         return !$this->issue_handlers[$issue_type]->allows($file_name);
+    }
+
+    public function getReportingLevel($issue_type)
+    {
+        $issue_type = array_pop(explode('\\', $issue_type));
+        if (isset($this->custom_error_levels[$issue_type])) {
+            return $this->custom_error_levels[$issue_type];
+        }
+
+        return self::REPORT_ERROR;
     }
 
     public function doesInheritVariables($file_name)

@@ -12,6 +12,8 @@ class ProjectChecker
         foreach (Config::getInstance()->getIncludeDirs() as $dir_name) {
             self::checkDir($dir_name, $debug);
         }
+
+        IssueHandler::finish();
     }
 
     public static function checkDir($dir_name, $debug = false)
@@ -77,5 +79,7 @@ class ProjectChecker
         }
 
         $file_checker->check(true);
+
+        IssueHandler::finish();
     }
 }

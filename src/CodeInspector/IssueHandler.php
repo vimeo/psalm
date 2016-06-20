@@ -2,8 +2,10 @@
 
 namespace CodeInspector;
 
-class ExceptionHandler
+class IssueHandler
 {
+    protected static $errors = [];
+
     public static function accepts(Issue\CodeIssue $e)
     {
         $config = Config::getInstance();
@@ -16,12 +18,26 @@ class ExceptionHandler
 
         $error_message = $error_class_name . ' - ' . $e->getMessage();
 
-        if ($config->stop_on_error) {
-            throw new Exception\CodeException($error_message);
+        if ($config->getReportingLevel(get_class($e)) !== Config::REPORT_ERROR) {
+            echo $error_message . PHP_EOL;
+            return false;
         }
 
         echo $error_message . PHP_EOL;
 
+        if ($config->stop_on_first_error) {
+            exit(1);
+        }
+
+        self::$errors[] = $error_message;
+
         return true;
+    }
+
+    public static function finish()
+    {
+        if (count(self::$errors)) {
+            exit(1);
+        }
     }
 }

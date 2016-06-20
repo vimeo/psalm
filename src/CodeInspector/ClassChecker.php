@@ -5,7 +5,7 @@ namespace CodeInspector;
 use CodeInspector\Issue\InvalidClass;
 use CodeInspector\Issue\UndefinedClass;
 use CodeInspector\Issue\UndefinedTrait;
-use CodeInspector\ExceptionHandler;
+use CodeInspector\IssueHandler;
 use PhpParser;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
@@ -96,7 +96,7 @@ class ClassChecker implements StatementsSource
                 foreach ($stmt->traits as $trait) {
                     $trait_name = self::getAbsoluteClassFromName($trait, $this->_namespace, $this->_aliased_classes);
                     if (!trait_exists($trait_name)) {
-                        if (ExceptionHandler::accepts(
+                        if (IssueHandler::accepts(
                             new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->_file_name, $trait->getLine())
                         )) {
                             return false;
@@ -132,7 +132,7 @@ class ClassChecker implements StatementsSource
             foreach ($method_checkers as $method_checker) {
                 $method_checker->check(new Context());
 
-                if (!$config->excludeIssueInFile('CodeInspector\Issue\InvalidReturnType', $this->_file_name)) {
+                if (!$config->excludeIssueInFile(CodeInspector\Issue\InvalidReturnType::CLASS, $this->_file_name)) {
                     $method_checker->checkReturnTypes();
                 }
             }
@@ -207,7 +207,7 @@ class ClassChecker implements StatementsSource
         }
 
         if (!class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
-            if (ExceptionHandler::accepts(
+            if (IssueHandler::accepts(
                 new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine())
             )) {
                 return false;
@@ -218,7 +218,7 @@ class ClassChecker implements StatementsSource
             $reflection_class = new ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
-                if (ExceptionHandler::accepts(
+                if (IssueHandler::accepts(
                     new InvalidClass('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine())
                 )) {
                     return false;
