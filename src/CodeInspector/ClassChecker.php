@@ -120,16 +120,15 @@ class ClassChecker implements StatementsSource
         }
 
         if ($leftover_stmts) {
-            $scope_vars = [];
-            $possibly_in_scope_vars = [];
+            $context = new Context();
 
-            (new StatementsChecker($this))->check($leftover_stmts, $scope_vars, $possibly_in_scope_vars);
+            (new StatementsChecker($this))->check($leftover_stmts, $context);
         }
 
         if ($check_statements) {
             // do the method checks after all class methods have been initialised
             foreach ($method_checkers as $method_checker) {
-                $method_checker->check();
+                $method_checker->check(new Context());
                 $method_checker->checkReturnTypes();
             }
         }

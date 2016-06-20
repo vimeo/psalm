@@ -20,6 +20,8 @@ class FileChecker implements StatementsSource
 
     protected $_preloaded_statements = [];
 
+    protected $_declared_classes = [];
+
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
     protected static $_functions = [];
@@ -51,6 +53,7 @@ class FileChecker implements StatementsSource
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 if ($check_classes) {
                     $class_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
+                    $this->_declared_classes[] = $class_checker->getAbsoluteClass();
                     $class_checker->check($check_class_statements);
                 }
 
@@ -68,6 +71,7 @@ class FileChecker implements StatementsSource
 
                 $namespace_checker = new NamespaceChecker($stmt, $this);
                 $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_statements);
+                $this->_declared_classes = array_merge($namespace_checker->getDeclaredClasses());
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
@@ -81,31 +85,10 @@ class FileChecker implements StatementsSource
 
         if ($leftover_stmts) {
             $statments_checker = new StatementsChecker($this);
-            $existing_vars = [];
-            $existing_vars_in_scope = [];
-            $statments_checker->check($leftover_stmts, $existing_vars, $existing_vars_in_scope);
+            $statments_checker->check($leftover_stmts, new Context());
         }
 
         return $stmts;
-    }
-
-    public function checkWithClass($class_name, $method_vars = [])
-    {
-        $stmts = self::getStatements($this->_real_file_name);
-
-        $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
-
-        if ($method_vars) {
-            foreach ($method_vars as $method_var => $type) {
-                $class_method->params[] = new PhpParser\Node\Param($method_var, null, $type);
-            }
-        }
-
-        $class = new PhpParser\Node\Stmt\Class_($class_name);
-
-        $class_checker = new ClassChecker($class, $this, $class_name);
-
-        (new ClassMethodChecker($class_method, $class_checker))->check();
     }
 
     public static function getAbsoluteClassFromNameInFile($class, $namespace, $file_name)
@@ -120,6 +103,33 @@ class FileChecker implements StatementsSource
         }
 
         return ClassChecker::getAbsoluteClassFromString($class, $namespace, $aliased_classes);
+    }
+
+    /**
+     * Gets a list of the classes declared
+     * @return array<string>
+     */
+    public function getDeclaredClasses()
+    {
+        return $this->_declared_classes;
+    }
+
+    /**
+     * Gets a list of the classes declared in that file
+     * @param  string $file_name
+     * @return array<string>
+     */
+    public static function getDeclaredClassesInFile($file_name)
+    {
+        if (isset(self::$_file_checkers[$file_name])) {
+            $file_checker = self::$_file_checkers[$file_name];
+        }
+        else {
+            $file_checker = new FileChecker($file_name);
+            $file_checker->check(false);
+        }
+
+        return $file_checker->getDeclaredClasses();
     }
 
     /**

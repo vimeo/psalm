@@ -8,7 +8,7 @@ class NamespaceChecker implements StatementsSource
 {
     protected $_namespace;
     protected $_namespace_name;
-    protected $_contained_classes = [];
+    protected $_declared_classes = [];
     protected $_aliased_classes = [];
     protected $_file_name;
 
@@ -26,7 +26,7 @@ class NamespaceChecker implements StatementsSource
         foreach ($this->_namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 $absolute_class = ClassChecker::getAbsoluteClassFromString($stmt->name, $this->_namespace_name, []);
-                $this->_contained_classes[$absolute_class] = 1;
+                $this->_declared_classes[$absolute_class] = 1;
 
                 if ($check_classes) {
                     $class_checker = ClassChecker::getClassCheckerFromClass($absolute_class) ?: new ClassChecker($stmt, $this, $absolute_class);
@@ -62,9 +62,18 @@ class NamespaceChecker implements StatementsSource
         return $this->_aliased_classes;
     }
 
+    /**
+     * Gets a list of the classes declared
+     * @return array<string>
+     */
+    public function getDeclaredClasses()
+    {
+        return array_keys($this->_declared_classes);
+    }
+
     public function containsClass($class_name)
     {
-        return isset($this->_contained_classes[$class_name]);
+        return isset($this->_declared_classes[$class_name]);
     }
 
     public function getNamespace()

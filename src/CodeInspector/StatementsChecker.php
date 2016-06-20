@@ -84,11 +84,11 @@ class StatementsChecker
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node>        $stmts
-     * @param  array<Type\Union>            &$vars_in_scope
-     * @param  array                        &$vars_possibly_in_scope
+     * @param  array<Type\Union>            &$context->vars_in_scope
+     * @param  array                        &$context->vars_possibly_in_scope
      * @return null|false
      */
-    public function check(array $stmts, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope = [])
+    public function check(array $stmts, Context $context, array &$for_vars_possibly_in_scope = [])
     {
         $has_returned = false;
 
@@ -102,7 +102,7 @@ class StatementsChecker
 
         foreach ($stmts as $stmt) {
             foreach (Config::getInstance()->getPlugins() as $plugin) {
-                if ($plugin->checkStatement($stmt, $vars_in_scope, $vars_possibly_in_scope, $this->_file_name) === false) {
+                if ($plugin->checkStatement($stmt, $context, $this->_file_name) === false) {
                     return false;
                 }
             }
@@ -113,26 +113,26 @@ class StatementsChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $this->_checkIf($stmt, $vars_in_scope, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
+                $this->_checkIf($stmt, $context, $for_vars_possibly_in_scope);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                $this->_checkTryCatch($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkTryCatch($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
-                $this->_checkFor($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkFor($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
-                $this->_checkForeach($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkForeach($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                $this->_checkWhile($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkWhile($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
-                $this->_checkDo($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkDo($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
-                    $this->_checkExpression($const->value, $vars_in_scope, $vars_possibly_in_scope);
+                    $this->_checkExpression($const->value, $context);
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
@@ -140,14 +140,14 @@ class StatementsChecker
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
-                $this->_checkReturn($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkReturn($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $has_returned = true;
-                $this->_checkThrow($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkThrow($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
-                $this->_checkSwitch($stmt, $vars_in_scope, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
+                $this->_checkSwitch($stmt, $context, $for_vars_possibly_in_scope);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
@@ -156,19 +156,19 @@ class StatementsChecker
                 $has_returned = true;
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
-                $this->_checkStatic($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkStatic($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
                 foreach ($stmt->exprs as $expr) {
-                    $this->_checkExpression($expr, $vars_in_scope, $vars_possibly_in_scope);
+                    $this->_checkExpression($expr, $context);
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checker = new FunctionChecker($stmt, $this->_source);
-                $function_checker->check();
+                $function_checker->check(new Context());
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
-                $this->_checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope);
+                $this->_checkExpression($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
@@ -182,10 +182,10 @@ class StatementsChecker
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
                         if (is_string($var->name)) {
-                            $vars_in_scope[$var->name] = Type::getMixed();
-                            $vars_possibly_in_scope[$var->name] = true;
+                            $context->vars_in_scope[$var->name] = Type::getMixed();
+                            $context->vars_possibly_in_scope[$var->name] = true;
                         } else {
-                            $this->_checkExpression($var, $vars_in_scope, $vars_possibly_in_scope);
+                            $this->_checkExpression($var, $context);
                         }
                     }
                 }
@@ -193,7 +193,7 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
                     if ($prop->default) {
-                        $this->_checkExpression($prop->default, $vars_in_scope, $vars_possibly_in_scope);
+                        $this->_checkExpression($prop->default, $context);
                     }
 
                     self::$_existing_static_vars[$this->_absolute_class . '::$' . $prop->name] = 1;
@@ -227,33 +227,41 @@ class StatementsChecker
     }
 
     /**
-     * IF
-     * all if/elseif/else blocks within an if block that
-     * bleed out into the following scope redefine a variable
-     * THEN
-     * set the aggregated type of that variable afterwards
+     * System of type substitution and deletion
      *
-     * these variables are stored in $redefined_vars
+     * for example
      *
-     * ELSE IF
-     * all if/elseif/else blocks within an if block that bleed out into
-     * the following scope refute the if's conditional
-     * OR
-     * they agree with the if's conditional (without necessarily setting the variable)
-     * THEN
-     * set the aggregated type of that variable afterwards
+     * x: A|null
      *
-     * these variables are stored in $refuting_vars and $agreeing_vars
+     * if (x)
+     *   (x: A)
+     *   x = B  -- effects: remove A from the type of x, add B
+     * else
+     *   (x: null)
+     *   x = C  -- effects: remove null from the type of x, add C
+     *
+     *
+     * x: A|null
+     *
+     * if (!x)
+     *   (x: null)
+     *   throw new Exception -- effects: remove null from the type of x
+     *
      *
      * @param  PhpParser\Node\Stmt\If_ $stmt
-     * @param  array                   &$vars_in_scope
-     * @param  array                   &$vars_possibly_in_scope
+     * @param  array                   &$context->vars_in_scope
+     * @param  array                   &$context->vars_possibly_in_scope
      * @param  array                   &$for_vars_possibly_in_scope
      * @return null|false
      */
-    protected function _checkIf(PhpParser\Node\Stmt\If_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
+    protected function _checkIf(PhpParser\Node\Stmt\If_ $stmt, Context $context, array &$for_vars_possibly_in_scope)
     {
-        if ($this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        $if_context = clone $context;
+
+        // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
+        $original_context = ($stmt->elseifs || $stmt->else) ? clone $context : null;
+
+        if ($this->_checkCondition($stmt->cond, $if_context) === false) {
             return false;
         }
 
@@ -273,88 +281,55 @@ class StatementsChecker
         $negated_if_types = $negated_types;
 
         // if the if has an || in the conditional, we cannot easily reason about it
-        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && self::_containsBooleanOr($stmt->cond)) {
-            $if_vars = array_merge([], $vars_in_scope);
-            $if_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
-        }
-        else {
-            $if_vars_reconciled = TypeChecker::reconcileKeyedTypes($if_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
-            if ($if_vars_reconciled === false) {
+        if (!($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) || !self::_containsBooleanOr($stmt->cond)) {
+            $if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($if_types, $if_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+            if ($if_vars_in_scope_reconciled === false) {
                 return false;
             }
-            $if_vars = $if_vars_reconciled;
-            $if_vars_possibly_in_scope = array_merge($if_types, $vars_possibly_in_scope);
+            $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
+            $if_context->vars_possibly_in_scope = array_merge($if_types, $if_context->vars_possibly_in_scope);
         }
 
-        $old_if_vars = $if_vars;
+        $old_if_context = clone $if_context;
 
-        if ($this->check($stmt->stmts, $if_vars, $if_vars_possibly_in_scope, $for_vars_possibly_in_scope) === false) {
+        if ($this->check($stmt->stmts, $if_context, $for_vars_possibly_in_scope) === false) {
             return false;
         }
 
         $new_vars = null;
         $new_vars_possibly_in_scope = [];
         $redefined_vars = null;
-        $refuting_vars = null;
-        $agreeing_vars = null;
         $possibly_redefined_vars = [];
-        $post_type_assertions = [];
 
-        $visited_if = false;
-        $visited_elseifs = false;
+        $updated_vars = [];
+
+        $mic_drop = false;
 
         if (count($stmt->stmts)) {
             if (!$has_leaving_statments) {
-                $new_vars = array_diff_key($if_vars, $vars_in_scope);
+                $new_vars = array_diff_key($if_context->vars_in_scope, $context->vars_in_scope);
 
-                $redefined_vars = [];
-
-                foreach ($old_if_vars as $if_var => $type) {
-                    if ((string)$if_vars[$if_var] !== (string)$type) {
-                        $redefined_vars[$if_var] = $if_vars[$if_var];
-                    }
-                }
-
+                $redefined_vars = Context::getRedefinedVars($context, $if_context);
                 $possibly_redefined_vars = $redefined_vars;
-
-                $refuting_vars = [];
-                $agreeing_vars = [];
-
-                foreach ($if_vars as $if_var => $type) {
-                    // are we refuting or agreeing with all parts of this type?
-                    if (isset($if_types[$if_var])) {
-                        $is_negation = true;
-                        $is_confirmation = true;
-
-                        foreach ($type->types as $redefined_type_part) {
-                            if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$if_var])) {
-                                $is_negation = false;
-                            }
-                            else {
-                                $is_confirmation = false;
-                            }
-                        }
-
-                        if ($is_negation) {
-                            $refuting_vars[$if_var] = $type;
-                        }
-
-                        if ($is_confirmation) {
-                            $agreeing_vars[$if_var] = $type;
-                        }
-                    }
-                }
-
-                $visited_ifs = true;
             }
-            else {
-                $post_type_assertions = $negated_types;
+            elseif (!$stmt->else && !$stmt->elseifs && $negated_types) {
+                $context_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $context->vars_in_scope, $this->_file_name, $stmt->getLine());
+                if ($context_vars_reconciled === false) {
+                    return false;
+                }
+                $context->vars_in_scope = $context_vars_reconciled;
+                $mic_drop = true;
+            }
+
+            // update the parent context as necessary, but only if we can safely reason about type negation
+            if ($can_negate_if_types && !$mic_drop) {
+                $context->update($old_if_context, $if_context, $has_leaving_statments, $updated_vars);
             }
 
             $has_ending_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, false, false);
 
             if (!$has_ending_statments) {
-                $vars = array_diff_key($if_vars_possibly_in_scope, $vars_possibly_in_scope);
+                $vars = array_diff_key($if_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
                 // if we're leaving this block, add vars to outer for loop scope
                 if ($has_leaving_statments) {
@@ -367,35 +342,45 @@ class StatementsChecker
         }
 
         foreach ($stmt->elseifs as $elseif) {
+            $elseif_context = clone $original_context;
+
             if ($negated_types) {
-                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
+                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $elseif_context->vars_in_scope, $this->_file_name, $stmt->getLine());
                 if ($elseif_vars_reconciled === false) {
                     return false;
                 }
-                $elseif_vars = $elseif_vars_reconciled;
+                $elseif_context->vars_in_scope = $elseif_vars_reconciled;
             }
-            else {
-                $elseif_vars = array_merge([], $vars_in_scope);
-            }
-
-            $old_elseif_vars = $elseif_vars;
-
-            $elseif_vars_possibly_in_scope = array_merge([], $vars_possibly_in_scope);
 
             $elseif_types = $this->_type_checker->getTypeAssertions($elseif->cond, true);
 
-            if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)) {
-                $negated_types = array_merge($negated_types, TypeChecker::negateTypes($elseif_types));
-            }
-            else {
-                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($elseif_types, $elseif_vars, $this->_file_name, $stmt->getLine());
+            $can_negate_elseif_types = !($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
+
+            $negated_elseif_types = $elseif_types && $can_negate_elseif_types
+                                    ? TypeChecker::negateTypes($elseif_types)
+                                    : [];
+
+            $negated_types = array_merge($negated_types, $negated_elseif_types);
+
+            // if the elseif has an || in the conditional, we cannot easily reason about it
+            if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp) || !self::_containsBooleanOr($elseif->cond)) {
+                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($elseif_types, $elseif_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+
                 if ($elseif_vars_reconciled === false) {
                     return false;
                 }
-                $elseif_vars = $elseif_vars_reconciled;
+
+                $elseif_context->vars_in_scope = $elseif_vars_reconciled;
             }
 
-            if ($this->_checkElseIf($elseif, $elseif_vars, $elseif_vars_possibly_in_scope, $for_vars_possibly_in_scope) === false) {
+            // check the elseif
+            if ($this->_checkCondition($elseif->cond, $elseif_context) === false) {
+                return false;
+            }
+
+            $old_elseif_context = clone $elseif_context;
+
+            if ($this->check($elseif->stmts, $elseif_context, $for_vars_possibly_in_scope) === false) {
                 return false;
             }
 
@@ -403,13 +388,8 @@ class StatementsChecker
                 $has_leaving_statements = ScopeChecker::doesLeaveBlock($elseif->stmts, true, true);
 
                 if (!$has_leaving_statements) {
-                    $elseif_redefined_vars = [];
-
-                    foreach ($old_elseif_vars as $elseif_var => $type) {
-                        if ($elseif_vars[$elseif_var] !== $type) {
-                            $elseif_redefined_vars[$elseif_var] = $elseif_vars[$elseif_var];
-                        }
-                    }
+                    // update the parent context as necessary
+                    $elseif_redefined_vars = Context::getRedefinedVars($original_context, $elseif_context);
 
                     if ($redefined_vars === null) {
                         $redefined_vars = $elseif_redefined_vars;
@@ -438,87 +418,30 @@ class StatementsChecker
                         }
                     }
 
-                    $elseif_refuting_vars = [];
-                    $elseif_agreeing_vars = [];
-
-                    foreach ($elseif_vars as $elseif_var => $type) {
-                        // are we refuting or agreeing with all parts of this type?
-                        if (isset($if_types[$elseif_var])) {
-                            $is_negation = true;
-                            $is_confirmation = true;
-
-                            foreach ($type->types as $redefined_type_part) {
-                                if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$elseif_var])) {
-                                    $is_negation = false;
-                                }
-                                else {
-                                    $is_confirmation = false;
-                                }
-                            }
-
-                            if ($is_negation) {
-                                $elseif_refuting_vars[$elseif_var] = $type;
-                            }
-
-                            if ($is_confirmation) {
-                                $elseif_agreeing_vars[$elseif_var] = $type;
-                            }
-                        }
-                    }
-
-                    if ($refuting_vars === null) {
-                        $refuting_vars = $elseif_refuting_vars;
-                    }
-                    else {
-                        foreach ($refuting_vars as $var => $type) {
-                            if (isset($elseif_refuting_vars[$var])) {
-                                $refuting_vars[$var] = Type::combineUnionTypes($elseif_refuting_vars[$var], $type);
-                            }
-                            else {
-                                unset($refuting_vars[$var]);
-                            }
-                        }
-                    }
-
-                    if ($agreeing_vars === null) {
-                        $agreeing_vars = $elseif_agreeing_vars;
-                    }
-                    else {
-                        foreach ($agreeing_vars as $var => $type) {
-                            if (isset($elseif_agreeing_vars[$var])) {
-                                $agreeing_vars[$var] = Type::combineUnionTypes($elseif_agreeing_vars[$var], $type);
-                            }
-                            else {
-                                unset($agreeing_vars[$var]);
-                            }
-                        }
-                    }
-
                     if ($new_vars === null) {
-                        $new_vars = array_diff_key($elseif_vars, $vars_in_scope);
+                        $new_vars = array_diff_key($elseif_context->vars_in_scope, $context->vars_in_scope);
                     }
                     else {
                         foreach ($new_vars as $new_var => $type) {
-                            if (!isset($elseif_vars[$new_var])) {
+                            if (!isset($elseif_context->vars_in_scope[$new_var])) {
                                 unset($new_vars[$new_var]);
                             }
                             else {
-                                $new_vars[$new_var] = Type::combineUnionTypes($type, $elseif_vars[$new_var]);
+                                $new_vars[$new_var] = Type::combineUnionTypes($type, $elseif_context->vars_in_scope[$new_var]);
                             }
                         }
                     }
-
-                    $visited_elseifs = true;
                 }
-                else {
-                    $post_type_assertions = $negated_types;
+
+                if ($can_negate_if_types) {
+                    $context->update($old_elseif_context, $elseif_context, $has_leaving_statments, $updated_vars);
                 }
 
                 // has a return/throw at end
                 $has_ending_statments = ScopeChecker::doesLeaveBlock($elseif->stmts, false, false);
 
                 if (!$has_ending_statments) {
-                    $vars = array_diff_key($elseif_vars_possibly_in_scope, $vars_possibly_in_scope);
+                    $vars = array_diff_key($elseif_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
                     // if we're leaving this block, add vars to outer for loop scope
                     if ($has_leaving_statements) {
@@ -532,22 +455,19 @@ class StatementsChecker
         }
 
         if ($stmt->else) {
+            $else_context = clone $original_context;
+
             if ($negated_types) {
-                $else_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
+                $else_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $else_context->vars_in_scope, $this->_file_name, $stmt->getLine());
                 if ($else_vars_reconciled === false) {
                     return false;
                 }
-                $else_vars = $else_vars_reconciled;
-            }
-            else {
-                $else_vars = array_merge([], $vars_in_scope);
+                $else_context->vars_in_scope = $else_vars_reconciled;
             }
 
-            $old_else_vars = $else_vars;
+            $old_else_context = clone $else_context;
 
-            $else_vars_possibly_in_scope = $vars_possibly_in_scope;
-
-            if ($this->_checkElse($stmt->else, $else_vars, $else_vars_possibly_in_scope, $for_vars_possibly_in_scope) === false) {
+            if ($this->check($stmt->else->stmts, $else_context, $for_vars_possibly_in_scope) === false) {
                 return false;
             }
 
@@ -556,13 +476,7 @@ class StatementsChecker
 
                 // if it doesn't end in a return
                 if (!$has_leaving_statements) {
-                    $else_redefined_vars = [];
-
-                    foreach ($old_else_vars as $else_var => $type) {
-                        if ($else_vars[$else_var] !== $type) {
-                            $else_redefined_vars[$else_var] = $else_vars[$else_var];
-                        }
-                    }
+                    $else_redefined_vars = Context::getRedefinedVars($original_context, $else_context);
 
                     if ($redefined_vars === null) {
                         $redefined_vars = $else_redefined_vars;
@@ -579,10 +493,6 @@ class StatementsChecker
                         }
 
                         foreach ($else_redefined_vars as $var => $type) {
-                            if (isset($post_type_assertions[$var])) {
-                                continue;
-                            }
-
                             if ($type->isMixed()) {
                                 $possibly_redefined_vars[$var] = $type;
                             }
@@ -595,86 +505,31 @@ class StatementsChecker
                         }
                     }
 
-                    $else_refuting_vars = [];
-                    $else_agreeing_vars = [];
-
-                    foreach ($else_vars as $else_var => $type) {
-                        // are we refuting or agreeing with all parts of this type?
-                        if (isset($if_types[$else_var])) {
-                            $is_negation = true;
-                            $is_confirmation = true;
-
-                            foreach ($type->types as $redefined_type_part) {
-                                if (!TypeChecker::isNegation($redefined_type_part->value, $if_types[$else_var])) {
-                                    $is_negation = false;
-                                }
-                                else {
-                                    $is_confirmation = false;
-                                }
-                            }
-
-                            if ($is_negation) {
-                                $else_refuting_vars[$else_var] = $type;
-                            }
-
-                            if ($is_confirmation) {
-                                $else_agreeing_vars[$else_var] = $type;
-                            }
-                        }
-                    }
-
-                    if ($refuting_vars === null) {
-                        $refuting_vars = $else_refuting_vars;
-                    }
-                    else {
-                        foreach ($refuting_vars as $var => $type) {
-                            if (isset($else_refuting_vars[$var])) {
-                                $refuting_vars[$var] = Type::combineUnionTypes($else_refuting_vars[$var], $type);
-                            }
-                            else {
-                                unset($refuting_vars[$var]);
-                            }
-                        }
-                    }
-
-                    if ($agreeing_vars === null) {
-                        $agreeing_vars = $else_agreeing_vars;
-                    }
-                    else {
-                        foreach ($agreeing_vars as $var => $type) {
-                            if (isset($else_agreeing_vars[$var])) {
-                                $agreeing_vars[$var] = Type::combineUnionTypes($else_agreeing_vars[$var], $type);
-                            }
-                            else {
-                                unset($agreeing_vars[$var]);
-                            }
-                        }
-                    }
-
                     if ($new_vars === null) {
-                        $new_vars = array_diff_key($else_vars, $vars_in_scope);
+                        $new_vars = array_diff_key($else_context->vars_in_scope, $context->vars_in_scope);
                     }
                     else {
                         foreach ($new_vars as $new_var => $type) {
-                            if (!isset($else_vars[$new_var])) {
+                            if (!isset($else_context->vars_in_scope[$new_var])) {
                                 unset($new_vars[$new_var]);
                             }
                             else {
-                                $new_vars[$new_var] = Type::combineUnionTypes($type, $else_vars[$new_var]);
+                                $new_vars[$new_var] = Type::combineUnionTypes($type, $else_context->vars_in_scope[$new_var]);
                             }
                         }
                     }
                 }
-                else {
-                    $refuting_vars = [];
-                    $agreeing_vars = [];
+
+                // update the parent context as necessary
+                if ($can_negate_if_types) {
+                    $context->update($old_else_context, $else_context, $has_leaving_statments, $updated_vars);
                 }
 
                 // has a return/throw at end
                 $has_ending_statments = ScopeChecker::doesLeaveBlock($stmt->else->stmts, false, false);
 
                 if (!$has_ending_statments) {
-                    $vars = array_diff_key($else_vars_possibly_in_scope, $vars_possibly_in_scope);
+                    $vars = array_diff_key($else_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
                     if ($has_leaving_statements) {
                         $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
@@ -683,144 +538,59 @@ class StatementsChecker
                         $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
                     }
                 }
-
-                if ($new_vars) {
-                    // only update vars if there is an else
-                    $vars_in_scope = array_merge($vars_in_scope, $new_vars);
-                }
-
-                if ($redefined_vars) {
-                    $vars_in_scope = array_merge($vars_in_scope, $redefined_vars);
-                    $redefined_vars = null;
-                }
             }
         }
-        else {
-            if ($visited_elseifs) {
-                $refuting_vars = [];
-            }
 
-            $redefined_vars = [];
-            $agreeing_vars = [];
+        if ($new_vars) {
+            $context->vars_in_scope = array_merge($context->vars_in_scope, $new_vars);
         }
+        $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $new_vars_possibly_in_scope);
 
-        $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
-
-        if ($if_types) {
-            /**
-             * let's get the type assertions from the condition if it's a terminator
-             * so that we can negate them going forward
-             */
-            if (ScopeChecker::doesLeaveBlock($stmt->stmts, false, false) && $negated_if_types) {
-                $vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($negated_if_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
-
-                if ($vars_in_scope_reconciled === false) {
-                    return false;
-                }
-
-                $vars_in_scope = $vars_in_scope_reconciled;
-
-                $vars_possibly_in_scope = array_merge($negated_if_types, $vars_possibly_in_scope);
-            }
-
-            if ($redefined_vars) {
-                foreach ($if_types as $var => $type) {
-                    $vars_in_scope[$var] = $redefined_vars[$var];
-                }
-            }
-
-            if ($agreeing_vars) {
-                foreach ($agreeing_vars as $var => $type) {
-                    if (!isset($redefined_vars[$var])) {
-                        $vars_in_scope[$var] = $type;
-                    }
-                }
-            }
-
-            if ($refuting_vars) {
-                foreach ($refuting_vars as $var => $type) {
-                    if (!isset($redefined_vars[$var])) {
-                        $vars_in_scope[$var] = $type;
-                    }
-                }
+        // vars can only be redefined if there was an else (defined in every block)
+        if ($stmt->else && $redefined_vars) {
+            foreach ($redefined_vars as $var => $type) {
+                $context->vars_in_scope[$var] = $type;
+                $updated_vars[$var] = true;
             }
         }
 
         if ($possibly_redefined_vars) {
             foreach ($possibly_redefined_vars as $var => $type) {
-                if (isset($vars_in_scope[$var]) && !isset($refuting_vars[$var]) && !isset($agreeing_vars[$var]) && !isset($redefined_vars[$var])) {
-                    $vars_in_scope[$var] = Type::combineUnionTypes($vars_in_scope[$var], $type);
+                if (isset($context->vars_in_scope[$var]) && !isset($updated_vars[$var])) {
+                    $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $type);
                 }
             }
         }
-
-        if ($post_type_assertions) {
-            $vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($post_type_assertions, $vars_in_scope, $this->_file_name, $stmt->getLine());
-
-            if ($vars_in_scope_reconciled === false) {
-                return false;
-            }
-
-            $vars_in_scope = $vars_in_scope_reconciled;
-        }
     }
 
-    protected function _checkElseIf(PhpParser\Node\Stmt\ElseIf_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
+    protected function _checkCondition(PhpParser\Node\Expr $stmt, Context $context)
     {
-        if ($this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope) === false) {
-            return false;
-        }
-
-        $if_types = $this->_type_checker->getTypeAssertions($stmt->cond);
-
-        $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($if_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
-
-        if ($elseif_vars_reconciled === false) {
-            return false;
-        }
-
-        $elseif_vars = $elseif_vars_reconciled;
-
-        if ($this->check($stmt->stmts, $elseif_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope) === false) {
-            return false;
-        }
-
-        $vars_in_scope = $elseif_vars;
+        return $this->_checkExpression($stmt, $context);
     }
 
-    protected function _checkElse(PhpParser\Node\Stmt\Else_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
-    {
-        $this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
-    }
-
-    protected function _checkCondition(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
-    {
-        return $this->_checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope);
-    }
-
-    protected function _checkStatic(PhpParser\Node\Stmt\Static_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope = [])
+    protected function _checkStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
     {
         foreach ($stmt->vars as $var) {
             if ($var instanceof PhpParser\Node\Stmt\StaticVar) {
                 if (is_string($var->name)) {
                     if ($this->_check_variables) {
-                        $vars_in_scope[$var->name] = Type::getMixed();
-                        $vars_possibly_in_scope[$var->name] = true;
+                        $context->vars_in_scope[$var->name] = Type::getMixed();
+                        $context->vars_possibly_in_scope[$var->name] = true;
                         $this->registerVariable($var->name, $var->getLine());
                     }
                 } else {
-                    if ($this->_checkExpression($var->name, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                    if ($this->_checkExpression($var->name, $context) === false) {
                         return false;
                     }
                 }
 
                 if ($var->default) {
-                    if ($this->_checkExpression($var->default, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                    if ($this->_checkExpression($var->default, $context) === false) {
                         return false;
                     }
                 }
             } else {
-                if ($this->_checkExpression($var, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($var, $context) === false) {
                     return false;
                 }
             }
@@ -830,29 +600,29 @@ class StatementsChecker
     /**
      * @return false|null
      */
-    protected function _checkExpression(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope = [], $array_assignment = false)
+    protected function _checkExpression(PhpParser\Node\Expr $stmt, Context $context, $array_assignment = false)
     {
         foreach (Config::getInstance()->getPlugins() as $plugin) {
 
-            if ($plugin->checkExpression($stmt, $vars_in_scope, $vars_possibly_in_scope, $this->_file_name) === false) {
+            if ($plugin->checkExpression($stmt, $context, $this->_file_name) === false) {
                 return false;
             }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            return $this->_checkVariable($stmt, $vars_in_scope, $vars_possibly_in_scope, null, -1, $array_assignment);
+            return $this->_checkVariable($stmt, $context, null, -1, $array_assignment);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            return $this->_checkAssignment($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkAssignment($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp) {
-            return $this->_checkAssignmentOperation($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkAssignmentOperation($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
-            return $this->_checkMethodCall($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkMethodCall($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
-            return $this->_checkStaticCall($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkStaticCall($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             return $this->_checkConstFetch($stmt);
@@ -873,10 +643,10 @@ class StatementsChecker
             $stmt->inferredType = Type::getFloat();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
-            return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->expr, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
-            return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->expr, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             foreach ($stmt->vars as $isset_var) {
@@ -886,137 +656,136 @@ class StatementsChecker
                     is_string($isset_var->name)
                 ) {
                     $var_id = 'this->' . $isset_var->name;
-                    $vars_in_scope[$var_id] = Type::getMixed();
-                    $vars_possibly_in_scope[$var_id] = true;
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    $context->vars_possibly_in_scope[$var_id] = true;
                 }
             }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
-            return $this->_checkClassConstFetch($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkClassConstFetch($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
-            return $this->_checkPropertyFetch($stmt, $vars_in_scope, $vars_possibly_in_scope, $array_assignment);
+            return $this->_checkPropertyFetch($stmt, $context, $array_assignment);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-            return $this->_checkStaticPropertyFetch($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkStaticPropertyFetch($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
-            return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->expr, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            return $this->_checkBinaryOp($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkBinaryOp($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostInc) {
-            return $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->var, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostDec) {
-            return $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->var, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PreInc) {
-            return $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->var, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PreDec) {
-            return $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->var, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\New_) {
-            return $this->_checkNew($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkNew($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
-            return $this->_checkArray($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkArray($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\Encapsed) {
-            return $this->_checkEncapsulatedString($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkEncapsulatedString($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
-            return $this->_checkFunctionCall($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkFunctionCall($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Ternary) {
-            return $this->_checkTernary($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkTernary($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            return $this->_checkBooleanNot($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkBooleanNot($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Empty_) {
-            return $this->_checkEmpty($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkEmpty($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Closure) {
             $closure_checker = new ClosureChecker($stmt, $this->_source);
 
-            if ($this->_checkClosureUses($stmt, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkClosureUses($stmt, $context) === false) {
                 return false;
             }
 
-            $use_vars = [];
-            $use_vars_possibly_in_scope = [];
+            $use_context = new Context();
 
             if (!$this->_is_static) {
                 $this_class = ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ?
                     ClassChecker::getThisClass() :
                     $this->_absolute_class;
 
-                $use_vars['this'] = new Type\Union([new Type\Atomic($this_class)]);
+                $use_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this_class)]);
             }
 
-            foreach ($vars_in_scope as $var => $type) {
+            foreach ($context->vars_in_scope as $var => $type) {
                 if (strpos($var, 'this->') === 0) {
-                    $use_vars[$var] = $type;
+                    $use_context->vars_in_scope[$var] = $type;
                 }
             }
 
-            foreach ($vars_possibly_in_scope as $var => $type) {
+            foreach ($context->vars_possibly_in_scope as $var => $type) {
                 if (strpos($var, 'this->') === 0) {
-                    $use_vars_possibly_in_scope[$var] = true;
+                    $use_context->var_possibly_in_scope[$var] = true;
                 }
             }
 
             foreach ($stmt->uses as $use) {
-                $use_vars[$use->var] = isset($vars_in_scope[$use->var]) ? $vars_in_scope[$use->var] : Type::getMixed();
-                $use_vars_possibly_in_scope[$use->var] = true;
+                $use_context->vars_in_scope[$use->var] = isset($context->vars_in_scope[$use->var]) ? $context->vars_in_scope[$use->var] : Type::getMixed();
+                $use_context->vars_possibly_in_scope[$use->var] = true;
             }
 
-            $closure_checker->check($use_vars, $use_vars_possibly_in_scope, $this->_check_methods);
+            $closure_checker->check($use_context, $this->_check_methods);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            return $this->_checkArrayAccess($stmt, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkArrayAccess($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
             $stmt->inferredType = Type::getInt();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
             $stmt->inferredType = Type::getDouble();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
             $stmt->inferredType = Type::getBool();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
             $stmt->inferredType = Type::getString();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
             $stmt->inferredType = Type::getObject();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
             $stmt->inferredType = Type::getArray();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -1025,7 +794,7 @@ class StatementsChecker
             }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Instanceof_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -1041,7 +810,7 @@ class StatementsChecker
             // do nothing
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -1079,10 +848,10 @@ class StatementsChecker
                 }
 
                 if (file_exists($path_to_file)) {
-                    $include_stmts = FileChecker::getStatements($path_to_file);
+                    $include_stmts = FileChecker::getStatementsForFile($path_to_file);
 
                     $this->_require_file_name = $path_to_file;
-                    $this->check($include_stmts, $vars_in_scope, $vars_possibly_in_scope);
+                    $this->check($include_stmts, $context);
                     return;
                 }
             }
@@ -1094,22 +863,22 @@ class StatementsChecker
             $this->_check_classes = false;
             $this->_check_variables = false;
 
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-                $vars_in_scope[$stmt->var->name] = Type::getMixed();
-                $vars_possibly_in_scope[$stmt->var->name] = true;
+                $context->vars_in_scope[$stmt->var->name] = Type::getMixed();
+                $context->vars_possibly_in_scope[$stmt->var->name] = true;
                 $this->registerVariable($stmt->var->name, $stmt->var->getLine());
             } else {
-                if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($stmt->var, $context) === false) {
                     return false;
                 }
             }
 
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -1124,7 +893,7 @@ class StatementsChecker
             }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Print_) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -1137,7 +906,7 @@ class StatementsChecker
     /**
      * @return false|null
      */
-    protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $method_id = null, $argument_offset = -1, $array_assignment = false)
+    protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, Context $context, $method_id = null, $argument_offset = -1, $array_assignment = false)
     {
         if ($this->_is_static && $stmt->name === 'this') {
             if (ExceptionHandler::accepts(
@@ -1151,8 +920,8 @@ class StatementsChecker
             $stmt->inferredType = Type::getMixed();
 
             if (is_string($stmt->name)) {
-                $vars_in_scope[$stmt->name] = Type::getMixed();
-                $vars_possibly_in_scope[$stmt->name] = true;
+                $context->vars_in_scope[$stmt->name] = Type::getMixed();
+                $context->vars_possibly_in_scope[$stmt->name] = true;
             }
 
             return;
@@ -1163,11 +932,11 @@ class StatementsChecker
         }
 
         if (!is_string($stmt->name)) {
-            return $this->_checkExpression($stmt->name, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkExpression($stmt->name, $context);
         }
 
-        if ($method_id && isset($vars_in_scope[$stmt->name]) && !$vars_in_scope[$stmt->name]->isMixed()) {
-            if ($this->_checkFunctionArgumentType($vars_in_scope[$stmt->name], $method_id, $argument_offset, $this->_file_name, $stmt->getLine()) === false) {
+        if ($method_id && isset($context->vars_in_scope[$stmt->name]) && !$context->vars_in_scope[$stmt->name]->isMixed()) {
+            if ($this->_checkFunctionArgumentType($context->vars_in_scope[$stmt->name], $method_id, $argument_offset, $this->_file_name, $stmt->getLine()) === false) {
                 return false;
             }
         }
@@ -1177,20 +946,20 @@ class StatementsChecker
         }
 
         if ($method_id && $this->_isPassedByReference($method_id, $argument_offset)) {
-            $this->_assignByRefParam($stmt, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+            $this->_assignByRefParam($stmt, $method_id, $context);
             return;
         }
 
         $var_name = $stmt->name;
 
-        if (!isset($vars_in_scope[$var_name])) {
-            if (!isset($vars_possibly_in_scope[$var_name]) || !isset($this->_all_vars[$var_name])) {
+        if (!isset($context->vars_in_scope[$var_name])) {
+            if (!isset($context->vars_possibly_in_scope[$var_name]) || !isset($this->_all_vars[$var_name])) {
                 if ($array_assignment) {
                     // if we're in an array assignment, let's assign the variable
                     // because PHP allows it
 
-                    $vars_in_scope[$var_name] = Type::getArray();
-                    $vars_possibly_in_scope[$var_name] = true;
+                    $context->vars_in_scope[$var_name] = Type::getArray();
+                    $context->vars_possibly_in_scope[$var_name] = true;
                     $this->registerVariable($var_name, $stmt->getLine());
                 }
                 else {
@@ -1217,11 +986,11 @@ class StatementsChecker
             }
 
         } else {
-            $stmt->inferredType = $vars_in_scope[$var_name];
+            $stmt->inferredType = $context->vars_in_scope[$var_name];
         }
     }
 
-    protected function _assignByRefParam(PhpParser\Node\Expr $stmt, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _assignByRefParam(PhpParser\Node\Expr $stmt, $method_id, Context $context)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             $property_id = $stmt->name;
@@ -1233,8 +1002,8 @@ class StatementsChecker
             throw new \InvalidArgumentException('Bad property passed to _checkMethodParam');
         }
 
-        if (!isset($vars_in_scope[$property_id])) {
-            $vars_possibly_in_scope[$property_id] = true;
+        if (!isset($context->vars_in_scope[$property_id])) {
+            $context->vars_possibly_in_scope[$property_id] = true;
             $this->registerVariable($property_id, $stmt->getLine());
 
             if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $this->_source->getMethodId()) {
@@ -1248,13 +1017,13 @@ class StatementsChecker
             }
         }
 
-        $vars_in_scope[$property_id] = Type::getMixed();
+        $context->vars_in_scope[$property_id] = Type::getMixed();
     }
 
-    protected function _checkPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $array_assignment = false)
+    protected function _checkPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, Context $context, $array_assignment = false)
     {
         if (!is_string($stmt->name)) {
-            if ($this->_checkExpression($stmt->name, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->name, $context) === false) {
                 return false;
             }
         }
@@ -1262,18 +1031,18 @@ class StatementsChecker
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if ($stmt->var->name === 'this') {
                 if (is_string($stmt->name)) {
-                    return $this->_checkThisPropertyFetch($stmt, $vars_in_scope, $vars_possibly_in_scope, $array_assignment);
+                    return $this->_checkThisPropertyFetch($stmt, $context, $array_assignment);
                 }
             }
 
-            return $this->_checkVariable($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
+            return $this->_checkVariable($stmt->var, $context);
 
         }
 
-        return $this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope);
+        return $this->_checkExpression($stmt->var, $context);
     }
 
-    protected function _checkThisPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $array_assignment = false)
+    protected function _checkThisPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, Context $context, $array_assignment = false)
     {
         $class_checker = $this->_source->getClassChecker();
 
@@ -1288,22 +1057,22 @@ class StatementsChecker
         $var_id = self::getVarId($stmt);
         $property_names = $class_checker->getPropertyNames();
 
-        if (isset($vars_in_scope[$var_id])) {
-            $stmt->inferredType = $vars_in_scope[$var_id];
+        if (isset($context->vars_in_scope[$var_id])) {
+            $stmt->inferredType = $context->vars_in_scope[$var_id];
         }
 
         if (!in_array($stmt->name, $property_names)) {
             $property_id = $this->_absolute_class . '::' . $stmt->name;
 
-            $var_defined = isset($vars_in_scope[$var_id]) || isset($vars_possibly_in_scope[$var_id]);
+            $var_defined = isset($context->vars_in_scope[$var_id]) || isset($context->vars_possibly_in_scope[$var_id]);
 
             if ((ClassChecker::getThisClass() && !$var_defined) || (!ClassChecker::getThisClass() && !$var_defined && !self::_propertyExists($property_id))) {
                 if ($array_assignment) {
                     // if we're in an array assignment, let's assign the variable
                     // because PHP allows it
 
-                    $vars_in_scope[$var_id] = Type::getArray();
-                    $vars_possibly_in_scope[$var_id] = true;
+                    $context->vars_in_scope[$var_id] = Type::getArray();
+                    $context->vars_possibly_in_scope[$var_id] = true;
                     $this->registerVariable($var_id, $stmt->getLine());
                 }
                 else {
@@ -1318,7 +1087,7 @@ class StatementsChecker
         }
     }
 
-    protected function _checkNew(PhpParser\Node\Expr\New_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkNew(PhpParser\Node\Expr\New_ $stmt, Context $context)
     {
         $absolute_class = null;
 
@@ -1336,13 +1105,13 @@ class StatementsChecker
         if ($absolute_class) {
             $method_id = $absolute_class . '::__construct';
 
-            if ($this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkMethodParams($stmt->args, $method_id, $context) === false) {
                 return false;
             }
         }
     }
 
-    protected function _checkArray(PhpParser\Node\Expr\Array_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkArray(PhpParser\Node\Expr\Array_ $stmt, Context $context)
     {
         // if the array is empty, this special type allows us to match any other array type against it
         if (empty($stmt->items)) {
@@ -1352,12 +1121,12 @@ class StatementsChecker
 
         foreach ($stmt->items as $item) {
             if ($item->key) {
-                if ($this->_checkExpression($item->key, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($item->key, $context) === false) {
                     return false;
                 }
             }
 
-            if ($this->_checkExpression($item->value, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($item->value, $context) === false) {
                 return false;
             }
         }
@@ -1365,23 +1134,24 @@ class StatementsChecker
         $stmt->inferredType = Type::getArray();
     }
 
-    protected function _checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, Context $context)
     {
-        $this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope);
+        $original_context = clone $context;
+        $this->check($stmt->stmts, $context);
 
         foreach ($stmt->catches as $catch) {
-            $catch_vars_in_scope = array_merge([], $vars_in_scope);
+            $catch_context = clone $original_context;
 
             if ($catch->type) {
-                $catch_vars_in_scope[$catch->var] = new Type\Union([
+                $catch_context->vars_in_scope[$catch->var] = new Type\Union([
                     new Type\Atomic(ClassChecker::getAbsoluteClassFromName($catch->type, $this->_namespace, $this->_aliased_classes))
                 ]);
             }
             else {
-                $catch_vars_in_scope[$catch->var] = Type::getMixed();
+                $catch_context->vars_in_scope[$catch->var] = Type::getMixed();
             }
 
-            $vars_possibly_in_scope[$catch->var] = true;
+            $catch_context->vars_possibly_in_scope[$catch->var] = true;
 
             $this->registerVariable($catch->var, $catch->getLine());
 
@@ -1391,66 +1161,66 @@ class StatementsChecker
                 }
             }
 
-            $this->check($catch->stmts, $catch_vars_in_scope, $vars_possibly_in_scope);
+            $this->check($catch->stmts, $catch_context);
 
-            foreach ($catch_vars_in_scope as $catch_var => $type) {
-                if ($catch->var !== $catch_var && isset($vars_in_scope[$catch_var]) && (string) $vars_in_scope[$catch_var] !== (string) $type) {
-                    $vars_in_scope[$catch_var] = Type::combineUnionTypes($vars_in_scope[$catch_var], $type);
+            foreach ($catch_context->vars_in_scope as $catch_var => $type) {
+                if ($catch->var !== $catch_var && isset($context->vars_in_scope[$catch_var]) && (string) $context->vars_in_scope[$catch_var] !== (string) $type) {
+                    $context->vars_in_scope[$catch_var] = Type::combineUnionTypes($context->vars_in_scope[$catch_var], $type);
                 }
             }
         }
 
         if ($stmt->finallyStmts) {
-            $this->check($stmt->finallyStmts, $vars_in_scope, $vars_possibly_in_scope);
+            $this->check($stmt->finallyStmts, $context);
         }
     }
 
-    protected function _checkFor(PhpParser\Node\Stmt\For_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkFor(PhpParser\Node\Stmt\For_ $stmt, Context $context)
     {
-        $for_vars = array_merge([], $vars_in_scope);
+        $for_vars = array_merge([], $context->vars_in_scope);
 
         foreach ($stmt->init as $init) {
-            if ($this->_checkExpression($init, $for_vars, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($init, $for_vars, $context->vars_possibly_in_scope) === false) {
                 return false;
             }
         }
 
         foreach ($stmt->cond as $condition) {
-            if ($this->_checkCondition($condition, $for_vars, $vars_possibly_in_scope) === false) {
+            if ($this->_checkCondition($condition, $for_vars, $context->vars_possibly_in_scope) === false) {
                 return false;
             }
         }
 
         foreach ($stmt->loop as $expr) {
-            if ($this->_checkExpression($expr, $for_vars, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($expr, $for_vars, $context->vars_possibly_in_scope) === false) {
                 return false;
             }
         }
 
         $for_vars_possibly_in_scope = [];
 
-        $this->check($stmt->stmts, $for_vars, $vars_possibly_in_scope, $for_vars_possibly_in_scope);
+        $this->check($stmt->stmts, $for_vars, $context->vars_possibly_in_scope, $for_vars_possibly_in_scope);
 
-        foreach ($vars_in_scope as $var => $type) {
+        foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
                 continue;
             }
 
             if ($for_vars[$var]->isMixed()) {
-                $vars_in_scope[$var] = $for_vars[$var];
+                $context->vars_in_scope[$var] = $for_vars[$var];
             }
 
             if ((string) $for_vars[$var] !== (string) $type) {
-                $vars_in_scope[$var] = Type::combineUnionTypes($vars_in_scope[$var], $for_vars[$var]);
+                $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $for_vars[$var]);
             }
         }
 
-        $vars_possibly_in_scope = array_merge($for_vars_possibly_in_scope, $vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge($for_vars_possibly_in_scope, $context->vars_possibly_in_scope);
     }
 
-    protected function _checkForeach(PhpParser\Node\Stmt\Foreach_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkForeach(PhpParser\Node\Stmt\Foreach_ $stmt, Context $context)
     {
-        if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkExpression($stmt->expr, $context) === false) {
             return false;
         }
 
@@ -1458,7 +1228,7 @@ class StatementsChecker
 
         if ($stmt->keyVar) {
             $foreach_vars[$stmt->keyVar->name] = Type::getMixed();
-            $vars_possibly_in_scope[$stmt->keyVar->name] = true;
+            $context->vars_possibly_in_scope[$stmt->keyVar->name] = true;
             $this->registerVariable($stmt->keyVar->name, $stmt->getLine());
         }
 
@@ -1467,7 +1237,7 @@ class StatementsChecker
 
             $var_id = self::getVarId($stmt->expr);
 
-            $iterator_type = isset($vars_in_scope[$var_id]) ? $vars_in_scope[$var_id] : null;
+            $iterator_type = isset($context->vars_in_scope[$var_id]) ? $context->vars_in_scope[$var_id] : null;
 
             if ($iterator_type) {
                 foreach ($iterator_type->types as $return_type) {
@@ -1510,38 +1280,41 @@ class StatementsChecker
             }
 
             $foreach_vars[$stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
-            $vars_possibly_in_scope[$stmt->valueVar->name] = true;
+            $context->vars_possibly_in_scope[$stmt->valueVar->name] = true;
             $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
         }
 
-        $foreach_vars = array_merge($vars_in_scope, $foreach_vars);
+        $foreach_vars = array_merge($context->vars_in_scope, $foreach_vars);
 
         $foreach_vars_possibly_in_scope = [];
 
-        $this->check($stmt->stmts, $foreach_vars, $vars_possibly_in_scope, $foreach_vars_possibly_in_scope);
+        $foreach_context = clone $context;
+        $foreach_context->vars_in_scope = $foreach_vars;
 
-        foreach ($vars_in_scope as $var => $type) {
+        $this->check($stmt->stmts, $foreach_context, $foreach_vars_possibly_in_scope);
+
+        foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
                 continue;
             }
 
-            if ($foreach_vars[$var]->isMixed()) {
-                $vars_in_scope[$var] = $foreach_vars[$var];
+            if ($foreach_context->vars_in_scope[$var]->isMixed()) {
+                $context->vars_in_scope[$var] = $foreach_vars[$var];
             }
 
-            if ((string) $foreach_vars[$var] !== (string) $type) {
-                $vars_in_scope[$var] = Type::combineUnionTypes($vars_in_scope[$var], $foreach_vars[$var]);
+            if ((string) $foreach_context->vars_in_scope[$var] !== (string) $type) {
+                $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $foreach_context->vars_in_scope[$var]);
             }
         }
 
-        $vars_possibly_in_scope = array_merge($foreach_vars_possibly_in_scope, $vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge($foreach_vars_possibly_in_scope, $context->vars_possibly_in_scope);
     }
 
-    protected function _checkWhile(PhpParser\Node\Stmt\While_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkWhile(PhpParser\Node\Stmt\While_ $stmt, Context $context)
     {
-        $while_vars = array_merge([], $vars_in_scope);
+        $while_context = clone $context;
 
-        if ($this->_checkCondition($stmt->cond, $while_vars, $vars_possibly_in_scope) === false) {
+        if ($this->_checkCondition($stmt->cond, $while_context) === false) {
             return false;
         }
 
@@ -1552,46 +1325,46 @@ class StatementsChecker
             // do nothing
         }
         else {
-            $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($while_types, $while_vars, $this->_file_name, $stmt->getLine());
+            $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($while_types, $while_context->vars_in_scope, $this->_file_name, $stmt->getLine());
 
             if ($while_vars_in_scope_reconciled === false) {
                 return false;
             }
 
-            $while_vars = $while_vars_in_scope_reconciled;
+            $while_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
-        if ($this->check($stmt->stmts, $while_vars, $vars_possibly_in_scope) === false) {
+        if ($this->check($stmt->stmts, $while_context) === false) {
             return false;
         }
 
-        foreach ($vars_in_scope as $var => $type) {
+        foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
                 continue;
             }
 
-            if ($while_vars[$var]->isMixed()) {
-                $vars_in_scope[$var] = $while_vars[$var];
+            if ($while_context->vars_in_scope[$var]->isMixed()) {
+                $context->vars_in_scope[$var] = $while_context->vars_in_scope[$var];
             }
 
-            if ($while_vars[$var] !== $type) {
-                $vars_in_scope[$var]->types = array_merge($vars_in_scope[$var]->types, $while_vars[$var]->types);
+            if ($while_context->vars_in_scope[$var] !== $type) {
+                $context->vars_in_scope[$var]->types = array_merge($context->vars_in_scope[$var]->types, $while_context->vars_in_scope[$var]->types);
             }
         }
     }
 
-    protected function _checkDo(PhpParser\Node\Stmt\Do_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
-        if ($this->check($stmt->stmts, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->check($stmt->stmts, $context) === false) {
             return false;
         }
 
-        $vars_in_scope_copy = array_merge([], $vars_in_scope);
+        $context->vars_in_scope_copy = array_merge([], $context->vars_in_scope);
 
-        return $this->_checkCondition($stmt->cond, $vars_in_scope_copy, $vars_possibly_in_scope);
+        return $this->_checkCondition($stmt->cond, $context->vars_in_scope_copy, $context->vars_possibly_in_scope);
     }
 
-    protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $nesting = 0)
+    protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, Context $context, $nesting = 0)
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
             // ignore deeply-nested string concatenation
@@ -1599,19 +1372,22 @@ class StatementsChecker
         else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
             $left_type_assertions = $this->_type_checker->getTypeAssertions($stmt->left, true);
 
-            if ($this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->left, $context) === false) {
                 return false;
             }
 
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes($left_type_assertions, $vars_in_scope, $this->_file_name, $stmt->getLine());
+            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes($left_type_assertions, $context->vars_in_scope, $this->_file_name, $stmt->getLine());
 
             if ($op_vars_in_scope === false) {
                 return false;
             }
 
-            if ($this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope) === false) {
+            $new_context = clone $context;
+            $new_context->vars_in_scope = $op_vars_in_scope;
+
+            if ($this->_checkExpression($stmt->right, $new_context) === false) {
                 return false;
             }
         }
@@ -1620,19 +1396,22 @@ class StatementsChecker
 
             $negated_type_assertions = TypeChecker::negateTypes($left_type_assertions);
 
-            if ($this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->left, $context) === false) {
                 return false;
             }
 
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
-            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes($negated_type_assertions, $vars_in_scope, $this->_file_name, $stmt->getLine());
+            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes($negated_type_assertions, $context->vars_in_scope, $this->_file_name, $stmt->getLine());
 
             if ($op_vars_in_scope === false) {
                 return false;
             }
 
-            if ($this->_checkExpression($stmt->right, $op_vars_in_scope, $vars_possibly_in_scope) === false) {
+            $new_context = clone $context;
+            $new_context->vars_in_scope = $op_vars_in_scope;
+
+            if ($this->_checkExpression($stmt->right, $new_context) === false) {
                 return false;
             }
         }
@@ -1642,23 +1421,23 @@ class StatementsChecker
             }
 
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
-                if ($this->_checkBinaryOp($stmt->left, $vars_in_scope, $vars_possibly_in_scope, ++$nesting) === false) {
+                if ($this->_checkBinaryOp($stmt->left, $context, ++$nesting) === false) {
                     return false;
                 }
             }
             else {
-                if ($this->_checkExpression($stmt->left, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($stmt->left, $context) === false) {
                     return false;
                 }
             }
 
             if ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp) {
-                if ($this->_checkBinaryOp($stmt->right, $vars_in_scope, $vars_possibly_in_scope, ++$nesting) === false) {
+                if ($this->_checkBinaryOp($stmt->right, $context, ++$nesting) === false) {
                     return false;
                 }
             }
             else {
-                if ($this->_checkExpression($stmt->right, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($stmt->right, $context) === false) {
                     return false;
                 }
             }
@@ -1679,9 +1458,9 @@ class StatementsChecker
         }
     }
 
-    protected function _checkAssignment(PhpParser\Node\Expr\Assign $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkAssignment(PhpParser\Node\Expr\Assign $stmt, Context $context)
     {
-        if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkExpression($stmt->expr, $context) === false) {
             return false;
         }
 
@@ -1714,8 +1493,8 @@ class StatementsChecker
         $var_id = self::getVarId($stmt->var);
 
         if ($type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
-            if (isset($vars_in_scope[$type_in_comments_var_id])) {
-                $vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
+            if (isset($context->vars_in_scope[$type_in_comments_var_id])) {
+                $context->vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
             }
 
             $type_in_comments = null;
@@ -1734,22 +1513,22 @@ class StatementsChecker
         $stmt->inferredType = $return_type;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable && is_string($stmt->var->name)) {
-            $vars_in_scope[$var_id] = $return_type;
-            $vars_possibly_in_scope[$var_id] = true;
+            $context->vars_in_scope[$var_id] = $return_type;
+            $context->vars_possibly_in_scope[$var_id] = true;
             $this->registerVariable($var_id, $stmt->var->getLine());
 
         } elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $var) {
                 if ($var) {
-                    $vars_in_scope[$var->name] = Type::getMixed();
-                    $vars_possibly_in_scope[$var->name] = true;
+                    $context->vars_in_scope[$var->name] = Type::getMixed();
+                    $context->vars_possibly_in_scope[$var->name] = true;
                     $this->registerVariable($var->name, $var->getLine());
                 }
             }
 
         } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
 
-            if ($this->_checkArrayAssignment($stmt->var, $vars_in_scope, $vars_possibly_in_scope, $return_type) === false) {
+            if ($this->_checkArrayAssignment($stmt->var, $context, $return_type) === false) {
                 return false;
             }
 
@@ -1767,14 +1546,14 @@ class StatementsChecker
             $property_id = $this->_absolute_class . '::' . $stmt->var->name;
             self::$_existing_properties[$property_id] = 1;
 
-            $vars_in_scope[$var_id] = $return_type;
-            $vars_possibly_in_scope[$var_id] = true;
+            $context->vars_in_scope[$var_id] = $return_type;
+            $context->vars_possibly_in_scope[$var_id] = true;
 
             // right now we have to settle for mixed
             self::$_this_assignments[$method_id][$stmt->var->name] = Type::getMixed();
         }
 
-        if ($var_id && isset($vars_in_scope[$var_id]) && $vars_in_scope[$var_id] instanceof Type\Void) {
+        if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
             if (ExceptionHandler::accepts(
                 new FailedTypeResolution('Cannot assign $' . $var_id . ' to type void', $this->_file_name, $stmt->getLine())
             )) {
@@ -1804,9 +1583,9 @@ class StatementsChecker
         return null;
     }
 
-    protected function _checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, Type\Union $assignment_type)
+    protected function _checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, Type\Union $assignment_type)
     {
-        if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope, true) === false) {
+        if ($this->_checkExpression($stmt->var, $context, true) === false) {
             return false;
         }
 
@@ -1836,7 +1615,7 @@ class StatementsChecker
                     $type = $refined_type;
                 }
 
-                $vars_in_scope[$var_id] = $return_type;
+                $context->vars_in_scope[$var_id] = $return_type;
             }
         }
     }
@@ -1846,7 +1625,7 @@ class StatementsChecker
      * @param  Type\Atomic $type
      * @param  string      $var_id
      * @param  int         $line_number
-     * @return Type\Atomic
+     * @return Type\Atomic|false
      */
     protected function _refineArrayType(Type\Atomic $type, Type\Union $assignment_type, $var_id, $line_number)
     {
@@ -1905,18 +1684,18 @@ class StatementsChecker
         return $type;
     }
 
-    protected function _checkAssignmentOperation(PhpParser\Node\Expr\AssignOp $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkAssignmentOperation(PhpParser\Node\Expr\AssignOp $stmt, Context $context)
     {
-        if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkExpression($stmt->var, $context) === false) {
             return false;
         }
 
-        return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+        return $this->_checkExpression($stmt->expr, $context);
     }
 
-    protected function _checkMethodCall(PhpParser\Node\Expr\MethodCall $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkMethodCall(PhpParser\Node\Expr\MethodCall $stmt, Context $context)
     {
-        if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkExpression($stmt->var, $context) === false) {
             return false;
         }
 
@@ -1925,7 +1704,7 @@ class StatementsChecker
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (!is_string($stmt->var->name)) {
-                if ($this->_checkExpression($stmt->var->name, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($stmt->var->name, $context) === false) {
                     return false;
                 }
             }
@@ -1937,14 +1716,14 @@ class StatementsChecker
                 }
             }
         } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
-            if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->var, $context) === false) {
                 return false;
             }
         }
 
         $var_id = self::getVarId($stmt->var);
 
-        $class_type = isset($vars_in_scope[$var_id]) ? $vars_in_scope[$var_id] : null;
+        $class_type = isset($context->vars_in_scope[$var_id]) ? $context->vars_in_scope[$var_id] : null;
 
         // make sure we stay vague here
         if (!$class_type) {
@@ -1969,7 +1748,7 @@ class StatementsChecker
 
                 $method_id = $this->_absolute_class . '::' . $stmt->name;
 
-                if ($this->_checkInsideMethod($method_id, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkInsideMethod($method_id, $context) === false) {
                     return false;
                 }
             }
@@ -2050,56 +1829,54 @@ class StatementsChecker
             }
         }
 
-        if ($this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkMethodParams($stmt->args, $method_id, $context) === false) {
             return false;
         }
     }
 
-    protected function _checkInsideMethod($method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkInsideMethod($method_id, Context $context)
     {
         $method_checker = ClassChecker::getMethodChecker($method_id);
 
         if ($method_checker && $method_checker->getMethodId() !== $this->_source->getMethodId()) {
-            $this_vars_in_scope = [];
+            $this_context = new Context();
 
-            $this_vars_possibly_in_scope = [];
-
-            foreach ($vars_possibly_in_scope as $var => $type) {
+            foreach ($context->vars_possibly_in_scope as $var => $type) {
                 if (strpos($var, 'this->') === 0) {
-                    $this_vars_possibly_in_scope[$var] = true;
+                    $this_context->vars_possibly_in_scope[$var] = true;
                 }
             }
 
-            foreach ($vars_in_scope as $var => $type) {
+            foreach ($context->vars_in_scope as $var => $type) {
                 if (strpos($var, 'this->') === 0) {
-                    $this_vars_in_scope[$var] = $type;
+                    $this_context->vars_in_scope[$var] = $type;
                 }
             }
 
-            $method_checker->check($this_vars_in_scope, $this_vars_possibly_in_scope);
+            $method_checker->check($this_context);
 
-            foreach ($this_vars_in_scope as $var => $type) {
-                $vars_possibly_in_scope[$var] = true;
+            foreach ($this_context->vars_in_scope as $var => $type) {
+                $context->vars_possibly_in_scope[$var] = true;
             }
 
-            foreach ($this_vars_in_scope as $var => $type) {
-                $vars_in_scope[$var] = $type;
+            foreach ($this_context->vars_in_scope as $var => $type) {
+                $context->vars_in_scope[$var] = $type;
             }
         }
     }
 
-    protected function _checkClosureUses(PhpParser\Node\Expr\Closure $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkClosureUses(PhpParser\Node\Expr\Closure $stmt, Context $context)
     {
         foreach ($stmt->uses as $use) {
-            if (!isset($vars_in_scope[$use->var])) {
+            if (!isset($context->vars_in_scope[$use->var])) {
                 if ($use->byRef) {
-                    $vars_in_scope[$use->var] = Type::getMixed();
-                    $vars_possibly_in_scope[$use->var] = true;
+                    $context->vars_in_scope[$use->var] = Type::getMixed();
+                    $context->vars_possibly_in_scope[$use->var] = true;
                     $this->registerVariable($use->var, $use->getLine());
                     return;
                 }
 
-                if (!isset($vars_possibly_in_scope[$use->var])) {
+                if (!isset($context->vars_possibly_in_scope[$use->var])) {
                     if (ExceptionHandler::accepts(
                         new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
                     )) {
@@ -2136,7 +1913,7 @@ class StatementsChecker
     /**
      * @return void
      */
-    protected function _checkStaticCall(PhpParser\Node\Expr\StaticCall $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkStaticCall(PhpParser\Node\Expr\StaticCall $stmt, Context $context)
     {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             // this is when calling $some_class::staticMethod() - which is a shitty way of doing things
@@ -2177,7 +1954,7 @@ class StatementsChecker
             if (ClassChecker::getThisClass()) {
                 $method_id = $absolute_class . '::' . $stmt->name;
 
-                if ($this->_checkInsideMethod($method_id, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkInsideMethod($method_id, $context) === false) {
                     return false;
                 }
             }
@@ -2229,7 +2006,7 @@ class StatementsChecker
             }
         }
 
-        return $this->_checkMethodParams($stmt->args, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+        return $this->_checkMethodParams($stmt->args, $method_id, $context);
     }
 
     protected static function _fleshOutReturnTypes(Type\Union $return_type, array $args, $method_id)
@@ -2266,7 +2043,7 @@ class StatementsChecker
             }
         }
 
-        if ($return_type instanceof GenericType) {
+        if ($return_type instanceof Type\Generic) {
             foreach ($return_type->type_params as $type_param) {
                 if ($type_param instanceof Type\Union) {
                     $type_param = self::_fleshOutReturnTypes($type_param, $args, $method_id);
@@ -2307,7 +2084,7 @@ class StatementsChecker
         return $original_call === $call || strpos($call, '$') !== false ? null : $call;
     }
 
-    protected function _checkMethodParams(array $args, $method_id, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkMethodParams(array $args, $method_id, Context $context)
     {
         foreach ($args as $i => $arg) {
             if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch &&
@@ -2318,26 +2095,26 @@ class StatementsChecker
                 $property_id = 'this' . '->' . $arg->value->name;
 
                 if ($method_id) {
-                    if (isset($vars_in_scope[$property_id]) && !$vars_in_scope[$property_id]->isMixed()) {
-                        if ($this->_checkFunctionArgumentType($vars_in_scope[$property_id], $method_id, $i, $this->_file_name, $arg->getLine()) === false) {
+                    if (isset($context->vars_in_scope[$property_id]) && !$context->vars_in_scope[$property_id]->isMixed()) {
+                        if ($this->_checkFunctionArgumentType($context->vars_in_scope[$property_id], $method_id, $i, $this->_file_name, $arg->getLine()) === false) {
                             return false;
                         }
                     }
 
                     if ($this->_isPassedByReference($method_id, $i)) {
-                        $this->_assignByRefParam($arg->value, $method_id, $vars_in_scope, $vars_possibly_in_scope);
+                        $this->_assignByRefParam($arg->value, $method_id, $context);
                     }
                     else {
-                        if ($this->_checkPropertyFetch($arg->value, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                        if ($this->_checkPropertyFetch($arg->value, $context) === false) {
                             return false;
                         }
                     }
                 } else {
 
-                    if (false || !isset($vars_in_scope[$property_id]) || $vars_in_scope[$property_id]->isNull()) {
+                    if (false || !isset($context->vars_in_scope[$property_id]) || $context->vars_in_scope[$property_id]->isNull()) {
                         // we don't know if it exists, assume it's passed by reference
-                        $vars_in_scope[$property_id] = Type::getMixed();
-                        $vars_possibly_in_scope[$property_id] = true;
+                        $context->vars_in_scope[$property_id] = Type::getMixed();
+                        $context->vars_possibly_in_scope[$property_id] = true;
                         $this->registerVariable($property_id, $arg->value->getLine());
                     }
 
@@ -2345,20 +2122,20 @@ class StatementsChecker
             }
             elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                 if ($method_id) {
-                    if ($this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i) === false) {
+                    if ($this->_checkVariable($arg->value, $context, $method_id, $i) === false) {
                         return false;
                     }
 
                 } elseif (is_string($arg->value->name)) {
-                    if (false || !isset($vars_in_scope[$arg->value->name]) || $vars_in_scope[$arg->value->name]->isNull()) {
+                    if (false || !isset($context->vars_in_scope[$arg->value->name]) || $context->vars_in_scope[$arg->value->name]->isNull()) {
                         // we don't know if it exists, assume it's passed by reference
-                        $vars_in_scope[$arg->value->name] = Type::getMixed();
-                        $vars_possibly_in_scope[$arg->value->name] = true;
+                        $context->vars_in_scope[$arg->value->name] = Type::getMixed();
+                        $context->vars_possibly_in_scope[$arg->value->name] = true;
                         $this->registerVariable($arg->value->name, $arg->value->getLine());
                     }
                 }
             } else {
-                if ($this->_checkExpression($arg->value, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($arg->value, $context) === false) {
                     return false;
                 }
             }
@@ -2391,7 +2168,7 @@ class StatementsChecker
         }
     }
 
-    protected function _checkClassConstFetch(PhpParser\Node\Expr\ClassConstFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkClassConstFetch(PhpParser\Node\Expr\ClassConstFetch $stmt, Context $context)
     {
         if ($this->_check_consts && $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts !== ['static']) {
             if ($stmt->class->parts === ['self']) {
@@ -2417,7 +2194,7 @@ class StatementsChecker
         }
 
         if ($stmt->class instanceof PhpParser\Node\Expr) {
-            if ($this->_checkExpression($stmt->class, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->class, $context) === false) {
                 return false;
             }
         }
@@ -2426,7 +2203,7 @@ class StatementsChecker
     /**
      * @return null|false
      */
-    protected function _checkStaticPropertyFetch(PhpParser\Node\Expr\StaticPropertyFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkStaticPropertyFetch(PhpParser\Node\Expr\StaticPropertyFetch $stmt, Context $context)
     {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             // this is when calling $some_class::staticMethod() - which is a shitty way of doing things
@@ -2463,7 +2240,7 @@ class StatementsChecker
         }
     }
 
-    protected function _checkReturn(PhpParser\Node\Stmt\Return_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
     {
         $type_in_comments = null;
         $type_in_comments_var_id = null;
@@ -2492,15 +2269,15 @@ class StatementsChecker
         }
 
         if ($type_in_comments_var_id) {
-            if (isset($vars_in_scope[$type_in_comments_var_id])) {
-                $vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
+            if (isset($context->vars_in_scope[$type_in_comments_var_id])) {
+                $context->vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
             }
 
             $type_in_comments = null;
         }
 
         if ($stmt->expr) {
-            if ($this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -2519,15 +2296,17 @@ class StatementsChecker
         }
 
         if ($this->_source instanceof FunctionChecker) {
-            $this->_source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $vars_in_scope, $vars_possibly_in_scope);
+            $this->_source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
         }
     }
 
-    protected function _checkTernary(PhpParser\Node\Expr\Ternary $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkTernary(PhpParser\Node\Expr\Ternary $stmt, Context $context)
     {
-        if ($this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkCondition($stmt->cond, $context) === false) {
             return false;
         }
+
+        $t_if_context = clone $context;
 
         $if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
 
@@ -2535,14 +2314,16 @@ class StatementsChecker
 
         $if_return_type = null;
 
-        $t_if_vars_in_scope = TypeChecker::reconcileKeyedTypes($if_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
+        $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($if_types, $t_if_context->vars_in_scope, $this->_file_name, $stmt->getLine());
 
-        if ($t_if_vars_in_scope === false) {
+        if ($t_if_vars_in_scope_reconciled === false) {
             return false;
         }
 
+        $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+
         if ($stmt->if) {
-            if ($this->_checkExpression($stmt->if, $t_if_vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->if, $t_if_context) === false) {
                 return false;
             }
 
@@ -2563,19 +2344,19 @@ class StatementsChecker
             }
         }
 
+        $t_else_context = clone $context;
+
         if ($can_negate_if_types) {
             $negated_if_types = TypeChecker::negateTypes($if_types);
-            $t_else_vars_in_scope = TypeChecker::reconcileKeyedTypes($negated_if_types, $vars_in_scope, $this->_file_name, $stmt->getLine());
+            $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($negated_if_types, $t_else_context->vars_in_scope, $this->_file_name, $stmt->getLine());
 
-            if ($t_else_vars_in_scope === false) {
+            if ($t_else_vars_in_scope_reconciled === false) {
                 return false;
             }
-        }
-        else {
-            $t_else_vars_in_scope = $vars_in_scope;
+            $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
         }
 
-        if ($this->_checkExpression($stmt->else, $t_else_vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkExpression($stmt->else, $t_else_context) === false) {
             return false;
         }
 
@@ -2600,22 +2381,22 @@ class StatementsChecker
         }
     }
 
-    protected function _checkBooleanNot(PhpParser\Node\Expr\BooleanNot $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkBooleanNot(PhpParser\Node\Expr\BooleanNot $stmt, Context $context)
     {
-        return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+        return $this->_checkExpression($stmt->expr, $context);
     }
 
-    protected function _checkEmpty(PhpParser\Node\Expr\Empty_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkEmpty(PhpParser\Node\Expr\Empty_ $stmt, Context $context)
     {
-        return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+        return $this->_checkExpression($stmt->expr, $context);
     }
 
-    protected function _checkThrow(PhpParser\Node\Stmt\Throw_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
     {
-        return $this->_checkExpression($stmt->expr, $vars_in_scope, $vars_possibly_in_scope);
+        return $this->_checkExpression($stmt->expr, $context);
     }
 
-    protected function _checkSwitch(PhpParser\Node\Stmt\Switch_ $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, array &$for_vars_possibly_in_scope)
+    protected function _checkSwitch(PhpParser\Node\Stmt\Switch_ $stmt, Context $context, array &$for_vars_possibly_in_scope)
     {
         $type_candidate_var = null;
 
@@ -2630,7 +2411,7 @@ class StatementsChecker
             }
         }
 
-        if ($this->_checkCondition($stmt->cond, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkCondition($stmt->cond, $context) === false) {
             return false;
         }
 
@@ -2643,7 +2424,7 @@ class StatementsChecker
 
         foreach ($stmt->cases as $case) {
             if ($case->cond) {
-                if ($this->_checkCondition($case->cond, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkCondition($case->cond, $context) === false) {
                     return false;
                 }
 
@@ -2658,12 +2439,14 @@ class StatementsChecker
                 $switch_vars = $type_candidate_var && !empty($case_types)
                                 ? [$type_candidate_var => Type::parseString(implode('|', $case_types))]
                                 : [];
+                $case_context = clone $context;
 
-                $case_vars_in_scope = array_merge($vars_in_scope, $switch_vars);
-                $old_case_vars = $case_vars_in_scope;
-                $case_vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $switch_vars);
+                $case_context->vars_in_scope = array_merge($case_context->vars_in_scope, $switch_vars);
+                $case_context->vars_possibly_in_scope = array_merge($case_context->vars_possibly_in_scope, $switch_vars);
 
-                $this->check($case->stmts, $case_vars_in_scope, $case_vars_possibly_in_scope);
+                $old_case_context = clone $case_context;
+
+                $this->check($case->stmts, $case_context);
 
                 $last_stmt = $case->stmts[count($case->stmts) - 1];
 
@@ -2671,7 +2454,7 @@ class StatementsChecker
                 $has_ending_statments = ScopeChecker::doesLeaveBlock($case->stmts, false, false);
 
                 if (!$has_ending_statments) {
-                    $vars = array_diff_key($case_vars_possibly_in_scope, $vars_possibly_in_scope);
+                    $vars = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
                     $has_leaving_statements = ScopeChecker::doesLeaveBlock($case->stmts, true, false);
 
@@ -2680,13 +2463,7 @@ class StatementsChecker
                         $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
                     }
                     else {
-                        $case_redefined_vars = [];
-
-                        foreach ($old_case_vars as $case_var => $type) {
-                            if ($case_vars_in_scope[$case_var] !== $type) {
-                                $case_redefined_vars[$case_var] = $case_vars_in_scope[$case_var];
-                            }
-                        }
+                        $case_redefined_vars = Context::getRedefinedVars($context, $case_context);
 
                         if ($redefined_vars === null) {
                             $redefined_vars = $case_redefined_vars;
@@ -2700,20 +2477,20 @@ class StatementsChecker
                         }
 
                         if ($new_vars_in_scope === null) {
-                            $new_vars_in_scope = array_diff_key($case_vars_in_scope, $vars_in_scope);
-                            $new_vars_possibly_in_scope = array_diff_key($case_vars_possibly_in_scope, $vars_possibly_in_scope);
+                            $new_vars_in_scope = array_diff_key($case_context->vars_in_scope, $context->vars_in_scope);
+                            $new_vars_possibly_in_scope = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
                         }
                         else {
                             foreach ($new_vars_in_scope as $new_var => $type) {
-                                if (!isset($case_vars_in_scope[$new_var])) {
+                                if (!isset($case_context->vars_in_scope[$new_var])) {
                                     unset($new_vars_in_scope[$new_var]);
                                 }
                             }
 
                             $new_vars_possibly_in_scope = array_merge(
                                 array_diff_key(
-                                    $case_vars_possibly_in_scope,
-                                    $vars_possibly_in_scope
+                                    $case_context->vars_possibly_in_scope,
+                                    $context->vars_possibly_in_scope
                                 ),
                                 $new_vars_possibly_in_scope
                             );
@@ -2730,16 +2507,16 @@ class StatementsChecker
             // if that default has a throw/return/continue, that should be handled above
             if ($case->cond === null) {
                 if ($new_vars_in_scope) {
-                    $vars_in_scope = array_merge($vars_in_scope, $new_vars_in_scope);
+                    $context->vars_in_scope = array_merge($context->vars_in_scope, $new_vars_in_scope);
                 }
 
                 if ($redefined_vars) {
-                    $vars_in_scope = array_merge($vars_in_scope, $redefined_vars);
+                    $context->vars_in_scope = array_merge($context->vars_in_scope, $redefined_vars);
                 }
             }
         }
 
-        $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $new_vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $new_vars_possibly_in_scope);
     }
 
     protected function _checkFunctionArgumentType(Type\Union $input_type, $method_id, $argument_offset, $file_name, $line_number)
@@ -2803,7 +2580,7 @@ class StatementsChecker
         }
     }
 
-    protected function _checkFunctionCall(PhpParser\Node\Expr\FuncCall $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkFunctionCall(PhpParser\Node\Expr\FuncCall $stmt, Context $context)
     {
         $method = $stmt->name;
 
@@ -2848,16 +2625,16 @@ class StatementsChecker
         foreach ($stmt->args as $i => $arg) {
             if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                 if ($method_id) {
-                    if ($this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope, $method_id, $i) === false) {
+                    if ($this->_checkVariable($arg->value, $context, $method_id, $i) === false) {
                         return false;
                     }
                 } else {
-                    if ($this->_checkVariable($arg->value, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                    if ($this->_checkVariable($arg->value, $context) === false) {
                         return false;
                     }
                 }
             } else {
-                if ($this->_checkExpression($arg->value, $vars_in_scope, $vars_possibly_in_scope) === false) {
+                if ($this->_checkExpression($arg->value, $context) === false) {
                     return false;
                 }
             }
@@ -2866,13 +2643,13 @@ class StatementsChecker
 
     /**
      * @param  PhpParser\Node\Expr\ArrayDimFetch $stmt
-     * @param  array                             &$vars_in_scope
-     * @param  array                             &$vars_possibly_in_scope
+     * @param  array                             &$context->vars_in_scope
+     * @param  array                             &$context->vars_possibly_in_scope
      * @return false|null
      */
-    protected function _checkArrayAccess(PhpParser\Node\Expr\ArrayDimFetch $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkArrayAccess(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context)
     {
-        if ($this->_checkExpression($stmt->var, $vars_in_scope, $vars_possibly_in_scope) === false) {
+        if ($this->_checkExpression($stmt->var, $context) === false) {
             return false;
         }
 
@@ -2889,7 +2666,7 @@ class StatementsChecker
         }
 
         if ($stmt->dim) {
-            if ($this->_checkExpression($stmt->dim, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($stmt->dim, $context) === false) {
                 return false;
             }
 
@@ -2909,10 +2686,10 @@ class StatementsChecker
         }
     }
 
-    protected function _checkEncapsulatedString(PhpParser\Node\Scalar\Encapsed $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope)
+    protected function _checkEncapsulatedString(PhpParser\Node\Scalar\Encapsed $stmt, Context $context)
     {
         foreach ($stmt->parts as $part) {
-            if ($this->_checkExpression($part, $vars_in_scope, $vars_possibly_in_scope) === false) {
+            if ($this->_checkExpression($part, $context) === false) {
                 return false;
             }
         }

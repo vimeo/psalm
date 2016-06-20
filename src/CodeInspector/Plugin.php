@@ -14,7 +14,7 @@ abstract class Plugin
      * @param  string               $file_name
      * @return null|false
      */
-    public function checkExpression(PhpParser\Node\Expr $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $file_name)
+    public function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $file_name)
     {
         return;
     }
@@ -27,7 +27,7 @@ abstract class Plugin
      * @param  string               $file_name
      * @return null|false
      */
-    public function checkStatement(PhpParser\Node $stmt, array &$vars_in_scope, array &$vars_possibly_in_scope, $file_name)
+    public function checkStatement(PhpParser\Node $stmt, Context $context, $file_name)
     {
         return;
     }

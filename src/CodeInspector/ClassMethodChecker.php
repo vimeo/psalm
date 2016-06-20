@@ -298,7 +298,6 @@ class ClassMethodChecker extends FunctionChecker
                 'name' => $param->getName(),
                 'by_ref' => $param->isPassedByReference(),
                 'type' => $param_type ? Type::parseString($param_type) : Type::getMixed(),
-                'is_nullable' => $is_nullable
             ];
         }
 
@@ -427,36 +426,42 @@ class ClassMethodChecker extends FunctionChecker
             $param_type = null;
 
             if ($param->type) {
-                if (is_string($param->type)) {
-                    $param_type = $param->type;
+                if ($param->type instanceof Type) {
+                    $param_type = $param_type;
                 }
                 else {
-                    if ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
-                        $param_type = implode('\\', $param->type->parts);
-
-                    } elseif ($param->type->parts === ['self']) {
-                        $param_type = $this->_absolute_class;
-
-                    } else {
-                        $param_type = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                    if (is_string($param->type)) {
+                        $param_type_string = $param->type;
                     }
-                }
-            }
+                    elseif ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
+                        $param_type_string = implode('\\', $param->type->parts);
+                    }
+                    elseif ($param->type->parts === ['self']) {
+                        $param_type_string = $this->_absolute_class;
+                    }
+                    else {
+                        $param_type_string = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                    }
 
-            $is_nullable = $param->default !== null &&
+                    $is_nullable = $param->default !== null &&
                             $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
                             $param->default->name instanceof PhpParser\Node\Name &&
                             $param->default->name->parts = ['null'];
 
-            if ($is_nullable && $param_type) {
-                $param_type .= '|null';
+                    if ($param_type_string) {
+                        if ($is_nullable) {
+                            $param_type_string .= '|null';
+                        }
+
+                        $param_type = Type::parseString($param_type_string);
+                    }
+                }
             }
 
             self::$_method_params[$method_id][] = [
                 'name' => $param->name,
                 'by_ref' => $param->byRef,
-                'type' => $param_type ? Type::parseString($param_type) : Type::getMixed(),
-                'is_nullable' => $is_nullable
+                'type' => $param_type ?: Type::getMixed(),
             ];
         }
     }

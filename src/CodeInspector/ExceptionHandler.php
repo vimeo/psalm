@@ -17,7 +17,7 @@ class ExceptionHandler
         $error_message = $error_class_name . ' - ' . $e->getMessage();
 
         if ($config->stop_on_error) {
-            throw new CodeException($error_message);
+            throw new Exception\CodeException($error_message);
         }
 
         echo $error_message . PHP_EOL;

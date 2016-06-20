@@ -35,22 +35,22 @@ class FunctionChecker implements StatementsSource
         $this->_source = $source;
     }
 
-    public function check(&$vars_in_scope = [], &$vars_possibly_in_scope = [], $check_methods = true)
+    public function check(Context $context, $check_methods = true)
     {
         if ($this->_function->stmts) {
             if ($this instanceof ClassMethodChecker) {
                 if (ClassChecker::getThisClass()) {
-                    $hash = $this->getMethodId() . json_encode([$vars_in_scope, $vars_possibly_in_scope]);
+                    $hash = $this->getMethodId() . json_encode([$context->vars_in_scope, $context->vars_possibly_in_scope]);
 
                     // if we know that the function has no effects on vars, we don't bother rechecking
                     if (isset(self::$_no_effects_hashes[$hash])) {
-                        list($vars_in_scope, $vars_possibly_in_scope) = self::$_no_effects_hashes[$hash];
+                        list($context->vars_in_scope, $context->vars_possibly_in_scope) = self::$_no_effects_hashes[$hash];
 
                         return;
                     }
                 }
                 else {
-                    $vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->_absolute_class)]);
+                    $context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->_absolute_class)]);
                 }
             }
 
@@ -58,7 +58,7 @@ class FunctionChecker implements StatementsSource
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {
-                    if (is_object($param->type)) {
+                    if ($param->type instanceof PhpParser\Node\Name) {
                         if (!in_array($param->type->parts[0], ['self', 'parent'])) {
                             ClassChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name);
                         }
@@ -70,54 +70,59 @@ class FunctionChecker implements StatementsSource
                                 $param->default->name instanceof PhpParser\Node\Name &&
                                 $param->default->name->parts = ['null'];
 
-                if ($param->type && is_object($param->type)) {
-                    $param_class = $param->type->parts === ['self'] ?
-                                                    $this->_absolute_class :
-                                                    ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
-
-                    $param_type = new Type\Union([new Type\Atomic($param_class)]);
-
-                    if ($is_nullable) {
-                        $param_type->types['null'] = Type::getNull(false);
+                if ($param->type) {
+                    if ($param->type instanceof Type) {
+                        $context->vars_in_scope[$param->name] = clone $param->type;
                     }
+                    else {
+                        if (is_string($param->type)) {
+                            $param_type_string = $param->type;
+                        }
+                        elseif ($param->type instanceof PhpParser\Node\Name) {
+                            $param_type_string = $param->type->parts === ['self']
+                                                    ? $this->_absolute_class
+                                                    : ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
+                        }
 
-                    $vars_in_scope[$param->name] = $param_type;
-                }
-                elseif (is_string($param->type)) {
-                    $vars_in_scope[$param->name] = Type::parseString($param->type);
+                        if ($is_nullable) {
+                            $param_type_string .= '|null';
+                        }
+
+                        $context->vars_in_scope[$param->name] = Type::parseString($param_type_string);
+                    }
                 }
                 else {
-                    $vars_in_scope[$param->name] = Type::getMixed();
+                    $context->vars_in_scope[$param->name] = Type::getMixed();
                 }
 
-                $vars_possibly_in_scope[$param->name] = true;
+                $context->vars_possibly_in_scope[$param->name] = true;
                 $statements_checker->registerVariable($param->name, $param->getLine());
             }
 
-            $statements_checker->check($this->_function->stmts, $vars_in_scope, $vars_possibly_in_scope);
+            $statements_checker->check($this->_function->stmts, $context);
 
             if (isset($this->_return_vars_in_scope[''])) {
-                $vars_in_scope = TypeChecker::combineKeyedTypes($vars_in_scope, $this->_return_vars_in_scope['']);
+                $context->vars_in_scope = TypeChecker::combineKeyedTypes($context->vars_in_scope, $this->_return_vars_in_scope['']);
             }
 
             if (isset($this->_return_vars_possibly_in_scope[''])) {
-                $vars_possibly_in_scope = array_merge($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope['']);
+                $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $this->_return_vars_possibly_in_scope['']);
             }
 
-            foreach ($vars_in_scope as $var => $type) {
+            foreach ($context->vars_in_scope as $var => $type) {
                 if (strpos($var, 'this->') !== 0) {
-                    unset($vars_in_scope[$var]);
+                    unset($context->vars_in_scope[$var]);
                 }
             }
 
-            foreach ($vars_possibly_in_scope as $var => $type) {
+            foreach ($context->vars_possibly_in_scope as $var => $type) {
                 if (strpos($var, 'this->') !== 0) {
-                    unset($vars_possibly_in_scope[$var]);
+                    unset($context->vars_possibly_in_scope[$var]);
                 }
             }
 
             if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
-                self::$_no_effects_hashes[$hash] = [$vars_in_scope, $vars_possibly_in_scope];
+                self::$_no_effects_hashes[$hash] = [$context->vars_in_scope, $context->vars_possibly_in_scope];
             }
         }
     }
@@ -125,23 +130,23 @@ class FunctionChecker implements StatementsSource
     /**
      * Adds return types for the given function
      * @param string        $return_type
-     * @param array<Type>   $vars_in_scope
-     * @param array<bool>   $vars_possibly_in_scope
+     * @param array<Type>   $context->vars_in_scope
+     * @param array<bool>   $context->vars_possibly_in_scope
      */
-    public function addReturnTypes($return_type, $vars_in_scope, $vars_possibly_in_scope)
+    public function addReturnTypes($return_type, Context $context)
     {
         if (isset($this->_return_vars_in_scope[$return_type])) {
-            $this->_return_vars_in_scope[$return_type] = TypeChecker::combineKeyedTypes($vars_in_scope, $this->_return_vars_in_scope[$return_type]);
+            $this->_return_vars_in_scope[$return_type] = TypeChecker::combineKeyedTypes($context->vars_in_scope, $this->_return_vars_in_scope[$return_type]);
         }
         else {
-            $this->_return_vars_in_scope[$return_type] = $vars_in_scope;
+            $this->_return_vars_in_scope[$return_type] = $context->vars_in_scope;
         }
 
         if (isset($this->_return_vars_possibly_in_scope[$return_type])) {
-            $this->_return_vars_possibly_in_scope[$return_type] = array_merge($vars_possibly_in_scope, $this->_return_vars_possibly_in_scope[$return_type]);
+            $this->_return_vars_possibly_in_scope[$return_type] = array_merge($context->vars_possibly_in_scope, $this->_return_vars_possibly_in_scope[$return_type]);
         }
         else {
-            $this->_return_vars_possibly_in_scope[$return_type] = $vars_possibly_in_scope;
+            $this->_return_vars_possibly_in_scope[$return_type] = $context->vars_possibly_in_scope;
         }
     }
 

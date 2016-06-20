@@ -19,6 +19,7 @@ class ProjectChecker
         $config = Config::getInstance();
 
         $file_extensions = $config->getFileExtensions();
+        $filetype_handlers = $config->getFiletypeHandlers();
         $base_dir = $config->getBaseDir();
 
         /** @var RecursiveDirectoryIterator */
@@ -29,21 +30,50 @@ class ProjectChecker
 
         while ($iterator->valid()) {
             if (!$iterator->isDot()) {
-                if (in_array($iterator->getExtension(), $file_extensions)) {
-                    $files[] = $iterator->getRealPath();
+                $extension = $iterator->getExtension();
+                if (in_array($extension, $file_extensions)) {
+                    $file_name = $iterator->getRealPath();
+
+                    if ($debug) {
+                        echo 'Checking ' . $file_name . PHP_EOL;
+                    }
+
+                    if (isset($filetype_handlers[$extension])) {
+                        /** @var FileChecker */
+                        $file_checker = new $filetype_handlers[$extension]($file_name);
+                    }
+                    else {
+                        $file_checker = new FileChecker($file_name);
+                    }
+
+                    $file_checker->check(true);
                 }
             }
 
             $iterator->next();
         }
+    }
 
-        foreach ($files as $file_name) {
-            if ($debug) {
-                echo 'Checking ' . $file_name . PHP_EOL;
-            }
-
-            $file_checker = new FileChecker($file_name);
-            $file_checker->check(true);
+    public static function checkFile($file_name, $debug = false)
+    {
+        if ($debug) {
+            echo 'Checking ' . $file_name . PHP_EOL;
         }
+
+        $config = Config::getInstance();
+
+        $extension = array_pop(explode('.', $file_name));
+
+        $filetype_handlers = $config->getFiletypeHandlers();
+
+        if (isset($filetype_handlers[$extension])) {
+            /** @var FileChecker */
+            $file_checker = new $filetype_handlers[$extension]($file_name);
+        }
+        else {
+            $file_checker = new FileChecker($file_name);
+        }
+
+        $file_checker->check(true);
     }
 }
