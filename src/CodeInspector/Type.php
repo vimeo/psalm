@@ -19,6 +19,13 @@ abstract class Type
         $type_tokens = TypeChecker::tokenize($type_string);
 
         if (count($type_tokens) === 1) {
+            if ($type_tokens[0] === 'boolean') {
+                $type_tokens[0] = 'bool';
+            }
+            elseif ($type_tokens[0] === 'integer') {
+                $type_tokens[0] = 'int';
+            }
+
             $parsed_type = new Atomic($type_tokens[0]);
 
             if ($enclose_with_union) {
@@ -93,6 +100,13 @@ abstract class Type
                     break;
 
                 default:
+                    if ($type_token === 'boolean') {
+                        $type_token = 'bool';
+                    }
+                    elseif ($type_token === 'integer') {
+                        $type_token = 'int';
+                    }
+
                     if ($current_leaf->value === null) {
                         $current_leaf->value = $type_token;
                         continue;

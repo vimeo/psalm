@@ -108,7 +108,12 @@ class ClassChecker implements StatementsSource
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($stmt->props as $property) {
-                        $this->_class_properties[] = $property->name;
+                        $comment = $stmt->getDocComment();
+                        $type_in_comment = null;
+                        if ($comment) {
+                            $type_in_comment = CommentChecker::getTypeFromComment($comment, null, $this);
+                        }
+                        $this->_class_properties[$property->name] = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
                     }
                 }
                 $leftover_stmts[] = $stmt;
@@ -310,7 +315,7 @@ class ClassChecker implements StatementsSource
         return $this->_has_custom_get;
     }
 
-    public function getPropertyNames()
+    public function getProperties()
     {
         return $this->_class_properties;
     }

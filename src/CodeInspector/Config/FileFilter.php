@@ -15,8 +15,12 @@ class FileFilter
     /** @var array<string> */
     protected $include_files = [];
 
+    protected $include_files_lowercase = [];
+
     /** @var array<string> */
     protected $exclude_files = [];
+
+    protected $exclude_files_lowercase = [];
 
     /** @var array<string> */
     protected $include_patterns = [];
@@ -47,6 +51,7 @@ class FileFilter
             if ($e->file) {
                 foreach ($e->file as $file) {
                     $filter->include_files[] = $file['name'];
+                    $filter->include_files_lowercase[] = strtolower($file['name']);
                 }
             }
         }
@@ -60,6 +65,7 @@ class FileFilter
             if ($e->file) {
                 foreach ($e->file as $file) {
                     $filter->exclude_files[] = $file['name'];
+                    $filter->exclude_files_lowercase[] = strtolower($file['name']);
                 }
             }
         }
@@ -72,17 +78,32 @@ class FileFilter
         return preg_replace('/\/?$/', '/', $str);
     }
 
-    public function allows($file_name)
+    public function allows($file_name, $case_sensitive = false)
     {
         if ($this->inclusive) {
             foreach ($this->include_dirs as $include_dir) {
-                if (strpos($file_name, $include_dir) === 0) {
+                if ($case_sensitive) {
+                    if (strpos($file_name, $include_dir) === 0) {
+                        return true;
+                    }
+                }
+                else {
+                    if (stripos($file_name, $include_dir) === 0) {
+                        return true;
+                    }
+                }
+
+            }
+
+            if ($case_sensitive) {
+                if (in_array($file_name, $this->include_files)) {
                     return true;
                 }
             }
-
-            if (in_array($file_name, $this->include_files)) {
-                return true;
+            else {
+                if (in_array(strtolower($file_name), $this->include_files_lowercase)) {
+                    return true;
+                }
             }
 
             return false;
@@ -90,13 +111,27 @@ class FileFilter
 
         // exclusive
         foreach ($this->exclude_dirs as $exclude_dir) {
-            if (strpos($file_name, $exclude_dir) === 0) {
-                return false;
+            if ($case_sensitive) {
+                if (strpos($file_name, $exclude_dir) === 0) {
+                    return false;
+                }
+            }
+            else {
+                if (stripos($file_name, $exclude_dir) === 0) {
+                    return false;
+                }
             }
         }
 
-        if (in_array($file_name, $this->exclude_files)) {
-            return false;
+        if ($case_sensitive) {
+            if (in_array($file_name, $this->exclude_files)) {
+                return false;
+            }
+        }
+        else {
+            if (in_array(strtolower($file_name), $this->exclude_files_lowercase)) {
+                return false;
+            }
         }
 
         return true;

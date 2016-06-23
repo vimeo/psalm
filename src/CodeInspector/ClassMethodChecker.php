@@ -19,7 +19,6 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_existing_methods = [];
     protected static $_have_reflected = [];
     protected static $_have_registered = [];
-    protected static $_method_custom_calls = [];
     protected static $_inherited_methods = [];
     protected static $_declaring_class = [];
     protected static $_method_visibility = [];
@@ -28,8 +27,6 @@ class ClassMethodChecker extends FunctionChecker
     const VISIBILITY_PUBLIC = 1;
     const VISIBILITY_PROTECTED = 2;
     const VISIBILITY_PRIVATE = 3;
-
-    const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\|\[\]]+)';
 
     public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source, array $this_vars = [])
     {
@@ -238,36 +235,16 @@ class ClassMethodChecker extends FunctionChecker
 
         $return_types = null;
 
-        $comments = StatementsChecker::parseDocComment($method->getDocComment() ?: '');
+        $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
 
-        if ($comments) {
-            if (isset($comments['specials']['return'])) {
-                $return_blocks = explode(' ', $comments['specials']['return'][0]);
-                foreach ($return_blocks as $block) {
-                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block) && !preg_match('/\[[^\]]+\]/', $block)) {
-                        $return_types = $block;
-                        break;
-                    }
-                }
-            }
-
-            if (isset($comments['specials']['call'])) {
-                self::$_method_custom_calls[$method_id] = [];
-
-                $call_blocks = $comments['specials']['call'];
-                foreach ($comments['specials']['call'] as $block) {
-                    if ($block) {
-                        self::$_method_custom_calls[$method_id][] = trim($block);
-                    }
-                }
-            }
-
-            if ($return_types) {
-                $return_types = self::_fixUpReturnType($return_types, $method_id);
-            }
+        if ($docblock_info['return_type']) {
+            self::$_method_return_types[$method_id] = Type::parseString(
+                self::_fixUpReturnType($docblock_info['return_type'], $method_id)
+            );
         }
-
-        self::$_method_return_types[$method_id] = $return_types ? Type::parseString($return_types) : null;
+        else {
+            self::$_method_return_types[$method_id] = null;
+        }
     }
 
     protected static function _copyToChildMethod($method_id, $child_method_id)
@@ -322,38 +299,18 @@ class ClassMethodChecker extends FunctionChecker
                                                     self::VISIBILITY_PRIVATE :
                                                     ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
 
-        $comments = StatementsChecker::parseDocComment($method->getDocComment());
 
-        $return_types = null;
 
-        if (isset($comments['specials']['return'])) {
-            $return_blocks = explode(' ', $comments['specials']['return'][0]);
-            foreach ($return_blocks as $block) {
-                if ($block) {
-                    if ($block && preg_match('/^' . self::TYPE_REGEX . '$/', $block) && !preg_match('/\[[^\]]+\]/', $block)) {
-                        $return_types = $block;
-                        break;
-                    }
-                }
-            }
+        $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
+
+        if ($docblock_info['return_type']) {
+            self::$_method_return_types[$method_id] = Type::parseString(
+                $this->_fixUpLocalReturnType($docblock_info['return_type'], $method_id, $this->_namespace, $this->_aliased_classes)
+            );
         }
-
-        if (isset($comments['specials']['call'])) {
-            self::$_method_custom_calls[$method_id] = [];
-
-            $call_blocks = $comments['specials']['call'];
-            foreach ($comments['specials']['call'] as $block) {
-                if ($block) {
-                    self::$_method_custom_calls[$method_id][] = trim($block);
-                }
-            }
+        else {
+            self::$_method_return_types[$method_id] = null;
         }
-
-        if ($return_types) {
-            $return_types = $this->_fixUpLocalReturnType($return_types, $method_id, $this->_namespace, $this->_aliased_classes);
-        }
-
-        self::$_method_return_types[$method_id] = $return_types ? Type::parseString($return_types) : null;
 
         self::$_method_params[$method_id] = [];
 
@@ -603,7 +560,6 @@ class ClassMethodChecker extends FunctionChecker
         self::$_existing_methods = [];
         self::$_have_reflected = [];
         self::$_have_registered = [];
-        self::$_method_custom_calls = [];
         self::$_inherited_methods = [];
         self::$_declaring_class = [];
         self::$_method_visibility = [];

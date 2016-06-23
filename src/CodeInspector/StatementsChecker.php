@@ -14,6 +14,7 @@ use CodeInspector\Issue\ParentNotFound;
 use CodeInspector\Issue\PossiblyUndefinedVariable;
 use CodeInspector\Issue\InvalidArrayAssignment;
 use CodeInspector\Issue\InvalidArrayAccess;
+use CodeInspector\Issue\InvalidPropertyAssignment;
 use CodeInspector\Issue\InvalidScope;
 use CodeInspector\Issue\InvalidStaticInvocation;
 use CodeInspector\Issue\InvalidStaticVariable;
@@ -194,6 +195,12 @@ class StatementsChecker
                 foreach ($stmt->props as $prop) {
                     if ($prop->default) {
                         $this->_checkExpression($prop->default, $context);
+
+                        if (isset($prop->default->inferredType)) {
+                            if ($this->_checkThisPropertyAssignment($prop->name, $prop->default->inferredType, $stmt->getLine()) === false) {
+                                return false;
+                            }
+                        }
                     }
 
                     self::$_existing_static_vars[$this->_absolute_class . '::$' . $prop->name] = 1;
@@ -1057,15 +1064,19 @@ class StatementsChecker
             }
         }
 
+        $var_name = is_string($stmt->name) ? $stmt->name : null;
         $var_id = self::getVarId($stmt);
-        $property_names = $class_checker->getPropertyNames();
+        $defined_properties = $class_checker->getProperties();
         $this_class = $context->vars_in_scope['this'];
 
         if (isset($context->vars_in_scope[$var_id])) {
             $stmt->inferredType = $context->vars_in_scope[$var_id];
         }
+        elseif ($var_name && isset($defined_properties[$var_name])) {
+            $stmt->inferredType = $defined_properties[$var_name];
+        }
 
-        if (!in_array($stmt->name, $property_names)) {
+        if (!$var_name || !isset($defined_properties[$var_name])) {
             $property_id = $this_class . '::' . $stmt->name;
 
             $var_defined = isset($context->vars_in_scope[$var_id]) || isset($context->vars_possibly_in_scope[$var_id]);
@@ -1087,6 +1098,39 @@ class StatementsChecker
                     }
                 }
 
+            }
+        }
+    }
+
+    protected function _checkThisPropertyAssignment($prop_name, Type\Union $assignment_type, $line_number)
+    {
+        if ($assignment_type->isMixed()) {
+            return;
+        }
+
+        $class_checker = $this->_source->getClassChecker();
+
+        if ($class_checker) {
+            $properties = $class_checker->getProperties();
+
+            if (isset($properties[$prop_name])) {
+                $property_type = $properties[$prop_name];
+
+                if ($property_type->isMixed()) {
+                    return;
+                }
+
+                if (!$assignment_type->isIn($property_type)) {
+                    if (IssueHandler::accepts(
+                        new InvalidPropertyAssignment(
+                            '$this->' . $prop_name . ' with declared type \'' . $property_type . '\' cannot be assigned type \'' . $assignment_type . '\'',
+                            $this->_file_name,
+                            $line_number
+                        )
+                    )) {
+                        return false;
+                    }
+                }
             }
         }
     }
@@ -1485,39 +1529,7 @@ class StatementsChecker
             return false;
         }
 
-        $type_in_comments = null;
-        $type_in_comments_var_id = null;
-        $doc_comment = $stmt->getDocComment();
-
-        if ($doc_comment) {
-            $comments = self::parseDocComment($doc_comment);
-
-            if ($comments && isset($comments['specials']['var'][0])) {
-                $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
-
-                if ($var_parts) {
-                    $type_in_comments = $var_parts[0];
-
-                    if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
-                        $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
-                    }
-
-                    // support PHPStorm-style docblocks like
-                    // @var Type $variable
-                    if (count($var_parts) > 1 && $var_parts[1][0] === '$') {
-                        $type_in_comments_var_id = substr($var_parts[1], 1);
-                    }
-                }
-            }
-        }
-
-        if ($type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
-            if (isset($context->vars_in_scope[$type_in_comments_var_id])) {
-                $context->vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
-            }
-
-            $type_in_comments = null;
-        }
+        $type_in_comments = CommentChecker::getTypeFromComment($stmt->getDocComment(), $context, $this->_source, $var_id);
 
         if ($type_in_comments) {
             $return_type = Type::parseString($type_in_comments);
@@ -1557,6 +1569,8 @@ class StatementsChecker
                     is_string($stmt->var->name)) {
 
             $method_id = $this->_source->getMethodId();
+
+            $this->_checkThisPropertyAssignment($stmt->var->name, $return_type, $stmt->getLine());
 
             if (!isset(self::$_this_assignments[$method_id])) {
                 self::$_this_assignments[$method_id] = [];
@@ -2263,39 +2277,7 @@ class StatementsChecker
 
     protected function _checkReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
     {
-        $type_in_comments = null;
-        $type_in_comments_var_id = null;
-        $doc_comment = $stmt->getDocComment();
-
-        if ($doc_comment) {
-            $comments = self::parseDocComment($doc_comment);
-
-            if ($comments && isset($comments['specials']['var'][0])) {
-                $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
-
-                if ($var_parts) {
-                    $type_in_comments = $var_parts[0];
-
-                    if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
-                        $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $this->_namespace, $this->_aliased_classes);
-                    }
-
-                    // support PHPStorm-style docblocks like
-                    // @var Type $variable
-                    if (count($var_parts) > 1 && $var_parts[1][0] === '$') {
-                        $type_in_comments_var_id = substr($var_parts[1], 1);
-                    }
-                }
-            }
-        }
-
-        if ($type_in_comments_var_id) {
-            if (isset($context->vars_in_scope[$type_in_comments_var_id])) {
-                $context->vars_in_scope[$type_in_comments_var_id] = Type::parseString($type_in_comments);
-            }
-
-            $type_in_comments = null;
-        }
+        $type_in_comments = CommentChecker::getTypeFromComment($stmt->getDocComment(), $context, $this->_source);
 
         if ($stmt->expr) {
             if ($this->_checkExpression($stmt->expr, $context) === false) {
@@ -2347,22 +2329,6 @@ class StatementsChecker
             if ($this->_checkExpression($stmt->if, $t_if_context) === false) {
                 return false;
             }
-
-            $if_return_type = isset($stmt->if->inferredType) ? $stmt->if->inferredType : Type::getMixed();
-        }
-        else {
-            if (isset($stmt->cond->inferredType)) {
-                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, $this->_file_name, $stmt->getLine());
-
-                if ($if_return_type_reconciled === false) {
-                    return false;
-                }
-
-                $if_return_type = $if_return_type_reconciled;
-            }
-            else {
-                $if_return_type = Type::getMixed();
-            }
         }
 
         $t_else_context = clone $context;
@@ -2390,7 +2356,13 @@ class StatementsChecker
         }
         elseif ($stmt->cond) {
             if (isset($stmt->cond->inferredType)) {
-                $lhs_type = $stmt->cond->inferredType;
+                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, $this->_file_name, $stmt->getLine());
+
+                if ($if_return_type_reconciled === false) {
+                    return false;
+                }
+
+                $lhs_type = $if_return_type_reconciled;
             }
         }
 

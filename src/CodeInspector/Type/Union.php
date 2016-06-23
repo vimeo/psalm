@@ -75,4 +75,26 @@ class Union extends Type
             }
         }
     }
+
+    public function isIn(Union $parent)
+    {
+        foreach ($this->types as $type) {
+            if (strtoupper($type->value[0]) === $type->value[0] && $parent->hasType('object')) {
+                continue;
+            }
+
+            if ($type->value === 'false' && $parent->hasType('bool')) {
+                // this is fine
+                continue;
+            }
+
+            if (!$parent->hasType($type->value)) {
+                return false;
+            }
+
+            // @todo add is_subclass_of
+        }
+
+        return true;
+    }
 }
