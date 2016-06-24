@@ -5,6 +5,7 @@ namespace CodeInspector;
 use CodeInspector\Issue\UndefinedMethod;
 use CodeInspector\Issue\InaccessibleMethod;
 use CodeInspector\Issue\InvalidReturnType;
+use CodeInspector\Issue\InvalidDocblock;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
@@ -202,6 +203,8 @@ class ClassMethodChecker extends FunctionChecker
 
         $params = $method->getParameters();
 
+        $method_param_names = [];
+
         self::$_method_params[$method_id] = [];
         foreach ($params as $param) {
             $param_type = null;
@@ -226,6 +229,8 @@ class ClassMethodChecker extends FunctionChecker
                 // do nothing
             }
 
+            $method_param_names[$param->getName()] = true;
+
             self::$_method_params[$method_id][] = [
                 'name' => $param->getName(),
                 'by_ref' => $param->isPassedByReference(),
@@ -235,16 +240,31 @@ class ClassMethodChecker extends FunctionChecker
 
         $return_types = null;
 
-        $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
+        $config = Config::getInstance();
 
-        if ($docblock_info['return_type']) {
-            self::$_method_return_types[$method_id] = Type::parseString(
-                self::_fixUpReturnType($docblock_info['return_type'], $method_id)
-            );
+        $return_type = null;
+
+        if ($config->use_docblock_types) {
+            $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
+
+            if ($docblock_info['return_type']) {
+                $return_type = Type::parseString(
+                    self::_fixUpReturnType($docblock_info['return_type'], $method_id)
+                );
+            }
+
+            if ($docblock_info['params']) {
+                foreach ($docblock_info['params'] as $docblock_param) {
+                    $param_name = $docblock_param['name'];
+                    $param_type = $docblock_param['type'];
+
+                    if (isset($method_param_names[$param_name])) {
+                    }
+                }
+            }
         }
-        else {
-            self::$_method_return_types[$method_id] = null;
-        }
+
+        self::$_method_return_types[$method_id] = $return_type;
     }
 
     protected static function _copyToChildMethod($method_id, $child_method_id)
@@ -295,24 +315,20 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_namespaces[$method_id] = $this->_namespace;
         self::$_method_files[$method_id] = $this->_file_name;
         self::$_existing_methods[$method_id] = 1;
-        self::$_method_visibility[$method_id] = $method->isPrivate() ?
-                                                    self::VISIBILITY_PRIVATE :
-                                                    ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
 
-
-
-        $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
-
-        if ($docblock_info['return_type']) {
-            self::$_method_return_types[$method_id] = Type::parseString(
-                $this->_fixUpLocalReturnType($docblock_info['return_type'], $method_id, $this->_namespace, $this->_aliased_classes)
-            );
+        if ($method->isPrivate()) {
+            self::$_method_visibility[$method_id] = self::VISIBILITY_PRIVATE;
+        }
+        elseif ($method->isProtected()) {
+            self::$_method_visibility[$method_id] = self::VISIBILITY_PROTECTED;
         }
         else {
-            self::$_method_return_types[$method_id] = null;
+            self::$_method_visibility[$method_id] = self::VISIBILITY_PUBLIC;
         }
 
         self::$_method_params[$method_id] = [];
+
+        $method_param_names = [];
 
         foreach ($method->getParams() as $param) {
             $param_type = null;
@@ -350,12 +366,63 @@ class ClassMethodChecker extends FunctionChecker
                 }
             }
 
+            $method_param_names[$param->name] = $param_type;
+
             self::$_method_params[$method_id][] = [
                 'name' => $param->name,
                 'by_ref' => $param->byRef,
                 'type' => $param_type ?: Type::getMixed(),
             ];
         }
+
+        $config = Config::getInstance();
+        $return_type = null;
+
+        if ($config->use_docblock_types) {
+            $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
+
+            if ($docblock_info['return_type']) {
+                $return_type = Type::parseString(
+                    $this->_fixUpLocalReturnType($docblock_info['return_type'], $method_id, $this->_namespace, $this->_aliased_classes)
+                );
+            }
+
+            if ($docblock_info['params']) {
+                foreach ($docblock_info['params'] as $docblock_param) {
+                    $param_name = $docblock_param['name'];
+
+                    if (!array_key_exists($param_name, $method_param_names)) {
+                        if (IssueHandler::accepts(
+                            new InvalidDocblock('Parameter $' . $param_name .' does not appear in the argument list for ' . $method_id, $this->_file_name, $method->getLine())
+                        )) {
+                            return false;
+                        }
+
+                        continue;
+                    }
+
+                    $param_type = Type::parseString($docblock_param['type']);
+
+                    if ($method_param_names[$param_name] && !$method_param_names[$param_name]->isMixed()) {
+                        if (!$param_type->isIn($method_param_names[$param_name])) {
+                            if (IssueHandler::accepts(
+                                new InvalidDocblock(
+                                    'Parameter $' . $param_name .' has wrong type \'' . $param_type . '\', should be \'' . $method_param_names[$param_name] . '\'',
+                                    $this->_file_name,
+                                    $method->getLine()
+                                )
+                            )) {
+                                return false;
+                            }
+
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        self::$_method_return_types[$method_id] = $return_type;
     }
 
     protected static function _fixUpLocalReturnType($return_type, $method_id, $namespace, $aliased_classes)

@@ -79,12 +79,11 @@ class CommentChecker
                     !preg_match('/\[[^\]]+\]/', $param_blocks[0]) &&
                     preg_match('/^\$[A-Za-z0-9_]+$/', $param_blocks[1])
                 ) {
-                    $info['params'] = ['name' => $param_blocks[1], 'type' => $param_blocks[0]];
+                    $info['params'][] = ['name' => substr($param_blocks[1], 1), 'type' => $param_blocks[0]];
                 }
             }
         }
 
         return $info;
-
     }
 }

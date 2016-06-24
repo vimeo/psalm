@@ -7,10 +7,18 @@ use SimpleXMLElement;
 
 class Config
 {
+    const REPORT_INFO = 'info';
+    const REPORT_ERROR = 'error';
+
+    const ERROR_LEVELS = [
+        self::REPORT_INFO,
+        self::REPORT_ERROR,
+    ];
+
     protected static $_config;
 
     public $stop_on_first_error = true;
-    public $use_docblock_return_type = false;
+    public $use_docblock_types = false;
 
     protected $inspect_files;
 
@@ -22,17 +30,11 @@ class Config
 
     protected $issue_handlers = [];
 
-    protected $custom_error_levels = [];
+    protected $custom_error_levels = ['InvalidDocblock' => self::REPORT_INFO];
 
     protected $mock_classes = [];
 
-    const REPORT_INFO = 'info';
-    const REPORT_ERROR = 'error';
 
-    const ERROR_LEVELS = [
-        self::REPORT_INFO,
-        self::REPORT_ERROR,
-    ];
 
     /**
      * CodeInspector plugins
@@ -60,8 +62,9 @@ class Config
             $config->stop_on_first_error = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['useDocblockReturnType'])) {
-            $config->use_docblock_return_type = (bool) $config_xml['useDocblockReturnType'];
+        if (isset($config_xml['useDocblockTypes'])) {
+            $attribute_text = (string) $config_xml['useDocblockTypes'];
+            $config->use_docblock_types = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->inspectFiles)) {

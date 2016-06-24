@@ -62,6 +62,8 @@ class ClassChecker implements StatementsSource
             $this->_registerInheritedMethods($this->_parent_class);
         }
 
+        $config = Config::getInstance();
+
         $leftover_stmts = [];
 
         $method_checkers = [];
@@ -110,7 +112,7 @@ class ClassChecker implements StatementsSource
                     foreach ($stmt->props as $property) {
                         $comment = $stmt->getDocComment();
                         $type_in_comment = null;
-                        if ($comment) {
+                        if ($comment && $config->use_docblock_types) {
                             $type_in_comment = CommentChecker::getTypeFromComment($comment, null, $this);
                         }
                         $this->_class_properties[$property->name] = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
