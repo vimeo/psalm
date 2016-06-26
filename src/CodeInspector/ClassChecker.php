@@ -5,7 +5,7 @@ namespace CodeInspector;
 use CodeInspector\Issue\InvalidClass;
 use CodeInspector\Issue\UndefinedClass;
 use CodeInspector\Issue\UndefinedTrait;
-use CodeInspector\IssueHandler;
+use CodeInspector\IssueBuffer;
 use PhpParser;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
@@ -98,7 +98,7 @@ class ClassChecker implements StatementsSource
                 foreach ($stmt->traits as $trait) {
                     $trait_name = self::getAbsoluteClassFromName($trait, $this->_namespace, $this->_aliased_classes);
                     if (!trait_exists($trait_name)) {
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->_file_name, $trait->getLine())
                         )) {
                             return false;
@@ -214,7 +214,7 @@ class ClassChecker implements StatementsSource
         }
 
         if (!class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine())
             )) {
                 return false;
@@ -225,7 +225,7 @@ class ClassChecker implements StatementsSource
             $reflection_class = new ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new InvalidClass('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine())
                 )) {
                     return false;

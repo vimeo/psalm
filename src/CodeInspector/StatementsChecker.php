@@ -4,7 +4,7 @@ namespace CodeInspector;
 
 use PhpParser;
 
-use CodeInspector\IssueHandler;
+use CodeInspector\IssueBuffer;
 use CodeInspector\Issue\ForbiddenCode;
 use CodeInspector\Issue\InvalidArgument;
 use CodeInspector\Issue\InvalidNamespace;
@@ -217,7 +217,7 @@ class StatementsChecker
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 if ($this->_namespace) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new InvalidNamespace('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine())
                     )) {
                         return false;
@@ -896,7 +896,7 @@ class StatementsChecker
             // do nothing
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new ForbiddenCode('Use of shell_exec', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
@@ -919,7 +919,7 @@ class StatementsChecker
     protected function _checkVariable(PhpParser\Node\Expr\Variable $stmt, Context $context, $method_id = null, $argument_offset = -1, $array_assignment = false)
     {
         if ($this->_is_static && $stmt->name === 'this') {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new InvalidStaticVariable('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
@@ -973,7 +973,7 @@ class StatementsChecker
                     $this->registerVariable($var_name, $stmt->getLine());
                 }
                 else {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new UndefinedVariable('Cannot find referenced variable $' . $var_name, $this->_file_name, $stmt->getLine())
                     )) {
                         return false;
@@ -984,7 +984,7 @@ class StatementsChecker
             if (isset($this->_all_vars[$var_name]) && !isset($this->_warn_vars[$var_name])) {
                 $this->_warn_vars[$var_name] = true;
 
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new PossiblyUndefinedVariable(
                         'Possibly undefined variable $' . $var_name .', first seen on line ' . $this->_all_vars[$var_name],
                         $this->_file_name,
@@ -1057,7 +1057,7 @@ class StatementsChecker
         $class_checker = $this->_source->getClassChecker();
 
         if (!$class_checker) {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new InvalidScope('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
@@ -1091,7 +1091,7 @@ class StatementsChecker
                     $this->registerVariable($var_id, $stmt->getLine());
                 }
                 else {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new UndefinedProperty('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine())
                     )) {
                         return false;
@@ -1121,7 +1121,7 @@ class StatementsChecker
                 }
 
                 if (!$assignment_type->isIn($property_type)) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
                             '$this->' . $prop_name . ' with declared type \'' . $property_type . '\' cannot be assigned type \'' . $assignment_type . '\'',
                             $this->_file_name,
@@ -1303,7 +1303,7 @@ class StatementsChecker
                             break;
 
                         case 'null':
-                            if (IssueHandler::accepts(
+                            if (IssueBuffer::accepts(
                                 new NullReference('Cannot iterate over ' . $return_type->value, $this->_file_name, $stmt->getLine())
                             )) {
                                 return false;
@@ -1313,7 +1313,7 @@ class StatementsChecker
                         case 'string':
                         case 'void':
                         case 'int':
-                            if (IssueHandler::accepts(
+                            if (IssueBuffer::accepts(
                                 new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->_file_name, $stmt->getLine())
                             )) {
                                 return false;
@@ -1587,7 +1587,7 @@ class StatementsChecker
         }
 
         if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new FailedTypeResolution('Cannot assign $' . $var_id . ' to type void', $this->_file_name, $stmt->getLine())
             )) {
                 return false;
@@ -1631,7 +1631,7 @@ class StatementsChecker
 
                 foreach ($return_type->types as &$type) {
                     if ($type->isScalar()) {
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new InvalidArrayAssignment('Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value, $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
@@ -1663,7 +1663,7 @@ class StatementsChecker
     protected function _refineArrayType(Type\Atomic $type, Type\Union $assignment_type, $var_id, $line_number)
     {
         if ($type->value === 'null') {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new NullReference('Cannot assign value on possibly null array ' . $var_id, $this->_file_name, $line_number)
             )) {
                 return false;
@@ -1674,7 +1674,7 @@ class StatementsChecker
 
         foreach ($assignment_type->types as $at) {
             if ($type->value === 'string' && $at->isString()) {
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new InvalidArrayAssignment('Cannot assign value on variable ' . $var_id . ' using string offset', $this->_file_name, $line_number)
                 )) {
                     return false;
@@ -1683,7 +1683,7 @@ class StatementsChecker
         }
 
         if ($type->value !== 'array' && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new InvalidArrayAssignment('Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess', $this->_file_name, $line_number)
             )) {
                 return false;
@@ -1742,7 +1742,7 @@ class StatementsChecker
                 }
             }
             else if ($stmt->var->name === 'this' && !$this->_class_name) {
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new InvalidScope('Use of $this in non-class context', $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
@@ -1797,7 +1797,7 @@ class StatementsChecker
 
                 switch ($absolute_class) {
                     case 'null':
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new NullReference('Cannot call method ' . $stmt->name . ' on possibly null variable ' . $class_type, $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
@@ -1807,7 +1807,7 @@ class StatementsChecker
                     case 'int':
                     case 'bool':
                     case 'array':
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new InvalidArgument('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
@@ -1912,7 +1912,7 @@ class StatementsChecker
                 }
 
                 if (!isset($context->vars_possibly_in_scope[$use->var])) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
                     )) {
                         return false;
@@ -1922,7 +1922,7 @@ class StatementsChecker
                 if (isset($this->_all_vars[$use->var])) {
                     if (!isset($this->_warn_vars[$use->var])) {
                         $this->_warn_vars[$use->var] = true;
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new PossiblyUndefinedVariable(
                                 'Possibly undefined variable $' . $use->var . ', first seen on line ' . $this->_all_vars[$use->var],
                                 $this->_file_name,
@@ -1936,7 +1936,7 @@ class StatementsChecker
                     return;
                 }
 
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
                 )) {
                     return false;
@@ -1962,7 +1962,7 @@ class StatementsChecker
         if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($stmt->class->parts[0] === 'parent') {
                 if ($this->_class_extends === null) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new ParentNotFound('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine())
                     )) {
                         return false;
@@ -2014,7 +2014,7 @@ class StatementsChecker
 
             if ($this->_is_static) {
                 if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new InvalidStaticInvocation('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine())
                     )) {
                         return false;
@@ -2024,7 +2024,7 @@ class StatementsChecker
             else {
                 if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
                     if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new InvalidStaticInvocation('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
@@ -2218,7 +2218,7 @@ class StatementsChecker
             $const_id = $absolute_class . '::' . $stmt->name;
 
             if (!defined($const_id)) {
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
@@ -2266,7 +2266,7 @@ class StatementsChecker
             $var_id = $absolute_class . '::$' . $stmt->name;
 
             if (!self::_staticVarExists($var_id)) {
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new UndefinedVariable('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
@@ -2530,7 +2530,7 @@ class StatementsChecker
                 }
 
                 if ($param_type->isNullable() && !$param_type->isNullable()) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new NullReference(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
                             $file_name,
@@ -2557,7 +2557,7 @@ class StatementsChecker
                                 return;
                             }
 
-                            if (IssueHandler::accepts(
+                            if (IssueBuffer::accepts(
                                 new InvalidArgument(
                                     'Argument ' . ($argument_offset + 1) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                                     $file_name,
@@ -2591,7 +2591,7 @@ class StatementsChecker
                 $this->_check_variables = false;
 
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new ForbiddenCode('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine())
                 )) {
                     return false;
@@ -2668,7 +2668,7 @@ class StatementsChecker
                     if ($at->isString()) {
                         $var_id = self::getVarId($stmt->var);
 
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new InvalidArrayAccess('Cannot access value on string variable ' . $var_id . ' using string offset', $this->_file_name, $stmt->getLine())
                         )) {
                             return false;
@@ -2753,7 +2753,7 @@ class StatementsChecker
             (new \ReflectionFunction($method_id));
         }
         catch (\ReflectionException $e) {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new UndefinedFunction('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine())
             )) {
                 return false;

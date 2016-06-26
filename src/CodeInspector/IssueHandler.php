@@ -2,7 +2,7 @@
 
 namespace CodeInspector;
 
-class IssueHandler
+class IssueBuffer
 {
     protected static $errors = [];
 

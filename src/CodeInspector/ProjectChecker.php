@@ -21,7 +21,7 @@ class ProjectChecker
             self::checkDir($dir_name, $debug);
         }
 
-        IssueHandler::finish();
+        IssueBuffer::finish();
     }
 
     public static function checkDir($dir_name, $debug = false)
@@ -92,7 +92,7 @@ class ProjectChecker
 
         $file_checker->check(true);
 
-        IssueHandler::finish();
+        IssueBuffer::finish();
     }
 
     /**

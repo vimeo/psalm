@@ -74,7 +74,7 @@ class ClassMethodChecker extends FunctionChecker
                     return;
                 }
 
-                if (IssueHandler::accepts(
+                if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return type was found for method ' . $method_id . ' but return type \'' . $declared_return_type . '\' was expected',
                         $this->_file_name,
@@ -137,7 +137,7 @@ class ClassMethodChecker extends FunctionChecker
                             $inferred_return_type = Type::getVoid();
                         }
 
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new InvalidReturnType(
                                 'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
                                 $this->_file_name,
@@ -392,7 +392,7 @@ class ClassMethodChecker extends FunctionChecker
                     $param_name = $docblock_param['name'];
 
                     if (!array_key_exists($param_name, $method_param_names)) {
-                        if (IssueHandler::accepts(
+                        if (IssueBuffer::accepts(
                             new InvalidDocblock('Parameter $' . $param_name .' does not appear in the argument list for ' . $method_id, $this->_file_name, $method->getLine())
                         )) {
                             return false;
@@ -405,7 +405,7 @@ class ClassMethodChecker extends FunctionChecker
 
                     if ($method_param_names[$param_name] && !$method_param_names[$param_name]->isMixed()) {
                         if (!$param_type->isIn($method_param_names[$param_name])) {
-                            if (IssueHandler::accepts(
+                            if (IssueBuffer::accepts(
                                 new InvalidDocblock(
                                     'Parameter $' . $param_name .' has wrong type \'' . $param_type . '\', should be \'' . $method_param_names[$param_name] . '\'',
                                     $this->_file_name,
@@ -507,7 +507,7 @@ class ClassMethodChecker extends FunctionChecker
             return;
         }
 
-        if (IssueHandler::accepts(
+        if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine())
         )) {
             return false;
@@ -537,7 +537,7 @@ class ClassMethodChecker extends FunctionChecker
         $method_name = explode('::', $method_id)[1];
 
         if (!isset(self::$_method_visibility[$method_id])) {
-            if (IssueHandler::accepts(
+            if (IssueBuffer::accepts(
                 new InaccessibleMethod('Cannot access method ' . $method_id, $file_name, $line_number)
             )) {
                 return false;
@@ -550,7 +550,7 @@ class ClassMethodChecker extends FunctionChecker
 
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $method_class !== $calling_context) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new InaccessibleMethod('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
                     )) {
                         return false;
@@ -564,7 +564,7 @@ class ClassMethodChecker extends FunctionChecker
                 }
 
                 if (!$calling_context) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new InaccessibleMethod('Cannot access protected method ' . $method_id, $file_name, $line_number)
                     )) {
                         return false;
@@ -576,7 +576,7 @@ class ClassMethodChecker extends FunctionChecker
                 }
 
                 if (!is_subclass_of($calling_context, $method_class)) {
-                    if (IssueHandler::accepts(
+                    if (IssueBuffer::accepts(
                         new InaccessibleMethod('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
                     )) {
                         return false;
