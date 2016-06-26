@@ -15,7 +15,9 @@ class ProjectChecker
 
     public static function check($debug = false)
     {
-        self::$config = self::getConfigForPath(getcwd());
+        if (!self::$config) {
+            self::$config = self::getConfigForPath(getcwd());
+        }
 
         foreach (self::$config->getIncludeDirs() as $dir_name) {
             self::checkDirWithConfig($dir_name, self::$config, $debug);
@@ -136,5 +138,14 @@ class ProjectChecker
         }
 
         return $config;
+    }
+
+    public static function setConfigXML($path_to_config)
+    {
+        if (!file_exists($path_to_config)) {
+            throw new Exception\ConfigException('Config not found at location ' . $path_to_config);
+        }
+
+        self::$config = \CodeInspector\Config::loadFromXML($path_to_config);
     }
 }
