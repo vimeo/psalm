@@ -18,7 +18,7 @@ class ProjectChecker
         self::$config = self::getConfigForPath(getcwd());
 
         foreach (self::$config->getIncludeDirs() as $dir_name) {
-            self::checkDir($dir_name, $debug);
+            self::checkDirWithConfig($dir_name, self::$config, $debug);
         }
 
         IssueBuffer::finish();
@@ -30,9 +30,16 @@ class ProjectChecker
             self::$config = self::getConfigForPath($dir_name);
         }
 
-        $file_extensions = self::$config->getFileExtensions();
-        $filetype_handlers = self::$config->getFiletypeHandlers();
-        $base_dir = self::$config->getBaseDir();
+        self::checkDirWithConfig($dir_name, self::$config, $debug);
+
+        IssueBuffer::finish();
+    }
+
+    protected static function checkDirWithConfig($dir_name, Config $config, $debug)
+    {
+        $file_extensions = $config->getFileExtensions();
+        $filetype_handlers = $config->getFiletypeHandlers();
+        $base_dir = $config->getBaseDir();
 
         /** @var RecursiveDirectoryIterator */
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base_dir . $dir_name));
