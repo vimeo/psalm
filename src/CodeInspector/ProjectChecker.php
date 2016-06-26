@@ -7,9 +7,17 @@ use RecursiveIteratorIterator;
 
 class ProjectChecker
 {
+    /**
+     * Cached config
+     * @var Config|null
+     */
+    protected static $config;
+
     public static function check($debug = false)
     {
-        foreach (Config::getInstance()->getIncludeDirs() as $dir_name) {
+        self::$config = self::getConfigForPath(getcwd());
+
+        foreach (self::$config->getIncludeDirs() as $dir_name) {
             self::checkDir($dir_name, $debug);
         }
 
@@ -18,11 +26,13 @@ class ProjectChecker
 
     public static function checkDir($dir_name, $debug = false)
     {
-        $config = Config::getInstance();
+        if (!self::$config) {
+            self::$config = self::getConfigForPath($dir_name);
+        }
 
-        $file_extensions = $config->getFileExtensions();
-        $filetype_handlers = $config->getFiletypeHandlers();
-        $base_dir = $config->getBaseDir();
+        $file_extensions = self::$config->getFileExtensions();
+        $filetype_handlers = self::$config->getFiletypeHandlers();
+        $base_dir = self::$config->getBaseDir();
 
         /** @var RecursiveDirectoryIterator */
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base_dir . $dir_name));
@@ -62,13 +72,15 @@ class ProjectChecker
             echo 'Checking ' . $file_name . PHP_EOL;
         }
 
-        $config = Config::getInstance();
+        if (!self::$config) {
+            self::$config = self::getConfigForPath($file_name);
+        }
 
-        $base_dir = $config->getBaseDir();
+        $base_dir = self::$config->getBaseDir();
 
         $extension = array_pop(explode('.', $file_name));
 
-        $filetype_handlers = $config->getFiletypeHandlers();
+        $filetype_handlers = self::$config->getFiletypeHandlers();
 
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
@@ -81,5 +93,41 @@ class ProjectChecker
         $file_checker->check(true);
 
         IssueHandler::finish();
+    }
+
+    /**
+     * Gets a Config object from an XML file.
+     * Searches up a folder hierachy for the most immediate config.
+     *
+     * @param  string $path
+     * @return Config
+     */
+    protected static function getConfigForPath($path)
+    {
+        $dir_path = realpath($path) . '/';
+
+        if (!is_dir($dir_path)) {
+            $dir_path = dirname($dir_path) . '/';
+        }
+
+        $config = null;
+
+        do {
+            $maybe_path = $dir_path . Config::DEFAULT_FILE_NAME;
+
+            if (file_exists($maybe_path)) {
+                $config = \CodeInspector\Config::loadFromXML($maybe_path);
+                break;
+            }
+
+            $dir_path = preg_replace('/[^\/]+\/$/', '', $dir_path);
+        }
+        while ($dir_path !== '/');
+
+        if (!$config) {
+            throw new Exception\ConfigException('Config not found for path ' . $path);
+        }
+
+        return $config;
     }
 }

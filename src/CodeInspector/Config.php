@@ -7,12 +7,15 @@ use SimpleXMLElement;
 
 class Config
 {
+    const DEFAULT_FILE_NAME = 'codeinspector.xml';
     const REPORT_INFO = 'info';
     const REPORT_ERROR = 'error';
+    const REPORT_SUPPRESS = 'suppress';
 
     const ERROR_LEVELS = [
         self::REPORT_INFO,
         self::REPORT_ERROR,
+        self::REPORT_SUPPRESS
     ];
 
     protected static $_config;
@@ -47,6 +50,11 @@ class Config
         self::$_config = $this;
     }
 
+    /**
+     * Creates a new config object from the file
+     * @param  string $file_name
+     * @return $this
+     */
     public static function loadFromXML($file_name)
     {
         $file_contents = file_get_contents($file_name);
@@ -125,6 +133,8 @@ class Config
                 }
             }
         }
+
+        return $config;
     }
 
     /**
