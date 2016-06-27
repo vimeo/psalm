@@ -931,7 +931,7 @@ class StatementsChecker
         if (!$this->_check_variables) {
             $stmt->inferredType = Type::getMixed();
 
-            if (is_string($stmt->name)) {
+            if (is_string($stmt->name) && !isset($context->vars_in_scope[$stmt->name])) {
                 $context->vars_in_scope[$stmt->name] = Type::getMixed();
                 $context->vars_possibly_in_scope[$stmt->name] = true;
             }
