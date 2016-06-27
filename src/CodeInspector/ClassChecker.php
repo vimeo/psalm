@@ -70,6 +70,8 @@ class ClassChecker implements StatementsSource
 
         self::$_class_methods[$this->_absolute_class] = [];
 
+        $class_context = new Context();
+
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_id = $this->_absolute_class . '::' . $stmt->name;
@@ -115,7 +117,13 @@ class ClassChecker implements StatementsSource
                         if ($comment && $config->use_docblock_types) {
                             $type_in_comment = CommentChecker::getTypeFromComment($comment, null, $this);
                         }
-                        $this->_class_properties[$property->name] = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
+
+                        $property_type = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
+                        $this->_class_properties[$property->name] = $property_type;
+
+                        if (!$stmt->isStatic()) {
+                            $class_context->vars_in_scope['this->' . $property->name] = $property_type;
+                        }
                     }
                 }
                 $leftover_stmts[] = $stmt;
@@ -137,7 +145,7 @@ class ClassChecker implements StatementsSource
         if ($check_statements) {
             // do the method checks after all class methods have been initialised
             foreach ($method_checkers as $method_checker) {
-                $method_checker->check(new Context());
+                $method_checker->check(clone $class_context);
 
                 if (!$config->excludeIssueInFile(CodeInspector\Issue\InvalidReturnType::CLASS, $this->_file_name)) {
                     $method_checker->checkReturnTypes();
