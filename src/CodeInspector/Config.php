@@ -224,11 +224,6 @@ class Config
         return self::REPORT_ERROR;
     }
 
-    public function doesInheritVariables($file_name)
-    {
-        return false;
-    }
-
     public function getIncludeDirs()
     {
         return $this->inspect_files->getIncludeDirs();

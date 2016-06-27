@@ -14,6 +14,15 @@ class IssueBuffer
             return false;
         }
 
+        self::add($e);
+
+        return true;
+    }
+
+    public static function add(Issue\CodeIssue $e)
+    {
+        $config = Config::getInstance();
+
         $error_class_name = array_pop(explode('\\', get_class($e)));
 
         $error_message = $error_class_name . ' - ' . $e->getMessage();
@@ -40,8 +49,6 @@ class IssueBuffer
         }
 
         self::$errors[] = $error_message;
-
-        return true;
     }
 
     public static function finish()

@@ -76,7 +76,9 @@ class StatementsChecker
         $this->_class_name = $this->_source->getClassName();
         $this->_class_extends = $this->_source->getParentClass();
 
-        $this->_check_variables = !Config::getInstance()->doesInheritVariables($this->_file_name) || $enforce_variable_checks;
+        $config = Config::getInstance();
+
+        $this->_check_variables = !$config->excludeIssueInFile(UndefinedVariable::CLASS, $this->_file_name) || $enforce_variable_checks;
 
         $this->_type_checker = new TypeChecker($source, $this);
     }
@@ -973,11 +975,11 @@ class StatementsChecker
                     $this->registerVariable($var_name, $stmt->getLine());
                 }
                 else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::add(
                         new UndefinedVariable('Cannot find referenced variable $' . $var_name, $this->_file_name, $stmt->getLine())
-                    )) {
-                        return false;
-                    }
+                    );
+
+                    return false;
                 }
             }
 
@@ -1912,9 +1914,11 @@ class StatementsChecker
                 }
 
                 if (!isset($context->vars_possibly_in_scope[$use->var])) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
-                    )) {
+                    if ($this->_check_variables) {
+                        IssueBuffer::add(
+                            new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
+                        );
+
                         return false;
                     }
                 }
@@ -1936,9 +1940,11 @@ class StatementsChecker
                     return;
                 }
 
-                if (IssueBuffer::accepts(
-                    new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
-                )) {
+                if ($this->_check_variables) {
+                    IssueBuffer::add(
+                        new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
+                    );
+
                     return false;
                 }
             }
@@ -2266,9 +2272,11 @@ class StatementsChecker
             $var_id = $absolute_class . '::$' . $stmt->name;
 
             if (!self::_staticVarExists($var_id)) {
-                if (IssueBuffer::accepts(
-                    new UndefinedVariable('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine())
-                )) {
+                if ($this->_check_variables) {
+                    IssueBuffer::add(
+                        new UndefinedVariable('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine())
+                    );
+
                     return false;
                 }
             }

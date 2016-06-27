@@ -55,7 +55,7 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            $statements_checker = new StatementsChecker($this, ClassChecker::getThisClass(), $check_methods);
+            $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
 
             foreach ($this->_function->params as $param) {
                 if ($param->type) {
