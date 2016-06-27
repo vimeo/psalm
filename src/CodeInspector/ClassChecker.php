@@ -147,7 +147,7 @@ class ClassChecker implements StatementsSource
             foreach ($method_checkers as $method_checker) {
                 $method_checker->check(clone $class_context);
 
-                if (!$config->excludeIssueInFile(CodeInspector\Issue\InvalidReturnType::CLASS, $this->_file_name)) {
+                if (!$config->excludeIssueInFile('CodeInspector\Issue\InvalidReturnType', $this->_file_name)) {
                     $method_checker->checkReturnTypes();
                 }
             }

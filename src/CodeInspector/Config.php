@@ -12,7 +12,7 @@ class Config
     const REPORT_ERROR = 'error';
     const REPORT_SUPPRESS = 'suppress';
 
-    const ERROR_LEVELS = [
+    public static $ERROR_LEVELS = [
         self::REPORT_INFO,
         self::REPORT_ERROR,
         self::REPORT_SUPPRESS
@@ -139,7 +139,7 @@ class Config
                 if (isset($issue_handler['errorLevel'])) {
                     $error_level = (string) $issue_handler['errorLevel'];
 
-                    if (!in_array($error_level, self::ERROR_LEVELS)) {
+                    if (!in_array($error_level, self::$ERROR_LEVELS)) {
                         throw new \InvalidArgumentException('Error level ' . $error_level . ' could not be recognised');
                     }
 

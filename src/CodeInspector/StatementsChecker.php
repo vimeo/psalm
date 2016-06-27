@@ -78,7 +78,7 @@ class StatementsChecker
 
         $config = Config::getInstance();
 
-        $this->_check_variables = !$config->excludeIssueInFile(UndefinedVariable::CLASS, $this->_file_name) || $enforce_variable_checks;
+        $this->_check_variables = !$config->excludeIssueInFile('CodeInspector\Issue\UndefinedVariable', $this->_file_name) || $enforce_variable_checks;
 
         $this->_type_checker = new TypeChecker($source, $this);
     }
