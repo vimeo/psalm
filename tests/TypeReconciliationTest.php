@@ -128,7 +128,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testObject() {
+    public function testObject()
+    {
         $this->assertEquals(
             'Object',
             (string) TypeChecker::reconcileTypes('Object', Type::parseString('Object|bool'))
@@ -140,7 +141,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testAllMixed() {
+    public function testAllMixed()
+    {
         $this->assertEquals(
             'mixed',
             (string) TypeChecker::reconcileTypes('mixed', Type::parseString('mixed'))

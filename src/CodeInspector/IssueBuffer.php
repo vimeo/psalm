@@ -29,6 +29,10 @@ class IssueBuffer
                 return false;
         }
 
+        if ($config->throw_exception) {
+            throw new Exception\CodeException($error_message);
+        }
+
         echo "\033[0;31m" . 'ERROR: ' . "\033[0m" . $error_message . PHP_EOL;
 
         if ($config->stop_on_first_error) {

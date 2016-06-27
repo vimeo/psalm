@@ -17,6 +17,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
+        $config = \CodeInspector\Config::getInstance();
+        $config->throw_exception = true;
+
         $filter = new \CodeInspector\Config\FileFilter();
         $filter->addExcludeFile('somefile.php');
         $filter->makeExclusive();
@@ -100,6 +103,10 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable $array, first seen on line 4
+     */
     public function testPossiblyUndefinedArrayInWhileAndForeach()
     {
         $stmts = self::$_parser->parse('<?php
@@ -278,6 +285,10 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, first seen on line 4
+     */
     public function testPossiblyUndefinedVariableInForeachAndIf()
     {
         $stmts = self::$_parser->parse('<?php

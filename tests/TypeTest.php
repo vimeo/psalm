@@ -15,6 +15,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+
+        $config = \CodeInspector\Config::getInstance();
+        $config->throw_exception = true;
     }
 
     public function setUp()

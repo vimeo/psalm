@@ -20,8 +20,23 @@ class Config
 
     protected static $_config;
 
+    /**
+     * Whether or not to stop when the first error is seen
+     * @var boolean
+     */
     public $stop_on_first_error = true;
+
+    /**
+     * Whether or not to use types as defined in docblocks
+     * @var boolean
+     */
     public $use_docblock_types = false;
+
+    /**
+     * Whether or not to throw an exception on first error
+     * @var boolean
+     */
+    public $throw_exception = false;
 
     protected $inspect_files;
 
@@ -36,8 +51,6 @@ class Config
     protected $custom_error_levels = ['InvalidDocblock' => self::REPORT_INFO];
 
     protected $mock_classes = [];
-
-
 
     /**
      * CodeInspector plugins
@@ -73,6 +86,11 @@ class Config
         if (isset($config_xml['useDocblockTypes'])) {
             $attribute_text = (string) $config_xml['useDocblockTypes'];
             $config->use_docblock_types = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['throwExceptionOnError'])) {
+            $attribute_text = (string) $config_xml['throwExceptionOnError'];
+            $config->throw_exception = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->inspectFiles)) {

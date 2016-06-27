@@ -40,7 +40,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
 
     public function testArrayOfIntOrAlsoString()
     {
-        $this->assertEquals('array<int>|string',
+        $this->assertEquals(
+            'array<int>|string',
             (string) Type::combineTypes([
                 Type::parseString('array<int>', false),
                 Type::parseString('string', false)
@@ -50,7 +51,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
 
     public function testEmptyArrays()
     {
-        $this->assertEquals('array<empty>',
+        $this->assertEquals(
+            'array<empty>',
             (string) Type::combineTypes([
                 Type::parseString('array<empty>', false),
                 Type::parseString('array<empty>', false)
@@ -60,7 +62,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
 
     public function testArrayStringOrEmptyArray()
     {
-        $this->assertEquals('array<string>',
+        $this->assertEquals(
+            'array<string>',
             (string) Type::combineTypes([
                 Type::parseString('array<empty>', false),
                 Type::parseString('array<string>', false)
