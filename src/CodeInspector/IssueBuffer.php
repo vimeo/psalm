@@ -18,12 +18,18 @@ class IssueBuffer
 
         $error_message = $error_class_name . ' - ' . $e->getMessage();
 
-        if ($config->getReportingLevel(get_class($e)) !== Config::REPORT_ERROR) {
-            echo $error_message . PHP_EOL;
-            return false;
+        $reporting_level = $config->getReportingLevel(get_class($e));
+
+        switch ($reporting_level) {
+            case Config::REPORT_INFO:
+                echo 'INFO: ' . $error_message . PHP_EOL;
+                return false;
+
+            case Config::REPORT_SUPPRESS:
+                return false;
         }
 
-        echo $error_message . PHP_EOL;
+        echo "\033[0;31m" . 'ERROR: ' . "\033[0m" . $error_message . PHP_EOL;
 
         if ($config->stop_on_first_error) {
             exit(1);
