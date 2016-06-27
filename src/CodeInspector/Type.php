@@ -16,6 +16,10 @@ abstract class Type
      */
     public static function parseString($type_string, $enclose_with_union = true)
     {
+        if (strpos($type_string, '[') !== false) {
+            $type_string = TypeChecker::convertSquareBrackets($type_string);
+        }
+
         $type_tokens = TypeChecker::tokenize($type_string);
 
         if (count($type_tokens) === 1) {
