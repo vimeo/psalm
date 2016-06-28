@@ -70,8 +70,12 @@ class TypeChecker
 
         foreach ($keys as $key) {
             if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
-                $type_assertions = array_merge(explode('|', $left_assertions[$key]), explode('|', $right_assertions[$key]));
-                $if_types[$key] = implode('|', array_unique($type_assertions));
+                if ($left_assertions[$key][0] !== '!' && $right_assertions[$key][0] !== '!') {
+                    $if_types[$key] = $left_assertions[$key] . '&' . $right_assertions[$key];
+                }
+                else {
+                    $if_types[$key] = $right_assertions[$key];
+                }
             }
             else if (isset($left_assertions[$key])) {
                 $if_types[$key] = $left_assertions[$key];
