@@ -12,9 +12,9 @@ abstract class Type
     /**
      * Parses a string type representation
      * @param  string $string
-     * @return self
+     * @return Union
      */
-    public static function parseString($type_string, $enclose_with_union = true)
+    public static function parseString($type_string)
     {
         if (strpos($type_string, '[') !== false) {
             $type_string = TypeChecker::convertSquareBrackets($type_string);
@@ -30,13 +30,7 @@ abstract class Type
                 $type_tokens[0] = 'int';
             }
 
-            $parsed_type = new Atomic($type_tokens[0]);
-
-            if ($enclose_with_union) {
-                $parsed_type = new Union([$parsed_type]);
-            }
-
-            return $parsed_type;
+            return new Union([new Atomic($type_tokens[0])]);
         }
 
         // We construct a parse tree corresponding to the type
@@ -125,7 +119,7 @@ abstract class Type
 
         $parsed_type = self::getTypeFromTree($parse_tree);
 
-        if ($enclose_with_union && !($parsed_type instanceof Union)) {
+        if (!($parsed_type instanceof Union)) {
             $parsed_type = new Union([$parsed_type]);
         }
 

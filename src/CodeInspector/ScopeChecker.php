@@ -170,6 +170,7 @@ class ScopeChecker
 
             if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 $has_returned = false;
+                $has_default_terminator = false;
 
                 // iterate backwards in a case statement
                 for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {

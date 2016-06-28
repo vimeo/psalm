@@ -41,10 +41,9 @@ class ProjectChecker
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
-        $base_dir = $config->getBaseDir();
 
         /** @var RecursiveDirectoryIterator */
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base_dir . $dir_name));
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
         $iterator->rewind();
 
         $files = [];
@@ -85,18 +84,16 @@ class ProjectChecker
             self::$config = self::getConfigForPath($file_name);
         }
 
-        $base_dir = self::$config->getBaseDir();
-
         $extension = array_pop(explode('.', $file_name));
 
         $filetype_handlers = self::$config->getFiletypeHandlers();
 
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
-            $file_checker = new $filetype_handlers[$extension]($base_dir . $file_name);
+            $file_checker = new $filetype_handlers[$extension]($file_name);
         }
         else {
-            $file_checker = new FileChecker($base_dir . $file_name);
+            $file_checker = new FileChecker($file_name);
         }
 
         $file_checker->check(true);

@@ -16,13 +16,18 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    private static function getAtomic($string)
+    {
+        return array_values(self::getAtomic($string)->types)[0];
+    }
+
     public function testIntOrString()
     {
         $this->assertEquals(
             'int|string',
             (string) Type::combineTypes([
-                Type::parseString('int', false),
-                Type::parseString('string', false)
+                self::getAtomic('int'),
+                self::getAtomic('string')
             ])
         );
     }
@@ -32,8 +37,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'array<int|string>',
             (string) Type::combineTypes([
-                Type::parseString('array<int>', false),
-                Type::parseString('array<string>', false)
+                self::getAtomic('array<int>'),
+                self::getAtomic('array<string>')
             ])
         );
     }
@@ -43,8 +48,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'array<int>|string',
             (string) Type::combineTypes([
-                Type::parseString('array<int>', false),
-                Type::parseString('string', false)
+                self::getAtomic('array<int>'),
+                self::getAtomic('string')
             ])
         );
     }
@@ -54,8 +59,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'array<empty>',
             (string) Type::combineTypes([
-                Type::parseString('array<empty>', false),
-                Type::parseString('array<empty>', false)
+                self::getAtomic('array<empty>'),
+                self::getAtomic('array<empty>')
             ])
         );
     }
@@ -65,8 +70,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'array<string>',
             (string) Type::combineTypes([
-                Type::parseString('array<empty>', false),
-                Type::parseString('array<string>', false)
+                self::getAtomic('array<empty>'),
+                self::getAtomic('array<string>')
             ])
         );
     }
@@ -76,8 +81,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'array<mixed>',
             (string) Type::combineTypes([
-                Type::parseString('array<mixed>', false),
-                Type::parseString('array<string>', false)
+                self::getAtomic('array<mixed>'),
+                self::getAtomic('array<string>')
             ])
         );
     }
@@ -87,8 +92,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'array<mixed>',
             (string) Type::combineTypes([
-                Type::parseString('array<empty>', false),
-                Type::parseString('array<mixed>', false)
+                self::getAtomic('array<empty>'),
+                self::getAtomic('array<mixed>')
             ])
         );
     }
@@ -98,8 +103,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'array<int|float|string>',
             (string) Type::combineTypes([
-                Type::parseString('array<int|float>', false),
-                Type::parseString('array<string>', false)
+                self::getAtomic('array<int|float>'),
+                self::getAtomic('array<string>')
             ])
         );
     }
@@ -109,8 +114,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'bool',
             (string) Type::combineTypes([
-                Type::parseString('false', false),
-                Type::parseString('bool', false)
+                self::getAtomic('false'),
+                self::getAtomic('bool')
             ])
         );
     }
@@ -120,7 +125,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'bool',
             (string) Type::combineTypes([
-                Type::parseString('false', false)
+                self::getAtomic('false')
             ])
         );
     }
@@ -130,8 +135,8 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             'bool',
             (string) Type::combineTypes([
-                Type::parseString('false', false),
-                Type::parseString('false', false)
+                self::getAtomic('false'),
+                self::getAtomic('false')
             ])
         );
     }
