@@ -1437,7 +1437,7 @@ class StatementsChecker
             // ignore deeply-nested string concatenation
         }
         else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-            $left_type_assertions = $this->_type_checker->getTypeAssertions($stmt->left, true);
+            $left_type_assertions = $this->_type_checker->getReconcilableTypeAssertions($stmt->left);
 
             if ($this->_checkExpression($stmt->left, $context) === false) {
                 return false;
@@ -1468,7 +1468,7 @@ class StatementsChecker
             $context->vars_possibly_in_scope = array_merge($op_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
         }
         else if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            $left_type_assertions = $this->_type_checker->getTypeAssertions($stmt->left, true);
+            $left_type_assertions = $this->_type_checker->getNegatableTypeAssertions($stmt->left);
 
             $negated_type_assertions = TypeChecker::negateTypes($left_type_assertions);
 
