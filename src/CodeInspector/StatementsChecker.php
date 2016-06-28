@@ -2423,7 +2423,32 @@ class StatementsChecker
 
         $redefined_vars = null;
 
-        foreach ($stmt->cases as $case) {
+        // the last statement always breaks, by default
+        $last_case_exit_type = 'break';
+
+        $case_exit_types = new \SplFixedArray(count($stmt->cases));
+
+        // create a map of case statement -> ultimate exit type
+        for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
+            $case = $stmt->cases[$i];
+
+            if (ScopeChecker::doesReturnOrThrow($case->stmts)) {
+                $last_case_exit_type = 'return_throw';
+            }
+            elseif (ScopeChecker::doesEverBreakOrContinue($case->stmts, true)) {
+                $last_case_exit_type = 'continue';
+            }
+            elseif (ScopeChecker::doesEverBreakOrContinue($case->stmts)) {
+                $last_case_exit_type = 'break';
+            }
+
+            $case_exit_types[$i] = $last_case_exit_type;
+        }
+
+        for ($i = 0, $l = count($stmt->cases); $i < $l; $i++) {
+            $case = $stmt->cases[$i];
+            $case_exit_type = $case_exit_types[$i];
+
             if ($case->cond) {
                 if ($this->_checkCondition($case->cond, $context) === false) {
                     return false;
@@ -2454,13 +2479,11 @@ class StatementsChecker
                 // has a return/throw at end
                 $has_ending_statments = ScopeChecker::doesReturnOrThrow($case->stmts);
 
-                if (!$has_ending_statments) {
+                if (!$case_exit_type !== 'return_throw') {
                     $vars = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
-                    $has_leaving_statements = ScopeChecker::doesLeaveBlock($case->stmts, true, false);
-
                     // if we're leaving this block, add vars to outer for loop scope
-                    if ($has_leaving_statements) {
+                    if ($case_exit_type === 'continue') {
                         $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
                     }
                     else {

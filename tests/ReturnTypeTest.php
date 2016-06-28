@@ -16,6 +16,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $config = \CodeInspector\Config::getInstance();
         $config->throw_exception = true;
+        $config->use_docblock_types = true;
     }
 
     public function setUp()
@@ -169,6 +170,115 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
                 }
                 catch (\Exception $e) {
                     throw $e;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testSwitchReturnTypeWithFallthrough()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return bool */
+            public function foo() {
+                switch (rand(0,10)) {
+                    case 1:
+                    default:
+                        return true;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testSwitchReturnTypeWithFallthroughAndStatement()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return bool */
+            public function foo() {
+                switch (rand(0,10)) {
+                    case 1:
+                        $a = 5;
+                    default:
+                        return true;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testSwitchReturnTypeWithFallthroughAndBreak()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return bool */
+            public function foo() {
+                switch (rand(0,10)) {
+                    case 1:
+                        break;
+                    default:
+                        return true;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testSwitchReturnTypeWithFallthroughAndConditionalBreak()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return bool */
+            public function foo() {
+                switch (rand(0,10)) {
+                    case 1:
+                        if (rand(0,10) === 5) {
+                            break;
+                        }
+                    default:
+                        return true;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testSwitchReturnTypeWithNoDefault()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return bool */
+            public function foo() {
+                switch (rand(0,10)) {
+                    case 1:
+                    case 2:
+                        return true;
                 }
             }
         }

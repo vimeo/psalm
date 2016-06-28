@@ -50,16 +50,31 @@ class ScopeChecker
                 }
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Switch_ && $stmt->cases[count($stmt->cases) - 1]->cond === null) {
-                $all_cases_terminate = true;
+            if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
+                $has_left = false;
 
-                foreach ($stmt->cases as $case) {
-                    if (!self::doesLeaveBlock($case->stmts, false)) {
+                $has_default_leaver = false;
+
+                // iterate backwards in a case statement
+                for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
+                    $case = $stmt->cases[$i];
+
+                    $case_does_leave = self::doesLeaveBlock($case->stmts, false);
+
+                    if ($case_does_leave) {
+                        $has_left = true;
+                    }
+
+                    if (!$case_does_leave && !$has_left) {
                         return false;
+                    }
+
+                    if (!$case->cond && $case_does_leave) {
+                        $has_default_leaver = true;
                     }
                 }
 
-                return true;
+                return $has_default_leaver;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
@@ -72,7 +87,7 @@ class ScopeChecker
         return false;
     }
 
-    public static function doesBreakOrContinue(array $stmts)
+    public static function doesEverBreakOrContinue(array $stmts, $ignore_break = false)
     {
         if (empty($stmts)) {
             return false;
@@ -81,43 +96,41 @@ class ScopeChecker
         for ($i = count($stmts) - 1; $i >= 0; $i--) {
             $stmt = $stmts[$i];
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Continue_ || $stmt instanceof PhpParser\Node\Stmt\Break_) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Continue_ || (!$ignore_break && $stmt instanceof PhpParser\Node\Stmt\Break_)) {
                 return true;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                if ($stmt->else && self::doesBreakOrContinue($stmt->stmts) && self::doesBreakOrContinue($stmt->else->stmts)) {
-                    if (empty($stmt->elseifs)) {
+                if (self::doesEverBreakOrContinue($stmt->stmts, $ignore_break)) {
+                    return true;
+                }
+
+                if ($stmt->else && self::doesEverBreakOrContinue($stmt->else->stmts, $ignore_break)) {
+                    return true;
+                }
+
+                foreach ($stmt->elseifs as $elseif) {
+                    if (self::doesEverBreakOrContinue($elseif->stmts, $ignore_break)) {
                         return true;
                     }
-
-                    foreach ($stmt->elseifs as $elseif) {
-                        if (!self::doesBreakOrContinue($elseif->stmts)) {
-                            return false;
-                        }
-                    }
-
-                    return true;
                 }
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Switch_ && $stmt->cases[count($stmt->cases) - 1]->cond === null) {
-                $all_cases_terminate = true;
+            if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
+                // iterate backwards
+                // in switch statements we only care here about continue
+                for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
+                    $case = $stmt->cases[$i];
 
-                foreach ($stmt->cases as $case) {
-                    if (!self::doesBreakOrContinue($case->stmts)) {
-                        return false;
+                    if (self::doesEverBreakOrContinue($case->stmts, true)) {
+                        return true;
                     }
                 }
-
-                return true;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 continue;
             }
-
-            return false;
         }
 
         return false;
@@ -155,29 +168,33 @@ class ScopeChecker
                 }
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Switch_ && $stmt->cases[count($stmt->cases) - 1]->cond === null) {
-                $all_cases_terminate = true;
+            if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
+                $has_returned = false;
 
-                $has_default = false;
-                foreach ($stmt->cases as $case) {
-                    if (self::doesBreakOrContinue($case->stmts)) {
+                // iterate backwards in a case statement
+                for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
+                    $case = $stmt->cases[$i];
+
+                    if (self::doesEverBreakOrContinue($case->stmts)) {
                         return false;
                     }
 
-                    if (self::doesReturnOrThrow($case->stmts)) {
-                        return true;
+                    $case_does_return = self::doesReturnOrThrow($case->stmts);
+
+                    if ($case_does_return) {
+                        $has_returned = true;
                     }
 
-                    if (!$case->cond) {
-                        $has_default = true;
+                    if (!$case_does_return && !$has_returned) {
+                        return false;
+                    }
+
+                    if (!$case->cond && $case_does_return) {
+                        $has_default_terminator = true;
                     }
                 }
 
-                if ($has_default) {
-                    return false;
-                }
-
-                return true;
+                return $has_default_terminator;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\While_) {
