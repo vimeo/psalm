@@ -18,7 +18,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
 
     private static function getAtomic($string)
     {
-        return array_values(self::getAtomic($string)->types)[0];
+        return array_values(Type::parseString($string)->types)[0];
     }
 
     public function testIntOrString()
