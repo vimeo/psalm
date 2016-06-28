@@ -25,12 +25,72 @@ class TypeChecker
     }
 
     /**
+     * Gets all the type assertions in a conditional that are && together
+     * @param  PhpParser\Node\Expr $conditional [description]
+     * @return [type]                           [description]
+     */
+    public function getReconcilableTypeAssertions(PhpParser\Node\Expr $conditional)
+    {
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            return [];
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            $left_assertions = $this->getReconcilableTypeAssertions($conditional->left);
+            $right_assertions = $this->getReconcilableTypeAssertions($conditional->right);
+
+            return self::combineTypeAssertions($left_assertions, $right_assertions);
+        }
+
+        return $this->getTypeAssertions($conditional);
+    }
+
+    public function getNegatableTypeAssertions(PhpParser\Node\Expr $conditional)
+    {
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            return [];
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            $left_assertions = $this->getNegatableTypeAssertions($conditional->left);
+            $right_assertions = $this->getNegatableTypeAssertions($conditional->right);
+
+            return self::combineTypeAssertions($left_assertions, $right_assertions);
+        }
+
+        return $this->getTypeAssertions($conditional);
+    }
+
+    private static function combineTypeAssertions(array $left_assertions, array $right_assertions)
+    {
+        $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
+        $keys = array_unique($keys);
+
+        $if_types = [];
+
+        foreach ($keys as $key) {
+            if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
+                $type_assertions = array_merge(explode('|', $left_assertions[$key]), explode('|', $right_assertions[$key]));
+                $if_types[$key] = implode('|', array_unique($type_assertions));
+            }
+            else if (isset($left_assertions[$key])) {
+                $if_types[$key] = $left_assertions[$key];
+            }
+            else {
+                $if_types[$key] = $right_assertions[$key];
+            }
+        }
+
+        return $if_types;
+    }
+
+    /**
      * Gets all the type assertions in a conditional
      *
      * @param  PhpParser\Node\Expr $stmt
      * @return array
      */
-    public function getTypeAssertions(PhpParser\Node\Expr $conditional, $check_boolean_and = false)
+    public function getTypeAssertions(PhpParser\Node\Expr $conditional)
     {
         $if_types = [];
 
@@ -303,50 +363,6 @@ class TypeChecker
                 $var_name = StatementsChecker::getVarId($isset_var);
                 if ($var_name) {
                     $if_types[$var_name] = '!null';
-                }
-            }
-        }
-        else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            $left_assertions = $this->getTypeAssertions($conditional->left, false);
-            $right_assertions = $this->getTypeAssertions($conditional->right, false);
-
-            $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
-            $keys = array_unique($keys);
-
-            foreach ($keys as $key) {
-                if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
-                    $type_assertions = array_merge(explode('|', $left_assertions[$key]), explode('|', $right_assertions[$key]));
-                    $if_types[$key] = implode('|', array_unique($type_assertions));
-                }
-                else if (isset($left_assertions[$key])) {
-                    $if_types[$key] = $left_assertions[$key];
-                }
-                else {
-                    $if_types[$key] = $right_assertions[$key];
-                }
-            }
-        }
-        else if ($check_boolean_and && $conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-            $left_assertions = $this->getTypeAssertions($conditional->left, $check_boolean_and);
-            $right_assertions = $this->getTypeAssertions($conditional->right, $check_boolean_and);
-
-            $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
-            $keys = array_unique($keys);
-
-            foreach ($keys as $key) {
-                if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
-                    if ($left_assertions[$key][0] !== '!' && $right_assertions[$key][0] !== '!') {
-                        $if_types[$key] = $left_assertions[$key] . '&' . $right_assertions[$key];
-                    }
-                    else {
-                        $if_types[$key] = $right_assertions[$key];
-                    }
-                }
-                else if (isset($left_assertions[$key])) {
-                    $if_types[$key] = $left_assertions[$key];
-                }
-                else {
-                    $if_types[$key] = $right_assertions[$key];
                 }
             }
         }

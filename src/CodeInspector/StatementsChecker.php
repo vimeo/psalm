@@ -274,29 +274,41 @@ class StatementsChecker
             return false;
         }
 
-        $if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) {
+            $reconcilable_if_types = $this->_type_checker->getReconcilableTypeAssertions($stmt->cond, true);
+            $negatable_if_types = $this->_type_checker->getNegatableTypeAssertions($stmt->cond, true);
+        }
+        else {
+            $reconcilable_if_types = $negatable_if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
+        }
 
         $has_leaving_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, true, true);
 
         // we only need to negate the if types if there are throw/return/break/continue or else/elseif blocks
         $need_to_negate_if_types = $has_leaving_statments || $stmt->elseifs || $stmt->else;
 
-        $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
-
-        $negated_types = $if_types && $need_to_negate_if_types && $can_negate_if_types
-                            ? TypeChecker::negateTypes($if_types)
+        $negated_types = $negatable_if_types && $need_to_negate_if_types
+                            ? TypeChecker::negateTypes($negatable_if_types)
                             : [];
 
         $negated_if_types = $negated_types;
 
         // if the if has an || in the conditional, we cannot easily reason about it
-        if (!($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) || !self::_containsBooleanOr($stmt->cond)) {
-            $if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($if_types, $if_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+        if ($reconcilable_if_types) {
+            $if_vars_in_scope_reconciled =
+                TypeChecker::reconcileKeyedTypes(
+                    $reconcilable_if_types,
+                    $if_context->vars_in_scope,
+                    $this->_file_name,
+                    $stmt->getLine()
+                );
+
             if ($if_vars_in_scope_reconciled === false) {
                 return false;
             }
+
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
-            $if_context->vars_possibly_in_scope = array_merge($if_types, $if_context->vars_possibly_in_scope);
+            $if_context->vars_possibly_in_scope = array_merge($reconcilable_if_types, $if_context->vars_possibly_in_scope);
         }
 
         $old_if_context = clone $if_context;
@@ -332,7 +344,7 @@ class StatementsChecker
             }
 
             // update the parent context as necessary, but only if we can safely reason about type negation
-            if ($can_negate_if_types && !$mic_drop) {
+            if ($negatable_if_types && !$mic_drop) {
                 $context->update($old_if_context, $if_context, $has_leaving_statments, $updated_vars);
             }
 
@@ -362,19 +374,23 @@ class StatementsChecker
                 $elseif_context->vars_in_scope = $elseif_vars_reconciled;
             }
 
-            $elseif_types = $this->_type_checker->getTypeAssertions($elseif->cond, true);
+            if ($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp) {
+                $reconcilable_elseif_types = $this->_type_checker->getReconcilableTypeAssertions($elseif->cond, true);
+                $negatable_elseif_types = $this->_type_checker->getNegatableTypeAssertions($elseif->cond, true);
+            }
+            else {
+                $reconcilable_elseif_types = $negatable_elseif_types = $this->_type_checker->getTypeAssertions($elseif->cond, true);
+            }
 
-            $can_negate_elseif_types = !($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
-
-            $negated_elseif_types = $elseif_types && $can_negate_elseif_types
-                                    ? TypeChecker::negateTypes($elseif_types)
+            $negated_elseif_types = $negatable_elseif_types
+                                    ? TypeChecker::negateTypes($negatable_elseif_types)
                                     : [];
 
             $negated_types = array_merge($negated_types, $negated_elseif_types);
 
             // if the elseif has an || in the conditional, we cannot easily reason about it
             if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp) || !self::_containsBooleanOr($elseif->cond)) {
-                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($elseif_types, $elseif_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($reconcilable_elseif_types, $elseif_context->vars_in_scope, $this->_file_name, $stmt->getLine());
 
                 if ($elseif_vars_reconciled === false) {
                     return false;
@@ -443,7 +459,7 @@ class StatementsChecker
                     }
                 }
 
-                if ($can_negate_if_types) {
+                if ($negatable_if_types) {
                     $context->update($old_elseif_context, $elseif_context, $has_leaving_statments, $updated_vars);
                 }
 
@@ -531,7 +547,7 @@ class StatementsChecker
                 }
 
                 // update the parent context as necessary
-                if ($can_negate_if_types) {
+                if ($negatable_if_types) {
                     $context->update($old_else_context, $else_context, $has_leaving_statments, $updated_vars);
                 }
 
@@ -2319,13 +2335,23 @@ class StatementsChecker
 
         $t_if_context = clone $context;
 
-        $if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
-
-        $can_negate_if_types = !($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd);
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) {
+            $reconcilable_if_types = $this->_type_checker->getReconcilableTypeAssertions($stmt->cond, true);
+            $negatable_if_types = $this->_type_checker->getNegatableTypeAssertions($stmt->cond, true);
+        }
+        else {
+            $reconcilable_if_types = $negatable_if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
+        }
 
         $if_return_type = null;
 
-        $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($if_types, $t_if_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+        $t_if_vars_in_scope_reconciled =
+            TypeChecker::reconcileKeyedTypes(
+                $reconcilable_if_types,
+                $t_if_context->vars_in_scope,
+                $this->_file_name,
+                $stmt->getLine()
+            );
 
         if ($t_if_vars_in_scope_reconciled === false) {
             return false;
@@ -2341,8 +2367,9 @@ class StatementsChecker
 
         $t_else_context = clone $context;
 
-        if ($can_negate_if_types) {
-            $negated_if_types = TypeChecker::negateTypes($if_types);
+        if ($negatable_if_types) {
+            $negated_if_types = TypeChecker::negateTypes($negatable_if_types);
+
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($negated_if_types, $t_else_context->vars_in_scope, $this->_file_name, $stmt->getLine());
 
             if ($t_else_vars_in_scope_reconciled === false) {
@@ -3118,12 +3145,6 @@ class StatementsChecker
     {
         // we only want to discount expressions where either the whole thing is an or
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            return true;
-        }
-
-        // or both sides are ors
-        if (($stmt->left instanceof PhpParser\Node\Expr\BinaryOp && $stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) &&
-            ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp && $stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)) {
             return true;
         }
 
