@@ -59,7 +59,7 @@ class ScopeChecker
                 for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
                     $case = $stmt->cases[$i];
 
-                    $case_does_leave = self::doesLeaveBlock($case->stmts, false);
+                    $case_does_leave = self::doesEverBreakOrContinue($case->stmts, true);
 
                     if ($case_does_leave) {
                         $has_left = true;

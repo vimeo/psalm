@@ -2455,6 +2455,8 @@ class StatementsChecker
 
         $case_exit_types = new \SplFixedArray(count($stmt->cases));
 
+        $has_default = false;
+
         // create a map of case statement -> ultimate exit type
         for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
             $case = $stmt->cases[$i];
@@ -2506,7 +2508,7 @@ class StatementsChecker
                 // has a return/throw at end
                 $has_ending_statments = ScopeChecker::doesReturnOrThrow($case->stmts);
 
-                if (!$case_exit_type !== 'return_throw') {
+                if ($case_exit_type !== 'return_throw') {
                     $vars = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
                     // if we're leaving this block, add vars to outer for loop scope
@@ -2554,16 +2556,20 @@ class StatementsChecker
                 $case_types = [];
             }
 
-            // only update vars if there is a default
-            // if that default has a throw/return/continue, that should be handled above
-            if ($case->cond === null) {
-                if ($new_vars_in_scope) {
-                    $context->vars_in_scope = array_merge($context->vars_in_scope, $new_vars_in_scope);
-                }
+            if (!$case->cond) {
+                $has_default = true;
+            }
+        }
 
-                if ($redefined_vars) {
-                    $context->vars_in_scope = array_merge($context->vars_in_scope, $redefined_vars);
-                }
+        // only update vars if there is a default
+        // if that default has a throw/return/continue, that should be handled above
+        if ($has_default) {
+            if ($new_vars_in_scope) {
+                $context->vars_in_scope = array_merge($context->vars_in_scope, $new_vars_in_scope);
+            }
+
+            if ($redefined_vars) {
+                $context->vars_in_scope = array_merge($context->vars_in_scope, $redefined_vars);
             }
         }
 
@@ -2593,7 +2599,7 @@ class StatementsChecker
             return;
         }
 
-        if ($param_type->isNullable() && !$param_type->isNullable()) {
+        if ($input_type->isNullable() && !$param_type->isNullable()) {
             if (IssueBuffer::accepts(
                 new NullReference(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
