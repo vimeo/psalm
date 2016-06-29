@@ -287,4 +287,26 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    public function testSwitchReturnTypeWitDefaultException()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return bool */
+            public function foo() {
+                switch (rand(0,10)) {
+                    case 1:
+                    case 2:
+                        return true;
+
+                    default:
+                        throw new \Exception("badness");
+                }
+            }
+        }
+        ');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }

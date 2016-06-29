@@ -651,6 +651,99 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testNullableMethodWithGuardedSwitchRedefinitionNoDefault()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null) {
+                $a = 4;
+
+                if ($one === null) {
+                    switch ($a) {
+                        case 4:
+                            $one = new One();
+                            break;
+                    }
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException CodeInspector\Exception\CodeException
+     */
+    public function testNullableMethodWithGuardedSwitchRedefinitionEmptyDefault()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null) {
+                $a = 4;
+
+                if ($one === null) {
+                    switch ($a) {
+                        case 4:
+                            $one = new One();
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNullableMethodWithGuardedSwitchRedefinitionDueToException()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null) {
+                $a = 4;
+
+                if ($one === null) {
+                    switch ($a) {
+                        case 4:
+                            $one = new One();
+                            break;
+
+                        default:
+                            throw new \Exception("bad");
+                    }
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testNullableMethodWithGuardedNestedRedefinitionWithReturn()
     {
         $stmts = self::$_parser->parse('<?php
