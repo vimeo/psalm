@@ -382,9 +382,15 @@ class ClassMethodChecker extends FunctionChecker
             $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
 
             if ($docblock_info['return_type']) {
-                $return_type = Type::parseString(
-                    $this->_fixUpLocalReturnType($docblock_info['return_type'], $method_id, $this->_namespace, $this->_aliased_classes)
-                );
+                $return_type =
+                    Type::parseString(
+                        $this->_fixUpLocalType(
+                            $docblock_info['return_type'],
+                            $method_id,
+                            $this->_namespace,
+                            $this->_aliased_classes
+                        )
+                    );
             }
 
             if ($docblock_info['params']) {
@@ -401,7 +407,15 @@ class ClassMethodChecker extends FunctionChecker
                         continue;
                     }
 
-                    $param_type = Type::parseString($docblock_param['type']);
+                    $param_type =
+                        Type::parseString(
+                            $this->_fixUpLocalType(
+                                $docblock_param['type'],
+                                $method_id,
+                                $this->_namespace,
+                                $this->_aliased_classes
+                            )
+                        );
 
                     if ($method_param_names[$param_name] && !$method_param_names[$param_name]->isMixed()) {
                         if (!$param_type->isIn($method_param_names[$param_name])) {
@@ -425,7 +439,7 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_return_types[$method_id] = $return_type;
     }
 
-    protected static function _fixUpLocalReturnType($return_type, $method_id, $namespace, $aliased_classes)
+    protected static function _fixUpLocalType($return_type, $method_id, $namespace, $aliased_classes)
     {
         if (strpos($return_type, '[') !== false) {
             $return_type = TypeChecker::convertSquareBrackets($return_type);
