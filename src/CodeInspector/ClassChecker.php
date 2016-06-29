@@ -191,7 +191,7 @@ class ClassChecker implements StatementsSource
     }
 
     /**
-     * @return void
+     * @return bool
      */
     public static function checkClassName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes, $file_name)
     {
@@ -201,7 +201,7 @@ class ClassChecker implements StatementsSource
 
         $absolute_class = self::getAbsoluteClassFromName($class_name, $namespace, $aliased_classes);
 
-        self::checkAbsoluteClass($absolute_class, $class_name, $file_name);
+        return self::checkAbsoluteClass($absolute_class, $class_name, $file_name);
     }
 
     /**
