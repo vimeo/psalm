@@ -282,7 +282,9 @@ class StatementsChecker
             $reconcilable_if_types = $negatable_if_types = $this->_type_checker->getTypeAssertions($stmt->cond, true);
         }
 
-        $has_leaving_statments = ScopeChecker::doesLeaveBlock($stmt->stmts, true, true);
+        $has_ending_statments = ScopeChecker::doesReturnOrThrow($stmt->stmts);
+
+        $has_leaving_statments = $has_ending_statments || ScopeChecker::doesLeaveBlock($stmt->stmts, true, true);
 
         // we only need to negate the if types if there are throw/return/break/continue or else/elseif blocks
         $need_to_negate_if_types = $has_leaving_statments || $stmt->elseifs || $stmt->else;
@@ -347,8 +349,6 @@ class StatementsChecker
             if ($negatable_if_types && !$mic_drop) {
                 $context->update($old_if_context, $if_context, $has_leaving_statments, $updated_vars);
             }
-
-            $has_ending_statments = ScopeChecker::doesReturnOrThrow($stmt->stmts);
 
             if (!$has_ending_statments) {
                 $vars = array_diff_key($if_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
