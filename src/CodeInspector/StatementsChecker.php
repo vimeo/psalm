@@ -2572,59 +2572,63 @@ class StatementsChecker
 
     protected function _checkFunctionArgumentType(Type\Union $input_type, $method_id, $argument_offset, $file_name, $line_number)
     {
-        if (strpos($method_id, '::') !== false) {
-            $method_params = ClassMethodChecker::getMethodParams($method_id);
+        if (strpos($method_id, '::') === false) {
+            return;
+        }
 
-            if (isset($method_params[$argument_offset])) {
-                $param_type = $method_params[$argument_offset]['type'];
+        $method_params = ClassMethodChecker::getMethodParams($method_id);
 
-                if ($param_type->isMixed()) {
-                    return;
+        if (!isset($method_params[$argument_offset])) {
+            return;
+        }
+
+        $param_type = $method_params[$argument_offset]['type'];
+
+        if ($param_type->isMixed()) {
+            return;
+        }
+
+        if ($input_type->isMixed()) {
+            // @todo make this a config
+            return;
+        }
+
+        if ($param_type->isNullable() && !$param_type->isNullable()) {
+            if (IssueBuffer::accepts(
+                new NullReference(
+                    'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
+                    $file_name,
+                    $line_number
+                )
+            )) {
+                return false;
+            }
+        }
+
+        foreach ($input_type->types as $input_type_part) {
+            if ($input_type_part->isNull()) {
+                continue;
+            }
+
+            foreach ($param_type->types as $param_type_part) {
+                if ($param_type_part->isNull()) {
+                    continue;
                 }
 
-                if ($input_type->isMixed()) {
-                    // @todo make this a config
-                    return;
-                }
+                if ($input_type_part->value !== $param_type_part->value && !is_subclass_of($input_type_part->value, $param_type_part->value) && !self::isMock($input_type_part->value)) {
+                    if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
+                        // @todo handle coercion
+                        return;
+                    }
 
-                if ($param_type->isNullable() && !$param_type->isNullable()) {
                     if (IssueBuffer::accepts(
-                        new NullReference(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
+                        new InvalidArgument(
+                            'Argument ' . ($argument_offset + 1) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                             $file_name,
                             $line_number
                         )
                     )) {
                         return false;
-                    }
-                }
-
-                foreach ($input_type->types as $input_type_part) {
-                    if ($input_type_part->isNull()) {
-                        continue;
-                    }
-
-                    foreach ($param_type->types as $param_type_part) {
-                        if ($param_type_part->isNull()) {
-                            continue;
-                        }
-
-                        if ($input_type_part->value !== $param_type_part->value && !is_subclass_of($input_type_part->value, $param_type_part->value) && !self::isMock($input_type_part->value)) {
-                            if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
-                                // @todo handle coercion
-                                return;
-                            }
-
-                            if (IssueBuffer::accepts(
-                                new InvalidArgument(
-                                    'Argument ' . ($argument_offset + 1) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
-                                    $file_name,
-                                    $line_number
-                                )
-                            )) {
-                                return false;
-                            }
-                        }
                     }
                 }
             }
