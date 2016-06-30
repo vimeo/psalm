@@ -4,7 +4,7 @@ namespace CodeInspector;
 
 class CommentChecker
 {
-    const TYPE_REGEX = '(\\\?[A-Za-z0-9\<\>\[\]|\\\]+[A-Za-z0-9\<\>\[\]]|\$[a-zA-Z_0-9\<\>\|\[\]]+)';
+    const TYPE_REGEX = '(\\\?[A-Za-z0-9_\<\>\[\]|\\\]+[A-Za-z0-9_\<\>\[\]]|\$[a-zA-Z_0-9_\<\>\|\[\]]+)';
 
     /**
      * @param  string           $comment
