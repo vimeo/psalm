@@ -1776,8 +1776,10 @@ class StatementsChecker
 
         $class_type = isset($context->vars_in_scope[$var_id]) ? $context->vars_in_scope[$var_id] : null;
 
-        // make sure we stay vague here
-        if (!$class_type) {
+        if (isset($stmt->var->inferredType)) {
+            $class_type = $stmt->var->inferredType;
+        }
+        elseif (!$class_type) {
             $stmt->inferredType = Type::getMixed();
         }
 
