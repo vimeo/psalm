@@ -48,7 +48,7 @@ class Config
 
     protected $issue_handlers = [];
 
-    protected $custom_error_levels = ['InvalidDocblock' => self::REPORT_INFO];
+    protected $custom_error_levels = ['InvalidDocblock' => self::REPORT_INFO, 'MixedMethodCall' => self::REPORT_SUPPRESS];
 
     protected $mock_classes = [];
 
