@@ -744,6 +744,35 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testNullableMethodWithGuardedSwitchThatAlwaysReturns()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        class B {
+            public function bar(One $one = null) {
+                $a = 4;
+
+                if ($one === null) {
+                    switch ($a) {
+                        case 4:
+                            return;
+
+                        default:
+                            return;
+                    }
+                }
+
+                $one->foo();
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testNullableMethodWithGuardedNestedRedefinitionWithReturn()
     {
         $stmts = self::$_parser->parse('<?php
