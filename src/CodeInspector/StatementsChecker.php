@@ -9,6 +9,7 @@ use CodeInspector\Issue\ForbiddenCode;
 use CodeInspector\Issue\InvalidArgument;
 use CodeInspector\Issue\InvalidNamespace;
 use CodeInspector\Issue\InvalidIterator;
+use CodeInspector\Issue\MixedMethodCall;
 use CodeInspector\Issue\NullReference;
 use CodeInspector\Issue\ParentNotFound;
 use CodeInspector\Issue\PossiblyUndefinedVariable;
@@ -1835,6 +1836,11 @@ class StatementsChecker
                         break;
 
                     case 'mixed':
+                        if (IssueBuffer::accepts(
+                            new MixedMethodCall('Cannot call method ' . $stmt->name . ' on a mixed variable', $this->_file_name, $stmt->getLine())
+                        )) {
+                            return false;
+                        }
                         break;
 
                     default:
