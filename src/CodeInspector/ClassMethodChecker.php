@@ -204,37 +204,40 @@ class ClassMethodChecker extends FunctionChecker
         $params = $method->getParameters();
 
         $method_param_names = [];
+        $method_param_types = [];
 
         self::$_method_params[$method_id] = [];
         foreach ($params as $param) {
-            $param_type = null;
+            $param_type_string = null;
 
             if ($param->isArray()) {
-                $param_type = 'array';
+                $param_type_string = 'array';
 
             } elseif ($param->getClass() && self::$_method_files[$method_id]) {
-                $param_type = $param->getClass()->getName();
+                $param_type_string = $param->getClass()->getName();
             }
-
-            $is_nullable = false;
 
             try {
                 $is_nullable = $param->getDefaultValue() === null;
 
-                if ($param_type) {
-                    $param_type = '|null';
+                if ($param_type_string && $is_nullable) {
+                    $param_type_string .= '|null';
                 }
             }
             catch (\ReflectionException $e) {
                 // do nothing
             }
 
-            $method_param_names[$param->getName()] = true;
+            $param_name = $param->getName();
+            $param_type = $param_type_string ? Type::parseString($param_type_string) : Type::getMixed();
+
+            $method_param_names[$param_name] = true;
+            $method_param_types[$param_name] = $param_type;
 
             self::$_method_params[$method_id][] = [
-                'name' => $param->getName(),
+                'name' => $param_name,
                 'by_ref' => $param->isPassedByReference(),
-                'type' => $param_type ? Type::parseString($param_type) : Type::getMixed(),
+                'type' => $param_type,
             ];
         }
 
@@ -259,6 +262,13 @@ class ClassMethodChecker extends FunctionChecker
                     $param_type = $docblock_param['type'];
 
                     if (isset($method_param_names[$param_name])) {
+                        foreach (self::$_method_params[$method_id] as &$param_info) {
+                            if ($param_info['name'] === $param_name) {
+                                $param_info['type'] = Type::parseString(
+                                    self::_fixUpReturnType($docblock_param['type'], $method_id)
+                                );
+                            }
+                        }
                     }
                 }
             }

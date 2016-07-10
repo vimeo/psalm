@@ -1311,14 +1311,27 @@ class StatementsChecker
 
             $var_id = self::getVarId($stmt->expr);
 
-            $iterator_type = isset($foreach_context->vars_in_scope[$var_id]) ? $foreach_context->vars_in_scope[$var_id] : null;
+            if (isset($stmt->expr->inferredType)) {
+                $iterator_type = $stmt->expr->inferredType;
+            }
+            elseif (isset($foreach_context->vars_in_scope[$var_id])) {
+                $iterator_type = $foreach_context->vars_in_scope[$var_id];
+            }
+            else {
+                $iterator_type = null;
+            }
 
             if ($iterator_type) {
                 foreach ($iterator_type->types as $return_type) {
+                    if ($return_type instanceof Type\Generic) {
+                        $value_type = $return_type->type_params[0];
+                    }
+
                     switch ($return_type->value) {
                         case 'mixed':
+                            break;
+
                         case 'array':
-                            // do nothing
                             break;
 
                         case 'null':
@@ -1340,8 +1353,12 @@ class StatementsChecker
                             break;
 
                         default:
-                            if ($iterator_type instanceof Type\Generic) {
-                                $value_type = $iterator_type->type_params[0];
+                            if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
+                                $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($return_type->value . '::current');
+
+                                if ($iterator_class_type) {
+                                    $value_type = $iterator_class_type;
+                                }
                             }
 
                             if ($return_type->value !== 'array' && $return_type->value !== 'Traversable' && $return_type->value !== $this->_class_name) {
@@ -1351,6 +1368,10 @@ class StatementsChecker
                             }
                     }
                 }
+            }
+
+            if ($value_type && $value_type instanceof Type\Atomic) {
+                $value_type = new Type\Union([$value_type]);
             }
 
             $foreach_context->vars_in_scope[$stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
@@ -2624,26 +2645,41 @@ class StatementsChecker
                 continue;
             }
 
+            $type_match_found = false;
+
             foreach ($param_type->types as $param_type_part) {
                 if ($param_type_part->isNull()) {
                     continue;
                 }
 
-                if ($input_type_part->value !== $param_type_part->value && !is_subclass_of($input_type_part->value, $param_type_part->value) && !self::isMock($input_type_part->value)) {
-                    if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
-                        // @todo handle coercion
-                        return;
-                    }
+                if ($input_type_part->value === $param_type_part->value ||
+                    is_subclass_of($input_type_part->value, $param_type_part->value) ||
+                    self::isMock($input_type_part->value)
+                ) {
+                    $type_match_found = true;
+                    break;
+                }
 
-                    if (IssueBuffer::accepts(
-                        new InvalidArgument(
-                            'Argument ' . ($argument_offset + 1) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
-                            $file_name,
-                            $line_number
-                        )
-                    )) {
-                        return false;
-                    }
+                if ($input_type_part->value === 'false' && $param_type_part->value === 'bool') {
+                    $type_match_found = true;
+                }
+
+                if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
+                    // @todo handle coercion
+                    $type_match_found = true;
+                    break;
+                }
+            }
+
+            if (!$type_match_found) {
+                if (IssueBuffer::accepts(
+                    new InvalidArgument(
+                        'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                        $file_name,
+                        $line_number
+                    )
+                )) {
+                    return false;
                 }
             }
         }
