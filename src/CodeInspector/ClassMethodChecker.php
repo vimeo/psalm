@@ -258,15 +258,24 @@ class ClassMethodChecker extends FunctionChecker
 
             if ($docblock_info['params']) {
                 foreach ($docblock_info['params'] as $docblock_param) {
-                    $param_name = $docblock_param['name'];
-                    $param_type = $docblock_param['type'];
+                    $docblock_param_name = $docblock_param['name'];
 
                     if (isset($method_param_names[$param_name])) {
                         foreach (self::$_method_params[$method_id] as &$param_info) {
-                            if ($param_info['name'] === $param_name) {
-                                $param_info['type'] = Type::parseString(
-                                    self::_fixUpReturnType($docblock_param['type'], $method_id)
+                            if ($param_info['name'] === $docblock_param_name) {
+                                $docblock_param_type_string = $docblock_param['type'];
+
+                                $existing_param_type = $param_info['type'];
+
+                                $new_param_type = Type::parseString(
+                                    self::_fixUpReturnType($docblock_param_type_string, $method_id)
                                 );
+
+                                if ($existing_param_type->isNullable() && !$new_param_type->isNullable()) {
+                                    $new_param_type->types['null'] = Type::getNull(false);
+                                }
+
+                                $param_info['type'] = $new_param_type;
                             }
                         }
                     }
