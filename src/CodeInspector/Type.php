@@ -339,6 +339,21 @@ abstract class Type
         return false;
     }
 
+    public function hasGeneric()
+    {
+        if ($this instanceof Union) {
+            foreach ($this->types as $type) {
+                if ($type instanceof Generic) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return $this instanceof Generic;
+    }
+
     public function isScalar()
     {
         if ($this instanceof Atomic) {
@@ -349,6 +364,8 @@ abstract class Type
                     $this->value === 'bool' ||
                     $this->value === 'false';
         }
+
+        return false;
     }
 
     /**

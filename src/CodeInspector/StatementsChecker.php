@@ -16,6 +16,7 @@ use CodeInspector\Issue\PossiblyUndefinedVariable;
 use CodeInspector\Issue\InvalidArrayAssignment;
 use CodeInspector\Issue\InvalidArrayAccess;
 use CodeInspector\Issue\InvalidPropertyAssignment;
+use CodeInspector\Issue\InvalidScalarArgument;
 use CodeInspector\Issue\InvalidScope;
 use CodeInspector\Issue\InvalidStaticInvocation;
 use CodeInspector\Issue\InvalidStaticVariable;
@@ -2646,6 +2647,7 @@ class StatementsChecker
             }
 
             $type_match_found = false;
+            $scalar_type_match_found = false;
 
             foreach ($param_type->types as $param_type_part) {
                 if ($param_type_part->isNull()) {
@@ -2664,15 +2666,35 @@ class StatementsChecker
                     $type_match_found = true;
                 }
 
+                if ($input_type_part->value === 'int' && $param_type_part->value === 'float') {
+                    $type_match_found = true;
+                }
+
+                if ($input_type_part->isScalar() && $param_type_part->isScalar()) {
+                    $scalar_type_match_found = true;
+                }
+
                 if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
                     // @todo handle coercion
                     $type_match_found = true;
                     break;
                 }
+
             }
 
             if (!$type_match_found) {
-                if (IssueBuffer::accepts(
+                if ($scalar_type_match_found) {
+                    if (IssueBuffer::accepts(
+                        new InvalidScalarArgument(
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                            $file_name,
+                            $line_number
+                        )
+                    )) {
+                        return false;
+                    }
+                }
+                else if (IssueBuffer::accepts(
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                         $file_name,
