@@ -217,6 +217,8 @@ class ClassMethodChecker extends FunctionChecker
                 $param_type_string = $param->getClass()->getName();
             }
 
+            $is_nullable = false;
+
             try {
                 $is_nullable = $param->getDefaultValue() === null;
 
@@ -238,6 +240,7 @@ class ClassMethodChecker extends FunctionChecker
                 'name' => $param_name,
                 'by_ref' => $param->isPassedByReference(),
                 'type' => $param_type,
+                'is_nullable' => $is_nullable
             ];
         }
 
@@ -266,12 +269,13 @@ class ClassMethodChecker extends FunctionChecker
                                 $docblock_param_type_string = $docblock_param['type'];
 
                                 $existing_param_type = $param_info['type'];
+                                $existing_param_type_nullable = $param_info['is_nullable'];
 
                                 $new_param_type = Type::parseString(
                                     self::_fixUpReturnType($docblock_param_type_string, $method_id)
                                 );
 
-                                if ($existing_param_type->isNullable() && !$new_param_type->isNullable()) {
+                                if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
                                     $new_param_type->types['null'] = Type::getNull(false);
                                 }
 
