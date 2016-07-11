@@ -48,7 +48,7 @@ class Config
 
     protected $issue_handlers = [];
 
-    protected $custom_error_levels = ['InvalidDocblock' => self::REPORT_INFO, 'MixedMethodCall' => self::REPORT_INFO];
+    protected $custom_error_levels = ['InvalidDocblock' => self::REPORT_INFO, 'MixedMethodCall' => self::REPORT_SUPPRESS];
 
     protected $mock_classes = [];
 
@@ -204,6 +204,10 @@ class Config
 
     public function excludeIssueInFile($issue_type, $file_name)
     {
+        if ($this->getReportingLevel($issue_type) === self::REPORT_SUPPRESS) {
+            return true;
+        }
+
         $issue_type = array_pop(explode('\\', $issue_type));
         $file_name = $this->shortenFileName($file_name);
 
