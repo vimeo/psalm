@@ -269,17 +269,22 @@ class ClassMethodChecker extends FunctionChecker
                                 $docblock_param_type_string = $docblock_param['type'];
 
                                 $existing_param_type = $param_info['type'];
-                                $existing_param_type_nullable = $param_info['is_nullable'];
 
                                 $new_param_type = Type::parseString(
                                     self::_fixUpReturnType($docblock_param_type_string, $method_id)
                                 );
 
-                                if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                                    $new_param_type->types['null'] = Type::getNull(false);
+                                // only fix the type if we're dealing with an undefined or generic type
+                                if ($existing_param_type->isMixed() || $new_param_type->hasGeneric()) {
+                                    $existing_param_type_nullable = $param_info['is_nullable'];
+
+                                    if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
+                                        $new_param_type->types['null'] = Type::getNull(false);
+                                    }
+
+                                    $param_info['type'] = $new_param_type;
                                 }
 
-                                $param_info['type'] = $new_param_type;
                             }
                         }
                     }
