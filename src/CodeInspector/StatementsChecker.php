@@ -1601,7 +1601,6 @@ class StatementsChecker
             }
 
         } else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-
             if ($this->_checkArrayAssignment($stmt->var, $context, $return_type) === false) {
                 return false;
             }
@@ -2602,6 +2601,21 @@ class StatementsChecker
 
             if ($redefined_vars) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $redefined_vars);
+            }
+        }
+        elseif ($redefined_vars) {
+            foreach ($redefined_vars as $var_name => $union_type) {
+                foreach ($union_type->types as $type) {
+                    foreach ($context->vars_in_scope[$var_name]->types as $context_type) {
+                        if ($context_type instanceof Type\Generic &&
+                            $context_type instanceof Type\Generic &&
+                            $context_type->type_params[0]->isEmpty()
+                        ) {
+                            $context_type->type_params[0] = $type->type_params[0];
+                        }
+                    }
+
+                }
             }
         }
 

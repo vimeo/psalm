@@ -395,6 +395,11 @@ abstract class Type
         }
     }
 
+    public function isEmpty()
+    {
+        return $this->value === 'empty';
+    }
+
     public function isObject()
     {
         if ($this instanceof Atomic) {
