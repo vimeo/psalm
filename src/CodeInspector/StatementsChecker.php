@@ -1380,6 +1380,8 @@ class StatementsChecker
             $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
         }
 
+        CommentChecker::getTypeFromComment($stmt->getDocComment(), $foreach_context, $this->_source, null);
+
         $this->check($stmt->stmts, $foreach_context, $foreach_context->vars_possibly_in_scope);
 
         foreach ($context->vars_in_scope as $var => $type) {

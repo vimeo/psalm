@@ -412,9 +412,9 @@ class ClassMethodChecker extends FunctionChecker
             if ($docblock_info['return_type']) {
                 $return_type =
                     Type::parseString(
-                        $this->_fixUpLocalType(
+                        $this->fixUpLocalType(
                             $docblock_info['return_type'],
-                            $method_id,
+                            $this->_absolute_class,
                             $this->_namespace,
                             $this->_aliased_classes
                         )
@@ -437,9 +437,9 @@ class ClassMethodChecker extends FunctionChecker
 
                     $param_type =
                         Type::parseString(
-                            $this->_fixUpLocalType(
+                            $this->fixUpLocalType(
                                 $docblock_param['type'],
-                                $method_id,
+                                $this->_absolute_class,
                                 $this->_namespace,
                                 $this->_aliased_classes
                             )
@@ -467,13 +467,13 @@ class ClassMethodChecker extends FunctionChecker
         self::$_method_return_types[$method_id] = $return_type;
     }
 
-    protected static function _fixUpLocalType($return_type, $method_id, $namespace, $aliased_classes)
+    public static function fixUpLocalType($return_type, $absolute_class, $namespace, $aliased_classes)
     {
         if (strpos($return_type, '[') !== false) {
-            $return_type = TypeChecker::convertSquareBrackets($return_type);
+            $return_type = Type::convertSquareBrackets($return_type);
         }
 
-        $return_type_tokens = TypeChecker::tokenize($return_type);
+        $return_type_tokens = Type::tokenize($return_type);
 
         foreach ($return_type_tokens as &$return_type_token) {
             if ($return_type_token[0] === '\\') {
@@ -485,10 +485,10 @@ class ClassMethodChecker extends FunctionChecker
                 continue;
             }
 
-            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
-                $absolute_class = explode('::', $method_id)[0];
+            $return_type_token = Type::fixScalarTerms($return_type_token);
 
-                if ($return_type === '$this') {
+            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
+                if ($return_type === '$this' && $absolute_class) {
                     $return_type_token = $absolute_class;
                     continue;
                 }
@@ -503,10 +503,10 @@ class ClassMethodChecker extends FunctionChecker
     protected static function _fixUpReturnType($return_type, $method_id)
     {
         if (strpos($return_type, '[') !== false) {
-            $return_type = TypeChecker::convertSquareBrackets($return_type);
+            $return_type = Type::convertSquareBrackets($return_type);
         }
 
-        $return_type_tokens = TypeChecker::tokenize($return_type);
+        $return_type_tokens = Type::tokenize($return_type);
 
         foreach ($return_type_tokens as &$return_type_token) {
             if ($return_type_token[0] === '\\') {
@@ -517,6 +517,8 @@ class ClassMethodChecker extends FunctionChecker
             if (in_array($return_type_token, ['<', '>', '|'])) {
                 continue;
             }
+
+            $return_type_token = Type::fixScalarTerms($return_type_token);
 
             if ($return_type_token[0] === strtoupper($return_type_token[0])) {
                 $absolute_class = explode('::', $method_id)[0];

@@ -17,18 +17,13 @@ abstract class Type
     public static function parseString($type_string)
     {
         if (strpos($type_string, '[') !== false) {
-            $type_string = TypeChecker::convertSquareBrackets($type_string);
+            $type_string = self::convertSquareBrackets($type_string);
         }
 
-        $type_tokens = TypeChecker::tokenize($type_string);
+        $type_tokens = self::tokenize($type_string);
 
         if (count($type_tokens) === 1) {
-            if ($type_tokens[0] === 'boolean') {
-                $type_tokens[0] = 'bool';
-            }
-            elseif ($type_tokens[0] === 'integer') {
-                $type_tokens[0] = 'int';
-            }
+            $type_tokens[0] = self::fixScalarTerms($type_tokens[0]);
 
             return new Union([new Atomic($type_tokens[0])]);
         }
@@ -98,13 +93,6 @@ abstract class Type
                     break;
 
                 default:
-                    if ($type_token === 'boolean') {
-                        $type_token = 'bool';
-                    }
-                    elseif ($type_token === 'integer') {
-                        $type_token = 'int';
-                    }
-
                     if ($current_leaf->value === null) {
                         $current_leaf->value = $type_token;
                         continue;
@@ -126,6 +114,36 @@ abstract class Type
         return $parsed_type;
     }
 
+    private static function replaceScalarTerms($type_string)
+    {
+        if ($type_string === 'boolean') {
+            return 'bool';
+        }
+        elseif ($type_string === 'integer') {
+            return 'int';
+        }
+        elseif(in_array($type_string, ['String', 'Int', 'Float', 'Array', 'Object', 'Bool'])) {
+            return strtolower($type_string);
+        }
+
+        return $type_string;
+    }
+
+    public static function fixScalarTerms($type_string)
+    {
+        if (in_array(strtolower($type_string), ['numeric', 'int', 'float', 'string', 'bool', 'true', 'false', 'null', 'array', 'object', 'mixed'])) {
+            return strtolower($type_string);
+        }
+        elseif ($type_string === 'boolean') {
+            return 'bool';
+        }
+        elseif ($type_string === 'integer') {
+            return 'int';
+        }
+
+        return $type_string;
+    }
+
     private static function getTypeFromTree(ParseTree $parse_tree)
     {
         if ($parse_tree->value === ParseTree::GENERIC) {
@@ -144,7 +162,7 @@ abstract class Type
 
             $is_empty = count($generic_params) === 1 && $generic_params[0] instanceof Atomic && $generic_params[0]->value === 'empty';
 
-            return new Generic($generic_type->value, $generic_params, $is_empty);
+            return new Generic(self::fixScalarTerms($generic_type->value), $generic_params, $is_empty);
         }
 
         if ($parse_tree->value === ParseTree::UNION) {
@@ -158,7 +176,58 @@ abstract class Type
             return new Union($union_types);
         }
 
-        return new Atomic($parse_tree->value);
+        return new Atomic(self::fixScalarTerms($parse_tree->value));
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function tokenize($return_type)
+    {
+        $return_type_tokens = [''];
+        $was_char = false;
+
+        foreach (str_split($return_type) as $char) {
+            if ($was_char) {
+                $return_type_tokens[] = '';
+            }
+
+            if ($char === '<' || $char === '>' || $char === '|') {
+                if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
+                    $return_type_tokens[count($return_type_tokens) - 1] = $char;
+                }
+                else {
+                    $return_type_tokens[] = $char;
+                }
+
+                $was_char = true;
+            }
+            else {
+                $return_type_tokens[count($return_type_tokens) - 1] .= $char;
+                $was_char = false;
+            }
+        }
+
+        return $return_type_tokens;
+    }
+
+    public static function convertSquareBrackets($type)
+    {
+        return preg_replace_callback(
+            '/([a-zA-Z\<\>]+)((\[\])+)/',
+            function ($matches) {
+                $inner_type = $matches[1];
+
+                $dimensionality = strlen($matches[2]) / 2;
+
+                for ($i = 0; $i < $dimensionality; $i++) {
+                    $inner_type = 'array<' . $inner_type . '>';
+                }
+
+                return $inner_type;
+            },
+            $type
+        );
     }
 
     public static function getInt($enclose_with_union = true)

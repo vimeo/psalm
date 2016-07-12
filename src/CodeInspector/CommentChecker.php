@@ -25,11 +25,7 @@ class CommentChecker
             $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
 
             if ($var_parts) {
-                $type_in_comments = $var_parts[0];
-
-                if ($type_in_comments[0] === strtoupper($type_in_comments[0])) {
-                    $type_in_comments = ClassChecker::getAbsoluteClassFromString($type_in_comments, $source->getNamespace(), $source->getAliasedClasses());
-                }
+                $type_in_comments = ClassMethodChecker::fixUpLocalType($var_parts[0], $source->getAbsoluteClass(), $source->getNamespace(), $source->getAliasedClasses());
 
                 // support PHPStorm-style docblocks like
                 // @var Type $variable
