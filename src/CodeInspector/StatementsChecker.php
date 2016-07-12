@@ -2670,9 +2670,15 @@ class StatementsChecker
                     $type_match_found = true;
                 }
 
-                if ($input_type_part->isScalar() && $param_type_part->isScalar()) {
-                    $scalar_type_match_found = true;
+                if ($input_type_part->isScalar()) {
+                    if ($param_type_part->isScalar()) {
+                        $scalar_type_match_found = true;
+                    }
                 }
+                else if ($param_type_part->isObject()) {
+                    $type_match_found = true;
+                }
+
 
                 if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
                     // @todo handle coercion

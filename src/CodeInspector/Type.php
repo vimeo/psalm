@@ -326,6 +326,17 @@ abstract class Type
         }
     }
 
+    public function isObject()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'object';
+        }
+
+        if ($this instanceof Union) {
+            return isset($this->types['object']);
+        }
+    }
+
     public function isNullable()
     {
         if ($this instanceof Atomic) {
