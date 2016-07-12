@@ -11,18 +11,18 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     public function testNotNull()
     {
         $this->assertEquals(
-            'Object',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('Object'))
+            'MyObject',
+            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject'))
         );
 
         $this->assertEquals(
-            'Object',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('Object|null'))
+            'MyObject',
+            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|null'))
         );
 
         $this->assertEquals(
-            'Object|false',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('Object|false'))
+            'MyObject|false',
+            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|false'))
         );
 
         $this->assertEquals(
@@ -34,18 +34,18 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     public function testNotEmpty()
     {
         $this->assertEquals(
-            'Object',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('Object'))
+            'MyObject',
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject'))
         );
 
         $this->assertEquals(
-            'Object',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('Object|null'))
+            'MyObject',
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|null'))
         );
 
         $this->assertEquals(
-            'Object',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('Object|false'))
+            'MyObject',
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|false'))
         );
 
         $this->assertEquals(
@@ -56,8 +56,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->markTestIncomplete('This should work in the future');
 
         $this->assertEquals(
-            'Object|true',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('Object|bool'))
+            'MyObject|true',
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|bool'))
         );
     }
 
@@ -65,17 +65,17 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('Object|null'))
+            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject|null'))
         );
 
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('Object'))
+            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject'))
         );
 
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('Object|false'))
+            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject|false'))
         );
 
         $this->assertEquals(
@@ -88,16 +88,16 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('Object'))
+            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject'))
         );
         $this->assertEquals(
             'false',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('Object|false'))
+            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|false'))
         );
 
         $this->assertEquals(
             'false',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('Object|bool'))
+            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|bool'))
         );
 
         $this->assertEquals(
@@ -110,34 +110,34 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('CodeInspector\Type\Atomic', $reconciled->types['false']);
     }
 
-    public function testNotObject()
+    public function testNotMyObject()
     {
         $this->assertEquals(
             'bool',
-            (string) TypeChecker::reconcileTypes('!Object', Type::parseString('Object|bool'))
+            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|bool'))
         );
 
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('!Object', Type::parseString('Object|null'))
+            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|null'))
         );
 
         $this->assertEquals(
-            'ObjectB',
-            (string) TypeChecker::reconcileTypes('!ObjectA', Type::parseString('ObjectA|ObjectB'))
+            'MyObjectB',
+            (string) TypeChecker::reconcileTypes('!MyObjectA', Type::parseString('MyObjectA|MyObjectB'))
         );
     }
 
-    public function testObject()
+    public function testMyObject()
     {
         $this->assertEquals(
-            'Object',
-            (string) TypeChecker::reconcileTypes('Object', Type::parseString('Object|bool'))
+            'MyObject',
+            (string) TypeChecker::reconcileTypes('MyObject', Type::parseString('MyObject|bool'))
         );
 
         $this->assertEquals(
-            'ObjectA',
-            (string) TypeChecker::reconcileTypes('ObjectA', Type::parseString('ObjectA|ObjectB'))
+            'MyObjectA',
+            (string) TypeChecker::reconcileTypes('MyObjectA', Type::parseString('MyObjectA|MyObjectB'))
         );
     }
 
