@@ -1672,7 +1672,7 @@ class StatementsChecker
             if (!$return_type->isMixed()) {
 
                 foreach ($return_type->types as &$type) {
-                    if ($type->isScalar()) {
+                    if ($type->isScalarType()) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAssignment('Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value, $this->_file_name, $stmt->getLine())
                         )) {
@@ -2686,8 +2686,12 @@ class StatementsChecker
                     $type_match_found = true;
                 }
 
-                if ($input_type_part->isScalar()) {
-                    if ($param_type_part->isScalar()) {
+                if ($param_type_part->isNumeric() && $input_type_part->isNumericType()) {
+                    $type_match_found = true;
+                }
+
+                if ($input_type_part->isScalarType()) {
+                    if ($param_type_part->isScalarType()) {
                         $scalar_type_match_found = true;
                     }
                 }

@@ -131,7 +131,7 @@ abstract class Type
 
     public static function fixScalarTerms($type_string)
     {
-        if (in_array(strtolower($type_string), ['numeric', 'int', 'float', 'string', 'bool', 'true', 'false', 'null', 'array', 'object', 'mixed'])) {
+        if (in_array(strtolower($type_string), ['numeric', 'int', 'float', 'string', 'bool', 'true', 'false', 'null', 'array', 'object', 'mixed', 'resource'])) {
             return strtolower($type_string);
         }
         elseif ($type_string === 'boolean') {
@@ -395,6 +395,17 @@ abstract class Type
         }
     }
 
+    public function isNumeric()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'numeric';
+        }
+
+        if ($this instanceof Union) {
+            return isset($this->types['numeric']);
+        }
+    }
+
     public function isEmpty()
     {
         return $this->value === 'empty';
@@ -439,7 +450,7 @@ abstract class Type
         return $this instanceof Generic;
     }
 
-    public function isScalar()
+    public function isScalarType()
     {
         if ($this instanceof Atomic) {
             return $this->value === 'int' ||
@@ -448,6 +459,17 @@ abstract class Type
                     $this->value === 'float' ||
                     $this->value === 'bool' ||
                     $this->value === 'false';
+        }
+
+        return false;
+    }
+
+    public function isNumericType()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'int' ||
+                    $this->value === 'double' ||
+                    $this->value === 'float';
         }
 
         return false;
