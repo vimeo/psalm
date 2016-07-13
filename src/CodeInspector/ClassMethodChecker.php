@@ -213,8 +213,20 @@ class ClassMethodChecker extends FunctionChecker
             if ($param->isArray()) {
                 $param_type_string = 'array';
 
-            } elseif ($param->getClass() && self::$_method_files[$method_id]) {
-                $param_type_string = $param->getClass()->getName();
+            }
+            else {
+                $param_class = null;
+
+                try {
+                    $param_class = $param->getClass();
+                }
+                catch (\ReflectionException $e) {
+                    // do nothing
+                }
+
+                if ($param_class && self::$_method_files[$method_id]) {
+                    $param_type_string = $param->getClass()->getName();
+                }
             }
 
             $is_nullable = false;
