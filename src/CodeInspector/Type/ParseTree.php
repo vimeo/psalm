@@ -17,7 +17,7 @@ class ParseTree
     public $parent;
 
     /**
-     * @param string         $value
+     * @param string|null    $value
      * @param ParseTree|null $parent
      */
     public function __construct($value, ParseTree $parent = null)

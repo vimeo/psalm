@@ -1330,6 +1330,7 @@ class StatementsChecker
 
                     switch ($return_type->value) {
                         case 'mixed':
+                        case 'empty':
                             break;
 
                         case 'array':
@@ -2687,6 +2688,11 @@ class StatementsChecker
                 }
 
                 if ($param_type_part->isNumeric() && $input_type_part->isNumericType()) {
+                    $type_match_found = true;
+                }
+
+                if ($param_type_part->isCallable() && ($input_type_part->value === 'string' || $input_type_part->value === 'array')) {
+                    // @todo add value checks if possible here
                     $type_match_found = true;
                 }
 

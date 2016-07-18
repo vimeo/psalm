@@ -406,9 +406,24 @@ abstract class Type
         }
     }
 
+    public function isCallable()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'callable';
+        }
+
+        if ($this instanceof Union) {
+            return isset($this->types['callable']);
+        }
+    }
+
     public function isEmpty()
     {
-        return $this->value === 'empty';
+        if ($this instanceof Atomic) {
+            return $this->value === 'empty';
+        }
+
+        return false;
     }
 
     public function isObject()
