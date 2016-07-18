@@ -1,5 +1,5 @@
 {
-    "name": "mattb/php-codeinspector",
+    "name": "mattb/psalm",
     "description": "A PHP code inspection utility written in PHP",
     "keywords": ["php", "code", "inspection"],
     "type": "library",
