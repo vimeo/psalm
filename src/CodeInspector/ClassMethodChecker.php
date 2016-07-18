@@ -59,7 +59,12 @@ class ClassMethodChecker extends FunctionChecker
 
         $method_id = $this->_absolute_class . '::' . $this->_function->name;
 
-        $declared_return_type = self::getMethodReturnTypes($method_id);
+        // passing it through fleshOutReturnTypes eradicates errant $ vars
+        $declared_return_type = StatementsChecker::fleshOutReturnTypes(
+            self::getMethodReturnTypes($method_id),
+            [],
+            $method_id
+        );
 
         if ($declared_return_type) {
             $inferred_return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);

@@ -1356,10 +1356,11 @@ class StatementsChecker
 
                         default:
                             if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
-                                $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($return_type->value . '::current');
+                                $iterator_method = $return_type->value . '::current';
+                                $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($iterator_method);
 
                                 if ($iterator_class_type) {
-                                    $value_type = $iterator_class_type;
+                                    $value_type = self::fleshOutReturnTypes($iterator_class_type, [], $iterator_method);
                                 }
                             }
 
@@ -1903,7 +1904,7 @@ class StatementsChecker
                             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
                             if ($return_types) {
-                                $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
+                                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $method_id);
 
                                 $stmt->inferredType = $return_types;
                             }
@@ -2090,7 +2091,7 @@ class StatementsChecker
             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
             if ($return_types) {
-                $return_types = self::_fleshOutReturnTypes($return_types, $stmt->args, $method_id);
+                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $method_id);
                 $stmt->inferredType = $return_types;
             }
         }
@@ -2098,10 +2099,15 @@ class StatementsChecker
         return $this->_checkMethodParams($stmt->args, $method_id, $context);
     }
 
-    protected static function _fleshOutReturnTypes(Type\Union $return_type, array $args, $method_id)
+    public static function fleshOutReturnTypes(Type\Union $return_type, array $args, $method_id)
     {
-        foreach ($return_type->types as &$return_type_part) {
+        foreach ($return_type->types as $key => $return_type_part) {
             self::_fleshOutAtomicReturnType($return_type_part, $args, $method_id);
+
+            if ($return_type_part->value !== $key) {
+                unset($return_type->types[$key]);
+                $return_type->types[$return_type_part->value] = $return_type_part;
+            }
         }
 
         return $return_type;
@@ -2135,7 +2141,7 @@ class StatementsChecker
         if ($return_type instanceof Type\Generic) {
             foreach ($return_type->type_params as $type_param) {
                 if ($type_param instanceof Type\Union) {
-                    $type_param = self::_fleshOutReturnTypes($type_param, $args, $method_id);
+                    $type_param = self::fleshOutReturnTypes($type_param, $args, $method_id);
                 }
                 else {
                     $type_param = self::_fleshOutAtomicReturnType($type_param, $args, $method_id);
