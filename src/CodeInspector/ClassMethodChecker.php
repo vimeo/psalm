@@ -5,7 +5,9 @@ namespace CodeInspector;
 use CodeInspector\Issue\UndefinedMethod;
 use CodeInspector\Issue\InaccessibleMethod;
 use CodeInspector\Issue\InvalidReturnType;
+use CodeInspector\Issue\DeprecatedMethod;
 use CodeInspector\Issue\InvalidDocblock;
+use CodeInspector\Issue\InvalidStaticInvocation;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker
@@ -24,6 +26,8 @@ class ClassMethodChecker extends FunctionChecker
     protected static $_declaring_class = [];
     protected static $_method_visibility = [];
     protected static $_new_docblocks = [];
+    protected static $_method_suppress = [];
+    protected static $_deprecated_methods = [];
 
     const VISIBILITY_PUBLIC = 1;
     const VISIBILITY_PROTECTED = 2;
@@ -59,9 +63,15 @@ class ClassMethodChecker extends FunctionChecker
 
         $method_id = $this->_absolute_class . '::' . $this->_function->name;
 
+        $method_return_types = self::getMethodReturnTypes($method_id);
+
+        if (!$method_return_types) {
+            return;
+        }
+
         // passing it through fleshOutReturnTypes eradicates errant $ vars
         $declared_return_type = StatementsChecker::fleshOutReturnTypes(
-            self::getMethodReturnTypes($method_id),
+            $method_return_types,
             [],
             $method_id
         );
@@ -267,9 +277,15 @@ class ClassMethodChecker extends FunctionChecker
 
         $return_type = null;
 
-        if ($config->use_docblock_types) {
-            $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
+        $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
 
+        if ($docblock_info['deprecated']) {
+            self::$_deprecated_methods[$method_id] = true;
+        }
+
+        self::$_method_suppress[$method_id] = $docblock_info['suppress'];
+
+        if ($config->use_docblock_types) {
             if ($docblock_info['return_type']) {
                 $return_type = Type::parseString(
                     self::_fixUpReturnType($docblock_info['return_type'], $method_id)
@@ -334,13 +350,19 @@ class ClassMethodChecker extends FunctionChecker
     /**
      * Determines whether a given method is static or not
      * @param  string  $method_id
-     * @return bool
      */
-    public static function isGivenMethodStatic($method_id)
+    public static function checkMethodStatic($method_id, $file_name, $line_number, array $suppressed_issues)
     {
         self::_populateData($method_id);
 
-        return self::$_static_methods[$method_id];
+        if (!self::$_static_methods[$method_id]) {
+            if (IssueBuffer::accepts(
+                new InvalidStaticInvocation('Method ' . $method_id . ' is not static', $file_name, $line_number),
+                $suppressed_issues
+            )) {
+                return false;
+            }
+        }
     }
 
     protected function _registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
@@ -348,6 +370,8 @@ class ClassMethodChecker extends FunctionChecker
         $method_id = $this->_absolute_class . '::' . $method->name;
 
         if (isset(self::$_have_reflected[$method_id]) || isset(self::$_have_registered[$method_id])) {
+            $this->_suppressed_issues = self::$_method_suppress[$method_id];
+
             return;
         }
 
@@ -418,14 +442,22 @@ class ClassMethodChecker extends FunctionChecker
                 'by_ref' => $param->byRef,
                 'type' => $param_type ?: Type::getMixed(),
             ];
+
         }
 
         $config = Config::getInstance();
         $return_type = null;
 
-        if ($config->use_docblock_types) {
-            $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
+        $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
 
+        if ($docblock_info['deprecated']) {
+            self::$_deprecated_methods[$method_id] = true;
+        }
+
+        self::$_method_suppress[$method_id] = $docblock_info['suppress'];
+        $this->_suppressed_issues = $docblock_info['suppress'];
+
+        if ($config->use_docblock_types) {
             if ($docblock_info['return_type']) {
                 $return_type =
                     Type::parseString(
@@ -444,7 +476,11 @@ class ClassMethodChecker extends FunctionChecker
 
                     if (!array_key_exists($param_name, $method_param_names)) {
                         if (IssueBuffer::accepts(
-                            new InvalidDocblock('Parameter $' . $param_name .' does not appear in the argument list for ' . $method_id, $this->_file_name, $method->getLine())
+                            new InvalidDocblock(
+                                'Parameter $' . $param_name .' does not appear in the argument list for ' . $method_id,
+                                $this->_file_name,
+                                $method->getLine()
+                            )
                         )) {
                             return false;
                         }
@@ -555,7 +591,7 @@ class ClassMethodChecker extends FunctionChecker
     /**
      * @return false|null
      */
-    public static function checkMethodExists($method_id, $file_name, $stmt)
+    public static function checkMethodExists($method_id, $file_name, $line_number, array $suppresssed_issues)
     {
         if (isset(self::$_existing_methods[$method_id])) {
             return;
@@ -569,7 +605,8 @@ class ClassMethodChecker extends FunctionChecker
         }
 
         if (IssueBuffer::accepts(
-            new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $stmt->getLine())
+            new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $line_number),
+            $suppresssed_issues
         )) {
             return false;
         }
@@ -587,10 +624,24 @@ class ClassMethodChecker extends FunctionChecker
         }
     }
 
+    public static function checkMethodNotDeprecated($method_id, $file_name, $line_number, array $suppresssed_issues)
+    {
+        self::_populateData($method_id);
+
+        if (isset(self::$_deprecated_methods[$method_id])) {
+            if (IssueBuffer::accepts(
+                new DeprecatedMethod('The method ' . $method_id . ' has been marked as deprecated', $file_name, $line_number),
+                $suppresssed_issues
+            )) {
+                return false;
+            }
+        }
+    }
+
     /**
      * @return false|null
      */
-    public static function checkMethodVisibility($method_id, $calling_context, $file_name, $line_number)
+    public static function checkMethodVisibility($method_id, $calling_context, $file_name, $line_number, array $suppresssed_issues)
     {
         self::_populateData($method_id);
 
@@ -599,7 +650,8 @@ class ClassMethodChecker extends FunctionChecker
 
         if (!isset(self::$_method_visibility[$method_id])) {
             if (IssueBuffer::accepts(
-                new InaccessibleMethod('Cannot access method ' . $method_id, $file_name, $line_number)
+                new InaccessibleMethod('Cannot access method ' . $method_id, $file_name, $line_number),
+                $suppresssed_issues
             )) {
                 return false;
             }
@@ -612,7 +664,12 @@ class ClassMethodChecker extends FunctionChecker
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $method_class !== $calling_context) {
                     if (IssueBuffer::accepts(
-                        new InaccessibleMethod('Cannot access private method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                        new InaccessibleMethod(
+                            'Cannot access private method ' . $method_id . ' from context ' . $calling_context,
+                            $file_name,
+                            $line_number
+                        ),
+                        $suppresssed_issues
                     )) {
                         return false;
                     }
@@ -626,7 +683,8 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!$calling_context) {
                     if (IssueBuffer::accepts(
-                        new InaccessibleMethod('Cannot access protected method ' . $method_id, $file_name, $line_number)
+                        new InaccessibleMethod('Cannot access protected method ' . $method_id, $file_name, $line_number),
+                        $suppresssed_issues
                     )) {
                         return false;
                     }
@@ -638,7 +696,12 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!is_subclass_of($calling_context, $method_class)) {
                     if (IssueBuffer::accepts(
-                        new InaccessibleMethod('Cannot access protected method ' . $method_id . ' from context ' . $calling_context, $file_name, $line_number)
+                        new InaccessibleMethod(
+                            'Cannot access protected method ' . $method_id . ' from context ' . $calling_context,
+                            $file_name,
+                            $line_number
+                        ),
+                        $suppresssed_issues
                     )) {
                         return false;
                     }

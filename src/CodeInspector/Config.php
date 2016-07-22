@@ -208,7 +208,6 @@ class Config
             return true;
         }
 
-        $issue_type = array_pop(explode('\\', $issue_type));
         $file_name = $this->shortenFileName($file_name);
 
         if (!isset($this->issue_handlers[$issue_type])) {
@@ -220,7 +219,6 @@ class Config
 
     public function getReportingLevel($issue_type)
     {
-        $issue_type = array_pop(explode('\\', $issue_type));
         if (isset($this->custom_error_levels[$issue_type])) {
             return $this->custom_error_levels[$issue_type];
         }

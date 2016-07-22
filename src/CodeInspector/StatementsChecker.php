@@ -18,7 +18,6 @@ use CodeInspector\Issue\InvalidArrayAccess;
 use CodeInspector\Issue\InvalidPropertyAssignment;
 use CodeInspector\Issue\InvalidScalarArgument;
 use CodeInspector\Issue\InvalidScope;
-use CodeInspector\Issue\InvalidStaticInvocation;
 use CodeInspector\Issue\InvalidStaticVariable;
 use CodeInspector\Issue\FailedTypeResolution;
 use CodeInspector\Issue\UndefinedConstant;
@@ -50,6 +49,12 @@ class StatementsChecker
 
     protected $_available_functions = [];
 
+    /**
+     * A list of suppressed issues
+     * @var array
+     */
+    protected $_suppressed_issues;
+
     protected $_require_file_name = null;
 
     protected static $_method_call_index = [];
@@ -77,10 +82,11 @@ class StatementsChecker
         $this->_absolute_class = $this->_source->getAbsoluteClass();
         $this->_class_name = $this->_source->getClassName();
         $this->_class_extends = $this->_source->getParentClass();
+        $this->_suppressed_issues = $this->_source->getSuppressedIssues();
 
         $config = Config::getInstance();
 
-        $this->_check_variables = !$config->excludeIssueInFile('CodeInspector\Issue\UndefinedVariable', $this->_file_name) || $enforce_variable_checks;
+        $this->_check_variables = !$config->excludeIssueInFile('UndefinedVariable', $this->_file_name) || $enforce_variable_checks;
 
         $this->_type_checker = new TypeChecker($source, $this);
     }
@@ -222,7 +228,8 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 if ($this->_namespace) {
                     if (IssueBuffer::accepts(
-                        new InvalidNamespace('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine())
+                        new InvalidNamespace('Cannot redeclare namespace', $this->_require_file_name, $stmt->getLine()),
+                        $this->_suppressed_issues
                     )) {
                         return false;
                     }
@@ -917,7 +924,8 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(
-                new ForbiddenCode('Use of shell_exec', $this->_file_name, $stmt->getLine())
+                new ForbiddenCode('Use of shell_exec', $this->_file_name, $stmt->getLine()),
+                $this->_suppressed_issues
             )) {
                 return false;
             }
@@ -940,7 +948,8 @@ class StatementsChecker
     {
         if ($this->_is_static && $stmt->name === 'this') {
             if (IssueBuffer::accepts(
-                new InvalidStaticVariable('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine())
+                new InvalidStaticVariable('Invalid reference to $this in a static context', $this->_file_name, $stmt->getLine()),
+                $this->_suppressed_issues
             )) {
                 return false;
             }
@@ -1009,7 +1018,8 @@ class StatementsChecker
                         'Possibly undefined variable $' . $var_name .', first seen on line ' . $this->_all_vars[$var_name],
                         $this->_file_name,
                         $stmt->getLine()
-                    )
+                    ),
+                    $this->_suppressed_issues
                 )) {
                     return false;
                 }
@@ -1078,7 +1088,8 @@ class StatementsChecker
 
         if (!$class_checker) {
             if (IssueBuffer::accepts(
-                new InvalidScope('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine())
+                new InvalidScope('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine()),
+                $this->_suppressed_issues
             )) {
                 return false;
             }
@@ -1112,7 +1123,8 @@ class StatementsChecker
                 }
                 else {
                     if (IssueBuffer::accepts(
-                        new UndefinedProperty('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine())
+                        new UndefinedProperty('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine()),
+                        $this->_suppressed_issues
                     )) {
                         return false;
                     }
@@ -1146,7 +1158,8 @@ class StatementsChecker
                             '$this->' . $prop_name . ' with declared type \'' . $property_type . '\' cannot be assigned type \'' . $assignment_type . '\'',
                             $this->_file_name,
                             $line_number
-                        )
+                        ),
+                        $this->_suppressed_issues
                     )) {
                         return false;
                     }
@@ -1338,7 +1351,8 @@ class StatementsChecker
 
                         case 'null':
                             if (IssueBuffer::accepts(
-                                new NullReference('Cannot iterate over ' . $return_type->value, $this->_file_name, $stmt->getLine())
+                                new NullReference('Cannot iterate over ' . $return_type->value, $this->_file_name, $stmt->getLine()),
+                                $this->_suppressed_issues
                             )) {
                                 return false;
                             }
@@ -1348,7 +1362,8 @@ class StatementsChecker
                         case 'void':
                         case 'int':
                             if (IssueBuffer::accepts(
-                                new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->_file_name, $stmt->getLine())
+                                new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->_file_name, $stmt->getLine()),
+                                $this->_suppressed_issues
                             )) {
                                 return false;
                             }
@@ -1632,7 +1647,8 @@ class StatementsChecker
 
         if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
             if (IssueBuffer::accepts(
-                new FailedTypeResolution('Cannot assign $' . $var_id . ' to type void', $this->_file_name, $stmt->getLine())
+                new FailedTypeResolution('Cannot assign $' . $var_id . ' to type void', $this->_file_name, $stmt->getLine()),
+                $this->_suppressed_issues
             )) {
                 return false;
             }
@@ -1676,7 +1692,12 @@ class StatementsChecker
                 foreach ($return_type->types as &$type) {
                     if ($type->isScalarType()) {
                         if (IssueBuffer::accepts(
-                            new InvalidArrayAssignment('Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value, $this->_file_name, $stmt->getLine())
+                            new InvalidArrayAssignment(
+                                'Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value,
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
                         )) {
                             return false;
                         }
@@ -1708,7 +1729,12 @@ class StatementsChecker
     {
         if ($type->value === 'null') {
             if (IssueBuffer::accepts(
-                new NullReference('Cannot assign value on possibly null array ' . $var_id, $this->_file_name, $line_number)
+                new NullReference(
+                    'Cannot assign value on possibly null array ' . $var_id,
+                    $this->_file_name,
+                    $line_number
+                ),
+                $this->_suppressed_issues
             )) {
                 return false;
             }
@@ -1719,7 +1745,12 @@ class StatementsChecker
         foreach ($assignment_type->types as $at) {
             if ($type->value === 'string' && $at->isString()) {
                 if (IssueBuffer::accepts(
-                    new InvalidArrayAssignment('Cannot assign value on variable ' . $var_id . ' using string offset', $this->_file_name, $line_number)
+                    new InvalidArrayAssignment(
+                        'Cannot assign value on variable ' . $var_id . ' using string offset',
+                        $this->_file_name,
+                        $line_number
+                    ),
+                    $this->_suppressed_issues
                 )) {
                     return false;
                 }
@@ -1728,7 +1759,12 @@ class StatementsChecker
 
         if ($type->value !== 'array' && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
             if (IssueBuffer::accepts(
-                new InvalidArrayAssignment('Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess', $this->_file_name, $line_number)
+                new InvalidArrayAssignment(
+                    'Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess',
+                    $this->_file_name,
+                    $line_number
+                ),
+                $this->_suppressed_issues
             )) {
                 return false;
             }
@@ -1787,7 +1823,8 @@ class StatementsChecker
             }
             else if ($stmt->var->name === 'this' && !$this->_class_name) {
                 if (IssueBuffer::accepts(
-                    new InvalidScope('Use of $this in non-class context', $this->_file_name, $stmt->getLine())
+                    new InvalidScope('Use of $this in non-class context', $this->_file_name, $stmt->getLine()),
+                    $this->_suppressed_issues
                 )) {
                     return false;
                 }
@@ -1844,7 +1881,12 @@ class StatementsChecker
                 switch ($absolute_class) {
                     case 'null':
                         if (IssueBuffer::accepts(
-                            new NullReference('Cannot call method ' . $stmt->name . ' on possibly null variable ' . $class_type, $this->_file_name, $stmt->getLine())
+                            new NullReference(
+                                'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $class_type,
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
                         )) {
                             return false;
                         }
@@ -1854,7 +1896,12 @@ class StatementsChecker
                     case 'bool':
                     case 'array':
                         if (IssueBuffer::accepts(
-                            new InvalidArgument('Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable', $this->_file_name, $stmt->getLine())
+                            new InvalidArgument(
+                                'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable',
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
                         )) {
                             return false;
                         }
@@ -1862,7 +1909,12 @@ class StatementsChecker
 
                     case 'mixed':
                         if (IssueBuffer::accepts(
-                            new MixedMethodCall('Cannot call method ' . $stmt->name . ' on a mixed variable', $this->_file_name, $stmt->getLine())
+                            new MixedMethodCall(
+                                'Cannot call method ' . $stmt->name . ' on a mixed variable',
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
                         )) {
                             return false;
                         }
@@ -1887,7 +1939,7 @@ class StatementsChecker
                                 self::$_method_call_index[$method_id][] = $this->_source->getFileName();
                             }
 
-                            if (ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt) === false) {
+                            if (ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
                                 return false;
                             }
 
@@ -1898,7 +1950,13 @@ class StatementsChecker
                                     $calling_context = $this->_absolute_class;
                                 }
 
-                                ClassMethodChecker::checkMethodVisibility($method_id, $calling_context, $this->_file_name, $stmt->getLine());
+                                if (ClassMethodChecker::checkMethodVisibility($method_id, $calling_context, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                                    return false;
+                                }
+                            }
+
+                            if (ClassMethodChecker::checkMethodNotDeprecated($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                                return false;
                             }
 
                             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
@@ -1965,7 +2023,8 @@ class StatementsChecker
                 if (!isset($context->vars_possibly_in_scope[$use->var])) {
                     if ($this->_check_variables) {
                         IssueBuffer::add(
-                            new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
+                            new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine()),
+                            $this->_suppressed_issues
                         );
 
                         return false;
@@ -1980,7 +2039,8 @@ class StatementsChecker
                                 'Possibly undefined variable $' . $use->var . ', first seen on line ' . $this->_all_vars[$use->var],
                                 $this->_file_name,
                                 $use->getLine()
-                            )
+                            ),
+                            $this->_suppressed_issues
                         )) {
                             return false;
                         }
@@ -2018,7 +2078,8 @@ class StatementsChecker
             if ($stmt->class->parts[0] === 'parent') {
                 if ($this->_class_extends === null) {
                     if (IssueBuffer::accepts(
-                        new ParentNotFound('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine())
+                        new ParentNotFound('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine()),
+                        $this->_suppressed_issues
                     )) {
                         return false;
                     }
@@ -2064,28 +2125,29 @@ class StatementsChecker
                 self::$_method_call_index[$method_id][] = $this->_source->getFileName();
             }
 
-            ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt);
-            ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine());
+            if (ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                return false;
+            }
+
+            if (ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                return false;
+            }
 
             if ($this->_is_static) {
-                if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
-                    if (IssueBuffer::accepts(
-                        new InvalidStaticInvocation('Method ' . $method_id . ' is not static', $this->_file_name, $stmt->getLine())
-                    )) {
-                        return false;
-                    }
+                if (ClassMethodChecker::checkMethodStatic($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                    return false;
                 }
             }
             else {
                 if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
-                    if (!ClassMethodChecker::isGivenMethodStatic($method_id)) {
-                        if (IssueBuffer::accepts(
-                            new InvalidStaticInvocation('Cannot call non-static method ' . $method_id . ' as if it were static', $this->_file_name, $stmt->getLine())
-                        )) {
-                            return false;
-                        }
+                    if (ClassMethodChecker::checkMethodStatic($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                        return false;
                     }
                 }
+            }
+
+            if (ClassMethodChecker::checkMethodNotDeprecated($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                return false;
             }
 
             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
@@ -2279,7 +2341,8 @@ class StatementsChecker
 
             if (!defined($const_id)) {
                 if (IssueBuffer::accepts(
-                    new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine())
+                    new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine()),
+                    $this->_suppressed_issues
                 )) {
                     return false;
                 }
@@ -2658,7 +2721,8 @@ class StatementsChecker
                     'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
                     $file_name,
                     $line_number
-                )
+                ),
+                $this->_suppressed_issues
             )) {
                 return false;
             }
@@ -2727,7 +2791,8 @@ class StatementsChecker
                             'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                             $file_name,
                             $line_number
-                        )
+                        ),
+                        $this->_suppressed_issues
                     )) {
                         return false;
                     }
@@ -2737,7 +2802,8 @@ class StatementsChecker
                         'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                         $file_name,
                         $line_number
-                    )
+                    ),
+                    $this->_suppressed_issues
                 )) {
                     return false;
                 }
@@ -2764,7 +2830,8 @@ class StatementsChecker
 
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
                 if (IssueBuffer::accepts(
-                    new ForbiddenCode('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine())
+                    new ForbiddenCode('Unsafe ' . implode('', $method->parts), $this->_file_name, $stmt->getLine()),
+                    $this->_suppressed_issues
                 )) {
                     return false;
                 }
@@ -2841,7 +2908,12 @@ class StatementsChecker
                         $var_id = self::getVarId($stmt->var);
 
                         if (IssueBuffer::accepts(
-                            new InvalidArrayAccess('Cannot access value on string variable ' . $var_id . ' using string offset', $this->_file_name, $stmt->getLine())
+                            new InvalidArrayAccess(
+                                'Cannot access value on string variable ' . $var_id . ' using string offset',
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
                         )) {
                             return false;
                         }
@@ -2926,7 +2998,8 @@ class StatementsChecker
         }
         catch (\ReflectionException $e) {
             if (IssueBuffer::accepts(
-                new UndefinedFunction('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine())
+                new UndefinedFunction('Function ' . $method_id . ' does not exist', $this->_file_name, $stmt->getLine()),
+                $this->_suppressed_issues
             )) {
                 return false;
             }

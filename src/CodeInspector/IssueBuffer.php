@@ -6,11 +6,17 @@ class IssueBuffer
 {
     protected static $errors = [];
 
-    public static function accepts(Issue\CodeIssue $e)
+    public static function accepts(Issue\CodeIssue $e, array $suppressed_issues = [])
     {
         $config = Config::getInstance();
 
-        if ($config->excludeIssueInFile(get_class($e), $e->getFileName())) {
+        $issue_type = array_pop(explode('\\', get_class($e)));
+
+        if (in_array($issue_type, $suppressed_issues)) {
+            return false;
+        }
+
+        if ($config->excludeIssueInFile($issue_type, $e->getFileName())) {
             return false;
         }
 
@@ -27,7 +33,9 @@ class IssueBuffer
 
         $error_message = $error_class_name . ' - ' . $e->getMessage();
 
-        $reporting_level = $config->getReportingLevel(get_class($e));
+        $issue_type = array_pop(explode('\\', get_class($e)));
+
+        $reporting_level = $config->getReportingLevel($issue_type);
 
         switch ($reporting_level) {
             case Config::REPORT_INFO:

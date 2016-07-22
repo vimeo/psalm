@@ -56,7 +56,7 @@ class CommentChecker
     {
         $comments = StatementsChecker::parseDocComment($comment);
 
-        $info = ['return_type' => null, 'params' => null];
+        $info = ['return_type' => null, 'params' => [], 'deprecated' => false, 'suppress' => []];
 
         if (isset($comments['specials']['return'])) {
             $return_blocks = preg_split('/[\s]+/', $comments['specials']['return'][0]);
@@ -77,6 +77,16 @@ class CommentChecker
                 ) {
                     $info['params'][] = ['name' => substr($param_blocks[1], 1), 'type' => $param_blocks[0]];
                 }
+            }
+        }
+
+        if (isset($comments['specials']['deprecated'])) {
+            $info['deprecated'] = true;
+        }
+
+        if (isset($comments['specials']['suppress'])) {
+            foreach ($comments['specials']['suppress'] as $suppress_entry) {
+                $info['suppress'][] = preg_split('/[\s]+/', $suppress_entry)[0];
             }
         }
 

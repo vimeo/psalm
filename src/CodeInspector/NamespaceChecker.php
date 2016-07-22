@@ -12,11 +12,17 @@ class NamespaceChecker implements StatementsSource
     protected $_aliased_classes = [];
     protected $_file_name;
 
+    /**
+     * @var array
+     */
+    protected $_suppressed_issues;
+
     public function __construct(\PhpParser\Node\Stmt\Namespace_ $namespace, StatementsSource $source)
     {
         $this->_namespace = $namespace;
         $this->_namespace_name = implode('\\', $this->_namespace->name->parts);
         $this->_file_name = $source->getFileName();
+        $this->_suppressed_issues = $source->getSuppressedIssues();
     }
 
     public function check($check_classes = true, $check_class_statements = true)
@@ -132,5 +138,10 @@ class NamespaceChecker implements StatementsSource
     public function getSource()
     {
         return null;
+    }
+
+    public function getSuppressedIssues()
+    {
+        return $this->_suppressed_issues;
     }
 }

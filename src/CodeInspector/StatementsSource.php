@@ -24,4 +24,10 @@ interface StatementsSource
     public function isStatic();
 
     public function getSource();
+
+    /**
+     * Get a list of suppressed issues
+     * @return array
+     */
+    public function getSuppressedIssues();
 }

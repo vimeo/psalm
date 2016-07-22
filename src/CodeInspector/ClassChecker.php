@@ -29,6 +29,11 @@ class ClassChecker implements StatementsSource
     /** @var string|null */
     protected $_parent_class;
 
+    /**
+     * @var array
+     */
+    protected $_suppressed_issues;
+
     protected static $_this_class = null;
 
     protected static $_existing_classes = [];
@@ -44,6 +49,8 @@ class ClassChecker implements StatementsSource
         $this->_aliased_classes = $source->getAliasedClasses();
         $this->_file_name = $source->getFileName();
         $this->_absolute_class = $absolute_class;
+
+        $this->_suppressed_issues = $source->getSuppressedIssues();
 
         $this->_parent_class = $this->_class->extends ? ClassChecker::getAbsoluteClassFromName($this->_class->extends, $this->_namespace, $this->_aliased_classes) : null;
 
@@ -101,7 +108,8 @@ class ClassChecker implements StatementsSource
                     $trait_name = self::getAbsoluteClassFromName($trait, $this->_namespace, $this->_aliased_classes);
                     if (!trait_exists($trait_name)) {
                         if (IssueBuffer::accepts(
-                            new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->_file_name, $trait->getLine())
+                            new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->_file_name, $trait->getLine()),
+                            $this->_suppressed_issues
                         )) {
                             return false;
                         }
@@ -147,7 +155,7 @@ class ClassChecker implements StatementsSource
             foreach ($method_checkers as $method_checker) {
                 $method_checker->check(clone $class_context);
 
-                if (!$config->excludeIssueInFile('CodeInspector\Issue\InvalidReturnType', $this->_file_name)) {
+                if (!$config->excludeIssueInFile('InvalidReturnType', $this->_file_name)) {
                     $method_checker->checkReturnTypes();
                 }
             }
@@ -331,6 +339,11 @@ class ClassChecker implements StatementsSource
     public function getSource()
     {
         return null;
+    }
+
+    public function getSuppressedIssues()
+    {
+        return $this->_suppressed_issues;
     }
 
     /**

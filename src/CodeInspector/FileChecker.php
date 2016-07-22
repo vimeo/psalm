@@ -22,6 +22,11 @@ class FileChecker implements StatementsSource
 
     protected $_declared_classes = [];
 
+    /**
+     * @var array
+     */
+    protected $_suppressed_issues = [];
+
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
     protected static $_functions = [];
@@ -269,6 +274,11 @@ class FileChecker implements StatementsSource
     public function getSource()
     {
         return null;
+    }
+
+    public function getSuppressedIssues()
+    {
+        return $this->_suppressed_issues;
     }
 
     public static function getFileCheckerFromFileName($file_name)

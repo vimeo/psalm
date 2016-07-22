@@ -19,6 +19,11 @@ class FunctionChecker implements StatementsSource
     protected $_return_vars_in_scope = [];
     protected $_return_vars_possibly_in_scope = [];
 
+    /**
+     * @var array
+     */
+    protected $_suppressed_issues;
+
     protected static $_no_effects_hashes = [];
 
     protected $_function_params = [];
@@ -33,6 +38,7 @@ class FunctionChecker implements StatementsSource
         $this->_file_name = $source->getFileName();
         $this->_absolute_class = $source->getAbsoluteClass();
         $this->_source = $source;
+        $this->_suppressed_issues = $source->getSuppressedIssues();
     }
 
     public function check(Context $context, $check_methods = true)
@@ -206,5 +212,10 @@ class FunctionChecker implements StatementsSource
     public function getSource()
     {
         return $this->_source;
+    }
+
+    public function getSuppressedIssues()
+    {
+        return $this->_suppressed_issues;
     }
 }
