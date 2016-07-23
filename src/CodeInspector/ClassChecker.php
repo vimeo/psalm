@@ -20,7 +20,6 @@ class ClassChecker implements StatementsSource
     protected $_namespace;
     protected $_aliased_classes;
     protected $_absolute_class;
-    protected $_class_properties = [];
     protected $_has_custom_get = false;
     protected $_source;
 
@@ -41,6 +40,8 @@ class ClassChecker implements StatementsSource
 
     protected static $_class_methods = [];
     protected static $_class_checkers = [];
+
+    protected static $_class_properties = [];
 
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
@@ -64,7 +65,7 @@ class ClassChecker implements StatementsSource
     public function check($check_statements = true, $method_id = null)
     {
         if ($this->_parent_class) {
-            self::checkAbsoluteClass($this->_parent_class, $this->_class, $this->_file_name);
+            self::checkAbsoluteClass($this->_parent_class, $this->_file_name, $this->_class->getLine());
 
             $this->_registerInheritedMethods($this->_parent_class);
         }
@@ -118,6 +119,10 @@ class ClassChecker implements StatementsSource
                 }
 
             } else {
+                if (!isset(self::$_class_properties[$this->_absolute_class])) {
+                    self::$_class_properties[$this->_absolute_class] = [];
+                }
+
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($stmt->props as $property) {
                         $comment = $stmt->getDocComment();
@@ -127,7 +132,7 @@ class ClassChecker implements StatementsSource
                         }
 
                         $property_type = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
-                        $this->_class_properties[$property->name] = $property_type;
+                        self::$_class_properties[$this->_absolute_class][$property->name] = $property_type;
 
                         if (!$stmt->isStatic()) {
                             $class_context->vars_in_scope['this->' . $property->name] = $property_type;
@@ -209,13 +214,13 @@ class ClassChecker implements StatementsSource
 
         $absolute_class = self::getAbsoluteClassFromName($class_name, $namespace, $aliased_classes);
 
-        return self::checkAbsoluteClass($absolute_class, $class_name, $file_name);
+        return self::checkAbsoluteClass($absolute_class, $file_name, $class_name->getLine());
     }
 
     /**
      * @return false|null
      */
-    public static function checkAbsoluteClass($absolute_class, PhpParser\NodeAbstract $stmt, $file_name)
+    public static function checkAbsoluteClass($absolute_class, $file_name, $line_number)
     {
         if (empty($absolute_class)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -229,7 +234,7 @@ class ClassChecker implements StatementsSource
 
         if (!class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
             if (IssueBuffer::accepts(
-                new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $stmt->getLine())
+                new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $line_number)
             )) {
                 return false;
             }
@@ -240,7 +245,7 @@ class ClassChecker implements StatementsSource
 
             if ($reflection_class->getName() !== $absolute_class) {
                 if (IssueBuffer::accepts(
-                    new InvalidClass('Class ' . $absolute_class . ' has wrong casing', $file_name, $stmt->getLine())
+                    new InvalidClass('Class ' . $absolute_class . ' has wrong casing', $file_name, $line_number)
                 )) {
                     return false;
                 }
@@ -333,7 +338,10 @@ class ClassChecker implements StatementsSource
 
     public function getProperties()
     {
-        return $this->_class_properties;
+        $class_properties = isset(self::$_class_properties[$this->_absolute_class]) ? self::$_class_properties[$this->_absolute_class] : [];
+        $parent_properties = isset(self::$_class_properties[$this->_parent_class]) ? self::$_class_properties[$this->_parent_class] : [];
+
+        return array_merge($parent_properties, $class_properties);
     }
 
     public function getSource()

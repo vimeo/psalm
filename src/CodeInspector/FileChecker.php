@@ -82,6 +82,9 @@ class FileChecker implements StatementsSource
                 foreach ($stmt->uses as $use) {
                     $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
+                $statments_checker = new StatementsChecker($this);
+                $statments_checker->check([$stmt], new Context());
 
             } else {
                 $leftover_stmts[] = $stmt;

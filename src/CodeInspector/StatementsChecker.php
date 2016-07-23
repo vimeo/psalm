@@ -66,6 +66,7 @@ class StatementsChecker
     protected static $_existing_static_vars = [];
     protected static $_existing_properties = [];
     protected static $_mock_interfaces = [];
+    protected static $_class_consts = [];
 
     public function __construct(StatementsSource $source, $enforce_variable_checks = false, $check_methods = true)
     {
@@ -217,7 +218,9 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-
+                foreach ($stmt->consts as $const) {
+                    self::$_class_consts[$this->_absolute_class . '::' . $const->name] = true;
+                }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 (new ClassChecker($stmt, $this->_source, $stmt->name))->check();
@@ -1380,7 +1383,7 @@ class StatementsChecker
                             }
 
                             if ($return_type->value !== 'array' && $return_type->value !== 'Traversable' && $return_type->value !== $this->_class_name) {
-                                if (ClassChecker::checkAbsoluteClass($return_type->value, $stmt, $this->_file_name) === false) {
+                                if (ClassChecker::checkAbsoluteClass($return_type->value, $this->_file_name, $stmt->getLine()) === false) {
                                     return false;
                                 }
                             }
@@ -1922,7 +1925,7 @@ class StatementsChecker
 
                     default:
                         if ($absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
-                            if (ClassChecker::checkAbsoluteClass($absolute_class, $stmt, $this->_file_name) === false) {
+                            if (ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine()) === false) {
                                 return false;
                             }
 
@@ -2332,20 +2335,24 @@ class StatementsChecker
                 $absolute_class = $this->_absolute_class;
             } else {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                if (ClassChecker::checkAbsoluteClass($absolute_class, $stmt, $this->_file_name) === false) {
+                if (ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine()) === false) {
                     return false;
                 }
             }
 
             $const_id = $absolute_class . '::' . $stmt->name;
 
-            if (!defined($const_id)) {
-                if (IssueBuffer::accepts(
-                    new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine()),
-                    $this->_suppressed_issues
-                )) {
-                    return false;
+            if (!isset(self::$_class_consts[$const_id])) {
+                if (!defined($const_id)) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->_file_name, $stmt->getLine()),
+                        $this->_suppressed_issues
+                    )) {
+                        return false;
+                    }
                 }
+
+                self::$_class_consts[$const_id] = true;
             }
 
             return;
@@ -2967,9 +2974,12 @@ class StatementsChecker
 
         $absolute_class = explode('::', $property_id)[0];
 
-        $reflection_class = new \ReflectionClass($absolute_class);
-
-        self::_getClassProperties($reflection_class, $absolute_class);
+        try {
+            $reflection_class = new \ReflectionClass($absolute_class);
+            self::_getClassProperties($reflection_class, $absolute_class);
+        }
+        catch (\ReflectionException $e) {
+        }
 
         return isset(self::$_existing_properties[$property_id]);
     }

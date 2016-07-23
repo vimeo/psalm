@@ -604,6 +604,11 @@ class ClassMethodChecker extends FunctionChecker
             return;
         }
 
+        if (isset(self::$_have_registered[$method_id])) {
+            self::$_existing_methods[$method_id] = 1;
+            return;
+        }
+
         if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $line_number),
             $suppresssed_issues
