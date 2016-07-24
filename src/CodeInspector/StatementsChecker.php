@@ -1781,7 +1781,7 @@ class StatementsChecker
                     return new Type\Atomic($type->value);
                 }
 
-                $type->type_params = array_values($assignment_type->types);
+                $type->type_params[0] = $assignment_type;
                 $type->is_empty = false;
                 return $type;
             }
@@ -2098,6 +2098,8 @@ class StatementsChecker
 
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
+
+
 
         if (!$this->_check_methods) {
             return;
@@ -2682,14 +2684,14 @@ class StatementsChecker
             }
         }
         elseif ($redefined_vars) {
-            foreach ($redefined_vars as $var_name => $union_type) {
-                foreach ($union_type->types as $type) {
+            foreach ($redefined_vars as $var_name => $redefined_union_type) {
+                foreach ($redefined_union_type->types as $redefined_atomic_type) {
                     foreach ($context->vars_in_scope[$var_name]->types as $context_type) {
                         if ($context_type instanceof Type\Generic &&
-                            $context_type instanceof Type\Generic &&
+                            $redefined_atomic_type instanceof Type\Generic &&
                             $context_type->type_params[0]->isEmpty()
                         ) {
-                            $context_type->type_params[0] = $type->type_params[0];
+                            $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
                         }
                     }
 

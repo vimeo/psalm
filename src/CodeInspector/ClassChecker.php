@@ -23,8 +23,6 @@ class ClassChecker implements StatementsSource
     protected $_has_custom_get = false;
     protected $_source;
 
-    protected static $_method_checkers = [];
-
     /** @var string|null */
     protected $_parent_class;
 
@@ -32,6 +30,11 @@ class ClassChecker implements StatementsSource
      * @var array
      */
     protected $_suppressed_issues;
+
+    /**
+     * @var array<ClassMethodChecker>
+     */
+    protected static $_method_checkers = [];
 
     protected static $_this_class = null;
 
@@ -423,5 +426,20 @@ class ClassChecker implements StatementsSource
     public static function getThisClass()
     {
         return self::$_this_class;
+    }
+
+    public static function clearCache()
+    {
+        self::$_method_checkers = [];
+
+        self::$_this_class = null;
+
+        self::$_existing_classes = [];
+        self::$_implementing_classes = [];
+
+        self::$_class_methods = [];
+        self::$_class_checkers = [];
+
+        self::$_class_properties = [];
     }
 }

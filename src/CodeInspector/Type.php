@@ -422,7 +422,9 @@ abstract class Type
             return $this->value === 'empty';
         }
 
-        return false;
+        if ($this instanceof Union) {
+            return isset($this->types['empty']);
+        }
     }
 
     public function isObject()

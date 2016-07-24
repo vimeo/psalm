@@ -133,9 +133,9 @@ class ClassMethodChecker extends FunctionChecker
             return false;
         }
 
-        $simple_declared_types = array_filter(array_keys($declared_type->types), function($type_value) { $type_value !== 'null'; });
+        $simple_declared_types = array_filter(array_keys($declared_type->types), function($type_value) { return $type_value !== 'null'; });
 
-        $simple_inferred_types = array_filter(array_keys($inferred_type->types), function($type_value) { $type_value !== 'null'; });
+        $simple_inferred_types = array_filter(array_keys($inferred_type->types), function($type_value) { return $type_value !== 'null'; });
 
         // gets elements A△B
         $differing_types = array_diff($simple_inferred_types, $simple_declared_types);
@@ -147,8 +147,11 @@ class ClassMethodChecker extends FunctionChecker
             foreach ($differing_types as $differing_type) {
                 $is_match = false;
 
+                if ($differing_type === 'mixed') {
+                    continue;
+                }
+
                 foreach ($simple_declared_types as $simple_declared_type) {
-                    var_dump($simple_declared_type, $differing_type);
                     if (is_subclass_of($differing_type, $simple_declared_type) ||
                         (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_type, ['float', 'double', 'int'])) ||
                         (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_type, ['boolean', 'bool']))
@@ -163,7 +166,7 @@ class ClassMethodChecker extends FunctionChecker
                 }
             }
 
-            return $truly_different;
+            return !$truly_different;
         }
 
         foreach ($declared_type->types as $key => $declared_atomic_type) {
@@ -178,7 +181,9 @@ class ClassMethodChecker extends FunctionChecker
                 continue;
             }
 
-            self::hasIdenticalTypes($declared_atomic_type->type_params[0], $inferred_atomic_type->type_params[0]);
+            if (!self::hasIdenticalTypes($declared_atomic_type->type_params[0], $inferred_atomic_type->type_params[0])) {
+                return false;
+            }
         }
 
         return true;
