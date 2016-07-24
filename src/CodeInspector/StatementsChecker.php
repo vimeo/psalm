@@ -840,7 +840,7 @@ class StatementsChecker
 
             if ($stmt->class instanceof PhpParser\Node\Name && !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($this->_check_classes) {
-                    if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name) === false) {
+                    if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues) === false) {
                         return false;
                     }
                 }
@@ -888,10 +888,9 @@ class StatementsChecker
                 }
 
                 if (file_exists($path_to_file)) {
-                    $include_stmts = FileChecker::getStatementsForFile($path_to_file);
+                    $file_checker = new FileChecker($path_to_file, []);
+                    $file_checker->check(true, true, $context);
 
-                    $this->_require_file_name = $path_to_file;
-                    $this->check($include_stmts, $context);
                     return;
                 }
             }
@@ -1177,7 +1176,7 @@ class StatementsChecker
 
         if ($stmt->class instanceof PhpParser\Node\Name && !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($this->_check_classes) {
-                if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name) === false) {
+                if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues) === false) {
                     return false;
                 }
 
@@ -1199,7 +1198,7 @@ class StatementsChecker
     {
         // if the array is empty, this special type allows us to match any other array type against it
         if (empty($stmt->items)) {
-            $stmt->inferredType = new Type\Union([new Type\Generic('array', [new Type\Atomic('empty')], true)]);
+            $stmt->inferredType = new Type\Union([new Type\Generic('array', [new Type\Union([new Type\Atomic('empty')])], true)]);
             return;
         }
 
@@ -1243,7 +1242,7 @@ class StatementsChecker
             $this->registerVariable($catch->var, $catch->getLine());
 
             if ($this->_check_classes) {
-                if (ClassChecker::checkClassName($catch->type, $this->_namespace, $this->_aliased_classes, $this->_file_name) === false) {
+                if (ClassChecker::checkClassName($catch->type, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues) === false) {
                     return;
                 }
             }
@@ -1383,7 +1382,7 @@ class StatementsChecker
                             }
 
                             if ($return_type->value !== 'array' && $return_type->value !== 'Traversable' && $return_type->value !== $this->_class_name) {
-                                if (ClassChecker::checkAbsoluteClass($return_type->value, $this->_file_name, $stmt->getLine()) === false) {
+                                if (ClassChecker::checkAbsoluteClass($return_type->value, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
                                     return false;
                                 }
                             }
@@ -1819,22 +1818,13 @@ class StatementsChecker
         $method_id = null;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            if (!is_string($stmt->var->name)) {
-                if ($this->_checkExpression($stmt->var->name, $context) === false) {
-                    return false;
-                }
-            }
-            else if ($stmt->var->name === 'this' && !$this->_class_name) {
+            if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$this->_class_name) {
                 if (IssueBuffer::accepts(
                     new InvalidScope('Use of $this in non-class context', $this->_file_name, $stmt->getLine()),
                     $this->_suppressed_issues
                 )) {
                     return false;
                 }
-            }
-        } elseif ($stmt->var instanceof PhpParser\Node\Expr) {
-            if ($this->_checkExpression($stmt->var, $context) === false) {
-                return false;
             }
         }
 
@@ -1925,8 +1915,10 @@ class StatementsChecker
 
                     default:
                         if ($absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
-                            if (ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine()) === false) {
-                                return false;
+                            $does_class_exist = ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues);
+
+                            if (!$does_class_exist) {
+                                return $does_class_exist;
                             }
 
                             $method_id = $absolute_class . '::' . $stmt->name;
@@ -1942,8 +1934,12 @@ class StatementsChecker
                                 self::$_method_call_index[$method_id][] = $this->_source->getFileName();
                             }
 
-                            if (ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
-                                return false;
+
+
+                            $does_method_exist = ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues);
+
+                            if (!$does_method_exist) {
+                                return $does_method_exist;
                             }
 
                             if (!($this->_source->getSource() instanceof TraitChecker)) {
@@ -2094,9 +2090,12 @@ class StatementsChecker
             }
 
         } elseif ($this->_check_classes) {
-            if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name) === false) {
-                return false;
+            $does_class_exist = ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues);
+
+            if (!$does_class_exist) {
+                return $does_class_exist;
             }
+
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
 
@@ -2128,8 +2127,10 @@ class StatementsChecker
                 self::$_method_call_index[$method_id][] = $this->_source->getFileName();
             }
 
-            if (ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
-                return false;
+            $does_method_exist = ClassMethodChecker::checkMethodExists($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues);
+
+            if (!$does_method_exist) {
+                return $does_method_exist;
             }
 
             if (ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
@@ -2335,7 +2336,7 @@ class StatementsChecker
                 $absolute_class = $this->_absolute_class;
             } else {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                if (ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine()) === false) {
+                if (ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
                     return false;
                 }
             }
@@ -2386,7 +2387,7 @@ class StatementsChecker
                 $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }
         } elseif ($this->_check_classes) {
-            if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name) === false) {
+            if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues) === false) {
                 return false;
             }
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
