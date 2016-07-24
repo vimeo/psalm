@@ -67,7 +67,7 @@ class FunctionChecker implements StatementsSource
                 if ($param->type) {
                     if ($param->type instanceof PhpParser\Node\Name) {
                         if (!in_array($param->type->parts[0], ['self', 'parent'])) {
-                            ClassChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name);
+                            ClassChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues);
                         }
                     }
                 }

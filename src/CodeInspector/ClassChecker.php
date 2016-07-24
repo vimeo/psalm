@@ -55,7 +55,7 @@ class ClassChecker implements StatementsSource
 
         $this->_parent_class = $this->_class->extends ? ClassChecker::getAbsoluteClassFromName($this->_class->extends, $this->_namespace, $this->_aliased_classes) : null;
 
-        self::$_existing_classes[$absolute_class] = 1;
+        self::$_existing_classes[$absolute_class] = true;
 
         if (self::$_this_class) {
             self::$_class_checkers[$absolute_class] = $this;
@@ -65,7 +65,7 @@ class ClassChecker implements StatementsSource
     public function check($check_statements = true, $method_id = null)
     {
         if ($this->_parent_class) {
-            self::checkAbsoluteClass($this->_parent_class, $this->_file_name, $this->_class->getLine());
+            self::checkAbsoluteClass($this->_parent_class, $this->_file_name, $this->_class->getLine(), $this->getSuppressedIssues());
 
             $this->_registerInheritedMethods($this->_parent_class);
         }
@@ -206,7 +206,7 @@ class ClassChecker implements StatementsSource
     /**
      * @return bool
      */
-    public static function checkClassName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes, $file_name)
+    public static function checkClassName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes, $file_name, array $suppressed_issues)
     {
         if ($class_name->parts[0] === 'static') {
             return;
@@ -214,13 +214,13 @@ class ClassChecker implements StatementsSource
 
         $absolute_class = self::getAbsoluteClassFromName($class_name, $namespace, $aliased_classes);
 
-        return self::checkAbsoluteClass($absolute_class, $file_name, $class_name->getLine());
+        return self::checkAbsoluteClass($absolute_class, $file_name, $class_name->getLine(), $suppressed_issues);
     }
 
     /**
      * @return false|null
      */
-    public static function checkAbsoluteClass($absolute_class, $file_name, $line_number)
+    public static function checkAbsoluteClass($absolute_class, $file_name, $line_number, array $suppressed_issues)
     {
         if (empty($absolute_class)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -229,15 +229,18 @@ class ClassChecker implements StatementsSource
         $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
         if (isset(self::$_existing_classes[$absolute_class])) {
-            return;
+            return true;
         }
 
         if (!class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
             if (IssueBuffer::accepts(
-                new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $line_number)
+                new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $line_number),
+                $suppressed_issues
             )) {
                 return false;
             }
+
+            return;
         }
 
         if (class_exists($absolute_class, true) && strpos($absolute_class, '\\') === false) {
@@ -245,14 +248,16 @@ class ClassChecker implements StatementsSource
 
             if ($reflection_class->getName() !== $absolute_class) {
                 if (IssueBuffer::accepts(
-                    new InvalidClass('Class ' . $absolute_class . ' has wrong casing', $file_name, $line_number)
+                    new InvalidClass('Class ' . $absolute_class . ' has wrong casing', $file_name, $line_number),
+                    $suppressed_issues
                 )) {
                     return false;
                 }
             }
         }
 
-        self::$_existing_classes[$absolute_class] = 1;
+        self::$_existing_classes[$absolute_class] = true;
+        return true;
     }
 
     public static function getAbsoluteClassFromName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes)
