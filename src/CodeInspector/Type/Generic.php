@@ -14,9 +14,9 @@ class Generic extends Atomic
 
     /**
      * Constructs a new instance of a generic type
-     * @param string        $value
-     * @param array<Type>   $type_params
-     * @param bool          $is_empty
+     * @param string            $value
+     * @param array<Type\Union> $type_params
+     * @param bool              $is_empty
      */
     public function __construct($value, array $type_params, $is_empty = false)
     {

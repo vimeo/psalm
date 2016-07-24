@@ -151,7 +151,8 @@ abstract class Type
 
             $generic_params = array_map(
                 function (ParseTree $child_tree) {
-                    return self::getTypeFromTree($child_tree);
+                    $tree_type = self::getTypeFromTree($child_tree);
+                    return $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
                 },
                 $parse_tree->children
             );
@@ -160,9 +161,7 @@ abstract class Type
                 throw new \InvalidArgumentException('No generic params provided for type');
             }
 
-            $is_empty = count($generic_params) === 1 && $generic_params[0] instanceof Atomic && $generic_params[0]->value === 'empty';
-
-            return new Generic(self::fixScalarTerms($generic_type->value), $generic_params, $is_empty);
+            return new Generic(self::fixScalarTerms($generic_type->value), $generic_params);
         }
 
         if ($parse_tree->value === ParseTree::UNION) {
