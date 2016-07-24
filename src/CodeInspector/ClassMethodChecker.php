@@ -109,64 +109,79 @@ class ClassMethodChecker extends FunctionChecker
                     return;
                 }
 
-                $simple_declared_return_types = array_map(
-                    function ($return_type) {
-                        return $return_type->value;
-                    },
-                    $declared_return_type->types
-                );
-
-                $simple_inferred_return_types = array_map(
-                    function ($return_type) {
-                        return $return_type->value;
-                    },
-                    $inferred_return_type->types
-                );
-
-                // gets elements A△B
-                $differing_types = array_diff($simple_inferred_return_types, $simple_declared_return_types);
-
-                if (count($differing_types) && (string) $inferred_return_type !== (string) $declared_return_type) {
-                    // check whether the differing types are subclasses of declared return types
-                    $truly_different = false;
-                    foreach ($differing_types as $differing_type) {
-                        $is_match = false;
-
-                        foreach ($simple_declared_return_types as $simple_declared_return_type) {
-                            if (is_subclass_of($differing_type, $simple_declared_return_type) ||
-                                (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_return_type, ['float', 'double', 'int'])) ||
-                                (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_return_type, ['boolean', 'bool']))
-                            ) {
-                                $is_match = true;
-                                break;
-                            }
-                        }
-
-                        if (!$is_match) {
-                            $truly_different = true;
-                        }
-                    }
-
-                    if ($truly_different) {
-                        if ($inferred_return_type->isNull()) {
-                            $inferred_return_type = Type::getVoid();
-                        }
-
-                        if (IssueBuffer::accepts(
-                            new InvalidReturnType(
-                                'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
-                                $this->_file_name,
-                                $this->_function->getLine()
-                            )
-                        )) {
-                            return false;
-                        }
+                if (!self::hasIdenticalTypes($declared_return_type, $inferred_return_type)) {
+                    if (IssueBuffer::accepts(
+                        new InvalidReturnType(
+                            'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
+                            $this->_file_name,
+                            $this->_function->getLine()
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        return false;
                     }
                 }
             }
 
             return;
         }
+    }
+
+    protected static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type)
+    {
+        if ($declared_type->isNullable() !== $inferred_type->isNullable()) {
+            return false;
+        }
+
+        $simple_declared_types = array_filter(array_keys($declared_type->types), function($type_value) { $type_value !== 'null'; });
+
+        $simple_inferred_types = array_filter(array_keys($inferred_type->types), function($type_value) { $type_value !== 'null'; });
+
+        // gets elements A△B
+        $differing_types = array_diff($simple_inferred_types, $simple_declared_types);
+
+        if (count($differing_types)) {
+            // check whether the differing types are subclasses of declared return types
+            $truly_different = false;
+
+            foreach ($differing_types as $differing_type) {
+                $is_match = false;
+
+                foreach ($simple_declared_types as $simple_declared_type) {
+                    var_dump($simple_declared_type, $differing_type);
+                    if (is_subclass_of($differing_type, $simple_declared_type) ||
+                        (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_type, ['float', 'double', 'int'])) ||
+                        (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_type, ['boolean', 'bool']))
+                    ) {
+                        $is_match = true;
+                        break;
+                    }
+                }
+
+                if (!$is_match) {
+                    $truly_different = true;
+                }
+            }
+
+            return $truly_different;
+        }
+
+        foreach ($declared_type->types as $key => $declared_atomic_type) {
+            $inferred_atomic_type = $inferred_type->types[$key];
+
+            if (!($declared_atomic_type instanceof Type\Generic)) {
+                continue;
+            }
+
+            if (!($inferred_atomic_type instanceof Type\Generic) && $declared_atomic_type instanceof Type\Generic) {
+                // @todo handle this better
+                continue;
+            }
+
+            self::hasIdenticalTypes($declared_atomic_type->type_params[0], $inferred_atomic_type->type_params[0]);
+        }
+
+        return true;
     }
 
     public static function getMethodParams($method_id)
@@ -589,24 +604,24 @@ class ClassMethodChecker extends FunctionChecker
     }
 
     /**
-     * @return false|null
+     * @return bool|null
      */
     public static function checkMethodExists($method_id, $file_name, $line_number, array $suppresssed_issues)
     {
         if (isset(self::$_existing_methods[$method_id])) {
-            return;
+            return true;
         }
 
         $method_parts = explode('::', $method_id);
 
         if (method_exists($method_parts[0], $method_parts[1])) {
             self::$_existing_methods[$method_id] = 1;
-            return;
+            return true;
         }
 
         if (isset(self::$_have_registered[$method_id])) {
             self::$_existing_methods[$method_id] = 1;
-            return;
+            return true;
         }
 
         if (IssueBuffer::accepts(
