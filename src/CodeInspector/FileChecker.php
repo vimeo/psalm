@@ -48,52 +48,66 @@ class FileChecker implements StatementsSource
         }
     }
 
-    public function check($check_classes = true, $check_class_statements = true)
+    public function check($check_classes = true, $check_class_statements = true, Context $file_context = null)
     {
+        if (!$file_context) {
+            $file_context = new Context();
+        }
+
         $stmts = $this->getStatements();
 
         $leftover_stmts = [];
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                if ($check_classes) {
-                    $class_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
-                    $this->_declared_classes[] = $class_checker->getAbsoluteClass();
-                    $class_checker->check($check_class_statements);
+            if ($stmt instanceof PhpParser\Node\Stmt\Class_
+                || $stmt instanceof PhpParser\Node\Stmt\Interface_
+                || $stmt instanceof PhpParser\Node\Stmt\Trait_
+                || $stmt instanceof PhpParser\Node\Stmt\Namespace_
+                || $stmt instanceof PhpParser\Node\Stmt\Use_
+            ) {
+                if ($leftover_stmts) {
+                    $statments_checker = new StatementsChecker($this);
+                    $statments_checker->check($leftover_stmts, $file_context);
+                    $leftover_stmts = [];
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
-                // @todo check interfaces
+                if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+                    if ($check_classes) {
+                        $class_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
+                        $this->_declared_classes[] = $class_checker->getAbsoluteClass();
+                        $class_checker->check($check_class_statements);
+                    }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                if ($check_classes) {
-                    $trait_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
-                    $trait_checker->check($check_class_statements);
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                    // @todo check interfaces
+
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                    if ($check_classes) {
+                        $trait_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
+                        $trait_checker->check($check_class_statements);
+                    }
+
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                    $namespace_name = implode('\\', $stmt->name->parts);
+
+                    $namespace_checker = new NamespaceChecker($stmt, $this);
+                    $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_statements);
+                    $this->_declared_classes = array_merge($namespace_checker->getDeclaredClasses());
+
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                    foreach ($stmt->uses as $use) {
+                        $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
+                    }
                 }
-
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
-                $namespace_name = implode('\\', $stmt->name->parts);
-
-                $namespace_checker = new NamespaceChecker($stmt, $this);
-                $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_statements);
-                $this->_declared_classes = array_merge($namespace_checker->getDeclaredClasses());
-
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                foreach ($stmt->uses as $use) {
-                    $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
-                }
-            } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
-                $statments_checker = new StatementsChecker($this);
-                $statments_checker->check([$stmt], new Context());
-
-            } else {
+            }
+            else {
                 $leftover_stmts[] = $stmt;
             }
         }
 
         if ($leftover_stmts) {
             $statments_checker = new StatementsChecker($this);
-            $statments_checker->check($leftover_stmts, new Context());
+            $statments_checker->check($leftover_stmts, $file_context);
         }
 
         return $stmts;
@@ -106,7 +120,7 @@ class FileChecker implements StatementsSource
 
         } else {
             $file_checker = new FileChecker($file_name);
-            $file_checker->check(false);
+            $file_checker->check(false, false, new Context());
             $aliased_classes = $file_checker->getAliasedClasses($namespace);
         }
 
@@ -134,7 +148,7 @@ class FileChecker implements StatementsSource
         }
         else {
             $file_checker = new FileChecker($file_name);
-            $file_checker->check(false);
+            $file_checker->check(false, false, new Context());
         }
 
         return $file_checker->getDeclaredClasses();
