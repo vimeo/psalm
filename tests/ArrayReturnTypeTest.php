@@ -123,21 +123,82 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
-    public function testGenericArrayCreationWithObjectAddedInSwitch()
+    public function testGenericArrayCreationWithElementAddedInSwitch()
     {
         $stmts = self::$_parser->parse('<?php
         class B {
             /**
-             * @return array<B>
+             * @return array<int>
              */
             public function bar(array $in) {
                 $out = [];
 
-                if (rand(0,10) === 10) {
-                    switch (rand(0,10)) {
-                        case 5:
-                            $out[4] = new B();
-                    }
+                switch (rand(0,10)) {
+                    case 5:
+                        $out[] = 4;
+                        break;
+
+                    case 6:
+                        // do nothing
+                }
+
+                return $out;
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testGenericArrayCreationWithElementsAddedInSwitch()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B {
+            /**
+             * @return array<int|string>
+             */
+            public function bar(array $in) {
+                $out = [];
+
+                switch (rand(0,10)) {
+                    case 5:
+                        $out[] = 4;
+                        break;
+
+                    case 6:
+                        $out[] = "hello";
+                        break;
+                }
+
+                return $out;
+            }
+        }');
+
+        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testGenericArrayCreationWithElementsAddedInSwitchWithNothing()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B {
+            /**
+             * @return array<int|string>
+             */
+            public function bar(array $in) {
+                $out = [];
+
+                switch (rand(0,10)) {
+                    case 5:
+                        $out[] = 4;
+                        break;
+
+                    case 6:
+                        $out[] = "hello";
+                        break;
+
+                    case 7:
+                        // do nothing
                 }
 
                 return $out;
