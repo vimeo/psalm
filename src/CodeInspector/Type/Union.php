@@ -3,6 +3,7 @@
 namespace CodeInspector\Type;
 
 use CodeInspector\Type;
+use CodeInspector\ClassChecker;
 
 class Union extends Type
 {
@@ -79,7 +80,7 @@ class Union extends Type
     public function isIn(Union $parent)
     {
         foreach ($this->types as $type) {
-            if (strtoupper($type->value[0]) === $type->value[0] && $parent->hasType('object')) {
+            if ($parent->hasType('object') && ClassChecker::classExists($type->value)) {
                 continue;
             }
 
@@ -88,11 +89,27 @@ class Union extends Type
                 continue;
             }
 
-            if (!$parent->hasType($type->value)) {
-                return false;
+            if ($parent->hasType($type->value)) {
+                continue;
             }
 
-            // @todo add is_subclass_of
+            // last check to see if class is subclass
+            if (ClassChecker::classExists($type->value)) {
+                $type_is_subclass = false;
+
+                foreach ($parent->types as $parent_type) {
+                    if (ClassChecker::classExtendsOrImplements($type->value, $parent_type->value)) {
+                        $type_is_subclass = true;
+                        break;
+                    }
+                }
+
+                if ($type_is_subclass) {
+                    continue;
+                }
+            }
+
+            return false;
         }
 
         return true;

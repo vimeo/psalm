@@ -757,7 +757,7 @@ class StatementsChecker
             $use_context = new Context();
 
             if (!$this->_is_static) {
-                $this_class = ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ?
+                $this_class = ClassChecker::getThisClass() && ClassChecker::classExtends(ClassChecker::getThisClass(), $this->_absolute_class) ?
                     ClassChecker::getThisClass() :
                     $this->_absolute_class;
 
@@ -1851,7 +1851,7 @@ class StatementsChecker
             if (ClassChecker::getThisClass() &&
                 (
                     ClassChecker::getThisClass() === $this->_absolute_class ||
-                    is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class) ||
+                    ClassChecker::classExtends(ClassChecker::getThisClass(), $this->_absolute_class) ||
                     trait_exists($this->_absolute_class)
                 )) {
 
@@ -1945,7 +1945,7 @@ class StatementsChecker
                             if (!($this->_source->getSource() instanceof TraitChecker)) {
                                 $calling_context = $this->_absolute_class;
 
-                                if (ClassChecker::getThisClass() && is_subclass_of(ClassChecker::getThisClass(), $this->_absolute_class)) {
+                                if (ClassChecker::getThisClass() && ClassChecker::classExtends(ClassChecker::getThisClass(), $this->_absolute_class)) {
                                     $calling_context = $this->_absolute_class;
                                 }
 
@@ -2752,7 +2752,7 @@ class StatementsChecker
                 }
 
                 if ($input_type_part->value === $param_type_part->value ||
-                    is_subclass_of($input_type_part->value, $param_type_part->value) ||
+                    ClassChecker::classExtends($input_type_part->value, $param_type_part->value) ||
                     self::isMock($input_type_part->value)
                 ) {
                     $type_match_found = true;
@@ -2786,7 +2786,7 @@ class StatementsChecker
                 }
 
 
-                if (is_subclass_of($param_type_part->value, $input_type_part->value)) {
+                if (ClassChecker::classExtends($param_type_part->value, $input_type_part->value)) {
                     // @todo handle coercion
                     $type_match_found = true;
                     break;

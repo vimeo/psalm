@@ -152,7 +152,8 @@ class ClassMethodChecker extends FunctionChecker
                 }
 
                 foreach ($simple_declared_types as $simple_declared_type) {
-                    if (is_subclass_of($differing_type, $simple_declared_type) ||
+                    if (($simple_declared_type === 'object' && ClassChecker::classExists($differing_type)) ||
+                        ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type) ||
                         (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_type, ['float', 'double', 'int'])) ||
                         (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_type, ['boolean', 'bool']))
                     ) {
@@ -715,11 +716,11 @@ class ClassMethodChecker extends FunctionChecker
                     }
                 }
 
-                if (is_subclass_of($method_class, $calling_context) && method_exists($calling_context, $method_name)) {
+                if (ClassChecker::classExtends($method_class, $calling_context) && method_exists($calling_context, $method_name)) {
                     return;
                 }
 
-                if (!is_subclass_of($calling_context, $method_class)) {
+                if (!ClassChecker::classExtends($calling_context, $method_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $method_id . ' from context ' . $calling_context,
