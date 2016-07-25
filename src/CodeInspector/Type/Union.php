@@ -84,6 +84,10 @@ class Union extends Type
                 continue;
             }
 
+            if ($parent->hasType('numeric') && $type->isNumericType()) {
+                continue;
+            }
+
             if ($type->value === 'false' && $parent->hasType('bool')) {
                 // this is fine
                 continue;
