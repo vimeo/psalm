@@ -2509,6 +2509,8 @@ class StatementsChecker
             return false;
         }
 
+        $original_context = clone $context;
+
         $case_types = [];
 
         $new_vars_in_scope = null;
@@ -2560,7 +2562,7 @@ class StatementsChecker
                 $switch_vars = $type_candidate_var && !empty($case_types)
                                 ? [$type_candidate_var => Type::parseString(implode('|', $case_types))]
                                 : [];
-                $case_context = clone $context;
+                $case_context = clone $original_context;
 
                 $case_context->vars_in_scope = array_merge($case_context->vars_in_scope, $switch_vars);
                 $case_context->vars_possibly_in_scope = array_merge($case_context->vars_possibly_in_scope, $switch_vars);
@@ -2575,14 +2577,16 @@ class StatementsChecker
                 $has_ending_statments = ScopeChecker::doesReturnOrThrow($case->stmts);
 
                 if ($case_exit_type !== 'return_throw') {
-                    $vars = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
+                    $vars = array_diff_key($case_context->vars_possibly_in_scope, $original_context->vars_possibly_in_scope);
 
                     // if we're leaving this block, add vars to outer for loop scope
                     if ($case_exit_type === 'continue') {
                         $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
                     }
                     else {
-                        $case_redefined_vars = Context::getRedefinedVars($context, $case_context);
+                        $case_redefined_vars = Context::getRedefinedVars($original_context, $case_context);
+
+                        Type::redefineGenericUnionTypes($case_redefined_vars, $context);
 
                         if ($redefined_vars === null) {
                             $redefined_vars = $case_redefined_vars;
@@ -2636,21 +2640,6 @@ class StatementsChecker
 
             if ($redefined_vars) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $redefined_vars);
-            }
-        }
-        elseif ($redefined_vars) {
-            foreach ($redefined_vars as $var_name => $redefined_union_type) {
-                foreach ($redefined_union_type->types as $redefined_atomic_type) {
-                    foreach ($context->vars_in_scope[$var_name]->types as $context_type) {
-                        if ($context_type instanceof Type\Generic &&
-                            $redefined_atomic_type instanceof Type\Generic &&
-                            $context_type->type_params[0]->isEmpty()
-                        ) {
-                            $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
-                        }
-                    }
-
-                }
             }
         }
 
@@ -3037,12 +3026,19 @@ class StatementsChecker
             if (in_array($path_to_file, FileChecker::getIncludesToIgnore())) {
                 $this->_check_classes = false;
                 $this->_check_variables = false;
+
                 return;
             }
 
             if (file_exists($path_to_file)) {
-                $file_checker = new FileChecker($path_to_file, []);
-                $file_checker->check(true, true, $context);
+                if ($this->_source instanceof FileChecker) {
+                    $file_checker = new FileChecker($path_to_file, []);
+                    $file_checker->check(true, true, $context);
+                }
+                else {
+                    $include_stmts = FileChecker::getStatementsForFile($path_to_file);
+                    $this->check($include_stmts, $context);
+                }
 
                 return;
             }
