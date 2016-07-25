@@ -7,7 +7,7 @@ use SimpleXMLElement;
 
 class Config
 {
-    const DEFAULT_FILE_NAME = 'codeinspector.xml';
+    const DEFAULT_FILE_NAME = 'psalm.xml';
     const REPORT_INFO = 'info';
     const REPORT_ERROR = 'error';
     const REPORT_SUPPRESS = 'suppress';
