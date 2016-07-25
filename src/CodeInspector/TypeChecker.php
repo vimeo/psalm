@@ -27,12 +27,25 @@ class TypeChecker
     /**
      * Gets all the type assertions in a conditional that are && together
      * @param  PhpParser\Node\Expr $conditional [description]
-     * @return [type]                           [description]
+     * @return array<string>
      */
     public function getReconcilableTypeAssertions(PhpParser\Node\Expr $conditional)
     {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            return [];
+            $left_assertions = $this->getReconcilableTypeAssertions($conditional->left);
+            $right_assertions = $this->getReconcilableTypeAssertions($conditional->right);
+
+            $keys = array_intersect(array_keys($left_assertions), array_keys($right_assertions));
+
+            $if_types = [];
+
+            foreach ($keys as $key) {
+                if ($left_assertions[$key][0] !== '!' && $right_assertions[$key][0] !== '!') {
+                    $if_types[$key] = $left_assertions[$key] . '|' . $right_assertions[$key];
+                }
+            }
+
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
