@@ -15,6 +15,8 @@ use ReflectionMethod;
 
 class ClassChecker implements StatementsSource
 {
+    protected static $SPECIAL_TYPES = ['int', 'string', 'double', 'float', 'bool', 'false', 'object', 'empty'];
+
     protected $_file_name;
     protected $_class;
     protected $_namespace;
@@ -39,6 +41,7 @@ class ClassChecker implements StatementsSource
     protected static $_this_class = null;
 
     protected static $_existing_classes = [];
+    protected static $_existing_interfaces = [];
     protected static $_class_implements = [];
 
     protected static $_class_methods = [];
@@ -70,7 +73,7 @@ class ClassChecker implements StatementsSource
     public function check($check_statements = true, $method_id = null)
     {
         if ($this->_parent_class) {
-            self::checkAbsoluteClass($this->_parent_class, $this->_file_name, $this->_class->getLine(), $this->getSuppressedIssues());
+            self::checkAbsoluteClassOrInterface($this->_parent_class, $this->_file_name, $this->_class->getLine(), $this->getSuppressedIssues());
 
             $this->_registerInheritedMethods($this->_parent_class);
         }
@@ -219,25 +222,48 @@ class ClassChecker implements StatementsSource
 
         $absolute_class = self::getAbsoluteClassFromName($class_name, $namespace, $aliased_classes);
 
-        return self::checkAbsoluteClass($absolute_class, $file_name, $class_name->getLine(), $suppressed_issues);
+        return self::checkAbsoluteClassOrInterface($absolute_class, $file_name, $class_name->getLine(), $suppressed_issues);
     }
 
-    /**
-     * @param  string $absolute_class
-     * @return bool
-     */
     public static function classExists($absolute_class)
     {
         if (isset(self::$_existing_classes[$absolute_class])) {
             return true;
         }
 
-        if (class_exists($absolute_class, true) || interface_exists($absolute_class, true)) {
+        if (in_array($absolute_class, self::$SPECIAL_TYPES)) {
+            return false;
+        }
+
+        if (class_exists($absolute_class, true)) {
             self::$_existing_classes[$absolute_class] = true;
             return true;
         }
 
         return false;
+    }
+
+    public static function interfaceExists($absolute_class)
+    {
+        if (isset(self::$_existing_interfaces[$absolute_class])) {
+            return true;
+        }
+
+        if (interface_exists($absolute_class, true)) {
+            self::$_existing_interfaces[$absolute_class] = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  string $absolute_class
+     * @return bool
+     */
+    public static function classOrInterfaceExists($absolute_class)
+    {
+        return self::classExists($absolute_class) || self::interfaceExists($absolute_class);
     }
 
     /**
@@ -251,7 +277,7 @@ class ClassChecker implements StatementsSource
             return self::$_class_extends[$absolute_class][$possible_parent];
         }
 
-        if (!self::classExists($absolute_class) || self::classExists($possible_parent)) {
+        if (!self::classExists($absolute_class) || !self::classExists($possible_parent)) {
             return false;
         }
 
@@ -281,7 +307,7 @@ class ClassChecker implements StatementsSource
      * @param  array<string>  $suppressed_issues
      * @return bool|null
      */
-    public static function checkAbsoluteClass($absolute_class, $file_name, $line_number, array $suppressed_issues)
+    public static function checkAbsoluteClassOrInterface($absolute_class, $file_name, $line_number, array $suppressed_issues)
     {
         if (empty($absolute_class)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -289,9 +315,9 @@ class ClassChecker implements StatementsSource
 
         $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
-        if (!self::classExists($absolute_class)) {
+        if (!self::classOrInterfaceExists($absolute_class)) {
             if (IssueBuffer::accepts(
-                new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $line_number),
+                new UndefinedClass('Class or interface ' . $absolute_class . ' does not exist', $file_name, $line_number),
                 $suppressed_issues
             )) {
                 return false;
@@ -300,12 +326,12 @@ class ClassChecker implements StatementsSource
             return;
         }
 
-        if (class_exists($absolute_class, true) && strpos($absolute_class, '\\') === false) {
+        if (strpos($absolute_class, '\\') === false) {
             $reflection_class = new ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
                 if (IssueBuffer::accepts(
-                    new InvalidClass('Class ' . $absolute_class . ' has wrong casing', $file_name, $line_number),
+                    new InvalidClass('Class or interface ' . $absolute_class . ' has wrong casing', $file_name, $line_number),
                     $suppressed_issues
                 )) {
                     return false;
@@ -429,7 +455,9 @@ class ClassChecker implements StatementsSource
             return false;
         }
 
-        if (in_array($interface, ['int', 'string', 'double', 'float', 'bool', 'false'])) {
+        if (in_array($absolute_class, self::$SPECIAL_TYPES) ||
+            in_array($interface, self::$SPECIAL_TYPES)
+        ) {
             return false;
         }
 

@@ -80,7 +80,7 @@ class Union extends Type
     public function isIn(Union $parent)
     {
         foreach ($this->types as $type) {
-            if ($parent->hasType('object') && ClassChecker::classExists($type->value)) {
+            if ($parent->hasType('object') && ClassChecker::classOrInterfaceExists($type->value)) {
                 continue;
             }
 

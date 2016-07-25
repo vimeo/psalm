@@ -1382,7 +1382,7 @@ class StatementsChecker
                             }
 
                             if ($return_type->value !== 'array' && $return_type->value !== 'Traversable' && $return_type->value !== $this->_class_name) {
-                                if (ClassChecker::checkAbsoluteClass($return_type->value, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                                if (ClassChecker::checkAbsoluteClassOrInterface($return_type->value, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
                                     return false;
                                 }
                             }
@@ -1915,7 +1915,7 @@ class StatementsChecker
 
                     default:
                         if ($absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
-                            $does_class_exist = ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues);
+                            $does_class_exist = ClassChecker::checkAbsoluteClassOrInterface($absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues);
 
                             if (!$does_class_exist) {
                                 return $does_class_exist;
@@ -2338,7 +2338,7 @@ class StatementsChecker
                 $absolute_class = $this->_absolute_class;
             } else {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                if (ClassChecker::checkAbsoluteClass($absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                if (ClassChecker::checkAbsoluteClassOrInterface($absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
                     return false;
                 }
             }
@@ -2752,7 +2752,7 @@ class StatementsChecker
                 }
 
                 if ($input_type_part->value === $param_type_part->value ||
-                    ClassChecker::classExtends($input_type_part->value, $param_type_part->value) ||
+                    ClassChecker::classExtendsOrImplements($input_type_part->value, $param_type_part->value) ||
                     self::isMock($input_type_part->value)
                 ) {
                     $type_match_found = true;
@@ -2785,8 +2785,7 @@ class StatementsChecker
                     $type_match_found = true;
                 }
 
-
-                if (ClassChecker::classExtends($param_type_part->value, $input_type_part->value)) {
+                if (ClassChecker::classExtendsOrImplements($param_type_part->value, $input_type_part->value)) {
                     // @todo handle coercion
                     $type_match_found = true;
                     break;
