@@ -13,6 +13,12 @@ class ProjectChecker
      */
     protected static $config;
 
+    /**
+     * Whether or not to use colors in error output
+     * @var boolean
+     */
+    public static $use_color = true;
+
     public static function check($debug = false)
     {
         if (!self::$config) {

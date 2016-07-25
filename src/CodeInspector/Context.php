@@ -26,12 +26,12 @@ class Context
      * @param  bool    $has_leaving_statements   whether or not the parent scope is abandoned between $start_context and $end_context
      * @return void
      */
-    public function update(Context $start_context, Context $end_context, $has_leaving_statments, array &$updated_vars)
+    public function update(Context $start_context, Context $end_context, $has_leaving_statements, array &$updated_vars)
     {
         foreach ($this->vars_in_scope as $var => &$context_type) {
             $old_type = $start_context->vars_in_scope[$var];
             // if we're leaving, we're effectively deleting the possibility of the if types
-            $new_type = !$has_leaving_statments ? $end_context->vars_in_scope[$var] : null;
+            $new_type = !$has_leaving_statements ? $end_context->vars_in_scope[$var] : null;
 
             // this is only true if there was some sort of type negation
             if ((string)$context_type !== (string)$old_type) {

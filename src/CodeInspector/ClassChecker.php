@@ -137,7 +137,7 @@ class ClassChecker implements StatementsSource
                         $comment = $stmt->getDocComment();
                         $type_in_comment = null;
                         if ($comment && $config->use_docblock_types) {
-                            $type_in_comment = CommentChecker::getTypeFromComment($comment, null, $this);
+                            $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
                         }
 
                         $property_type = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
@@ -213,7 +213,7 @@ class ClassChecker implements StatementsSource
     }
 
     /**
-     * @return bool
+     * @return bool|null
      */
     public static function checkClassName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes, $file_name, array $suppressed_issues)
     {

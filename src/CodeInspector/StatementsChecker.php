@@ -280,7 +280,7 @@ class StatementsChecker
         $if_context = clone $context;
 
         // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
-        $original_context = ($stmt->elseifs || $stmt->else) ? clone $context : null;
+        $original_context = clone $context;
 
         if ($this->_checkCondition($stmt->cond, $if_context) === false) {
             return false;
@@ -514,6 +514,7 @@ class StatementsChecker
 
                 // if it doesn't end in a return
                 if (!$has_leaving_statements) {
+                    /** @var Context $original_context */
                     $else_redefined_vars = Context::getRedefinedVars($original_context, $else_context);
 
                     if ($redefined_vars === null) {
@@ -850,53 +851,7 @@ class StatementsChecker
             // do nothing
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
-            if ($this->_checkExpression($stmt->expr, $context) === false) {
-                return false;
-            }
-
-            $path_to_file = null;
-
-            if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
-                $path_to_file = $stmt->expr->value;
-
-                // attempts to resolve using get_include_path dirs
-                $include_path = self::_resolveIncludePath($path_to_file, dirname($this->_file_name));
-                $path_to_file = $include_path ? $include_path : $path_to_file;
-
-                if ($path_to_file[0] !== '/') {
-                    $path_to_file = getcwd() . '/' . $path_to_file;
-                }
-            }
-            else {
-                $path_to_file = self::_getPathTo($stmt->expr, $this->_file_name);
-            }
-
-            if ($path_to_file) {
-                $reduce_pattern = '/\/[^\/]+\/\.\.\//';
-
-                while (preg_match($reduce_pattern, $path_to_file)) {
-                    $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file);
-                }
-
-                // if the file is already included, we can't check much more
-                if (in_array($path_to_file, get_included_files())) {
-                    return;
-                }
-
-                if (in_array($path_to_file, FileChecker::getIncludesToIgnore())) {
-                    return;
-                }
-
-                if (file_exists($path_to_file)) {
-                    $file_checker = new FileChecker($path_to_file, []);
-                    $file_checker->check(true, true, $context);
-
-                    return;
-                }
-            }
-
-            $this->_check_classes = false;
-            $this->_check_variables = false;
+            $this->_checkInclude($stmt, $context);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Eval_) {
             $this->_check_classes = false;
@@ -1399,7 +1354,7 @@ class StatementsChecker
             $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
         }
 
-        CommentChecker::getTypeFromComment($stmt->getDocComment(), $foreach_context, $this->_source, null);
+        CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $foreach_context, $this->_source, null);
 
         $this->check($stmt->stmts, $foreach_context, $foreach_context->vars_possibly_in_scope);
 
@@ -1591,7 +1546,7 @@ class StatementsChecker
             return false;
         }
 
-        $type_in_comments = CommentChecker::getTypeFromComment($stmt->getDocComment(), $context, $this->_source, $var_id);
+        $type_in_comments = CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $context, $this->_source, $var_id);
 
         if ($type_in_comments) {
             $return_type = Type::parseString($type_in_comments);
@@ -2412,7 +2367,7 @@ class StatementsChecker
 
     protected function _checkReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
     {
-        $type_in_comments = CommentChecker::getTypeFromComment($stmt->getDocComment(), $context, $this->_source);
+        $type_in_comments = CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $context, $this->_source);
 
         if ($stmt->expr) {
             if ($this->_checkExpression($stmt->expr, $context) === false) {
@@ -2502,7 +2457,7 @@ class StatementsChecker
         }
         elseif ($stmt->cond) {
             if (isset($stmt->cond->inferredType)) {
-                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, $this->_file_name, $stmt->getLine());
+                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, '', $this->_file_name, $stmt->getLine());
 
                 if ($if_return_type_reconciled === false) {
                     return false;
@@ -3042,6 +2997,59 @@ class StatementsChecker
         }
 
         return isset(self::$_existing_static_vars[$var_id]);
+    }
+
+    protected function _checkInclude(PhpParser\Node\Expr\Include_ $stmt, Context $context)
+    {
+        if ($this->_checkExpression($stmt->expr, $context) === false) {
+            return false;
+        }
+
+        $path_to_file = null;
+
+        if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
+            $path_to_file = $stmt->expr->value;
+
+            // attempts to resolve using get_include_path dirs
+            $include_path = self::_resolveIncludePath($path_to_file, dirname($this->_file_name));
+            $path_to_file = $include_path ? $include_path : $path_to_file;
+
+            if ($path_to_file[0] !== '/') {
+                $path_to_file = getcwd() . '/' . $path_to_file;
+            }
+        }
+        else {
+            $path_to_file = self::_getPathTo($stmt->expr, $this->_file_name);
+        }
+
+        if ($path_to_file) {
+            $reduce_pattern = '/\/[^\/]+\/\.\.\//';
+
+            while (preg_match($reduce_pattern, $path_to_file)) {
+                $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file);
+            }
+
+            // if the file is already included, we can't check much more
+            if (in_array($path_to_file, get_included_files())) {
+                return;
+            }
+
+            if (in_array($path_to_file, FileChecker::getIncludesToIgnore())) {
+                $this->_check_classes = false;
+                $this->_check_variables = false;
+                return;
+            }
+
+            if (file_exists($path_to_file)) {
+                $file_checker = new FileChecker($path_to_file, []);
+                $file_checker->check(true, true, $context);
+
+                return;
+            }
+
+            $this->_check_classes = false;
+            $this->_check_variables = false;
+        }
     }
 
     /**

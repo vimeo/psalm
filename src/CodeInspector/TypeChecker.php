@@ -104,7 +104,7 @@ class TypeChecker
     /**
      * Gets all the type assertions in a conditional
      *
-     * @param  PhpParser\Node\Expr $stmt
+     * @param  PhpParser\Node\Expr $conditional
      * @return array
      */
     public function getTypeAssertions(PhpParser\Node\Expr $conditional)
@@ -258,6 +258,10 @@ class TypeChecker
                 $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
                 $if_types[$var_name] = '!array';
             }
+            else if (self::_hasObjectCheck($conditional->expr)) {
+                $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                $if_types[$var_name] = '!object';
+            }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
                 foreach ($conditional->expr->vars as $isset_var) {
                     $var_name = StatementsChecker::getVarId($isset_var);
@@ -369,6 +373,10 @@ class TypeChecker
             $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
             $if_types[$var_name] = 'array';
         }
+        else if (self::_hasObjectCheck($conditional)) {
+            $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+            $if_types[$var_name] = 'object';
+        }
         else if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
             $var_name = StatementsChecker::getVarId($conditional->expr);
             if ($var_name) {
@@ -475,6 +483,18 @@ class TypeChecker
     }
 
     /**
+     * @return bool
+     */
+    protected static function _hasObjectCheck(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_object']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
      * @param  array  $new_types
@@ -526,7 +546,7 @@ class TypeChecker
      * notEmpty(Object|false) => Object
      *
      * @param  string       $new_var_type
-     * @param  Type\Union   $existing_var_types
+     * @param  Type\Union   $existing_var_type
      * @param  string       $key
      * @param  string       $file_name
      * @param  int          $line_number
