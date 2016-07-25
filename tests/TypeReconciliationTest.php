@@ -1,9 +1,9 @@
 <?php
 
-namespace CodeInspector\Tests;
+namespace Psalm\Tests;
 
-use CodeInspector\Type;
-use CodeInspector\TypeChecker;
+use Psalm\Type;
+use Psalm\TypeChecker;
 use PHPUnit_Framework_TestCase;
 
 class TypeReconciliationTest extends PHPUnit_Framework_TestCase
@@ -108,7 +108,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
         $reconciled = TypeChecker::reconcileTypes('empty', Type::parseString('bool'));
         $this->assertEquals('false', (string) $reconciled);
-        $this->assertInstanceOf('CodeInspector\Type\Atomic', $reconciled->types['false']);
+        $this->assertInstanceOf('Psalm\Type\Atomic', $reconciled->types['false']);
     }
 
     public function testNotMyObject()

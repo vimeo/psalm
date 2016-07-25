@@ -1,8 +1,8 @@
 <?php
 
-namespace CodeInspector\Tests;
+namespace Psalm\Tests;
 
-use CodeInspector\Type;
+use Psalm\Type;
 use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
@@ -151,7 +151,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
             $var[] = new B();
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

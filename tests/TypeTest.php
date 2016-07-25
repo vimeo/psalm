@@ -1,8 +1,8 @@
 <?php
 
-namespace CodeInspector\Tests;
+namespace Psalm\Tests;
 
-use CodeInspector\Type;
+use Psalm\Type;
 
 use PhpParser;
 use PhpParser\ParserFactory;
@@ -16,17 +16,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \CodeInspector\Config::getInstance();
+        $config = \Psalm\Config::getInstance();
         $config->throw_exception = true;
     }
 
     public function setUp()
     {
-        \CodeInspector\ClassMethodChecker::clearCache();
+        \Psalm\ClassMethodChecker::clearCache();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodCall()
     {
@@ -41,7 +41,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -58,7 +58,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -75,7 +75,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -92,7 +92,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -109,7 +109,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -128,12 +128,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodCallWithThis()
     {
@@ -149,7 +149,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -167,7 +167,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -185,7 +185,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -206,12 +206,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongIfGuard()
     {
@@ -232,7 +232,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -253,7 +253,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -277,12 +277,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuard()
     {
@@ -303,7 +303,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -326,7 +326,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -349,7 +349,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -372,7 +372,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -402,12 +402,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongIfGuardBefore()
     {
@@ -430,7 +430,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -455,12 +455,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuardBefore()
     {
@@ -483,7 +483,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -504,7 +504,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -528,12 +528,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testMethodWithMeaninglessCheck()
     {
@@ -552,12 +552,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedNestedIncompleteRedefinition()
     {
@@ -584,7 +584,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -616,7 +616,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -647,12 +647,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionNoDefault()
     {
@@ -677,12 +677,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionEmptyDefault()
     {
@@ -710,7 +710,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -740,7 +740,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -769,7 +769,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -798,7 +798,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -827,12 +827,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn()
     {
@@ -862,7 +862,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -894,7 +894,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -921,7 +921,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -944,7 +944,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -963,7 +963,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -982,7 +982,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1005,7 +1005,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1030,12 +1030,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testVariableReassignmentInIfWithOutsideCall()
     {
@@ -1060,7 +1060,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1095,7 +1095,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1122,12 +1122,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testUnNegatableInstanceof()
     {
@@ -1155,7 +1155,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1171,7 +1171,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1193,7 +1193,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1216,7 +1216,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1243,12 +1243,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testWrongParam()
     {
@@ -1263,7 +1263,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(5);
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1280,7 +1280,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(new A);
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1297,12 +1297,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(null);
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testIntToNullableObjectParam()
     {
@@ -1317,7 +1317,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(5);
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1334,12 +1334,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(new A);
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      */
     public function testParamCoercionWithBadArg()
     {
@@ -1358,7 +1358,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1379,7 +1379,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1406,7 +1406,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<codeinspector
+    name="CodeInspection for Vimeo"
+    stopOnFirstError="true"
+    useDocblockTypes="true"
+>
+    <inspectFiles>
+        <directory name="src" />
+    </inspectFiles>
+
+    <issueHandler>
+        <ForbiddenCode>
+            <excludeFiles>
+                <file name="src/CodeInspector/StatementsChecker.php" />
+            </excludeFiles>
+        </ForbiddenCode>
+    </issueHandler>
+
+</codeinspector>

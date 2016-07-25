@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInspector\Tests;
+namespace Psalm\Tests;
 
 use PhpParser;
 use PhpParser\ParserFactory;
@@ -14,14 +14,14 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
     {
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \CodeInspector\Config::getInstance();
+        $config = \Psalm\Config::getInstance();
         $config->throw_exception = true;
         $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
-        \CodeInspector\ClassMethodChecker::clearCache();
+        \Psalm\ClassMethodChecker::clearCache();
     }
 
     public function testGenericArrayCreation()
@@ -42,7 +42,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -64,7 +64,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -97,7 +97,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -119,7 +119,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -146,7 +146,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -174,7 +174,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -205,7 +205,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

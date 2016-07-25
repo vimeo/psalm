@@ -15,12 +15,12 @@
     },
     "autoload": {
         "psr-4": {
-            "CodeInspector\\": "src/CodeInspector"
+            "Psalm\\": "src/Psalm"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "CodeInspector\\Tests": "tests"
+            "Psalm\\Tests": "tests"
         }
     }
 }

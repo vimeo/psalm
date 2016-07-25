@@ -1,8 +1,8 @@
 <?php
 
-namespace CodeInspector\Tests;
+namespace Psalm\Tests;
 
-use CodeInspector\Type;
+use Psalm\Type;
 
 use PhpParser;
 use PhpParser\ParserFactory;
@@ -17,10 +17,10 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \CodeInspector\Config::getInstance();
+        $config = \Psalm\Config::getInstance();
         $config->throw_exception = true;
 
-        $filter = new \CodeInspector\Config\FileFilter();
+        $filter = new \Psalm\Config\FileFilter();
         $filter->addExcludeFile('somefile.php');
         $filter->makeExclusive();
 
@@ -29,8 +29,8 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \CodeInspector\ClassMethodChecker::clearCache();
-        \CodeInspector\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
+        \Psalm\ClassMethodChecker::clearCache();
+        \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 
     public function testNewVarInIf()
@@ -46,7 +46,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $badge;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -63,12 +63,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $badge;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
      */
     public function testPossiblyUndefinedArrayInIf()
@@ -81,12 +81,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
      */
     public function testPossiblyUndefinedArrayInForeach()
@@ -99,12 +99,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable $array, first seen on line 4
      */
     public function testPossiblyUndefinedArrayInWhileAndForeach()
@@ -119,14 +119,14 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        \CodeInspector\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
+        \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $car, first seen on line 3
      */
     public function testPossiblyUndefinedVariableInForeach()
@@ -139,7 +139,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $car;
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -165,7 +165,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -184,7 +184,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[1]->cond;
@@ -207,7 +207,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[2]->cond;
@@ -230,7 +230,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[2]->cond;
@@ -256,7 +256,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -268,7 +268,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -281,12 +281,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException CodeInspector\Exception\CodeException
+     * @expectedException Psalm\Exception\CodeException
      * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, first seen on line 4
      */
     public function testPossiblyUndefinedVariableInForeachAndIf()
@@ -302,9 +302,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $a;
         ');
 
-        \CodeInspector\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
+        \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
 
-        $file_checker = new \CodeInspector\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }
