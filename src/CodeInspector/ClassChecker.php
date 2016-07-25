@@ -460,9 +460,11 @@ class ClassChecker implements StatementsSource
             return false;
         }
 
-        if (in_array($absolute_class, self::$SPECIAL_TYPES) ||
-            in_array($interface, self::$SPECIAL_TYPES)
-        ) {
+        if (!ClassChecker::classExists($absolute_class)) {
+            return false;
+        }
+
+        if (in_array($interface, self::$SPECIAL_TYPES)) {
             return false;
         }
 
