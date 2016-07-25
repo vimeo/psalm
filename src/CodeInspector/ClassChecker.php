@@ -251,6 +251,10 @@ class ClassChecker implements StatementsSource
             return self::$_class_extends[$absolute_class][$possible_parent];
         }
 
+        if (!self::classExists($absolute_class) || self::classExists($possible_parent)) {
+            return false;
+        }
+
         if (!isset(self::$_class_extends[$absolute_class])) {
             self::$_class_extends[$absolute_class] = [];
         }
@@ -422,6 +426,10 @@ class ClassChecker implements StatementsSource
         }
 
         if (isset(self::$_class_implements[$absolute_class])) {
+            return false;
+        }
+
+        if (in_array($interface, ['int', 'string', 'double', 'float', 'bool', 'false'])) {
             return false;
         }
 
