@@ -15,7 +15,7 @@ use ReflectionMethod;
 
 class ClassChecker implements StatementsSource
 {
-    protected static $SPECIAL_TYPES = ['int', 'string', 'double', 'float', 'bool', 'false', 'object', 'empty'];
+    protected static $SPECIAL_TYPES = ['int', 'string', 'double', 'float', 'bool', 'false', 'object', 'empty', 'callable', 'array'];
 
     protected $_file_name;
     protected $_class;
@@ -41,6 +41,7 @@ class ClassChecker implements StatementsSource
     protected static $_this_class = null;
 
     protected static $_existing_classes = [];
+    protected static $_existing_classes_ci = [];
     protected static $_existing_interfaces = [];
     protected static $_class_implements = [];
 
@@ -227,6 +228,10 @@ class ClassChecker implements StatementsSource
 
     public static function classExists($absolute_class)
     {
+        if (isset(self::$_existing_classes_ci[$absolute_class])) {
+            return true;
+        }
+
         if (isset(self::$_existing_classes[$absolute_class])) {
             return true;
         }
@@ -236,7 +241,7 @@ class ClassChecker implements StatementsSource
         }
 
         if (class_exists($absolute_class, true)) {
-            self::$_existing_classes[$absolute_class] = true;
+            self::$_existing_classes_ci[$absolute_class] = true;
             return true;
         }
 
@@ -326,7 +331,7 @@ class ClassChecker implements StatementsSource
             return;
         }
 
-        if (strpos($absolute_class, '\\') === false) {
+        if (!isset(self::$_existing_classes[$absolute_class]) && strpos($absolute_class, '\\') === false) {
             $reflection_class = new ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
