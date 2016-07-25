@@ -39,12 +39,14 @@ class ClassChecker implements StatementsSource
     protected static $_this_class = null;
 
     protected static $_existing_classes = [];
-    protected static $_implementing_classes = [];
+    protected static $_class_implements = [];
 
     protected static $_class_methods = [];
     protected static $_class_checkers = [];
 
     protected static $_class_properties = [];
+
+    protected static $_class_extends = [];
 
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
@@ -221,7 +223,59 @@ class ClassChecker implements StatementsSource
     }
 
     /**
-     * @return false|null
+     * @param  string $absolute_class
+     * @return bool
+     */
+    public static function classExists($absolute_class)
+    {
+        if (isset(self::$_existing_classes[$absolute_class])) {
+            return true;
+        }
+
+        if (class_exists($absolute_class, true) || interface_exists($absolute_class, true)) {
+            self::$_existing_classes[$absolute_class] = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  string $absolute_class
+     * @param  string $possible_parent
+     * @return bool
+     */
+    public static function classExtends($absolute_class, $possible_parent)
+    {
+        if (isset(self::$_class_extends[$absolute_class][$possible_parent])) {
+            return self::$_class_extends[$absolute_class][$possible_parent];
+        }
+
+        if (!isset(self::$_class_extends[$absolute_class])) {
+            self::$_class_extends[$absolute_class] = [];
+        }
+
+        self::$_class_extends[$absolute_class][$possible_parent] = is_subclass_of($absolute_class, $possible_parent);
+
+        return self::$_class_extends[$absolute_class][$possible_parent];
+    }
+
+    /**
+     * @param  string $absolute_class
+     * @param  string $possible_parent
+     * @return bool
+     */
+    public static function classExtendsOrImplements($absolute_class, $possible_parent)
+    {
+        return self::classExtends($absolute_class, $possible_parent) || self::classImplements($absolute_class, $possible_parent);
+    }
+
+    /**
+     * @param  string $absolute_class
+     * @param  string $file_name
+     * @param  int $line_number
+     * @param  array<string>  $suppressed_issues
+     * @return bool|null
      */
     public static function checkAbsoluteClass($absolute_class, $file_name, $line_number, array $suppressed_issues)
     {
@@ -231,11 +285,7 @@ class ClassChecker implements StatementsSource
 
         $absolute_class = preg_replace('/^\\\/', '', $absolute_class);
 
-        if (isset(self::$_existing_classes[$absolute_class])) {
-            return true;
-        }
-
-        if (!class_exists($absolute_class, true) && !interface_exists($absolute_class, true)) {
+        if (!self::classExists($absolute_class)) {
             if (IssueBuffer::accepts(
                 new UndefinedClass('Class ' . $absolute_class . ' does not exist', $file_name, $line_number),
                 $suppressed_issues
@@ -367,11 +417,11 @@ class ClassChecker implements StatementsSource
      */
     public static function classImplements($absolute_class, $interface)
     {
-        if (isset(self::$_implementing_classes[$absolute_class][$interface])) {
+        if (isset(self::$_class_implements[$absolute_class][$interface])) {
             return true;
         }
 
-        if (isset(self::$_implementing_classes[$absolute_class])) {
+        if (isset(self::$_class_implements[$absolute_class])) {
             return false;
         }
 
@@ -381,7 +431,7 @@ class ClassChecker implements StatementsSource
             return false;
         }
 
-        self::$_implementing_classes[$absolute_class] = $class_implementations;
+        self::$_class_implements[$absolute_class] = $class_implementations;
 
         return true;
     }
@@ -435,7 +485,7 @@ class ClassChecker implements StatementsSource
         self::$_this_class = null;
 
         self::$_existing_classes = [];
-        self::$_implementing_classes = [];
+        self::$_class_implements = [];
 
         self::$_class_methods = [];
         self::$_class_checkers = [];
