@@ -13,6 +13,7 @@
         "php": ">=5.4",
         "nikic/PHP-Parser": "2.1.0"
     },
+    "bin": ["bin/psalm"],
     "autoload": {
         "psr-4": {
             "Psalm\\": "src/Psalm"
