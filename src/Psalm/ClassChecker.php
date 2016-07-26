@@ -74,7 +74,15 @@ class ClassChecker implements StatementsSource
     public function check($check_statements = true, $method_id = null)
     {
         if ($this->_parent_class) {
-            self::checkAbsoluteClassOrInterface($this->_parent_class, $this->_file_name, $this->_class->getLine(), $this->getSuppressedIssues());
+            if (self::checkAbsoluteClassOrInterface(
+                    $this->_parent_class,
+                    $this->_file_name,
+                    $this->_class->getLine(),
+                    $this->getSuppressedIssues()
+                ) === false
+            ) {
+                return false;
+            }
 
             $this->_registerInheritedMethods($this->_parent_class);
         }
