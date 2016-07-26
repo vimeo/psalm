@@ -90,7 +90,9 @@ class ProjectChecker
             self::$config = self::getConfigForPath($file_name);
         }
 
-        $extension = array_pop(explode('.', $file_name));
+        $file_name_parts = explode('.', $file_name);
+
+        $extension = array_pop($file_name_parts);
 
         $filetype_handlers = self::$config->getFiletypeHandlers();
 
@@ -129,6 +131,7 @@ class ProjectChecker
 
             if (file_exists($maybe_path)) {
                 $config = \Psalm\Config::loadFromXML($maybe_path);
+                require_once($dir_path . $config->autoloader);
                 break;
             }
 
@@ -149,6 +152,10 @@ class ProjectChecker
             throw new Exception\ConfigException('Config not found at location ' . $path_to_config);
         }
 
+        $dir_path = dirname($path_to_config) . '/';
+
         self::$config = \Psalm\Config::loadFromXML($path_to_config);
+
+        require_once($dir_path . self::$config->autoloader);
     }
 }

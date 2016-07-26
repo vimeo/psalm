@@ -38,6 +38,12 @@ class Config
      */
     public $throw_exception = false;
 
+    /**
+     * Path to the autoader
+     * @var string|null
+     */
+    public $autoloader;
+
     protected $inspect_files;
 
     protected $base_dir;
@@ -91,6 +97,10 @@ class Config
         if (isset($config_xml['throwExceptionOnError'])) {
             $attribute_text = (string) $config_xml['throwExceptionOnError'];
             $config->throw_exception = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['autoloader'])) {
+            $config->autoloader = (string) $config_xml['autoloader'];
         }
 
         if (isset($config_xml->inspectFiles)) {

@@ -10,7 +10,8 @@ class IssueBuffer
     {
         $config = Config::getInstance();
 
-        $issue_type = array_pop(explode('\\', get_class($e)));
+        $fqcn_parts = explode('\\', get_class($e));
+        $issue_type = array_pop($fqcn_parts);
 
         if (in_array($issue_type, $suppressed_issues)) {
             return false;
@@ -29,11 +30,10 @@ class IssueBuffer
     {
         $config = Config::getInstance();
 
-        $error_class_name = array_pop(explode('\\', get_class($e)));
+        $fqcn_parts = explode('\\', get_class($e));
+        $issue_type = array_pop($fqcn_parts);
 
-        $error_message = $error_class_name . ' - ' . $e->getMessage();
-
-        $issue_type = array_pop(explode('\\', get_class($e)));
+        $error_message = $issue_type . ' - ' . $e->getMessage();
 
         $reporting_level = $config->getReportingLevel($issue_type);
 
