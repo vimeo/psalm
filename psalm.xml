@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <codeinspector
-    name="CodeInspection for Vimeo"
+    name="CodeInspection for Psalm"
     stopOnFirstError="true"
     useDocblockTypes="true"
 >
