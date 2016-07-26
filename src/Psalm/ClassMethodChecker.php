@@ -171,6 +171,10 @@ class ClassMethodChecker extends FunctionChecker
         }
 
         foreach ($declared_type->types as $key => $declared_atomic_type) {
+            if (!isset($inferred_type->types[$key])) {
+                continue;
+            }
+
             $inferred_atomic_type = $inferred_type->types[$key];
 
             if (!($declared_atomic_type instanceof Type\Generic)) {
@@ -317,7 +321,7 @@ class ClassMethodChecker extends FunctionChecker
                 foreach ($docblock_info['params'] as $docblock_param) {
                     $docblock_param_name = $docblock_param['name'];
 
-                    if (isset($method_param_names[$param_name])) {
+                    if (isset($method_param_names[$docblock_param_name])) {
                         foreach (self::$_method_params[$method_id] as &$param_info) {
                             if ($param_info['name'] === $docblock_param_name) {
                                 $docblock_param_type_string = $docblock_param['type'];
