@@ -131,7 +131,11 @@ class ProjectChecker
 
             if (file_exists($maybe_path)) {
                 $config = \Psalm\Config::loadFromXML($maybe_path);
-                require_once($dir_path . $config->autoloader);
+
+                if ($config->autoloader) {
+                    require_once($dir_path . $config->autoloader);
+                }
+
                 break;
             }
 
@@ -156,6 +160,8 @@ class ProjectChecker
 
         self::$config = \Psalm\Config::loadFromXML($path_to_config);
 
-        require_once($dir_path . self::$config->autoloader);
+        if (self::$config->autoloader) {
+            require_once($dir_path . self::$config->autoloader);
+        }
     }
 }
