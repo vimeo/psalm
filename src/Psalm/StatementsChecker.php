@@ -24,6 +24,8 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Issue\UndefinedProperty;
 use Psalm\Issue\UndefinedVariable;
+use Psalm\Issue\TooFewArguments;
+use Psalm\Issue\TooManyArguments;
 
 class StatementsChecker
 {
@@ -1141,10 +1143,12 @@ class StatementsChecker
         }
 
         if ($absolute_class) {
-            $method_id = $absolute_class . '::__construct';
+            if (method_exists($absolute_class, '__construct')) {
+                $method_id = $absolute_class . '::__construct';
 
-            if ($this->_checkMethodParams($stmt->args, $method_id, $context) === false) {
-                return false;
+                if ($this->_checkMethodParams($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
+                    return false;
+                }
             }
         }
     }
@@ -1204,7 +1208,7 @@ class StatementsChecker
 
             $this->check($catch->stmts, $catch_context);
 
-            if (!ScopeChecker::doesReturnOrThrow($catch->stmts, false, false)) {
+            if (!ScopeChecker::doesReturnOrThrow($catch->stmts)) {
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {
                     if ($catch->var !== $catch_var && isset($context->vars_in_scope[$catch_var]) && (string) $context->vars_in_scope[$catch_var] !== (string) $type) {
                         $context->vars_in_scope[$catch_var] = Type::combineUnionTypes($context->vars_in_scope[$catch_var], $type);
@@ -1925,7 +1929,7 @@ class StatementsChecker
             }
         }
 
-        if ($this->_checkMethodParams($stmt->args, $method_id, $context) === false) {
+        if ($this->_checkMethodParams($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
             return false;
         }
     }
@@ -1977,8 +1981,7 @@ class StatementsChecker
                 if (!isset($context->vars_possibly_in_scope[$use->var])) {
                     if ($this->_check_variables) {
                         IssueBuffer::add(
-                            new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine()),
-                            $this->_suppressed_issues
+                            new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->_file_name, $use->getLine())
                         );
 
                         return false;
@@ -2119,7 +2122,7 @@ class StatementsChecker
             }
         }
 
-        return $this->_checkMethodParams($stmt->args, $method_id, $context);
+        return $this->_checkMethodParams($stmt->args, $method_id, $context, $stmt->getLine());
     }
 
     public static function fleshOutReturnTypes(Type\Union $return_type, array $args, $method_id)
@@ -2202,7 +2205,7 @@ class StatementsChecker
         return $original_call === $call || strpos($call, '$') !== false ? null : $call;
     }
 
-    protected function _checkMethodParams(array $args, $method_id, Context $context)
+    protected function _checkMethodParams(array $args, $method_id, Context $context, $line_number)
     {
         foreach ($args as $i => $arg) {
             if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch &&
@@ -2261,6 +2264,38 @@ class StatementsChecker
             if ($method_id && isset($arg->value->inferredType)) {
                 if ($this->_checkFunctionArgumentType($arg->value->inferredType, $method_id, $i, $this->_file_name, $arg->value->getLine()) === false) {
                     return false;
+                }
+            }
+        }
+
+        if ($method_id) {
+            $method_params = ClassMethodChecker::getMethodParams($method_id);
+
+            if (count($args) > count($method_params)) {
+                if (IssueBuffer::accepts(
+                    new TooManyArguments('Too many arguments for method ' . $method_id, $this->_file_name, $line_number),
+                    $this->_suppressed_issues
+                )) {
+                    return false;
+                }
+
+                return;
+            }
+
+            if (count($args) < count($method_params)) {
+                for ($i = count($args); $i < count($method_params); $i++) {
+                    $param = $method_params[$i];
+
+                    if (!$param['is_optional']) {
+                        if (IssueBuffer::accepts(
+                            new TooFewArguments('Too few arguments for method ' . $method_id, $this->_file_name, $line_number),
+                            $this->_suppressed_issues
+                        )) {
+                            return false;
+                        }
+
+                        break;
+                    }
                 }
             }
         }

@@ -8,7 +8,7 @@ class CommentChecker
 
     /**
      * @param  string           $comment
-     * @param  Context          $context
+     * @param  Context|null     $context
      * @param  StatementsSource $source
      * @param  string           $var_id
      * @return Type\Union|null

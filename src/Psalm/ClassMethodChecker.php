@@ -271,6 +271,8 @@ class ClassMethodChecker extends FunctionChecker
 
             $is_nullable = false;
 
+            $is_optional = $param->isOptional();
+
             try {
                 $is_nullable = $param->getDefaultValue() === null;
 
@@ -292,7 +294,8 @@ class ClassMethodChecker extends FunctionChecker
                 'name' => $param_name,
                 'by_ref' => $param->isPassedByReference(),
                 'type' => $param_type,
-                'is_nullable' => $is_nullable
+                'is_nullable' => $is_nullable,
+                'is_optional' => $is_optional,
             ];
         }
 
@@ -460,12 +463,15 @@ class ClassMethodChecker extends FunctionChecker
                 }
             }
 
+            $is_optional = $param->default !== null;
+
             $method_param_names[$param->name] = $param_type;
 
             self::$_method_params[$method_id][] = [
                 'name' => $param->name,
                 'by_ref' => $param->byRef,
                 'type' => $param_type ?: Type::getMixed(),
+                'is_optional' => $is_optional,
             ];
 
         }
