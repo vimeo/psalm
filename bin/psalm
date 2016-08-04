@@ -19,13 +19,16 @@ ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '2048M');
 
 // get options from command line
-$options = getopt('f:m:', ['debug', 'config:', 'monochrome']);
+$options = getopt('f:m:', ['debug', 'config:', 'monochrome', 'show-info:']);
 
 // get vars from options
 $debug = array_key_exists('debug', $options);
 $path_to_check = isset($options['f']) ? realpath($options['f']) : null;
 $path_to_config = isset($options['config']) ? realpath($options['config']) : null;
 $use_color = !array_key_exists('monochrome', $options);
+$show_info = isset($options['show-info'])
+            ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
+            : true;
 
 // set the cache directory for the file checker
 FileChecker::setCacheDir('/var/tmp/php-parser');
@@ -36,6 +39,7 @@ if ($path_to_config) {
 }
 
 ProjectChecker::$use_color = $use_color;
+ProjectChecker::$show_info = $show_info;
 
 $time = microtime(true);
 

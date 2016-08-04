@@ -37,9 +37,12 @@ class IssueBuffer
 
         $reporting_level = $config->getReportingLevel($issue_type);
 
+
         switch ($reporting_level) {
             case Config::REPORT_INFO:
-                echo 'INFO: ' . $error_message . PHP_EOL;
+                if (ProjectChecker::$show_info) {
+                    echo 'INFO: ' . $error_message . PHP_EOL;
+                }
                 return false;
 
             case Config::REPORT_SUPPRESS:

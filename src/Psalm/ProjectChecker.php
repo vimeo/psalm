@@ -19,6 +19,12 @@ class ProjectChecker
      */
     public static $use_color = true;
 
+    /**
+     * Whether or not to show informational messages
+     * @var boolean
+     */
+    public static $show_info = true;
+
     public static function check($debug = false)
     {
         if (!self::$config) {
