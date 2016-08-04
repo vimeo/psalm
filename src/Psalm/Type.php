@@ -11,7 +11,7 @@ abstract class Type
 {
     /**
      * Parses a string type representation
-     * @param  string $string
+     * @param  string $type_string
      * @return Union
      */
     public static function parseString($type_string)
@@ -19,6 +19,8 @@ abstract class Type
         if (strpos($type_string, '[') !== false) {
             $type_string = self::convertSquareBrackets($type_string);
         }
+
+        $type_string = str_replace('?', 'null|', $type_string);
 
         $type_tokens = self::tokenize($type_string);
 
