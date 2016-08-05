@@ -12,6 +12,7 @@ use PhpParser\ParserFactory;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
+use ReflectionProperty;
 
 class ClassChecker implements StatementsSource
 {
@@ -71,7 +72,7 @@ class ClassChecker implements StatementsSource
         }
     }
 
-    public function check($check_statements = true, $method_id = null)
+    public function check($check_methods = true, $method_id = null)
     {
         if ($this->_parent_class) {
             if (self::checkAbsoluteClassOrInterface(
@@ -82,6 +83,25 @@ class ClassChecker implements StatementsSource
                 ) === false
             ) {
                 return false;
+            }
+
+            if (!isset(self::$_class_properties[$this->_parent_class])) {
+                $reflected_parent_class = new ReflectionClass($this->_parent_class);
+
+                if ($reflected_parent_class->isUserDefined()) {
+                    $parent_class_file_name = $reflected_parent_class->getFileName();
+
+                    $parent_file_checker = (new FileChecker($parent_class_file_name))->check(true, false);
+                }
+                else {
+                    $parent_class_properties = $reflected_parent_class->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED);
+
+                    self::$_class_properties[$this->_parent_class] = [];
+
+                    foreach ($parent_class_properties as $parent_class_property) {
+                        self::$_class_properties[$this->_parent_class][$parent_class_property->getName()] = Type::getMixed();
+                    }
+                }
             }
 
             $this->_registerInheritedMethods($this->_parent_class);
@@ -95,6 +115,8 @@ class ClassChecker implements StatementsSource
 
         self::$_class_methods[$this->_absolute_class] = [];
 
+        self::$_class_properties[$this->_absolute_class] = [];
+
         $class_context = new Context();
 
         foreach ($this->_class->stmts as $stmt) {
@@ -105,7 +127,7 @@ class ClassChecker implements StatementsSource
                     $method_checker = new ClassMethodChecker($stmt, $this);
                     $method_checkers[$stmt->name] = $method_checker;
 
-                    if (self::$_this_class && !$check_statements) {
+                    if (self::$_this_class && !$check_methods) {
                         self::$_method_checkers[$method_id] = $method_checker;
                     }
                 }
@@ -136,10 +158,6 @@ class ClassChecker implements StatementsSource
                 }
 
             } else {
-                if (!isset(self::$_class_properties[$this->_absolute_class])) {
-                    self::$_class_properties[$this->_absolute_class] = [];
-                }
-
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($stmt->props as $property) {
                         $comment = $stmt->getDocComment();
@@ -172,7 +190,7 @@ class ClassChecker implements StatementsSource
 
         $config = Config::getInstance();
 
-        if ($check_statements) {
+        if ($check_methods) {
             // do the method checks after all class methods have been initialised
             foreach ($method_checkers as $method_checker) {
                 $method_checker->check(clone $class_context);
@@ -197,13 +215,25 @@ class ClassChecker implements StatementsSource
             return self::$_method_checkers[$method_id];
         }
 
-        $parent_method_id = ClassMethodChecker::getDeclaringMethod($method_id);
-        $parent_class = explode('::', $parent_method_id)[0];
+        $declaring_method_id = ClassMethodChecker::getDeclaringMethod($method_id);
+        $declaring_class = explode('::', $declaring_method_id)[0];
 
-        $class_checker = FileChecker::getClassCheckerFromClass($parent_class);
+        $class_checker = FileChecker::getClassCheckerFromClass($declaring_class);
 
-        // this is now set
-        return self::$_method_checkers[$parent_method_id];
+        if (!$class_checker) {
+            throw new \InvalidArgumentException('Could not get class checker for ' . $declaring_class);
+        }
+
+        foreach ($class_checker->_class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $method_checker = new ClassMethodChecker($stmt, $class_checker);
+                $method_id = $class_checker->_absolute_class . '::' . $stmt->name;
+                self::$_method_checkers[$method_id] = $method_checker;
+                return $method_checker;
+            }
+        }
+
+        throw new \InvalidArgumentException('Method checker not found');
     }
 
     /**
@@ -439,10 +469,9 @@ class ClassChecker implements StatementsSource
 
     public function getProperties()
     {
-        $class_properties = isset(self::$_class_properties[$this->_absolute_class]) ? self::$_class_properties[$this->_absolute_class] : [];
-        $parent_properties = isset(self::$_class_properties[$this->_parent_class]) ? self::$_class_properties[$this->_parent_class] : [];
+        $parent_properties = $this->_parent_class ? self::$_class_properties[$this->_parent_class] : [];
 
-        return array_merge($parent_properties, $class_properties);
+        return array_merge($parent_properties, self::$_class_properties[$this->_absolute_class]);
     }
 
     public function getSource()

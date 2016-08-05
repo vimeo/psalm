@@ -224,6 +224,21 @@ class Config
 
         $file_name = $this->shortenFileName($file_name);
 
+        if ($this->getIncludeDirs()) {
+            $in_project_dir = false;
+
+            foreach ($this->getIncludeDirs() as $dir_name) {
+                if (preg_match('/^' . preg_quote($dir_name, '/') . '/', $file_name)) {
+                    $in_project_dir = true;
+                }
+            }
+
+            if (!$in_project_dir) {
+                return true;
+            }
+        }
+
+
         if (!isset($this->issue_handlers[$issue_type])) {
             return false;
         }

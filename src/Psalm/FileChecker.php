@@ -32,6 +32,10 @@ class FileChecker implements StatementsSource
     protected static $_functions = [];
     protected static $_includes_to_ignore = [];
 
+    protected static $_class_methods_checked = [];
+    protected static $_classes_checked = [];
+    protected static $_file_checked = [];
+
     protected static $_ignore_check_variables_pattern = null;
 
     public static $show_notices = true;
@@ -42,14 +46,27 @@ class FileChecker implements StatementsSource
         $this->_short_file_name = Config::getInstance()->shortenFileName($file_name);
 
         self::$_file_checkers[$this->_short_file_name] = $this;
+        self::$_file_checkers[$file_name] = $this;
 
         if ($preloaded_statements) {
             $this->_preloaded_statements = $preloaded_statements;
         }
     }
 
-    public function check($check_classes = true, $check_class_statements = true, Context $file_context = null)
+    public function check($check_classes = true, $check_class_methods = true, Context $file_context = null, $cache = true)
     {
+        if ($cache && isset(self::$_class_methods_checked[$this->_real_file_name])) {
+            return;
+        }
+
+        if ($cache && $check_classes && isset(self::$_classes_checked[$this->_real_file_name])) {
+            return;
+        }
+
+        if ($cache && !$check_classes && !$check_class_methods && isset(self::$_file_checked[$this->_real_file_name])) {
+            return;
+        }
+
         if (!$file_context) {
             $file_context = new Context();
         }
@@ -75,7 +92,7 @@ class FileChecker implements StatementsSource
                     if ($check_classes) {
                         $class_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
                         $this->_declared_classes[] = $class_checker->getAbsoluteClass();
-                        $class_checker->check($check_class_statements);
+                        $class_checker->check($check_class_methods);
                     }
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
@@ -84,14 +101,14 @@ class FileChecker implements StatementsSource
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
                         $trait_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
-                        $trait_checker->check($check_class_statements);
+                        $trait_checker->check($check_class_methods);
                     }
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                     $namespace_name = implode('\\', $stmt->name->parts);
 
                     $namespace_checker = new NamespaceChecker($stmt, $this);
-                    $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_statements);
+                    $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_methods);
                     $this->_declared_classes = array_merge($namespace_checker->getDeclaredClasses());
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
@@ -109,6 +126,16 @@ class FileChecker implements StatementsSource
             $statments_checker = new StatementsChecker($this);
             $statments_checker->check($leftover_stmts, $file_context);
         }
+
+        if ($check_class_methods) {
+            self::$_class_methods_checked[$this->_real_file_name] = true;
+        }
+
+        if ($check_classes) {
+            self::$_classes_checked[$this->_real_file_name] = true;
+        }
+
+        self::$_file_checked[$this->_real_file_name] = true;
 
         return $stmts;
     }
@@ -314,7 +341,7 @@ class FileChecker implements StatementsSource
             $file_checker = new FileChecker($file_name);
         }
 
-        $file_checker->check(true, false);
+        $file_checker->check(true, false, null, false);
 
         return ClassChecker::getClassCheckerFromClass($class_name);
     }

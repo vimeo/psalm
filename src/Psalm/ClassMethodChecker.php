@@ -241,6 +241,7 @@ class ClassMethodChecker extends FunctionChecker
                                                     self::VISIBILITY_PRIVATE :
                                                     ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
 
+
         $params = $method->getParameters();
 
         $method_param_names = [];
@@ -311,10 +312,12 @@ class ClassMethodChecker extends FunctionChecker
             self::$_deprecated_methods[$method_id] = true;
         }
 
+        self::$_method_return_types[$method_id] = [];
         self::$_method_suppress[$method_id] = $docblock_info['suppress'];
 
         if ($config->use_docblock_types) {
             if ($docblock_info['return_type']) {
+
                 $return_type = Type::parseString(
                     self::_fixUpReturnType($docblock_info['return_type'], $method_id)
                 );
