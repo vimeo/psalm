@@ -1034,8 +1034,52 @@ class StatementsChecker
                 }
             }
 
-            return $this->_checkVariable($stmt->var, $context);
+            if ($this->_checkVariable($stmt->var, $context) === false) {
+                return false;
+            }
 
+            if (isset($stmt->var->inferredType)) {
+                if (!$stmt->var->inferredType->isMixed()) {
+                    if ($stmt->var->inferredType->isNullable()) {
+                        if (IssueBuffer::accepts(
+                            new NullReference(
+                                'Cannot get property on possibly null variable $' . $stmt->var->name,
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    if ($stmt->var->inferredType->isObjectType()) {
+                        foreach ($stmt->var->inferredType->types as $lhs_type) {
+                            if ($lhs_type->isNull()) {
+                                continue;
+                            }
+
+                            if ($lhs_type->isObject() || (string) $lhs_type === 'stdClass') {
+                                continue;
+                            }
+
+                            if (method_exists((string) $lhs_type, '__get')) {
+                                continue;
+                            }
+
+                            var_dump((string) $lhs_type);
+                        }
+                    }
+                    else {
+                        // @todo ScalarPropertyFetch issue
+                    }
+                }
+                else {
+                    // @todo MixedPropertyFetch issue
+                }
+            }
+
+            return;
         }
 
         return $this->_checkExpression($stmt->var, $context);

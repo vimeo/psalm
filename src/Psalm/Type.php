@@ -493,6 +493,11 @@ abstract class Type
         return false;
     }
 
+    public function isObjectType()
+    {
+        return $this->isObject() || (!$this->isScalarType() && !$this->isCallable());
+    }
+
     /**
      * @param  array<Union> $redefined_vars
      * @param  Context      $context
