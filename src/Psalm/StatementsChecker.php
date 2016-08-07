@@ -10,6 +10,7 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidNamespace;
 use Psalm\Issue\InvalidIterator;
 use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -65,8 +66,6 @@ class StatementsChecker
     protected static $_this_assignments = [];
     protected static $_this_calls = [];
 
-    protected static $_existing_static_vars = [];
-    protected static $_existing_properties = [];
     protected static $_mock_interfaces = [];
     protected static $_class_consts = [];
 
@@ -210,13 +209,11 @@ class StatementsChecker
                         $this->_checkExpression($prop->default, $context);
 
                         if (isset($prop->default->inferredType)) {
-                            if ($this->_checkThisPropertyAssignment($prop->name, $prop->default->inferredType, $stmt->getLine()) === false) {
+                            if ($this->_checkPropertyAssignment($prop, $prop->name, $prop->default->inferredType, $context) === false) {
                                 return false;
                             }
                         }
                     }
-
-                    self::$_existing_static_vars[$this->_absolute_class . '::$' . $prop->name] = 1;
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
@@ -1028,22 +1025,34 @@ class StatementsChecker
         }
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            if ($stmt->var->name === 'this') {
-                if (is_string($stmt->name)) {
-                    return $this->_checkThisPropertyFetch($stmt, $context, $array_assignment);
-                }
-            }
-
             if ($this->_checkVariable($stmt->var, $context) === false) {
                 return false;
             }
 
-            if (isset($stmt->var->inferredType)) {
-                if (!$stmt->var->inferredType->isMixed()) {
-                    if ($stmt->var->inferredType->isNullable()) {
+            $var_name = is_string($stmt->name) ? $stmt->name : null;
+            $var_id = self::getVarId($stmt);
+
+            $stmt_var_type = null;
+
+            if (isset($context->vars_in_scope[$var_id])) {
+                // we don't need to check anything
+                $stmt->inferredType = $context->vars_in_scope[$var_id];
+                return;
+            }
+
+            if (isset($context->vars_in_scope[$stmt->var->name])) {
+                $stmt_var_type = $context->vars_in_scope[$stmt->var->name];
+            }
+            elseif (isset($stmt->var->inferredType)) {
+                $stmt_var_type = $stmt->var->inferredType;
+            }
+
+            if ($stmt_var_type) {
+                if (!$stmt_var_type->isMixed()) {
+                    if ($stmt_var_type->isNull()) {
                         if (IssueBuffer::accepts(
                             new NullReference(
-                                'Cannot get property on possibly null variable $' . $stmt->var->name,
+                                'Cannot get property on null variable $' . $var_id,
                                 $this->_file_name,
                                 $stmt->getLine()
                             ),
@@ -1051,24 +1060,77 @@ class StatementsChecker
                         )) {
                             return false;
                         }
+
+                        return;
                     }
 
-                    if ($stmt->var->inferredType->isObjectType()) {
-                        foreach ($stmt->var->inferredType->types as $lhs_type) {
-                            if ($lhs_type->isNull()) {
-                                continue;
-                            }
-
-                            if ($lhs_type->isObject() || (string) $lhs_type === 'stdClass') {
-                                continue;
-                            }
-
-                            if (method_exists((string) $lhs_type, '__get')) {
-                                continue;
-                            }
-
-                            var_dump((string) $lhs_type);
+                    if ($stmt_var_type->isNullable()) {
+                        if (IssueBuffer::accepts(
+                            new NullPropertyFetch(
+                                'Cannot get property on possibly null variable $' . $var_id,
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
+                        )) {
+                            return false;
                         }
+
+                        $stmt->inferredType = Type::getNull();
+                    }
+
+                    if ($stmt_var_type->isObjectType() && is_string($stmt->name)) {
+                        foreach ($stmt_var_type->types as $lhs_type_part) {
+                            if ($lhs_type_part->isNull()) {
+                                continue;
+                            }
+
+                            if ($lhs_type_part->isObject() || (string) $lhs_type_part === 'stdClass') {
+                                $stmt->inferredType = Type::getMixed();
+                                continue;
+                            }
+
+                            if (!$lhs_type_part->isObjectType()) {
+                                // @todo InvalidPropertyFetch
+                                continue;
+                            }
+
+                            if (method_exists((string) $lhs_type_part, '__get')) {
+                                continue;
+                            }
+
+                            $class_visibility =
+                                $var_name === 'this'
+                                || (string) $lhs_type_part === $this->_absolute_class
+                                || ClassChecker::classExtends((string) $lhs_type_part, $this->_absolute_class)
+                                    ? \ReflectionProperty::IS_PRIVATE
+                                    : \ReflectionProperty::IS_PUBLIC;
+
+                            $class_properties = ClassChecker::getInstancePropertiesForClass(
+                                (string) $lhs_type_part,
+                                $class_visibility
+                            );
+
+                            if (!$class_properties || !isset($class_properties[$stmt->name])) {
+                                if (IssueBuffer::accepts(
+                                    new UndefinedProperty('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine()),
+                                    $this->_suppressed_issues
+                                )) {
+                                    return false;
+                                }
+
+                                return;
+                            }
+
+                            if (isset($stmt->inferredType)) {
+                                $stmt->inferredType = Type::combineUnionTypes($class_properties[$stmt->name], $stmt->inferredType);
+                            }
+                            else {
+                                $stmt->inferredType = $class_properties[$stmt->name];
+                            }
+                        }
+
+                        return;
                     }
                     else {
                         // @todo ScalarPropertyFetch issue
@@ -1098,74 +1160,126 @@ class StatementsChecker
             }
         }
 
-        $var_name = is_string($stmt->name) ? $stmt->name : null;
-        $var_id = self::getVarId($stmt);
-        $defined_properties = $class_checker->getProperties();
-        $this_class = $context->vars_in_scope['this'];
 
-        if (isset($context->vars_in_scope[$var_id])) {
-            $stmt->inferredType = $context->vars_in_scope[$var_id];
-        }
-        elseif ($var_name && isset($defined_properties[$var_name])) {
-            $stmt->inferredType = $defined_properties[$var_name];
-        }
-
-        if (!$var_name || !isset($defined_properties[$var_name])) {
-            $property_id = $this_class . '::' . $stmt->name;
-
-            $var_defined = isset($context->vars_in_scope[$var_id]) || isset($context->vars_possibly_in_scope[$var_id]);
-
-            if ((ClassChecker::getThisClass() && !$var_defined) || (!ClassChecker::getThisClass() && !$var_defined && !self::_propertyExists($property_id))) {
-                if ($array_assignment) {
-                    // if we're in an array assignment, let's assign the variable
-                    // because PHP allows it
-
-                    $context->vars_in_scope[$var_id] = Type::getArray();
-                    $context->vars_possibly_in_scope[$var_id] = true;
-                    $this->registerVariable($var_id, $stmt->getLine());
-                }
-                else {
-                    if (IssueBuffer::accepts(
-                        new UndefinedProperty('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine()),
-                        $this->_suppressed_issues
-                    )) {
-                        return false;
-                    }
-                }
-
-            }
-        }
     }
 
-    protected function _checkThisPropertyAssignment($prop_name, Type\Union $assignment_type, $line_number)
+    /**
+     * @param  PhpParser\Node\Expr\PropertyFetch|PhpParser\Node\Stmt\PropertyProperty    $stmt
+     * @param  string     $prop_name
+     * @param  Type\Union $assignment_type
+     * @param  Context    $context
+     * @param  int        $line_number
+     * @return false|null
+     */
+    protected function _checkPropertyAssignment($stmt, $prop_name, Type\Union $assignment_type, Context $context)
     {
         if ($assignment_type->isMixed()) {
             return;
         }
 
-        $class_checker = $this->_source->getClassChecker();
+        $class_property_types = [];
 
-        if ($class_checker) {
-            $properties = $class_checker->getProperties();
+        if ($stmt instanceof PhpParser\Node\Stmt\PropertyProperty) {
+            $class_properties = ClassChecker::getInstancePropertiesForClass($this->_absolute_class, \ReflectionProperty::IS_PRIVATE);
 
-            if (isset($properties[$prop_name])) {
-                $property_type = $properties[$prop_name];
+            if (!isset($class_properties[$prop_name])) {
+                // @todo UndefinedProperty
+                return;
+            }
 
-                if ($property_type->isMixed()) {
-                    return;
+            $class_property_types[] = $class_properties[$prop_name];
+
+            $var_id = 'this->' . $prop_name;
+        }
+        else {
+            $lhs_type = $context->vars_in_scope[$stmt->var->name];
+
+            if (!$lhs_type) {
+                // @todo This shouldn't happen
+                return;
+            }
+
+            $var_id = self::getVarId($stmt);
+
+            if ($lhs_type->isMixed()) {
+                // @todo MixedAssignment
+                return;
+            }
+
+            if ($lhs_type->isNull()) {
+                // @todo NullPropertyAssignment
+                return;
+            }
+
+            if ($lhs_type->isNullable()) {
+                // @todo NullablePropertyAssignment
+            }
+
+            foreach ($lhs_type->types as $lhs_type_part) {
+                if ($lhs_type_part->isNull()) {
+                    continue;
                 }
 
-                if (!$assignment_type->isIn($property_type)) {
+                if (!$lhs_type_part->isObjectType()) {
                     if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
-                            '$this->' . $prop_name . ' with declared type \'' . $property_type . '\' cannot be assigned type \'' . $assignment_type . '\'',
+                            '$' . $var_id . ' with possible non-object type \'' . $lhs_type_part . '\' cannot be assigned to',
                             $this->_file_name,
-                            $line_number
+                            $stmt->getLine()
                         ),
                         $this->_suppressed_issues
                     )) {
                         return false;
                     }
+
+                    continue;
+                }
+
+                if ($lhs_type_part->isObject() || (string) $lhs_type_part === 'stdClass') {
+                    continue;
+                }
+
+                $class_visibility =
+                    $stmt->var->name === 'this'
+                    || (string) $lhs_type_part === $this->_absolute_class
+                    || ClassChecker::classExtends((string) $lhs_type_part, $this->_absolute_class)
+                        ? \ReflectionProperty::IS_PRIVATE
+                        : \ReflectionProperty::IS_PUBLIC;
+
+                $class_properties = ClassChecker::getInstancePropertiesForClass(
+                    (string) $lhs_type_part,
+                    $class_visibility
+                );
+
+                if (!isset($class_properties[$prop_name])) {
+                    // @todo UndefinedProperty
+                    continue;
+                }
+
+                $class_property_types[] = $class_properties[$prop_name];
+            }
+        }
+
+        if (!$class_property_types) {
+            // @todo something here?
+            return;
+        }
+
+        foreach ($class_property_types as $class_property_type) {
+            if ($class_property_type->isMixed()) {
+                continue;
+            }
+
+            if (!$assignment_type->isIn($class_property_type)) {
+                if (IssueBuffer::accepts(
+                    new InvalidPropertyAssignment(
+                        $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' . $assignment_type . '\'',
+                        $this->_file_name,
+                        $stmt->getLine()
+                    ),
+                    $this->_suppressed_issues
+                )) {
+                    return false;
                 }
             }
         }
@@ -1629,25 +1743,14 @@ class StatementsChecker
 
         } else if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch &&
                     $stmt->var->var instanceof PhpParser\Node\Expr\Variable &&
-                    $stmt->var->var->name === 'this' &&
                     is_string($stmt->var->name)) {
 
             $method_id = $this->_source->getMethodId();
 
-            $this->_checkThisPropertyAssignment($stmt->var->name, $return_type, $stmt->getLine());
-
-            if (!isset(self::$_this_assignments[$method_id])) {
-                self::$_this_assignments[$method_id] = [];
-            }
-
-            $property_id = $this->_absolute_class . '::' . $stmt->var->name;
-            self::$_existing_properties[$property_id] = 1;
+            $this->_checkPropertyAssignment($stmt->var, $stmt->var->name, $return_type, $context);
 
             $context->vars_in_scope[$var_id] = $return_type;
             $context->vars_possibly_in_scope[$var_id] = true;
-
-            // right now we have to settle for mixed
-            self::$_this_assignments[$method_id][$stmt->var->name] = Type::getMixed();
         }
 
         if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
@@ -2422,7 +2525,8 @@ class StatementsChecker
             } else {
                 $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }
-        } elseif ($this->_check_classes) {
+        }
+        elseif ($this->_check_classes) {
             if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues) === false) {
                 return false;
             }
@@ -2430,16 +2534,36 @@ class StatementsChecker
         }
 
         if ($absolute_class && $this->_check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
-            $var_id = $absolute_class . '::$' . $stmt->name;
+            $visible_class_properties = ClassChecker::getStaticPropertiesForClass(
+                $absolute_class,
+                $absolute_class === $this->_absolute_class ? \ReflectionProperty::IS_PRIVATE : \ReflectionProperty::IS_PUBLIC
+            );
 
-            if (!self::_staticVarExists($var_id)) {
-                if ($this->_check_variables) {
-                    IssueBuffer::add(
-                        new UndefinedVariable('Static variable ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine())
+            if (!isset($visible_class_properties[$stmt->name])) {
+                $var_id = $absolute_class . '::$' . $stmt->name;
+
+                $all_class_properties = [];
+
+                if ($absolute_class !== $this->_absolute_class) {
+                    $all_class_properties = ClassChecker::getStaticPropertiesForClass(
+                        $absolute_class,
+                        \ReflectionProperty::IS_PUBLIC
                     );
-
-                    return false;
                 }
+
+                if ($all_class_properties && isset($all_class_properties[$stmt->name])) {
+                    // @todo change issue type
+                    IssueBuffer::add(
+                        new UndefinedProperty('Static property ' . $var_id . ' is not visible in this context', $this->_file_name, $stmt->getLine())
+                    );
+                }
+                else {
+                    IssueBuffer::add(
+                        new UndefinedProperty('Static property ' . $var_id . ' does not exist', $this->_file_name, $stmt->getLine())
+                    );
+                }
+
+                return false;
             }
         }
     }
@@ -2971,44 +3095,6 @@ class StatementsChecker
         }
     }
 
-    public static function _getClassProperties(\ReflectionClass $reflection_class, $absolute_class_name)
-    {
-        $properties = $reflection_class->getProperties();
-        $props_arr = [];
-
-        foreach ($properties as $reflection_property) {
-            if ($reflection_property->isPrivate() || $reflection_property->isStatic()) {
-                continue;
-            }
-
-            self::$_existing_properties[$absolute_class_name . '::' . $reflection_property->getName()] = 1;
-        }
-
-        $parent_reflection_class = $reflection_class->getParentClass();
-
-        if ($parent_reflection_class) {
-            self::_getClassProperties($parent_reflection_class, $absolute_class_name);
-        }
-    }
-
-    protected static function _propertyExists($property_id)
-    {
-        if (isset(self::$_existing_properties[$property_id])) {
-            return true;
-        }
-
-        $absolute_class = explode('::', $property_id)[0];
-
-        try {
-            $reflection_class = new \ReflectionClass($absolute_class);
-            self::_getClassProperties($reflection_class, $absolute_class);
-        }
-        catch (\ReflectionException $e) {
-        }
-
-        return isset(self::$_existing_properties[$property_id]);
-    }
-
     /**
      * @return false|null
      */
@@ -3041,30 +3127,6 @@ class StatementsChecker
         }
 
         self::$_existing_functions[$method_id] = 1;
-    }
-
-    protected static function _staticVarExists($var_id)
-    {
-        if (isset(self::$_existing_static_vars[$var_id])) {
-            return true;
-        }
-
-        $absolute_class = explode('::', $var_id)[0];
-
-        try {
-            $reflection_class = new \ReflectionClass($absolute_class);
-        }
-        catch (\ReflectionException $e) {
-            return false;
-        }
-
-        $static_properties = $reflection_class->getStaticProperties();
-
-        foreach ($static_properties as $property => $value) {
-            self::$_existing_static_vars[$absolute_class . '::$' . $property] = 1;
-        }
-
-        return isset(self::$_existing_static_vars[$var_id]);
     }
 
     protected function _checkInclude(PhpParser\Node\Expr\Include_ $stmt, Context $context)

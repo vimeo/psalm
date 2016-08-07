@@ -49,7 +49,13 @@ class ClassChecker implements StatementsSource
     protected static $_class_methods = [];
     protected static $_class_checkers = [];
 
-    protected static $_class_properties = [];
+    protected static $_public_class_properties = [];
+    protected static $_protected_class_properties = [];
+    protected static $_private_class_properties = [];
+
+    protected static $_public_static_class_properties = [];
+    protected static $_protected_static_class_properties = [];
+    protected static $_private_static_class_properties = [];
 
     protected static $_class_extends = [];
 
@@ -85,24 +91,7 @@ class ClassChecker implements StatementsSource
                 return false;
             }
 
-            if (!isset(self::$_class_properties[$this->_parent_class])) {
-                $reflected_parent_class = new ReflectionClass($this->_parent_class);
-
-                if ($reflected_parent_class->isUserDefined()) {
-                    $parent_class_file_name = $reflected_parent_class->getFileName();
-
-                    $parent_file_checker = (new FileChecker($parent_class_file_name))->check(true, false);
-                }
-                else {
-                    $parent_class_properties = $reflected_parent_class->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED);
-
-                    self::$_class_properties[$this->_parent_class] = [];
-
-                    foreach ($parent_class_properties as $parent_class_property) {
-                        self::$_class_properties[$this->_parent_class][$parent_class_property->getName()] = Type::getMixed();
-                    }
-                }
-            }
+            self::_registerClassProperties($this->_parent_class);
 
             $this->_registerInheritedMethods($this->_parent_class);
         }
@@ -115,7 +104,21 @@ class ClassChecker implements StatementsSource
 
         self::$_class_methods[$this->_absolute_class] = [];
 
-        self::$_class_properties[$this->_absolute_class] = [];
+        self::$_public_class_properties[$this->_absolute_class] = [];
+        self::$_protected_class_properties[$this->_absolute_class] = [];
+        self::$_private_class_properties[$this->_absolute_class] = [];
+
+        self::$_public_static_class_properties[$this->_absolute_class] = [];
+        self::$_protected_static_class_properties[$this->_absolute_class] = [];
+        self::$_private_static_class_properties[$this->_absolute_class] = [];
+
+        if ($this->_parent_class) {
+            self::$_public_class_properties[$this->_absolute_class] = self::$_public_class_properties[$this->_parent_class];
+            self::$_protected_class_properties[$this->_absolute_class] = self::$_protected_class_properties[$this->_parent_class];
+
+            self::$_public_static_class_properties[$this->_absolute_class] = self::$_public_static_class_properties[$this->_parent_class];
+            self::$_protected_static_class_properties[$this->_absolute_class] = self::$_protected_static_class_properties[$this->_parent_class];
+        }
 
         $class_context = new Context();
 
@@ -167,7 +170,30 @@ class ClassChecker implements StatementsSource
                         }
 
                         $property_type = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
-                        self::$_class_properties[$this->_absolute_class][$property->name] = $property_type;
+
+                        if ($stmt->isStatic()) {
+                            if ($stmt->isPublic()) {
+                                self::$_public_static_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                            }
+                            elseif ($stmt->isProtected()) {
+                                self::$_protected_static_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                            }
+                            elseif ($stmt->isPrivate()) {
+                                self::$_private_static_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                            }
+                        }
+                        else {
+                            if ($stmt->isPublic()) {
+                                self::$_public_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                            }
+                            elseif ($stmt->isProtected()) {
+                                self::$_protected_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                            }
+                            elseif ($stmt->isPrivate()) {
+                                self::$_private_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                            }
+                        }
+
 
                         if (!$stmt->isStatic()) {
                             $class_context->vars_in_scope['this->' . $property->name] = $property_type;
@@ -467,11 +493,104 @@ class ClassChecker implements StatementsSource
         return $this->_has_custom_get;
     }
 
-    public function getProperties()
+    protected static function _registerClassProperties($class_name)
     {
-        $parent_properties = $this->_parent_class ? self::$_class_properties[$this->_parent_class] : [];
+        $reflected_class = new ReflectionClass($class_name);
 
-        return array_merge($parent_properties, self::$_class_properties[$this->_absolute_class]);
+        if ($reflected_class->isUserDefined()) {
+            $class_file_name = $reflected_class->getFileName();
+
+            (new FileChecker($class_file_name))->check(true, false);
+        }
+        else {
+            $class_properties = $reflected_class->getProperties();
+
+            self::$_public_class_properties[$class_name] = [];
+            self::$_protected_class_properties[$class_name] = [];
+            self::$_private_class_properties[$class_name] = [];
+
+            self::$_public_static_class_properties[$class_name] = [];
+            self::$_protected_static_class_properties[$class_name] = [];
+            self::$_private_static_class_properties[$class_name] = [];
+
+            foreach ($class_properties as $class_property) {
+                if ($class_property->isStatic()) {
+                    if ($class_property->isPublic()) {
+                        self::$_public_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                    }
+                    elseif ($class_property->isProtected()) {
+                        self::$_protected_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                    }
+                    elseif ($class_property->isPrivate()) {
+                        self::$_private_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                    }
+                }
+                else {
+                    if ($class_property->isPublic()) {
+                        self::$_public_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                    }
+                    elseif ($class_property->isProtected()) {
+                        self::$_protected_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                    }
+                    elseif ($class_property->isPrivate()) {
+                        self::$_private_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                    }
+                }
+
+            }
+        }
+    }
+
+    public static function getInstancePropertiesForClass($class_name, $visibility)
+    {
+        if (!isset(self::$_public_class_properties[$class_name])) {
+            self::_registerClassProperties($class_name);
+        }
+
+        if ($visibility === ReflectionProperty::IS_PUBLIC) {
+            return self::$_public_class_properties[$class_name];
+        }
+        elseif ($visibility === ReflectionProperty::IS_PROTECTED) {
+            return array_merge(
+                self::$_public_class_properties[$class_name],
+                self::$_protected_class_properties[$class_name]
+            );
+        }
+        elseif ($visibility === ReflectionProperty::IS_PRIVATE) {
+            return array_merge(
+                self::$_public_class_properties[$class_name],
+                self::$_protected_class_properties[$class_name],
+                self::$_private_class_properties[$class_name]
+            );
+        }
+
+        throw new \InvalidArgumentException('Must specify $visibility');
+    }
+
+    public static function getStaticPropertiesForClass($class_name, $visibility)
+    {
+        if (!isset(self::$_public_static_class_properties[$class_name])) {
+            self::_registerClassProperties($class_name);
+        }
+
+        if ($visibility === ReflectionProperty::IS_PUBLIC) {
+            return self::$_public_static_class_properties[$class_name];
+        }
+        elseif ($visibility === ReflectionProperty::IS_PROTECTED) {
+            return array_merge(
+                self::$_public_static_class_properties[$class_name],
+                self::$_protected_static_class_properties[$class_name]
+            );
+        }
+        elseif ($visibility === ReflectionProperty::IS_PRIVATE) {
+            return array_merge(
+                self::$_public_static_class_properties[$class_name],
+                self::$_protected_static_class_properties[$class_name],
+                self::$_private_static_class_properties[$class_name]
+            );
+        }
+
+        throw new \InvalidArgumentException('Must specify $visibility');
     }
 
     public function getSource()
@@ -570,6 +689,6 @@ class ClassChecker implements StatementsSource
         self::$_class_methods = [];
         self::$_class_checkers = [];
 
-        self::$_class_properties = [];
+        self::$_public_class_properties = [];
     }
 }

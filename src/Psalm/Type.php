@@ -440,6 +440,17 @@ abstract class Type
         }
     }
 
+    public function isArray()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'array';
+        }
+
+        if ($this instanceof Union) {
+            return isset($this->types['array']);
+        }
+    }
+
     public function isNullable()
     {
         if ($this instanceof Atomic) {
@@ -495,7 +506,7 @@ abstract class Type
 
     public function isObjectType()
     {
-        return $this->isObject() || (!$this->isScalarType() && !$this->isCallable());
+        return $this->isObject() || (!$this->isScalarType() && !$this->isCallable() && !$this->isArray());
     }
 
     /**
