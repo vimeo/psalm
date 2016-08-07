@@ -63,47 +63,58 @@ class FunctionChecker implements StatementsSource
 
             $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
 
-            foreach ($this->_function->params as $param) {
-                if ($param->type) {
-                    if ($param->type instanceof PhpParser\Node\Name) {
-                        if (!in_array($param->type->parts[0], ['self', 'parent'])) {
-                            ClassChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues);
+            if ($this->_function instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $method_params = ClassMethodChecker::getMethodParams($this->getMethodId());
+
+                foreach ($method_params as $method_param) {
+                    $context->vars_in_scope[$method_param['name']] = clone $method_param['type'];
+                    $statements_checker->registerVariable($method_param['name'], $this->_function->getLine());
+                }
+            }
+            else {
+                // @todo deprecate this code
+                foreach ($this->_function->params as $param) {
+                    if ($param->type) {
+                        if ($param->type instanceof PhpParser\Node\Name) {
+                            if (!in_array($param->type->parts[0], ['self', 'parent'])) {
+                                ClassChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues);
+                            }
                         }
                     }
-                }
 
-                $is_nullable = $param->default !== null &&
-                                $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
-                                $param->default->name instanceof PhpParser\Node\Name &&
-                                $param->default->name->parts = ['null'];
+                    $is_nullable = $param->default !== null &&
+                                    $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
+                                    $param->default->name instanceof PhpParser\Node\Name &&
+                                    $param->default->name->parts = ['null'];
 
-                if ($param->type) {
-                    if ($param->type instanceof Type) {
-                        $context->vars_in_scope[$param->name] = clone $param->type;
+                    if ($param->type) {
+                        if ($param->type instanceof Type) {
+                            $context->vars_in_scope[$param->name] = clone $param->type;
+                        }
+                        else {
+                            if (is_string($param->type)) {
+                                $param_type_string = $param->type;
+                            }
+                            elseif ($param->type instanceof PhpParser\Node\Name) {
+                                $param_type_string = $param->type->parts === ['self']
+                                                        ? $this->_absolute_class
+                                                        : ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
+                            }
+
+                            if ($is_nullable) {
+                                $param_type_string .= '|null';
+                            }
+
+                            $context->vars_in_scope[$param->name] = Type::parseString($param_type_string);
+                        }
                     }
                     else {
-                        if (is_string($param->type)) {
-                            $param_type_string = $param->type;
-                        }
-                        elseif ($param->type instanceof PhpParser\Node\Name) {
-                            $param_type_string = $param->type->parts === ['self']
-                                                    ? $this->_absolute_class
-                                                    : ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
-                        }
-
-                        if ($is_nullable) {
-                            $param_type_string .= '|null';
-                        }
-
-                        $context->vars_in_scope[$param->name] = Type::parseString($param_type_string);
+                        $context->vars_in_scope[$param->name] = Type::getMixed();
                     }
-                }
-                else {
-                    $context->vars_in_scope[$param->name] = Type::getMixed();
-                }
 
-                $context->vars_possibly_in_scope[$param->name] = true;
-                $statements_checker->registerVariable($param->name, $param->getLine());
+                    $context->vars_possibly_in_scope[$param->name] = true;
+                    $statements_checker->registerVariable($param->name, $param->getLine());
+                }
             }
 
             $statements_checker->check($this->_function->stmts, $context);
