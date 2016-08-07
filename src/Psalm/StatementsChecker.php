@@ -212,9 +212,12 @@ class StatementsChecker
                         $this->_checkExpression($prop->default, $context);
 
                         if (isset($prop->default->inferredType)) {
-                            if ($this->_checkPropertyAssignment($prop, $prop->name, $prop->default->inferredType, $context) === false) {
-                                return false;
+                            if (!$stmt->isStatic()) {
+                                if ($this->_checkPropertyAssignment($prop, $prop->name, $prop->default->inferredType, $context) === false) {
+                                    return false;
+                                }
                             }
+
                         }
                     }
                 }
@@ -1217,11 +1220,6 @@ class StatementsChecker
         if ($stmt instanceof PhpParser\Node\Stmt\PropertyProperty) {
             $class_properties = ClassChecker::getInstancePropertiesForClass($this->_absolute_class, \ReflectionProperty::IS_PRIVATE);
 
-            if (!isset($class_properties[$prop_name])) {
-                // @todo UndefinedProperty
-                return;
-            }
-
             $class_property_types[] = $class_properties[$prop_name];
 
             $var_id = 'this->' . $prop_name;
@@ -1267,6 +1265,7 @@ class StatementsChecker
                 }
 
                 if (method_exists((string) $lhs_type_part, '__set')) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
                     continue;
                 }
 
@@ -1297,6 +1296,7 @@ class StatementsChecker
                 }
 
                 if (self::isMock($lhs_type_part->value)) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
                     return;
                 }
 
@@ -1328,9 +1328,12 @@ class StatementsChecker
             }
         }
 
-        if (count($class_property_types) === 1 && (string) $class_property_types[0] === 'stdClass') {
+        if (count($class_property_types) === 1 && isset($class_property_types[0]->types['stdClass'])) {
+            $context->vars_in_scope[$var_id] = Type::getMixed();
             return;
         }
+
+        $context->vars_in_scope[$var_id] = $assignment_type;
 
         if (!$class_property_types) {
             if (IssueBuffer::accepts(
@@ -1347,7 +1350,7 @@ class StatementsChecker
             return;
         }
 
-        if ($assignment_type->isMixed()) {
+        if (!$assignment_type->isMixed()) {
             return;
         }
 
@@ -1840,7 +1843,6 @@ class StatementsChecker
 
             $this->_checkPropertyAssignment($stmt->var, $stmt->var->name, $return_type, $context);
 
-            $context->vars_in_scope[$var_id] = $return_type;
             $context->vars_possibly_in_scope[$var_id] = true;
         }
 
