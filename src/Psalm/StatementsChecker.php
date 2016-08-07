@@ -10,6 +10,8 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidNamespace;
 use Psalm\Issue\InvalidIterator;
 use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\MissingPropertyDeclaration;
+use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
@@ -21,6 +23,7 @@ use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
 use Psalm\Issue\FailedTypeResolution;
+use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Issue\UndefinedProperty;
@@ -1099,15 +1102,45 @@ class StatementsChecker
                                 continue;
                             }
 
+                            if (!ClassChecker::classExists($lhs_type_part->value)) {
+                                if (ClassChecker::interfaceExists($lhs_type_part->value)) {
+                                    if (IssueBuffer::accepts(
+                                        new NoInterfaceProperties(
+                                            'Interfaces cannot have properties',
+                                            $this->_file_name,
+                                            $stmt->getLine()
+                                        ),
+                                        $this->_suppressed_issues
+                                    )) {
+                                        return false;
+                                    }
+
+                                    return;
+                                }
+
+                                if (IssueBuffer::accepts(
+                                    new UndefinedClass(
+                                        'Cannot get properties of undefined class ' . $lhs_type_part->value,
+                                        $this->_file_name,
+                                        $stmt->getLine()
+                                    ),
+                                    $this->_suppressed_issues
+                                )) {
+                                    return false;
+                                }
+
+                                return;
+                            }
+
                             $class_visibility =
                                 $var_name === 'this'
-                                || (string) $lhs_type_part === $this->_absolute_class
-                                || ClassChecker::classExtends((string) $lhs_type_part, $this->_absolute_class)
+                                || $lhs_type_part->value === $this->_absolute_class
+                                || ClassChecker::classExtends($lhs_type_part->value, $this->_absolute_class)
                                     ? \ReflectionProperty::IS_PRIVATE
                                     : \ReflectionProperty::IS_PUBLIC;
 
                             $class_properties = ClassChecker::getInstancePropertiesForClass(
-                                (string) $lhs_type_part,
+                                $lhs_type_part->value,
                                 $class_visibility
                             );
 
@@ -1173,10 +1206,6 @@ class StatementsChecker
      */
     protected function _checkPropertyAssignment($stmt, $prop_name, Type\Union $assignment_type, Context $context)
     {
-        if ($assignment_type->isMixed()) {
-            return;
-        }
-
         $class_property_types = [];
 
         if ($stmt instanceof PhpParser\Node\Stmt\PropertyProperty) {
@@ -1195,6 +1224,7 @@ class StatementsChecker
             $lhs_type = $context->vars_in_scope[$stmt->var->name];
 
             if (!$lhs_type) {
+                var_dump('no class property types');
                 // @todo This shouldn't happen
                 return;
             }
@@ -1215,10 +1245,18 @@ class StatementsChecker
                 // @todo NullablePropertyAssignment
             }
 
+            $has_regular_setter = false;
+
             foreach ($lhs_type->types as $lhs_type_part) {
                 if ($lhs_type_part->isNull()) {
                     continue;
                 }
+
+                if (method_exists((string) $lhs_type_part, '__set')) {
+                    continue;
+                }
+
+                $has_regular_setter = true;
 
                 if (!$lhs_type_part->isObjectType()) {
                     if (IssueBuffer::accepts(
@@ -1235,7 +1273,12 @@ class StatementsChecker
                     continue;
                 }
 
-                if ($lhs_type_part->isObject() || (string) $lhs_type_part === 'stdClass') {
+                if ($lhs_type_part->isObject()) {
+                    continue;
+                }
+
+                if ((string) $lhs_type_part === 'stdClass') {
+                    $class_property_types[] = new Type\Union([$lhs_type_part]);
                     continue;
                 }
 
@@ -1258,10 +1301,32 @@ class StatementsChecker
 
                 $class_property_types[] = $class_properties[$prop_name];
             }
+
+            if (!$has_regular_setter) {
+                return;
+            }
+        }
+
+        if (count($class_property_types) === 1 && (string) $class_property_types[0] === 'stdClass') {
+            return;
         }
 
         if (!$class_property_types) {
-            // @todo something here?
+            if (IssueBuffer::accepts(
+                new MissingPropertyDeclaration(
+                    'Missing property declaration for $' . $var_id,
+                    $this->_file_name,
+                    $stmt->getLine()
+                ),
+                $this->_suppressed_issues
+            )) {
+                return false;
+            }
+
+            return;
+        }
+
+        if ($assignment_type->isMixed()) {
             return;
         }
 

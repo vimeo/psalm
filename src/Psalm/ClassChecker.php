@@ -43,7 +43,7 @@ class ClassChecker implements StatementsSource
 
     protected static $_existing_classes = [];
     protected static $_existing_classes_ci = [];
-    protected static $_existing_interfaces = [];
+    protected static $_existing_interfaces_ci = [];
     protected static $_class_implements = [];
 
     protected static $_class_methods = [];
@@ -292,11 +292,7 @@ class ClassChecker implements StatementsSource
 
     public static function classExists($absolute_class)
     {
-        if (isset(self::$_existing_classes_ci[$absolute_class])) {
-            return true;
-        }
-
-        if (isset(self::$_existing_classes[$absolute_class])) {
+        if (isset(self::$_existing_classes_ci[strtolower($absolute_class)])) {
             return true;
         }
 
@@ -305,7 +301,7 @@ class ClassChecker implements StatementsSource
         }
 
         if (class_exists($absolute_class, true)) {
-            self::$_existing_classes_ci[$absolute_class] = true;
+            self::$_existing_classes_ci[strtolower($absolute_class)] = true;
             return true;
         }
 
@@ -314,12 +310,12 @@ class ClassChecker implements StatementsSource
 
     public static function interfaceExists($absolute_class)
     {
-        if (isset(self::$_existing_interfaces[$absolute_class])) {
+        if (isset(self::$_existing_interfaces_ci[strtolower($absolute_class)])) {
             return true;
         }
 
         if (interface_exists($absolute_class, true)) {
-            self::$_existing_interfaces[$absolute_class] = true;
+            self::$_existing_interfaces_ci[strtolower($absolute_class)] = true;
             return true;
         }
 
@@ -395,7 +391,7 @@ class ClassChecker implements StatementsSource
             return;
         }
 
-        if (!isset(self::$_existing_classes[$absolute_class]) && strpos($absolute_class, '\\') === false) {
+        if (isset(self::$_existing_classes_ci[strtolower($absolute_class)])) {
             $reflection_class = new ReflectionClass($absolute_class);
 
             if ($reflection_class->getName() !== $absolute_class) {
@@ -408,7 +404,6 @@ class ClassChecker implements StatementsSource
             }
         }
 
-        self::$_existing_classes[$absolute_class] = true;
         return true;
     }
 
@@ -495,7 +490,12 @@ class ClassChecker implements StatementsSource
 
     protected static function _registerClassProperties($class_name)
     {
-        $reflected_class = new ReflectionClass($class_name);
+        try {
+            $reflected_class = new ReflectionClass($class_name);
+        }
+        catch (\ReflectionException $e) {
+            return false;
+        }
 
         if ($reflected_class->isUserDefined()) {
             $class_file_name = $reflected_class->getFileName();
@@ -544,7 +544,9 @@ class ClassChecker implements StatementsSource
     public static function getInstancePropertiesForClass($class_name, $visibility)
     {
         if (!isset(self::$_public_class_properties[$class_name])) {
-            self::_registerClassProperties($class_name);
+            if (self::_registerClassProperties($class_name) === false) {
+                return [];
+            }
         }
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
