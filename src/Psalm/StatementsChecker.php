@@ -1542,6 +1542,11 @@ class StatementsChecker
 
             if ($iterator_type) {
                 foreach ($iterator_type->types as $return_type) {
+                    // if it's an empty array, we cannot iterate over it
+                    if ((string) $return_type === 'array<empty>') {
+                        continue;
+                    }
+
                     if ($return_type instanceof Type\Generic) {
                         $value_type = $return_type->type_params[0];
                     }
