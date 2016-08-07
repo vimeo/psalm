@@ -44,7 +44,7 @@ class StatementsChecker
     protected $_check_consts = true;
     protected $_check_functions = true;
     protected $_class_name;
-    protected $_class_extends;
+    protected $_parent_class;
 
     protected $_namespace;
     protected $_aliased_classes;
@@ -86,7 +86,7 @@ class StatementsChecker
         $this->_is_static = $this->_source->isStatic();
         $this->_absolute_class = $this->_source->getAbsoluteClass();
         $this->_class_name = $this->_source->getClassName();
-        $this->_class_extends = $this->_source->getParentClass();
+        $this->_parent_class = $this->_source->getParentClass();
         $this->_suppressed_issues = $this->_source->getSuppressedIssues();
 
         $config = Config::getInstance();
@@ -1375,18 +1375,37 @@ class StatementsChecker
     {
         $absolute_class = null;
 
-        if ($stmt->class instanceof PhpParser\Node\Name && !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
-            if ($this->_check_classes) {
-                if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues) === false) {
-                    return false;
+        if ($stmt->class instanceof PhpParser\Node\Name) {
+            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+                if ($this->_check_classes) {
+                    if (ClassChecker::checkClassName($stmt->class, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues) === false) {
+                        return false;
+                    }
                 }
 
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
-                $stmt->inferredType = new Type\Union([new Type\Atomic($absolute_class)]);
+            }
+            else {
+                switch ($stmt->class->parts[0]) {
+                    case 'self':
+                        $absolute_class = $this->_absolute_class;
+                        break;
+
+                    case 'parent':
+                        $absolute_class = $this->_parent_class;
+                        break;
+
+                    case 'static':
+                        // @todo maybe we can do better here
+                        $absolute_class = $this->_absolute_class;
+                        break;
+                }
             }
         }
 
         if ($absolute_class) {
+            $stmt->inferredType = new Type\Union([new Type\Atomic($absolute_class)]);
+
             if (method_exists($absolute_class, '__construct')) {
                 $method_id = $absolute_class . '::__construct';
 
@@ -2270,7 +2289,7 @@ class StatementsChecker
 
         if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($stmt->class->parts[0] === 'parent') {
-                if ($this->_class_extends === null) {
+                if ($this->_parent_class === null) {
                     if (IssueBuffer::accepts(
                         new ParentNotFound('Cannot call method on parent as this class does not extend another', $this->_file_name, $stmt->getLine()),
                         $this->_suppressed_issues
@@ -2279,7 +2298,7 @@ class StatementsChecker
                     }
                 }
 
-                $absolute_class = $this->_class_extends;
+                $absolute_class = $this->_parent_class;
             } else {
                 $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }
@@ -2611,7 +2630,7 @@ class StatementsChecker
 
         if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
             if ($stmt->class->parts[0] === 'parent') {
-                $absolute_class = $this->_class_extends;
+                $absolute_class = $this->_parent_class;
             } else {
                 $absolute_class = ($this->_namespace ? $this->_namespace . '\\' : '') . $this->_class_name;
             }
