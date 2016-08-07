@@ -193,7 +193,7 @@ abstract class Type
                 $return_type_tokens[] = '';
             }
 
-            if ($char === '<' || $char === '>' || $char === '|') {
+            if ($char === '<' || $char === '>' || $char === '|' || $char === '?') {
                 if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
                     $return_type_tokens[count($return_type_tokens) - 1] = $char;
                 }

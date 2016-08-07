@@ -568,7 +568,7 @@ class ClassMethodChecker extends FunctionChecker
                 continue;
             }
 
-            if (in_array($return_type_token, ['<', '>', '|'])) {
+            if (in_array($return_type_token, ['<', '>', '|', '?'])) {
                 continue;
             }
 
