@@ -1155,7 +1155,11 @@ class StatementsChecker
 
                             if (!$class_properties || !isset($class_properties[$stmt->name])) {
                                 if (IssueBuffer::accepts(
-                                    new UndefinedProperty('$' . $var_id . ' is not defined', $this->_file_name, $stmt->getLine()),
+                                    new UndefinedProperty(
+                                        'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
+                                        $this->_file_name,
+                                        $stmt->getLine()
+                                    ),
                                     $this->_suppressed_issues
                                 )) {
                                     return false;
@@ -1187,22 +1191,6 @@ class StatementsChecker
         }
 
         return $this->_checkExpression($stmt->var, $context);
-    }
-
-    protected function _checkThisPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, Context $context, $array_assignment = false)
-    {
-        $class_checker = $this->_source->getClassChecker();
-
-        if (!$class_checker) {
-            if (IssueBuffer::accepts(
-                new InvalidScope('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine()),
-                $this->_suppressed_issues
-            )) {
-                return false;
-            }
-        }
-
-
     }
 
     /**
@@ -1239,6 +1227,15 @@ class StatementsChecker
                 var_dump('no class property types');
                 // @todo This shouldn't happen
                 return;
+            }
+
+            if ($stmt->var->name === 'this' && !$this->_source->getClassChecker()) {
+                if (IssueBuffer::accepts(
+                    new InvalidScope('Cannot use $this when not inside class', $this->_file_name, $stmt->getLine()),
+                    $this->_suppressed_issues
+                )) {
+                    return false;
+                }
             }
 
             $var_id = self::getVarId($stmt);
@@ -1350,7 +1347,7 @@ class StatementsChecker
             return;
         }
 
-        if (!$assignment_type->isMixed()) {
+        if ($assignment_type->isMixed()) {
             return;
         }
 
