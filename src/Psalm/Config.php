@@ -57,6 +57,7 @@ class Config
     protected $custom_error_levels = [
         'InvalidDocblock' => self::REPORT_INFO,
         'NullPropertyFetch' => self::REPORT_INFO,
+        'MissingPropertyDeclaration' => self::REPORT_INFO,
         'MixedMethodCall' => self::REPORT_SUPPRESS,
         'TooManyArguments' => self::REPORT_SUPPRESS
     ];

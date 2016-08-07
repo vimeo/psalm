@@ -69,7 +69,9 @@ class ClassChecker implements StatementsSource
 
         $this->_suppressed_issues = $source->getSuppressedIssues();
 
-        $this->_parent_class = $this->_class->extends ? ClassChecker::getAbsoluteClassFromName($this->_class->extends, $this->_namespace, $this->_aliased_classes) : null;
+        $this->_parent_class = $this->_class->extends
+            ? ClassChecker::getAbsoluteClassFromName($this->_class->extends, $this->_namespace, $this->_aliased_classes)
+            : null;
 
         self::$_existing_classes[$absolute_class] = true;
 

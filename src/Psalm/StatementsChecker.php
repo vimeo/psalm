@@ -1132,12 +1132,15 @@ class StatementsChecker
                                 return;
                             }
 
-                            $class_visibility =
-                                $var_name === 'this'
-                                || $lhs_type_part->value === $this->_absolute_class
-                                || ClassChecker::classExtends($lhs_type_part->value, $this->_absolute_class)
-                                    ? \ReflectionProperty::IS_PRIVATE
-                                    : \ReflectionProperty::IS_PUBLIC;
+                            if ($var_name === 'this' || $lhs_type_part->value === $this->_absolute_class) {
+                                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                            }
+                            elseif (ClassChecker::classExtends($lhs_type_part->value, $this->_absolute_class)) {
+                                $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                            }
+                            else {
+                                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                            }
 
                             $class_properties = ClassChecker::getInstancePropertiesForClass(
                                 $lhs_type_part->value,
@@ -1221,6 +1224,14 @@ class StatementsChecker
             $var_id = 'this->' . $prop_name;
         }
         else {
+            if (!isset($context->vars_in_scope[$stmt->var->name])) {
+                if ($this->_checkVariable($stmt->var, $context) === false) {
+                    return false;
+                }
+
+                return;
+            }
+
             $lhs_type = $context->vars_in_scope[$stmt->var->name];
 
             if (!$lhs_type) {
@@ -1277,17 +1288,24 @@ class StatementsChecker
                     continue;
                 }
 
-                if ((string) $lhs_type_part === 'stdClass') {
+                if ($lhs_type_part->value === 'stdClass') {
                     $class_property_types[] = new Type\Union([$lhs_type_part]);
                     continue;
                 }
 
-                $class_visibility =
-                    $stmt->var->name === 'this'
-                    || (string) $lhs_type_part === $this->_absolute_class
-                    || ClassChecker::classExtends((string) $lhs_type_part, $this->_absolute_class)
-                        ? \ReflectionProperty::IS_PRIVATE
-                        : \ReflectionProperty::IS_PUBLIC;
+                if (self::isMock($lhs_type_part->value)) {
+                    return;
+                }
+
+                if ($stmt->var->name === 'this' || $lhs_type_part->value === $this->_absolute_class) {
+                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                }
+                elseif (ClassChecker::classExtends($lhs_type_part->value, $this->_absolute_class)) {
+                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                }
+                else {
+                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                }
 
                 $class_properties = ClassChecker::getInstancePropertiesForClass(
                     (string) $lhs_type_part,
@@ -2599,9 +2617,19 @@ class StatementsChecker
         }
 
         if ($absolute_class && $this->_check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
+            if ($absolute_class === $this->_absolute_class) {
+                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+            }
+            elseif (ClassChecker::classExtends($this->_absolute_class, $absolute_class)) {
+                $class_visibility = \ReflectionProperty::IS_PROTECTED;
+            }
+            else {
+                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+            }
+
             $visible_class_properties = ClassChecker::getStaticPropertiesForClass(
                 $absolute_class,
-                $absolute_class === $this->_absolute_class ? \ReflectionProperty::IS_PRIVATE : \ReflectionProperty::IS_PUBLIC
+                $class_visibility
             );
 
             if (!isset($visible_class_properties[$stmt->name])) {
@@ -2612,7 +2640,7 @@ class StatementsChecker
                 if ($absolute_class !== $this->_absolute_class) {
                     $all_class_properties = ClassChecker::getStaticPropertiesForClass(
                         $absolute_class,
-                        \ReflectionProperty::IS_PUBLIC
+                        \ReflectionProperty::IS_PRIVATE
                     );
                 }
 
