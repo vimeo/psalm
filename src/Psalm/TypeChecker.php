@@ -501,7 +501,7 @@ class TypeChecker
      * @param  array  $existing_types
      * @return array|false
      */
-    public static function reconcileKeyedTypes(array $new_types, array $existing_types, $file_name, $line_number)
+    public static function reconcileKeyedTypes(array $new_types, array $existing_types, $file_name, $line_number, array $suppressed_issues)
     {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
         $keys = array_unique($keys);
@@ -523,7 +523,8 @@ class TypeChecker
                 isset($existing_types[$key]) ? clone $existing_types[$key] : null,
                 $key,
                 $file_name,
-                $line_number
+                $line_number,
+                $suppressed_issues
             );
 
             if ($result_type === false) {
@@ -552,7 +553,7 @@ class TypeChecker
      * @param  int          $line_number
      * @return Type\Union|false
      */
-    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type = null, $key = null, $file_name = null, $line_number = null)
+    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type = null, $key = null, $file_name = null, $line_number = null, array $suppressed_issues)
     {
         $result_var_types = null;
 
@@ -592,7 +593,8 @@ class TypeChecker
             if (empty($existing_var_type->types)) {
                 if ($key) {
                     if (IssueBuffer::accepts(
-                        new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number)
+                        new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number),
+                        $suppressed_issues
                     )) {
                         return false;
                     }

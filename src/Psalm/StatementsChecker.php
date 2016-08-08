@@ -322,7 +322,8 @@ class StatementsChecker
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
                     $this->_file_name,
-                    $stmt->getLine()
+                    $stmt->getLine(),
+                    $this->_suppressed_issues
                 );
 
             if ($if_vars_in_scope_reconciled === false) {
@@ -357,7 +358,14 @@ class StatementsChecker
                 $possibly_redefined_vars = $redefined_vars;
             }
             elseif (!$stmt->else && !$stmt->elseifs && $negated_types) {
-                $context_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $context->vars_in_scope, $this->_file_name, $stmt->getLine());
+                $context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $negated_types,
+                    $context->vars_in_scope,
+                    $this->_file_name,
+                    $stmt->getLine(),
+                    $this->_suppressed_issues
+                );
+
                 if ($context_vars_reconciled === false) {
                     return false;
                 }
@@ -387,7 +395,14 @@ class StatementsChecker
             $elseif_context = clone $original_context;
 
             if ($negated_types) {
-                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $elseif_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $negated_types,
+                    $elseif_context->vars_in_scope,
+                    $this->_file_name,
+                    $stmt->getLine(),
+                    $this->_suppressed_issues
+                );
+
                 if ($elseif_vars_reconciled === false) {
                     return false;
                 }
@@ -410,7 +425,13 @@ class StatementsChecker
 
             // if the elseif has an || in the conditional, we cannot easily reason about it
             if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp) || !self::_containsBooleanOr($elseif->cond)) {
-                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes($reconcilable_elseif_types, $elseif_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+                $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $reconcilable_elseif_types,
+                    $elseif_context->vars_in_scope,
+                    $this->_file_name,
+                    $stmt->getLine(),
+                    $this->_suppressed_issues
+                );
 
                 if ($elseif_vars_reconciled === false) {
                     return false;
@@ -504,7 +525,14 @@ class StatementsChecker
             $else_context = clone $original_context;
 
             if ($negated_types) {
-                $else_vars_reconciled = TypeChecker::reconcileKeyedTypes($negated_types, $else_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+                $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $negated_types,
+                    $else_context->vars_in_scope,
+                    $this->_file_name,
+                    $stmt->getLine(),
+                    $this->_suppressed_issues
+                );
+
                 if ($else_vars_reconciled === false) {
                     return false;
                 }
@@ -1618,7 +1646,7 @@ class StatementsChecker
                                 $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($iterator_method);
 
                                 if ($iterator_class_type) {
-                                    $value_type = self::fleshOutReturnTypes($iterator_class_type, [], $iterator_method);
+                                    $value_type = self::fleshOutReturnTypes($iterator_class_type, [], $return_type->value, $iterator_method);
                                 }
                             }
 
@@ -1676,7 +1704,13 @@ class StatementsChecker
             // do nothing
         }
         else {
-            $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($while_types, $while_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+            $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                $while_types,
+                $while_context->vars_in_scope,
+                $this->_file_name,
+                $stmt->getLine(),
+                $this->_suppressed_issues
+            );
 
             if ($while_vars_in_scope_reconciled === false) {
                 return false;
@@ -1730,7 +1764,13 @@ class StatementsChecker
 
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes($left_type_assertions, $context->vars_in_scope, $this->_file_name, $stmt->getLine());
+            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
+                $left_type_assertions,
+                $context->vars_in_scope,
+                $this->_file_name,
+                $stmt->getLine(),
+                $this->_suppressed_issues
+            );
 
             if ($op_vars_in_scope === false) {
                 return false;
@@ -1763,7 +1803,13 @@ class StatementsChecker
 
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
-            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes($negated_type_assertions, $context->vars_in_scope, $this->_file_name, $stmt->getLine());
+            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
+                $negated_type_assertions,
+                $context->vars_in_scope,
+                $this->_file_name,
+                $stmt->getLine(),
+                $this->_suppressed_issues
+            );
 
             if ($op_vars_in_scope === false) {
                 return false;
@@ -2188,7 +2234,7 @@ class StatementsChecker
                             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
                             if ($return_types) {
-                                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $method_id);
+                                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $absolute_class, $method_id);
 
                                 $stmt->inferredType = $return_types;
                             }
@@ -2326,8 +2372,6 @@ class StatementsChecker
             $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
         }
 
-
-
         if (!$this->_check_methods) {
             return;
         }
@@ -2386,7 +2430,7 @@ class StatementsChecker
             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
             if ($return_types) {
-                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $method_id);
+                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $stmt->class->parts === ['parent'] ? $this->_absolute_class : $absolute_class, $method_id);
                 $stmt->inferredType = $return_types;
             }
         }
@@ -2394,10 +2438,10 @@ class StatementsChecker
         return $this->_checkMethodParams($stmt->args, $method_id, $context, $stmt->getLine());
     }
 
-    public static function fleshOutReturnTypes(Type\Union $return_type, array $args, $method_id)
+    public static function fleshOutReturnTypes(Type\Union $return_type, array $args, $calling_class, $method_id)
     {
         foreach ($return_type->types as $key => $return_type_part) {
-            self::_fleshOutAtomicReturnType($return_type_part, $args, $method_id);
+            self::_fleshOutAtomicReturnType($return_type_part, $args, $calling_class, $method_id);
 
             if ($return_type_part->value !== $key) {
                 unset($return_type->types[$key]);
@@ -2408,12 +2452,10 @@ class StatementsChecker
         return $return_type;
     }
 
-    protected static function _fleshOutAtomicReturnType(Type\Atomic &$return_type, array $args, $method_id)
+    protected static function _fleshOutAtomicReturnType(Type\Atomic &$return_type, array $args, $calling_class, $method_id)
     {
         if ($return_type->value === '$this' || $return_type->value === 'static') {
-            $absolute_class = explode('::', $method_id)[0];
-
-            $return_type->value = $absolute_class;
+            $return_type->value = $calling_class;
         }
         else if ($return_type->value[0] === '$') {
             $method_params = ClassMethodChecker::getMethodParams($method_id);
@@ -2436,7 +2478,7 @@ class StatementsChecker
         if ($return_type instanceof Type\Generic) {
             foreach ($return_type->type_params as $type_param) {
                 if ($type_param instanceof Type\Union) {
-                    $type_param = self::fleshOutReturnTypes($type_param, $args, $method_id);
+                    $type_param = self::fleshOutReturnTypes($type_param, $args, $calling_class, $method_id);
                 }
                 else {
                     $type_param = self::_fleshOutAtomicReturnType($type_param, $args, $method_id);
@@ -2751,7 +2793,8 @@ class StatementsChecker
                 $reconcilable_if_types,
                 $t_if_context->vars_in_scope,
                 $this->_file_name,
-                $stmt->getLine()
+                $stmt->getLine(),
+                $this->_suppressed_issues
             );
 
         if ($t_if_vars_in_scope_reconciled === false) {
@@ -2771,7 +2814,13 @@ class StatementsChecker
         if ($negatable_if_types) {
             $negated_if_types = TypeChecker::negateTypes($negatable_if_types);
 
-            $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes($negated_if_types, $t_else_context->vars_in_scope, $this->_file_name, $stmt->getLine());
+            $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                $negated_if_types,
+                $t_else_context->vars_in_scope,
+                $this->_file_name,
+                $stmt->getLine(),
+                $this->_suppressed_issues
+            );
 
             if ($t_else_vars_in_scope_reconciled === false) {
                 return false;
@@ -2792,7 +2841,7 @@ class StatementsChecker
         }
         elseif ($stmt->cond) {
             if (isset($stmt->cond->inferredType)) {
-                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, '', $this->_file_name, $stmt->getLine());
+                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, '', $this->_file_name, $stmt->getLine(), $this->_suppressed_issues);
 
                 if ($if_return_type_reconciled === false) {
                     return false;

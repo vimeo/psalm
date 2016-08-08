@@ -73,6 +73,7 @@ class ClassMethodChecker extends FunctionChecker
         $declared_return_type = StatementsChecker::fleshOutReturnTypes(
             $method_return_types,
             [],
+            $this->_absolute_class,
             $method_id
         );
 
