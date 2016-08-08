@@ -4,11 +4,19 @@ namespace Psalm;
 
 class Context
 {
+    /** @var array<Type\Union> */
     public $vars_in_scope = [];
 
     public $vars_possibly_in_scope = [];
 
+    /** @var boolean */
     public $in_loop = false;
+
+    /** @var string|null */
+    public $self;
+
+    /** @var string|null */
+    public $parent;
 
     public function __clone()
     {

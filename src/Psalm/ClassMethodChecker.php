@@ -678,6 +678,11 @@ class ClassMethodChecker extends FunctionChecker
     }
 
     /**
+     * @param  string $method_id
+     * @param  string $calling_context
+     * @param  string $file_name
+     * @param  int    $line_number
+     * @param  array  $suppresssed_issues
      * @return false|null
      */
     public static function checkMethodVisibility($method_id, $calling_context, $file_name, $line_number, array $suppresssed_issues)

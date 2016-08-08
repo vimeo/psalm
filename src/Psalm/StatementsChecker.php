@@ -181,7 +181,9 @@ class StatementsChecker
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checker = new FunctionChecker($stmt, $this->_source);
-                $function_checker->check(new Context());
+                $function_context = new Context();
+                $function_context->self = $context->self;
+                $function_checker->check($function_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 $this->_checkExpression($stmt, $context);
@@ -224,7 +226,7 @@ class StatementsChecker
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 foreach ($stmt->consts as $const) {
-                    self::$_class_consts[$this->_absolute_class . '::' . $const->name] = true;
+                    self::$_class_consts[$context->self . '::' . $const->name] = true;
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
@@ -761,11 +763,12 @@ class StatementsChecker
             }
 
             $use_context = new Context();
+            $use_context->self = $context->self;
 
             if (!$this->_is_static) {
                 $this_class = ClassChecker::getThisClass() && ClassChecker::classExtends(ClassChecker::getThisClass(), $this->_absolute_class) ?
                     ClassChecker::getThisClass() :
-                    $this->_absolute_class;
+                    $context->self;
 
                 if ($this_class) {
                     $use_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this_class)]);
@@ -1138,10 +1141,10 @@ class StatementsChecker
                                 return;
                             }
 
-                            if ($var_name === 'this' || $lhs_type_part->value === $this->_absolute_class) {
+                            if ($var_name === 'this' || $lhs_type_part->value === $context->self) {
                                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
                             }
-                            elseif (ClassChecker::classExtends($lhs_type_part->value, $this->_absolute_class)) {
+                            elseif (ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
                                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
                             }
                             else {
@@ -1206,7 +1209,7 @@ class StatementsChecker
         $class_property_types = [];
 
         if ($stmt instanceof PhpParser\Node\Stmt\PropertyProperty) {
-            $class_properties = ClassChecker::getInstancePropertiesForClass($this->_absolute_class, \ReflectionProperty::IS_PRIVATE);
+            $class_properties = ClassChecker::getInstancePropertiesForClass($context->self, \ReflectionProperty::IS_PRIVATE);
 
             $class_property_types[] = $class_properties[$prop_name];
 
@@ -1297,10 +1300,10 @@ class StatementsChecker
                     return;
                 }
 
-                if ($stmt->var->name === 'this' || $lhs_type_part->value === $this->_absolute_class) {
+                if ($stmt->var->name === 'this' || $lhs_type_part->value === $context->self) {
                     $class_visibility = \ReflectionProperty::IS_PRIVATE;
                 }
-                elseif (ClassChecker::classExtends($lhs_type_part->value, $this->_absolute_class)) {
+                elseif (ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
                     $class_visibility = \ReflectionProperty::IS_PROTECTED;
                 }
                 else {
@@ -1388,16 +1391,16 @@ class StatementsChecker
             else {
                 switch ($stmt->class->parts[0]) {
                     case 'self':
-                        $absolute_class = $this->_absolute_class;
+                        $absolute_class = $context->self;
                         break;
 
                     case 'parent':
-                        $absolute_class = $this->_parent_class;
+                        $absolute_class = $context->parent;
                         break;
 
                     case 'static':
                         // @todo maybe we can do better here
-                        $absolute_class = $this->_absolute_class;
+                        $absolute_class = $context->self;
                         break;
                 }
             }
@@ -2157,16 +2160,14 @@ class StatementsChecker
                                 return $does_method_exist;
                             }
 
-                            if (!($this->_source->getSource() instanceof TraitChecker)) {
-                                $calling_context = $this->_absolute_class;
+                            /**
+                            if (ClassChecker::getThisClass() && ClassChecker::classExtends(ClassChecker::getThisClass(), $this->_absolute_class)) {
+                                $calling_context = $context->self;
+                            }
+                            **/
 
-                                if (ClassChecker::getThisClass() && ClassChecker::classExtends(ClassChecker::getThisClass(), $this->_absolute_class)) {
-                                    $calling_context = $this->_absolute_class;
-                                }
-
-                                if (ClassMethodChecker::checkMethodVisibility($method_id, $calling_context, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
-                                    return false;
-                                }
+                            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+                                return false;
                             }
 
                             if (ClassMethodChecker::checkMethodNotDeprecated($method_id, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
@@ -2210,6 +2211,7 @@ class StatementsChecker
             }
 
             $this_context->vars_in_scope['this'] = $context->vars_in_scope['this'];
+            $this_context->self = (string) $context->vars_in_scope['this'];
 
             $method_checker->check($this_context);
 
@@ -2349,7 +2351,7 @@ class StatementsChecker
                 return $does_method_exist;
             }
 
-            if (ClassMethodChecker::checkMethodVisibility($method_id, $this->_absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
+            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
                 return false;
             }
 
@@ -2581,7 +2583,7 @@ class StatementsChecker
     {
         if ($this->_check_consts && $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts !== ['static']) {
             if ($stmt->class->parts === ['self']) {
-                $absolute_class = $this->_absolute_class;
+                $absolute_class = $context->self;
             } else {
                 $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_aliased_classes);
                 if (ClassChecker::checkAbsoluteClassOrInterface($absolute_class, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
@@ -2643,10 +2645,10 @@ class StatementsChecker
         }
 
         if ($absolute_class && $this->_check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
-            if ($absolute_class === $this->_absolute_class) {
+            if ($absolute_class === $context->self) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             }
-            elseif (ClassChecker::classExtends($this->_absolute_class, $absolute_class)) {
+            elseif (ClassChecker::classExtends($context->self, $absolute_class)) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             }
             else {
@@ -2663,7 +2665,7 @@ class StatementsChecker
 
                 $all_class_properties = [];
 
-                if ($absolute_class !== $this->_absolute_class) {
+                if ($absolute_class !== $context->self) {
                     $all_class_properties = ClassChecker::getStaticPropertiesForClass(
                         $absolute_class,
                         \ReflectionProperty::IS_PRIVATE
@@ -3118,7 +3120,7 @@ class StatementsChecker
         if ($stmt->name instanceof PhpParser\Node\Name && $this->_check_functions) {
             $method_id = implode('', $stmt->name->parts);
 
-            if ($this->_absolute_class) {
+            if ($context->self) {
                 //$method_id = $this->_absolute_class . '::' . $method_id;
             }
 

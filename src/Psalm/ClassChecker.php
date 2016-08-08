@@ -124,6 +124,10 @@ class ClassChecker implements StatementsSource
 
         $class_context = new Context();
 
+        $class_context->self = $this->_absolute_class;
+        $class_context->parent = $this->_parent_class;
+        $class_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->_absolute_class)]);
+
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_id = $this->_absolute_class . '::' . $stmt->name;
@@ -196,7 +200,6 @@ class ClassChecker implements StatementsSource
                             }
                         }
 
-
                         if (!$stmt->isStatic()) {
                             $class_context->vars_in_scope['this->' . $property->name] = $property_type;
                         }
@@ -211,9 +214,7 @@ class ClassChecker implements StatementsSource
         }
 
         if ($leftover_stmts) {
-            $context = new Context();
-
-            (new StatementsChecker($this))->check($leftover_stmts, $context);
+            (new StatementsChecker($this))->check($leftover_stmts, $class_context);
         }
 
         $config = Config::getInstance();
