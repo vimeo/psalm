@@ -289,7 +289,7 @@ class StatementsChecker
         // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
         $original_context = clone $context;
 
-        if ($this->_checkCondition($stmt->cond, $if_context) === false) {
+        if ($this->_checkExpression($stmt->cond, $if_context) === false) {
             return false;
         }
 
@@ -419,7 +419,7 @@ class StatementsChecker
             }
 
             // check the elseif
-            if ($this->_checkCondition($elseif->cond, $elseif_context) === false) {
+            if ($this->_checkExpression($elseif->cond, $elseif_context) === false) {
                 return false;
             }
 
@@ -607,11 +607,6 @@ class StatementsChecker
                 }
             }
         }
-    }
-
-    protected function _checkCondition(PhpParser\Node\Expr $stmt, Context $context)
-    {
-        return $this->_checkExpression($stmt, $context);
     }
 
     protected function _checkStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
@@ -1326,14 +1321,15 @@ class StatementsChecker
             if (!$has_regular_setter) {
                 return;
             }
+
+            // because we don't want to be assigning for property declarations
+            $context->vars_in_scope[$var_id] = $assignment_type;
         }
 
         if (count($class_property_types) === 1 && isset($class_property_types[0]->types['stdClass'])) {
             $context->vars_in_scope[$var_id] = Type::getMixed();
             return;
         }
-
-        $context->vars_in_scope[$var_id] = $assignment_type;
 
         if (!$class_property_types) {
             if (IssueBuffer::accepts(
@@ -1502,7 +1498,7 @@ class StatementsChecker
         }
 
         foreach ($stmt->cond as $condition) {
-            if ($this->_checkCondition($condition, $for_context) === false) {
+            if ($this->_checkExpression($condition, $for_context) === false) {
                 return false;
             }
         }
@@ -1654,7 +1650,7 @@ class StatementsChecker
     {
         $while_context = clone $context;
 
-        if ($this->_checkCondition($stmt->cond, $while_context) === false) {
+        if ($this->_checkExpression($stmt->cond, $while_context) === false) {
             return false;
         }
 
@@ -1702,7 +1698,7 @@ class StatementsChecker
             return false;
         }
 
-        return $this->_checkCondition($stmt->cond, $context);
+        return $this->_checkExpression($stmt->cond, $context);
     }
 
     protected function _checkBinaryOp(PhpParser\Node\Expr\BinaryOp $stmt, Context $context, $nesting = 0)
@@ -2719,7 +2715,7 @@ class StatementsChecker
 
     protected function _checkTernary(PhpParser\Node\Expr\Ternary $stmt, Context $context)
     {
-        if ($this->_checkCondition($stmt->cond, $context) === false) {
+        if ($this->_checkExpression($stmt->cond, $context) === false) {
             return false;
         }
 
@@ -2829,7 +2825,7 @@ class StatementsChecker
             }
         }
 
-        if ($this->_checkCondition($stmt->cond, $context) === false) {
+        if ($this->_checkExpression($stmt->cond, $context) === false) {
             return false;
         }
 
@@ -2871,7 +2867,7 @@ class StatementsChecker
             $case_exit_type = $case_exit_types[$i];
 
             if ($case->cond) {
-                if ($this->_checkCondition($case->cond, $context) === false) {
+                if ($this->_checkExpression($case->cond, $context) === false) {
                     return false;
                 }
 

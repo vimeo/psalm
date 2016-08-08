@@ -59,7 +59,7 @@ class ClassChecker implements StatementsSource
 
     protected static $_class_extends = [];
 
-    public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
         $this->_class = $class;
         $this->_namespace = $source->getNamespace();
@@ -75,12 +75,12 @@ class ClassChecker implements StatementsSource
 
         self::$_existing_classes[$absolute_class] = true;
 
-        if (self::$_this_class) {
+        if (self::$_this_class || $class instanceof PhpParser\Node\Stmt\Trait_) {
             self::$_class_checkers[$absolute_class] = $this;
         }
     }
 
-    public function check($check_methods = true, $method_id = null)
+    public function check($check_methods = true, Context $class_context = null)
     {
         if ($this->_parent_class) {
             if (self::checkAbsoluteClassOrInterface(
@@ -122,11 +122,12 @@ class ClassChecker implements StatementsSource
             self::$_protected_static_class_properties[$this->_absolute_class] = self::$_protected_static_class_properties[$this->_parent_class];
         }
 
-        $class_context = new Context();
-
-        $class_context->self = $this->_absolute_class;
-        $class_context->parent = $this->_parent_class;
-        $class_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->_absolute_class)]);
+        if (!$class_context) {
+            $class_context = new Context();
+            $class_context->self = $this->_absolute_class;
+            $class_context->parent = $this->_parent_class;
+            $class_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->_absolute_class)]);
+        }
 
         foreach ($this->_class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
@@ -155,6 +156,7 @@ class ClassChecker implements StatementsSource
 
                 foreach ($stmt->traits as $trait) {
                     $trait_name = self::getAbsoluteClassFromName($trait, $this->_namespace, $this->_aliased_classes);
+
                     if (!trait_exists($trait_name)) {
                         if (IssueBuffer::accepts(
                             new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->_file_name, $trait->getLine()),
@@ -163,9 +165,28 @@ class ClassChecker implements StatementsSource
                             return false;
                         }
                     }
-                    $this->_registerInheritedMethods($trait_name, $method_map);
-                }
+                    else {
+                        try {
+                            $reflection_trait = new \ReflectionClass($trait_name);
+                        }
+                        catch (\ReflectionException $e) {
+                            if (IssueBuffer::accepts(
+                                new UndefinedTrait('Trait ' . $trait_name . ' has wrong casing', $this->_file_name, $trait->getLine()),
+                                $this->_suppressed_issues
+                            )) {
+                                return false;
+                            }
 
+                            continue;
+                        }
+
+                        $this->_registerInheritedMethods($trait_name, $method_map);
+
+                        $trait_checker = FileChecker::getClassCheckerFromClass($trait_name);
+
+                        $trait_checker->check(true, $class_context);
+                    }
+                }
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($stmt->props as $property) {
@@ -179,24 +200,24 @@ class ClassChecker implements StatementsSource
 
                         if ($stmt->isStatic()) {
                             if ($stmt->isPublic()) {
-                                self::$_public_static_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                                self::$_public_static_class_properties[$class_context->self][$property->name] = $property_type;
                             }
                             elseif ($stmt->isProtected()) {
-                                self::$_protected_static_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                                self::$_protected_static_class_properties[$class_context->self][$property->name] = $property_type;
                             }
                             elseif ($stmt->isPrivate()) {
-                                self::$_private_static_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                                self::$_private_static_class_properties[$class_context->self][$property->name] = $property_type;
                             }
                         }
                         else {
                             if ($stmt->isPublic()) {
-                                self::$_public_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                                self::$_public_class_properties[$class_context->self][$property->name] = $property_type;
                             }
                             elseif ($stmt->isProtected()) {
-                                self::$_protected_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                                self::$_protected_class_properties[$class_context->self][$property->name] = $property_type;
                             }
                             elseif ($stmt->isPrivate()) {
-                                self::$_private_class_properties[$this->_absolute_class][$property->name] = $property_type;
+                                self::$_private_class_properties[$class_context->self][$property->name] = $property_type;
                             }
                         }
 

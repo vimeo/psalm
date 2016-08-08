@@ -45,8 +45,8 @@ class NamespaceChecker implements StatementsSource
                 $absolute_class = ClassChecker::getAbsoluteClassFromString($stmt->name, $this->_namespace_name, []);
 
                 if ($check_classes) {
-                    $trait_checker = ClassChecker::getClassCheckerFromClass($absolute_class) ?: new TraitChecker($stmt, $this, $absolute_class);
-                    $trait_checker->check($check_class_statements);
+                    // register the trait checker
+                    ClassChecker::getClassCheckerFromClass($absolute_class) ?: new TraitChecker($stmt, $this, $absolute_class);
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {

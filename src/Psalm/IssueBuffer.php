@@ -21,9 +21,7 @@ class IssueBuffer
             return false;
         }
 
-        self::add($e);
-
-        return true;
+        return self::add($e);
     }
 
     public static function add(Issue\CodeIssue $e)
@@ -60,6 +58,8 @@ class IssueBuffer
         }
 
         self::$errors[] = $error_message;
+
+        return true;
     }
 
     public static function finish()

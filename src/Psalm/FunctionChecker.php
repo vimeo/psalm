@@ -57,7 +57,7 @@ class FunctionChecker implements StatementsSource
                     }
                 }
                 else {
-                    $context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->_absolute_class)]);
+                    $context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($context->self)]);
                 }
             }
 

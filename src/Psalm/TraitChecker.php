@@ -16,9 +16,19 @@ class TraitChecker extends ClassChecker
 
         $this->_parent_class = null;
 
+        $this->_suppressed_issues = $source->getSuppressedIssues();
+
         self::$_existing_classes[$absolute_class] = 1;
-        if (self::$_this_class) {
-            self::$_class_checkers[$absolute_class] = $this;
+
+        self::$_class_checkers[$absolute_class] = $this;
+    }
+
+    public function check($check_methods = true, Context $class_context = null)
+    {
+        if (!$class_context) {
+            throw new \InvalidArgumentException('TraitChecker::check must be called with a $class_context');
         }
+
+        parent::check($check_methods, $class_context);
     }
 }
