@@ -27,6 +27,7 @@ use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Issue\UndefinedProperty;
+use Psalm\Issue\UndefinedThisProperty;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
@@ -1152,15 +1153,29 @@ class StatementsChecker
                             );
 
                             if (!$class_properties || !isset($class_properties[$stmt->name])) {
-                                if (IssueBuffer::accepts(
-                                    new UndefinedProperty(
-                                        'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
-                                        $this->_file_name,
-                                        $stmt->getLine()
-                                    ),
-                                    $this->_suppressed_issues
-                                )) {
-                                    return false;
+                                if ($stmt->var->name === 'this') {
+                                    if (IssueBuffer::accepts(
+                                        new UndefinedThisProperty(
+                                            'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
+                                            $this->_file_name,
+                                            $stmt->getLine()
+                                        ),
+                                        $this->_suppressed_issues
+                                    )) {
+                                        return false;
+                                    }
+                                }
+                                else {
+                                    if (IssueBuffer::accepts(
+                                        new UndefinedProperty(
+                                            'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
+                                            $this->_file_name,
+                                            $stmt->getLine()
+                                        ),
+                                        $this->_suppressed_issues
+                                    )) {
+                                        return false;
+                                    }
                                 }
 
                                 return;
