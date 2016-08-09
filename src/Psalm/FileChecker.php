@@ -59,7 +59,7 @@ class FileChecker implements StatementsSource
             return;
         }
 
-        if ($cache && $check_classes && isset(self::$_classes_checked[$this->_real_file_name])) {
+        if ($cache && $check_classes && !$check_class_methods && isset(self::$_classes_checked[$this->_real_file_name])) {
             return;
         }
 
