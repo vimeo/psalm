@@ -67,7 +67,13 @@ class FunctionChecker implements StatementsSource
                 $method_params = ClassMethodChecker::getMethodParams($this->getMethodId());
 
                 foreach ($method_params as $method_param) {
-                    $context->vars_in_scope[$method_param['name']] = clone $method_param['type'];
+                    $context->vars_in_scope[$method_param['name']] = StatementsChecker::fleshOutTypes(
+                        clone $method_param['type'],
+                        [],
+                        $context->self,
+                        $this->getMethodId()
+                    );
+
                     $statements_checker->registerVariable($method_param['name'], $this->_function->getLine());
                 }
             }

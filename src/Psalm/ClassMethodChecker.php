@@ -69,8 +69,8 @@ class ClassMethodChecker extends FunctionChecker
             return;
         }
 
-        // passing it through fleshOutReturnTypes eradicates errant $ vars
-        $declared_return_type = StatementsChecker::fleshOutReturnTypes(
+        // passing it through fleshOutTypes eradicates errant $ vars
+        $declared_return_type = StatementsChecker::fleshOutTypes(
             $method_return_types,
             [],
             $this->_absolute_class,
@@ -434,36 +434,31 @@ class ClassMethodChecker extends FunctionChecker
         foreach ($method->getParams() as $param) {
             $param_type = null;
 
-            if ($param->type) {
-                if ($param->type instanceof Type) {
-                    $param_type = $param_type;
-                }
-                else {
-                    if (is_string($param->type)) {
-                        $param_type_string = $param->type;
-                    }
-                    elseif ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
-                        $param_type_string = implode('\\', $param->type->parts);
-                    }
-                    elseif ($param->type->parts === ['self']) {
-                        $param_type_string = $this->_absolute_class;
-                    }
-                    else {
-                        $param_type_string = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
-                    }
-
-                    $is_nullable = $param->default !== null &&
+            $is_nullable = $param->default !== null &&
                             $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
                             $param->default->name instanceof PhpParser\Node\Name &&
-                            $param->default->name->parts = ['null'];
+                            $param->default->name->parts === ['null'];
 
-                    if ($param_type_string) {
-                        if ($is_nullable) {
-                            $param_type_string .= '|null';
-                        }
+            if ($param->type) {
+                if (is_string($param->type)) {
+                    $param_type_string = $param->type;
+                }
+                elseif ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
+                    $param_type_string = implode('\\', $param->type->parts);
+                }
+                elseif ($param->type->parts === ['self']) {
+                    $param_type_string = $this->_absolute_class;
+                }
+                else {
+                    $param_type_string = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                }
 
-                        $param_type = Type::parseString($param_type_string);
+                if ($param_type_string) {
+                    if ($is_nullable) {
+                        $param_type_string .= '|null';
                     }
+
+                    $param_type = Type::parseString($param_type_string);
                 }
             }
 
@@ -476,8 +471,8 @@ class ClassMethodChecker extends FunctionChecker
                 'by_ref' => $param->byRef,
                 'type' => $param_type ?: Type::getMixed(),
                 'is_optional' => $is_optional,
+                'is_nullable' => $is_nullable,
             ];
-
         }
 
         $config = Config::getInstance();
@@ -523,7 +518,7 @@ class ClassMethodChecker extends FunctionChecker
                         continue;
                     }
 
-                    $param_type =
+                    $new_param_type =
                         Type::parseString(
                             $this->fixUpLocalType(
                                 $docblock_param['type'],
@@ -534,10 +529,10 @@ class ClassMethodChecker extends FunctionChecker
                         );
 
                     if ($method_param_names[$param_name] && !$method_param_names[$param_name]->isMixed()) {
-                        if (!$param_type->isIn($method_param_names[$param_name])) {
+                        if (!$new_param_type->isIn($method_param_names[$param_name])) {
                             if (IssueBuffer::accepts(
                                 new InvalidDocblock(
-                                    'Parameter $' . $param_name .' has wrong type \'' . $param_type . '\', should be \'' . $method_param_names[$param_name] . '\'',
+                                    'Parameter $' . $param_name .' has wrong type \'' . $new_param_type . '\', should be \'' . $method_param_names[$param_name] . '\'',
                                     $this->_file_name,
                                     $method->getLine()
                                 )
@@ -546,6 +541,19 @@ class ClassMethodChecker extends FunctionChecker
                             }
 
                             continue;
+                        }
+                    }
+
+                    foreach (self::$_method_params[$method_id] as &$signature_method_param) {
+                        if ($signature_method_param['name'] === $param_name) {
+                            $existing_param_type_nullable = $signature_method_param['is_nullable'];
+
+                            if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
+                                $new_param_type->types['null'] = Type::getNull(false);
+                            }
+
+                            $signature_method_param['type'] = $new_param_type;
+                            break;
                         }
                     }
                 }

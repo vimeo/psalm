@@ -1648,6 +1648,7 @@ class StatementsChecker
                             break;
 
                         case 'array':
+                        case 'object':
                             break;
 
                         case 'null':
@@ -1676,11 +1677,11 @@ class StatementsChecker
                                 $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($iterator_method);
 
                                 if ($iterator_class_type) {
-                                    $value_type = self::fleshOutReturnTypes($iterator_class_type, [], $return_type->value, $iterator_method);
+                                    $value_type = self::fleshOutTypes($iterator_class_type, [], $return_type->value, $iterator_method);
                                 }
                             }
 
-                            if ($return_type->value !== 'array' && $return_type->value !== 'Traversable' && $return_type->value !== $this->_class_name) {
+                            if ($return_type->value !== 'Traversable' && $return_type->value !== $this->_class_name) {
                                 if (ClassChecker::checkAbsoluteClassOrInterface($return_type->value, $this->_file_name, $stmt->getLine(), $this->_suppressed_issues) === false) {
                                     return false;
                                 }
@@ -2264,7 +2265,7 @@ class StatementsChecker
                             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
                             if ($return_types) {
-                                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $absolute_class, $method_id);
+                                $return_types = self::fleshOutTypes($return_types, $stmt->args, $absolute_class, $method_id);
 
                                 $stmt->inferredType = $return_types;
                             }
@@ -2460,7 +2461,7 @@ class StatementsChecker
             $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
 
             if ($return_types) {
-                $return_types = self::fleshOutReturnTypes($return_types, $stmt->args, $stmt->class->parts === ['parent'] ? $this->_absolute_class : $absolute_class, $method_id);
+                $return_types = self::fleshOutTypes($return_types, $stmt->args, $stmt->class->parts === ['parent'] ? $this->_absolute_class : $absolute_class, $method_id);
                 $stmt->inferredType = $return_types;
             }
         }
@@ -2468,10 +2469,10 @@ class StatementsChecker
         return $this->_checkMethodParams($stmt->args, $method_id, $context, $stmt->getLine());
     }
 
-    public static function fleshOutReturnTypes(Type\Union $return_type, array $args, $calling_class, $method_id)
+    public static function fleshOutTypes(Type\Union $return_type, array $args, $calling_class, $method_id)
     {
         foreach ($return_type->types as $key => $return_type_part) {
-            self::_fleshOutAtomicReturnType($return_type_part, $args, $calling_class, $method_id);
+            self::_fleshOutAtomicType($return_type_part, $args, $calling_class, $method_id);
 
             if ($return_type_part->value !== $key) {
                 unset($return_type->types[$key]);
@@ -2482,7 +2483,7 @@ class StatementsChecker
         return $return_type;
     }
 
-    protected static function _fleshOutAtomicReturnType(Type\Atomic &$return_type, array $args, $calling_class, $method_id)
+    protected static function _fleshOutAtomicType(Type\Atomic &$return_type, array $args, $calling_class, $method_id)
     {
         if ($return_type->value === '$this' || $return_type->value === 'static') {
             $return_type->value = $calling_class;
@@ -2508,7 +2509,7 @@ class StatementsChecker
         if ($return_type instanceof Type\Generic) {
             foreach ($return_type->type_params as $type_param) {
                 if ($type_param instanceof Type\Union) {
-                    $type_param = self::fleshOutReturnTypes($type_param, $args, $calling_class, $method_id);
+                    $type_param = self::fleshOutTypes($type_param, $args, $calling_class, $method_id);
                 }
                 else {
                     $type_param = self::_fleshOutAtomicReturnType($type_param, $args, $method_id);
