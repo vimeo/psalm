@@ -3233,7 +3233,7 @@ class StatementsChecker
             }
         }
 
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['get_class']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['get_class'] && $stmt->args) {
             $var = $stmt->args[0]->value;
 
             if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
