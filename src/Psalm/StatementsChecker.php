@@ -2909,19 +2909,12 @@ class StatementsChecker
     {
         $type_candidate_var = null;
 
-        if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall &&
-            $stmt->cond->name instanceof PhpParser\Node\Name &&
-            $stmt->cond->name->parts === ['get_class']) {
-
-            $var = $stmt->cond->args[0]->value;
-
-            if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
-                $type_candidate_var = $var->name;
-            }
-        }
-
         if ($this->_checkExpression($stmt->cond, $context) === false) {
             return false;
+        }
+
+        if (isset($stmt->cond->inferredType) && array_values($stmt->cond->inferredType->types)[0] instanceof Type\T) {
+            $type_candidate_var = array_values($stmt->cond->inferredType->types)[0]->typeof;
         }
 
         $original_context = clone $context;
@@ -3237,6 +3230,14 @@ class StatementsChecker
                 if ($this->_checkExpression($arg->value, $context) === false) {
                     return false;
                 }
+            }
+        }
+
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['get_class']) {
+            $var = $stmt->args[0]->value;
+
+            if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
+                $stmt->inferredType = new Type\Union([new Type\T($var->name)]);
             }
         }
     }
