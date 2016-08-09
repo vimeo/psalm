@@ -596,7 +596,9 @@ class ClassChecker implements StatementsSource
     public static function getStaticPropertiesForClass($class_name, $visibility)
     {
         if (!isset(self::$_public_static_class_properties[$class_name])) {
-            self::_registerClassProperties($class_name);
+            if (self::_registerClassProperties($class_name) === false) {
+                return [];
+            }
         }
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
