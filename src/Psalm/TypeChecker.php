@@ -258,6 +258,14 @@ class TypeChecker
                 $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
                 $if_types[$var_name] = '!array';
             }
+            else if (self::_hasBoolCheck($conditional->expr)) {
+                $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                $if_types[$var_name] = '!bool';
+            }
+            else if (self::_hasStringCheck($conditional->expr)) {
+                $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                $if_types[$var_name] = '!string';
+            }
             else if (self::_hasObjectCheck($conditional->expr)) {
                 $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
                 $if_types[$var_name] = '!object';
@@ -373,6 +381,14 @@ class TypeChecker
             $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
             $if_types[$var_name] = 'array';
         }
+        else if (self::_hasStringCheck($conditional)) {
+            $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+            $if_types[$var_name] = 'string';
+        }
+        else if (self::_hasBoolCheck($conditional)) {
+            $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+            $if_types[$var_name] = 'bool';
+        }
         else if (self::_hasObjectCheck($conditional)) {
             $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
             $if_types[$var_name] = 'object';
@@ -485,6 +501,30 @@ class TypeChecker
     /**
      * @return bool
      */
+    protected static function _hasStringCheck(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_string']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function _hasBoolCheck(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_bool']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
     protected static function _hasObjectCheck(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_object']) {
@@ -518,14 +558,22 @@ class TypeChecker
                 continue;
             }
 
-            $result_type = self::reconcileTypes(
-                (string) $new_types[$key],
-                isset($existing_types[$key]) ? clone $existing_types[$key] : null,
-                $key,
-                $file_name,
-                $line_number,
-                $suppressed_issues
-            );
+            $new_type_parts = explode('&', $new_types[$key]);
+
+            $result_type = isset($existing_types[$key]) ? clone $existing_types[$key] : null;
+
+            foreach ($new_type_parts as $new_type_part) {
+                $result_type = self::reconcileTypes(
+                    (string) $new_type_part,
+                    $result_type,
+                    $key,
+                    $file_name,
+                    $line_number,
+                    $suppressed_issues
+                );
+            }
+
+            //echo((string) $new_types[$key] . ' and ' . (isset($existing_types[$key]) ? (string) $existing_types[$key] : '') . ' => ' . $result_type . PHP_EOL);
 
             if ($result_type === false) {
                 return false;
@@ -724,7 +772,13 @@ class TypeChecker
                 return $type;
             }
 
-            return $type[0] === '!' ? substr($type, 1) : '!' . $type;
+            $type_parts = explode('&', $type);
+
+            foreach ($type_parts as &$type_part) {
+                $type_part = $type_part[0] === '!' ? substr($type_part, 1) : '!' . $type_part;
+            }
+
+            return implode('&', $type_parts);
         }, $types);
     }
 }
