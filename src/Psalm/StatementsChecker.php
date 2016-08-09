@@ -1348,8 +1348,38 @@ class StatementsChecker
                     $class_visibility = \ReflectionProperty::IS_PUBLIC;
                 }
 
+                if (!ClassChecker::classExists($lhs_type_part->value)) {
+                    if (ClassChecker::interfaceExists($lhs_type_part->value)) {
+                        if (IssueBuffer::accepts(
+                            new NoInterfaceProperties(
+                                'Interfaces cannot have properties',
+                                $this->_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->_suppressed_issues
+                        )) {
+                            return false;
+                        }
+
+                        return;
+                    }
+
+                    if (IssueBuffer::accepts(
+                        new UndefinedClass(
+                            'Cannot set properties of undefined class ' . $lhs_type_part->value,
+                            $this->_file_name,
+                            $stmt->getLine()
+                        ),
+                        $this->_suppressed_issues
+                    )) {
+                        return false;
+                    }
+
+                    return;
+                }
+
                 $class_properties = ClassChecker::getInstancePropertiesForClass(
-                    (string) $lhs_type_part,
+                    $lhs_type_part->value,
                     $class_visibility
                 );
 
