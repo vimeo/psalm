@@ -93,6 +93,58 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testReturnTypeAfterTwoIfsWithThrow()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A1 {
+        }
+        class A2 {
+        }
+        class B {
+            /**
+             * @return A1
+             */
+            public function bar(A1 $a1 = null, A2 $a2 = null) {
+                if (!$a1) {
+                    throw new \Exception();
+                }
+                if (!$a2) {
+                    throw new \Exception();
+                }
+                return $a1;
+            }
+        }');
+
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testReturnTypeAfterIfElseIfWithThrow()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A1 {
+        }
+        class A2 {
+        }
+        class B {
+            /**
+             * @return A1
+             */
+            public function bar(A1 $a1 = null, A2 $a2 = null) {
+                if (!$a1) {
+                    throw new \Exception();
+                }
+                elseif (!$a2) {
+                    throw new \Exception();
+                }
+                return $a1;
+            }
+        }');
+
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testTryCatchReturnType()
     {
         $stmts = self::$_parser->parse('<?php
