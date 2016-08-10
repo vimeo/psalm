@@ -73,6 +73,8 @@ class StatementsChecker
     protected static $mock_interfaces = [];
     protected static $class_consts = [];
 
+    protected static $call_map = null;
+
     public function __construct(StatementsSource $source, $enforce_variable_checks = false, $check_methods = true)
     {
         $this->source = $source;
@@ -3206,7 +3208,16 @@ class StatementsChecker
                 return false;
             }
 
-            $stmt->inferredType = Type::getMixed();
+            $call_map = self::getCallMap();
+
+            $call_map_key = strtolower($method_id);
+
+            if (isset($call_map[$call_map_key]) && $call_map[$call_map_key][0]) {
+                $stmt->inferredType = Type::parseString($call_map[$call_map_key][0]);
+            }
+            else {
+                $stmt->inferredType = Type::getMixed();
+            }
         }
 
         foreach ($stmt->args as $i => $arg) {
@@ -3731,5 +3742,27 @@ class StatementsChecker
         }
 
         return $this_assignments;
+    }
+
+    /**
+     * Gets the method/function call map
+     *
+     * @return array<array<string>>
+     */
+    protected static function getCallMap()
+    {
+        if (self::$call_map !== null) {
+            return self::$call_map;
+        }
+
+        $call_map = require_once(__DIR__.'/CallMap.php');
+
+        self::$call_map = [];
+
+        foreach ($call_map as $key => $value) {
+            self::$call_map[strtolower($key)] = $value;
+        }
+
+        return self::$call_map;
     }
 }
