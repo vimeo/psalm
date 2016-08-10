@@ -10,7 +10,7 @@ class ParseTree
     /** @var array<ParseTree> */
     public $children;
 
-    /** @var string */
+    /** @var string|null */
     public $value;
 
     /** @var null|ParseTree */

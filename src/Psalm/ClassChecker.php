@@ -193,11 +193,12 @@ class ClassChecker implements StatementsSource
                     foreach ($stmt->props as $property) {
                         $comment = $stmt->getDocComment();
                         $type_in_comment = null;
+
                         if ($comment && $config->use_docblock_types) {
                             $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
                         }
 
-                        $property_type = $type_in_comment ? Type::parseString($type_in_comment) : Type::getMixed();
+                        $property_type = $type_in_comment ? $type_in_comment : Type::getMixed();
 
                         if ($stmt->isStatic()) {
                             if ($stmt->isPublic()) {

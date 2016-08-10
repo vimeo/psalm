@@ -7,7 +7,7 @@ use Psalm\ClassChecker;
 
 class Union extends Type
 {
-    /** @var array<Type> */
+    /** @var array<Atomic> */
     public $types = [];
 
     /**

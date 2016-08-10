@@ -641,26 +641,20 @@ class StatementsChecker
     protected function checkStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
     {
         foreach ($stmt->vars as $var) {
-            if ($var instanceof PhpParser\Node\Stmt\StaticVar) {
-                if (is_string($var->name)) {
-                    if ($this->check_variables) {
-                        $context->vars_in_scope[$var->name] = Type::getMixed();
-                        $context->vars_possibly_in_scope[$var->name] = true;
-                        $this->registerVariable($var->name, $var->getLine());
-                    }
-                } else {
-                    if ($this->checkExpression($var->name, $context) === false) {
-                        return false;
-                    }
-                }
-
-                if ($var->default) {
-                    if ($this->checkExpression($var->default, $context) === false) {
-                        return false;
-                    }
+            if (is_string($var->name)) {
+                if ($this->check_variables) {
+                    $context->vars_in_scope[$var->name] = Type::getMixed();
+                    $context->vars_possibly_in_scope[$var->name] = true;
+                    $this->registerVariable($var->name, $var->getLine());
                 }
             } else {
-                if ($this->checkExpression($var, $context) === false) {
+                if ($this->checkExpression($var->name, $context) === false) {
+                    return false;
+                }
+            }
+
+            if ($var->default) {
+                if ($this->checkExpression($var->default, $context) === false) {
                     return false;
                 }
             }
@@ -807,7 +801,7 @@ class StatementsChecker
 
             foreach ($context->vars_possibly_in_scope as $var => $type) {
                 if (strpos($var, 'this->') === 0) {
-                    $use_context->var_possibly_in_scope[$var] = true;
+                    $use_context->vars_possibly_in_scope[$var] = true;
                 }
             }
 
@@ -1912,7 +1906,7 @@ class StatementsChecker
         $type_in_comments = CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $context, $this->source, $var_id);
 
         if ($type_in_comments) {
-            $return_type = Type::parseString($type_in_comments);
+            $return_type = $type_in_comments;
         }
         elseif (isset($stmt->expr->inferredType)) {
             $return_type = $stmt->expr->inferredType;
@@ -2512,7 +2506,7 @@ class StatementsChecker
                     $type_param = self::fleshOutTypes($type_param, $args, $calling_class, $method_id);
                 }
                 else {
-                    $type_param = self::fleshOutAtomicReturnType($type_param, $args, $method_id);
+                    $type_param = self::fleshOutAtomicType($type_param, $args, $calling_class, $method_id);
                 }
             }
         }
@@ -2732,7 +2726,7 @@ class StatementsChecker
             if ($absolute_class === $context->self) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             }
-            elseif (ClassChecker::classExtends($context->self, $absolute_class)) {
+            elseif ($context->self && ClassChecker::classExtends($context->self, $absolute_class)) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             }
             else {
@@ -2783,7 +2777,7 @@ class StatementsChecker
             }
 
             if ($type_in_comments) {
-                $stmt->inferredType = Type::parseString($type_in_comments);
+                $stmt->inferredType = $type_in_comments;
             }
             elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;

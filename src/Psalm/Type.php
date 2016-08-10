@@ -68,7 +68,7 @@ abstract class Type
                     break;
 
                 case ',':
-                    if ($current_parent->value !== ParseTree::GENERIC) {
+                    if (!$current_parent || $current_parent->value !== ParseTree::GENERIC) {
                         throw new \InvalidArgumentException('Cannot parse comma in non-generic type');
                     }
                     break;
@@ -215,7 +215,7 @@ abstract class Type
     public static function convertSquareBrackets($type)
     {
         return preg_replace_callback(
-            '/([a-zA-Z\<\>]+)((\[\])+)/',
+            '/([a-zA-Z\<\>\\\\_]+)((\[\])+)/',
             function ($matches) {
                 $inner_type = $matches[1];
 
