@@ -500,8 +500,8 @@ class StatementsChecker
                     }
                 }
 
-                if ($negatable_if_types) {
-                    $context->update($old_elseif_context, $elseif_context, $has_leaving_statments, array_keys($negatable_if_types), $updated_vars);
+                if ($negatable_elseif_types) {
+                    $context->update($old_elseif_context, $elseif_context, $has_leaving_statments, array_keys($negated_elseif_types), $updated_vars);
                 }
 
                 // has a return/throw at end
@@ -801,7 +801,7 @@ class StatementsChecker
 
             foreach ($context->vars_in_scope as $var => $type) {
                 if (strpos($var, 'this->') === 0) {
-                    $use_context->vars_in_scope[$var] = $type;
+                    $use_context->vars_in_scope[$var] = clone $type;
                 }
             }
 
@@ -812,7 +812,7 @@ class StatementsChecker
             }
 
             foreach ($stmt->uses as $use) {
-                $use_context->vars_in_scope[$use->var] = isset($context->vars_in_scope[$use->var]) ? $context->vars_in_scope[$use->var] : Type::getMixed();
+                $use_context->vars_in_scope[$use->var] = isset($context->vars_in_scope[$use->var]) ? clone $context->vars_in_scope[$use->var] : Type::getMixed();
                 $use_context->vars_possibly_in_scope[$use->var] = true;
             }
 
