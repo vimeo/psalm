@@ -375,7 +375,7 @@ class StatementsChecker
 
             // update the parent context as necessary, but only if we can safely reason about type negation
             if ($negatable_if_types && !$mic_drop) {
-                $context->update($old_if_context, $if_context, $has_leaving_statments, $updated_vars);
+                $context->update($old_if_context, $if_context, $has_leaving_statments, array_keys($negatable_if_types), $updated_vars);
             }
 
             if (!$has_ending_statments) {
@@ -501,7 +501,7 @@ class StatementsChecker
                 }
 
                 if ($negatable_if_types) {
-                    $context->update($old_elseif_context, $elseif_context, $has_leaving_statments, $updated_vars);
+                    $context->update($old_elseif_context, $elseif_context, $has_leaving_statments, array_keys($negatable_if_types), $updated_vars);
                 }
 
                 // has a return/throw at end
@@ -597,7 +597,7 @@ class StatementsChecker
 
                 // update the parent context as necessary
                 if ($negatable_if_types) {
-                    $context->update($old_else_context, $else_context, $has_leaving_statments, $updated_vars);
+                    $context->update($old_else_context, $else_context, $has_leaving_statments, array_keys($negatable_if_types), $updated_vars);
                 }
 
                 // has a return/throw at end
