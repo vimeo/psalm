@@ -3377,12 +3377,14 @@ class StatementsChecker
                 return;
             }
 
+            /*
             if (in_array($path_to_file, FileChecker::getIncludesToIgnore())) {
                 $this->_check_classes = false;
                 $this->_check_variables = false;
 
                 return;
             }
+             */
 
             if (file_exists($path_to_file)) {
                 if ($this->_source instanceof FileChecker) {

@@ -41,14 +41,10 @@ class Context
             // if we're leaving, we're effectively deleting the possibility of the if types
             $new_type = !$has_leaving_statements ? $end_context->vars_in_scope[$var] : null;
 
-            // this is only true if there was some sort of type negation
-            if ((string)$context_type !== (string)$old_type) {
-
-                // if the type changed within the block of statements, process the replacement
-                if ((string)$old_type !== (string)$new_type) {
-                    $context_type->substitute($old_type, $new_type);
-                    $updated_vars[$var] = true;
-                }
+            // if the type changed within the block of statements, process the replacement
+            if ((string)$old_type !== (string)$new_type) {
+                $context_type->substitute($old_type, $new_type);
+                $updated_vars[$var] = true;
             }
         }
     }

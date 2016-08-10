@@ -33,8 +33,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
-            public $baz;
-
             /**
              * @return One|null
              */
@@ -52,12 +50,26 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
         $file_checker->check();
+    }
 
-        $method_stmts = $stmts[1]->stmts[1]->stmts;
+    public function testReturnTypeAfterNotEmptyCheck()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B {
+            /**
+             * @param string|null $str
+             * @return string
+             */
+            public function bar($str) {
+                if (empty($str)) {
+                    $str = "";
+                }
+                return $str;
+            }
+        }');
 
-        $return_stmt = array_pop($method_stmts);
-
-        $this->assertSame('One|null', (string) $return_stmt->inferredType);
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
     }
 
     public function testTryCatchReturnType()
