@@ -110,7 +110,7 @@ class ClassMethodChecker extends FunctionChecker
                     return;
                 }
 
-                if (!self::hasIdenticalTypes($declared_return_type, $inferred_return_type)) {
+                if (!self::hasIdenticalTypes($declared_return_type, $inferred_return_type, $this->_absolute_class)) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
                             'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
@@ -128,11 +128,13 @@ class ClassMethodChecker extends FunctionChecker
         }
     }
 
-    protected static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type)
+    protected static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type, $absolute_class)
     {
         if ($declared_type->isNullable() !== $inferred_type->isNullable()) {
             return false;
         }
+
+        $inferred_type = StatementsChecker::fleshOutTypes($inferred_type, [], $absolute_class, '');
 
         $simple_declared_types = array_filter(array_keys($declared_type->types), function($type_value) { return $type_value !== 'null'; });
 
@@ -187,7 +189,7 @@ class ClassMethodChecker extends FunctionChecker
                 continue;
             }
 
-            if (!self::hasIdenticalTypes($declared_atomic_type->type_params[0], $inferred_atomic_type->type_params[0])) {
+            if (!self::hasIdenticalTypes($declared_atomic_type->type_params[0], $inferred_atomic_type->type_params[0], $absolute_class)) {
                 return false;
             }
         }
