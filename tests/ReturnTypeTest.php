@@ -52,7 +52,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
-    public function testReturnTypeAfterNotEmptyCheck()
+    public function testReturnTypeNotEmptyCheck()
     {
         $stmts = self::$_parser->parse('<?php
         class B {
@@ -62,6 +62,27 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
              */
             public function bar($str) {
                 if (empty($str)) {
+                    $str = "";
+                }
+                return $str;
+            }
+        }');
+
+        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testReturnTypeAfterIf()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B {
+            /**
+             * @return string|null
+             */
+            public function bar() {
+                $str = null;
+                $bar1 = rand(0, 100) > 40;
+                if ($bar1) {
                     $str = "";
                 }
                 return $str;
