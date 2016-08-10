@@ -29,14 +29,10 @@ class FileChecker implements StatementsSource
 
     protected static $_cache_dir = null;
     protected static $_file_checkers = [];
-    protected static $_functions = [];
-    protected static $_includes_to_ignore = [];
 
     protected static $_class_methods_checked = [];
     protected static $_classes_checked = [];
     protected static $_file_checked = [];
-
-    protected static $_ignore_check_variables_pattern = null;
 
     public static $show_notices = true;
 
@@ -359,23 +355,12 @@ class FileChecker implements StatementsSource
         return $argument_offset < count($this->_function_params[$function_name]) && $this->_function_params[$function_name][$argument_offset];
     }
 
-    public static function ignoreIncludes(array $includes)
+    public static function clearCache()
     {
-        self::$_includes_to_ignore = $includes;
-    }
+        self::$_file_checkers = [];
 
-    public static function getIncludesToIgnore()
-    {
-        return self::$_includes_to_ignore;
-    }
-
-    public static function ignoreVariableChecksFor($pattern)
-    {
-        self::$_ignore_check_variables_pattern = $pattern;
-    }
-
-    public static function shouldCheckVariables($file_name)
-    {
-        return !self::$_ignore_check_variables_pattern || !preg_match(self::$_ignore_check_variables_pattern, $file_name);
+        self::$_class_methods_checked = [];
+        self::$_classes_checked = [];
+        self::$_file_checked = [];
     }
 }

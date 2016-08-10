@@ -74,6 +74,7 @@ class ClassChecker implements StatementsSource
             : null;
 
         self::$_existing_classes[$absolute_class] = true;
+        self::$_existing_classes_ci[strtolower($absolute_class)] = true;
 
         if (self::$_this_class || $class instanceof PhpParser\Node\Stmt\Trait_) {
             self::$_class_checkers[$absolute_class] = $this;
@@ -416,15 +417,20 @@ class ClassChecker implements StatementsSource
         }
 
         if (isset(self::$_existing_classes_ci[strtolower($absolute_class)])) {
-            $reflection_class = new ReflectionClass($absolute_class);
+            try {
+                $reflection_class = new ReflectionClass($absolute_class);
 
-            if ($reflection_class->getName() !== $absolute_class) {
-                if (IssueBuffer::accepts(
-                    new InvalidClass('Class or interface ' . $absolute_class . ' has wrong casing', $file_name, $line_number),
-                    $suppressed_issues
-                )) {
-                    return false;
+                if ($reflection_class->getName() !== $absolute_class) {
+                    if (IssueBuffer::accepts(
+                        new InvalidClass('Class or interface ' . $absolute_class . ' has wrong casing', $file_name, $line_number),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
                 }
+            }
+            catch (\ReflectionException $e) {
+                // do nothing
             }
         }
 
@@ -712,11 +718,21 @@ class ClassChecker implements StatementsSource
         self::$_this_class = null;
 
         self::$_existing_classes = [];
+        self::$_existing_classes_ci = [];
+        self::$_existing_interfaces_ci = [];
         self::$_class_implements = [];
 
         self::$_class_methods = [];
         self::$_class_checkers = [];
 
         self::$_public_class_properties = [];
+        self::$_protected_class_properties = [];
+        self::$_private_class_properties = [];
+
+        self::$_public_static_class_properties = [];
+        self::$_protected_static_class_properties = [];
+        self::$_private_static_class_properties = [];
+
+        self::$_class_extends = [];
     }
 }

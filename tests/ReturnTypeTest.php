@@ -22,6 +22,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         \Psalm\ClassMethodChecker::clearCache();
+        \Psalm\FileChecker::clearCache();
     }
 
     public function testReturnTypeAfterUselessNullcheck()

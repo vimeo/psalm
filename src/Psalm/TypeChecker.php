@@ -541,7 +541,7 @@ class TypeChecker
      * @param  array  $existing_types
      * @return array|false
      */
-    public static function reconcileKeyedTypes(array $new_types, array $existing_types, $file_name, $line_number, array $suppressed_issues)
+    public static function reconcileKeyedTypes(array $new_types, array $existing_types, $file_name, $line_number, array $suppressed_issues = null)
     {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
         $keys = array_unique($keys);
@@ -601,7 +601,7 @@ class TypeChecker
      * @param  int          $line_number
      * @return Type\Union|false
      */
-    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type = null, $key = null, $file_name = null, $line_number = null, array $suppressed_issues)
+    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type = null, $key = null, $file_name = null, $line_number = null, array $suppressed_issues = null)
     {
         $result_var_types = null;
 
