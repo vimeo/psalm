@@ -1117,7 +1117,7 @@ class StatementsChecker
                             // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
                             // but we don't want to throw an error
                             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-                            if ($lhs_type_part->isObject() || $lhs_type_part->value === 'stdClass' || $lhs_type_part->value === 'SimpleXMLElement') {
+                            if ($lhs_type_part->isObject() || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'])) {
                                 $stmt->inferredType = Type::getMixed();
                                 continue;
                             }
@@ -3208,16 +3208,7 @@ class StatementsChecker
                 return false;
             }
 
-            $call_map = self::getCallMap();
-
-            $call_map_key = strtolower($method_id);
-
-            if (isset($call_map[$call_map_key]) && $call_map[$call_map_key][0]) {
-                $stmt->inferredType = Type::parseString($call_map[$call_map_key][0]);
-            }
-            else {
-                $stmt->inferredType = Type::getMixed();
-            }
+            $stmt->inferredType = self::getFunctionReturnTypeFromCallMap($method_id, $stmt->args);
         }
 
         foreach ($stmt->args as $i => $arg) {
@@ -3226,16 +3217,22 @@ class StatementsChecker
                     if ($this->checkVariable($arg->value, $context, $method_id, $i) === false) {
                         return false;
                     }
-                } else {
+                }
+                else {
                     if ($this->checkVariable($arg->value, $context) === false) {
                         return false;
                     }
                 }
-            } else {
+            }
+            else {
                 if ($this->checkExpression($arg->value, $context) === false) {
                     return false;
                 }
             }
+        }
+
+        if ($stmt->name instanceof PhpParser\Node\Name && $this->check_functions) {
+            $stmt->inferredType = self::getFunctionReturnTypeFromCallMap($method_id, $stmt->args);
         }
 
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['get_class'] && $stmt->args) {
@@ -3245,6 +3242,33 @@ class StatementsChecker
                 $stmt->inferredType = new Type\Union([new Type\T($var->name)]);
             }
         }
+    }
+
+    protected function getFunctionReturnTypeFromCallMap($function_id, array $call_args)
+    {
+        $call_map_key = strtolower($function_id);
+
+        $call_map = self::getCallMap();
+
+        if (!isset($call_map[$call_map_key]) || !$call_map[$call_map_key][0]) {
+            return Type::getMixed();
+        }
+
+        if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'])) {
+            if (isset($call_args[2]->value->inferredType)) {
+
+                $subject_type = $call_args[2]->value->inferredType;
+
+                if ($subject_type->isString() && !$subject_type->isArray()) {
+                    return Type::getString();
+                }
+                elseif (!$subject_type->isString() && $subject_type->isArray()) {
+                    return Type::getArray();
+                }
+            }
+        }
+
+        return Type::parseString($call_map[$call_map_key][0]);
     }
 
     /**

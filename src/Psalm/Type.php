@@ -381,7 +381,7 @@ abstract class Type
         }
 
         if ($this instanceof Union) {
-            return count($this->types) === 1 && isset($this->types['string']);
+            return isset($this->types['string']);
         }
     }
 
