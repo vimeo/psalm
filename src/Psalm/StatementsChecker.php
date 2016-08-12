@@ -3207,8 +3207,6 @@ class StatementsChecker
             if ($this->checkFunctionExists($method_id, $stmt) === false) {
                 return false;
             }
-
-            $stmt->inferredType = self::getFunctionReturnTypeFromCallMap($method_id, $stmt->args);
         }
 
         foreach ($stmt->args as $i => $arg) {
@@ -3244,11 +3242,11 @@ class StatementsChecker
         }
     }
 
-    protected function getFunctionReturnTypeFromCallMap($function_id, array $call_args)
+    protected static function getFunctionReturnTypeFromCallMap($function_id, array $call_args)
     {
-        $call_map_key = strtolower($function_id);
-
         $call_map = self::getCallMap();
+
+        $call_map_key = strtolower($function_id);
 
         if (!isset($call_map[$call_map_key]) || !$call_map[$call_map_key][0]) {
             return Type::getMixed();
