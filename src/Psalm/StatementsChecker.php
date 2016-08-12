@@ -1659,6 +1659,8 @@ class StatementsChecker
                         case 'string':
                         case 'void':
                         case 'int':
+                        case 'bool':
+                        case 'false':
                             if (IssueBuffer::accepts(
                                 new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->file_name, $stmt->getLine()),
                                 $this->suppressed_issues
@@ -1994,7 +1996,7 @@ class StatementsChecker
             if (!$return_type->isMixed()) {
 
                 foreach ($return_type->types as &$type) {
-                    if ($type->isScalarType()) {
+                    if ($type->isScalarType() && !$type->isString()) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAssignment(
                                 'Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value,
@@ -2014,6 +2016,10 @@ class StatementsChecker
                         return false;
                     }
 
+                    if ($refined_type === null) {
+                        continue;
+                    }
+
                     $type = $refined_type;
                 }
 
@@ -2027,7 +2033,7 @@ class StatementsChecker
      * @param  Type\Atomic $type
      * @param  string      $var_id
      * @param  int         $line_number
-     * @return Type\Atomic|false
+     * @return Type\Atomic|null|false
      */
     protected function refineArrayType(Type\Atomic $type, Type\Union $assignment_type, $var_id, $line_number)
     {
@@ -2048,16 +2054,7 @@ class StatementsChecker
 
         foreach ($assignment_type->types as $at) {
             if ($type->value === 'string' && $at->isString()) {
-                if (IssueBuffer::accepts(
-                    new InvalidArrayAssignment(
-                        'Cannot assign value on variable ' . $var_id . ' using string offset',
-                        $this->file_name,
-                        $line_number
-                    ),
-                    $this->suppressed_issues
-                )) {
-                    return false;
-                }
+                return;
             }
         }
 
@@ -3257,13 +3254,20 @@ class StatementsChecker
 
                 $subject_type = $call_args[2]->value->inferredType;
 
-                if ($subject_type->isString() && !$subject_type->isArray()) {
-                    return Type::getString();
-                }
-                elseif (!$subject_type->isString() && $subject_type->isArray()) {
+                if (!$subject_type->isString() && $subject_type->isArray()) {
                     return Type::getArray();
                 }
+
+                return Type::getString();
             }
+        }
+
+        if (in_array($call_map_key, ['pathinfo'])) {
+            if (isset($call_args[1])) {
+                return Type::getString();
+            }
+
+            return Type::getArray();
         }
 
         return Type::parseString($call_map[$call_map_key][0]);
