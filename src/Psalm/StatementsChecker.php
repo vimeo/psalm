@@ -1161,7 +1161,10 @@ class StatementsChecker
                                 return;
                             }
 
-                            if ($var_name === 'this' || $lhs_type_part->value === $context->self) {
+                            if ($var_name === 'this'
+                                || $lhs_type_part->value === $context->self
+                                || ($this->source->getSource() instanceof TraitChecker && $lhs_type_part->value === $this->source->getAbsoluteClass())
+                            ) {
                                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
                             }
                             elseif (ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
@@ -2247,7 +2250,7 @@ class StatementsChecker
                             }
                             **/
 
-                            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
                                 return false;
                             }
 
@@ -2430,7 +2433,7 @@ class StatementsChecker
                 return $does_method_exist;
             }
 
-            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
                 return false;
             }
 
@@ -2722,7 +2725,9 @@ class StatementsChecker
         }
 
         if ($absolute_class && $this->check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
-            if ($absolute_class === $context->self) {
+            if ($absolute_class === $context->self
+                || ($this->source->getSource() instanceof TraitChecker && $lhs_type_part->value === $this->source->getAbsoluteClass())
+            ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             }
             elseif ($context->self && ClassChecker::classExtends($context->self, $absolute_class)) {

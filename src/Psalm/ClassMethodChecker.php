@@ -411,14 +411,14 @@ class ClassMethodChecker extends FunctionChecker
     }
 
     /**
-     * @param  string $method_id
-     * @param  string $calling_context
-     * @param  string $file_name
-     * @param  int    $line_number
-     * @param  array  $suppresssed_issues
+     * @param  string           $method_id
+     * @param  string           $calling_context
+     * @param  StatementsSource $file_name
+     * @param  int              $line_number
+     * @param  array            $suppresssed_issues
      * @return false|null
      */
-    public static function checkMethodVisibility($method_id, $calling_context, $file_name, $line_number, array $suppresssed_issues)
+    public static function checkMethodVisibility($method_id, $calling_context, StatementsSource $source, $line_number, array $suppresssed_issues)
     {
         self::_populateData($method_id);
 
@@ -427,11 +427,15 @@ class ClassMethodChecker extends FunctionChecker
 
         if (!isset(self::$_method_visibility[$method_id])) {
             if (IssueBuffer::accepts(
-                new InaccessibleMethod('Cannot access method ' . $method_id, $file_name, $line_number),
+                new InaccessibleMethod('Cannot access method ' . $method_id, $source->getFileName(), $line_number),
                 $suppresssed_issues
             )) {
                 return false;
             }
+        }
+
+        if ($source->getSource() instanceof TraitChecker && $method_class === $source->getAbsoluteClass()) {
+            return;
         }
 
         switch (self::$_method_visibility[$method_id]) {
@@ -443,7 +447,7 @@ class ClassMethodChecker extends FunctionChecker
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access private method ' . $method_id . ' from context ' . $calling_context,
-                            $file_name,
+                            $source->getFileName(),
                             $line_number
                         ),
                         $suppresssed_issues
@@ -460,7 +464,7 @@ class ClassMethodChecker extends FunctionChecker
 
                 if (!$calling_context) {
                     if (IssueBuffer::accepts(
-                        new InaccessibleMethod('Cannot access protected method ' . $method_id, $file_name, $line_number),
+                        new InaccessibleMethod('Cannot access protected method ' . $method_id, $source->getFileName(), $line_number),
                         $suppresssed_issues
                     )) {
                         return false;
@@ -475,7 +479,7 @@ class ClassMethodChecker extends FunctionChecker
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $method_id . ' from context ' . $calling_context,
-                            $file_name,
+                            $source->getFileName(),
                             $line_number
                         ),
                         $suppresssed_issues
