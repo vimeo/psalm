@@ -1238,7 +1238,6 @@ class StatementsChecker
      * @param  string     $prop_name
      * @param  Type\Union $assignment_type
      * @param  Context    $context
-     * @param  int        $line_number
      * @return false|null
      */
     protected function checkPropertyAssignment($stmt, $prop_name, Type\Union $assignment_type, Context $context)
@@ -2465,6 +2464,13 @@ class StatementsChecker
         return $this->checkMethodParams($stmt->args, $method_id, $context, $stmt->getLine());
     }
 
+    /**
+     * @param  Type\Atomic                  $return_type
+     * @param  array<PhpParser\Node\Arg>    $args
+     * @param  string|null                  $calling_class
+     * @param  string|null                  $method_id
+     * @return Type\Union
+     */
     public static function fleshOutTypes(Type\Union $return_type, array $args, $calling_class, $method_id)
     {
         foreach ($return_type->types as $key => $return_type_part) {
@@ -2479,9 +2485,20 @@ class StatementsChecker
         return $return_type;
     }
 
+    /**
+     * @param  Type\Atomic                  &$return_type
+     * @param  array<PhpParser\Node\Arg>    $args
+     * @param  string|null                  $calling_class
+     * @param  string|null                  $method_id
+     * @return void
+     */
     protected static function fleshOutAtomicType(Type\Atomic &$return_type, array $args, $calling_class, $method_id)
     {
         if ($return_type->value === '$this' || $return_type->value === 'static' || $return_type->value === 'self') {
+            if (!$calling_class) {
+                throw new \InvalidArgumentException('Cannot handle ' . $return_type->value . ' when $calling_class is empty');
+            }
+
             $return_type->value = $calling_class;
         }
         else if ($return_type->value[0] === '$') {
@@ -2491,8 +2508,9 @@ class StatementsChecker
                 $method_param = $method_params[$i];
 
                 if ($return_type->value === '$' . $method_param['name']) {
-                    if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
-                        $return_type->value = preg_replace('/^\\\/', '', $arg->value->value);
+                    $arg_value = $arg->value;
+                    if ($arg_value instanceof PhpParser\Node\Scalar\String_) {
+                        $return_type->value = preg_replace('/^\\\/', '', $arg_value->value);
                     }
                 }
             }
@@ -2504,12 +2522,7 @@ class StatementsChecker
 
         if ($return_type instanceof Type\Generic) {
             foreach ($return_type->type_params as $type_param) {
-                if ($type_param instanceof Type\Union) {
-                    $type_param = self::fleshOutTypes($type_param, $args, $calling_class, $method_id);
-                }
-                else {
-                    $type_param = self::fleshOutAtomicType($type_param, $args, $calling_class, $method_id);
-                }
+                $type_param = self::fleshOutTypes($type_param, $args, $calling_class, $method_id);
             }
         }
     }
@@ -2726,7 +2739,7 @@ class StatementsChecker
 
         if ($absolute_class && $this->check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
             if ($absolute_class === $context->self
-                || ($this->source->getSource() instanceof TraitChecker && $lhs_type_part->value === $this->source->getAbsoluteClass())
+                || ($this->source->getSource() instanceof TraitChecker && $absolute_class === $this->source->getAbsoluteClass())
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             }

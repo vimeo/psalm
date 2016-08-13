@@ -6,7 +6,7 @@ use Psalm\Type;
 
 class Generic extends Atomic
 {
-    /** @var array<Type> */
+    /** @var array<Type\Union> */
     public $type_params;
 
     /** @var bool */

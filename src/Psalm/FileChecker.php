@@ -211,7 +211,7 @@ class FileChecker implements StatementsSource
             }
         }
 
-        if (!$stmts) {
+        if (!$stmts && $contents) {
             $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
             $stmts = $parser->parse($contents);

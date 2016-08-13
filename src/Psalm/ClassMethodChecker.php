@@ -413,7 +413,7 @@ class ClassMethodChecker extends FunctionChecker
     /**
      * @param  string           $method_id
      * @param  string           $calling_context
-     * @param  StatementsSource $file_name
+     * @param  StatementsSource $source
      * @param  int              $line_number
      * @param  array            $suppresssed_issues
      * @return false|null
