@@ -11,7 +11,7 @@
     <issueHandler>
         <ForbiddenCode>
             <excludeFiles>
-                <file name="src/Psalm/StatementsChecker.php" />
+                <file name="src/Psalm/Checker/StatementsChecker.php" />
             </excludeFiles>
         </ForbiddenCode>
     </issueHandler>
