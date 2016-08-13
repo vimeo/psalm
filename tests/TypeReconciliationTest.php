@@ -3,7 +3,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Type;
-use Psalm\TypeChecker;
+use Psalm\Checker\TypeChecker;
 use PHPUnit_Framework_TestCase;
 
 class TypeReconciliationTest extends PHPUnit_Framework_TestCase

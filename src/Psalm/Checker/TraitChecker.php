@@ -1,10 +1,13 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 use PhpParser;
 
-class TraitChecker extends ClassChecker
+use Psalm\StatementsSource;
+use Psalm\Context;
+
+class TraitChecker extends ClassLikeChecker
 {
     public function __construct(PhpParser\Node\Stmt\Trait_ $class, StatementsSource $source, $absolute_class)
     {

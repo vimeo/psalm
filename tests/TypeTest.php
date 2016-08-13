@@ -22,8 +22,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\ClassMethodChecker::clearCache();
-        \Psalm\FileChecker::clearCache();
+        \Psalm\Checker\ClassMethodChecker::clearCache();
+        \Psalm\Checker\FileChecker::clearCache();
     }
 
     /**
@@ -42,7 +42,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -59,7 +59,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -76,7 +76,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -93,7 +93,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -110,7 +110,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -129,7 +129,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -150,7 +150,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -168,7 +168,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -186,7 +186,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -207,7 +207,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -233,7 +233,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -254,7 +254,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -278,7 +278,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -304,7 +304,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -327,7 +327,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -350,7 +350,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -373,7 +373,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -403,7 +403,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -431,7 +431,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -456,7 +456,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -484,7 +484,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -505,7 +505,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -529,7 +529,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -553,7 +553,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -585,7 +585,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -617,7 +617,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -648,7 +648,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -678,7 +678,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -711,7 +711,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -741,7 +741,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -770,7 +770,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -799,7 +799,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -828,7 +828,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -863,7 +863,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -895,7 +895,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -922,7 +922,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -945,7 +945,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -964,7 +964,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -983,7 +983,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1006,7 +1006,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1031,7 +1031,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1061,7 +1061,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1096,7 +1096,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1123,7 +1123,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1156,7 +1156,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1172,7 +1172,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1194,7 +1194,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1217,7 +1217,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1244,7 +1244,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1264,7 +1264,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(5);
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1281,7 +1281,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(new A);
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1298,7 +1298,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(null);
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1318,7 +1318,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(5);
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1335,7 +1335,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(new A);
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1359,7 +1359,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1380,7 +1380,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -1407,7 +1407,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

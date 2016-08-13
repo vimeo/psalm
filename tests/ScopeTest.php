@@ -29,8 +29,8 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\ClassMethodChecker::clearCache();
-        \Psalm\FileChecker::clearCache();
+        \Psalm\Checker\ClassMethodChecker::clearCache();
+        \Psalm\Checker\FileChecker::clearCache();
         \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 
@@ -47,7 +47,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $badge;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -64,7 +64,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $badge;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -82,7 +82,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -100,7 +100,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -122,7 +122,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -140,7 +140,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $car;
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -166,7 +166,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -185,7 +185,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[1]->cond;
@@ -208,7 +208,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[2]->cond;
@@ -231,7 +231,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[2]->cond;
@@ -257,7 +257,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -269,7 +269,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -282,7 +282,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
@@ -305,7 +305,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

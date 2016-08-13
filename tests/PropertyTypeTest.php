@@ -25,7 +25,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\ClassMethodChecker::clearCache();
+        \Psalm\Checker\ClassMethodChecker::clearCache();
     }
 
     public function testNewVarInIf()
@@ -50,7 +50,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

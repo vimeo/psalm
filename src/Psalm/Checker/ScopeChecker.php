@@ -1,6 +1,6 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 use PhpParser;
 

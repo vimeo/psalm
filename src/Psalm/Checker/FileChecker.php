@@ -1,10 +1,14 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 use PhpParser;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
+
+use Psalm\StatementsSource;
+use Psalm\Config;
+use Psalm\Context;
 
 class FileChecker implements StatementsSource
 {
@@ -86,7 +90,7 @@ class FileChecker implements StatementsSource
 
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                     if ($check_classes) {
-                        $class_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
+                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
                         $this->_declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check($check_class_methods);
                     }
@@ -96,7 +100,7 @@ class FileChecker implements StatementsSource
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
-                        $trait_checker = ClassChecker::getClassCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
+                        $trait_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
                         $trait_checker->check($check_class_methods);
                     }
 
@@ -147,7 +151,7 @@ class FileChecker implements StatementsSource
             $aliased_classes = $file_checker->getAliasedClasses($namespace);
         }
 
-        return ClassChecker::getAbsoluteClassFromString($class, $namespace, $aliased_classes);
+        return ClassLikeChecker::getAbsoluteClassFromString($class, $namespace, $aliased_classes);
     }
 
     /**
@@ -285,7 +289,7 @@ class FileChecker implements StatementsSource
     /**
      * @return null
      */
-    public function getClassChecker()
+    public function getClassLikeChecker()
     {
         return null;
     }
@@ -326,7 +330,7 @@ class FileChecker implements StatementsSource
         return self::$_file_checkers[$file_name];
     }
 
-    public static function getClassCheckerFromClass($class_name)
+    public static function getClassLikeCheckerFromClass($class_name)
     {
         $file_name = (new \ReflectionClass($class_name))->getFileName();
 
@@ -339,7 +343,7 @@ class FileChecker implements StatementsSource
 
         $file_checker->check(true, false, null, false);
 
-        return ClassChecker::getClassCheckerFromClass($class_name);
+        return ClassLikeChecker::getClassLikeCheckerFromClass($class_name);
     }
 
     public function hasFunction($function_name)

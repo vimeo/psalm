@@ -3,6 +3,7 @@
 namespace Psalm;
 
 use Psalm\Config\FileFilter;
+use Psalm\Checker\FileChecker;
 use SimpleXMLElement;
 
 class Config
@@ -204,8 +205,8 @@ class Config
 
                 require_once($path);
 
-                if (!is_subclass_of($declared_classes[0], 'Psalm\\FileChecker')) {
-                    throw new \InvalidArgumentException('Filetype handlers must extend \Psalm\FileChecker - ' . $path . ' does not');
+                if (!is_subclass_of($declared_classes[0], 'Psalm\\Checker\\FileChecker')) {
+                    throw new \InvalidArgumentException('Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not');
                 }
 
                 $this->filetype_handlers[$extension_name] = $declared_classes[0];

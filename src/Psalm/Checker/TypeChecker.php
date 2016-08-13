@@ -1,10 +1,13 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\IssueBuffer;
+use Psalm\Type;
+use Psalm\StatementsSource;
+use Psalm\Config;
 use PhpParser;
 
 class TypeChecker
@@ -419,7 +422,7 @@ class TypeChecker
     {
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
-                $instanceof_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_checker->getAliasedClasses());
+                $instanceof_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->_namespace, $this->_checker->getAliasedClasses());
                 return $instanceof_class;
 
             } elseif ($stmt->class->parts === ['self']) {
@@ -812,7 +815,7 @@ class TypeChecker
                 }
 
                 foreach ($simple_declared_types as $simple_declared_type) {
-                    if (($simple_declared_type === 'object' && ClassChecker::classOrInterfaceExists($differing_type)) ||
+                    if (($simple_declared_type === 'object' && ClassLikeChecker::classOrInterfaceExists($differing_type)) ||
                         ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type) ||
                         (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_type, ['float', 'double', 'int'])) ||
                         (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_type, ['boolean', 'bool']))

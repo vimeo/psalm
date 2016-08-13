@@ -1,6 +1,8 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
+
+use Psalm\StatementsSource;
 
 use PhpParser;
 
@@ -31,22 +33,22 @@ class NamespaceChecker implements StatementsSource
 
         foreach ($this->_namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                $absolute_class = ClassChecker::getAbsoluteClassFromString($stmt->name, $this->_namespace_name, []);
+                $absolute_class = ClassLikeChecker::getAbsoluteClassFromString($stmt->name, $this->_namespace_name, []);
                 $this->_declared_classes[$absolute_class] = 1;
 
                 if ($check_classes) {
-                    $class_checker = ClassChecker::getClassCheckerFromClass($absolute_class) ?: new ClassChecker($stmt, $this, $absolute_class);
+                    $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class) ?: new ClassChecker($stmt, $this, $absolute_class);
                     $class_checker->check($check_class_statements);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                 // @todo check interface
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                $absolute_class = ClassChecker::getAbsoluteClassFromString($stmt->name, $this->_namespace_name, []);
+                $absolute_class = ClassLikeChecker::getAbsoluteClassFromString($stmt->name, $this->_namespace_name, []);
 
                 if ($check_classes) {
                     // register the trait checker
-                    ClassChecker::getClassCheckerFromClass($absolute_class) ?: new TraitChecker($stmt, $this, $absolute_class);
+                    ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class) ?: new TraitChecker($stmt, $this, $absolute_class);
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
@@ -109,7 +111,7 @@ class NamespaceChecker implements StatementsSource
     /**
      * @return null
      */
-    public function getClassChecker()
+    public function getClassLikeChecker()
     {
         return null;
     }

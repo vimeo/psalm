@@ -1,12 +1,16 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidStaticInvocation;
+use Psalm\StatementsSource;
+use Psalm\Config;
+use Psalm\Type;
+use Psalm\IssueBuffer;
 use PhpParser;
 
 class ClassMethodChecker extends FunctionChecker

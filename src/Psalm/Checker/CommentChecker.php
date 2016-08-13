@@ -1,6 +1,10 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
+
+use Psalm\Context;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class CommentChecker
 {

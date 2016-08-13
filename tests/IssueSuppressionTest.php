@@ -29,8 +29,8 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\ClassChecker::clearCache();
-        \Psalm\ClassMethodChecker::clearCache();
+        \Psalm\Checker\ClassLikeChecker::clearCache();
+        \Psalm\Checker\ClassMethodChecker::clearCache();
         \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 
@@ -48,7 +48,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\FileChecker('somefile.php', $stmts);
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

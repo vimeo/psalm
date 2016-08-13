@@ -1,6 +1,6 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 use PhpParser;
 
@@ -31,6 +31,11 @@ use Psalm\Issue\UndefinedThisProperty;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
+
+use Psalm\Type;
+use Psalm\StatementsSource;
+use Psalm\Config;
+use Psalm\Context;
 
 class StatementsChecker
 {
@@ -71,7 +76,6 @@ class StatementsChecker
     protected static $this_calls = [];
 
     protected static $mock_interfaces = [];
-    protected static $class_consts = [];
 
     protected static $call_map = null;
 
@@ -152,6 +156,10 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
                     $this->checkExpression($const->value, $context);
+
+                    if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
+                        var_dump((string) $const->value->inferredType);
+                    }
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
@@ -228,9 +236,7 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-                foreach ($stmt->consts as $const) {
-                    self::$class_consts[$context->self . '::' . $const->name] = true;
-                }
+
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 (new ClassChecker($stmt, $this->source, $stmt->name))->check();
@@ -786,8 +792,8 @@ class StatementsChecker
             $use_context->self = $context->self;
 
             if (!$this->is_static) {
-                $this_class = ClassChecker::getThisClass() && ClassChecker::classExtends(ClassChecker::getThisClass(), $this->absolute_class) ?
-                    ClassChecker::getThisClass() :
+                $this_class = ClassLikeChecker::getThisClass() && ClassChecker::classExtends(ClassLikeChecker::getThisClass(), $this->absolute_class) ?
+                    ClassLikeChecker::getThisClass() :
                     $context->self;
 
                 if ($this_class) {
@@ -869,7 +875,7 @@ class StatementsChecker
 
             if ($stmt->class instanceof PhpParser\Node\Name && !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($this->check_classes) {
-                    if (ClassChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
@@ -1132,7 +1138,7 @@ class StatementsChecker
                             }
 
                             if (!ClassChecker::classExists($lhs_type_part->value)) {
-                                if (ClassChecker::interfaceExists($lhs_type_part->value)) {
+                                if (ClassLikeChecker::interfaceExists($lhs_type_part->value)) {
                                     if (IssueBuffer::accepts(
                                         new NoInterfaceProperties(
                                             'Interfaces cannot have properties',
@@ -1174,7 +1180,7 @@ class StatementsChecker
                                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
                             }
 
-                            $class_properties = ClassChecker::getInstancePropertiesForClass(
+                            $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
                                 $lhs_type_part->value,
                                 $class_visibility
                             );
@@ -1245,7 +1251,7 @@ class StatementsChecker
         $class_property_types = [];
 
         if ($stmt instanceof PhpParser\Node\Stmt\PropertyProperty) {
-            $class_properties = ClassChecker::getInstancePropertiesForClass($context->self, \ReflectionProperty::IS_PRIVATE);
+            $class_properties = ClassLikeChecker::getInstancePropertiesForClass($context->self, \ReflectionProperty::IS_PRIVATE);
 
             $class_property_types[] = $class_properties[$prop_name];
 
@@ -1268,7 +1274,7 @@ class StatementsChecker
                 return;
             }
 
-            if ($stmt->var->name === 'this' && !$this->source->getClassChecker()) {
+            if ($stmt->var->name === 'this' && !$this->source->getClassLikeChecker()) {
                 if (IssueBuffer::accepts(
                     new InvalidScope('Cannot use $this when not inside class', $this->file_name, $stmt->getLine()),
                     $this->suppressed_issues
@@ -1347,7 +1353,7 @@ class StatementsChecker
                 }
 
                 if (!ClassChecker::classExists($lhs_type_part->value)) {
-                    if (ClassChecker::interfaceExists($lhs_type_part->value)) {
+                    if (ClassLikeChecker::interfaceExists($lhs_type_part->value)) {
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
@@ -1376,7 +1382,7 @@ class StatementsChecker
                     return;
                 }
 
-                $class_properties = ClassChecker::getInstancePropertiesForClass(
+                $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
                     $lhs_type_part->value,
                     $class_visibility
                 );
@@ -1448,12 +1454,12 @@ class StatementsChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($this->check_classes) {
-                    if (ClassChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
 
-                $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
             }
             else {
                 switch ($stmt->class->parts[0]) {
@@ -1522,7 +1528,7 @@ class StatementsChecker
 
             if ($catch->type) {
                 $catch_context->vars_in_scope[$catch->var] = new Type\Union([
-                    new Type\Atomic(ClassChecker::getAbsoluteClassFromName($catch->type, $this->namespace, $this->aliased_classes))
+                    new Type\Atomic(ClassLikeChecker::getAbsoluteClassFromName($catch->type, $this->namespace, $this->aliased_classes))
                 ]);
             }
             else {
@@ -1534,7 +1540,7 @@ class StatementsChecker
             $this->registerVariable($catch->var, $catch->getLine());
 
             if ($this->check_classes) {
-                if (ClassChecker::checkClassName($catch->type, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+                if (ClassLikeChecker::checkClassName($catch->type, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
                     return;
                 }
             }
@@ -1672,7 +1678,7 @@ class StatementsChecker
                             break;
 
                         default:
-                            if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
+                            if (ClassLikeChecker::classImplements($return_type->value, 'Iterator')) {
                                 $iterator_method = $return_type->value . '::current';
                                 $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($iterator_method);
 
@@ -1682,7 +1688,7 @@ class StatementsChecker
                             }
 
                             if ($return_type->value !== 'Traversable' && $return_type->value !== $this->class_name) {
-                                if (ClassChecker::checkAbsoluteClassOrInterface($return_type->value, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                                if (ClassLikeChecker::checkAbsoluteClassOrInterface($return_type->value, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                                     return false;
                                 }
                             }
@@ -2060,7 +2066,7 @@ class StatementsChecker
             }
         }
 
-        if ($type->value !== 'array' && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
+        if ($type->value !== 'array' && !ClassLikeChecker::classImplements($type->value, 'ArrayAccess')) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess',
@@ -2149,10 +2155,10 @@ class StatementsChecker
 
             self::$this_calls[$this_method_id][] = $stmt->name;
 
-            if (ClassChecker::getThisClass() &&
+            if (ClassLikeChecker::getThisClass() &&
                 (
-                    ClassChecker::getThisClass() === $this->absolute_class ||
-                    ClassChecker::classExtends(ClassChecker::getThisClass(), $this->absolute_class) ||
+                    ClassLikeChecker::getThisClass() === $this->absolute_class ||
+                    ClassChecker::classExtends(ClassLikeChecker::getThisClass(), $this->absolute_class) ||
                     trait_exists($this->absolute_class)
                 )) {
 
@@ -2216,7 +2222,7 @@ class StatementsChecker
 
                     default:
                         if ($absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
-                            $does_class_exist = ClassChecker::checkAbsoluteClassOrInterface($absolute_class, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+                            $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
 
                             if (!$does_class_exist) {
                                 return $does_class_exist;
@@ -2244,7 +2250,7 @@ class StatementsChecker
                             }
 
                             /**
-                            if (ClassChecker::getThisClass() && ClassChecker::classExtends(ClassChecker::getThisClass(), $this->absolute_class)) {
+                            if (ClassLikeChecker::getThisClass() && ClassChecker::classExtends(ClassLikeChecker::getThisClass(), $this->absolute_class)) {
                                 $calling_context = $context->self;
                             }
                             **/
@@ -2276,7 +2282,7 @@ class StatementsChecker
 
     protected function checkInsideMethod($method_id, Context $context)
     {
-        $method_checker = ClassChecker::getMethodChecker($method_id);
+        $method_checker = ClassLikeChecker::getMethodChecker($method_id);
 
         if ($method_checker && $method_checker->getMethodId() !== $this->source->getMethodId()) {
             $this_context = new Context();
@@ -2389,13 +2395,13 @@ class StatementsChecker
             }
 
         } elseif ($this->check_classes) {
-            $does_class_exist = ClassChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues);
+            $does_class_exist = ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues);
 
             if (!$does_class_exist) {
                 return $does_class_exist;
             }
 
-            $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+            $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
         }
 
         if (!$this->check_methods) {
@@ -2403,7 +2409,7 @@ class StatementsChecker
         }
 
         if ($stmt->class->parts === ['parent'] && is_string($stmt->name)) {
-            if (ClassChecker::getThisClass()) {
+            if (ClassLikeChecker::getThisClass()) {
                 $method_id = $absolute_class . '::' . $stmt->name;
 
                 if ($this->checkInsideMethod($method_id, $context) === false) {
@@ -2678,25 +2684,23 @@ class StatementsChecker
             if ($stmt->class->parts === ['self']) {
                 $absolute_class = $context->self;
             } else {
-                $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
-                if (ClassChecker::checkAbsoluteClassOrInterface($absolute_class, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+                if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                     return false;
                 }
             }
 
             $const_id = $absolute_class . '::' . $stmt->name;
 
-            if (!isset(self::$class_consts[$const_id])) {
-                if (!defined($const_id)) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->file_name, $stmt->getLine()),
-                        $this->suppressed_issues
-                    )) {
-                        return false;
-                    }
-                }
+            $class_constants = ClassLikeChecker::getConstantsForClass($absolute_class, \ReflectionProperty::IS_PUBLIC);
 
-                self::$class_consts[$const_id] = true;
+            if (!isset($class_constants[$stmt->name])) {
+                if (IssueBuffer::accepts(
+                    new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->file_name, $stmt->getLine()),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
             }
 
             return;
@@ -2731,10 +2735,10 @@ class StatementsChecker
             }
         }
         elseif ($this->check_classes) {
-            if (ClassChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+            if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
                 return false;
             }
-            $absolute_class = ClassChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+            $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
         }
 
         if ($absolute_class && $this->check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
@@ -2750,7 +2754,7 @@ class StatementsChecker
                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
             }
 
-            $visible_class_properties = ClassChecker::getStaticPropertiesForClass(
+            $visible_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
                 $absolute_class,
                 $class_visibility
             );
@@ -2761,7 +2765,7 @@ class StatementsChecker
                 $all_class_properties = [];
 
                 if ($absolute_class !== $context->self) {
-                    $all_class_properties = ClassChecker::getStaticPropertiesForClass(
+                    $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
                         $absolute_class,
                         \ReflectionProperty::IS_PRIVATE
                     );
@@ -3799,7 +3803,7 @@ class StatementsChecker
             return self::$call_map;
         }
 
-        $call_map = require_once(__DIR__.'/CallMap.php');
+        $call_map = require_once(__DIR__.'/../CallMap.php');
 
         self::$call_map = [];
 

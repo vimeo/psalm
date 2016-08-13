@@ -1,12 +1,16 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 ini_set('xdebug.max_nesting_level', 512);
 
 use PhpParser;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
+use Psalm\StatementsSource;
+use Psalm\Type;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 
 class FunctionChecker implements StatementsSource
 {
@@ -56,7 +60,7 @@ class FunctionChecker implements StatementsSource
         if ($this->_function->stmts) {
             $has_context = (bool) count($context->vars_in_scope);
             if ($this instanceof ClassMethodChecker) {
-                if (ClassChecker::getThisClass()) {
+                if (ClassLikeChecker::getThisClass()) {
                     $hash = $this->getMethodId() . json_encode([$context->vars_in_scope, $context->vars_possibly_in_scope]);
 
                     // if we know that the function has no effects on vars, we don't bother rechecking
@@ -93,7 +97,7 @@ class FunctionChecker implements StatementsSource
                     if ($param->type) {
                         if ($param->type instanceof PhpParser\Node\Name) {
                             if (!in_array($param->type->parts[0], ['self', 'parent'])) {
-                                ClassChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues);
+                                ClassLikeChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues);
                             }
                         }
                     }
@@ -114,7 +118,7 @@ class FunctionChecker implements StatementsSource
                             elseif ($param->type instanceof PhpParser\Node\Name) {
                                 $param_type_string = $param->type->parts === ['self']
                                                         ? $this->_absolute_class
-                                                        : ClassChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
+                                                        : ClassLikeChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
                             }
 
                             if ($is_nullable) {
@@ -155,7 +159,7 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            if (ClassChecker::getThisClass() && $this instanceof ClassMethodChecker) {
+            if (ClassLikeChecker::getThisClass() && $this instanceof ClassMethodChecker) {
                 self::$_no_effects_hashes[$hash] = [$context->vars_in_scope, $context->vars_possibly_in_scope];
             }
         }
@@ -216,9 +220,9 @@ class FunctionChecker implements StatementsSource
         return $this->_class_name;
     }
 
-    public function getClassChecker()
+    public function getClassLikeChecker()
     {
-        return $this->_source->getClassChecker();
+        return $this->_source->getClassLikeChecker();
     }
 
     public function getParentClass()
@@ -297,7 +301,7 @@ class FunctionChecker implements StatementsSource
         );
 
         if ($declared_return_type) {
-            $inferred_return_types = EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
+            $inferred_return_types = \Psalm\EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
 
             if (!$inferred_return_types) {
                 if ($declared_return_type->isVoid()) {
@@ -487,7 +491,7 @@ class FunctionChecker implements StatementsSource
                 $param_type_string = $this->_absolute_class;
             }
             else {
-                $param_type_string = ClassChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                $param_type_string = ClassLikeChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
             }
 
             if ($param_type_string) {
@@ -536,7 +540,7 @@ class FunctionChecker implements StatementsSource
                     continue;
                 }
 
-                $return_type_token = ClassChecker::getAbsoluteClassFromString($return_type_token, $namespace, $aliased_classes);
+                $return_type_token = ClassLikeChecker::getAbsoluteClassFromString($return_type_token, $namespace, $aliased_classes);
             }
         }
 

@@ -3,7 +3,8 @@
 namespace Psalm\Type;
 
 use Psalm\Type;
-use Psalm\ClassChecker;
+use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\ClassChecker;
 
 class Union extends Type
 {
@@ -80,7 +81,7 @@ class Union extends Type
     public function isIn(Union $parent)
     {
         foreach ($this->types as $type) {
-            if ($parent->hasType('object') && ClassChecker::classOrInterfaceExists($type->value)) {
+            if ($parent->hasType('object') && ClassLikeChecker::classOrInterfaceExists($type->value)) {
                 continue;
             }
 

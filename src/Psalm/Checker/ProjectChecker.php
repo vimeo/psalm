@@ -1,9 +1,12 @@
 <?php
 
-namespace Psalm;
+namespace Psalm\Checker;
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+
+use Psalm\Config;
+use Psalm\IssueBuffer;
 
 class ProjectChecker
 {

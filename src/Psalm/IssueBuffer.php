@@ -2,6 +2,8 @@
 
 namespace Psalm;
 
+use Psalm\Checker\ProjectChecker;
+
 class IssueBuffer
 {
     protected static $errors = [];

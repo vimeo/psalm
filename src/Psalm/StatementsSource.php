@@ -12,7 +12,7 @@ interface StatementsSource
 
     public function getClassName();
 
-    public function getClassChecker();
+    public function getClassLikeChecker();
 
     /**
      * @return \PhpParser\Node\Name
