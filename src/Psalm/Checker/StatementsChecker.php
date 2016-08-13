@@ -1138,7 +1138,7 @@ class StatementsChecker
                             }
 
                             if (!ClassChecker::classExists($lhs_type_part->value)) {
-                                if (ClassLikeChecker::interfaceExists($lhs_type_part->value)) {
+                                if (InterfaceChecker::interfaceExists($lhs_type_part->value)) {
                                     if (IssueBuffer::accepts(
                                         new NoInterfaceProperties(
                                             'Interfaces cannot have properties',
@@ -1353,7 +1353,7 @@ class StatementsChecker
                 }
 
                 if (!ClassChecker::classExists($lhs_type_part->value)) {
-                    if (ClassLikeChecker::interfaceExists($lhs_type_part->value)) {
+                    if (InterfaceChecker::interfaceExists($lhs_type_part->value)) {
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
@@ -1678,7 +1678,7 @@ class StatementsChecker
                             break;
 
                         default:
-                            if (ClassLikeChecker::classImplements($return_type->value, 'Iterator')) {
+                            if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
                                 $iterator_method = $return_type->value . '::current';
                                 $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($iterator_method);
 
@@ -2066,7 +2066,7 @@ class StatementsChecker
             }
         }
 
-        if ($type->value !== 'array' && !ClassLikeChecker::classImplements($type->value, 'ArrayAccess')) {
+        if ($type->value !== 'array' && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess',

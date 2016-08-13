@@ -11,19 +11,17 @@ class TraitChecker extends ClassLikeChecker
 {
     public function __construct(PhpParser\Node\Stmt\Trait_ $class, StatementsSource $source, $absolute_class)
     {
-        $this->_class = $class;
-        $this->_namespace = $source->getNamespace();
-        $this->_aliased_classes = $source->getAliasedClasses();
-        $this->_file_name = $source->getFileName();
-        $this->_absolute_class = $absolute_class;
+        $this->class = $class;
+        $this->namespace = $source->getNamespace();
+        $this->aliased_classes = $source->getAliasedClasses();
+        $this->file_name = $source->getFileName();
+        $this->absolute_class = $absolute_class;
 
-        $this->_parent_class = null;
+        $this->parent_class = null;
 
-        $this->_suppressed_issues = $source->getSuppressedIssues();
+        $this->suppressed_issues = $source->getSuppressedIssues();
 
-        self::$_existing_classes[$absolute_class] = 1;
-
-        self::$_class_checkers[$absolute_class] = $this;
+        self::$class_checkers[$absolute_class] = $this;
     }
 
     public function check($check_methods = true, Context $class_context = null)

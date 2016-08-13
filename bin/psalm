@@ -8,8 +8,8 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
     }
 }
 
-use Psalm\FileChecker;
-use Psalm\ProjectChecker;
+use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\IssueBuffer;
 
 // show all errors

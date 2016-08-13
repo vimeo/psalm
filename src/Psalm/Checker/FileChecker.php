@@ -12,58 +12,58 @@ use Psalm\Context;
 
 class FileChecker implements StatementsSource
 {
-    protected $_real_file_name;
-    protected $_short_file_name;
-    protected $_namespace;
-    protected $_aliased_classes = [];
+    protected $real_file_name;
+    protected $short_file_name;
+    protected $namespace;
+    protected $aliased_classes = [];
 
-    protected $_function_params = [];
-    protected $_class_name;
+    protected $function_params = [];
+    protected $class_name;
 
-    protected $_namespace_aliased_classes = [];
+    protected $namespace_aliased_classes = [];
 
-    protected $_preloaded_statements = [];
+    protected $preloaded_statements = [];
 
-    protected $_declared_classes = [];
+    protected $declared_classes = [];
 
     /**
      * @var array
      */
-    protected $_suppressed_issues = [];
+    protected $suppressed_issues = [];
 
-    protected static $_cache_dir = null;
-    protected static $_file_checkers = [];
+    protected static $cache_dir = null;
+    protected static $file_checkers = [];
 
-    protected static $_class_methods_checked = [];
-    protected static $_classes_checked = [];
-    protected static $_file_checked = [];
+    protected static $class_methods_checked = [];
+    protected static $classes_checked = [];
+    protected static $file_checked = [];
 
     public static $show_notices = true;
 
     public function __construct($file_name, array $preloaded_statements = [])
     {
-        $this->_real_file_name = $file_name;
-        $this->_short_file_name = Config::getInstance()->shortenFileName($file_name);
+        $this->real_file_name = $file_name;
+        $this->short_file_name = Config::getInstance()->shortenFileName($file_name);
 
-        self::$_file_checkers[$this->_short_file_name] = $this;
-        self::$_file_checkers[$file_name] = $this;
+        self::$file_checkers[$this->short_file_name] = $this;
+        self::$file_checkers[$file_name] = $this;
 
         if ($preloaded_statements) {
-            $this->_preloaded_statements = $preloaded_statements;
+            $this->preloaded_statements = $preloaded_statements;
         }
     }
 
     public function check($check_classes = true, $check_class_methods = true, Context $file_context = null, $cache = true)
     {
-        if ($cache && isset(self::$_class_methods_checked[$this->_real_file_name])) {
+        if ($cache && isset(self::$class_methods_checked[$this->real_file_name])) {
             return;
         }
 
-        if ($cache && $check_classes && !$check_class_methods && isset(self::$_classes_checked[$this->_real_file_name])) {
+        if ($cache && $check_classes && !$check_class_methods && isset(self::$classes_checked[$this->real_file_name])) {
             return;
         }
 
-        if ($cache && !$check_classes && !$check_class_methods && isset(self::$_file_checked[$this->_real_file_name])) {
+        if ($cache && !$check_classes && !$check_class_methods && isset(self::$file_checked[$this->real_file_name])) {
             return;
         }
 
@@ -91,12 +91,16 @@ class FileChecker implements StatementsSource
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
-                        $this->_declared_classes[] = $class_checker->getAbsoluteClass();
+                        $this->declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check($check_class_methods);
                     }
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
-                    // @todo check interfaces
+                    if ($check_classes) {
+                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new InterfaceChecker($stmt, $this, $stmt->name);
+                        $this->declared_classes[] = $class_checker->getAbsoluteClass();
+                        $class_checker->check(false);
+                    }
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
@@ -108,12 +112,12 @@ class FileChecker implements StatementsSource
                     $namespace_name = implode('\\', $stmt->name->parts);
 
                     $namespace_checker = new NamespaceChecker($stmt, $this);
-                    $this->_namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_methods);
-                    $this->_declared_classes = array_merge($namespace_checker->getDeclaredClasses());
+                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_methods);
+                    $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                     foreach ($stmt->uses as $use) {
-                        $this->_aliased_classes[$use->alias] = implode('\\', $use->name->parts);
+                        $this->aliased_classes[$use->alias] = implode('\\', $use->name->parts);
                     }
                 }
             }
@@ -128,22 +132,22 @@ class FileChecker implements StatementsSource
         }
 
         if ($check_class_methods) {
-            self::$_class_methods_checked[$this->_real_file_name] = true;
+            self::$class_methods_checked[$this->real_file_name] = true;
         }
 
         if ($check_classes) {
-            self::$_classes_checked[$this->_real_file_name] = true;
+            self::$classes_checked[$this->real_file_name] = true;
         }
 
-        self::$_file_checked[$this->_real_file_name] = true;
+        self::$file_checked[$this->real_file_name] = true;
 
         return $stmts;
     }
 
     public static function getAbsoluteClassFromNameInFile($class, $namespace, $file_name)
     {
-        if (isset(self::$_file_checkers[$file_name])) {
-            $aliased_classes = self::$_file_checkers[$file_name]->getAliasedClasses($namespace);
+        if (isset(self::$file_checkers[$file_name])) {
+            $aliased_classes = self::$file_checkers[$file_name]->getAliasedClasses($namespace);
 
         } else {
             $file_checker = new FileChecker($file_name);
@@ -160,7 +164,7 @@ class FileChecker implements StatementsSource
      */
     public function getDeclaredClasses()
     {
-        return $this->_declared_classes;
+        return $this->declared_classes;
     }
 
     /**
@@ -170,8 +174,8 @@ class FileChecker implements StatementsSource
      */
     public static function getDeclaredClassesInFile($file_name)
     {
-        if (isset(self::$_file_checkers[$file_name])) {
-            $file_checker = self::$_file_checkers[$file_name];
+        if (isset(self::$file_checkers[$file_name])) {
+            $file_checker = self::$file_checkers[$file_name];
         }
         else {
             $file_checker = new FileChecker($file_name);
@@ -186,9 +190,9 @@ class FileChecker implements StatementsSource
      */
     protected function getStatements()
     {
-        return $this->_preloaded_statements ?
-                    $this->_preloaded_statements :
-                    self::getStatementsForFile($this->_real_file_name);
+        return $this->preloaded_statements ?
+                    $this->preloaded_statements :
+                    self::getStatementsForFile($this->real_file_name);
     }
 
     /**
@@ -204,10 +208,10 @@ class FileChecker implements StatementsSource
 
         $cache_location = null;
 
-        if (self::$_cache_dir) {
+        if (self::$cache_dir) {
             $key = md5($contents);
 
-            $cache_location = self::$_cache_dir . '/' . $key;
+            $cache_location = self::$cache_dir . '/' . $key;
 
             if (is_readable($cache_location)) {
                 $stmts = unserialize(file_get_contents($cache_location));
@@ -221,12 +225,12 @@ class FileChecker implements StatementsSource
             $stmts = $parser->parse($contents);
         }
 
-        if (self::$_cache_dir) {
+        if (self::$cache_dir) {
             if ($from_cache) {
                 touch($cache_location);
             } else {
-                if (!file_exists(self::$_cache_dir)) {
-                    mkdir(self::$_cache_dir);
+                if (!file_exists(self::$cache_dir)) {
+                    mkdir(self::$cache_dir);
                 }
 
                 file_put_contents($cache_location, serialize($stmts));
@@ -242,17 +246,17 @@ class FileChecker implements StatementsSource
 
     public static function setCacheDir($cache_dir)
     {
-        self::$_cache_dir = $cache_dir;
+        self::$cache_dir = $cache_dir;
     }
 
     public function registerFunction(PhpParser\Node\Stmt\Function_ $function)
     {
         $function_name = $function->name;
 
-        $this->_function_params[$function_name] = [];
+        $this->function_params[$function_name] = [];
 
         foreach ($function->params as $param) {
-            $this->_function_params[$function_name][] = $param->byRef;
+            $this->function_params[$function_name][] = $param->byRef;
         }
     }
 
@@ -266,11 +270,11 @@ class FileChecker implements StatementsSource
 
     public function getAliasedClasses($namespace_name = null)
     {
-        if ($namespace_name && isset($this->_namespace_aliased_classes[$namespace_name])) {
-            return $this->_namespace_aliased_classes[$namespace_name];
+        if ($namespace_name && isset($this->namespace_aliased_classes[$namespace_name])) {
+            return $this->namespace_aliased_classes[$namespace_name];
         }
 
-        return $this->_aliased_classes;
+        return $this->aliased_classes;
     }
 
     /**
@@ -283,7 +287,7 @@ class FileChecker implements StatementsSource
 
     public function getClassName()
     {
-        return $this->_class_name;
+        return $this->class_name;
     }
 
     /**
@@ -304,7 +308,7 @@ class FileChecker implements StatementsSource
 
     public function getFileName()
     {
-        return $this->_short_file_name;
+        return $this->short_file_name;
     }
 
     /**
@@ -322,20 +326,20 @@ class FileChecker implements StatementsSource
 
     public function getSuppressedIssues()
     {
-        return $this->_suppressed_issues;
+        return $this->suppressed_issues;
     }
 
     public static function getFileCheckerFromFileName($file_name)
     {
-        return self::$_file_checkers[$file_name];
+        return self::$file_checkers[$file_name];
     }
 
     public static function getClassLikeCheckerFromClass($class_name)
     {
         $file_name = (new \ReflectionClass($class_name))->getFileName();
 
-        if (isset(self::$_file_checkers[$file_name])) {
-            $file_checker = self::$_file_checkers[$file_name];
+        if (isset(self::$file_checkers[$file_name])) {
+            $file_checker = self::$file_checkers[$file_name];
         }
         else {
             $file_checker = new FileChecker($file_name);
@@ -348,7 +352,7 @@ class FileChecker implements StatementsSource
 
     public function hasFunction($function_name)
     {
-        return isset($this->_function_params[$function_name]);
+        return isset($this->function_params[$function_name]);
     }
 
     /**
@@ -356,15 +360,15 @@ class FileChecker implements StatementsSource
      */
     public function isPassedByReference($function_name, $argument_offset)
     {
-        return $argument_offset < count($this->_function_params[$function_name]) && $this->_function_params[$function_name][$argument_offset];
+        return $argument_offset < count($this->function_params[$function_name]) && $this->function_params[$function_name][$argument_offset];
     }
 
     public static function clearCache()
     {
-        self::$_file_checkers = [];
+        self::$file_checkers = [];
 
-        self::$_class_methods_checked = [];
-        self::$_classes_checked = [];
-        self::$_file_checked = [];
+        self::$class_methods_checked = [];
+        self::$classes_checked = [];
+        self::$file_checked = [];
     }
 }

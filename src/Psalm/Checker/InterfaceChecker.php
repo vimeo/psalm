@@ -3,42 +3,52 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\StatementsSource;
+use Psalm\Context;
 
 class InterfaceChecker extends ClassLikeChecker
 {
-    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source)
+    protected static $existing_interfaces = [];
+    protected static $existing_interfaces_ci = [];
+
+    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source, $absolute_class)
     {
-        $this->_class = $class;
-        $this->_namespace = $source->getNamespace();
-        $this->_aliased_classes = $source->getAliasedClasses();
-        $this->_file_name = $source->getFileName();
-        $this->_absolute_class = $absolute_class;
+        parent::__construct($interface, $source, $absolute_class);
 
-        $this->_parent_class = null;
-
-        $this->_suppressed_issues = $source->getSuppressedIssues();
-
-        self::$_existing_classes[$absolute_class] = 1;
-
-        self::$_class_checkers[$absolute_class] = $this;
-    }
-
-    public function check($check_methods = true, Context $class_context = null)
-    {
-
+        self::$existing_interfaces[$absolute_class] = true;
+        self::$existing_interfaces_ci[strtolower($absolute_class)] = true;
     }
 
     public static function interfaceExists($absolute_class)
     {
-        if (isset(self::$_existing_interfaces_ci[strtolower($absolute_class)])) {
-            return true;
+        if (isset(self::$existing_interfaces_ci[strtolower($absolute_class)])) {
+            return self::$existing_interfaces_ci[strtolower($absolute_class)];
+        }
+
+        if (in_array($absolute_class, self::$SPECIAL_TYPES)) {
+            return false;
         }
 
         if (interface_exists($absolute_class, true)) {
-            self::$_existing_interfaces_ci[strtolower($absolute_class)] = true;
+            $reflected_interface = new \ReflectionClass($absolute_class);
+
+            self::$existing_interfaces_ci[strtolower($absolute_class)] = true;
+            self::$existing_interfaces[$reflected_interface->getName()] = true;
             return true;
         }
 
+        self::$existing_interfaces_ci[strtolower($absolute_class)] = false;
+        self::$existing_interfaces_ci[$absolute_class] = false;
+
         return false;
+    }
+
+    public static function hasCorrectCasing($absolute_class)
+    {
+        if (!self::interfaceExists($absolute_class)) {
+            throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $absolute_class);
+        }
+
+        return isset(self::$existing_interfaces[$absolute_class]);
     }
 }

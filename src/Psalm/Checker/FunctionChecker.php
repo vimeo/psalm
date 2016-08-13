@@ -14,58 +14,58 @@ use Psalm\IssueBuffer;
 
 class FunctionChecker implements StatementsSource
 {
-    protected $_function;
-    protected $_aliased_classes = [];
-    protected $_namespace;
-    protected $_file_name;
-    protected $_is_static = false;
-    protected $_absolute_class;
-    protected $_statements_checker;
-    protected $_source;
-    protected $_return_vars_in_scope = [];
-    protected $_return_vars_possibly_in_scope = [];
-    protected $_class_name;
-    protected $_class_extends;
+    protected $function;
+    protected $aliased_classes = [];
+    protected $namespace;
+    protected $file_name;
+    protected $is_static = false;
+    protected $absolute_class;
+    protected $statements_checker;
+    protected $source;
+    protected $return_vars_in_scope = [];
+    protected $return_vars_possibly_in_scope = [];
+    protected $class_name;
+    protected $class_extends;
 
     /**
      * @var array
      */
-    protected $_suppressed_issues;
+    protected $suppressed_issues;
 
-    protected static $_no_effects_hashes = [];
+    protected static $no_effects_hashes = [];
 
-    protected static $_function_params = [];
-    protected static $_new_docblocks = [];
-    protected static $_function_return_types = [];
-    protected static $_function_namespaces = [];
-    protected static $_existing_functions = [];
-    protected static $_deprecated_functions = [];
-    protected static $_have_registered_function = [];
+    protected static $function_params = [];
+    protected static $new_docblocks = [];
+    protected static $function_return_types = [];
+    protected static $function_namespaces = [];
+    protected static $existing_functions = [];
+    protected static $deprecated_functions = [];
+    protected static $have_registered_function = [];
 
     public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source)
     {
-        $this->_function = $function;
-        $this->_aliased_classes = $source->getAliasedClasses();
-        $this->_namespace = $source->getNamespace();
-        $this->_class_name = $source->getClassName();
-        $this->_class_extends = $source->getParentClass();
-        $this->_file_name = $source->getFileName();
-        $this->_absolute_class = $source->getAbsoluteClass();
-        $this->_source = $source;
-        $this->_suppressed_issues = $source->getSuppressedIssues();
+        $this->function = $function;
+        $this->aliased_classes = $source->getAliasedClasses();
+        $this->namespace = $source->getNamespace();
+        $this->class_name = $source->getClassName();
+        $this->class_extends = $source->getParentClass();
+        $this->file_name = $source->getFileName();
+        $this->absolute_class = $source->getAbsoluteClass();
+        $this->source = $source;
+        $this->suppressed_issues = $source->getSuppressedIssues();
     }
 
     public function check(Context $context, $check_methods = true)
     {
-        if ($this->_function->stmts) {
+        if ($this->function->stmts) {
             $has_context = (bool) count($context->vars_in_scope);
             if ($this instanceof ClassMethodChecker) {
                 if (ClassLikeChecker::getThisClass()) {
                     $hash = $this->getMethodId() . json_encode([$context->vars_in_scope, $context->vars_possibly_in_scope]);
 
                     // if we know that the function has no effects on vars, we don't bother rechecking
-                    if (isset(self::$_no_effects_hashes[$hash])) {
-                        list($context->vars_in_scope, $context->vars_possibly_in_scope) = self::$_no_effects_hashes[$hash];
+                    if (isset(self::$no_effects_hashes[$hash])) {
+                        list($context->vars_in_scope, $context->vars_possibly_in_scope) = self::$no_effects_hashes[$hash];
 
                         return;
                     }
@@ -77,7 +77,7 @@ class FunctionChecker implements StatementsSource
 
             $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
 
-            if ($this->_function instanceof PhpParser\Node\Stmt\ClassMethod) {
+            if ($this->function instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_params = ClassMethodChecker::getMethodParams($this->getMethodId());
 
                 foreach ($method_params as $method_param) {
@@ -88,16 +88,16 @@ class FunctionChecker implements StatementsSource
                         $this->getMethodId()
                     );
 
-                    $statements_checker->registerVariable($method_param['name'], $this->_function->getLine());
+                    $statements_checker->registerVariable($method_param['name'], $this->function->getLine());
                 }
             }
             else {
                 // @todo deprecate this code
-                foreach ($this->_function->params as $param) {
+                foreach ($this->function->params as $param) {
                     if ($param->type) {
                         if ($param->type instanceof PhpParser\Node\Name) {
                             if (!in_array($param->type->parts[0], ['self', 'parent'])) {
-                                ClassLikeChecker::checkClassName($param->type, $this->_namespace, $this->_aliased_classes, $this->_file_name, $this->_suppressed_issues);
+                                ClassLikeChecker::checkClassName($param->type, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues);
                             }
                         }
                     }
@@ -117,8 +117,8 @@ class FunctionChecker implements StatementsSource
                             }
                             elseif ($param->type instanceof PhpParser\Node\Name) {
                                 $param_type_string = $param->type->parts === ['self']
-                                                        ? $this->_absolute_class
-                                                        : ClassLikeChecker::getAbsoluteClassFromName($param->type, $this->_namespace, $this->_aliased_classes);
+                                                        ? $this->absolute_class
+                                                        : ClassLikeChecker::getAbsoluteClassFromName($param->type, $this->namespace, $this->aliased_classes);
                             }
 
                             if ($is_nullable) {
@@ -137,14 +137,14 @@ class FunctionChecker implements StatementsSource
                 }
             }
 
-            $statements_checker->check($this->_function->stmts, $context);
+            $statements_checker->check($this->function->stmts, $context);
 
-            if (isset($this->_return_vars_in_scope[''])) {
-                $context->vars_in_scope = TypeChecker::combineKeyedTypes($context->vars_in_scope, $this->_return_vars_in_scope['']);
+            if (isset($this->return_vars_in_scope[''])) {
+                $context->vars_in_scope = TypeChecker::combineKeyedTypes($context->vars_in_scope, $this->return_vars_in_scope['']);
             }
 
-            if (isset($this->_return_vars_possibly_in_scope[''])) {
-                $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $this->_return_vars_possibly_in_scope['']);
+            if (isset($this->return_vars_possibly_in_scope[''])) {
+                $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $this->return_vars_possibly_in_scope['']);
             }
 
             foreach ($context->vars_in_scope as $var => $type) {
@@ -160,7 +160,7 @@ class FunctionChecker implements StatementsSource
             }
 
             if (ClassLikeChecker::getThisClass() && $this instanceof ClassMethodChecker) {
-                self::$_no_effects_hashes[$hash] = [$context->vars_in_scope, $context->vars_possibly_in_scope];
+                self::$no_effects_hashes[$hash] = [$context->vars_in_scope, $context->vars_possibly_in_scope];
             }
         }
     }
@@ -173,18 +173,18 @@ class FunctionChecker implements StatementsSource
      */
     public function addReturnTypes($return_type, Context $context)
     {
-        if (isset($this->_return_vars_in_scope[$return_type])) {
-            $this->_return_vars_in_scope[$return_type] = TypeChecker::combineKeyedTypes($context->vars_in_scope, $this->_return_vars_in_scope[$return_type]);
+        if (isset($this->return_vars_in_scope[$return_type])) {
+            $this->return_vars_in_scope[$return_type] = TypeChecker::combineKeyedTypes($context->vars_in_scope, $this->return_vars_in_scope[$return_type]);
         }
         else {
-            $this->_return_vars_in_scope[$return_type] = $context->vars_in_scope;
+            $this->return_vars_in_scope[$return_type] = $context->vars_in_scope;
         }
 
-        if (isset($this->_return_vars_possibly_in_scope[$return_type])) {
-            $this->_return_vars_possibly_in_scope[$return_type] = array_merge($context->vars_possibly_in_scope, $this->_return_vars_possibly_in_scope[$return_type]);
+        if (isset($this->return_vars_possibly_in_scope[$return_type])) {
+            $this->return_vars_possibly_in_scope[$return_type] = array_merge($context->vars_possibly_in_scope, $this->return_vars_possibly_in_scope[$return_type]);
         }
         else {
-            $this->_return_vars_possibly_in_scope[$return_type] = $context->vars_possibly_in_scope;
+            $this->return_vars_possibly_in_scope[$return_type] = $context->vars_possibly_in_scope;
         }
     }
 
@@ -193,71 +193,71 @@ class FunctionChecker implements StatementsSource
      */
     public function getMethodId()
     {
-        if ($this->_function instanceof PhpParser\Node\Expr\Closure) {
+        if ($this->function instanceof PhpParser\Node\Expr\Closure) {
             return null;
         }
 
-        return ($this->_absolute_class ? $this->_absolute_class . '::' : '') . $this->_function->name;
+        return ($this->absolute_class ? $this->absolute_class . '::' : '') . $this->function->name;
     }
 
     public function getNamespace()
     {
-        return $this->_namespace;
+        return $this->namespace;
     }
 
     public function getAliasedClasses()
     {
-        return $this->_aliased_classes;
+        return $this->aliased_classes;
     }
 
     public function getAbsoluteClass()
     {
-        return $this->_absolute_class;
+        return $this->absolute_class;
     }
 
     public function getClassName()
     {
-        return $this->_class_name;
+        return $this->class_name;
     }
 
     public function getClassLikeChecker()
     {
-        return $this->_source->getClassLikeChecker();
+        return $this->source->getClassLikeChecker();
     }
 
     public function getParentClass()
     {
-        return $this->_class_extends;
+        return $this->class_extends;
     }
 
     public function getFileName()
     {
-        return $this->_file_name;
+        return $this->file_name;
     }
 
     public function isStatic()
     {
-        return $this->_is_static;
+        return $this->is_static;
     }
 
     public function getSource()
     {
-        return $this->_source;
+        return $this->source;
     }
 
     public function getSuppressedIssues()
     {
-        return $this->_suppressed_issues;
+        return $this->suppressed_issues;
     }
 
     public static function getFunctionReturnTypes($function_id, $file_name)
     {
-        if (!isset(self::$_function_return_types[$file_name][$function_id])) {
+        if (!isset(self::$function_return_types[$file_name][$function_id])) {
             throw new \InvalidArgumentException('Do not know function');
         }
 
-        return self::$_function_return_types[$file_name][$function_id]
-            ? clone self::$_function_return_types[$file_name][$function_id]
+        return self::$function_return_types[$file_name][$function_id]
+            ? clone self::$function_return_types[$file_name][$function_id]
             : null;
     }
 
@@ -266,17 +266,17 @@ class FunctionChecker implements StatementsSource
      */
     public function checkReturnTypes($update_doc_comment = false)
     {
-        if (!$this->_function->stmts) {
+        if (!$this->function->stmts) {
             return;
         }
 
-        if ($this->_function->name === '__construct') {
+        if ($this->function->name === '__construct') {
             // we know that constructors always return this
             return;
         }
 
-        if (!isset(self::$_new_docblocks[$this->_file_name])) {
-            self::$_new_docblocks[$this->_file_name] = [];
+        if (!isset(self::$new_docblocks[$this->file_name])) {
+            self::$new_docblocks[$this->file_name] = [];
         }
 
         $method_id = $this->getMethodId();
@@ -285,7 +285,7 @@ class FunctionChecker implements StatementsSource
             $method_return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
         }
         else {
-            $method_return_types = self::getFunctionReturnTypes($method_id, $this->_file_name);
+            $method_return_types = self::getFunctionReturnTypes($method_id, $this->file_name);
         }
 
         if (!$method_return_types) {
@@ -296,19 +296,19 @@ class FunctionChecker implements StatementsSource
         $declared_return_type = StatementsChecker::fleshOutTypes(
             $method_return_types,
             [],
-            $this->_absolute_class,
+            $this->absolute_class,
             $method_id
         );
 
         if ($declared_return_type) {
-            $inferred_return_types = \Psalm\EffectsAnalyser::getReturnTypes($this->_function->stmts, true);
+            $inferred_return_types = \Psalm\EffectsAnalyser::getReturnTypes($this->function->stmts, true);
 
             if (!$inferred_return_types) {
                 if ($declared_return_type->isVoid()) {
                     return;
                 }
 
-                if (ScopeChecker::onlyThrows($this->_function->stmts)) {
+                if (ScopeChecker::onlyThrows($this->function->stmts)) {
                     // if there's a single throw statement, it's presumably an exception saying this method is not to be used
                     return;
                 }
@@ -316,8 +316,8 @@ class FunctionChecker implements StatementsSource
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return type was found for method ' . $method_id . ' but return type \'' . $declared_return_type . '\' was expected',
-                        $this->_file_name,
-                        $this->_function->getLine()
+                        $this->file_name,
+                        $this->function->getLine()
                     )
                 )) {
                     return false;
@@ -333,12 +333,12 @@ class FunctionChecker implements StatementsSource
                     return;
                 }
 
-                if (!TypeChecker::hasIdenticalTypes($declared_return_type, $inferred_return_type, $this->_absolute_class)) {
+                if (!TypeChecker::hasIdenticalTypes($declared_return_type, $inferred_return_type, $this->absolute_class)) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
                             'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
-                            $this->_file_name,
-                            $this->_function->getLine()
+                            $this->file_name,
+                            $this->function->getLine()
                         ),
                         $this->getSuppressedIssues()
                     )) {
@@ -351,26 +351,26 @@ class FunctionChecker implements StatementsSource
         }
     }
 
-    protected function _registerFunction(PhpParser\Node\Stmt\Function_ $function)
+    protected function registerFunction(PhpParser\Node\Stmt\Function_ $function)
     {
         $function_id = $function->name;
 
-        if (isset(self::$_have_registered_function[$this->_file_name][$function_id])) {
+        if (isset(self::$have_registered_function[$this->file_name][$function_id])) {
             throw new \LogicException('Cannot re-register function twice');
         }
 
-        self::$_have_registered_function[$this->_file_name][$function_id] = true;
+        self::$have_registered_function[$this->file_name][$function_id] = true;
 
-        self::$_function_namespaces[$this->_file_name][$function_id] = $this->_namespace;
-        self::$_existing_functions[$this->_file_name][$function_id] = 1;
+        self::$function_namespaces[$this->file_name][$function_id] = $this->namespace;
+        self::$existing_functions[$this->file_name][$function_id] = 1;
 
-        self::$_function_params[$this->_file_name][$function_id] = [];
+        self::$function_params[$this->file_name][$function_id] = [];
 
         $function_param_names = [];
 
         foreach ($function->getParams() as $param) {
             $param_array = $this->getParamArray($param);
-            self::$_function_params[$this->_file_name][$function_id][] = $param_array;
+            self::$function_params[$this->file_name][$function_id][] = $param_array;
             $function_param_names[$param->name] = $param_array['type'];
         }
 
@@ -380,10 +380,10 @@ class FunctionChecker implements StatementsSource
         $docblock_info = CommentChecker::extractDocblockInfo($function->getDocComment());
 
         if ($docblock_info['deprecated']) {
-            self::$_deprecated_functions[$this->_file_name][$function_id] = true;
+            self::$deprecated_functions[$this->file_name][$function_id] = true;
         }
 
-        $this->_suppressed_issues = $docblock_info['suppress'];
+        $this->suppressed_issues = $docblock_info['suppress'];
 
         if ($config->use_docblock_types) {
             if ($docblock_info['return_type']) {
@@ -392,8 +392,8 @@ class FunctionChecker implements StatementsSource
                         self::fixUpLocalType(
                             $docblock_info['return_type'],
                             null,
-                            $this->_namespace,
-                            $this->_aliased_classes
+                            $this->namespace,
+                            $this->aliased_classes
                         )
                     );
             }
@@ -402,13 +402,13 @@ class FunctionChecker implements StatementsSource
                 $this->improveParamsFromDocblock(
                     $docblock_info['params'],
                     $function_param_names,
-                    self::$_function_params[$this->_file_name][$function_id],
+                    self::$function_params[$this->file_name][$function_id],
                     $function->getLine()
                 );
             }
         }
 
-        self::$_function_return_types[$this->_file_name][$function_id] = $return_type;
+        self::$function_return_types[$this->file_name][$function_id] = $return_type;
     }
 
     protected function improveParamsFromDocblock(array $docblock_params, array $function_param_names, array &$function_signature, $method_line_number)
@@ -420,7 +420,7 @@ class FunctionChecker implements StatementsSource
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $param_name .' does not appear in the argument list for ' . $this->getMethodId(),
-                        $this->_file_name,
+                        $this->file_name,
                         $method_line_number
                     )
                 )) {
@@ -435,8 +435,8 @@ class FunctionChecker implements StatementsSource
                     self::fixUpLocalType(
                         $docblock_param['type'],
                         null,
-                        $this->_namespace,
-                        $this->_aliased_classes
+                        $this->namespace,
+                        $this->aliased_classes
                     )
                 );
 
@@ -445,7 +445,7 @@ class FunctionChecker implements StatementsSource
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             'Parameter $' . $param_name .' has wrong type \'' . $new_param_type . '\', should be \'' . $function_param_names[$param_name] . '\'',
-                            $this->_file_name,
+                            $this->file_name,
                             $method_line_number
                         )
                     )) {
@@ -488,10 +488,10 @@ class FunctionChecker implements StatementsSource
                 $param_type_string = implode('\\', $param->type->parts);
             }
             elseif ($param->type->parts === ['self']) {
-                $param_type_string = $this->_absolute_class;
+                $param_type_string = $this->absolute_class;
             }
             else {
-                $param_type_string = ClassLikeChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->_namespace, $this->_aliased_classes);
+                $param_type_string = ClassLikeChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->namespace, $this->aliased_classes);
             }
 
             if ($param_type_string) {
