@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\StatementsSource;
+use Psalm\Context;
 
 class ClassChecker extends ClassLikeChecker
 {
@@ -21,13 +22,61 @@ class ClassChecker extends ClassLikeChecker
 
         self::$class_implements[$absolute_class] = [];
 
+        if ($this->class->extends) {
+            $this->parent_class = self::getAbsoluteClassFromName($this->class->extends, $this->namespace, $this->aliased_classes);
+        }
+
         foreach ($class->implements as $interface_name) {
             $absolute_interface_name = self::getAbsoluteClassFromName($interface_name, $this->namespace, $this->aliased_classes);
 
+
+
             self::$class_implements[$absolute_class][$absolute_interface_name] = true;
-            self::registerClass($absolute_interface_name);
         }
     }
+
+    public function check($check_methods = true, Context $class_context = null)
+    {
+        if ($this->parent_class) {
+            if (self::checkAbsoluteClassOrInterface(
+                $this->parent_class,
+                $this->file_name,
+                $this->class->getLine(),
+                $this->getSuppressedIssues()
+            ) === false
+            ) {
+                return false;
+            }
+
+            if (!isset(self::$public_class_properties[$this->parent_class])
+                || !isset(self::$public_class_constants[$this->parent_class])
+                || !isset(self::$class_implements[$this->parent_class])
+            ) {
+                self::registerClass($this->parent_class);
+            }
+
+            $this->registerInheritedMethods($this->parent_class);
+
+            self::$class_implements[$this->absolute_class] += self::$class_implements[$this->parent_class];
+        }
+
+        foreach (self::$class_implements[$this->absolute_class] as $interface_name => $_) {
+            if (self::checkAbsoluteClassOrInterface(
+                $interface_name,
+                $this->file_name,
+                $this->class->getLine(),
+                $this->getSuppressedIssues()
+            ) === false
+            ) {
+                return false;
+            }
+
+            self::registerClass($interface_name);
+        }
+
+        parent::check($check_methods, $class_context);
+    }
+
 
     public static function classExists($absolute_class)
     {
@@ -89,7 +138,11 @@ class ClassChecker extends ClassLikeChecker
 
     public static function getInterfacesForClass($absolute_class)
     {
-        return isset(self::$class_implements[$absolute_class]) ? self::$class_implements[$absolute_class] : [];
+        if (!isset(self::$class_implements[$absolute_class])) {
+            self::$class_implements[$absolute_class] = class_implements($absolute_class);
+        }
+
+        return self::$class_implements[$absolute_class];
     }
 
     /**
@@ -113,14 +166,8 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        $class_implementations = class_implements($absolute_class);
+        $class_implementations = self::getInterfacesForClass($absolute_class);
 
-        if (!isset($class_implementations[$interface])) {
-            return false;
-        }
-
-        self::$class_implements[$absolute_class] = $class_implementations;
-
-        return true;
+        return isset($class_implementations[$interface]);
     }
 }

@@ -68,10 +68,6 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $this->suppressed_issues = $source->getSuppressedIssues();
 
-        $this->parent_class = $this->class->extends
-            ? self::getAbsoluteClassFromName($this->class->extends, $this->namespace, $this->aliased_classes)
-            : null;
-
         if (self::$this_class || $class instanceof PhpParser\Node\Stmt\Trait_) {
             self::$class_checkers[$absolute_class] = $this;
         }
@@ -79,24 +75,6 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public function check($check_methods = true, Context $class_context = null)
     {
-        if ($this->parent_class) {
-            if (self::checkAbsoluteClassOrInterface(
-                    $this->parent_class,
-                    $this->file_name,
-                    $this->class->getLine(),
-                    $this->getSuppressedIssues()
-                ) === false
-            ) {
-                return false;
-            }
-
-            if (!isset(self::$public_class_properties[$this->parent_class]) || !isset(self::$public_class_constants[$this->parent_class])) {
-                self::registerClass($this->parent_class);
-            }
-
-            $this->registerInheritedMethods($this->parent_class);
-        }
-
         $config = Config::getInstance();
 
         $leftover_stmts = [];
@@ -115,17 +93,17 @@ abstract class ClassLikeChecker implements StatementsSource
 
         self::$public_class_constants[$this->absolute_class] = [];
 
-        if ($this->parent_class) {
-            self::$public_class_properties[$this->absolute_class] = self::$public_class_properties[$this->parent_class];
-            self::$protected_class_properties[$this->absolute_class] = self::$protected_class_properties[$this->parent_class];
-
-            self::$public_static_class_properties[$this->absolute_class] = self::$public_static_class_properties[$this->parent_class];
-            self::$protected_static_class_properties[$this->absolute_class] = self::$protected_static_class_properties[$this->parent_class];
-
-            self::$public_class_constants[$this->absolute_class] = self::$public_class_constants[$this->parent_class];
-        }
-
         if ($this instanceof ClassChecker) {
+            if ($this->parent_class) {
+                self::$public_class_properties[$this->absolute_class] = self::$public_class_properties[$this->parent_class];
+                self::$protected_class_properties[$this->absolute_class] = self::$protected_class_properties[$this->parent_class];
+
+                self::$public_static_class_properties[$this->absolute_class] = self::$public_static_class_properties[$this->parent_class];
+                self::$protected_static_class_properties[$this->absolute_class] = self::$protected_static_class_properties[$this->parent_class];
+
+                self::$public_class_constants[$this->absolute_class] = self::$public_class_constants[$this->parent_class];
+            }
+
             foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_name => $_) {
                 self::$public_class_constants[$this->absolute_class] += self::$public_class_constants[$interface_name];
             }
@@ -531,7 +509,6 @@ abstract class ClassLikeChecker implements StatementsSource
                         self::$private_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
                     }
                 }
-
             }
 
             $class_constants = $reflected_class->getConstants();
@@ -569,6 +546,10 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
 
                 self::$public_class_constants[$class_name][$name] = $const_type;
+            }
+
+            if (!$reflected_class->isTrait() && !$reflected_class->isInterface()) {
+                ClassChecker::getInterfacesForClass($class_name);
             }
         }
     }

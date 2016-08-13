@@ -9,6 +9,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 

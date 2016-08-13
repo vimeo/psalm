@@ -7,6 +7,7 @@ use RecursiveIteratorIterator;
 
 use Psalm\Config;
 use Psalm\IssueBuffer;
+use Psalm\Exception;
 
 class ProjectChecker
 {

@@ -8,6 +8,8 @@ use Psalm\Context;
 
 class InterfaceChecker extends ClassLikeChecker
 {
+    protected $parent_interfaces = [];
+
     protected static $existing_interfaces = [];
     protected static $existing_interfaces_ci = [];
 
@@ -17,6 +19,10 @@ class InterfaceChecker extends ClassLikeChecker
 
         self::$existing_interfaces[$absolute_class] = true;
         self::$existing_interfaces_ci[strtolower($absolute_class)] = true;
+
+        foreach ($interface->extends as $extended_interface) {
+            $this->parent_interfaces[] = self::getAbsoluteClassFromName($extended_interface, $this->namespace, $this->aliased_classes);
+        }
     }
 
     public static function interfaceExists($absolute_class)
