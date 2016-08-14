@@ -796,9 +796,19 @@ class TypeChecker
 
         $inferred_type = StatementsChecker::fleshOutTypes($inferred_type, [], $absolute_class, '');
 
-        $simple_declared_types = array_filter(array_keys($declared_type->types), function($type_value) { return $type_value !== 'null'; });
+        $simple_declared_types = array_filter(
+            array_keys($declared_type->types),
+            function ($type_value) {
+                return $type_value !== 'null';
+            }
+        );
 
-        $simple_inferred_types = array_filter(array_keys($inferred_type->types), function($type_value) { return $type_value !== 'null'; });
+        $simple_inferred_types = array_filter(
+            array_keys($inferred_type->types),
+            function ($type_value) {
+                return $type_value !== 'null';
+            }
+        );
 
         // gets elements A△B
         $differing_types = array_diff($simple_inferred_types, $simple_declared_types);
@@ -817,8 +827,7 @@ class TypeChecker
                 foreach ($simple_declared_types as $simple_declared_type) {
                     if (($simple_declared_type === 'object' && ClassLikeChecker::classOrInterfaceExists($differing_type)) ||
                         ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type) ||
-                        (in_array($differing_type, ['float', 'double', 'int']) && in_array($simple_declared_type, ['float', 'double', 'int'])) ||
-                        (in_array($differing_type, ['boolean', 'bool']) && in_array($simple_declared_type, ['boolean', 'bool']))
+                        (in_array($differing_type, ['float', 'int']) && in_array($simple_declared_type, ['float', 'int']))
                     ) {
                         $is_match = true;
                         break;

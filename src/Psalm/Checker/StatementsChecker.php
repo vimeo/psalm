@@ -837,7 +837,7 @@ class StatementsChecker
             if ($this->checkExpression($stmt->expr, $context) === false) {
                 return false;
             }
-            $stmt->inferredType = Type::getDouble();
+            $stmt->inferredType = Type::getFloat();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             if ($this->checkExpression($stmt->expr, $context) === false) {
@@ -1127,7 +1127,7 @@ class StatementsChecker
                             // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
                             // but we don't want to throw an error
                             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-                            if ($lhs_type_part->isObject() || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'])) {
+                            if ($lhs_type_part->isObject() || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement', 'dateinterval'])) {
                                 $stmt->inferredType = Type::getMixed();
                                 continue;
                             }

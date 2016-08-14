@@ -116,24 +116,12 @@ abstract class Type
         return $parsed_type;
     }
 
-    private static function replaceScalarTerms($type_string)
-    {
-        if ($type_string === 'boolean') {
-            return 'bool';
-        }
-        elseif ($type_string === 'integer') {
-            return 'int';
-        }
-        elseif(in_array($type_string, ['String', 'Int', 'Float', 'Array', 'Object', 'Bool'])) {
-            return strtolower($type_string);
-        }
-
-        return $type_string;
-    }
-
     public static function fixScalarTerms($type_string)
     {
-        if (in_array(strtolower($type_string), ['numeric', 'int', 'float', 'string', 'bool', 'true', 'false', 'null', 'array', 'object', 'mixed', 'resource'])) {
+        if (in_array(
+            strtolower($type_string),
+            ['numeric', 'int', 'float', 'string', 'bool', 'true', 'false', 'null', 'array', 'object', 'mixed', 'resource']
+        )) {
             return strtolower($type_string);
         }
         elseif ($type_string === 'boolean') {
@@ -141,6 +129,9 @@ abstract class Type
         }
         elseif ($type_string === 'integer') {
             return 'int';
+        }
+        elseif ($type_string === 'double' || $type_string === 'real') {
+            return 'float';
         }
 
         return $type_string;
@@ -278,17 +269,6 @@ abstract class Type
     public static function getBool($enclose_with_union = true)
     {
         $type = new Atomic('bool');
-
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
-    }
-
-    public static function getDouble($enclose_with_union = true)
-    {
-        $type = new Atomic('double');
 
         if ($enclose_with_union) {
             return new Union([$type]);
@@ -484,7 +464,6 @@ abstract class Type
         if ($this instanceof Atomic) {
             return $this->value === 'int' ||
                     $this->value === 'string' ||
-                    $this->value === 'double' ||
                     $this->value === 'float' ||
                     $this->value === 'bool' ||
                     $this->value === 'false';
@@ -497,7 +476,6 @@ abstract class Type
     {
         if ($this instanceof Atomic) {
             return $this->value === 'int' ||
-                    $this->value === 'double' ||
                     $this->value === 'float';
         }
 
