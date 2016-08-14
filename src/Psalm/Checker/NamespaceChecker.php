@@ -68,7 +68,8 @@ class NamespaceChecker implements StatementsSource
 
         if ($leftover_stmts) {
             $statments_checker = new StatementsChecker($this);
-            $statments_checker->check($leftover_stmts, new Context());
+            $context = new Context($this->file_name);
+            $statments_checker->check($leftover_stmts, $context);
         }
 
         return $this->aliased_classes;

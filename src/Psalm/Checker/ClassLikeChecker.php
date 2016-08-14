@@ -110,8 +110,7 @@ abstract class ClassLikeChecker implements StatementsSource
         }
 
         if (!$class_context) {
-            $class_context = new Context();
-            $class_context->self = $this->absolute_class;
+            $class_context = new Context($this->file_name, $this->absolute_class);
             $class_context->parent = $this->parent_class;
             $class_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->absolute_class)]);
         }
@@ -630,7 +629,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public static function setConstantType($class_name, $const_name, Type\Union $type)
     {
-        self::$public_class_constants[$class_name] = $type;
+        self::$public_class_constants[$class_name][$const_name] = $type;
     }
 
     public function getSource()

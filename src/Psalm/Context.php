@@ -18,6 +18,19 @@ class Context
     /** @var string|null */
     public $parent;
 
+    /** @var string */
+    public $file_name;
+
+    /**
+     * @param string      $file_name
+     * @param string|null $self
+     */
+    public function __construct($file_name, $self = null)
+    {
+        $this->file_name = $file_name;
+        $this->self = $self;
+    }
+
     public function __clone()
     {
         foreach ($this->vars_in_scope as $key => &$type) {

@@ -352,26 +352,26 @@ class FunctionChecker implements StatementsSource
         }
     }
 
-    protected function registerFunction(PhpParser\Node\Stmt\Function_ $function)
+    protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
     {
         $function_id = $function->name;
 
-        if (isset(self::$have_registered_function[$this->file_name][$function_id])) {
+        if (isset(self::$have_registered_function[$file_name][$function_id])) {
             throw new \LogicException('Cannot re-register function twice');
         }
 
-        self::$have_registered_function[$this->file_name][$function_id] = true;
+        self::$have_registered_function[$file_name][$function_id] = true;
 
-        self::$function_namespaces[$this->file_name][$function_id] = $this->namespace;
-        self::$existing_functions[$this->file_name][$function_id] = 1;
+        self::$function_namespaces[$file_name][$function_id] = $this->namespace;
+        self::$existing_functions[$file_name][$function_id] = 1;
 
-        self::$function_params[$this->file_name][$function_id] = [];
+        self::$function_params[$file_name][$function_id] = [];
 
         $function_param_names = [];
 
         foreach ($function->getParams() as $param) {
             $param_array = $this->getParamArray($param);
-            self::$function_params[$this->file_name][$function_id][] = $param_array;
+            self::$function_params[$file_name][$function_id][] = $param_array;
             $function_param_names[$param->name] = $param_array['type'];
         }
 
@@ -381,7 +381,7 @@ class FunctionChecker implements StatementsSource
         $docblock_info = CommentChecker::extractDocblockInfo($function->getDocComment());
 
         if ($docblock_info['deprecated']) {
-            self::$deprecated_functions[$this->file_name][$function_id] = true;
+            self::$deprecated_functions[$file_name][$function_id] = true;
         }
 
         $this->suppressed_issues = $docblock_info['suppress'];
@@ -403,13 +403,13 @@ class FunctionChecker implements StatementsSource
                 $this->improveParamsFromDocblock(
                     $docblock_info['params'],
                     $function_param_names,
-                    self::$function_params[$this->file_name][$function_id],
+                    self::$function_params[$file_name][$function_id],
                     $function->getLine()
                 );
             }
         }
 
-        self::$function_return_types[$this->file_name][$function_id] = $return_type;
+        self::$function_return_types[$file_name][$function_id] = $return_type;
     }
 
     protected function improveParamsFromDocblock(array $docblock_params, array $function_param_names, array &$function_signature, $method_line_number)

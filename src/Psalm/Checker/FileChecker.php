@@ -68,7 +68,7 @@ class FileChecker implements StatementsSource
         }
 
         if (!$file_context) {
-            $file_context = new Context();
+            $file_context = new Context($this->short_file_name);
         }
 
         $stmts = $this->getStatements();
@@ -151,7 +151,7 @@ class FileChecker implements StatementsSource
 
         } else {
             $file_checker = new FileChecker($file_name);
-            $file_checker->check(false, false, new Context());
+            $file_checker->check(false, false, new Context($file_name));
             $aliased_classes = $file_checker->getAliasedClasses($namespace);
         }
 
@@ -179,7 +179,7 @@ class FileChecker implements StatementsSource
         }
         else {
             $file_checker = new FileChecker($file_name);
-            $file_checker->check(false, false, new Context());
+            $file_checker->check(false, false, new Context($file_name));
         }
 
         return $file_checker->getDeclaredClasses();

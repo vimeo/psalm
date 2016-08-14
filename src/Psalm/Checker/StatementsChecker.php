@@ -192,8 +192,7 @@ class StatementsChecker
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checker = new FunctionChecker($stmt, $this->source);
-                $function_context = new Context();
-                $function_context->self = $context->self;
+                $function_context = new Context($this->file_name, $context->self);
                 $function_checker->check($function_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
@@ -236,7 +235,13 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+                foreach ($stmt->consts as $const) {
+                    $this->checkExpression($const->value, $context);
 
+                    if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
+                        ClassLikeChecker::setConstantType($this->absolute_class, $const->name, $const->value->inferredType);
+                    }
+                }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 (new ClassChecker($stmt, $this->source, $stmt->name))->check();
@@ -788,8 +793,7 @@ class StatementsChecker
                 return false;
             }
 
-            $use_context = new Context();
-            $use_context->self = $context->self;
+            $use_context = new Context($this->file_name, $context->self);
 
             if (!$this->is_static) {
                 $this_class = ClassLikeChecker::getThisClass() && ClassChecker::classExtends(ClassLikeChecker::getThisClass(), $this->absolute_class) ?
@@ -1267,12 +1271,6 @@ class StatementsChecker
             }
 
             $lhs_type = $context->vars_in_scope[$stmt->var->name];
-
-            if (!$lhs_type) {
-                var_dump('no class property types');
-                // @todo This shouldn't happen
-                return;
-            }
 
             if ($stmt->var->name === 'this' && !$this->source->getClassLikeChecker()) {
                 if (IssueBuffer::accepts(
@@ -1952,8 +1950,6 @@ class StatementsChecker
                     $stmt->var->var instanceof PhpParser\Node\Expr\Variable &&
                     is_string($stmt->var->name)) {
 
-            $method_id = $this->source->getMethodId();
-
             $this->checkPropertyAssignment($stmt->var, $stmt->var->name, $return_type, $context);
 
             $context->vars_possibly_in_scope[$var_id] = true;
@@ -2285,7 +2281,7 @@ class StatementsChecker
         $method_checker = ClassLikeChecker::getMethodChecker($method_id);
 
         if ($method_checker && $method_checker->getMethodId() !== $this->source->getMethodId()) {
-            $this_context = new Context();
+            $this_context = new Context($this->file_name, (string) $context->vars_in_scope['this']);
 
             foreach ($context->vars_possibly_in_scope as $var => $type) {
                 if (strpos($var, 'this->') === 0) {
@@ -2300,7 +2296,6 @@ class StatementsChecker
             }
 
             $this_context->vars_in_scope['this'] = $context->vars_in_scope['this'];
-            $this_context->self = (string) $context->vars_in_scope['this'];
 
             $method_checker->check($this_context);
 
@@ -2701,6 +2696,9 @@ class StatementsChecker
                 )) {
                     return false;
                 }
+            }
+            else {
+                $stmt->inferredType = $class_constants[$stmt->name];
             }
 
             return;
