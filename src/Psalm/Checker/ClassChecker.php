@@ -96,8 +96,8 @@ class ClassChecker extends ClassLikeChecker
             return true;
         }
 
-        self::$existing_classes_ci[strtolower($absolute_class)] = false;
-        self::$existing_classes_ci[$absolute_class] = false;
+        // we can only be sure that the case-sensitive version does not exist
+        self::$existing_classes[$absolute_class] = false;
 
         return false;
     }
