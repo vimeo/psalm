@@ -4,6 +4,6 @@ namespace Psalm\Checker;
 
 use PhpParser;
 
-class ClosureChecker extends FunctionChecker
+class ClosureChecker extends FunctionLikeChecker
 {
 }

@@ -17,7 +17,6 @@ class FileChecker implements StatementsSource
     protected $namespace;
     protected $aliased_classes = [];
 
-    protected $function_params = [];
     protected $class_name;
 
     protected $namespace_aliased_classes = [];
@@ -82,8 +81,10 @@ class FileChecker implements StatementsSource
                 || $stmt instanceof PhpParser\Node\Stmt\Namespace_
                 || $stmt instanceof PhpParser\Node\Stmt\Use_
             ) {
+
                 if ($leftover_stmts) {
                     $statments_checker = new StatementsChecker($this);
+
                     $statments_checker->check($leftover_stmts, $file_context);
                     $leftover_stmts = [];
                 }
@@ -128,6 +129,7 @@ class FileChecker implements StatementsSource
 
         if ($leftover_stmts) {
             $statments_checker = new StatementsChecker($this);
+
             $statments_checker->check($leftover_stmts, $file_context);
         }
 
@@ -249,17 +251,6 @@ class FileChecker implements StatementsSource
         self::$cache_dir = $cache_dir;
     }
 
-    public function registerFunction(PhpParser\Node\Stmt\Function_ $function)
-    {
-        $function_name = $function->name;
-
-        $this->function_params[$function_name] = [];
-
-        foreach ($function->params as $param) {
-            $this->function_params[$function_name][] = $param->byRef;
-        }
-    }
-
     /**
      * @return null
      */
@@ -348,19 +339,6 @@ class FileChecker implements StatementsSource
         $file_checker->check(true, false, null, false);
 
         return ClassLikeChecker::getClassLikeCheckerFromClass($class_name);
-    }
-
-    public function hasFunction($function_name)
-    {
-        return isset($this->function_params[$function_name]);
-    }
-
-    /**
-     * @return bool
-     */
-    public function isPassedByReference($function_name, $argument_offset)
-    {
-        return $argument_offset < count($this->function_params[$function_name]) && $this->function_params[$function_name][$argument_offset];
     }
 
     public static function clearCache()

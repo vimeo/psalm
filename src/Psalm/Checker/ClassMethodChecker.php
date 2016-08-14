@@ -13,7 +13,7 @@ use Psalm\Type;
 use Psalm\IssueBuffer;
 use PhpParser;
 
-class ClassMethodChecker extends FunctionChecker
+class ClassMethodChecker extends FunctionLikeChecker
 {
     protected static $method_comments = [];
     protected static $method_files = [];
@@ -99,56 +99,12 @@ class ClassMethodChecker extends FunctionChecker
         $method_param_types = [];
 
         self::$method_params[$method_id] = [];
+
         foreach ($params as $param) {
-            $param_type_string = null;
-
-            if ($param->isArray()) {
-                $param_type_string = 'array';
-
-            }
-            else {
-                $param_class = null;
-
-                try {
-                    $param_class = $param->getClass();
-                }
-                catch (\ReflectionException $e) {
-                    // do nothing
-                }
-
-                if ($param_class && self::$method_files[$method_id]) {
-                    $param_type_string = $param->getClass()->getName();
-                }
-            }
-
-            $is_nullable = false;
-
-            $is_optional = $param->isOptional();
-
-            try {
-                $is_nullable = $param->getDefaultValue() === null;
-
-                if ($param_type_string && $is_nullable) {
-                    $param_type_string .= '|null';
-                }
-            }
-            catch (\ReflectionException $e) {
-                // do nothing
-            }
-
-            $param_name = $param->getName();
-            $param_type = $param_type_string ? Type::parseString($param_type_string) : Type::getMixed();
-
-            $method_param_names[$param_name] = true;
-            $method_param_types[$param_name] = $param_type;
-
-            self::$method_params[$method_id][] = [
-                'name' => $param_name,
-                'by_ref' => $param->isPassedByReference(),
-                'type' => $param_type,
-                'is_nullable' => $is_nullable,
-                'is_optional' => $is_optional,
-            ];
+            $param_array = self::getReflectionParamArray($param);
+            self::$method_params[$method_id][] = $param_array;
+            $method_param_names[$param->name] = true;
+            $method_param_types[$param->name] = $param_array['type'];
         }
 
         $return_types = null;

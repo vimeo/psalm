@@ -69,8 +69,9 @@ class StatementsChecker
 
     protected $require_file_name = null;
 
+    protected $existing_functions = [];
+
     protected static $method_call_index = [];
-    protected static $existing_functions = [];
     protected static $reflection_functions = [];
     protected static $this_assignments = [];
     protected static $this_calls = [];
@@ -115,11 +116,11 @@ class StatementsChecker
     {
         $has_returned = false;
 
-        // register all functions first
+        // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $file_checker = FileChecker::getFileCheckerFromFileName($this->file_name);
-                $file_checker->registerFunction($stmt);
+                $function_checker = new FunctionChecker($stmt, $this->source, $context->file_name);
+                $function_checkers[$stmt->name] = $function_checker;
             }
         }
 
@@ -191,9 +192,7 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_checker = new FunctionChecker($stmt, $this->source);
-                $function_context = new Context($this->file_name, $context->self);
-                $function_checker->check($function_context);
+                $function_checkers[$stmt->name]->check($context);
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 $this->checkExpression($stmt, $context);
@@ -2809,7 +2808,7 @@ class StatementsChecker
             $stmt->inferredType = Type::getVoid();
         }
 
-        if ($this->source instanceof FunctionChecker) {
+        if ($this->source instanceof FunctionLikeChecker) {
             $this->source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
         }
     }
@@ -3221,7 +3220,7 @@ class StatementsChecker
                 //$method_id = $this->absolute_class . '::' . $method_id;
             }
 
-            if ($this->checkFunctionExists($method_id, $stmt) === false) {
+            if ($this->checkFunctionExists($method_id, $context, $stmt) === false) {
                 return false;
             }
         }
@@ -3360,37 +3359,24 @@ class StatementsChecker
     }
 
     /**
-     * @return false|null
+     * @return bool
      */
-    public function checkFunctionExists($method_id, $stmt)
+    public function checkFunctionExists($function_id, Context $context, $stmt)
     {
-        if (isset(self::$existing_functions[$method_id])) {
-            return;
+        if (!isset($this->existing_functions[$function_id])) {
+            $this->existing_functions[$function_id] = FunctionChecker::functionExists($function_id, $context->file_name);
         }
 
-        $file_checker = FileChecker::getFileCheckerFromFileName($this->file_name);
-
-        if ($file_checker->hasFunction($method_id)) {
-            return;
-        }
-
-        if (strpos($method_id, '::') !== false) {
-            $method_id = preg_replace('/^[^:]+::/', '', $method_id);
-        }
-
-        try {
-            (new \ReflectionFunction($method_id));
-        }
-        catch (\ReflectionException $e) {
+        if (!$this->existing_functions[$function_id]) {
             if (IssueBuffer::accepts(
-                new UndefinedFunction('Function ' . $method_id . ' does not exist', $this->file_name, $stmt->getLine()),
+                new UndefinedFunction('Function ' . $function_id . ' does not exist', $this->file_name, $stmt->getLine()),
                 $this->suppressed_issues
             )) {
                 return false;
             }
         }
 
-        self::$existing_functions[$method_id] = 1;
+        return true;
     }
 
     protected function checkInclude(PhpParser\Node\Expr\Include_ $stmt, Context $context)
@@ -3438,20 +3424,14 @@ class StatementsChecker
              */
 
             if (file_exists($path_to_file)) {
-                if ($this->source instanceof FileChecker) {
-                    $file_checker = new FileChecker($path_to_file, []);
-                    $file_checker->check(true, true, $context);
-                }
-                else {
-                    $include_stmts = FileChecker::getStatementsForFile($path_to_file);
-                    $this->check($include_stmts, $context);
-                }
-
+                $include_stmts = FileChecker::getStatementsForFile($path_to_file);
+                $this->check($include_stmts, $context);
                 return;
             }
 
             $this->check_classes = false;
             $this->check_variables = false;
+            $this->check_functions = false;
         }
     }
 
@@ -3584,25 +3564,17 @@ class StatementsChecker
             }
         }
 
-        $file_checker = FileChecker::getFileCheckerFromFileName($this->file_name);
-
-        if ($file_checker->hasFunction($method_id)) {
-            return $file_checker->isPassedByReference($method_id, $argument_offset);
-        }
-
         if (strpos($method_id, '::') !== false) {
             $method_id = preg_replace('/^[^:]+::/', '', $method_id);
         }
 
-        try {
-            $reflection_parameters = (new \ReflectionFunction($method_id))->getParameters();
-
-            // if value is passed by reference
-            return $argument_offset < count($reflection_parameters) && $reflection_parameters[$argument_offset]->isPassedByReference();
-        }
-        catch (\ReflectionException $e) {
+        if (!FunctionChecker::functionExists($method_id, $this->file_name)) {
             return false;
         }
+
+        $function_params = FunctionChecker::getParams($method_id, $this->file_name);
+
+        return $argument_offset < count($function_params) && $function_params[$argument_offset]['by_ref'];
     }
 
     /**
