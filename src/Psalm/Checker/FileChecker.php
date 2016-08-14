@@ -74,17 +74,16 @@ class FileChecker implements StatementsSource
 
         $leftover_stmts = [];
 
+        $statments_checker = new StatementsChecker($this);
+
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_
                 || $stmt instanceof PhpParser\Node\Stmt\Interface_
                 || $stmt instanceof PhpParser\Node\Stmt\Trait_
                 || $stmt instanceof PhpParser\Node\Stmt\Namespace_
-                || $stmt instanceof PhpParser\Node\Stmt\Use_
             ) {
 
                 if ($leftover_stmts) {
-                    $statments_checker = new StatementsChecker($this);
-
                     $statments_checker->check($leftover_stmts, $file_context);
                     $leftover_stmts = [];
                 }
@@ -116,20 +115,20 @@ class FileChecker implements StatementsSource
                     $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_methods);
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
 
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                }
+            }
+            else {
+                if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                     foreach ($stmt->uses as $use) {
                         $this->aliased_classes[$use->alias] = implode('\\', $use->name->parts);
                     }
                 }
-            }
-            else {
+
                 $leftover_stmts[] = $stmt;
             }
         }
 
         if ($leftover_stmts) {
-            $statments_checker = new StatementsChecker($this);
-
             $statments_checker->check($leftover_stmts, $file_context);
         }
 

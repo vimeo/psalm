@@ -78,6 +78,8 @@ class StatementsChecker
 
     protected static $mock_interfaces = [];
 
+    protected static $user_constants = [];
+
     protected static $call_map = null;
 
     public function __construct(StatementsSource $source, $enforce_variable_checks = false, $check_methods = true)
@@ -158,9 +160,7 @@ class StatementsChecker
                 foreach ($stmt->consts as $const) {
                     $this->checkExpression($const->value, $context);
 
-                    if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
-                        var_dump((string) $const->value->inferredType);
-                    }
+                    self::$user_constants[$this->file_name][$const->name] = isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed();
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
@@ -192,7 +192,8 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_checkers[$stmt->name]->check($context);
+                $function_context = new Context($this->file_name, $context->self);
+                $function_checkers[$stmt->name]->check($function_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 $this->checkExpression($stmt, $context);
@@ -2654,21 +2655,30 @@ class StatementsChecker
 
     protected function checkConstFetch(PhpParser\Node\Expr\ConstFetch $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name) {
-            switch ($stmt->name->parts) {
-                case ['null']:
-                    $stmt->inferredType = Type::getNull();
-                    break;
+        $const_name = implode('', $stmt->name->parts);
+        switch (strtolower($const_name)) {
+            case 'null':
+                $stmt->inferredType = Type::getNull();
+                break;
 
-                case ['false']:
-                    // false is a subtype of bool
-                    $stmt->inferredType = Type::getFalse();
-                    break;
+            case 'false':
+                // false is a subtype of bool
+                $stmt->inferredType = Type::getFalse();
+                break;
 
-                case ['true']:
-                    $stmt->inferredType = Type::getBool();
-                    break;
-            }
+            case 'true':
+                $stmt->inferredType = Type::getBool();
+                break;
+
+            default:
+                if (!defined($const_name) && !isset(self::$user_constants[$this->file_name][$const_name])) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedConstant('Const ' . $const_name . ' is not defined', $this->file_name, $stmt->getLine()),
+                        $this->suppressed_issues
+                    )) {
+                        return false;
+                    }
+                }
         }
     }
 
@@ -3209,6 +3219,19 @@ class StatementsChecker
                     return false;
                 }
             }
+            elseif ($method->parts === ['define']) {
+                if ($stmt->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                    $this->checkExpression($stmt->args[1]->value, $context);
+                    $const_name = $stmt->args[0]->value->value;
+
+                    self::$user_constants[$this->file_name][$const_name] = isset($stmt->args[1]->value->inferredType)
+                                                                            ? $stmt->args[1]->value->inferredType
+                                                                            : Type::getMixed();
+                }
+                else {
+                    $this->check_consts = false;
+                }
+            }
         }
 
         $method_id = null;
@@ -3428,11 +3451,11 @@ class StatementsChecker
                 $this->check($include_stmts, $context);
                 return;
             }
-
-            $this->check_classes = false;
-            $this->check_variables = false;
-            $this->check_functions = false;
         }
+
+        $this->check_classes = false;
+        $this->check_variables = false;
+        $this->check_functions = false;
     }
 
     /**
