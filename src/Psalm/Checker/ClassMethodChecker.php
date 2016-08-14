@@ -475,11 +475,6 @@ class ClassMethodChecker extends FunctionLikeChecker
         return $parent_method_id;
     }
 
-    public static function getNewDocblocksForFile($file_name)
-    {
-        return isset(self::$new_docblocks[$file_name]) ? self::$new_docblocks[$file_name] : [];
-    }
-
     public static function clearCache()
     {
         self::$method_comments = [];

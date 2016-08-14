@@ -243,17 +243,6 @@ abstract class FunctionLikeChecker implements StatementsSource
         return $this->suppressed_issues;
     }
 
-    public static function getFunctionReturnTypes($function_id, $file_name)
-    {
-        if (!isset(self::$function_return_types[$file_name][$function_id])) {
-            throw new \InvalidArgumentException('Do not know function');
-        }
-
-        return self::$function_return_types[$file_name][$function_id]
-            ? clone self::$function_return_types[$file_name][$function_id]
-            : null;
-    }
-
     /**
      * @return false|null
      */
@@ -274,7 +263,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $method_return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
         }
         else {
-            $method_return_types = self::getFunctionReturnTypes($method_id, $this->file_name);
+            $method_return_types = FunctionChecker::getFunctionReturnTypes($method_id, $this->file_name);
         }
 
         if (!$method_return_types) {
@@ -443,7 +432,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         ];
     }
 
-    protected function getReflectionParamArray(\ReflectionParameter $param)
+    protected static function getReflectionParamArray(\ReflectionParameter $param)
     {
         $param_type_string = null;
 

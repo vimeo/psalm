@@ -118,6 +118,8 @@ class StatementsChecker
     {
         $has_returned = false;
 
+        $function_checkers = [];
+
         // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {

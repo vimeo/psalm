@@ -19,8 +19,6 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $config = \Psalm\Config::getInstance();
         $config->throw_exception = true;
-
-        self::$_file_filter = $filter;
     }
 
     public function setUp()

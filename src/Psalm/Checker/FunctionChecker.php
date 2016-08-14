@@ -76,6 +76,17 @@ class FunctionChecker extends FunctionLikeChecker
         }
     }
 
+    public static function getFunctionReturnTypes($function_id, $file_name)
+    {
+        if (!isset(self::$function_return_types[$file_name][$function_id])) {
+            throw new \InvalidArgumentException('Do not know function');
+        }
+
+        return self::$function_return_types[$file_name][$function_id]
+            ? clone self::$function_return_types[$file_name][$function_id]
+            : null;
+    }
+
     protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
     {
         $function_id = $function->name;
