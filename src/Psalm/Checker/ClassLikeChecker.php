@@ -20,7 +20,7 @@ use ReflectionProperty;
 
 abstract class ClassLikeChecker implements StatementsSource
 {
-    protected static $SPECIAL_TYPES = ['int', 'string', 'double', 'float', 'bool', 'false', 'object', 'empty', 'callable', 'array'];
+    protected static $SPECIAL_TYPES = ['int', 'string', 'float', 'bool', 'false', 'object', 'empty', 'callable', 'array'];
 
     protected $file_name;
     protected $class;
@@ -58,6 +58,8 @@ abstract class ClassLikeChecker implements StatementsSource
 
     protected static $public_class_constants = [];
 
+    protected static $registered_classes = [];
+
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
         $this->class = $class;
@@ -92,6 +94,8 @@ abstract class ClassLikeChecker implements StatementsSource
         self::$private_static_class_properties[$this->absolute_class] = [];
 
         self::$public_class_constants[$this->absolute_class] = [];
+
+        self::$registered_classes[$this->absolute_class] = true;
 
         if ($this instanceof ClassChecker) {
             if ($this->parent_class) {
@@ -547,6 +551,8 @@ abstract class ClassLikeChecker implements StatementsSource
                 self::$public_class_constants[$class_name][$name] = $const_type;
             }
 
+            self::$registered_classes[$class_name] = true;
+
             if (!$reflected_class->isTrait() && !$reflected_class->isInterface()) {
                 ClassChecker::getInterfacesForClass($class_name);
             }
@@ -555,7 +561,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public static function getInstancePropertiesForClass($class_name, $visibility)
     {
-        if (!isset(self::$public_class_properties[$class_name])) {
+        if (!isset(self::$registered_classes[$class_name])) {
             if (self::registerClass($class_name) === false) {
                 return [];
             }
@@ -583,7 +589,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public static function getStaticPropertiesForClass($class_name, $visibility)
     {
-        if (!isset(self::$public_static_class_properties[$class_name])) {
+        if (!isset(self::$registered_classes[$class_name])) {
             if (self::registerClass($class_name) === false) {
                 return [];
             }
@@ -614,7 +620,7 @@ abstract class ClassLikeChecker implements StatementsSource
         // remove for PHP 7.1 support
         $visibility = ReflectionProperty::IS_PUBLIC;
 
-        if (!isset(self::$public_class_constants[$class_name])) {
+        if (!isset(self::$registered_classes[$class_name])) {
             if (self::registerClass($class_name) === false) {
                 return [];
             }

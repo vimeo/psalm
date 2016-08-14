@@ -48,10 +48,7 @@ class ClassChecker extends ClassLikeChecker
                 return false;
             }
 
-            if (!isset(self::$public_class_properties[$this->parent_class])
-                || !isset(self::$public_class_constants[$this->parent_class])
-                || !isset(self::$class_implements[$this->parent_class])
-            ) {
+            if (!isset(self::$registered_classes[$this->parent_class])) {
                 self::registerClass($this->parent_class);
             }
 
@@ -71,7 +68,9 @@ class ClassChecker extends ClassLikeChecker
                 return false;
             }
 
-            self::registerClass($interface_name);
+            if (!isset(self::$registered_classes[$interface_name])) {
+                self::registerClass($interface_name);
+            }
         }
 
         parent::check($check_methods, $class_context);
