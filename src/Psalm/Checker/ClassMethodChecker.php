@@ -187,7 +187,7 @@ class ClassMethodChecker extends FunctionLikeChecker
                             $docblock_info['return_type'],
                             $this->absolute_class,
                             $this->namespace,
-                            $this->aliased_classes
+                            $this->getAliasedClasses()
                         )
                     );
             }

@@ -129,7 +129,7 @@ class FunctionChecker extends FunctionLikeChecker
                             $docblock_info['return_type'],
                             null,
                             $this->namespace,
-                            $this->aliased_classes
+                            $this->getAliasedClasses()
                         )
                     );
             }

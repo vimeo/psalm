@@ -16,7 +16,6 @@ use Psalm\IssueBuffer;
 abstract class FunctionLikeChecker implements StatementsSource
 {
     protected $function;
-    protected $aliased_classes = [];
     protected $namespace;
     protected $file_name;
     protected $is_static = false;
@@ -38,7 +37,6 @@ abstract class FunctionLikeChecker implements StatementsSource
     public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source)
     {
         $this->function = $function;
-        $this->aliased_classes = $source->getAliasedClasses();
         $this->namespace = $source->getNamespace();
         $this->class_name = $source->getClassName();
         $this->class_extends = $source->getParentClass();
@@ -90,7 +88,13 @@ abstract class FunctionLikeChecker implements StatementsSource
                     if ($param->type) {
                         if ($param->type instanceof PhpParser\Node\Name) {
                             if (!in_array($param->type->parts[0], ['self', 'parent'])) {
-                                ClassLikeChecker::checkClassName($param->type, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues);
+                                ClassLikeChecker::checkClassName(
+                                    $param->type,
+                                    $this->namespace,
+                                    $this->getAliasedClasses(),
+                                    $this->file_name,
+                                    $this->suppressed_issues
+                                );
                             }
                         }
                     }
@@ -111,7 +115,11 @@ abstract class FunctionLikeChecker implements StatementsSource
                             elseif ($param->type instanceof PhpParser\Node\Name) {
                                 $param_type_string = $param->type->parts === ['self']
                                                         ? $this->absolute_class
-                                                        : ClassLikeChecker::getAbsoluteClassFromName($param->type, $this->namespace, $this->aliased_classes);
+                                                        : ClassLikeChecker::getAbsoluteClassFromName(
+                                                            $param->type,
+                                                            $this->namespace,
+                                                            $this->getAliasedClasses()
+                                                        );
                             }
 
                             if ($is_nullable) {
@@ -200,7 +208,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
     public function getAliasedClasses()
     {
-        return $this->aliased_classes;
+        return $this->source->getAliasedClasses();
     }
 
     public function getAbsoluteClass()
@@ -354,7 +362,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                         $docblock_param['type'],
                         null,
                         $this->namespace,
-                        $this->aliased_classes
+                        $this->getAliasedClasses()
                     )
                 );
 
@@ -409,7 +417,11 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $param_type_string = $this->absolute_class;
             }
             else {
-                $param_type_string = ClassLikeChecker::getAbsoluteClassFromString(implode('\\', $param->type->parts), $this->namespace, $this->aliased_classes);
+                $param_type_string = ClassLikeChecker::getAbsoluteClassFromString(
+                    implode('\\', $param->type->parts),
+                    $this->namespace,
+                    $this->getAliasedClasses()
+                );
             }
 
             if ($param_type_string) {
