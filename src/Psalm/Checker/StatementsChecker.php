@@ -2198,6 +2198,7 @@ class StatementsChecker
                         break;
 
                     case 'mixed':
+                    case 'object':
                         if (IssueBuffer::accepts(
                             new MixedMethodCall(
                                 'Cannot call method ' . $stmt->name . ' on a mixed variable',
