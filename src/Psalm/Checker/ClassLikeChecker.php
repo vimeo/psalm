@@ -39,7 +39,7 @@ abstract class ClassLikeChecker implements StatementsSource
     protected $suppressed_issues;
 
     /**
-     * @var array<ClassMethodChecker>
+     * @var array<MethodChecker>
      */
     protected static $method_checkers = [];
 
@@ -173,7 +173,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 $method_id = $this->absolute_class . '::' . strtolower($stmt->name);
 
                 if (!isset(self::$method_checkers[$method_id])) {
-                    $method_checker = new ClassMethodChecker($stmt, $this);
+                    $method_checker = new MethodChecker($stmt, $this);
                     $method_checkers[$stmt->name] = $method_checker;
 
                     if (self::$this_class && !$check_methods) {
@@ -185,7 +185,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
 
                 if (!$stmt->isAbstract()) {
-                    ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
+                    MethodChecker::setDeclaringMethod($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
                     self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
                 }
 
@@ -322,7 +322,7 @@ abstract class ClassLikeChecker implements StatementsSource
      * classes
      *
      * @param  string $method_id
-     * @return ClassMethodChecker
+     * @return MethodChecker
      */
     public static function getMethodChecker($method_id)
     {
@@ -330,9 +330,9 @@ abstract class ClassLikeChecker implements StatementsSource
             return self::$method_checkers[$method_id];
         }
 
-        ClassMethodChecker::registerClassMethod($method_id);
+        MethodChecker::registerClassMethod($method_id);
 
-        $declaring_method_id = ClassMethodChecker::getDeclaringMethod($method_id);
+        $declaring_method_id = MethodChecker::getDeclaringMethod($method_id);
         $declaring_class = explode('::', $declaring_method_id)[0];
 
         $class_checker = FileChecker::getClassLikeCheckerFromClass($declaring_class);
@@ -344,7 +344,7 @@ abstract class ClassLikeChecker implements StatementsSource
         foreach ($class_checker->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 if ($declaring_method_id === $class_checker->absolute_class . '::' . strtolower($stmt->name)) {
-                    $method_checker = new ClassMethodChecker($stmt, $class_checker);
+                    $method_checker = new MethodChecker($stmt, $class_checker);
                     self::$method_checkers[$method_id] = $method_checker;
                     return $method_checker;
                 }
@@ -629,10 +629,10 @@ abstract class ClassLikeChecker implements StatementsSource
             self::$class_methods[$class_name] = [];
 
             foreach ($reflection_methods as $reflection_method) {
-                ClassMethodChecker::extractReflectionMethodInfo($reflection_method);
+                MethodChecker::extractReflectionMethodInfo($reflection_method);
 
                 if ($reflection_method->class !== $class_name) {
-                    ClassMethodChecker::setDeclaringMethod(
+                    MethodChecker::setDeclaringMethod(
                         $class_name . '::' . strtolower($reflection_method->name),
                         $reflection_method->class . '::' . strtolower($reflection_method->name)
                     );
@@ -655,11 +655,11 @@ abstract class ClassLikeChecker implements StatementsSource
 
         foreach ($class_methods as $method_name => $_) {
             $parent_method_id = $parent_class . '::' . $method_name;
-            $declaring_method_id = ClassMethodChecker::getDeclaringMethod($parent_method_id);
+            $declaring_method_id = MethodChecker::getDeclaringMethod($parent_method_id);
             $implemented_method_id = $this->absolute_class . '::' . $method_name;
 
             if (!isset(self::$class_methods[$this->absolute_class][$method_name])) {
-                ClassMethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);
+                MethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);
                 self::$class_methods[$this->absolute_class][$method_name] = true;
             }
         }

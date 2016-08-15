@@ -1671,7 +1671,7 @@ class StatementsChecker
                         default:
                             if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
                                 $iterator_method = $return_type->value . '::current';
-                                $iterator_class_type = ClassMethodChecker::getMethodReturnTypes($iterator_method);
+                                $iterator_class_type = MethodChecker::getMethodReturnTypes($iterator_method);
 
                                 if ($iterator_class_type) {
                                     $value_type = self::fleshOutTypes($iterator_class_type, [], $return_type->value, $iterator_method);
@@ -2233,14 +2233,14 @@ class StatementsChecker
                                 self::$method_call_index[$method_id] = [];
                             }
 
-                            if ($this->source instanceof ClassMethodChecker) {
+                            if ($this->source instanceof MethodChecker) {
                                 self::$method_call_index[$method_id][] = $this->source->getMethodId();
                             }
                             else {
                                 self::$method_call_index[$method_id][] = $this->source->getFileName();
                             }
 
-                            $does_method_exist = ClassMethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+                            $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
 
                             if (!$does_method_exist) {
                                 return $does_method_exist;
@@ -2252,15 +2252,15 @@ class StatementsChecker
                             }
                             **/
 
-                            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
+                            if (MethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
                                 return false;
                             }
 
-                            if (ClassMethodChecker::checkMethodNotDeprecated($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                            if (MethodChecker::checkMethodNotDeprecated($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                                 return false;
                             }
 
-                            $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
+                            $return_types = MethodChecker::getMethodReturnTypes($method_id);
 
                             if ($return_types) {
                                 $return_types = self::fleshOutTypes($return_types, $stmt->args, $absolute_class, $method_id);
@@ -2422,41 +2422,41 @@ class StatementsChecker
                 self::$method_call_index[$method_id] = [];
             }
 
-            if ($this->source instanceof ClassMethodChecker) {
+            if ($this->source instanceof MethodChecker) {
                 self::$method_call_index[$method_id][] = $this->source->getMethodId();
             }
             else {
                 self::$method_call_index[$method_id][] = $this->source->getFileName();
             }
 
-            $does_method_exist = ClassMethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+            $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
 
             if (!$does_method_exist) {
                 return $does_method_exist;
             }
 
-            if (ClassMethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
+            if (MethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
                 return false;
             }
 
             if ($this->is_static) {
-                if (ClassMethodChecker::checkMethodStatic($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                if (MethodChecker::checkMethodStatic($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                     return false;
                 }
             }
             else {
                 if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
-                    if (ClassMethodChecker::checkMethodStatic($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                    if (MethodChecker::checkMethodStatic($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
             }
 
-            if (ClassMethodChecker::checkMethodNotDeprecated($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+            if (MethodChecker::checkMethodNotDeprecated($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                 return false;
             }
 
-            $return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
+            $return_types = MethodChecker::getMethodReturnTypes($method_id);
 
             if ($return_types) {
                 $return_types = self::fleshOutTypes($return_types, $stmt->args, $stmt->class->parts === ['parent'] ? $this->absolute_class : $absolute_class, $method_id);
@@ -2505,7 +2505,7 @@ class StatementsChecker
             $return_type->value = $calling_class;
         }
         else if ($return_type->value[0] === '$') {
-            $method_params = ClassMethodChecker::getMethodParams($method_id);
+            $method_params = MethodChecker::getMethodParams($method_id);
 
             foreach ($args as $i => $arg) {
                 $method_param = $method_params[$i];
@@ -2541,7 +2541,7 @@ class StatementsChecker
         $call = preg_replace('/\(\)$/', '', $call);
 
         if (strpos($call, '$') !== false) {
-            $method_params = ClassMethodChecker::getMethodParams($method_id);
+            $method_params = MethodChecker::getMethodParams($method_id);
 
             foreach ($args as $i => $arg) {
                 $method_param = $method_params[$i];
@@ -2614,7 +2614,7 @@ class StatementsChecker
         }
 
         if ($method_id) {
-            $method_params = ClassMethodChecker::getMethodParams($method_id);
+            $method_params = MethodChecker::getMethodParams($method_id);
 
             if (count($args) > count($method_params)) {
                 if (IssueBuffer::accepts(
@@ -3075,7 +3075,7 @@ class StatementsChecker
             return;
         }
 
-        $method_params = ClassMethodChecker::getMethodParams($method_id);
+        $method_params = MethodChecker::getMethodParams($method_id);
 
         if (count($method_params) <= $argument_offset) {
             return;
@@ -3095,7 +3095,7 @@ class StatementsChecker
         if ($input_type->isNullable() && !$param_type->isNullable()) {
             if (IssueBuffer::accepts(
                 new NullReference(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . ClassMethodChecker::getCasedMethodId($method_id) . ' cannot be null, possibly null value provided',
+                    'Argument ' . ($argument_offset + 1) . ' of ' . MethodChecker::getCasedMethodId($method_id) . ' cannot be null, possibly null value provided',
                     $file_name,
                     $line_number
                 ),
@@ -3164,7 +3164,7 @@ class StatementsChecker
                 if ($scalar_type_match_found) {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . ClassMethodChecker::getCasedMethodId($method_id) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                            'Argument ' . ($argument_offset + 1) . ' of ' . MethodChecker::getCasedMethodId($method_id) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                             $file_name,
                             $line_number
                         ),
@@ -3175,7 +3175,7 @@ class StatementsChecker
                 }
                 else if (IssueBuffer::accepts(
                     new InvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . ' of ' . ClassMethodChecker::getCasedMethodId($method_id) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                        'Argument ' . ($argument_offset + 1) . ' of ' . MethodChecker::getCasedMethodId($method_id) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                         $file_name,
                         $line_number
                     ),
@@ -3574,7 +3574,7 @@ class StatementsChecker
     {
         if (strpos($method_id, '::') !== false) {
             try {
-                $method_params = ClassMethodChecker::getMethodParams($method_id);
+                $method_params = MethodChecker::getMethodParams($method_id);
 
                 return $argument_offset < count($method_params) && $method_params[$argument_offset]['by_ref'];
             }
@@ -3612,7 +3612,7 @@ class StatementsChecker
                 try {
                     $parent_class->getMethod($method_name);
                     $method_id = $parent_class->getName() . '::' . $method_name;
-                    return $output . ' - NONE - it extends ' . ClassMethodChecker::getCasedMethodId($method_id) . ' though';
+                    return $output . ' - NONE - it extends ' . MethodChecker::getCasedMethodId($method_id) . ' though';
                 }
                 catch (\ReflectionException $e) {
                     // do nothing

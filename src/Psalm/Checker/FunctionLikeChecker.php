@@ -50,7 +50,7 @@ abstract class FunctionLikeChecker implements StatementsSource
     {
         if ($this->function->stmts) {
             $has_context = (bool) count($context->vars_in_scope);
-            if ($this instanceof ClassMethodChecker) {
+            if ($this instanceof MethodChecker) {
                 if (ClassLikeChecker::getThisClass()) {
                     $hash = $this->getMethodId() . json_encode([$context->vars_in_scope, $context->vars_possibly_in_scope]);
 
@@ -68,7 +68,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
 
             if ($this->function instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_params = ClassMethodChecker::getMethodParams($this->getMethodId());
+                $method_params = MethodChecker::getMethodParams($this->getMethodId());
 
                 foreach ($method_params as $method_param) {
                     $context->vars_in_scope[$method_param['name']] = StatementsChecker::fleshOutTypes(
@@ -159,7 +159,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 }
             }
 
-            if (ClassLikeChecker::getThisClass() && $this instanceof ClassMethodChecker) {
+            if (ClassLikeChecker::getThisClass() && $this instanceof MethodChecker) {
                 self::$no_effects_hashes[$hash] = [$context->vars_in_scope, $context->vars_possibly_in_scope];
             }
         }
@@ -266,8 +266,8 @@ abstract class FunctionLikeChecker implements StatementsSource
 
         $method_id = $this->getMethodId();
 
-        if ($this instanceof ClassMethodChecker) {
-            $method_return_types = ClassMethodChecker::getMethodReturnTypes($method_id);
+        if ($this instanceof MethodChecker) {
+            $method_return_types = MethodChecker::getMethodReturnTypes($method_id);
         }
         else {
             $method_return_types = FunctionChecker::getFunctionReturnTypes($method_id, $this->file_name);
@@ -300,7 +300,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
-                        'No return type was found for method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' but return type \'' . $declared_return_type . '\' was expected',
+                        'No return type was found for method ' . MethodChecker::getCasedMethodId($method_id) . ' but return type \'' . $declared_return_type . '\' was expected',
                         $this->file_name,
                         $this->function->getLine()
                     )
@@ -321,7 +321,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 if (!TypeChecker::hasIdenticalTypes($declared_return_type, $inferred_return_type, $this->absolute_class)) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
-                            'The given return type \'' . $declared_return_type . '\' for ' . ClassMethodChecker::getCasedMethodId($method_id) . ' is incorrect, got \'' . $inferred_return_type . '\'',
+                            'The given return type \'' . $declared_return_type . '\' for ' . MethodChecker::getCasedMethodId($method_id) . ' is incorrect, got \'' . $inferred_return_type . '\'',
                             $this->file_name,
                             $this->function->getLine()
                         ),

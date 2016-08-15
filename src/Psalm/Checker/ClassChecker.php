@@ -132,6 +132,6 @@ class ClassChecker extends ClassLikeChecker
 
         self::$class_extends = [];
 
-        ClassMethodChecker::clearCache();
+        MethodChecker::clearCache();
     }
 }

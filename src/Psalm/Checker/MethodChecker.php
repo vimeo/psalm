@@ -13,7 +13,7 @@ use Psalm\Type;
 use Psalm\IssueBuffer;
 use PhpParser;
 
-class ClassMethodChecker extends FunctionLikeChecker
+class MethodChecker extends FunctionLikeChecker
 {
     protected static $method_comments = [];
     protected static $method_files = [];
@@ -122,7 +122,7 @@ class ClassMethodChecker extends FunctionLikeChecker
 
         if (!self::$static_methods[$method_id]) {
             if (IssueBuffer::accepts(
-                new InvalidStaticInvocation('Method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' is not static', $file_name, $line_number),
+                new InvalidStaticInvocation('Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static', $file_name, $line_number),
                 $suppressed_issues
             )) {
                 return false;
@@ -280,7 +280,7 @@ class ClassMethodChecker extends FunctionLikeChecker
 
         if (isset(self::$deprecated_methods[$method_id])) {
             if (IssueBuffer::accepts(
-                new DeprecatedMethod('The method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' has been marked as deprecated', $file_name, $line_number),
+                new DeprecatedMethod('The method ' . MethodChecker::getCasedMethodId($method_id) . ' has been marked as deprecated', $file_name, $line_number),
                 $suppresssed_issues
             )) {
                 return false;
@@ -326,7 +326,7 @@ class ClassMethodChecker extends FunctionLikeChecker
                 if (!$calling_context || $method_class !== $calling_context) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
-                            'Cannot access private method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
+                            'Cannot access private method ' . MethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
                             $source->getFileName(),
                             $line_number
                         ),
@@ -358,7 +358,7 @@ class ClassMethodChecker extends FunctionLikeChecker
                 if (!ClassChecker::classExtends($calling_context, $method_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
-                            'Cannot access protected method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
+                            'Cannot access protected method ' . MethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
                             $source->getFileName(),
                             $line_number
                         ),
