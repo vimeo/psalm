@@ -78,7 +78,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public function check($check_methods = true, Context $class_context = null)
     {
-        if (!$check_methods && isset(self::$registered_classes[$this->absolute_class])) {
+        if (!$check_methods && !($this instanceof TraitChecker) && isset(self::$registered_classes[$this->absolute_class])) {
             return;
         }
 
@@ -184,6 +184,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
                 ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $stmt->name, $method_id);
                 self::$class_methods[$class_context->self][$stmt->name] = true;
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 $method_map = [];
                 foreach ($stmt->adaptations as $adaptation) {
