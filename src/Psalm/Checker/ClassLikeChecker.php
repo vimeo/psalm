@@ -755,9 +755,6 @@ abstract class ClassLikeChecker implements StatementsSource
 
         self::$this_class = null;
 
-        self::$existing_classes = [];
-        self::$existing_classes_ci = [];
-        self::$existing_interfaces_ci = [];
         self::$class_implements = [];
 
         self::$class_methods = [];
@@ -771,6 +768,7 @@ abstract class ClassLikeChecker implements StatementsSource
         self::$protected_static_class_properties = [];
         self::$private_static_class_properties = [];
 
-        self::$class_extends = [];
+        ClassChecker::clearCache();
+        InterfaceChecker::clearCache();
     }
 }

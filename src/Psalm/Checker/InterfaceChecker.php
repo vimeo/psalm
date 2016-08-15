@@ -57,4 +57,10 @@ class InterfaceChecker extends ClassLikeChecker
 
         return isset(self::$existing_interfaces[$absolute_class]);
     }
+
+    public static function clearCache()
+    {
+        self::$existing_interfaces = [];
+        self::$existing_interfaces_ci = [];
+    }
 }

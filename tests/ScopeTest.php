@@ -29,7 +29,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\Checker\ClassMethodChecker::clearCache();
         \Psalm\Checker\FileChecker::clearCache();
         \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }

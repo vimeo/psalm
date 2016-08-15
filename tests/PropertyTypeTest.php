@@ -23,7 +23,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\Checker\ClassMethodChecker::clearCache();
+        \Psalm\Checker\FileChecker::clearCache();
     }
 
     public function testNewVarInIf()

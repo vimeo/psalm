@@ -385,6 +385,5 @@ class ClassMethodChecker extends FunctionLikeChecker
         self::$inherited_methods = [];
         self::$declaring_class = [];
         self::$method_visibility = [];
-        self::$new_docblocks = [];
     }
 }

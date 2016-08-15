@@ -124,4 +124,14 @@ class ClassChecker extends ClassLikeChecker
 
         return isset($class_implementations[$interface]);
     }
+
+    public static function clearCache()
+    {
+        self::$existing_classes = [];
+        self::$existing_classes_ci = [];
+
+        self::$class_extends = [];
+
+        ClassMethodChecker::clearCache();
+    }
 }

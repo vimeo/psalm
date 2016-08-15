@@ -29,8 +29,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\Checker\ClassLikeChecker::clearCache();
-        \Psalm\Checker\ClassMethodChecker::clearCache();
+        \Psalm\Checker\FileChecker::clearCache();
         \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 

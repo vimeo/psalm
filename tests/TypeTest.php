@@ -22,7 +22,6 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Psalm\Checker\ClassMethodChecker::clearCache();
         \Psalm\Checker\FileChecker::clearCache();
     }
 
