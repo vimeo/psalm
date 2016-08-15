@@ -1021,21 +1021,19 @@ class StatementsChecker
         }
     }
 
+    /**
+     * @param  PhpParser\Node\Expr\Variable|PhpParser\Node\Expr\PropertyFetch $stmt
+     * @param  string $method_id
+     * @param  Context $context
+     * @return void
+     */
     protected function assignByRefParam(PhpParser\Node\Expr $stmt, $method_id, Context $context)
     {
-        if ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            $property_id = $stmt->name;
-        }
-        else if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->var->name === 'this') {
-            $property_id = $stmt->var->name . '->' . $stmt->name;
-        }
-        else {
-            throw new \InvalidArgumentException('Bad property passed to checkMethodParam');
-        }
+        $var_id = self::getVarId($stmt);
 
-        if (!isset($context->vars_in_scope[$property_id])) {
-            $context->vars_possibly_in_scope[$property_id] = true;
-            $this->registerVariable($property_id, $stmt->getLine());
+        if (!isset($context->vars_in_scope[$var_id])) {
+            $context->vars_possibly_in_scope[$var_id] = true;
+            $this->registerVariable($var_id, $stmt->getLine());
 
             if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $this->source->getMethodId()) {
                 $this_method_id = $this->source->getMethodId();
@@ -1048,7 +1046,7 @@ class StatementsChecker
             }
         }
 
-        $context->vars_in_scope[$property_id] = Type::getMixed();
+        $context->vars_in_scope[$var_id] = Type::getMixed();
     }
 
     protected function checkPropertyFetch(PhpParser\Node\Expr\PropertyFetch $stmt, Context $context, $array_assignment = false)
