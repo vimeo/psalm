@@ -248,6 +248,9 @@ class ClassMethodChecker extends FunctionLikeChecker
      */
     public static function checkMethodExists($method_id, $file_name, $line_number, array $suppresssed_issues)
     {
+        // remove trailing backslash if it exists
+        $method_id = preg_replace('/^\\\\/', '', $method_id);
+
         $cased_method_id = $method_id;
         $method_parts = explode('::', $method_id);
         $method_id = $method_parts[0] . '::' . strtolower($method_parts[1]);
