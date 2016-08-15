@@ -57,7 +57,6 @@ abstract class FunctionLikeChecker implements StatementsSource
                     // if we know that the function has no effects on vars, we don't bother rechecking
                     if (isset(self::$no_effects_hashes[$hash])) {
                         list($context->vars_in_scope, $context->vars_possibly_in_scope) = self::$no_effects_hashes[$hash];
-
                         return;
                     }
                 }

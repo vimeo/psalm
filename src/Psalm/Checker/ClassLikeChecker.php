@@ -318,6 +318,8 @@ abstract class ClassLikeChecker implements StatementsSource
             return self::$method_checkers[$method_id];
         }
 
+        ClassMethodChecker::registerClassMethod($method_id);
+
         $declaring_method_id = ClassMethodChecker::getDeclaringMethod($method_id);
         $declaring_class = explode('::', $declaring_method_id)[0];
 
@@ -329,10 +331,11 @@ abstract class ClassLikeChecker implements StatementsSource
 
         foreach ($class_checker->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_checker = new ClassMethodChecker($stmt, $class_checker);
-                $method_id = $class_checker->absolute_class . '::' . $stmt->name;
-                self::$method_checkers[$method_id] = $method_checker;
-                return $method_checker;
+                if ($declaring_method_id === $class_checker->absolute_class . '::' . $stmt->name) {
+                    $method_checker = new ClassMethodChecker($stmt, $class_checker);
+                    self::$method_checkers[$method_id] = $method_checker;
+                    return $method_checker;
+                }
             }
         }
 

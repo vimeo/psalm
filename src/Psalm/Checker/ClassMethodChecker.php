@@ -259,7 +259,7 @@ class ClassMethodChecker extends FunctionLikeChecker
         }
     }
 
-    protected static function registerClassMethod($method_id)
+    public static function registerClassMethod($method_id)
     {
         ClassLikeChecker::registerClass(explode('::', $method_id)[0]);
     }
