@@ -166,6 +166,8 @@ abstract class ClassLikeChecker implements StatementsSource
             }
         }
 
+        $trait_checkers = [];
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_id = $this->absolute_class . '::' . $stmt->name;
@@ -182,8 +184,10 @@ abstract class ClassLikeChecker implements StatementsSource
                     $method_checker = self::$method_checkers[$method_id];
                 }
 
-                ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $stmt->name, $method_id);
-                self::$class_methods[$class_context->self][$stmt->name] = true;
+                if (!$stmt->isAbstract()) {
+                    ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $stmt->name, $method_id);
+                    self::$class_methods[$class_context->self][$stmt->name] = true;
+                }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 $method_map = [];
@@ -221,7 +225,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
                         $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
 
-                        $trait_checker->check($check_methods, $class_context);
+                        $trait_checker->check(false, $class_context);
                     }
                 }
             } else {
@@ -294,6 +298,10 @@ abstract class ClassLikeChecker implements StatementsSource
         $config = Config::getInstance();
 
         if ($check_methods) {
+            foreach ($trait_checkers as $trait_checker) {
+                $trait_checker->check(true, $class_context);
+            }
+
             // do the method checks after all class methods have been initialised
             foreach ($method_checkers as $method_checker) {
                 $method_checker->check(clone $class_context);
