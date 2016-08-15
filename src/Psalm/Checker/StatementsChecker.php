@@ -2184,6 +2184,7 @@ class StatementsChecker
                     case 'int':
                     case 'bool':
                     case 'array':
+                    case 'string':
                         if (IssueBuffer::accepts(
                             new InvalidArgument(
                                 'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable',
@@ -2225,6 +2226,7 @@ class StatementsChecker
                             }
 
                             $method_id = $absolute_class . '::' . strtolower($stmt->name);
+                            $cased_method_id = $absolute_class . '::' . $stmt->name;
 
                             if (!isset(self::$method_call_index[$method_id])) {
                                 self::$method_call_index[$method_id] = [];
@@ -2237,7 +2239,7 @@ class StatementsChecker
                                 self::$method_call_index[$method_id][] = $this->source->getFileName();
                             }
 
-                            $does_method_exist = ClassMethodChecker::checkMethodExists($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+                            $does_method_exist = ClassMethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
 
                             if (!$does_method_exist) {
                                 return $does_method_exist;
@@ -2413,6 +2415,7 @@ class StatementsChecker
 
         if ($absolute_class && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::isMock($absolute_class)) {
             $method_id = $absolute_class . '::' . strtolower($stmt->name);
+            $cased_method_id = $absolute_class . '::' . $stmt->name;
 
             if (!isset(self::$method_call_index[$method_id])) {
                 self::$method_call_index[$method_id] = [];
@@ -2425,7 +2428,7 @@ class StatementsChecker
                 self::$method_call_index[$method_id][] = $this->source->getFileName();
             }
 
-            $does_method_exist = ClassMethodChecker::checkMethodExists($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+            $does_method_exist = ClassMethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
 
             if (!$does_method_exist) {
                 return $does_method_exist;
@@ -3375,13 +3378,16 @@ class StatementsChecker
      */
     public function checkFunctionExists($function_id, Context $context, $stmt)
     {
+        $cased_function_id = $function_id;
+        $function_id = strtolower($function_id);
+
         if (!isset($this->existing_functions[$function_id])) {
             $this->existing_functions[$function_id] = FunctionChecker::functionExists($function_id, $context->file_name);
         }
 
         if (!$this->existing_functions[$function_id]) {
             if (IssueBuffer::accepts(
-                new UndefinedFunction('Function ' . $function_id . ' does not exist', $this->file_name, $stmt->getLine()),
+                new UndefinedFunction('Function ' . $cased_function_id . ' does not exist', $this->file_name, $stmt->getLine()),
                 $this->suppressed_issues
             )) {
                 return false;
