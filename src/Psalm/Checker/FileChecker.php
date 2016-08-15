@@ -33,7 +33,7 @@ class FileChecker implements StatementsSource
     protected static $cache_dir = null;
     protected static $file_checkers = [];
 
-    protected static $class_methods_checked = [];
+    protected static $functions_checked = [];
     protected static $classes_checked = [];
     protected static $file_checked = [];
 
@@ -52,17 +52,17 @@ class FileChecker implements StatementsSource
         }
     }
 
-    public function check($check_classes = true, $check_class_methods = true, Context $file_context = null, $cache = true)
+    public function check($check_classes = true, $check_functions = true, Context $file_context = null, $cache = true)
     {
-        if ($cache && isset(self::$class_methods_checked[$this->real_file_name])) {
+        if ($cache && isset(self::$functions_checked[$this->real_file_name])) {
             return;
         }
 
-        if ($cache && $check_classes && !$check_class_methods && isset(self::$classes_checked[$this->real_file_name])) {
+        if ($cache && $check_classes && !$check_functions && isset(self::$classes_checked[$this->real_file_name])) {
             return;
         }
 
-        if ($cache && !$check_classes && !$check_class_methods && isset(self::$file_checked[$this->real_file_name])) {
+        if ($cache && !$check_classes && !$check_functions && isset(self::$file_checked[$this->real_file_name])) {
             return;
         }
 
@@ -76,11 +76,21 @@ class FileChecker implements StatementsSource
 
         $statments_checker = new StatementsChecker($this);
 
+        $function_checkers = [];
+
+        // hoist functions to the top
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+                $function_checkers[$stmt->name] = new FunctionChecker($stmt, $this, $file_context->file_name);
+            }
+        }
+
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_
                 || $stmt instanceof PhpParser\Node\Stmt\Interface_
                 || $stmt instanceof PhpParser\Node\Stmt\Trait_
                 || $stmt instanceof PhpParser\Node\Stmt\Namespace_
+                || $stmt instanceof PhpParser\Node\Stmt\Function_
             ) {
 
                 if ($leftover_stmts) {
@@ -92,7 +102,7 @@ class FileChecker implements StatementsSource
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
                         $this->declared_classes[] = $class_checker->getAbsoluteClass();
-                        $class_checker->check($check_class_methods);
+                        $class_checker->check($check_functions);
                     }
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
@@ -105,16 +115,20 @@ class FileChecker implements StatementsSource
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
                         $trait_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
-                        $trait_checker->check($check_class_methods);
+                        $trait_checker->check($check_functions);
                     }
 
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                     $namespace_name = implode('\\', $stmt->name->parts);
 
                     $namespace_checker = new NamespaceChecker($stmt, $this);
-                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_class_methods);
+                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_functions);
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
 
+                }
+                elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
+                    $function_context = new Context($this->short_file_name, $file_context->self);
+                    $function_checkers[$stmt->name]->check($function_context);
                 }
             }
             else {
@@ -132,8 +146,8 @@ class FileChecker implements StatementsSource
             $statments_checker->check($leftover_stmts, $file_context);
         }
 
-        if ($check_class_methods) {
-            self::$class_methods_checked[$this->real_file_name] = true;
+        if ($check_functions) {
+            self::$functions_checked[$this->real_file_name] = true;
         }
 
         if ($check_classes) {
@@ -344,7 +358,7 @@ class FileChecker implements StatementsSource
     {
         self::$file_checkers = [];
 
-        self::$class_methods_checked = [];
+        self::$functions_checked = [];
         self::$classes_checked = [];
         self::$file_checked = [];
     }

@@ -11,7 +11,6 @@ class ClassChecker extends ClassLikeChecker
     protected static $existing_classes = [];
     protected static $existing_classes_ci = [];
     protected static $class_extends = [];
-    protected static $class_implements = [];
 
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
@@ -29,53 +28,9 @@ class ClassChecker extends ClassLikeChecker
         foreach ($class->implements as $interface_name) {
             $absolute_interface_name = self::getAbsoluteClassFromName($interface_name, $this->namespace, $this->aliased_classes);
 
-
-
             self::$class_implements[$absolute_class][$absolute_interface_name] = true;
         }
     }
-
-    public function check($check_methods = true, Context $class_context = null)
-    {
-        if ($this->parent_class) {
-            if (self::checkAbsoluteClassOrInterface(
-                $this->parent_class,
-                $this->file_name,
-                $this->class->getLine(),
-                $this->getSuppressedIssues()
-            ) === false
-            ) {
-                return false;
-            }
-
-            if (!isset(self::$registered_classes[$this->parent_class])) {
-                self::registerClass($this->parent_class);
-            }
-
-            $this->registerInheritedMethods($this->parent_class);
-
-            self::$class_implements[$this->absolute_class] += self::$class_implements[$this->parent_class];
-        }
-
-        foreach (self::$class_implements[$this->absolute_class] as $interface_name => $_) {
-            if (self::checkAbsoluteClassOrInterface(
-                $interface_name,
-                $this->file_name,
-                $this->class->getLine(),
-                $this->getSuppressedIssues()
-            ) === false
-            ) {
-                return false;
-            }
-
-            if (!isset(self::$registered_classes[$interface_name])) {
-                self::registerClass($interface_name);
-            }
-        }
-
-        parent::check($check_methods, $class_context);
-    }
-
 
     public static function classExists($absolute_class)
     {
@@ -168,5 +123,22 @@ class ClassChecker extends ClassLikeChecker
         $class_implementations = self::getInterfacesForClass($absolute_class);
 
         return isset($class_implementations[$interface]);
+    }
+
+    protected function registerInheritedMethods($parent_class, array $method_map = null)
+    {
+        $class_methods = self::$class_methods[$parent_class];
+
+        foreach ($class_methods as $method_name => $_) {
+            $parent_method_id = $parent_class . '::' . $method_name;
+            $declaring_method_id = ClassMethodChecker::getDeclaringMethod($parent_method_id);
+            $mapped_name = isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name;
+            $implemented_method_id = $this->absolute_class . '::' . $mapped_name;
+
+            if (!isset(self::$class_methods[$this->absolute_class][$mapped_name])) {
+                ClassMethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);
+                self::$class_methods[$this->absolute_class][$mapped_name] = true;
+            }
+        }
     }
 }

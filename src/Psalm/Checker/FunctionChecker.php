@@ -92,7 +92,7 @@ class FunctionChecker extends FunctionLikeChecker
         $function_id = $function->name;
 
         if (isset(self::$have_registered_function[$file_name][$function_id])) {
-            throw new \LogicException('Cannot re-register function twice');
+            return;
         }
 
         self::$have_registered_function[$file_name][$function_id] = true;

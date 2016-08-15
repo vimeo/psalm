@@ -120,14 +120,6 @@ class StatementsChecker
 
         $function_checkers = [];
 
-        // hoist functions to the top
-        foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_checker = new FunctionChecker($stmt, $this->source, $context->file_name);
-                $function_checkers[$stmt->name] = $function_checker;
-            }
-        }
-
         foreach ($stmts as $stmt) {
             foreach (Config::getInstance()->getPlugins() as $plugin) {
                 if ($plugin->checkStatement($stmt, $context, $this->file_name) === false) {
@@ -194,8 +186,8 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_context = new Context($this->file_name, $context->self);
-                $function_checkers[$stmt->name]->check($function_context);
+                $function_checker = new FunctionChecker($stmt, $this->source, $context->file_name);
+                $function_checker->check(new Context($this->file_name, $context->self));
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 $this->checkExpression($stmt, $context);
@@ -969,12 +961,6 @@ class StatementsChecker
 
         if (!is_string($stmt->name)) {
             return $this->checkExpression($stmt->name, $context);
-        }
-
-        if ($method_id && isset($context->vars_in_scope[$stmt->name]) && !$context->vars_in_scope[$stmt->name]->isMixed()) {
-            if ($this->checkFunctionArgumentType($context->vars_in_scope[$stmt->name], $method_id, $argument_offset, $this->file_name, $stmt->getLine()) === false) {
-                return false;
-            }
         }
 
         if ($stmt->name === 'this') {
@@ -2219,8 +2205,15 @@ class StatementsChecker
                         break;
 
                     default:
-                        if ($absolute_class[0] === strtoupper($absolute_class[0]) && !method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
-                            $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+                        if (!method_exists($absolute_class, '__call')
+                            && !self::isMock($absolute_class)
+                        ) {
+                            $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
+                                $absolute_class,
+                                $this->file_name,
+                                $stmt->getLine(),
+                                $this->suppressed_issues
+                            );
 
                             if (!$does_class_exist) {
                                 return $does_class_exist;
@@ -2238,8 +2231,6 @@ class StatementsChecker
                             else {
                                 self::$method_call_index[$method_id][] = $this->source->getFileName();
                             }
-
-
 
                             $does_method_exist = ClassMethodChecker::checkMethodExists($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
 
@@ -2562,19 +2553,9 @@ class StatementsChecker
     protected function checkMethodParams(array $args, $method_id, Context $context, $line_number)
     {
         foreach ($args as $i => $arg) {
-            if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch &&
-                $arg->value->var instanceof PhpParser\Node\Expr\Variable &&
-                $arg->value->var->name === 'this' &&
-                is_string($arg->value->name)
-            ) {
-                $property_id = 'this' . '->' . $arg->value->name;
-
+            if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch) {
                 if ($method_id) {
-                    if (isset($context->vars_in_scope[$property_id]) && !$context->vars_in_scope[$property_id]->isMixed()) {
-                        if ($this->checkFunctionArgumentType($context->vars_in_scope[$property_id], $method_id, $i, $this->file_name, $arg->getLine()) === false) {
-                            return false;
-                        }
-                    }
+                    $this->checkPropertyFetch($arg->value, $context);
 
                     if ($this->isPassedByReference($method_id, $i)) {
                         $this->assignByRefParam($arg->value, $method_id, $context);
@@ -2585,14 +2566,14 @@ class StatementsChecker
                         }
                     }
                 } else {
+                    $var_id = self::getVarId($arg->value);
 
-                    if (false || !isset($context->vars_in_scope[$property_id]) || $context->vars_in_scope[$property_id]->isNull()) {
+                    if (false || !isset($context->vars_in_scope[$var_id]) || $context->vars_in_scope[$var_id]->isNull()) {
                         // we don't know if it exists, assume it's passed by reference
-                        $context->vars_in_scope[$property_id] = Type::getMixed();
-                        $context->vars_possibly_in_scope[$property_id] = true;
-                        $this->registerVariable($property_id, $arg->value->getLine());
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                        $context->vars_possibly_in_scope[$var_id] = true;
+                        $this->registerVariable($var_id, $arg->value->getLine());
                     }
-
                 }
             }
             elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
@@ -2609,7 +2590,8 @@ class StatementsChecker
                         $this->registerVariable($arg->value->name, $arg->value->getLine());
                     }
                 }
-            } else {
+            }
+            else {
                 if ($this->checkExpression($arg->value, $context) === false) {
                     return false;
                 }
@@ -3086,7 +3068,7 @@ class StatementsChecker
 
         $method_params = ClassMethodChecker::getMethodParams($method_id);
 
-        if (!isset($method_params[$argument_offset])) {
+        if (count($method_params) <= $argument_offset) {
             return;
         }
 

@@ -21,7 +21,7 @@ class ClassMethodChecker extends FunctionLikeChecker
     protected static $method_namespaces = [];
     protected static $method_return_types = [];
     protected static $static_methods = [];
-    protected static $declaring_classes = [];
+    protected static $declaring_methods = [];
     protected static $existing_methods = [];
     protected static $have_reflected = [];
     protected static $have_registered = [];
@@ -47,14 +47,18 @@ class ClassMethodChecker extends FunctionLikeChecker
 
     public static function getMethodParams($method_id)
     {
-        self::populateData($method_id);
+        self::registerClassMethod($method_id);
+
+        $method_id = self::getDeclaringMethod($method_id);
 
         return self::$method_params[$method_id];
     }
 
     public static function getMethodReturnTypes($method_id)
     {
-        self::populateData($method_id);
+        self::registerClassMethod($method_id);
+
+        $method_id = self::getDeclaringMethod($method_id);
 
         return self::$method_return_types[$method_id] ? clone self::$method_return_types[$method_id] : null;
     }
@@ -62,24 +66,12 @@ class ClassMethodChecker extends FunctionLikeChecker
     /**
      * @return void
      */
-    public static function extractReflectionMethodInfo($method_id)
+    public static function extractReflectionMethodInfo(\ReflectionMethod $method)
     {
-        if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
+        $method_id = $method->class . '::' . $method->name;
+
+        if (isset(self::$have_reflected[$method_id])) {
             return;
-        }
-
-        try {
-            $method = new \ReflectionMethod($method_id);
-        }
-        catch (\ReflectionException $e) {
-            // maybe it's an old-timey constructor
-
-            $absolute_class = explode('::', $method_id)[0];
-            $class_name = array_pop(explode('\\', $absolute_class));
-
-            $alt_method_id = $absolute_class . '::' . $class_name;
-
-            $method = new \ReflectionMethod($alt_method_id);
         }
 
         self::$have_reflected[$method_id] = true;
@@ -87,7 +79,7 @@ class ClassMethodChecker extends FunctionLikeChecker
         self::$static_methods[$method_id] = $method->isStatic();
         self::$method_files[$method_id] = $method->getFileName();
         self::$method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
-        self::$declaring_classes[$method_id] = $method->getDeclaringClass()->name . '::' . $method->getName();
+        self::$declaring_methods[$method_id] = $method->getDeclaringClass()->name . '::' . $method->getName();
         self::$method_visibility[$method_id] = $method->isPrivate() ?
                                                     self::VISIBILITY_PRIVATE :
                                                     ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
@@ -113,76 +105,7 @@ class ClassMethodChecker extends FunctionLikeChecker
 
         $return_type = null;
 
-        $docblock_info = CommentChecker::extractDocblockInfo($method->getDocComment());
-
-        if ($docblock_info['deprecated']) {
-            self::$deprecated_methods[$method_id] = true;
-        }
-
-        self::$method_return_types[$method_id] = [];
-        self::$method_suppress[$method_id] = $docblock_info['suppress'];
-
-        if ($config->use_docblock_types) {
-            if ($docblock_info['return_type']) {
-
-                $return_type = Type::parseString(
-                    self::fixUpReturnType($docblock_info['return_type'], $method_id)
-                );
-            }
-
-            if ($docblock_info['params']) {
-                foreach ($docblock_info['params'] as $docblock_param) {
-                    $docblock_param_name = $docblock_param['name'];
-
-                    if (isset($method_param_names[$docblock_param_name])) {
-                        foreach (self::$method_params[$method_id] as &$param_info) {
-                            if ($param_info['name'] === $docblock_param_name) {
-                                $docblock_param_type_string = $docblock_param['type'];
-
-                                $existing_param_type = $param_info['type'];
-
-                                $new_param_type = Type::parseString(
-                                    self::fixUpReturnType($docblock_param_type_string, $method_id)
-                                );
-
-                                // only fix the type if we're dealing with an undefined or generic type
-                                if ($existing_param_type->isMixed() || $new_param_type->hasGeneric()) {
-                                    $existing_param_type_nullable = $param_info['is_nullable'];
-
-                                    if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                                        $new_param_type->types['null'] = Type::getNull(false);
-                                    }
-
-                                    $param_info['type'] = $new_param_type;
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         self::$method_return_types[$method_id] = $return_type;
-    }
-
-    protected static function copyToChildMethod($method_id, $child_method_id)
-    {
-        if (!isset(self::$have_registered[$method_id]) && !isset(self::$have_reflected[$method_id])) {
-            self::extractReflectionMethodInfo($method_id);
-        }
-
-        if (self::$method_visibility[$method_id] !== self::VISIBILITY_PRIVATE) {
-            self::$method_files[$child_method_id] = self::$method_files[$method_id];
-            self::$method_params[$child_method_id] = self::$method_params[$method_id];
-            self::$method_namespaces[$child_method_id] = self::$method_namespaces[$method_id];
-            self::$method_return_types[$child_method_id] = self::$method_return_types[$method_id];
-            self::$static_methods[$child_method_id] = self::$static_methods[$method_id];
-            self::$method_visibility[$child_method_id] = self::$method_visibility[$method_id];
-
-            self::$declaring_classes[$child_method_id] = self::$declaring_classes[$method_id];
-            self::$existing_methods[$child_method_id] = 1;
-        }
     }
 
     /**
@@ -191,7 +114,9 @@ class ClassMethodChecker extends FunctionLikeChecker
      */
     public static function checkMethodStatic($method_id, $file_name, $line_number, array $suppressed_issues)
     {
-        self::populateData($method_id);
+        self::registerClassMethod($method_id);
+
+        $method_id = self::getDeclaringMethod($method_id);
 
         if (!self::$static_methods[$method_id]) {
             if (IssueBuffer::accepts(
@@ -215,7 +140,7 @@ class ClassMethodChecker extends FunctionLikeChecker
 
         self::$have_registered[$method_id] = true;
 
-        self::$declaring_classes[$method_id] = $method_id;
+        self::$declaring_methods[$method_id] = $method_id;
         self::$static_methods[$method_id] = $method->isStatic();
 
         self::$method_namespaces[$method_id] = $this->namespace;
@@ -320,19 +245,9 @@ class ClassMethodChecker extends FunctionLikeChecker
      */
     public static function checkMethodExists($method_id, $file_name, $line_number, array $suppresssed_issues)
     {
-        if (isset(self::$existing_methods[$method_id])) {
-            return true;
-        }
+        self::registerClassMethod($method_id);
 
-        $method_parts = explode('::', $method_id);
-
-        if (method_exists($method_parts[0], $method_parts[1])) {
-            self::$existing_methods[$method_id] = 1;
-            return true;
-        }
-
-        if (isset(self::$have_registered[$method_id])) {
-            self::$existing_methods[$method_id] = 1;
+        if (isset(self::$declaring_methods[$method_id])) {
             return true;
         }
 
@@ -344,21 +259,14 @@ class ClassMethodChecker extends FunctionLikeChecker
         }
     }
 
-    protected static function populateData($method_id)
+    protected static function registerClassMethod($method_id)
     {
-        if (!isset(self::$have_reflected[$method_id]) && !isset(self::$have_registered[$method_id])) {
-            if (isset(self::$inherited_methods[$method_id])) {
-                self::copyToChildMethod(self::$inherited_methods[$method_id], $method_id);
-            }
-            else {
-                self::extractReflectionMethodInfo($method_id);
-            }
-        }
+        ClassLikeChecker::registerClass(explode('::', $method_id)[0]);
     }
 
     public static function checkMethodNotDeprecated($method_id, $file_name, $line_number, array $suppresssed_issues)
     {
-        self::populateData($method_id);
+        self::registerClassMethod($method_id);
 
         if (isset(self::$deprecated_methods[$method_id])) {
             if (IssueBuffer::accepts(
@@ -380,12 +288,14 @@ class ClassMethodChecker extends FunctionLikeChecker
      */
     public static function checkMethodVisibility($method_id, $calling_context, StatementsSource $source, $line_number, array $suppresssed_issues)
     {
-        self::populateData($method_id);
+        self::registerClassMethod($method_id);
+
+        $declared_method_id = self::getDeclaringMethod($method_id);
 
         $method_class = explode('::', $method_id)[0];
         $method_name = explode('::', $method_id)[1];
 
-        if (!isset(self::$method_visibility[$method_id])) {
+        if (!isset(self::$method_visibility[$declared_method_id])) {
             if (IssueBuffer::accepts(
                 new InaccessibleMethod('Cannot access method ' . $method_id, $source->getFileName(), $line_number),
                 $suppresssed_issues
@@ -398,7 +308,7 @@ class ClassMethodChecker extends FunctionLikeChecker
             return;
         }
 
-        switch (self::$method_visibility[$method_id]) {
+        switch (self::$method_visibility[$declared_method_id]) {
             case self::VISIBILITY_PUBLIC:
                 return;
 
@@ -450,29 +360,14 @@ class ClassMethodChecker extends FunctionLikeChecker
         }
     }
 
-    public static function registerInheritedMethod($parent_method_id, $method_id)
+    public static function setDeclaringMethod($method_id, $declaring_method_id)
     {
-        // only register the method if it's not already there
-        if (!isset(self::$declaring_classes[$method_id])) {
-            self::$declaring_classes[$method_id] = $parent_method_id;
-        }
-
-        self::$inherited_methods[$method_id] = $parent_method_id;
+        self::$declaring_methods[$method_id] = $declaring_method_id;
     }
 
     public static function getDeclaringMethod($method_id)
     {
-        if (isset(self::$declaring_classes[$method_id])) {
-            return self::$declaring_classes[$method_id];
-        }
-
-        $method_name = explode('::', $method_id)[1];
-
-        $parent_method_id = (new \ReflectionMethod($method_id))->getDeclaringClass()->getName() . '::' . $method_name;
-
-        self::$declaring_classes[$method_id] = $parent_method_id;
-
-        return $parent_method_id;
+        return self::$declaring_methods[$method_id];
     }
 
     public static function clearCache()
@@ -483,7 +378,7 @@ class ClassMethodChecker extends FunctionLikeChecker
         self::$method_namespaces = [];
         self::$method_return_types = [];
         self::$static_methods = [];
-        self::$declaring_classes = [];
+        self::$declaring_methods = [];
         self::$existing_methods = [];
         self::$have_reflected = [];
         self::$have_registered = [];

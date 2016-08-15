@@ -59,6 +59,7 @@ abstract class ClassLikeChecker implements StatementsSource
     protected static $public_class_constants = [];
 
     protected static $registered_classes = [];
+    protected static $class_implements = [];
 
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
@@ -70,14 +71,20 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $this->suppressed_issues = $source->getSuppressedIssues();
 
-        if (self::$this_class || $class instanceof PhpParser\Node\Stmt\Trait_) {
+        if (self::$this_class) {
             self::$class_checkers[$absolute_class] = $this;
         }
     }
 
     public function check($check_methods = true, Context $class_context = null)
     {
+        if (!$check_methods && isset(self::$registered_classes[$this->absolute_class])) {
+            return;
+        }
+
         $config = Config::getInstance();
+
+        self::$registered_classes[$this->absolute_class] = true;
 
         $leftover_stmts = [];
 
@@ -95,28 +102,68 @@ abstract class ClassLikeChecker implements StatementsSource
 
         self::$public_class_constants[$this->absolute_class] = [];
 
-        self::$registered_classes[$this->absolute_class] = true;
+        if (!$class_context) {
+            $class_context = new Context($this->file_name, $this->absolute_class);
+            $class_context->parent = $this->parent_class;
+            $class_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->absolute_class)]);
+        }
+
+        // set all constants first
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+                foreach ($stmt->consts as $const) {
+                    self::$public_class_constants[$class_context->self][$const->name] = Type::getMixed();
+                }
+            }
+        }
 
         if ($this instanceof ClassChecker) {
             if ($this->parent_class) {
+                if (self::checkAbsoluteClassOrInterface(
+                    $this->parent_class,
+                    $this->file_name,
+                    $this->class->getLine(),
+                    $this->getSuppressedIssues()
+                ) === false
+                ) {
+                    return false;
+                }
+
+                self::registerClass($this->parent_class);
+
+                $this->registerInheritedMethods($this->parent_class);
+
+                self::$class_implements[$this->absolute_class] += self::$class_implements[$this->parent_class];
+
                 self::$public_class_properties[$this->absolute_class] = self::$public_class_properties[$this->parent_class];
                 self::$protected_class_properties[$this->absolute_class] = self::$protected_class_properties[$this->parent_class];
 
                 self::$public_static_class_properties[$this->absolute_class] = self::$public_static_class_properties[$this->parent_class];
                 self::$protected_static_class_properties[$this->absolute_class] = self::$protected_static_class_properties[$this->parent_class];
 
-                self::$public_class_constants[$this->absolute_class] = self::$public_class_constants[$this->parent_class];
+                self::$public_class_constants[$this->absolute_class] = array_merge(
+                    self::$public_class_constants[$this->parent_class],
+                    self::$public_class_constants[$this->absolute_class]
+                );
+            }
+
+            foreach (self::$class_implements[$this->absolute_class] as $interface_name => $_) {
+                if (self::checkAbsoluteClassOrInterface(
+                    $interface_name,
+                    $this->file_name,
+                    $this->class->getLine(),
+                    $this->getSuppressedIssues()
+                ) === false
+                ) {
+                    return false;
+                }
+
+                self::registerClass($interface_name);
             }
 
             foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_name => $_) {
                 self::$public_class_constants[$this->absolute_class] += self::$public_class_constants[$interface_name];
             }
-        }
-
-        if (!$class_context) {
-            $class_context = new Context($this->file_name, $this->absolute_class);
-            $class_context->parent = $this->parent_class;
-            $class_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->absolute_class)]);
         }
 
         foreach ($this->class->stmts as $stmt) {
@@ -135,7 +182,9 @@ abstract class ClassLikeChecker implements StatementsSource
                     $method_checker = self::$method_checkers[$method_id];
                 }
 
-                self::$class_methods[$this->absolute_class][] = $stmt->name;
+                ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $stmt->name, $method_id);
+
+                self::$class_methods[$this->absolute_class][$stmt->name] = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 $method_map = [];
                 foreach ($stmt->adaptations as $adaptation) {
@@ -170,11 +219,9 @@ abstract class ClassLikeChecker implements StatementsSource
                             continue;
                         }
 
-                        $this->registerInheritedMethods($trait_name, $method_map);
-
                         $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
 
-                        $trait_checker->check(true, $class_context);
+                        $trait_checker->check($check_methods, $class_context);
                     }
                 }
             } else {
@@ -464,8 +511,12 @@ abstract class ClassLikeChecker implements StatementsSource
         return $this->has_custom_get;
     }
 
-    protected static function registerClass($class_name)
+    public static function registerClass($class_name)
     {
+        if (isset(self::$registered_classes[$class_name])) {
+            return true;
+        }
+
         try {
             $reflected_class = new ReflectionClass($class_name);
         }
@@ -476,6 +527,7 @@ abstract class ClassLikeChecker implements StatementsSource
         if ($reflected_class->isUserDefined()) {
             $class_file_name = $reflected_class->getFileName();
 
+            // this doesn't work on traits
             (new FileChecker($class_file_name))->check(true, false);
         }
         else {
@@ -556,15 +608,34 @@ abstract class ClassLikeChecker implements StatementsSource
             if (!$reflected_class->isTrait() && !$reflected_class->isInterface()) {
                 ClassChecker::getInterfacesForClass($class_name);
             }
+
+            $reflection_methods = $reflected_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
+
+            self::$class_methods[$class_name] = [];
+
+            foreach ($reflection_methods as $reflection_method) {
+                ClassMethodChecker::extractReflectionMethodInfo($reflection_method);
+
+                if ($reflection_method->class !== $class_name) {
+                    ClassMethodChecker::setDeclaringMethod(
+                        $class_name . '::' . $reflection_method->name,
+                        $reflection_method->class . '::' . $reflection_method->name
+                    );
+                }
+
+                if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $class_name) {
+                    self::$class_methods[$class_name][$reflection_method->getName()] = true;
+                }
+            }
         }
+
+        return true;
     }
 
     public static function getInstancePropertiesForClass($class_name, $visibility)
     {
-        if (!isset(self::$registered_classes[$class_name])) {
-            if (self::registerClass($class_name) === false) {
-                return [];
-            }
+        if (self::registerClass($class_name) === false) {
+            return [];
         }
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
@@ -589,10 +660,8 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public static function getStaticPropertiesForClass($class_name, $visibility)
     {
-        if (!isset(self::$registered_classes[$class_name])) {
-            if (self::registerClass($class_name) === false) {
-                return [];
-            }
+        if (self::registerClass($class_name) === false) {
+            return [];
         }
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
@@ -620,10 +689,8 @@ abstract class ClassLikeChecker implements StatementsSource
         // remove for PHP 7.1 support
         $visibility = ReflectionProperty::IS_PUBLIC;
 
-        if (!isset(self::$registered_classes[$class_name])) {
-            if (self::registerClass($class_name) === false) {
-                return [];
-            }
+        if (self::registerClass($class_name) === false) {
+            return [];
         }
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
@@ -646,36 +713,6 @@ abstract class ClassLikeChecker implements StatementsSource
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
-    }
-
-    protected function registerInheritedMethods($parent_class, array $method_map = null)
-    {
-        if (!isset(self::$class_methods[$parent_class])) {
-            $class_methods = [];
-
-            $reflection_class = new ReflectionClass($parent_class);
-
-            $reflection_methods = $reflection_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
-
-            foreach ($reflection_methods as $reflection_method) {
-                if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $parent_class) {
-                    $method_name = $reflection_method->getName();
-                    $class_methods[] = $method_name;
-                }
-            }
-
-            self::$class_methods[$parent_class] = $class_methods;
-        }
-        else {
-            $class_methods = self::$class_methods[$parent_class];
-        }
-
-        foreach ($class_methods as $method_name) {
-            $parent_method_id = $parent_class . '::' . $method_name;
-            $implemented_method_id = $this->absolute_class . '::' . (isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name);
-
-            ClassMethodChecker::registerInheritedMethod($parent_method_id, $implemented_method_id);
-        }
     }
 
     public static function setThisClass($this_class)
