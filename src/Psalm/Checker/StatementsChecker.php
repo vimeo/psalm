@@ -120,6 +120,14 @@ class StatementsChecker
 
         $function_checkers = [];
 
+        // hoist functions to the top
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+                $function_checker = new FunctionChecker($stmt, $this->source, $context->file_name);
+                $function_checkers[$stmt->name] = $function_checker;
+            }
+        }
+
         foreach ($stmts as $stmt) {
             foreach (Config::getInstance()->getPlugins() as $plugin) {
                 if ($plugin->checkStatement($stmt, $context, $this->file_name) === false) {
@@ -186,8 +194,8 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_checker = new FunctionChecker($stmt, $this->source, $context->file_name);
-                $function_checker->check(new Context($this->file_name, $context->self));
+                $function_context = new Context($this->file_name, $context->self);
+                $function_checkers[$stmt->name]->check($function_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 $this->checkExpression($stmt, $context);
