@@ -2183,6 +2183,7 @@ class StatementsChecker
 
                     case 'int':
                     case 'bool':
+                    case 'false':
                     case 'array':
                     case 'string':
                         if (IssueBuffer::accepts(
