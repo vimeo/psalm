@@ -20,6 +20,7 @@ class ClassMethodChecker extends FunctionLikeChecker
     protected static $method_params = [];
     protected static $method_namespaces = [];
     protected static $method_return_types = [];
+    protected static $cased_method_ids = [];
     protected static $static_methods = [];
     protected static $declaring_methods = [];
     protected static $existing_methods = [];
@@ -68,7 +69,8 @@ class ClassMethodChecker extends FunctionLikeChecker
      */
     public static function extractReflectionMethodInfo(\ReflectionMethod $method)
     {
-        $method_id = $method->class . '::' . $method->name;
+        $method_id = $method->class . '::' . strtolower($method->name);
+        self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
 
         if (isset(self::$have_reflected[$method_id])) {
             return;
@@ -79,7 +81,7 @@ class ClassMethodChecker extends FunctionLikeChecker
         self::$static_methods[$method_id] = $method->isStatic();
         self::$method_files[$method_id] = $method->getFileName();
         self::$method_namespaces[$method_id] = $method->getDeclaringClass()->getNamespaceName();
-        self::$declaring_methods[$method_id] = $method->getDeclaringClass()->name . '::' . $method->getName();
+        self::$declaring_methods[$method_id] = $method->getDeclaringClass()->name . '::' . strtolower($method->getName());
         self::$method_visibility[$method_id] = $method->isPrivate() ?
                                                     self::VISIBILITY_PRIVATE :
                                                     ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
@@ -120,7 +122,7 @@ class ClassMethodChecker extends FunctionLikeChecker
 
         if (!self::$static_methods[$method_id]) {
             if (IssueBuffer::accepts(
-                new InvalidStaticInvocation('Method ' . $method_id . ' is not static', $file_name, $line_number),
+                new InvalidStaticInvocation('Method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' is not static', $file_name, $line_number),
                 $suppressed_issues
             )) {
                 return false;
@@ -130,7 +132,8 @@ class ClassMethodChecker extends FunctionLikeChecker
 
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
-        $method_id = $this->absolute_class . '::' . $method->name;
+        $method_id = $this->absolute_class . '::' . strtolower($method->name);
+        self::$cased_method_ids[$method_id] = $this->absolute_class . '::' . $method->name;
 
         if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
             $this->suppressed_issues = self::$method_suppress[$method_id];
@@ -245,6 +248,10 @@ class ClassMethodChecker extends FunctionLikeChecker
      */
     public static function checkMethodExists($method_id, $file_name, $line_number, array $suppresssed_issues)
     {
+        $cased_method_id = $method_id;
+        $method_parts = explode('::', $method_id);
+        $method_id = $method_parts[0] . '::' . strtolower($method_parts[1]);
+
         self::registerClassMethod($method_id);
 
         if (isset(self::$declaring_methods[$method_id])) {
@@ -252,7 +259,7 @@ class ClassMethodChecker extends FunctionLikeChecker
         }
 
         if (IssueBuffer::accepts(
-            new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $line_number),
+            new UndefinedMethod('Method ' . $cased_method_id . ' does not exist', $file_name, $line_number),
             $suppresssed_issues
         )) {
             return false;
@@ -270,7 +277,7 @@ class ClassMethodChecker extends FunctionLikeChecker
 
         if (isset(self::$deprecated_methods[$method_id])) {
             if (IssueBuffer::accepts(
-                new DeprecatedMethod('The method ' . $method_id . ' has been marked as deprecated', $file_name, $line_number),
+                new DeprecatedMethod('The method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' has been marked as deprecated', $file_name, $line_number),
                 $suppresssed_issues
             )) {
                 return false;
@@ -316,7 +323,7 @@ class ClassMethodChecker extends FunctionLikeChecker
                 if (!$calling_context || $method_class !== $calling_context) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
-                            'Cannot access private method ' . $method_id . ' from context ' . $calling_context,
+                            'Cannot access private method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
                             $source->getFileName(),
                             $line_number
                         ),
@@ -348,7 +355,7 @@ class ClassMethodChecker extends FunctionLikeChecker
                 if (!ClassChecker::classExtends($calling_context, $method_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
-                            'Cannot access protected method ' . $method_id . ' from context ' . $calling_context,
+                            'Cannot access protected method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
                             $source->getFileName(),
                             $line_number
                         ),
@@ -370,11 +377,18 @@ class ClassMethodChecker extends FunctionLikeChecker
         return self::$declaring_methods[$method_id];
     }
 
+    public static function getCasedMethodId($method_id)
+    {
+        $method_id = self::getDeclaringMethod($method_id);
+        return self::$cased_method_ids[$method_id];
+    }
+
     public static function clearCache()
     {
         self::$method_comments = [];
         self::$method_files = [];
         self::$method_params = [];
+        self::$cased_method_ids = [];
         self::$method_namespaces = [];
         self::$method_return_types = [];
         self::$static_methods = [];

@@ -37,7 +37,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if (strpos($function_id, '::') !== false) {
-            $function_id = preg_replace('/^[^:]+::/', '', $function_id);
+            $function_id = strtolower(preg_replace('/^[^:]+::/', '', $function_id));
         }
 
         if (!isset(self::$builtin_functions[$function_id])) {
@@ -89,7 +89,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
     {
-        $function_id = $function->name;
+        $function_id = strtolower($function->name);
 
         if (isset(self::$have_registered_function[$file_name][$function_id])) {
             return;

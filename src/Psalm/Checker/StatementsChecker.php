@@ -682,7 +682,6 @@ class StatementsChecker
     protected function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $array_assignment = false)
     {
         foreach (Config::getInstance()->getPlugins() as $plugin) {
-
             if ($plugin->checkExpression($stmt, $context, $this->file_name) === false) {
                 return false;
             }
@@ -2152,7 +2151,7 @@ class StatementsChecker
                     trait_exists($this->absolute_class)
                 )) {
 
-                $method_id = $this->absolute_class . '::' . $stmt->name;
+                $method_id = $this->absolute_class . '::' . strtolower($stmt->name);
 
                 if ($this->checkInsideMethod($method_id, $context) === false) {
                     return false;
@@ -2225,7 +2224,7 @@ class StatementsChecker
                                 return $does_class_exist;
                             }
 
-                            $method_id = $absolute_class . '::' . $stmt->name;
+                            $method_id = $absolute_class . '::' . strtolower($stmt->name);
 
                             if (!isset(self::$method_call_index[$method_id])) {
                                 self::$method_call_index[$method_id] = [];
@@ -2404,7 +2403,7 @@ class StatementsChecker
 
         if ($stmt->class->parts === ['parent'] && is_string($stmt->name)) {
             if (ClassLikeChecker::getThisClass()) {
-                $method_id = $absolute_class . '::' . $stmt->name;
+                $method_id = $absolute_class . '::' . strtolower($stmt->name);
 
                 if ($this->checkInsideMethod($method_id, $context) === false) {
                     return false;
@@ -2413,7 +2412,7 @@ class StatementsChecker
         }
 
         if ($absolute_class && is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::isMock($absolute_class)) {
-            $method_id = $absolute_class . '::' . $stmt->name;
+            $method_id = $absolute_class . '::' . strtolower($stmt->name);
 
             if (!isset(self::$method_call_index[$method_id])) {
                 self::$method_call_index[$method_id] = [];
@@ -3092,7 +3091,7 @@ class StatementsChecker
         if ($input_type->isNullable() && !$param_type->isNullable()) {
             if (IssueBuffer::accepts(
                 new NullReference(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' cannot be null, possibly null value provided',
+                    'Argument ' . ($argument_offset + 1) . ' of ' . ClassMethodChecker::getCasedMethodId($method_id) . ' cannot be null, possibly null value provided',
                     $file_name,
                     $line_number
                 ),
@@ -3161,7 +3160,7 @@ class StatementsChecker
                 if ($scalar_type_match_found) {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                            'Argument ' . ($argument_offset + 1) . ' of ' . ClassMethodChecker::getCasedMethodId($method_id) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                             $file_name,
                             $line_number
                         ),
@@ -3172,7 +3171,7 @@ class StatementsChecker
                 }
                 else if (IssueBuffer::accepts(
                     new InvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                        'Argument ' . ($argument_offset + 1) . ' of ' . ClassMethodChecker::getCasedMethodId($method_id) . ' expects ' . $param_type . ', ' . $input_type . ' provided',
                         $file_name,
                         $line_number
                     ),
@@ -3606,7 +3605,7 @@ class StatementsChecker
                 try {
                     $parent_class->getMethod($method_name);
                     $method_id = $parent_class->getName() . '::' . $method_name;
-                    return $output . ' - NONE - it extends ' . $method_id . ' though';
+                    return $output . ' - NONE - it extends ' . ClassMethodChecker::getCasedMethodId($method_id) . ' though';
                 }
                 catch (\ReflectionException $e) {
                     // do nothing

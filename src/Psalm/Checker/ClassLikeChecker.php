@@ -170,7 +170,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_id = $this->absolute_class . '::' . $stmt->name;
+                $method_id = $this->absolute_class . '::' . strtolower($stmt->name);
 
                 if (!isset(self::$method_checkers[$method_id])) {
                     $method_checker = new ClassMethodChecker($stmt, $this);
@@ -185,7 +185,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
 
                 if (!$stmt->isAbstract()) {
-                    ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $stmt->name, $method_id);
+                    ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . strtolower($stmt->name), $method_id);
                     self::$class_methods[$class_context->self][$stmt->name] = true;
                 }
 
@@ -339,7 +339,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
         foreach ($class_checker->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                if ($declaring_method_id === $class_checker->absolute_class . '::' . $stmt->name) {
+                if ($declaring_method_id === $class_checker->absolute_class . '::' . strtolower($stmt->name)) {
                     $method_checker = new ClassMethodChecker($stmt, $class_checker);
                     self::$method_checkers[$method_id] = $method_checker;
                     return $method_checker;
@@ -629,8 +629,8 @@ abstract class ClassLikeChecker implements StatementsSource
 
                 if ($reflection_method->class !== $class_name) {
                     ClassMethodChecker::setDeclaringMethod(
-                        $class_name . '::' . $reflection_method->name,
-                        $reflection_method->class . '::' . $reflection_method->name
+                        $class_name . '::' . strtolower($reflection_method->name),
+                        $reflection_method->class . '::' . strtolower($reflection_method->name)
                     );
 
                     self::$class_methods[$class_name][$reflection_method->name] = true;
@@ -650,10 +650,10 @@ abstract class ClassLikeChecker implements StatementsSource
         $class_methods = self::$class_methods[$parent_class];
 
         foreach ($class_methods as $method_name => $_) {
-            $parent_method_id = $parent_class . '::' . $method_name;
+            $parent_method_id = $parent_class . '::' . strtolower($method_name);
             $declaring_method_id = ClassMethodChecker::getDeclaringMethod($parent_method_id);
             $mapped_name = isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name;
-            $implemented_method_id = $this->absolute_class . '::' . $mapped_name;
+            $implemented_method_id = $this->absolute_class . '::' . strtolower($mapped_name);
 
             if (!isset(self::$class_methods[$this->absolute_class][$mapped_name])) {
                 ClassMethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);

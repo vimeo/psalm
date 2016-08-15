@@ -197,7 +197,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             return null;
         }
 
-        return ($this->absolute_class ? $this->absolute_class . '::' : '') . $this->function->name;
+        return ($this->absolute_class ? $this->absolute_class . '::' : '') . strtolower($this->function->name);
     }
 
     public function getNamespace()
@@ -300,7 +300,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
-                        'No return type was found for method ' . $method_id . ' but return type \'' . $declared_return_type . '\' was expected',
+                        'No return type was found for method ' . ClassMethodChecker::getCasedMethodId($method_id) . ' but return type \'' . $declared_return_type . '\' was expected',
                         $this->file_name,
                         $this->function->getLine()
                     )
@@ -321,7 +321,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 if (!TypeChecker::hasIdenticalTypes($declared_return_type, $inferred_return_type, $this->absolute_class)) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
-                            'The given return type \'' . $declared_return_type . '\' for ' . $method_id . ' is incorrect, got \'' . $inferred_return_type . '\'',
+                            'The given return type \'' . $declared_return_type . '\' for ' . ClassMethodChecker::getCasedMethodId($method_id) . ' is incorrect, got \'' . $inferred_return_type . '\'',
                             $this->file_name,
                             $this->function->getLine()
                         ),
