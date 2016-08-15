@@ -183,8 +183,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
 
                 ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $stmt->name, $method_id);
-
-                self::$class_methods[$this->absolute_class][$stmt->name] = true;
+                self::$class_methods[$class_context->self][$stmt->name] = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 $method_map = [];
                 foreach ($stmt->adaptations as $adaptation) {
@@ -621,6 +620,8 @@ abstract class ClassLikeChecker implements StatementsSource
                         $class_name . '::' . $reflection_method->name,
                         $reflection_method->class . '::' . $reflection_method->name
                     );
+
+                    self::$class_methods[$class_name][$reflection_method->name] = true;
                 }
 
                 if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $class_name) {
@@ -630,6 +631,23 @@ abstract class ClassLikeChecker implements StatementsSource
         }
 
         return true;
+    }
+
+    protected function registerInheritedMethods($parent_class, array $method_map = null)
+    {
+        $class_methods = self::$class_methods[$parent_class];
+
+        foreach ($class_methods as $method_name => $_) {
+            $parent_method_id = $parent_class . '::' . $method_name;
+            $declaring_method_id = ClassMethodChecker::getDeclaringMethod($parent_method_id);
+            $mapped_name = isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name;
+            $implemented_method_id = $this->absolute_class . '::' . $mapped_name;
+
+            if (!isset(self::$class_methods[$this->absolute_class][$mapped_name])) {
+                ClassMethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);
+                self::$class_methods[$this->absolute_class][$mapped_name] = true;
+            }
+        }
     }
 
     public static function getInstancePropertiesForClass($class_name, $visibility)

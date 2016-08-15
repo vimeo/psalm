@@ -124,21 +124,4 @@ class ClassChecker extends ClassLikeChecker
 
         return isset($class_implementations[$interface]);
     }
-
-    protected function registerInheritedMethods($parent_class, array $method_map = null)
-    {
-        $class_methods = self::$class_methods[$parent_class];
-
-        foreach ($class_methods as $method_name => $_) {
-            $parent_method_id = $parent_class . '::' . $method_name;
-            $declaring_method_id = ClassMethodChecker::getDeclaringMethod($parent_method_id);
-            $mapped_name = isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name;
-            $implemented_method_id = $this->absolute_class . '::' . $mapped_name;
-
-            if (!isset(self::$class_methods[$this->absolute_class][$mapped_name])) {
-                ClassMethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);
-                self::$class_methods[$this->absolute_class][$mapped_name] = true;
-            }
-        }
-    }
 }
