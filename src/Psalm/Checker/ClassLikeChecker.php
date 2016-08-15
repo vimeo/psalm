@@ -185,15 +185,15 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
 
                 if (!$stmt->isAbstract()) {
-                    ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . strtolower($stmt->name), $method_id);
-                    self::$class_methods[$class_context->self][$stmt->name] = true;
+                    ClassMethodChecker::setDeclaringMethod($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
+                    self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 $method_map = [];
                 foreach ($stmt->adaptations as $adaptation) {
                     if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
-                        $method_map[$adaptation->method] = $adaptation->newName;
+                        $method_map[strtolower($adaptation->method)] = strtolower($adaptation->newName);
                     }
                 }
 
@@ -225,7 +225,11 @@ abstract class ClassLikeChecker implements StatementsSource
 
                         $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
 
+                        $trait_checker->setMethodMap($method_map);
+
                         $trait_checker->check(false, $class_context);
+
+                        $trait_checkers[] = $trait_checker;
                     }
                 }
             } else {
@@ -633,11 +637,11 @@ abstract class ClassLikeChecker implements StatementsSource
                         $reflection_method->class . '::' . strtolower($reflection_method->name)
                     );
 
-                    self::$class_methods[$class_name][$reflection_method->name] = true;
+                    self::$class_methods[$class_name][strtolower($reflection_method->name)] = true;
                 }
 
                 if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $class_name) {
-                    self::$class_methods[$class_name][$reflection_method->getName()] = true;
+                    self::$class_methods[$class_name][strtolower($reflection_method->getName())] = true;
                 }
             }
         }
@@ -645,19 +649,18 @@ abstract class ClassLikeChecker implements StatementsSource
         return true;
     }
 
-    protected function registerInheritedMethods($parent_class, array $method_map = null)
+    protected function registerInheritedMethods($parent_class)
     {
         $class_methods = self::$class_methods[$parent_class];
 
         foreach ($class_methods as $method_name => $_) {
-            $parent_method_id = $parent_class . '::' . strtolower($method_name);
+            $parent_method_id = $parent_class . '::' . $method_name;
             $declaring_method_id = ClassMethodChecker::getDeclaringMethod($parent_method_id);
-            $mapped_name = isset($method_map[$method_name]) ? $method_map[$method_name] : $method_name;
-            $implemented_method_id = $this->absolute_class . '::' . strtolower($mapped_name);
+            $implemented_method_id = $this->absolute_class . '::' . $method_name;
 
-            if (!isset(self::$class_methods[$this->absolute_class][$mapped_name])) {
+            if (!isset(self::$class_methods[$this->absolute_class][$method_name])) {
                 ClassMethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);
-                self::$class_methods[$this->absolute_class][$mapped_name] = true;
+                self::$class_methods[$this->absolute_class][$method_name] = true;
             }
         }
     }
@@ -755,6 +758,11 @@ abstract class ClassLikeChecker implements StatementsSource
     public static function getThisClass()
     {
         return self::$this_class;
+    }
+
+    protected function getMappedMethodName($method_name)
+    {
+        return $method_name;
     }
 
     public static function clearCache()
