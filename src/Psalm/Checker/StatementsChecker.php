@@ -2212,6 +2212,9 @@ class StatementsChecker
                         }
                         break;
 
+                    case 'static':
+                        $absolute_class = $context->self;
+
                     default:
                         if (!method_exists($absolute_class, '__call')
                             && !self::isMock($absolute_class)
@@ -2477,16 +2480,15 @@ class StatementsChecker
      */
     public static function fleshOutTypes(Type\Union $return_type, array $args, $calling_class, $method_id)
     {
-        foreach ($return_type->types as $key => $return_type_part) {
-            self::fleshOutAtomicType($return_type_part, $args, $calling_class, $method_id);
+        $return_type = clone $return_type;
 
-            if ($return_type_part->value !== $key) {
-                unset($return_type->types[$key]);
-                $return_type->types[$return_type_part->value] = $return_type_part;
-            }
+        $new_return_type_parts = [];
+
+        foreach ($return_type->types as $key => $return_type_part) {
+            $new_return_type_parts[] = self::fleshOutAtomicType($return_type_part, $args, $calling_class, $method_id);
         }
 
-        return $return_type;
+        return new Type\Union($new_return_type_parts);
     }
 
     /**
@@ -2496,7 +2498,7 @@ class StatementsChecker
      * @param  string|null                  $method_id
      * @return void
      */
-    protected static function fleshOutAtomicType(Type\Atomic &$return_type, array $args, $calling_class, $method_id)
+    protected static function fleshOutAtomicType(Type\Atomic $return_type, array $args, $calling_class, $method_id)
     {
         if ($return_type->value === '$this' || $return_type->value === 'static' || $return_type->value === 'self') {
             if (!$calling_class) {
@@ -2525,10 +2527,12 @@ class StatementsChecker
         }
 
         if ($return_type instanceof Type\Generic) {
-            foreach ($return_type->type_params as $type_param) {
+            foreach ($return_type->type_params as &$type_param) {
                 $type_param = self::fleshOutTypes($type_param, $args, $calling_class, $method_id);
             }
         }
+
+        return $return_type;
     }
 
     protected static function getMethodFromCallBlock($call, array $args, $method_id)

@@ -514,8 +514,8 @@ abstract class FunctionLikeChecker implements StatementsSource
             $return_type_token = Type::fixScalarTerms($return_type_token);
 
             if ($return_type_token[0] === strtoupper($return_type_token[0])) {
-                if ($return_type === '$this' && $absolute_class) {
-                    $return_type_token = $absolute_class;
+                if ($return_type === '$this') {
+                    $return_type_token = 'static';
                     continue;
                 }
 
