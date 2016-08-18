@@ -3310,6 +3310,23 @@ class StatementsChecker
             return Type::getArray();
         }
 
+        if (in_array($call_map_key, ['array_map'])) {
+            if (isset($call_args[0]) && $call_args[0]->value instanceof PhpParser\Node\Expr\Closure) {
+                $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($call_args[0]->value->stmts, true);
+
+                if (!$closure_return_types) {
+                    // @todo report issue
+                }
+                else {
+                    $inner_type = new Type\Union($closure_return_types);
+
+                    return new Type\Union([new Type\Generic('array', [$inner_type])]);
+                }
+            }
+
+            return Type::getArray();
+        }
+
         return Type::parseString($call_map[$call_map_key][0]);
     }
 
