@@ -3310,7 +3310,7 @@ class StatementsChecker
             return Type::getArray();
         }
 
-        if (in_array($call_map_key, ['array_map'])) {
+        if ($call_map_key === 'array_map') {
             if (isset($call_args[0]) && $call_args[0]->value instanceof PhpParser\Node\Expr\Closure) {
                 $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($call_args[0]->value->stmts, true);
 
@@ -3327,10 +3327,42 @@ class StatementsChecker
             return Type::getArray();
         }
 
-        if (in_array($call_map_key, ['array_filter'])) {
+        if (in_array($call_map_key, ['array_filter', 'array_values'])) {
             if (isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->isArray()) {
                 return clone $call_args[0]->value->inferredType;
             }
+        }
+
+        if ($call_map_key === 'array_merge') {
+            $inner_types = [];
+
+            foreach ($call_args as $call_arg) {
+                if (!isset($call_arg->value->inferredType)) {
+                    return Type::getArray();
+                }
+
+                foreach ($call_arg->value->inferredType->types as $type_part) {
+                    if (!$type_part instanceof Type\Generic) {
+                        return Type::getArray();
+                    }
+
+                    if ($type_part->type_params[0]->isEmpty()) {
+                        continue;
+                    }
+
+                    $inner_types = array_merge(array_values($type_part->type_params[0]->types), $inner_types);
+                }
+
+                if ($inner_types) {
+                    return new Type\Union([
+                        new Type\Generic('array',
+                            [Type::combineTypes($inner_types)]
+                        )
+                    ]);
+                }
+            }
+
+            return Type::getArray();
         }
 
         return Type::parseString($call_map[$call_map_key][0]);
