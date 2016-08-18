@@ -3327,6 +3327,12 @@ class StatementsChecker
             return Type::getArray();
         }
 
+        if (in_array($call_map_key, ['array_filter'])) {
+            if (isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->isArray()) {
+                return clone $call_args[0]->value->inferredType;
+            }
+        }
+
         return Type::parseString($call_map[$call_map_key][0]);
     }
 
