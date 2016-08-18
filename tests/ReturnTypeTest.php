@@ -5,6 +5,7 @@ namespace Psalm\Tests;
 use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Context;
 
 class ReturnTypeTest extends PHPUnit_Framework_TestCase
 {
@@ -294,5 +295,51 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
+    }
+
+    public function testExtendsStaticCallReturnType()
+    {
+        $stmts = self::$_parser->parse('<?php
+        abstract class A {
+            /** @return static */
+            public static function load() {
+                return new static();
+            }
+        }
+
+        class B extends A {
+        }
+
+        $b = B::load();
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+
+        $this->assertEquals('B', (string) $context->vars_in_scope['b']);
+    }
+
+    public function testExtendsStaticCallArrayReturnType()
+    {
+        $stmts = self::$_parser->parse('<?php
+        abstract class A {
+            /** @return array<static> */
+            public static function loadMultiple() {
+                return [new static()];
+            }
+        }
+
+        class B extends A {
+        }
+
+        $bees = B::loadMultiple();
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+
+        $this->assertEquals('array<B>', (string) $context->vars_in_scope['bees']);
     }
 }
