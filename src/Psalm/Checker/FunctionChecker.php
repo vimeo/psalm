@@ -205,13 +205,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     public static function getReturnTypeFromCallMap($function_id, array $call_args)
     {
-        $call_map = self::getCallMap();
-
         $call_map_key = strtolower($function_id);
-
-        if (!isset($call_map[$call_map_key]) || !$call_map[$call_map_key][0]) {
-            return Type::getMixed();
-        }
 
         if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'])) {
             if (isset($call_args[2]->value->inferredType)) {
@@ -287,6 +281,16 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             return Type::getArray();
+        }
+
+        if ($call_map_key === 'explode') {
+            return Type::parseString('array<string>');
+        }
+
+        $call_map = self::getCallMap();
+
+        if (!isset($call_map[$call_map_key]) || !$call_map[$call_map_key][0]) {
+            return Type::getMixed();
         }
 
         return Type::parseString($call_map[$call_map_key][0]);
