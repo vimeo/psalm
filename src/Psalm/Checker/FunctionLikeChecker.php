@@ -638,7 +638,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $all_args_match = true;
 
             foreach ($args as $argument_offset => $arg) {
-                if (count($possible_function_params) < $argument_offset) {
+                if (count($possible_function_params) <= $argument_offset) {
                     break;
                 }
 
