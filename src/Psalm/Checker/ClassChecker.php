@@ -28,7 +28,7 @@ class ClassChecker extends ClassLikeChecker
         foreach ($class->implements as $interface_name) {
             $absolute_interface_name = self::getAbsoluteClassFromName($interface_name, $this->namespace, $this->aliased_classes);
 
-            self::$class_implements[$absolute_class][$absolute_interface_name] = true;
+            self::$class_implements[$absolute_class][strtolower($absolute_interface_name)] = $absolute_interface_name;
         }
     }
 
@@ -93,7 +93,13 @@ class ClassChecker extends ClassLikeChecker
     public static function getInterfacesForClass($absolute_class)
     {
         if (!isset(self::$class_implements[$absolute_class])) {
-            self::$class_implements[$absolute_class] = class_implements($absolute_class);
+            $class_implements = class_implements($absolute_class);
+
+            self::$class_implements[$absolute_class] = [];
+
+            foreach ($class_implements as $interface) {
+                 self::$class_implements[$absolute_class][strtolower($interface)] = $interface;
+            }
         }
 
         return self::$class_implements[$absolute_class];
@@ -104,7 +110,9 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function classImplements($absolute_class, $interface)
     {
-        if (isset(self::$class_implements[$absolute_class][$interface])) {
+        $interface_id = strtolower($interface);
+
+        if (isset(self::$class_implements[$absolute_class][$interface_id])) {
             return true;
         }
 
@@ -116,13 +124,13 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        if (in_array($interface, self::$SPECIAL_TYPES)) {
+        if (in_array($interface_id, self::$SPECIAL_TYPES)) {
             return false;
         }
 
         $class_implementations = self::getInterfacesForClass($absolute_class);
 
-        return isset($class_implementations[$interface]);
+        return isset($class_implementations[$interface_id]);
     }
 
     public static function clearCache()

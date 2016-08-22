@@ -13,49 +13,49 @@ class InterfaceChecker extends ClassLikeChecker
     protected static $existing_interfaces = [];
     protected static $existing_interfaces_ci = [];
 
-    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source, $absolute_class)
+    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source, $interface_name)
     {
-        parent::__construct($interface, $source, $absolute_class);
+        parent::__construct($interface, $source, $interface_name);
 
-        self::$existing_interfaces[$absolute_class] = true;
-        self::$existing_interfaces_ci[strtolower($absolute_class)] = true;
+        self::$existing_interfaces[$interface_name] = true;
+        self::$existing_interfaces_ci[strtolower($interface_name)] = true;
 
         foreach ($interface->extends as $extended_interface) {
             $this->parent_interfaces[] = self::getAbsoluteClassFromName($extended_interface, $this->namespace, $this->aliased_classes);
         }
     }
 
-    public static function interfaceExists($absolute_class)
+    public static function interfaceExists($interface)
     {
-        if (isset(self::$existing_interfaces_ci[strtolower($absolute_class)])) {
-            return self::$existing_interfaces_ci[strtolower($absolute_class)];
+        if (isset(self::$existing_interfaces_ci[strtolower($interface)])) {
+            return self::$existing_interfaces_ci[strtolower($interface)];
         }
 
-        if (in_array($absolute_class, self::$SPECIAL_TYPES)) {
+        if (in_array($interface, self::$SPECIAL_TYPES)) {
             return false;
         }
 
-        if (interface_exists($absolute_class, true)) {
-            $reflected_interface = new \ReflectionClass($absolute_class);
+        if (interface_exists($interface, true)) {
+            $reflected_interface = new \ReflectionClass($interface);
 
-            self::$existing_interfaces_ci[strtolower($absolute_class)] = true;
+            self::$existing_interfaces_ci[strtolower($interface)] = true;
             self::$existing_interfaces[$reflected_interface->getName()] = true;
             return true;
         }
 
-        self::$existing_interfaces_ci[strtolower($absolute_class)] = false;
-        self::$existing_interfaces_ci[$absolute_class] = false;
+        self::$existing_interfaces_ci[strtolower($interface)] = false;
+        self::$existing_interfaces_ci[$interface] = false;
 
         return false;
     }
 
-    public static function hasCorrectCasing($absolute_class)
+    public static function hasCorrectCasing($interface)
     {
-        if (!self::interfaceExists($absolute_class)) {
-            throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $absolute_class);
+        if (!self::interfaceExists(strtolower($interface))) {
+            throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $interface);
         }
 
-        return isset(self::$existing_interfaces[$absolute_class]);
+        return isset(self::$existing_interfaces[$interface]);
     }
 
     public static function clearCache()

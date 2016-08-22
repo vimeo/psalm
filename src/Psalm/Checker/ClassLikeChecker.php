@@ -147,7 +147,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 );
             }
 
-            foreach (self::$class_implements[$this->absolute_class] as $interface_name => $_) {
+            foreach (self::$class_implements[$this->absolute_class] as $interface_id => $interface_name) {
                 if (self::checkAbsoluteClassOrInterface(
                     $interface_name,
                     $this->file_name,
@@ -161,7 +161,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 self::registerClass($interface_name);
             }
 
-            foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_name => $_) {
+            foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_id => $interface_name) {
                 self::$public_class_constants[$this->absolute_class] += self::$public_class_constants[$interface_name];
             }
         }
