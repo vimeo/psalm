@@ -568,6 +568,11 @@ class TypeChecker
 
             $result_type = isset($existing_types[$key]) ? clone $existing_types[$key] : null;
 
+            if (!$result_type) {
+                $result_type = Type::getMixed();
+                continue;
+            }
+
             foreach ($new_type_parts as $new_type_part) {
                 $result_type = self::reconcileTypes(
                     (string) $new_type_part,
@@ -607,13 +612,9 @@ class TypeChecker
      * @param  int          $line_number
      * @return Type\Union|false
      */
-    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type = null, $key = null, $file_name = null, $line_number = null, array $suppressed_issues = [])
+    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type, $key = null, $file_name = null, $line_number = null, array $suppressed_issues = [])
     {
         $result_var_types = null;
-
-        if (!$existing_var_type) {
-            return Type::getMixed();
-        }
 
         if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
             return $existing_var_type;
@@ -646,6 +647,7 @@ class TypeChecker
 
             if (empty($existing_var_type->types)) {
                 if ($key) {
+
                     if (IssueBuffer::accepts(
                         new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number),
                         $suppressed_issues
