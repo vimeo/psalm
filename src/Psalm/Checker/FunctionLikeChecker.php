@@ -525,4 +525,143 @@ abstract class FunctionLikeChecker implements StatementsSource
 
         return implode('', $return_type_tokens);
     }
+
+    /**
+     * Does the input param type match the given param type
+     * @param  Type\Union $input_type
+     * @param  Type\Union $param_type
+     * @param  bool       &$has_scalar_match
+     * @return bool
+     */
+    public static function doesParamMatch(Type\Union $input_type, Type\Union $param_type, &$has_scalar_match = null)
+    {
+        $has_scalar_match = true;
+
+        if ($param_type->isMixed()) {
+            return true;
+        }
+
+        if ($input_type->isMixed()) {
+            // @todo make this a config
+            return true;
+        }
+
+        $type_match_found = false;
+        $has_type_mismatch = false;
+
+        foreach ($input_type->types as $input_type_part) {
+            if ($input_type_part->isNull()) {
+                continue;
+            }
+
+            $type_match_found = false;
+            $scalar_type_match_found = false;
+
+            foreach ($param_type->types as $param_type_part) {
+                if ($param_type_part->isNull()) {
+                    continue;
+                }
+
+                if ($input_type_part->value === $param_type_part->value ||
+                    ClassChecker::classExtendsOrImplements($input_type_part->value, $param_type_part->value) ||
+                    StatementsChecker::isMock($input_type_part->value)
+                ) {
+                    $type_match_found = true;
+                    break;
+                }
+
+                if ($input_type_part->value === 'false' && $param_type_part->value === 'bool') {
+                    $type_match_found = true;
+                }
+
+                if ($input_type_part->value === 'int' && $param_type_part->value === 'float') {
+                    $type_match_found = true;
+                }
+
+                if ($param_type_part->isNumeric() && $input_type_part->isNumericType()) {
+                    $type_match_found = true;
+                }
+
+                if ($param_type_part->isCallable() && ($input_type_part->value === 'string' || $input_type_part->value === 'array')) {
+                    // @todo add value checks if possible here
+                    $type_match_found = true;
+                }
+
+                if ($input_type_part->isScalarType()) {
+                    if ($param_type_part->isScalarType()) {
+                        $scalar_type_match_found = true;
+                    }
+                }
+                else if ($param_type_part->isObject()) {
+                    $type_match_found = true;
+                }
+
+                if (ClassChecker::classExtendsOrImplements($param_type_part->value, $input_type_part->value)) {
+                    // @todo handle coercion
+                    $type_match_found = true;
+                    break;
+                }
+
+            }
+
+            if (!$type_match_found) {
+                if (!$scalar_type_match_found) {
+                    $has_scalar_match = false;
+                }
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function getParamsById($method_id, array $args, $file_name)
+    {
+        if (strpos($method_id, '::')) {
+            return MethodChecker::getMethodParams($method_id);
+        }
+
+        $function_param_options = FunctionChecker::getParamsFromCallMap($method_id, $args);
+
+        if ($function_param_options === null) {
+            return FunctionChecker::getParams($method_id, $file_name);
+        }
+
+        $function_params = null;
+
+        if (count($function_param_options) === 1) {
+            return $function_param_options[0];
+        }
+
+        foreach ($function_param_options as $possible_function_params) {
+            $all_args_match = true;
+
+            foreach ($args as $argument_offset => $arg) {
+                if (count($function_params) < $argument_offset) {
+                    break;
+                }
+
+                $param_type = $possible_function_params[$argument_offset]['type'];
+
+                if (!isset($arg->value->inferredType)) {
+                    continue;
+                }
+
+                if (FunctionLikeChecker::doesParamMatch($arg->value->inferredType, $param_type)) {
+                    continue;
+                }
+
+                $all_args_match = false;
+                break;
+            }
+
+            if ($all_args_match) {
+                return $possible_function_params;
+            }
+        }
+
+        // if we don't succeed in finding a match, set to the first possible and wait for issues below
+        return $function_param_options[0];
+    }
 }
