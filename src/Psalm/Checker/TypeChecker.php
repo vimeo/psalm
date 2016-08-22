@@ -566,12 +566,7 @@ class TypeChecker
 
             $new_type_parts = explode('&', $new_types[$key]);
 
-            $result_type = isset($existing_types[$key]) ? clone $existing_types[$key] : null;
-
-            if (!$result_type) {
-                $result_type = Type::getMixed();
-                continue;
-            }
+            $result_type = isset($existing_types[$key]) ? clone $existing_types[$key] : Type::getMixed();
 
             foreach ($new_type_parts as $new_type_part) {
                 $result_type = self::reconcileTypes(
