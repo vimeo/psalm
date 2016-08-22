@@ -625,7 +625,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         $function_param_options = FunctionChecker::getParamsFromCallMap($method_id, $args);
 
         if ($function_param_options === null) {
-            return FunctionChecker::getParams($method_id, $file_name);
+            return FunctionChecker::getParams(strtolower($method_id), $file_name);
         }
 
         $function_params = null;
@@ -638,7 +638,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $all_args_match = true;
 
             foreach ($args as $argument_offset => $arg) {
-                if (count($function_params) < $argument_offset) {
+                if (count($possible_function_params) < $argument_offset) {
                     break;
                 }
 
