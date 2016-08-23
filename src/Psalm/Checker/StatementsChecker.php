@@ -319,12 +319,7 @@ class StatementsChecker
 
         $has_leaving_statments = $has_ending_statments || ScopeChecker::doesLeaveBlock($stmt->stmts, true, true);
 
-        // we only need to negate the if types if there are throw/return/break/continue or else/elseif blocks
-        $need_to_negate_if_types = $has_leaving_statments || $stmt->elseifs || $stmt->else;
-
-        $negated_types = $negatable_if_types && $need_to_negate_if_types
-                            ? TypeChecker::negateTypes($negatable_if_types)
-                            : [];
+        $negated_types = $negatable_if_types ? TypeChecker::negateTypes($negatable_if_types) : [];
 
         $negated_if_types = $negated_types;
 
@@ -350,7 +345,26 @@ class StatementsChecker
         $old_if_context = clone $if_context;
         $context->vars_possibly_in_scope = array_merge($if_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
-        $pre_assignment_redefined_vars = Context::getRedefinedVars($context, $if_context);
+        $else_context = clone $original_context;
+
+        if ($negated_types) {
+            $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                $negated_types,
+                $else_context->vars_in_scope,
+                $this->file_name,
+                $stmt->getLine(),
+                $this->suppressed_issues
+            );
+
+            if ($else_vars_reconciled === false) {
+                return false;
+            }
+            $else_context->vars_in_scope = $else_vars_reconciled;
+        }
+
+        // we calculate the vars redefined in a hypothetical else statement to determine
+        // which vars of the if we can safely change
+        $pre_assignment_else_redefined_vars = Context::getRedefinedVars($context, $else_context);
 
         if ($this->check($stmt->stmts, $if_context, $for_vars_possibly_in_scope) === false) {
             return false;
@@ -397,7 +411,7 @@ class StatementsChecker
                     $old_if_context,
                     $if_context,
                     $has_leaving_statments,
-                    array_intersect(array_keys($pre_assignment_redefined_vars), array_keys($negatable_if_types)),
+                    array_intersect(array_keys($pre_assignment_else_redefined_vars), array_keys($negatable_if_types)),
                     $updated_vars
                 );
             }
@@ -546,23 +560,6 @@ class StatementsChecker
         }
 
         if ($stmt->else) {
-            $else_context = clone $original_context;
-
-            if ($negated_types) {
-                $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
-                    $negated_types,
-                    $else_context->vars_in_scope,
-                    $this->file_name,
-                    $stmt->getLine(),
-                    $this->suppressed_issues
-                );
-
-                if ($else_vars_reconciled === false) {
-                    return false;
-                }
-                $else_context->vars_in_scope = $else_vars_reconciled;
-            }
-
             $old_else_context = clone $else_context;
 
             if ($this->check($stmt->else->stmts, $else_context, $for_vars_possibly_in_scope) === false) {

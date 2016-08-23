@@ -616,7 +616,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         return true;
     }
 
-    public function getParamsById($method_id, array $args, $file_name)
+    public static function getParamsById($method_id, array $args, $file_name)
     {
         if (strpos($method_id, '::')) {
             return MethodChecker::getMethodParams($method_id);
