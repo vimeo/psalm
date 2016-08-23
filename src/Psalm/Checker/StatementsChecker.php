@@ -384,6 +384,7 @@ class StatementsChecker
 
                 $redefined_vars = Context::getRedefinedVars($context, $if_context);
                 $possibly_redefined_vars = $redefined_vars;
+
             }
             elseif (!$stmt->else && !$stmt->elseifs && $negated_types) {
                 $context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
@@ -565,6 +566,23 @@ class StatementsChecker
         }
 
         if ($stmt->else) {
+            $else_context = clone $original_context;
+
+            if ($negated_types) {
+                $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $negated_types,
+                    $else_context->vars_in_scope,
+                    $this->file_name,
+                    $stmt->getLine(),
+                    $this->suppressed_issues
+                );
+
+                if ($else_vars_reconciled === false) {
+                    return false;
+                }
+                $else_context->vars_in_scope = $else_vars_reconciled;
+            }
+
             $old_else_context = clone $else_context;
 
             if ($this->check($stmt->else->stmts, $else_context, $loop_context) === false) {
