@@ -3,6 +3,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Type;
+use Psalm\Context;
 
 use PhpParser;
 use PhpParser\ParserFactory;
@@ -1099,6 +1100,53 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testUnionTypeFlowWithThrow()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        /** @var One|null */
+        $var = null;
+
+        if (!$var) {
+            throw new \Exception("some exception");
+        }
+        else {
+            $var->foo();
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testUnionTypeFlowWithElseif()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class One {
+            public function foo() {}
+        }
+
+        /** @var One|null */
+        $var = null;
+
+        if (rand(0,100) === 5) {
+
+        }
+        elseif (!$var) {
+
+        }
+        else {
+            $var->foo();
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     /**
      * @expectedException Psalm\Exception\CodeException
      */
@@ -1129,15 +1177,6 @@ class TypeTest extends PHPUnit_Framework_TestCase
         class One {
             public function foo() {}
         }
-
-        class Two {
-            public function bar() {}
-        }
-
-        class Three {
-            public function baz() {}
-        }
-
 
         $var = new One();
 
@@ -1402,5 +1441,44 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
+    }
+
+    public function testAssignInsideForeach()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $b = false;
+
+        foreach ([1, 2, 3, 4] as $a) {
+            if ($a === rand(0, 10)) {
+                $b = true;
+            }
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+
+        $this->assertSame('bool', (string) $context->vars_in_scope['b']);
+    }
+
+    public function testAssignInsideForeachWithBreak()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $b = false;
+
+        foreach ([1, 2, 3, 4] as $a) {
+            if ($a === rand(0, 10)) {
+                $b = true;
+                break;
+            }
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+
+        $this->assertSame('bool', (string) $context->vars_in_scope['b']);
     }
 }
