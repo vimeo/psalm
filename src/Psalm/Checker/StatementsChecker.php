@@ -108,11 +108,11 @@ class StatementsChecker
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node>        $stmts
-     * @param  array<Type\Union>            &$context->vars_in_scope
-     * @param  array                        &$context->vars_possibly_in_scope
+     * @param  Context                      $context
+     * @param  Context|null                 $loop_context
      * @return null|false
      */
-    public function check(array $stmts, Context $context, array &$for_vars_possibly_in_scope = [])
+    public function check(array $stmts, Context $context, Context $loop_context = null)
     {
         $has_returned = false;
 
@@ -139,7 +139,7 @@ class StatementsChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $this->checkIf($stmt, $context, $for_vars_possibly_in_scope);
+                $this->checkIf($stmt, $context, $loop_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 $this->checkTryCatch($stmt, $context);
@@ -175,7 +175,7 @@ class StatementsChecker
                 $this->checkThrow($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
-                $this->checkSwitch($stmt, $context, $for_vars_possibly_in_scope);
+                $this->checkSwitch($stmt, $context, $loop_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
@@ -291,12 +291,11 @@ class StatementsChecker
      *
      *
      * @param  PhpParser\Node\Stmt\If_ $stmt
-     * @param  array                   &$context->vars_in_scope
-     * @param  array                   &$context->vars_possibly_in_scope
-     * @param  array                   &$for_vars_possibly_in_scope
+     * @param  Context                 $context
+     * @param  Context|null            $loop_context
      * @return null|false
      */
-    protected function checkIf(PhpParser\Node\Stmt\If_ $stmt, Context $context, array &$for_vars_possibly_in_scope)
+    protected function checkIf(PhpParser\Node\Stmt\If_ $stmt, Context $context, Context $loop_context = null)
     {
         $if_context = clone $context;
 
@@ -366,7 +365,7 @@ class StatementsChecker
         // which vars of the if we can safely change
         $pre_assignment_else_redefined_vars = Context::getRedefinedVars($context, $else_context);
 
-        if ($this->check($stmt->stmts, $if_context, $for_vars_possibly_in_scope) === false) {
+        if ($this->check($stmt->stmts, $if_context, $loop_context) === false) {
             return false;
         }
 
@@ -403,17 +402,23 @@ class StatementsChecker
                 $mic_drop = true;
             }
 
-            // update the parent context as necessary, but only if we can safely reason about type negation.
-            // We only update vars that changed both at the start of the if block and then again by an assignment
-            // in the if statement.
-            if ($negatable_if_types && !$mic_drop) {
-                $context->update(
-                    $old_if_context,
-                    $if_context,
-                    $has_leaving_statments,
-                    array_intersect(array_keys($pre_assignment_else_redefined_vars), array_keys($negatable_if_types)),
-                    $updated_vars
-                );
+            if (!$mic_drop) {
+                // update the parent context as necessary, but only if we can safely reason about type negation.
+                // We only update vars that changed both at the start of the if block and then again by an assignment
+                // in the if statement.
+                if ($negatable_if_types) {
+                    $context->update(
+                        $old_if_context,
+                        $if_context,
+                        $has_leaving_statments,
+                        array_intersect(array_keys($pre_assignment_else_redefined_vars), array_keys($negatable_if_types)),
+                        $updated_vars
+                    );
+                }
+                elseif ($has_leaving_statments) {
+                    $redefined_vars = Context::getRedefinedVars($loop_context, $if_context);
+                    $possibly_redefined_vars = $redefined_vars;
+                }
             }
 
             if (!$has_ending_statments) {
@@ -421,7 +426,7 @@ class StatementsChecker
 
                 // if we're leaving this block, add vars to outer for loop scope
                 if ($has_leaving_statments) {
-                    $for_vars_possibly_in_scope = array_merge($for_vars_possibly_in_scope, $vars);
+                    $loop_context->vars_possibly_in_scope = array_merge($loop_context->vars_possibly_in_scope, $vars);
                 }
                 else {
                     $new_vars_possibly_in_scope = $vars;
@@ -485,7 +490,7 @@ class StatementsChecker
 
             $old_elseif_context = clone $elseif_context;
 
-            if ($this->check($elseif->stmts, $elseif_context, $for_vars_possibly_in_scope) === false) {
+            if ($this->check($elseif->stmts, $elseif_context, $loop_context) === false) {
                 return false;
             }
 
@@ -550,7 +555,7 @@ class StatementsChecker
 
                     // if we're leaving this block, add vars to outer for loop scope
                     if ($has_leaving_statements) {
-                        $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
+                        $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
                     }
                     else {
                         $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
@@ -562,7 +567,7 @@ class StatementsChecker
         if ($stmt->else) {
             $old_else_context = clone $else_context;
 
-            if ($this->check($stmt->else->stmts, $else_context, $for_vars_possibly_in_scope) === false) {
+            if ($this->check($stmt->else->stmts, $else_context, $loop_context) === false) {
                 return false;
             }
 
@@ -628,7 +633,7 @@ class StatementsChecker
                     $vars = array_diff_key($else_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
                     if ($has_leaving_statements) {
-                        $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
+                        $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
                     }
                     else {
                         $new_vars_possibly_in_scope = array_merge($vars, $new_vars_possibly_in_scope);
@@ -1583,7 +1588,7 @@ class StatementsChecker
             }
         }
 
-        $this->check($stmt->stmts, $for_context, $for_context->vars_possibly_in_scope);
+        $this->check($stmt->stmts, $for_context, $for_context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -1704,7 +1709,7 @@ class StatementsChecker
 
         CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $foreach_context, $this->source, null);
 
-        $this->check($stmt->stmts, $foreach_context, $foreach_context->vars_possibly_in_scope);
+        $this->check($stmt->stmts, $foreach_context, $foreach_context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -2951,7 +2956,7 @@ class StatementsChecker
         return $this->checkExpression($stmt->expr, $context);
     }
 
-    protected function checkSwitch(PhpParser\Node\Stmt\Switch_ $stmt, Context $context, array &$for_vars_possibly_in_scope)
+    protected function checkSwitch(PhpParser\Node\Stmt\Switch_ $stmt, Context $context, Context $loop_context = null)
     {
         $type_candidate_var = null;
 
@@ -3035,7 +3040,7 @@ class StatementsChecker
 
                     // if we're leaving this block, add vars to outer for loop scope
                     if ($case_exit_type === 'continue') {
-                        $for_vars_possibly_in_scope = array_merge($vars, $for_vars_possibly_in_scope);
+                        $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
                     }
                     else {
                         $case_redefined_vars = Context::getRedefinedVars($original_context, $case_context);
