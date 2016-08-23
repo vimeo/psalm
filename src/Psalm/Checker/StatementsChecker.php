@@ -350,6 +350,8 @@ class StatementsChecker
         $old_if_context = clone $if_context;
         $context->vars_possibly_in_scope = array_merge($if_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
+        $pre_assignment_redefined_vars = Context::getRedefinedVars($context, $if_context);
+
         if ($this->check($stmt->stmts, $if_context, $for_vars_possibly_in_scope) === false) {
             return false;
         }
@@ -382,13 +384,22 @@ class StatementsChecker
                 if ($context_vars_reconciled === false) {
                     return false;
                 }
+
                 $context->vars_in_scope = $context_vars_reconciled;
                 $mic_drop = true;
             }
 
-            // update the parent context as necessary, but only if we can safely reason about type negation
+            // update the parent context as necessary, but only if we can safely reason about type negation.
+            // We only update vars that changed both at the start of the if block and then again by an assignment
+            // in the if statement.
             if ($negatable_if_types && !$mic_drop) {
-                $context->update($old_if_context, $if_context, $has_leaving_statments, array_keys($negatable_if_types), $updated_vars);
+                $context->update(
+                    $old_if_context,
+                    $if_context,
+                    $has_leaving_statments,
+                    array_intersect(array_keys($pre_assignment_redefined_vars), array_keys($negatable_if_types)),
+                    $updated_vars
+                );
             }
 
             if (!$has_ending_statments) {
