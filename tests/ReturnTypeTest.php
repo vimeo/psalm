@@ -72,6 +72,52 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testReturnTypeNotEmptyCheckInElseIf()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B {
+            /**
+             * @param string|null $str
+             * @return string
+             */
+            public function bar($str) {
+                if ($str === "badger") {
+                    // do nothing
+                }
+                elseif (empty($str)) {
+                    $str = "";
+                }
+                return $str;
+            }
+        }');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testReturnTypeNotEmptyCheckInElse()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B {
+            /**
+             * @param string|null $str
+             * @return string
+             */
+            public function bar($str) {
+                if (!empty($str)) {
+                    // do nothing
+                }
+                else {
+                    $str = "";
+                }
+                return $str;
+            }
+        }');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testReturnTypeAfterIf()
     {
         $stmts = self::$_parser->parse('<?php

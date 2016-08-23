@@ -1099,21 +1099,15 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    /**
+     * @expectedException Psalm\Exception\CodeException
+     */
     public function testUnnecessaryInstanceof()
     {
         $stmts = self::$_parser->parse('<?php
         class One {
             public function foo() {}
         }
-
-        class Two {
-            public function bar() {}
-        }
-
-        class Three {
-            public function baz() {}
-        }
-
 
         $var = new One();
 
