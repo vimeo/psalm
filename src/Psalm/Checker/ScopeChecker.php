@@ -136,7 +136,61 @@ class ScopeChecker
         return false;
     }
 
-    public static function doesReturnOrThrow(array $stmts)
+    public static function doesAlwaysBreakOrContinue(array $stmts, $ignore_break = false)
+    {
+        if (empty($stmts)) {
+            return false;
+        }
+
+        for ($i = count($stmts) - 1; $i >= 0; $i--) {
+            $stmt = $stmts[$i];
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Continue_ || (!$ignore_break && $stmt instanceof PhpParser\Node\Stmt\Break_)) {
+                return true;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\If_) {
+                $all_branches_break_continue;
+                if (!self::doesAlwaysBreakOrContinue($stmt->stmts, $ignore_break)) {
+                    return false;
+                }
+
+                if (!$stmt->else || !self::doesAlwaysBreakOrContinue($stmt->else->stmts, $ignore_break)) {
+                    return false;
+                }
+
+                foreach ($stmt->elseifs as $elseif) {
+                    if (!self::doesAlwaysBreakOrContinue($elseif->stmts, $ignore_break)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
+                // iterate backwards
+                // in switch statements we only care here about continue
+                for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
+                    $case = $stmt->cases[$i];
+
+                    if (!self::doesAlwaysBreakOrContinue($case->stmts, true)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
+                continue;
+            }
+        }
+
+        return false;
+    }
+
+    public static function doesAlwaysReturnOrThrow(array $stmts)
     {
         if (empty($stmts)) {
             return false;
@@ -153,13 +207,13 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                if ($stmt->else && self::doesReturnOrThrow($stmt->stmts) && self::doesReturnOrThrow($stmt->else->stmts)) {
+                if ($stmt->else && self::doesAlwaysReturnOrThrow($stmt->stmts) && self::doesAlwaysReturnOrThrow($stmt->else->stmts)) {
                     if (empty($stmt->elseifs)) {
                         return true;
                     }
 
                     foreach ($stmt->elseifs as $elseif) {
-                        if (!self::doesReturnOrThrow($elseif->stmts)) {
+                        if (!self::doesAlwaysReturnOrThrow($elseif->stmts)) {
                             return false;
                         }
                     }
@@ -180,7 +234,7 @@ class ScopeChecker
                         return false;
                     }
 
-                    $case_does_return = self::doesReturnOrThrow($case->stmts);
+                    $case_does_return = self::doesAlwaysReturnOrThrow($case->stmts);
 
                     if ($case_does_return) {
                         $has_returned = true;
@@ -199,15 +253,15 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                if (self::doesReturnOrThrow($stmt->stmts)) {
+                if (self::doesAlwaysReturnOrThrow($stmt->stmts)) {
                     return true;
                 }
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                if (self::doesReturnOrThrow($stmt->stmts)) {
+                if (self::doesAlwaysReturnOrThrow($stmt->stmts)) {
                     foreach ($stmt->catches as $catch) {
-                        if (!self::doesReturnOrThrow($catch->stmts)) {
+                        if (!self::doesAlwaysReturnOrThrow($catch->stmts)) {
                             return false;
                         }
                     }

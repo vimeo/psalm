@@ -314,9 +314,9 @@ class StatementsChecker
             $reconcilable_if_types = $negatable_if_types = $this->type_checker->getTypeAssertions($stmt->cond, true);
         }
 
-        $has_ending_statements = ScopeChecker::doesReturnOrThrow($stmt->stmts);
+        $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($stmt->stmts);
 
-        $has_leaving_statements = $has_ending_statements || ScopeChecker::doesLeaveBlock($stmt->stmts, true, true);
+        $has_leaving_statements = $has_ending_statements || ScopeChecker::doesAlwaysBreakOrContinue($stmt->stmts);
 
         $negated_types = $negatable_if_types ? TypeChecker::negateTypes($negatable_if_types) : [];
 
@@ -502,7 +502,10 @@ class StatementsChecker
             }
 
             if (count($elseif->stmts)) {
-                $has_leaving_statements = ScopeChecker::doesLeaveBlock($elseif->stmts, true, true);
+                // has a return/throw at end
+                $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($elseif->stmts);
+
+                $has_leaving_statements = $has_ending_statements || ScopeChecker::doesAlwaysBreakOrContinue($elseif->stmts);
 
                 // update the parent context as necessary
                 $elseif_redefined_vars = Context::getRedefinedVars($original_context, $elseif_context);
@@ -553,9 +556,6 @@ class StatementsChecker
                 if ($negatable_elseif_types) {
                     $context->update($old_elseif_context, $elseif_context, $has_leaving_statements, array_keys($negated_elseif_types), $updated_vars);
                 }
-
-                // has a return/throw at end
-                $has_ending_statements = ScopeChecker::doesReturnOrThrow($elseif->stmts);
 
                 if (!$has_ending_statements) {
                     $vars = array_diff_key($elseif_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
@@ -623,7 +623,10 @@ class StatementsChecker
             }
 
             if (count($stmt->else->stmts)) {
-                $has_leaving_statements = ScopeChecker::doesLeaveBlock($stmt->else->stmts, true, true);
+                // has a return/throw at end
+                $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($stmt->else->stmts);
+
+                $has_leaving_statements = $has_ending_statements || ScopeChecker::doesAlwaysBreakOrContinue($stmt->else->stmts);
 
                 /** @var Context $original_context */
                 $else_redefined_vars = Context::getRedefinedVars($original_context, $else_context);
@@ -677,8 +680,7 @@ class StatementsChecker
                     $context->update($old_else_context, $else_context, $has_leaving_statements, array_keys($negatable_if_types), $updated_vars);
                 }
 
-                // has a return/throw at end
-                $has_ending_statements = ScopeChecker::doesReturnOrThrow($stmt->else->stmts);
+
 
                 if (!$has_ending_statements) {
                     $vars = array_diff_key($else_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
@@ -1647,7 +1649,7 @@ class StatementsChecker
 
             $this->check($catch->stmts, $catch_context);
 
-            if (!ScopeChecker::doesReturnOrThrow($catch->stmts)) {
+            if (!ScopeChecker::doesAlwaysReturnOrThrow($catch->stmts)) {
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {
                     if ($catch->var !== $catch_var && isset($context->vars_in_scope[$catch_var]) && (string) $context->vars_in_scope[$catch_var] !== (string) $type) {
                         $context->vars_in_scope[$catch_var] = Type::combineUnionTypes($context->vars_in_scope[$catch_var], $type);
@@ -3086,13 +3088,13 @@ class StatementsChecker
         for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
             $case = $stmt->cases[$i];
 
-            if (ScopeChecker::doesReturnOrThrow($case->stmts)) {
+            if (ScopeChecker::doesAlwaysReturnOrThrow($case->stmts)) {
                 $last_case_exit_type = 'return_throw';
             }
-            elseif (ScopeChecker::doesEverBreakOrContinue($case->stmts, true)) {
+            elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts, true)) {
                 $last_case_exit_type = 'continue';
             }
-            elseif (ScopeChecker::doesEverBreakOrContinue($case->stmts)) {
+            elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts)) {
                 $last_case_exit_type = 'break';
             }
 
@@ -3131,7 +3133,7 @@ class StatementsChecker
                 $last_stmt = $case->stmts[count($case->stmts) - 1];
 
                 // has a return/throw at end
-                $has_ending_statements = ScopeChecker::doesReturnOrThrow($case->stmts);
+                $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case->stmts);
 
                 if ($case_exit_type !== 'return_throw') {
                     $vars = array_diff_key($case_context->vars_possibly_in_scope, $original_context->vars_possibly_in_scope);

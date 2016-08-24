@@ -77,7 +77,7 @@ class EffectsAnalyser
         }
 
         // if we're at the top level and we're not ending in a return, make sure to add possible null
-        if ($collapse_types && !$last_stmt instanceof PhpParser\Node\Stmt\Return_ && !Checker\ScopeChecker::doesReturnOrThrow($stmts)) {
+        if ($collapse_types && !$last_stmt instanceof PhpParser\Node\Stmt\Return_ && !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts)) {
             $return_types[] = Type::getNull(false);
         }
 
