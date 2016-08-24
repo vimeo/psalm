@@ -504,6 +504,9 @@ class StatementsChecker
             if (count($elseif->stmts)) {
                 $has_leaving_statements = ScopeChecker::doesLeaveBlock($elseif->stmts, true, true);
 
+                // update the parent context as necessary
+                $elseif_redefined_vars = Context::getRedefinedVars($original_context, $elseif_context);
+
                 if (!$has_leaving_statements) {
                     if ($new_vars === null) {
                         $new_vars = array_diff_key($elseif_context->vars_in_scope, $context->vars_in_scope);
@@ -518,9 +521,6 @@ class StatementsChecker
                             }
                         }
                     }
-
-                    // update the parent context as necessary
-                    $elseif_redefined_vars = Context::getRedefinedVars($original_context, $elseif_context);
 
                     if ($redefined_vars === null) {
                         $redefined_vars = $elseif_redefined_vars;
@@ -625,6 +625,9 @@ class StatementsChecker
             if (count($stmt->else->stmts)) {
                 $has_leaving_statements = ScopeChecker::doesLeaveBlock($stmt->else->stmts, true, true);
 
+                /** @var Context $original_context */
+                $else_redefined_vars = Context::getRedefinedVars($original_context, $else_context);
+
                 // if it doesn't end in a return
                 if (!$has_leaving_statements) {
                     if ($new_vars === null) {
@@ -640,9 +643,6 @@ class StatementsChecker
                             }
                         }
                     }
-
-                    /** @var Context $original_context */
-                    $else_redefined_vars = Context::getRedefinedVars($original_context, $else_context);
 
                     if ($redefined_vars === null) {
                         $redefined_vars = $else_redefined_vars;
@@ -1853,7 +1853,7 @@ class StatementsChecker
             $while_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
-        if ($this->check($stmt->stmts, $while_context) === false) {
+        if ($this->check($stmt->stmts, $while_context, $while_context) === false) {
             return false;
         }
 
