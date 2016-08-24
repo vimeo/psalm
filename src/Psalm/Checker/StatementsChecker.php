@@ -244,7 +244,8 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                (new ClassChecker($stmt, $this->source, $stmt->name))->check();
+                $class_checker = new ClassChecker($stmt, $this->source, $stmt->name);
+                $class_checker->file_name = $context->file_name ?: $this->file_name;
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 // do nothing
@@ -3472,7 +3473,10 @@ class StatementsChecker
 
             if (file_exists($path_to_file)) {
                 $include_stmts = FileChecker::getStatementsForFile($path_to_file);
+                $old_file_name = $context->file_name;
+                $context->file_name = $this->file_name = Config::getInstance()->shortenFileName($path_to_file);
                 $this->check($include_stmts, $context);
+                $context->file_name = $this->file_name = $old_file_name;
                 return;
             }
         }

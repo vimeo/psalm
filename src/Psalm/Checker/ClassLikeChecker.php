@@ -22,7 +22,7 @@ abstract class ClassLikeChecker implements StatementsSource
 {
     protected static $SPECIAL_TYPES = ['int', 'string', 'float', 'bool', 'false', 'object', 'empty', 'callable', 'array'];
 
-    protected $file_name;
+    public $file_name;
     protected $class;
     protected $namespace;
     protected $aliased_classes;
