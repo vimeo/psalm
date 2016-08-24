@@ -1481,4 +1481,66 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $this->assertSame('bool', (string) $context->vars_in_scope['b']);
     }
+
+    /**
+     * @expectedException Psalm\Exception\CodeException
+     * @expectedExceptionMessage NullReference
+     */
+    public function testNullCheckInsideForeachWithNoLeaveStatement()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return array<A|null> */
+            public static function loadMultiple()
+            {
+                return [new A, null];
+            }
+
+            public function bar() {
+
+            }
+        }
+
+        foreach (A::loadMultiple() as $a) {
+            if ($a === null) {
+                // do nothing
+            }
+
+            $a->bar();
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check();
+    }
+
+    public function testNullCheckInsideForeachWithContinue()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @return array<A|null> */
+            public static function loadMultiple()
+            {
+                return [new A, null];
+            }
+
+            public function bar() {
+
+            }
+        }
+
+        foreach (A::loadMultiple() as $a) {
+            if ($a === null) {
+                continue;
+            }
+
+            $a->bar();
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check();
+    }
 }

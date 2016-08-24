@@ -146,24 +146,50 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     public function testSwitchVariableWithContinue()
     {
         $stmts = self::$_parser->parse('<?php
-        class B {
-            public function bar() {
-                foreach ([\'a\', \'b\', \'c\'] as $letter) {
-                    switch ($letter) {
-                        case \'a\':
-                            $foo = 1;
-                            break;
-                        case \'b\':
-                            $foo = 2;
-                            break;
-                        default:
-                            continue;
-                    }
-
-                    $moo = $foo;
-                }
+        foreach ([\'a\', \'b\', \'c\'] as $letter) {
+            switch ($letter) {
+                case \'a\':
+                    $foo = 1;
+                    break;
+                case \'b\':
+                    $foo = 2;
+                    break;
+                default:
+                    continue;
             }
-        }');
+
+            $moo = $foo;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testSwitchVariableWithContinueAndIfs()
+    {
+        $stmts = self::$_parser->parse('<?php
+        foreach ([\'a\', \'b\', \'c\'] as $letter) {
+            switch ($letter) {
+                case \'a\':
+                    if (rand(0, 10) === 1) {
+                        continue;
+                    }
+                    $foo = 1;
+                    break;
+                case \'b\':
+                    if (rand(0, 10) === 1) {
+                        continue;
+                    }
+                    $foo = 2;
+                    break;
+                default:
+                    continue;
+            }
+
+            $moo = $foo;
+        }
+        ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
