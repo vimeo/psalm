@@ -578,6 +578,10 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $type_match_found = true;
                 }
 
+                if ($input_type_part->value === 'Closure' && $param_type_part->value === 'callable') {
+                    $type_match_found = true;
+                }
+
                 if ($param_type_part->isNumeric() && $input_type_part->isNumericType()) {
                     $type_match_found = true;
                 }
