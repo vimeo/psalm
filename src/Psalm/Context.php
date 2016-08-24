@@ -71,7 +71,7 @@ class Context
         $redefined_vars = [];
 
         foreach ($original_context->vars_in_scope as $var => $context_type) {
-            if ((string)$new_context->vars_in_scope[$var] !== (string)$context_type) {
+            if (isset($new_context->vars_in_scope[$var]) && (string)$new_context->vars_in_scope[$var] !== (string)$context_type) {
                 $redefined_vars[$var] = $new_context->vars_in_scope[$var];
             }
         }
