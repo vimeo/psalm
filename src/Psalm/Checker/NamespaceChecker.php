@@ -14,6 +14,7 @@ class NamespaceChecker implements StatementsSource
     protected $declared_classes = [];
     protected $aliased_classes = [];
     protected $file_name;
+    protected $include_file_name;
 
     /**
      * @var array
@@ -25,6 +26,7 @@ class NamespaceChecker implements StatementsSource
         $this->namespace = $namespace;
         $this->namespace_name = implode('\\', $this->namespace->name->parts);
         $this->file_name = $source->getFileName();
+        $this->include_file_name = $source->getIncludeFileName();
         $this->suppressed_issues = $source->getSuppressedIssues();
     }
 
@@ -134,6 +136,21 @@ class NamespaceChecker implements StatementsSource
     public function getFileName()
     {
         return $this->file_name;
+    }
+
+    public function getIncludeFileName()
+    {
+        return $this->include_file_name;
+    }
+
+    public function setIncludeFileName($file_name)
+    {
+        $this->include_file_name = $file_name;
+    }
+
+    public function getCheckedFileName()
+    {
+        return $this->include_file_name ?: $this->file_name;
     }
 
     /**

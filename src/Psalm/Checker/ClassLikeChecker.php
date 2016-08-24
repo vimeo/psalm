@@ -22,7 +22,8 @@ abstract class ClassLikeChecker implements StatementsSource
 {
     protected static $SPECIAL_TYPES = ['int', 'string', 'float', 'bool', 'false', 'object', 'empty', 'callable', 'array'];
 
-    public $file_name;
+    protected $file_name;
+    protected $include_file_name;
     protected $class;
     protected $namespace;
     protected $aliased_classes;
@@ -67,6 +68,7 @@ abstract class ClassLikeChecker implements StatementsSource
         $this->namespace = $source->getNamespace();
         $this->aliased_classes = $source->getAliasedClasses();
         $this->file_name = $source->getFileName();
+        $this->include_file_name = $source->getIncludeFileName();
         $this->absolute_class = $absolute_class;
 
         $this->suppressed_issues = $source->getSuppressedIssues();
@@ -506,6 +508,21 @@ abstract class ClassLikeChecker implements StatementsSource
     public function getFileName()
     {
         return $this->file_name;
+    }
+
+    public function getIncludeFileName()
+    {
+        return $this->include_file_name;
+    }
+
+    public function setIncludeFileName($file_name)
+    {
+        $this->include_file_name = $file_name;
+    }
+
+    public function getCheckedFileName()
+    {
+        return $this->include_file_name ?: $this->file_name;
     }
 
     public function getClassLikeChecker()

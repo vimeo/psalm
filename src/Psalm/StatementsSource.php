@@ -21,6 +21,11 @@ interface StatementsSource
 
     public function getFileName();
 
+    /**
+     * @param string $file_name
+     */
+    public function setIncludeFileName($file_name);
+
     public function isStatic();
 
     public function getSource();

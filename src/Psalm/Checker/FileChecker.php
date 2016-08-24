@@ -14,6 +14,7 @@ class FileChecker implements StatementsSource
 {
     protected $real_file_name;
     protected $short_file_name;
+    protected $include_file_name;
     protected $namespace;
     protected $aliased_classes = [];
 
@@ -313,6 +314,21 @@ class FileChecker implements StatementsSource
     public function getFileName()
     {
         return $this->short_file_name;
+    }
+
+    public function getIncludeFileName()
+    {
+        return $this->include_file_name;
+    }
+
+    public function setIncludeFileName($file_name)
+    {
+        $this->include_file_name = $file_name;
+    }
+
+    public function getCheckedFileName()
+    {
+        return $this->include_file_name ?: $this->short_file_name;
     }
 
     /**

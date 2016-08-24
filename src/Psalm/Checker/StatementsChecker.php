@@ -55,6 +55,7 @@ class StatementsChecker
     protected $namespace;
     protected $aliased_classes;
     protected $file_name;
+    protected $include_file_name;
     protected $is_static;
     protected $absolute_class;
     protected $type_checker;
@@ -89,6 +90,7 @@ class StatementsChecker
         $this->check_consts = true;
 
         $this->file_name = $this->source->getFileName();
+        $this->checked_file_name = $this->source->getCheckedFileName();
         $this->aliased_classes = $this->source->getAliasedClasses();
         $this->namespace = $this->source->getNamespace();
         $this->is_static = $this->source->isStatic();
@@ -99,7 +101,7 @@ class StatementsChecker
 
         $config = Config::getInstance();
 
-        $this->check_variables = !$config->excludeIssueInFile('UndefinedVariable', $this->file_name) || $enforce_variable_checks;
+        $this->check_variables = !$config->excludeIssueInFile('UndefinedVariable', $this->checked_file_name) || $enforce_variable_checks;
 
         $this->type_checker = new TypeChecker($source, $this);
     }
@@ -128,13 +130,13 @@ class StatementsChecker
 
         foreach ($stmts as $stmt) {
             foreach (Config::getInstance()->getPlugins() as $plugin) {
-                if ($plugin->checkStatement($stmt, $context, $this->file_name) === false) {
+                if ($plugin->checkStatement($stmt, $context, $this->checked_file_name) === false) {
                     return false;
                 }
             }
 
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)) {
-                echo('Warning: Expressions after return/throw/continue in ' . $this->file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
+                echo('Warning: Expressions after return/throw/continue in ' . $this->checked_file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
                 break;
             }
 
@@ -244,8 +246,7 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                $class_checker = new ClassChecker($stmt, $this->source, $stmt->name);
-                $class_checker->file_name = $context->file_name ?: $this->file_name;
+                (new ClassChecker($stmt, $this->source, $stmt->name))->check();
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 // do nothing
@@ -263,7 +264,7 @@ class StatementsChecker
                 $namespace_checker = new NamespaceChecker($stmt, $this->source);
                 $namespace_checker->check(true);
             } else {
-                var_dump('Unrecognised statement in ' . $this->file_name);
+                var_dump('Unrecognised statement in ' . $this->checked_file_name);
                 var_dump($stmt);
             }
         }
@@ -329,7 +330,7 @@ class StatementsChecker
                 TypeChecker::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
-                    $this->file_name,
+                    $this->checked_file_name,
                     $stmt->getLine(),
                     $this->suppressed_issues
                 );
@@ -351,7 +352,7 @@ class StatementsChecker
             $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $negated_types,
                 $else_context->vars_in_scope,
-                $this->file_name,
+                $this->checked_file_name,
                 $stmt->getLine(),
                 $this->suppressed_issues
             );
@@ -395,7 +396,7 @@ class StatementsChecker
                 $context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                     $negated_types,
                     $context->vars_in_scope,
-                    $this->file_name,
+                    $this->checked_file_name,
                     $stmt->getLine(),
                     $this->suppressed_issues
                 );
@@ -449,7 +450,7 @@ class StatementsChecker
                 $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                     $negated_types,
                     $elseif_context->vars_in_scope,
-                    $this->file_name,
+                    $this->checked_file_name,
                     $stmt->getLine(),
                     $this->suppressed_issues
                 );
@@ -479,7 +480,7 @@ class StatementsChecker
                 $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                     $reconcilable_elseif_types,
                     $elseif_context->vars_in_scope,
-                    $this->file_name,
+                    $this->checked_file_name,
                     $stmt->getLine(),
                     $this->suppressed_issues
                 );
@@ -606,7 +607,7 @@ class StatementsChecker
                 $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                     $negated_types,
                     $else_context->vars_in_scope,
-                    $this->file_name,
+                    $this->checked_file_name,
                     $stmt->getLine(),
                     $this->suppressed_issues
                 );
@@ -791,7 +792,7 @@ class StatementsChecker
     protected function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $array_assignment = false)
     {
         foreach (Config::getInstance()->getPlugins() as $plugin) {
-            if ($plugin->checkExpression($stmt, $context, $this->file_name) === false) {
+            if ($plugin->checkExpression($stmt, $context, $this->checked_file_name) === false) {
                 return false;
             }
         }
@@ -989,7 +990,7 @@ class StatementsChecker
 
             if ($stmt->class instanceof PhpParser\Node\Name && !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($this->check_classes) {
-                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
@@ -1029,7 +1030,7 @@ class StatementsChecker
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(
-                new ForbiddenCode('Use of shell_exec', $this->file_name, $stmt->getLine()),
+                new ForbiddenCode('Use of shell_exec', $this->checked_file_name, $stmt->getLine()),
                 $this->suppressed_issues
             )) {
                 return false;
@@ -1041,7 +1042,7 @@ class StatementsChecker
             }
 
         } else {
-            var_dump('Unrecognised expression in ' . $this->file_name);
+            var_dump('Unrecognised expression in ' . $this->checked_file_name);
             var_dump($stmt);
         }
     }
@@ -1053,7 +1054,7 @@ class StatementsChecker
     {
         if ($this->is_static && $stmt->name === 'this') {
             if (IssueBuffer::accepts(
-                new InvalidStaticVariable('Invalid reference to $this in a static context', $this->file_name, $stmt->getLine()),
+                new InvalidStaticVariable('Invalid reference to $this in a static context', $this->checked_file_name, $stmt->getLine()),
                 $this->suppressed_issues
             )) {
                 return false;
@@ -1102,7 +1103,7 @@ class StatementsChecker
                 }
                 else {
                     IssueBuffer::add(
-                        new UndefinedVariable('Cannot find referenced variable $' . $var_name, $this->file_name, $stmt->getLine())
+                        new UndefinedVariable('Cannot find referenced variable $' . $var_name, $this->checked_file_name, $stmt->getLine())
                     );
 
                     return false;
@@ -1115,7 +1116,7 @@ class StatementsChecker
                 if (IssueBuffer::accepts(
                     new PossiblyUndefinedVariable(
                         'Possibly undefined variable $' . $var_name .', first seen on line ' . $this->all_vars[$var_name],
-                        $this->file_name,
+                        $this->checked_file_name,
                         $stmt->getLine()
                     ),
                     $this->suppressed_issues
@@ -1194,7 +1195,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new NullReference(
                                 'Cannot get property on null variable $' . $var_id,
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -1209,7 +1210,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new NullPropertyFetch(
                                 'Cannot get property on possibly null variable $' . $var_id,
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -1248,7 +1249,7 @@ class StatementsChecker
                                     if (IssueBuffer::accepts(
                                         new NoInterfaceProperties(
                                             'Interfaces cannot have properties',
-                                            $this->file_name,
+                                            $this->checked_file_name,
                                             $stmt->getLine()
                                         ),
                                         $this->suppressed_issues
@@ -1262,7 +1263,7 @@ class StatementsChecker
                                 if (IssueBuffer::accepts(
                                     new UndefinedClass(
                                         'Cannot get properties of undefined class ' . $lhs_type_part->value,
-                                        $this->file_name,
+                                        $this->checked_file_name,
                                         $stmt->getLine()
                                     ),
                                     $this->suppressed_issues
@@ -1296,7 +1297,7 @@ class StatementsChecker
                                     if (IssueBuffer::accepts(
                                         new UndefinedThisProperty(
                                             'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
-                                            $this->file_name,
+                                            $this->checked_file_name,
                                             $stmt->getLine()
                                         ),
                                         $this->suppressed_issues
@@ -1308,7 +1309,7 @@ class StatementsChecker
                                     if (IssueBuffer::accepts(
                                         new UndefinedProperty(
                                             'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
-                                            $this->file_name,
+                                            $this->checked_file_name,
                                             $stmt->getLine()
                                         ),
                                         $this->suppressed_issues
@@ -1379,7 +1380,7 @@ class StatementsChecker
 
             if ($stmt->var->name === 'this' && !$this->source->getClassLikeChecker()) {
                 if (IssueBuffer::accepts(
-                    new InvalidScope('Cannot use $this when not inside class', $this->file_name, $stmt->getLine()),
+                    new InvalidScope('Cannot use $this when not inside class', $this->checked_file_name, $stmt->getLine()),
                     $this->suppressed_issues
                 )) {
                     return false;
@@ -1420,7 +1421,7 @@ class StatementsChecker
                     if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
                             '$' . $var_id . ' with possible non-object type \'' . $lhs_type_part . '\' cannot be assigned to',
-                            $this->file_name,
+                            $this->checked_file_name,
                             $stmt->getLine()
                         ),
                         $this->suppressed_issues
@@ -1460,7 +1461,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -1474,7 +1475,7 @@ class StatementsChecker
                     if (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                            $this->file_name,
+                            $this->checked_file_name,
                             $stmt->getLine()
                         ),
                         $this->suppressed_issues
@@ -1515,7 +1516,7 @@ class StatementsChecker
             if (IssueBuffer::accepts(
                 new MissingPropertyDeclaration(
                     'Missing property declaration for $' . $var_id,
-                    $this->file_name,
+                    $this->checked_file_name,
                     $stmt->getLine()
                 ),
                 $this->suppressed_issues
@@ -1539,7 +1540,7 @@ class StatementsChecker
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignment(
                         '$' . $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' . $assignment_type . '\'',
-                        $this->file_name,
+                        $this->checked_file_name,
                         $stmt->getLine()
                     ),
                     $this->suppressed_issues
@@ -1557,7 +1558,7 @@ class StatementsChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($this->check_classes) {
-                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
@@ -1643,7 +1644,7 @@ class StatementsChecker
             $this->registerVariable($catch->var, $catch->getLine());
 
             if ($this->check_classes) {
-                if (ClassLikeChecker::checkClassName($catch->type, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+                if (ClassLikeChecker::checkClassName($catch->type, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
                     return;
                 }
             }
@@ -1760,7 +1761,7 @@ class StatementsChecker
 
                         case 'null':
                             if (IssueBuffer::accepts(
-                                new NullReference('Cannot iterate over ' . $return_type->value, $this->file_name, $stmt->getLine()),
+                                new NullReference('Cannot iterate over ' . $return_type->value, $this->checked_file_name, $stmt->getLine()),
                                 $this->suppressed_issues
                             )) {
                                 return false;
@@ -1773,7 +1774,7 @@ class StatementsChecker
                         case 'bool':
                         case 'false':
                             if (IssueBuffer::accepts(
-                                new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->file_name, $stmt->getLine()),
+                                new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->checked_file_name, $stmt->getLine()),
                                 $this->suppressed_issues
                             )) {
                                 return false;
@@ -1791,7 +1792,7 @@ class StatementsChecker
                             }
 
                             if ($return_type->value !== 'Traversable' && $return_type->value !== $this->class_name) {
-                                if (ClassLikeChecker::checkAbsoluteClassOrInterface($return_type->value, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                                if (ClassLikeChecker::checkAbsoluteClassOrInterface($return_type->value, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                                     return false;
                                 }
                             }
@@ -1847,7 +1848,7 @@ class StatementsChecker
             $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $while_types,
                 $while_context->vars_in_scope,
-                $this->file_name,
+                $this->checked_file_name,
                 $stmt->getLine(),
                 $this->suppressed_issues
             );
@@ -1907,7 +1908,7 @@ class StatementsChecker
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $left_type_assertions,
                 $context->vars_in_scope,
-                $this->file_name,
+                $this->checked_file_name,
                 $stmt->getLine(),
                 $this->suppressed_issues
             );
@@ -1946,7 +1947,7 @@ class StatementsChecker
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $negated_type_assertions,
                 $context->vars_in_scope,
-                $this->file_name,
+                $this->checked_file_name,
                 $stmt->getLine(),
                 $this->suppressed_issues
             );
@@ -2062,7 +2063,7 @@ class StatementsChecker
 
         if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
             if (IssueBuffer::accepts(
-                new FailedTypeResolution('Cannot assign $' . $var_id . ' to type void', $this->file_name, $stmt->getLine()),
+                new FailedTypeResolution('Cannot assign $' . $var_id . ' to type void', $this->checked_file_name, $stmt->getLine()),
                 $this->suppressed_issues
             )) {
                 return false;
@@ -2109,7 +2110,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new InvalidArrayAssignment(
                                 'Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value,
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -2150,7 +2151,7 @@ class StatementsChecker
             if (IssueBuffer::accepts(
                 new NullReference(
                     'Cannot assign value on possibly null array ' . $var_id,
-                    $this->file_name,
+                    $this->checked_file_name,
                     $line_number
                 ),
                 $this->suppressed_issues
@@ -2171,7 +2172,7 @@ class StatementsChecker
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess',
-                    $this->file_name,
+                    $this->checked_file_name,
                     $line_number
                 ),
                 $this->suppressed_issues
@@ -2228,7 +2229,7 @@ class StatementsChecker
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$this->class_name) {
                 if (IssueBuffer::accepts(
-                    new InvalidScope('Use of $this in non-class context', $this->file_name, $stmt->getLine()),
+                    new InvalidScope('Use of $this in non-class context', $this->checked_file_name, $stmt->getLine()),
                     $this->suppressed_issues
                 )) {
                     return false;
@@ -2284,7 +2285,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new NullReference(
                                 'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $class_type,
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -2301,7 +2302,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new InvalidArgument(
                                 'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable',
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -2315,7 +2316,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new MixedMethodCall(
                                 'Cannot call method ' . $stmt->name . ' on a mixed variable',
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -2333,7 +2334,7 @@ class StatementsChecker
                         ) {
                             $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
                                 $absolute_class,
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine(),
                                 $this->suppressed_issues
                             );
@@ -2356,7 +2357,7 @@ class StatementsChecker
                                 self::$method_call_index[$method_id][] = $this->source->getFileName();
                             }
 
-                            $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+                            $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues);
 
                             if (!$does_method_exist) {
                                 return $does_method_exist;
@@ -2372,7 +2373,7 @@ class StatementsChecker
                                 return false;
                             }
 
-                            if (MethodChecker::checkMethodNotDeprecated($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                            if (MethodChecker::checkMethodNotDeprecated($method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                                 return false;
                             }
 
@@ -2440,7 +2441,7 @@ class StatementsChecker
                 if (!isset($context->vars_possibly_in_scope[$use->var])) {
                     if ($this->check_variables) {
                         IssueBuffer::add(
-                            new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->file_name, $use->getLine())
+                            new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->checked_file_name, $use->getLine())
                         );
 
                         return false;
@@ -2453,7 +2454,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new PossiblyUndefinedVariable(
                                 'Possibly undefined variable $' . $use->var . ', first seen on line ' . $this->all_vars[$use->var],
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $use->getLine()
                             ),
                             $this->suppressed_issues
@@ -2467,7 +2468,7 @@ class StatementsChecker
 
                 if ($this->check_variables) {
                     IssueBuffer::add(
-                        new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->file_name, $use->getLine())
+                        new UndefinedVariable('Cannot find referenced variable $' . $use->var, $this->checked_file_name, $use->getLine())
                     );
 
                     return false;
@@ -2494,7 +2495,7 @@ class StatementsChecker
             if ($stmt->class->parts[0] === 'parent') {
                 if ($this->parent_class === null) {
                     if (IssueBuffer::accepts(
-                        new ParentNotFound('Cannot call method on parent as this class does not extend another', $this->file_name, $stmt->getLine()),
+                        new ParentNotFound('Cannot call method on parent as this class does not extend another', $this->checked_file_name, $stmt->getLine()),
                         $this->suppressed_issues
                     )) {
                         return false;
@@ -2507,7 +2508,7 @@ class StatementsChecker
             }
 
         } elseif ($this->check_classes) {
-            $does_class_exist = ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues);
+            $does_class_exist = ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues);
 
             if (!$does_class_exist) {
                 return $does_class_exist;
@@ -2545,7 +2546,7 @@ class StatementsChecker
                 self::$method_call_index[$method_id][] = $this->source->getFileName();
             }
 
-            $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+            $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues);
 
             if (!$does_method_exist) {
                 return $does_method_exist;
@@ -2556,19 +2557,19 @@ class StatementsChecker
             }
 
             if ($this->is_static) {
-                if (MethodChecker::checkMethodStatic($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                if (MethodChecker::checkMethodStatic($method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                     return false;
                 }
             }
             else {
                 if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
-                    if (MethodChecker::checkMethodStatic($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                    if (MethodChecker::checkMethodStatic($method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
             }
 
-            if (MethodChecker::checkMethodNotDeprecated($method_id, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+            if (MethodChecker::checkMethodNotDeprecated($method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                 return false;
             }
 
@@ -2755,7 +2756,7 @@ class StatementsChecker
         if ($method_id) {
             if (count($args) > count($function_params)) {
                 if (IssueBuffer::accepts(
-                    new TooManyArguments('Too many arguments for method ' . $cased_method_id, $this->file_name, $line_number),
+                    new TooManyArguments('Too many arguments for method ' . $cased_method_id, $this->checked_file_name, $line_number),
                     $this->suppressed_issues
                 )) {
                     return false;
@@ -2770,7 +2771,7 @@ class StatementsChecker
 
                     if (!$param['is_optional']) {
                         if (IssueBuffer::accepts(
-                            new TooFewArguments('Too few arguments for method ' . $cased_method_id, $this->file_name, $line_number),
+                            new TooFewArguments('Too few arguments for method ' . $cased_method_id, $this->checked_file_name, $line_number),
                             $this->suppressed_issues
                         )) {
                             return false;
@@ -2803,7 +2804,7 @@ class StatementsChecker
             default:
                 if (!defined($const_name) && !isset(self::$user_constants[$this->file_name][$const_name])) {
                     if (IssueBuffer::accepts(
-                        new UndefinedConstant('Const ' . $const_name . ' is not defined', $this->file_name, $stmt->getLine()),
+                        new UndefinedConstant('Const ' . $const_name . ' is not defined', $this->checked_file_name, $stmt->getLine()),
                         $this->suppressed_issues
                     )) {
                         return false;
@@ -2819,7 +2820,7 @@ class StatementsChecker
                 $absolute_class = $context->self;
             } else {
                 $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
-                if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                     return false;
                 }
             }
@@ -2830,7 +2831,7 @@ class StatementsChecker
 
             if (!isset($class_constants[$stmt->name])) {
                 if (IssueBuffer::accepts(
-                    new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->file_name, $stmt->getLine()),
+                    new UndefinedConstant('Const ' . $const_id . ' is not defined', $this->checked_file_name, $stmt->getLine()),
                     $this->suppressed_issues
                 )) {
                     return false;
@@ -2872,7 +2873,7 @@ class StatementsChecker
             }
         }
         elseif ($this->check_classes) {
-            if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->file_name, $this->suppressed_issues) === false) {
+            if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
                 return false;
             }
             $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
@@ -2911,12 +2912,12 @@ class StatementsChecker
                 if ($all_class_properties && isset($all_class_properties[$stmt->name])) {
                     // @todo change issue type
                     IssueBuffer::add(
-                        new UndefinedProperty('Static property ' . $var_id . ' is not visible in this context', $this->file_name, $stmt->getLine())
+                        new UndefinedProperty('Static property ' . $var_id . ' is not visible in this context', $this->checked_file_name, $stmt->getLine())
                     );
                 }
                 else {
                     IssueBuffer::add(
-                        new UndefinedProperty('Static property ' . $var_id . ' does not exist', $this->file_name, $stmt->getLine())
+                        new UndefinedProperty('Static property ' . $var_id . ' does not exist', $this->checked_file_name, $stmt->getLine())
                     );
                 }
 
@@ -2975,7 +2976,7 @@ class StatementsChecker
             TypeChecker::reconcileKeyedTypes(
                 $reconcilable_if_types,
                 $t_if_context->vars_in_scope,
-                $this->file_name,
+                $this->checked_file_name,
                 $stmt->getLine(),
                 $this->suppressed_issues
             );
@@ -3000,7 +3001,7 @@ class StatementsChecker
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
-                $this->file_name,
+                $this->checked_file_name,
                 $stmt->getLine(),
                 $this->suppressed_issues
             );
@@ -3024,7 +3025,7 @@ class StatementsChecker
         }
         elseif ($stmt->cond) {
             if (isset($stmt->cond->inferredType)) {
-                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, '', $this->file_name, $stmt->getLine(), $this->suppressed_issues);
+                $if_return_type_reconciled = TypeChecker::reconcileTypes('!empty', $stmt->cond->inferredType, '', $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues);
 
                 if ($if_return_type_reconciled === false) {
                     return false;
@@ -3229,7 +3230,7 @@ class StatementsChecker
             if (IssueBuffer::accepts(
                 new NullReference(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be null, possibly null value provided',
-                    $this->file_name,
+                    $this->checked_file_name,
                     $line_number
                 ),
                 $this->suppressed_issues
@@ -3245,7 +3246,7 @@ class StatementsChecker
                 if (IssueBuffer::accepts(
                     new InvalidScalarArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
-                        $this->file_name,
+                        $this->checked_file_name,
                         $line_number
                     ),
                     $this->suppressed_issues
@@ -3256,7 +3257,7 @@ class StatementsChecker
             else if (IssueBuffer::accepts(
                 new InvalidArgument(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
-                    $this->file_name,
+                    $this->checked_file_name,
                     $line_number
                 ),
                 $this->suppressed_issues
@@ -3285,7 +3286,7 @@ class StatementsChecker
 
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
                 if (IssueBuffer::accepts(
-                    new ForbiddenCode('Unsafe ' . implode('', $method->parts), $this->file_name, $stmt->getLine()),
+                    new ForbiddenCode('Unsafe ' . implode('', $method->parts), $this->checked_file_name, $stmt->getLine()),
                     $this->suppressed_issues
                 )) {
                     return false;
@@ -3374,7 +3375,7 @@ class StatementsChecker
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
                                 'Cannot access value on string variable ' . $var_id . ' using string offset',
-                                $this->file_name,
+                                $this->checked_file_name,
                                 $stmt->getLine()
                             ),
                             $this->suppressed_issues
@@ -3417,7 +3418,7 @@ class StatementsChecker
 
         if (!$this->existing_functions[$function_id]) {
             if (IssueBuffer::accepts(
-                new UndefinedFunction('Function ' . $cased_function_id . ' does not exist', $this->file_name, $stmt->getLine()),
+                new UndefinedFunction('Function ' . $cased_function_id . ' does not exist', $this->checked_file_name, $stmt->getLine()),
                 $this->suppressed_issues
             )) {
                 return false;
@@ -3439,7 +3440,7 @@ class StatementsChecker
             $path_to_file = $stmt->expr->value;
 
             // attempts to resolve using get_include_path dirs
-            $include_path = self::resolveIncludePath($path_to_file, dirname($this->file_name));
+            $include_path = self::resolveIncludePath($path_to_file, dirname($this->checked_file_name));
             $path_to_file = $include_path ? $include_path : $path_to_file;
 
             if ($path_to_file[0] !== '/') {
@@ -3447,7 +3448,7 @@ class StatementsChecker
             }
         }
         else {
-            $path_to_file = self::getPathTo($stmt->expr, $this->file_name);
+            $path_to_file = self::getPathTo($stmt->expr, $this->checked_file_name);
         }
 
         if ($path_to_file) {
@@ -3473,10 +3474,12 @@ class StatementsChecker
 
             if (file_exists($path_to_file)) {
                 $include_stmts = FileChecker::getStatementsForFile($path_to_file);
-                $old_file_name = $context->file_name;
-                $context->file_name = $this->file_name = Config::getInstance()->shortenFileName($path_to_file);
+                $old_include_file_name = $this->include_file_name;
+                $this->include_file_name = Config::getInstance()->shortenFileName($path_to_file);
+                $this->source->setIncludeFileName($this->include_file_name);
                 $this->check($include_stmts, $context);
-                $context->file_name = $this->file_name = $old_file_name;
+                $this->include_file_name = $old_include_file_name;
+                $this->source->setIncludeFileName($old_include_file_name);
                 return;
             }
         }

@@ -18,6 +18,7 @@ abstract class FunctionLikeChecker implements StatementsSource
     protected $function;
     protected $namespace;
     protected $file_name;
+    protected $include_file_name;
     protected $is_static = false;
     protected $absolute_class;
     protected $statements_checker;
@@ -41,6 +42,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         $this->class_name = $source->getClassName();
         $this->class_extends = $source->getParentClass();
         $this->file_name = $source->getFileName();
+        $this->include_file_name = $source->getIncludeFileName();
         $this->absolute_class = $source->getAbsoluteClass();
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
@@ -91,7 +93,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                                     $param->type,
                                     $this->namespace,
                                     $this->getAliasedClasses(),
-                                    $this->file_name,
+                                    $this->getCheckedFileName(),
                                     $this->suppressed_issues
                                 );
                             }
@@ -235,6 +237,21 @@ abstract class FunctionLikeChecker implements StatementsSource
         return $this->file_name;
     }
 
+    public function getIncludeFileName()
+    {
+        return $this->include_file_name;
+    }
+
+    public function setIncludeFileName($file_name)
+    {
+        $this->include_file_name = $file_name;
+    }
+
+    public function getCheckedFileName()
+    {
+        return $this->include_file_name ?: $this->file_name;
+    }
+
     public function isStatic()
     {
         return $this->is_static;
@@ -301,7 +318,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return type was found for method ' . MethodChecker::getCasedMethodId($method_id) . ' but return type \'' . $declared_return_type . '\' was expected',
-                        $this->file_name,
+                        $this->getCheckedFileName(),
                         $this->function->getLine()
                     )
                 )) {
@@ -322,7 +339,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
                             'The given return type \'' . $declared_return_type . '\' for ' . MethodChecker::getCasedMethodId($method_id) . ' is incorrect, got \'' . $inferred_return_type . '\'',
-                            $this->file_name,
+                            $this->getCheckedFileName(),
                             $this->function->getLine()
                         ),
                         $this->getSuppressedIssues()
@@ -345,7 +362,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $param_name .' does not appear in the argument list for ' . $this->getMethodId(),
-                        $this->file_name,
+                        $this->getCheckedFileName(),
                         $method_line_number
                     )
                 )) {
@@ -370,7 +387,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             'Parameter $' . $param_name .' has wrong type \'' . $new_param_type . '\', should be \'' . $function_param_names[$param_name] . '\'',
-                            $this->file_name,
+                            $this->getCheckedFileName(),
                             $method_line_number
                         )
                     )) {
