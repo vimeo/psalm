@@ -1314,6 +1314,9 @@ class StatementsChecker
                                     }
                                 }
 
+                                $context->vars_in_scope[$var_id] = Type::getMixed();
+                                $stmt->inferredType = Type::getMixed();
+
                                 return;
                             }
 
