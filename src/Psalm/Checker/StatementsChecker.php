@@ -1686,7 +1686,7 @@ class StatementsChecker
             }
         }
 
-        $this->check($stmt->stmts, $for_context, $for_context);
+        $this->check($stmt->stmts, $for_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -1807,7 +1807,7 @@ class StatementsChecker
 
         CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $foreach_context, $this->source, null);
 
-        $this->check($stmt->stmts, $foreach_context, $foreach_context);
+        $this->check($stmt->stmts, $foreach_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -1856,7 +1856,7 @@ class StatementsChecker
             $while_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
-        if ($this->check($stmt->stmts, $while_context, $while_context) === false) {
+        if ($this->check($stmt->stmts, $while_context, $context) === false) {
             return false;
         }
 

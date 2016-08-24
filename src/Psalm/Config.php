@@ -31,7 +31,7 @@ class Config
      * Whether or not to use types as defined in docblocks
      * @var boolean
      */
-    public $use_docblock_types = false;
+    public $use_docblock_types = true;
 
     /**
      * Whether or not to throw an exception on first error
