@@ -603,17 +603,26 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $type_match_found = true;
                 }
 
+                if ($param_type_part->isScalar() && $input_type_part->isScalarType()) {
+                    $type_match_found = true;
+                }
+
                 if ($param_type_part->isCallable() && ($input_type_part->value === 'string' || $input_type_part->value === 'array')) {
                     // @todo add value checks if possible here
                     $type_match_found = true;
                 }
 
+                if ($input_type_part->isNumeric()) {
+                    if ($param_type_part->isNumericType()) {
+                        $scalar_type_match_found = true;
+                    }
+                }
                 if ($input_type_part->isScalarType()) {
                     if ($param_type_part->isScalarType()) {
                         $scalar_type_match_found = true;
                     }
                 }
-                else if ($param_type_part->isObject()) {
+                else if ($param_type_part->isObject() && !$input_type_part->isArray() && !$input_type_part->isResource()) {
                     $type_match_found = true;
                 }
 

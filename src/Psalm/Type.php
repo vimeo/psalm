@@ -387,6 +387,17 @@ abstract class Type
         }
     }
 
+    public function isScalar()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'scalar';
+        }
+
+        if ($this instanceof Union) {
+            return isset($this->types['scalar']);
+        }
+    }
+
     public function isCallable()
     {
         if ($this instanceof Atomic) {
