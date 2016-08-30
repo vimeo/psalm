@@ -398,6 +398,17 @@ abstract class Type
         }
     }
 
+    public function isResource()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'resource';
+        }
+
+        if ($this instanceof Union) {
+            return isset($this->types['resource']);
+        }
+    }
+
     public function isCallable()
     {
         if ($this instanceof Atomic) {
