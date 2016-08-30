@@ -274,6 +274,26 @@ class TypeChecker
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
                     $if_types[$var_name] = '!object';
                 }
+                else if (self::hasNumericCheck($conditional->expr)) {
+                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                    $if_types[$var_name] = '!numeric';
+                }
+                else if (self::hasIntCheck($conditional->expr)) {
+                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                    $if_types[$var_name] = '!int';
+                }
+                else if (self::hasFloatCheck($conditional->expr)) {
+                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                    $if_types[$var_name] = '!float';
+                }
+                else if (self::hasResourceCheck($conditional->expr)) {
+                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                    $if_types[$var_name] = '!resource';
+                }
+                else if (self::hasScalarCheck($conditional->expr)) {
+                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                    $if_types[$var_name] = '!scalar';
+                }
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
                 foreach ($conditional->expr->vars as $isset_var) {
@@ -398,6 +418,26 @@ class TypeChecker
             else if (self::hasObjectCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
                 $if_types[$var_name] = 'object';
+            }
+            else if (self::hasNumericCheck($conditional)) {
+                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+                $if_types[$var_name] = 'numeric';
+            }
+            else if (self::hasIntCheck($conditional)) {
+                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+                $if_types[$var_name] = 'int';
+            }
+            else if (self::hasFloatCheck($conditional)) {
+                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+                $if_types[$var_name] = 'float';
+            }
+            else if (self::hasResourceCheck($conditional)) {
+                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+                $if_types[$var_name] = 'resource';
+            }
+            else if (self::hasScalarCheck($conditional)) {
+                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+                $if_types[$var_name] = 'scalar';
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
@@ -534,6 +574,66 @@ class TypeChecker
     protected static function hasObjectCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_object']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_numeric']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasIntCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && ($stmt->name->parts === ['is_int'] || $stmt->name->parts === ['is_integer']|| $stmt->name->parts === ['is_long'])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasFloatCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && ($stmt->name->parts === ['is_float'] || $stmt->name->parts === ['is_real'] || $stmt->name->parts === ['is_double'])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasResourceCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_resource']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasScalarCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_scalar']) {
             return true;
         }
 
