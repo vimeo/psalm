@@ -195,6 +195,54 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testSwitchVariableWithFallthrough()
+    {
+        $stmts = self::$_parser->parse('<?php
+        foreach ([\'a\', \'b\', \'c\'] as $letter) {
+            switch ($letter) {
+                case \'a\':
+                case \'b\':
+                    $foo = 2;
+                    break;
+
+                default:
+                    $foo = 3;
+                    break;
+            }
+
+            $moo = $foo;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testSwitchVariableWithFallthroughStatement()
+    {
+        $stmts = self::$_parser->parse('<?php
+        foreach ([\'a\', \'b\', \'c\'] as $letter) {
+            switch ($letter) {
+                case \'a\':
+                    $bar = 1;
+
+                case \'b\':
+                    $foo = 2;
+                    break;
+
+                default:
+                    $foo = 3;
+                    break;
+            }
+
+            $moo = $foo;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testTryCatchVar()
     {
         $stmts = self::$_parser->parse('<?php
