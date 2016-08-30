@@ -228,17 +228,34 @@ class FunctionChecker extends FunctionLikeChecker
             return Type::getArray();
         }
 
+        $call_map = self::getCallMap();
+
         if ($call_map_key === 'array_map') {
-            if (isset($call_args[0]) && $call_args[0]->value instanceof PhpParser\Node\Expr\Closure) {
-                $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($call_args[0]->value->stmts, true);
+            if (isset($call_args[0])) {
+                if ($call_args[0]->value instanceof PhpParser\Node\Expr\Closure) {
+                    $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($call_args[0]->value->stmts, true);
 
-                if (!$closure_return_types) {
-                    // @todo report issue
+                    if (!$closure_return_types) {
+                        // @todo report issue
+                    }
+                    else {
+                        $inner_type = new Type\Union($closure_return_types);
+
+                        return new Type\Union([new Type\Generic('array', [$inner_type])]);
+                    }
                 }
-                else {
-                    $inner_type = new Type\Union($closure_return_types);
+                elseif ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                    $mapped_function_id = strtolower($call_args[0]->value->value);
 
-                    return new Type\Union([new Type\Generic('array', [$inner_type])]);
+                    if (isset($call_map[$mapped_function_id][0])) {
+                        if ($call_map[$mapped_function_id][0]) {
+                            $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
+                            return new Type\Union([new Type\Generic('array', [$mapped_function_return])]);
+                        }
+                    }
+                    else {
+                        // @todo handle array_map('some_custom_function', $arr)
+                    }
                 }
             }
 
@@ -286,8 +303,6 @@ class FunctionChecker extends FunctionLikeChecker
         if ($call_map_key === 'explode') {
             return Type::parseString('array<string>');
         }
-
-        $call_map = self::getCallMap();
 
         if (!isset($call_map[$call_map_key]) || !$call_map[$call_map_key][0]) {
             return Type::getMixed();
