@@ -129,7 +129,9 @@ class TypeChecker
         }
         else if ($conditional instanceof PhpParser\Node\Expr\Assign) {
             $var_name = StatementsChecker::getVarId($conditional->var);
-            $if_types[$var_name] = '!empty';
+            if ($var_name) {
+                $if_types[$var_name] = '!empty';
+            }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
             if ($conditional->expr instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -252,47 +254,69 @@ class TypeChecker
             elseif ($conditional->expr instanceof PhpParser\Node\Expr\FuncCall) {
                 if (self::hasNullCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!null';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!null';
+                    }
                 }
                 else if (self::hasIsACheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!' . $conditional->expr->args[1]->value->value;
+                    if ($var_name) {
+                        $if_types[$var_name] = '!' . $conditional->expr->args[1]->value->value;
+                    }
                 }
                 else if (self::hasArrayCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!array';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!array';
+                    }
                 }
                 else if (self::hasBoolCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!bool';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!bool';
+                    }
                 }
                 else if (self::hasStringCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!string';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!string';
+                    }
                 }
                 else if (self::hasObjectCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!object';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!object';
+                    }
                 }
                 else if (self::hasNumericCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!numeric';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!numeric';
+                    }
                 }
                 else if (self::hasIntCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!int';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!int';
+                    }
                 }
                 else if (self::hasFloatCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!float';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!float';
+                    }
                 }
                 else if (self::hasResourceCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!resource';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!resource';
+                    }
                 }
                 else if (self::hasScalarCheck($conditional->expr)) {
                     $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    $if_types[$var_name] = '!scalar';
+                    if ($var_name) {
+                        $if_types[$var_name] = '!scalar';
+                    }
                 }
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
@@ -397,47 +421,69 @@ class TypeChecker
         elseif ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
             if (self::hasNullCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'null';
+                if ($var_name) {
+                    $if_types[$var_name] = 'null';
+                }
             }
             else if (self::hasIsACheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = $conditional->args[1]->value->value;
+                if ($var_name) {
+                    $if_types[$var_name] = $conditional->args[1]->value->value;
+                }
             }
             else if (self::hasArrayCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'array';
+                if ($var_name) {
+                    $if_types[$var_name] = 'array';
+                }
             }
             else if (self::hasStringCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'string';
+                if ($var_name) {
+                    $if_types[$var_name] = 'string';
+                }
             }
             else if (self::hasBoolCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'bool';
+                if ($var_name) {
+                    $if_types[$var_name] = 'bool';
+                }
             }
             else if (self::hasObjectCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'object';
+                if ($var_name) {
+                    $if_types[$var_name] = 'object';
+                }
             }
             else if (self::hasNumericCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'numeric';
+                if ($var_name) {
+                    $if_types[$var_name] = 'numeric';
+                }
             }
             else if (self::hasIntCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'int';
+                if ($var_name) {
+                    $if_types[$var_name] = 'int';
+                }
             }
             else if (self::hasFloatCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'float';
+                if ($var_name) {
+                    $if_types[$var_name] = 'float';
+                }
             }
             else if (self::hasResourceCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'resource';
+                if ($var_name) {
+                    $if_types[$var_name] = 'resource';
+                }
             }
             else if (self::hasScalarCheck($conditional)) {
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                $if_types[$var_name] = 'scalar';
+                if ($var_name) {
+                    $if_types[$var_name] = 'scalar';
+                }
             }
         }
         else if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
