@@ -1589,7 +1589,7 @@ class StatementsChecker
             if (method_exists($absolute_class, '__construct')) {
                 $method_id = $absolute_class . '::__construct';
 
-                if ($this->checkFunctionParams($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
+                if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
                     return false;
                 }
             }
@@ -2389,7 +2389,7 @@ class StatementsChecker
             }
         }
 
-        if ($this->checkFunctionParams($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
+        if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
             return false;
         }
     }
@@ -2581,7 +2581,7 @@ class StatementsChecker
             }
         }
 
-        return $this->checkFunctionParams($stmt->args, $method_id, $context, $stmt->getLine());
+        return $this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine());
     }
 
     /**
@@ -2677,7 +2677,7 @@ class StatementsChecker
         return $original_call === $call || strpos($call, '$') !== false ? null : $call;
     }
 
-    protected function checkFunctionParams(array $args, $method_id, Context $context, $line_number)
+    protected function checkFunctionArguments(array $args, $method_id, Context $context, $line_number)
     {
         foreach ($args as $argument_offset => $arg) {
             if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch) {
@@ -3072,8 +3072,6 @@ class StatementsChecker
 
         $original_context = clone $context;
 
-        $case_types = [];
-
         $new_vars_in_scope = null;
         $new_vars_possibly_in_scope = [];
 
@@ -3103,9 +3101,12 @@ class StatementsChecker
             $case_exit_types[$i] = $last_case_exit_type;
         }
 
-        for ($i = 0, $l = count($stmt->cases); $i < $l; $i++) {
+        $leftover_statements = [];
+
+        for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
             $case = $stmt->cases[$i];
             $case_exit_type = $case_exit_types[$i];
+            $case_type = null;
 
             if ($case->cond) {
                 if ($this->checkExpression($case->cond, $context) === false) {
@@ -3113,78 +3114,87 @@ class StatementsChecker
                 }
 
                 if ($type_candidate_var && $case->cond instanceof PhpParser\Node\Scalar\String_) {
-                    $case_types[] = $case->cond->value;
+                    $case_type = $case->cond->value;
                 }
             }
 
-            $last_stmt = null;
+            $switch_vars = $type_candidate_var && $case_type
+                            ? [$type_candidate_var => Type::parseString($case_type)]
+                            : [];
 
-            if ($case->stmts) {
-                $switch_vars = $type_candidate_var && !empty($case_types)
-                                ? [$type_candidate_var => Type::parseString(implode('|', $case_types))]
-                                : [];
-                $case_context = clone $original_context;
+            $case_context = clone $original_context;
 
-                $case_context->vars_in_scope = array_merge($case_context->vars_in_scope, $switch_vars);
-                $case_context->vars_possibly_in_scope = array_merge($case_context->vars_possibly_in_scope, $switch_vars);
+            $case_context->vars_in_scope = array_merge($case_context->vars_in_scope, $switch_vars);
+            $case_context->vars_possibly_in_scope = array_merge($case_context->vars_possibly_in_scope, $switch_vars);
 
-                $old_case_context = clone $case_context;
+            $old_case_context = clone $case_context;
 
-                $this->check($case->stmts, $case_context);
+            $case_stmts = $case->stmts;
 
-                $last_stmt = $case->stmts[count($case->stmts) - 1];
+            // has a return/throw at end
+            $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
+            $has_leaving_statements = ScopeChecker::doesAlwaysBreakOrContinue($case_stmts);
 
-                // has a return/throw at end
-                $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case->stmts);
+            if (!$case_stmts || (!$has_ending_statements && !$has_leaving_statements)) {
+                $case_stmts = array_merge($case_stmts, $leftover_statements);
+                $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
+            }
+            else {
+                $leftover_statements = [];
+            }
 
-                if ($case_exit_type !== 'return_throw') {
-                    $vars = array_diff_key($case_context->vars_possibly_in_scope, $original_context->vars_possibly_in_scope);
+            $this->check($case_stmts, $case_context);
 
-                    // if we're leaving this block, add vars to outer for loop scope
-                    if ($case_exit_type === 'continue') {
-                        $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
+            // has a return/throw at end
+            $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
+
+            if ($case_exit_type !== 'return_throw') {
+                $vars = array_diff_key($case_context->vars_possibly_in_scope, $original_context->vars_possibly_in_scope);
+
+                // if we're leaving this block, add vars to outer for loop scope
+                if ($case_exit_type === 'continue') {
+                    $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
+                }
+                else {
+                    $case_redefined_vars = Context::getRedefinedVars($original_context, $case_context);
+
+                    Type::redefineGenericUnionTypes($case_redefined_vars, $context);
+
+                    if ($redefined_vars === null) {
+                        $redefined_vars = $case_redefined_vars;
                     }
                     else {
-                        $case_redefined_vars = Context::getRedefinedVars($original_context, $case_context);
-
-                        Type::redefineGenericUnionTypes($case_redefined_vars, $context);
-
-                        if ($redefined_vars === null) {
-                            $redefined_vars = $case_redefined_vars;
+                        foreach ($redefined_vars as $redefined_var => $type) {
+                            if (!isset($case_redefined_vars[$redefined_var])) {
+                                unset($redefined_vars[$redefined_var]);
+                            }
                         }
-                        else {
-                            foreach ($redefined_vars as $redefined_var => $type) {
-                                if (!isset($case_redefined_vars[$redefined_var])) {
-                                    unset($redefined_vars[$redefined_var]);
-                                }
+                    }
+
+                    if ($new_vars_in_scope === null) {
+                        $new_vars_in_scope = array_diff_key($case_context->vars_in_scope, $context->vars_in_scope);
+                        $new_vars_possibly_in_scope = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
+                    }
+                    else {
+                        foreach ($new_vars_in_scope as $new_var => $type) {
+                            if (!isset($case_context->vars_in_scope[$new_var])) {
+                                unset($new_vars_in_scope[$new_var]);
                             }
                         }
 
-                        if ($new_vars_in_scope === null) {
-                            $new_vars_in_scope = array_diff_key($case_context->vars_in_scope, $context->vars_in_scope);
-                            $new_vars_possibly_in_scope = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
-                        }
-                        else {
-                            foreach ($new_vars_in_scope as $new_var => $type) {
-                                if (!isset($case_context->vars_in_scope[$new_var])) {
-                                    unset($new_vars_in_scope[$new_var]);
-                                }
-                            }
-
-                            $new_vars_possibly_in_scope = array_merge(
-                                array_diff_key(
-                                    $case_context->vars_possibly_in_scope,
-                                    $context->vars_possibly_in_scope
-                                ),
-                                $new_vars_possibly_in_scope
-                            );
-                        }
+                        $new_vars_possibly_in_scope = array_merge(
+                            array_diff_key(
+                                $case_context->vars_possibly_in_scope,
+                                $context->vars_possibly_in_scope
+                            ),
+                            $new_vars_possibly_in_scope
+                        );
                     }
                 }
             }
 
-            if ($type_candidate_var && ($last_stmt instanceof PhpParser\Node\Stmt\Break_ || $last_stmt instanceof PhpParser\Node\Stmt\Return_)) {
-                $case_types = [];
+            if ($case->stmts) {
+                $leftover_statements = array_merge($leftover_statements, $case->stmts);
             }
 
             if (!$case->cond) {
@@ -3321,7 +3331,7 @@ class StatementsChecker
             }
         }
 
-        if ($this->checkFunctionParams($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
+        if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
             return false;
         }
 
