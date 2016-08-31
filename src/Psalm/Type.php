@@ -488,7 +488,8 @@ abstract class Type
                     $this->value === 'string' ||
                     $this->value === 'float' ||
                     $this->value === 'bool' ||
-                    $this->value === 'false';
+                    $this->value === 'false' ||
+                    $this->value === 'numeric';
         }
 
         return false;

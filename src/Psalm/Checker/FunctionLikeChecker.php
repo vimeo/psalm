@@ -617,7 +617,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                         $scalar_type_match_found = true;
                     }
                 }
-                if ($input_type_part->isScalarType()) {
+                if ($input_type_part->isScalarType() || $input_type_part->isScalar()) {
                     if ($param_type_part->isScalarType()) {
                         $scalar_type_match_found = true;
                     }
