@@ -1747,16 +1747,26 @@ class StatementsChecker
                     }
 
                     if ($return_type instanceof Type\Generic) {
-                        $value_type = $return_type->type_params[0];
+                        $value_type_part = $return_type->type_params[0];
+
+                        if (!$value_type) {
+                            $value_type = $value_type_part;
+                        }
+                        else {
+                            $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                        }
+                        continue;
                     }
 
                     switch ($return_type->value) {
                         case 'mixed':
                         case 'empty':
+                            $value_type = Type::getMixed();
                             break;
 
                         case 'array':
                         case 'object':
+                            $value_type = Type::getMixed();
                             break;
 
                         case 'null':
@@ -1766,6 +1776,8 @@ class StatementsChecker
                             )) {
                                 return false;
                             }
+
+                            $value_type = Type::getMixed();
                             break;
 
                         case 'string':
@@ -1779,6 +1791,7 @@ class StatementsChecker
                             )) {
                                 return false;
                             }
+                            $value_type = Type::getMixed();
                             break;
 
                         default:
@@ -1787,7 +1800,17 @@ class StatementsChecker
                                 $iterator_class_type = MethodChecker::getMethodReturnTypes($iterator_method);
 
                                 if ($iterator_class_type) {
-                                    $value_type = self::fleshOutTypes($iterator_class_type, [], $return_type->value, $iterator_method);
+                                    $value_type_part = self::fleshOutTypes($iterator_class_type, [], $return_type->value, $iterator_method);
+
+                                    if (!$value_type) {
+                                        $value_type = $value_type_part;
+                                    }
+                                    else {
+                                        $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                                    }
+                                }
+                                else {
+                                    $value_type = Type::getMixed();
                                 }
                             }
 
@@ -2277,6 +2300,8 @@ class StatementsChecker
         }
 
         if ($class_type && is_string($stmt->name)) {
+            $return_type = null;
+
             foreach ($class_type->types as $type) {
                 $absolute_class = $type->value;
 
@@ -2377,16 +2402,26 @@ class StatementsChecker
                                 return false;
                             }
 
-                            $return_types = MethodChecker::getMethodReturnTypes($method_id);
+                            $return_type_candidate = MethodChecker::getMethodReturnTypes($method_id);
 
-                            if ($return_types) {
-                                $return_types = self::fleshOutTypes($return_types, $stmt->args, $absolute_class, $method_id);
+                            if ($return_type_candidate) {
+                                $return_type_candidate = self::fleshOutTypes($return_type_candidate, $stmt->args, $absolute_class, $method_id);
 
-                                $stmt->inferredType = $return_types;
+                                if (!$return_type) {
+                                    $return_type = $return_type_candidate;
+                                }
+                                else {
+                                    $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
+                                }
+                            }
+                            else {
+                                $return_type = Type::getMixed();
                             }
                         }
                 }
             }
+
+            $stmt->inferredType = $return_type;
         }
 
         if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
