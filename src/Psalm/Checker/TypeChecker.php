@@ -318,6 +318,12 @@ class TypeChecker
                         $if_types[$var_name] = '!scalar';
                     }
                 }
+                else if (self::hasCallableCheck($conditional->expr)) {
+                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
+                    if ($var_name) {
+                        $if_types[$var_name] = '!callable';
+                    }
+                }
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
                 foreach ($conditional->expr->vars as $isset_var) {
@@ -483,6 +489,12 @@ class TypeChecker
                 $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
                 if ($var_name) {
                     $if_types[$var_name] = 'scalar';
+                }
+            }
+            else if (self::hasCallableCheck($conditional)) {
+                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
+                if ($var_name) {
+                    $if_types[$var_name] = 'callable';
                 }
             }
         }
@@ -680,6 +692,18 @@ class TypeChecker
     protected static function hasScalarCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_scalar']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_callable']) {
             return true;
         }
 
