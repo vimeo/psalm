@@ -7082,7 +7082,7 @@ return [
 'proc_close' => ['int', 'process'=>''],
 'proc_get_status' => ['array', 'process'=>''],
 'proc_nice' => ['bool', 'priority'=>'int'],
-'proc_open' => ['resource', 'command'=>'string', 'descriptorspec'=>'array', '&pipes'=>'array', 'cwd='=>'string', 'env='=>'array', 'other_options='=>'array'],
+'proc_open' => ['resource|false', 'command'=>'string', 'descriptorspec'=>'array', '&pipes'=>'array', 'cwd='=>'string', 'env='=>'array', 'other_options='=>'array'],
 'proc_terminate' => ['bool', 'process'=>'', 'signal='=>'int'],
 'property_exists' => ['bool', 'object_or_class'=>'object|string', 'property_name'=>'string'],
 'ps_add_bookmark' => ['int', 'psdoc'=>'', 'text'=>'string', 'parent='=>'int', 'open='=>'int'],
