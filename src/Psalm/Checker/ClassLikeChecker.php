@@ -195,7 +195,9 @@ abstract class ClassLikeChecker implements StatementsSource
                 $method_map = [];
                 foreach ($stmt->adaptations as $adaptation) {
                     if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
-                        $method_map[strtolower($adaptation->method)] = strtolower($adaptation->newName);
+                        if ($adaptation->method && $adaptation->newName) {
+                            $method_map[strtolower($adaptation->method)] = strtolower($adaptation->newName);
+                        }
                     }
                 }
 

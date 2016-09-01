@@ -150,7 +150,6 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $all_branches_break_continue;
                 if (!self::doesAlwaysBreakOrContinue($stmt->stmts, $ignore_break)) {
                     return false;
                 }

@@ -216,7 +216,7 @@ class FileChecker implements StatementsSource
      */
     public static function getStatementsForFile($file_name)
     {
-        $contents = file_get_contents($file_name);
+        $contents = (string) file_get_contents($file_name);
 
         $stmts = [];
 
@@ -230,7 +230,7 @@ class FileChecker implements StatementsSource
             $cache_location = self::$cache_dir . '/' . $key;
 
             if (is_readable($cache_location)) {
-                $stmts = unserialize(file_get_contents($cache_location));
+                $stmts = unserialize((string) file_get_contents($cache_location));
                 $from_cache = true;
             }
         }
@@ -241,7 +241,7 @@ class FileChecker implements StatementsSource
             $stmts = $parser->parse($contents);
         }
 
-        if (self::$cache_dir) {
+        if (self::$cache_dir && $cache_location) {
             if ($from_cache) {
                 touch($cache_location);
             } else {

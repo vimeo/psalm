@@ -21,6 +21,10 @@ interface StatementsSource
 
     public function getFileName();
 
+    public function getIncludeFileName();
+
+    public function getCheckedFileName();
+
     /**
      * @param string $file_name
      */

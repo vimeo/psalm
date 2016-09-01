@@ -55,6 +55,7 @@ class StatementsChecker
     protected $namespace;
     protected $aliased_classes;
     protected $file_name;
+    protected $checked_file_name;
     protected $include_file_name;
     protected $is_static;
     protected $absolute_class;
@@ -2351,7 +2352,7 @@ class StatementsChecker
                         break;
 
                     case 'static':
-                        $absolute_class = $context->self;
+                        $absolute_class = (string) $context->self;
 
                     default:
                         if (!method_exists($absolute_class, '__call')
@@ -2620,7 +2621,7 @@ class StatementsChecker
     }
 
     /**
-     * @param  Type\Atomic                  $return_type
+     * @param  Type\Union                   $return_type
      * @param  array<PhpParser\Node\Arg>    $args
      * @param  string|null                  $calling_class
      * @param  string|null                  $method_id
@@ -3188,7 +3189,12 @@ class StatementsChecker
 
                 // if we're leaving this block, add vars to outer for loop scope
                 if ($case_exit_type === 'continue') {
-                    $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
+                    if ($loop_context) {
+                        $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
+                    }
+                    else {
+                        // @todo emit InvalidContinue issue
+                    }
                 }
                 else {
                     $case_redefined_vars = Context::getRedefinedVars($original_context, $case_context);
@@ -3254,7 +3260,7 @@ class StatementsChecker
 
     /**
      * @param  Type\Union $input_type
-     * @param  Type\Union $function_params
+     * @param  Type\Union $param_type
      * @param  string     $cased_method_id
      * @param  int        $argument_offset
      * @param  int        $line_number

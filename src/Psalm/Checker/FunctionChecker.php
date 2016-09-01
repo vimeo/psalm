@@ -150,7 +150,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
-     * @return array<array<Type\Union>>|null
+     * @return array<array<array>>|null
      */
     public static function getParamsFromCallMap($function_id)
     {
