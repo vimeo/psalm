@@ -100,6 +100,8 @@ class ProjectChecker
             self::$config = self::getConfigForPath($file_name);
         }
 
+        self::$config->hide_external_errors = self::$config->isInProjectDirs(self::$config->shortenFileName($file_name));
+
         $file_name_parts = explode('.', $file_name);
 
         $extension = array_pop($file_name_parts);

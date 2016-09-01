@@ -153,7 +153,7 @@ class TypeChecker
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
                 $null_position = self::hasNullVariable($conditional->expr);
-                $false_position = self::hasNullVariable($conditional->expr);
+                $false_position = self::hasFalseVariable($conditional->expr);
 
                 if ($null_position !== null) {
                     if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -200,7 +200,7 @@ class TypeChecker
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotEqual) {
                 $null_position = self::hasNullVariable($conditional->expr);
-                $false_position = self::hasNullVariable($conditional->expr);
+                $false_position = self::hasFalseVariable($conditional->expr);
 
                 if ($null_position !== null) {
                     if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -252,78 +252,7 @@ class TypeChecker
                 }
             }
             elseif ($conditional->expr instanceof PhpParser\Node\Expr\FuncCall) {
-                if (self::hasNullCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!null';
-                    }
-                }
-                else if (self::hasIsACheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!' . $conditional->expr->args[1]->value->value;
-                    }
-                }
-                else if (self::hasArrayCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!array';
-                    }
-                }
-                else if (self::hasBoolCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!bool';
-                    }
-                }
-                else if (self::hasStringCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!string';
-                    }
-                }
-                else if (self::hasObjectCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!object';
-                    }
-                }
-                else if (self::hasNumericCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!numeric';
-                    }
-                }
-                else if (self::hasIntCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!int';
-                    }
-                }
-                else if (self::hasFloatCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!float';
-                    }
-                }
-                else if (self::hasResourceCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!resource';
-                    }
-                }
-                else if (self::hasScalarCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!scalar';
-                    }
-                }
-                else if (self::hasCallableCheck($conditional->expr)) {
-                    $var_name = StatementsChecker::getVarId($conditional->expr->args[0]->value);
-                    if ($var_name) {
-                        $if_types[$var_name] = '!callable';
-                    }
-                }
+                self::processFunctionCall($conditional->expr, $if_types, true);
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
                 foreach ($conditional->expr->vars as $isset_var) {
@@ -337,6 +266,7 @@ class TypeChecker
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
             $null_position = self::hasNullVariable($conditional);
             $false_position = self::hasFalseVariable($conditional);
+            $var_name = null;
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -360,10 +290,20 @@ class TypeChecker
             }
             elseif ($false_position) {
                 if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
-                    $var_name = StatementsChecker::getVarId($conditional->left);
+                    if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall) {
+                        self::processFunctionCall($conditional->left, $if_types, true);
+                    }
+                    else {
+                        $var_name = StatementsChecker::getVarId($conditional->left);
+                    }
                 }
                 else if ($false_position === self::ASSIGNMENT_TO_LEFT) {
-                    $var_name = StatementsChecker::getVarId($conditional->right);
+                    if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall) {
+                        self::processFunctionCall($conditional->right, $if_types, true);
+                    }
+                    else {
+                        $var_name = StatementsChecker::getVarId($conditional->right);
+                    }
                 }
                 else {
                     throw new \InvalidArgumentException('Bad null variable position');
@@ -382,6 +322,7 @@ class TypeChecker
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual) {
             $null_position = self::hasNullVariable($conditional);
             $false_position = self::hasFalseVariable($conditional);
+            $true_position = self::hasTrueVariable($conditional);
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -425,78 +366,7 @@ class TypeChecker
             }
         }
         elseif ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
-            if (self::hasNullCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'null';
-                }
-            }
-            else if (self::hasIsACheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = $conditional->args[1]->value->value;
-                }
-            }
-            else if (self::hasArrayCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'array';
-                }
-            }
-            else if (self::hasStringCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'string';
-                }
-            }
-            else if (self::hasBoolCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'bool';
-                }
-            }
-            else if (self::hasObjectCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'object';
-                }
-            }
-            else if (self::hasNumericCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'numeric';
-                }
-            }
-            else if (self::hasIntCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'int';
-                }
-            }
-            else if (self::hasFloatCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'float';
-                }
-            }
-            else if (self::hasResourceCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'resource';
-                }
-            }
-            else if (self::hasScalarCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'scalar';
-                }
-            }
-            else if (self::hasCallableCheck($conditional)) {
-                $var_name = StatementsChecker::getVarId($conditional->args[0]->value);
-                if ($var_name) {
-                    $if_types[$var_name] = 'callable';
-                }
-            }
+            self::processFunctionCall($conditional, $if_types);
         }
         else if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
             $var_name = StatementsChecker::getVarId($conditional->expr);
@@ -514,6 +384,84 @@ class TypeChecker
         }
 
         return $if_types;
+    }
+
+    protected static function processFunctionCall(PhpParser\Node\Expr $expr, array &$if_types, $negate = false)
+    {
+        $prefix = $negate ? '!' : '';
+
+        if (self::hasNullCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'null';
+            }
+        }
+        else if (self::hasIsACheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . $expr->args[1]->value->value;
+            }
+        }
+        else if (self::hasArrayCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'array';
+            }
+        }
+        else if (self::hasBoolCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'bool';
+            }
+        }
+        else if (self::hasStringCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'string';
+            }
+        }
+        else if (self::hasObjectCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'object';
+            }
+        }
+        else if (self::hasNumericCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'numeric';
+            }
+        }
+        else if (self::hasIntCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'int';
+            }
+        }
+        else if (self::hasFloatCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'float';
+            }
+        }
+        else if (self::hasResourceCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'resource';
+            }
+        }
+        else if (self::hasScalarCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'scalar';
+            }
+        }
+        else if (self::hasCallableCheck($expr)) {
+            $var_name = StatementsChecker::getVarId($expr->args[0]->value);
+            if ($var_name) {
+                $if_types[$var_name] = $prefix . 'callable';
+            }
+        }
     }
 
     protected function getInstanceOfTypes(PhpParser\Node\Expr\Instanceof_ $stmt)
@@ -559,6 +507,23 @@ class TypeChecker
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
             $conditional->left->name->parts === ['false']) {
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return null;
+    }
+
+    protected static function hasTrueVariable(PhpParser\Node\Expr\BinaryOp $conditional)
+    {
+        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
+            $conditional->right->name instanceof PhpParser\Node\Name &&
+            $conditional->right->name->parts === ['true']) {
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
+            $conditional->left->name instanceof PhpParser\Node\Name &&
+            $conditional->left->name->parts === ['true']) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 

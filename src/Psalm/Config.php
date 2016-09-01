@@ -47,6 +47,10 @@ class Config
 
     protected $inspect_files;
 
+    /**
+     * The base directory of this config file
+     * @var string
+     */
     protected $base_dir;
 
     protected $file_extensions = ['php'];
@@ -64,6 +68,8 @@ class Config
     ];
 
     protected $mock_classes = [];
+
+    public $hide_external_errors = true;
 
     /**
      * Psalm plugins
@@ -104,6 +110,11 @@ class Config
         if (isset($config_xml['throwExceptionOnError'])) {
             $attribute_text = (string) $config_xml['throwExceptionOnError'];
             $config->throw_exception = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['hideExternalErrors'])) {
+            $attribute_text = (string) $config_xml['hideExternalErrors'];
+            $config->hide_external_errors = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['autoloader'])) {
@@ -227,26 +238,28 @@ class Config
 
         $file_name = $this->shortenFileName($file_name);
 
-        if ($this->getIncludeDirs()) {
-            $in_project_dir = false;
-
-            foreach ($this->getIncludeDirs() as $dir_name) {
-                if (preg_match('/^' . preg_quote($dir_name, '/') . '/', $file_name)) {
-                    $in_project_dir = true;
-                }
-            }
-
-            if (!$in_project_dir) {
+        if ($this->getIncludeDirs() && $this->hide_external_errors) {
+            if (!$this->isInProjectDirs($file_name)) {
                 return true;
             }
         }
-
 
         if (!isset($this->issue_handlers[$issue_type])) {
             return false;
         }
 
         return !$this->issue_handlers[$issue_type]->allows($file_name);
+    }
+
+    public function isInProjectDirs($file_name)
+    {
+        foreach ($this->getIncludeDirs() as $dir_name) {
+            if (preg_match('/^' . preg_quote($dir_name, '/') . '/', $file_name)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getReportingLevel($issue_type)
