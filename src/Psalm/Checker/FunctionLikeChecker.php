@@ -52,6 +52,9 @@ abstract class FunctionLikeChecker implements StatementsSource
     {
         if ($this->function->stmts) {
             $has_context = (bool) count($context->vars_in_scope);
+
+            $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
+
             if ($this instanceof MethodChecker) {
                 if (ClassLikeChecker::getThisClass()) {
                     $hash = $this->getMethodId() . json_encode([$context->vars_in_scope, $context->vars_possibly_in_scope]);
@@ -65,78 +68,80 @@ abstract class FunctionLikeChecker implements StatementsSource
                 elseif ($context->self) {
                     $context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($context->self)]);
                 }
+
+                $function_params = MethodChecker::getMethodParams($this->getMethodId());
             }
-
-            $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
-
-            if ($this->function instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_params = MethodChecker::getMethodParams($this->getMethodId());
-
-                foreach ($method_params as $method_param) {
-                    $context->vars_in_scope[$method_param['name']] = StatementsChecker::fleshOutTypes(
-                        clone $method_param['type'],
-                        [],
-                        $context->self,
-                        $this->getMethodId()
-                    );
-
-                    $statements_checker->registerVariable($method_param['name'], $this->function->getLine());
-                }
+            else if ($this instanceof FunctionChecker) {
+                $function_params = FunctionChecker::getParams($this->getMethodId(), $this->file_name);
             }
-            else {
+            else { // Closure
+
+                $function_params = [];
                 // @todo deprecate this code
                 foreach ($this->function->params as $param) {
-                    if ($param->type) {
-                        if ($param->type instanceof PhpParser\Node\Name) {
-                            if (!in_array($param->type->parts[0], ['self', 'parent'])) {
-                                ClassLikeChecker::checkClassName(
-                                    $param->type,
-                                    $this->namespace,
-                                    $this->getAliasedClasses(),
-                                    $this->getCheckedFileName(),
-                                    $this->suppressed_issues
-                                );
-                            }
-                        }
-                    }
-
                     $is_nullable = $param->default !== null &&
                                     $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
                                     $param->default->name instanceof PhpParser\Node\Name &&
                                     $param->default->name->parts = ['null'];
 
+                    $param_type = null;
+
                     if ($param->type) {
-                        if ($param->type instanceof Type) {
-                            $context->vars_in_scope[$param->name] = clone $param->type;
+                        if (is_string($param->type)) {
+                            $param_type_string = $param->type;
                         }
-                        else {
-                            if (is_string($param->type)) {
-                                $param_type_string = $param->type;
-                            }
-                            elseif ($param->type instanceof PhpParser\Node\Name) {
-                                $param_type_string = $param->type->parts === ['self']
-                                                        ? $this->absolute_class
-                                                        : ClassLikeChecker::getAbsoluteClassFromName(
-                                                            $param->type,
-                                                            $this->namespace,
-                                                            $this->getAliasedClasses()
-                                                        );
-                            }
-
-                            if ($is_nullable) {
-                                $param_type_string .= '|null';
-                            }
-
-                            $context->vars_in_scope[$param->name] = Type::parseString($param_type_string);
+                        elseif ($param->type instanceof PhpParser\Node\Name) {
+                            $param_type_string = $param->type->parts === ['self']
+                                                    ? $this->absolute_class
+                                                    : ClassLikeChecker::getAbsoluteClassFromName(
+                                                        $param->type,
+                                                        $this->namespace,
+                                                        $this->getAliasedClasses()
+                                                    );
                         }
-                    }
-                    else {
-                        $context->vars_in_scope[$param->name] = Type::getMixed();
+
+                        if ($is_nullable) {
+                            $param_type_string .= '|null';
+                        }
+
+                        $param_type = Type::parseString($param_type_string);
                     }
 
-                    $context->vars_possibly_in_scope[$param->name] = true;
-                    $statements_checker->registerVariable($param->name, $param->getLine());
+                    if (!$param_type) {
+                        $param_type = Type::getMixed();
+                    }
+
+                    $function_params[] = [
+                        'name' => $param->name,
+                        'type' => $param_type,
+                    ];
                 }
+            }
+
+            foreach ($function_params as $function_param) {
+                $param_type = StatementsChecker::fleshOutTypes(
+                    clone $function_param['type'],
+                    [],
+                    $context->self,
+                    $this->getMethodId()
+                );
+
+                foreach ($param_type->types as $atomic_type) {
+                    if ($atomic_type->isObjectType()
+                        && ClassLikeChecker::checkAbsoluteClassOrInterface(
+                            $atomic_type->value,
+                            $this->file_name,
+                            $this->function->getLine(),
+                            $this->suppressed_issues
+                        ) === false
+                    ) {
+                        return false;
+                    }
+                }
+
+                $context->vars_in_scope[$function_param['name']] = $param_type;
+
+                $statements_checker->registerVariable($function_param['name'], $this->function->getLine());
             }
 
             $statements_checker->check($this->function->stmts, $context);
