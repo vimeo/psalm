@@ -364,6 +364,21 @@ class TypeChecker
                     }
                 }
             }
+            elseif ($true_position) {
+                if ($true_position === self::ASSIGNMENT_TO_RIGHT) {
+                    if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall) {
+                        self::processFunctionCall($conditional->left, $if_types, true);
+                    }
+                }
+                else if ($true_position === self::ASSIGNMENT_TO_LEFT) {
+                    if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall) {
+                        self::processFunctionCall($conditional->right, $if_types, true);
+                    }
+                }
+                else {
+                    throw new \InvalidArgumentException('Bad null variable position');
+                }
+            }
         }
         elseif ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
             self::processFunctionCall($conditional, $if_types);
@@ -386,7 +401,7 @@ class TypeChecker
         return $if_types;
     }
 
-    protected static function processFunctionCall(PhpParser\Node\Expr $expr, array &$if_types, $negate = false)
+    protected static function processFunctionCall(PhpParser\Node\Expr\FuncCall $expr, array &$if_types, $negate = false)
     {
         $prefix = $negate ? '!' : '';
 
