@@ -205,7 +205,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             return null;
         }
 
-        return ($this->absolute_class ? $this->absolute_class . '::' : '') . strtolower($this->function->name);
+        return ($this instanceof MethodChecker ? $this->absolute_class . '::' : '') . strtolower($this->function->name);
     }
 
     public function getNamespace()
@@ -537,8 +537,12 @@ abstract class FunctionLikeChecker implements StatementsSource
             $return_type_token = Type::fixScalarTerms($return_type_token);
 
             if ($return_type_token[0] === strtoupper($return_type_token[0])) {
-                if ($return_type === '$this') {
-                    $return_type_token = 'static';
+                if ($return_type_token[0] === '$') {
+                    if ($return_type === '$this') {
+                        $return_type_token = 'static';
+
+                    }
+
                     continue;
                 }
 
