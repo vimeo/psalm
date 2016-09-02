@@ -81,6 +81,12 @@ class FileChecker implements StatementsSource
 
         // hoist functions to the top
         foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                foreach ($stmt->uses as $use) {
+                    $this->aliased_classes[$use->alias] = implode('\\', $use->name->parts);
+                }
+            }
+
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checkers[$stmt->name] = new FunctionChecker($stmt, $this, $file_context->file_name);
             }
@@ -133,12 +139,6 @@ class FileChecker implements StatementsSource
                 }
             }
             else {
-                if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                    foreach ($stmt->uses as $use) {
-                        $this->aliased_classes[$use->alias] = implode('\\', $use->name->parts);
-                    }
-                }
-
                 $leftover_stmts[] = $stmt;
             }
         }
