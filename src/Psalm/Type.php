@@ -432,7 +432,7 @@ abstract class Type
 
     public function isObjectType()
     {
-        return $this->isObject() || (!$this->isScalarType() && !$this->isCallable() && !$this->isArray() && !$this->isMixed() && !$this->isNull());
+        return $this->isObject() || (!$this->isScalarType() && !$this->isCallable() && !$this->isArray() && !$this->isMixed() && !$this->isNull() && !$this->isResource());
     }
 
     /**

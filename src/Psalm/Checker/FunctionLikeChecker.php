@@ -128,6 +128,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 foreach ($param_type->types as $atomic_type) {
                     if ($atomic_type->isObjectType()
+                        && !$atomic_type->isObject()
                         && ClassLikeChecker::checkAbsoluteClassOrInterface(
                             $atomic_type->value,
                             $this->file_name,
