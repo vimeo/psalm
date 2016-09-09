@@ -269,7 +269,8 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_map_key === 'array_merge') {
-            $inner_types = [];
+            $inner_value_types = [];
+            $inner_key_types = [];
 
             foreach ($call_args as $call_arg) {
                 if (!isset($call_arg->value->inferredType)) {
@@ -281,17 +282,21 @@ class FunctionChecker extends FunctionLikeChecker
                         return Type::getArray();
                     }
 
-                    if ($type_part->type_params[0]->isEmpty()) {
+                    if ($type_part->type_params[1]->isEmpty()) {
                         continue;
                     }
 
-                    $inner_types = array_merge(array_values($type_part->type_params[0]->types), $inner_types);
+                    $inner_key_types = array_merge(array_values($type_part->type_params[0]->types), $inner_key_types);
+                    $inner_value_types = array_merge(array_values($type_part->type_params[1]->types), $inner_value_types);
                 }
 
                 if ($inner_types) {
                     return new Type\Union([
                         new Type\Generic('array',
-                            [Type::combineTypes($inner_types)]
+                            [
+                                Type::combineTypes($inner_key_types),
+                                Type::combineTypes($inner_value_types)
+                            ]
                         )
                     ]);
                 }

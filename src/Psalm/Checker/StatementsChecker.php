@@ -1601,23 +1601,63 @@ class StatementsChecker
     {
         // if the array is empty, this special type allows us to match any other array type against it
         if (empty($stmt->items)) {
-            $stmt->inferredType = new Type\Union([new Type\Generic('array', [new Type\Union([new Type\Atomic('empty')])], true)]);
+            $stmt->inferredType = new Type\Union([
+                new Type\Generic(
+                    'array',
+                    [
+                        new Type\Union([new Type\Atomic('empty')]),
+                        new Type\Union([new Type\Atomic('empty')])
+                    ]
+                )
+            ]);
             return;
         }
+
+        $item_key_type = null;
+        $item_value_type = null;
 
         foreach ($stmt->items as $item) {
             if ($item->key) {
                 if ($this->checkExpression($item->key, $context) === false) {
                     return false;
                 }
+
+                if (isset($item->key->inferredType)) {
+                    if ($item_key_type) {
+                        $item_key_type = Type::combineUnionTypes($item->key->inferredType, $item_key_type);
+                    }
+                    else {
+                        $item_key_type = $item->key->inferredType;
+                    }
+                }
+            }
+            else {
+                $item_key_type = Type::getInt();
             }
 
             if ($this->checkExpression($item->value, $context) === false) {
                 return false;
             }
+
+            if (isset($item->value->inferredType)) {
+                if ($item_value_type) {
+                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type);
+                }
+                else {
+                    $item_value_type = $item->value->inferredType;
+                }
+            }
         }
 
-        $stmt->inferredType = Type::getArray();
+        $stmt->inferredType = new Type\Union([
+            new Type\Generic(
+                'array',
+                [
+                    $item_key_type,
+                    $item_value_type ?: Type::getMixed()
+                ]
+            )
+        ]);
     }
 
     protected function checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, Context $context)
@@ -1719,119 +1759,133 @@ class StatementsChecker
         $foreach_context = clone $context;
         $foreach_context->in_loop = true;
 
+        $key_type = null;
+        $value_type = null;
+
+        $var_id = self::getVarId($stmt->expr);
+
+        if (isset($stmt->expr->inferredType)) {
+            $iterator_type = $stmt->expr->inferredType;
+        }
+        elseif (isset($foreach_context->vars_in_scope[$var_id])) {
+            $iterator_type = $foreach_context->vars_in_scope[$var_id];
+        }
+        else {
+            $iterator_type = null;
+        }
+
+        if ($iterator_type) {
+            foreach ($iterator_type->types as $return_type) {
+                // if it's an empty array, we cannot iterate over it
+                if ((string) $return_type === 'array<empty, empty>') {
+                    continue;
+                }
+
+                if ($return_type instanceof Type\Generic) {
+                    $value_index = count($return_type->type_params) - 1;
+                    $value_type_part = $return_type->type_params[$value_index];
+
+                    if (!$value_type) {
+                        $value_type = $value_type_part;
+                    }
+                    else {
+                        $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                    }
+
+                    if ($value_index) {
+                        $key_type_part = $return_type->type_params[$key_index];
+
+                        if (!$key_type) {
+                            $key_type = $key_type_part;
+                        }
+                        else {
+                            $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                        }
+                    }
+                    continue;
+                }
+
+                switch ($return_type->value) {
+                    case 'mixed':
+                    case 'empty':
+                        $value_type = Type::getMixed();
+                        break;
+
+                    case 'array':
+                    case 'object':
+                        $value_type = Type::getMixed();
+                        break;
+
+                    case 'null':
+                        if (IssueBuffer::accepts(
+                            new NullReference('Cannot iterate over ' . $return_type->value, $this->checked_file_name, $stmt->getLine()),
+                            $this->suppressed_issues
+                        )) {
+                            return false;
+                        }
+
+                        $value_type = Type::getMixed();
+                        break;
+
+                    case 'string':
+                    case 'void':
+                    case 'int':
+                    case 'bool':
+                    case 'false':
+                        if (IssueBuffer::accepts(
+                            new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->checked_file_name, $stmt->getLine()),
+                            $this->suppressed_issues
+                        )) {
+                            return false;
+                        }
+                        $value_type = Type::getMixed();
+                        break;
+
+                    default:
+                        if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
+                            $iterator_method = $return_type->value . '::current';
+                            $iterator_class_type = MethodChecker::getMethodReturnTypes($iterator_method);
+
+                            if ($iterator_class_type) {
+                                $value_type_part = self::fleshOutTypes($iterator_class_type, [], $return_type->value, $iterator_method);
+
+                                if (!$value_type) {
+                                    $value_type = $value_type_part;
+                                }
+                                else {
+                                    $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                                }
+                            }
+                            else {
+                                $value_type = Type::getMixed();
+                            }
+                        }
+
+                        if ($return_type->value !== 'Traversable' && $return_type->value !== $this->class_name) {
+                            if (ClassLikeChecker::checkAbsoluteClassOrInterface($return_type->value, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                                return false;
+                            }
+                        }
+                }
+            }
+        }
+
         if ($stmt->keyVar) {
-            $foreach_context->vars_in_scope[$stmt->keyVar->name] = Type::getMixed();
+            $foreach_context->vars_in_scope[$stmt->keyVar->name] = $key_type ?: new Type\Union([
+                new Type\Atomic('int'),
+                new Type\Atomic('string')
+            ]);
             $foreach_context->vars_possibly_in_scope[$stmt->keyVar->name] = true;
             $this->registerVariable($stmt->keyVar->name, $stmt->getLine());
         }
 
-        if ($stmt->valueVar) {
-            $value_type = null;
-
-            $var_id = self::getVarId($stmt->expr);
-
-            if (isset($stmt->expr->inferredType)) {
-                $iterator_type = $stmt->expr->inferredType;
-            }
-            elseif (isset($foreach_context->vars_in_scope[$var_id])) {
-                $iterator_type = $foreach_context->vars_in_scope[$var_id];
-            }
-            else {
-                $iterator_type = null;
-            }
-
-            if ($iterator_type) {
-                foreach ($iterator_type->types as $return_type) {
-                    // if it's an empty array, we cannot iterate over it
-                    if ((string) $return_type === 'array<empty>') {
-                        continue;
-                    }
-
-                    if ($return_type instanceof Type\Generic) {
-                        $value_type_part = $return_type->type_params[0];
-
-                        if (!$value_type) {
-                            $value_type = $value_type_part;
-                        }
-                        else {
-                            $value_type = Type::combineUnionTypes($value_type, $value_type_part);
-                        }
-                        continue;
-                    }
-
-                    switch ($return_type->value) {
-                        case 'mixed':
-                        case 'empty':
-                            $value_type = Type::getMixed();
-                            break;
-
-                        case 'array':
-                        case 'object':
-                            $value_type = Type::getMixed();
-                            break;
-
-                        case 'null':
-                            if (IssueBuffer::accepts(
-                                new NullReference('Cannot iterate over ' . $return_type->value, $this->checked_file_name, $stmt->getLine()),
-                                $this->suppressed_issues
-                            )) {
-                                return false;
-                            }
-
-                            $value_type = Type::getMixed();
-                            break;
-
-                        case 'string':
-                        case 'void':
-                        case 'int':
-                        case 'bool':
-                        case 'false':
-                            if (IssueBuffer::accepts(
-                                new InvalidIterator('Cannot iterate over ' . $return_type->value, $this->checked_file_name, $stmt->getLine()),
-                                $this->suppressed_issues
-                            )) {
-                                return false;
-                            }
-                            $value_type = Type::getMixed();
-                            break;
-
-                        default:
-                            if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
-                                $iterator_method = $return_type->value . '::current';
-                                $iterator_class_type = MethodChecker::getMethodReturnTypes($iterator_method);
-
-                                if ($iterator_class_type) {
-                                    $value_type_part = self::fleshOutTypes($iterator_class_type, [], $return_type->value, $iterator_method);
-
-                                    if (!$value_type) {
-                                        $value_type = $value_type_part;
-                                    }
-                                    else {
-                                        $value_type = Type::combineUnionTypes($value_type, $value_type_part);
-                                    }
-                                }
-                                else {
-                                    $value_type = Type::getMixed();
-                                }
-                            }
-
-                            if ($return_type->value !== 'Traversable' && $return_type->value !== $this->class_name) {
-                                if (ClassLikeChecker::checkAbsoluteClassOrInterface($return_type->value, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
-                                    return false;
-                                }
-                            }
-                    }
-                }
-            }
-
-            if ($value_type && $value_type instanceof Type\Atomic) {
-                $value_type = new Type\Union([$value_type]);
-            }
-
-            $foreach_context->vars_in_scope[$stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
-            $foreach_context->vars_possibly_in_scope[$stmt->valueVar->name] = true;
-            $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
+        if ($value_type && $value_type instanceof Type\Atomic) {
+            $value_type = new Type\Union([$value_type]);
         }
+
+        $foreach_context->vars_in_scope[$stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
+        $foreach_context->vars_possibly_in_scope[$stmt->valueVar->name] = true;
+        $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
 
         CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $foreach_context, $this->source, null);
 
@@ -2116,10 +2170,29 @@ class StatementsChecker
         return null;
     }
 
-    protected function checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, Type\Union $assignment_type)
+    protected function checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, Type\Union $assignment_value_type)
     {
+        if ($stmt->dim && $this->checkExpression($stmt->dim, $context, true) === false) {
+            return false;
+        }
+
         if ($this->checkExpression($stmt->var, $context, true) === false) {
             return false;
+        }
+
+        if ($stmt->dim) {
+            if (isset($stmt->dim->inferredType)) {
+                $assignment_key_type = $stmt->dim->inferredType;
+            }
+            else {
+                $assignment_key_type = new Type\Union([
+                    new Type\Atomic('int'),
+                    new Type\Atomic('string')
+                ]);
+            }
+        }
+        else {
+            $assignment_key_type = Type::getInt();
         }
 
         $var_id = self::getVarId($stmt->var);
@@ -2144,7 +2217,8 @@ class StatementsChecker
 
                         continue;
                     }
-                    $refined_type = $this->refineArrayType($type, $assignment_type, $var_id, $stmt->getLine());
+
+                    $refined_type = $this->refineArrayType($type, $assignment_key_type, $assignment_value_type, $var_id, $stmt->getLine());
 
                     if ($refined_type === false) {
                         return false;
@@ -2169,7 +2243,7 @@ class StatementsChecker
      * @param  int         $line_number
      * @return Type\Atomic|null|false
      */
-    protected function refineArrayType(Type\Atomic $type, Type\Union $assignment_type, $var_id, $line_number)
+    protected function refineArrayType(Type\Atomic $type, Type\Union $assignment_key_type, Type\Union $assignment_value_type, $var_id, $line_number)
     {
         if ($type->value === 'null') {
             if (IssueBuffer::accepts(
@@ -2186,7 +2260,7 @@ class StatementsChecker
             return $type;
         }
 
-        foreach ($assignment_type->types as $at) {
+        foreach ($assignment_value_type->types as $at) {
             if ($type->value === 'string' && $at->isString()) {
                 return;
             }
@@ -2208,26 +2282,27 @@ class StatementsChecker
         }
 
         if ($type instanceof Type\Generic) {
-            if ($type->is_empty) {
-                // boil this down to a regular array
-                if ($assignment_type->isMixed()) {
-                    return new Type\Atomic($type->value);
+            if ($type->isArray()) {
+                if ($type->type_params[1]->isEmpty()) {
+                    // boil this down to a regular array
+                    if ($assignment_value_type->isMixed()) {
+                        return Type::getArray();
+                    }
+
+                    $type->type_params[0] = $assignment_key_type;
+                    $type->type_params[1] = $assignment_value_type;
+                    return $type;
                 }
 
-                $type->type_params[0] = $assignment_type;
-                $type->is_empty = false;
-                return $type;
-            }
+                if ((string) $type->type_params[0] !== (string) $assignment_key_type) {
+                    $type->type_params[0] = Type::combineUnionTypes($type->type_params[0], $assignment_key_type);
+                }
 
-            $array_type = $type->type_params[0] instanceof Type\Union ? $type->type_params[0] : new Type\Union([$type->type_params[0]]);
-
-            if ((string) $array_type !== (string) $assignment_type) {
-                $type->type_params[0] = Type::combineUnionTypes($array_type, $assignment_type);
-                return $type;
+                if ((string) $type->type_params[1] !== (string) $assignment_value_type) {
+                    $type->type_params[1] = Type::combineUnionTypes($type->type_params[1], $assignment_value_type);
+                }
             }
         }
-
-
 
         return $type;
     }
@@ -2645,7 +2720,7 @@ class StatementsChecker
      * @param  array<PhpParser\Node\Arg>    $args
      * @param  string|null                  $calling_class
      * @param  string|null                  $method_id
-     * @return void
+     * @return Type\Atomic
      */
     protected static function fleshOutAtomicType(Type\Atomic $return_type, array $args, $calling_class, $method_id)
     {
@@ -2671,7 +2746,7 @@ class StatementsChecker
             }
 
             if ($return_type->value[0] === '$') {
-                $return_type = Type::getMixed(false);
+                $return_type = new Type\Atomic('mixed');
             }
         }
 
@@ -3402,15 +3477,30 @@ class StatementsChecker
         }
 
         $var_type = null;
+        $key_type = null;
 
         if (isset($stmt->var->inferredType)) {
             $var_type = $stmt->var->inferredType;
 
             if ($var_type instanceof Type\Generic) {
                 // create a union type to pass back to the statement
-                $array_type = $var_type->type_params[0] instanceof Type\Union ? $var_type->type_params[0] : new Type\Union([$var_type->type_params[0]]);
-                $stmt->inferredType = $array_type;
+                $value_index = count($var_type->type_params) - 1;
+                $stmt->inferredType = $var_type->type_params[$value_index];
+
+                if ($value_index) {
+                    $key_type = $var_type->type_params[0];
+                }
             }
+            elseif ($var_type->isString()) {
+                $key_type = Type::getInt();
+            }
+        }
+
+        if (!$key_type) {
+            $key_type = new Type\Union([
+                new Type\Atomic('int'),
+                new Type\Atomic('string')
+            ]);
         }
 
         if ($stmt->dim) {
@@ -3418,14 +3508,14 @@ class StatementsChecker
                 return false;
             }
 
-            if (isset($stmt->dim->inferredType) && $var_type && $var_type->isString()) {
+            if (isset($stmt->dim->inferredType) && $key_type) {
                 foreach ($stmt->dim->inferredType->types as $at) {
-                    if ($at->isString()) {
+                    if (!$at->isIn($key_type)) {
                         $var_id = self::getVarId($stmt->var);
 
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
-                                'Cannot access value on string variable ' . $var_id . ' using string offset',
+                                'Cannot access value on variable $' . $var_id . ' using ' . $at . ' offset',
                                 $this->checked_file_name,
                                 $stmt->getLine()
                             ),

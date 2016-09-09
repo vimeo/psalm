@@ -40,7 +40,7 @@ abstract class ClassLikeChecker implements StatementsSource
     protected $suppressed_issues;
 
     /**
-     * @var array<MethodChecker>
+     * @var array<string, MethodChecker>
      */
     protected static $method_checkers = [];
 

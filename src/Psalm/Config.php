@@ -57,6 +57,9 @@ class Config
 
     protected $filetype_handlers = [];
 
+    /**
+     * @var array<string, FileFilter>
+     */
     protected $issue_handlers = [];
 
     protected $custom_error_levels = [

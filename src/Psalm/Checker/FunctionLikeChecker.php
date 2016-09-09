@@ -409,7 +409,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $existing_param_type_nullable = $function_signature_param['is_nullable'];
 
                     if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                        $new_param_type->types['null'] = Type::getNull(false);
+                        $new_param_type->types['null'] = new Type\Atomic('null');
                     }
 
                     $function_signature_param['type'] = $new_param_type;

@@ -13,8 +13,8 @@ class EffectsAnalyser
     /**
      * Gets the return types from a list of statements
      *
-     * @param  array<PhpParser\Node\Stmt>  $stmts
-     * @return array<AtomicType>    a list of return types
+     * @param  array<int, PhpParser\Node\Stmt>  $stmts
+     * @return array<int, AtomicType>    a list of return types
      */
     public static function getReturnTypes(array $stmts, $collapse_types = false)
     {
@@ -32,7 +32,7 @@ class EffectsAnalyser
                     $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
                 }
                 else {
-                    $return_types[] = Type::getMixed(false);
+                    $return_types[] = new Type\Atomic('mixed');
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
@@ -78,7 +78,7 @@ class EffectsAnalyser
 
         // if we're at the top level and we're not ending in a return, make sure to add possible null
         if ($collapse_types && !$last_stmt instanceof PhpParser\Node\Stmt\Return_ && !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts)) {
-            $return_types[] = Type::getNull(false);
+            $return_types[] = new Type\Atomic('null');
         }
 
         return $return_types;

@@ -202,7 +202,7 @@ class FileChecker implements StatementsSource
     }
 
     /**
-     * @return array<\PhpParser\Node>
+     * @return array<int, \PhpParser\Node>
      */
     protected function getStatements()
     {

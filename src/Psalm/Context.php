@@ -4,7 +4,7 @@ namespace Psalm;
 
 class Context
 {
-    /** @var array<Type\Union> */
+    /** @var array<string, Type\Union> */
     public $vars_in_scope = [];
 
     public $vars_possibly_in_scope = [];

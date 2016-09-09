@@ -8,12 +8,12 @@ use Psalm\Checker\ClassChecker;
 
 class Union extends Type
 {
-    /** @var array<Atomic> */
+    /** @var array<string, Atomic> */
     public $types = [];
 
     /**
      * Constructs an Union instance
-     * @param array<AtomicType>     $types
+     * @param array<int, AtomicType>     $types
      */
     public function __construct(array $types)
     {
@@ -81,40 +81,9 @@ class Union extends Type
     public function isIn(Union $parent)
     {
         foreach ($this->types as $type) {
-            if ($parent->hasType('object') && ClassLikeChecker::classOrInterfaceExists($type->value)) {
-                continue;
+            if (!$type->isIn($parent)) {
+                return false;
             }
-
-            if ($parent->hasType('numeric') && $type->isNumericType()) {
-                continue;
-            }
-
-            if ($type->value === 'false' && $parent->hasType('bool')) {
-                // this is fine
-                continue;
-            }
-
-            if ($parent->hasType($type->value)) {
-                continue;
-            }
-
-            // last check to see if class is subclass
-            if (ClassChecker::classExists($type->value)) {
-                $type_is_subclass = false;
-
-                foreach ($parent->types as $parent_type) {
-                    if (ClassChecker::classExtendsOrImplements($type->value, $parent_type->value)) {
-                        $type_is_subclass = true;
-                        break;
-                    }
-                }
-
-                if ($type_is_subclass) {
-                    continue;
-                }
-            }
-
-            return false;
         }
 
         return true;

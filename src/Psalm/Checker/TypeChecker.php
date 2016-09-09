@@ -810,7 +810,7 @@ class TypeChecker
         if ($new_var_type === 'empty') {
             if ($existing_var_type->hasType('bool')) {
                 $existing_var_type->removeType('bool');
-                $existing_var_type->types['false'] = Type::getFalse(false);
+                $existing_var_type->types['false'] = new Type\Atomic('false');
             }
 
             $existing_var_type->removeObjects();
@@ -972,7 +972,8 @@ class TypeChecker
                 }
 
                 foreach ($simple_declared_types as $simple_declared_type) {
-                    if (($simple_declared_type === 'object' && ClassLikeChecker::classOrInterfaceExists($differing_type)) ||
+                    if ($simple_declared_type === 'mixed' ||
+                        ($simple_declared_type === 'object' && ClassLikeChecker::classOrInterfaceExists($differing_type)) ||
                         ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type) ||
                         (in_array($differing_type, ['float', 'int']) && in_array($simple_declared_type, ['float', 'int']))
                     ) {
@@ -1005,9 +1006,12 @@ class TypeChecker
                 continue;
             }
 
-            if (!self::hasIdenticalTypes($declared_atomic_type->type_params[0], $inferred_atomic_type->type_params[0], $absolute_class)) {
-                return false;
+            foreach ($declared_atomic_type->type_params as $offset => $type_param) {
+                if (!self::hasIdenticalTypes($declared_atomic_type->type_params[$offset], $inferred_atomic_type->type_params[$offset], $absolute_class)) {
+                    return false;
+                }
             }
+
         }
 
         return true;

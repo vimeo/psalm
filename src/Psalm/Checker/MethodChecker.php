@@ -184,6 +184,7 @@ class MethodChecker extends FunctionLikeChecker
 
         if ($config->use_docblock_types) {
             if ($docblock_info['return_type']) {
+
                 $return_type =
                     Type::parseString(
                         $this->fixUpLocalType(

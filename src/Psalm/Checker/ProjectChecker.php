@@ -46,6 +46,7 @@ class ProjectChecker
     {
         if (!self::$config) {
             self::$config = self::getConfigForPath($dir_name);
+            self::$config->hide_external_errors = self::$config->isInProjectDirs(self::$config->shortenFileName($dir_name));
         }
 
         self::checkDirWithConfig($dir_name, self::$config, $debug);

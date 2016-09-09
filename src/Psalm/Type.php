@@ -75,11 +75,20 @@ abstract class Type
                 $parse_tree->children
             );
 
+            $generic_type_value = self::fixScalarTerms($generic_type->value);
+
+            if ($generic_type_value === 'array' && count($generic_params) === 1) {
+                array_unshift($generic_params, new Union([
+                    new Atomic('int'),
+                    new Atomic('string')
+                ]));
+            }
+
             if (!$generic_params) {
                 throw new \InvalidArgumentException('No generic params provided for type');
             }
 
-            return new Generic(self::fixScalarTerms($generic_type->value), $generic_params);
+            return new Generic($generic_type_value, $generic_params);
         }
 
         if ($parse_tree->value === ParseTree::UNION) {
@@ -93,23 +102,30 @@ abstract class Type
             return new Union($union_types);
         }
 
-        return new Atomic(self::fixScalarTerms($parse_tree->value));
+        $atomic_type = self::fixScalarTerms($parse_tree->value);
+
+        if ($atomic_type === 'array') {
+            return self::getArray()->types['array'];
+        }
+
+        return new Atomic($atomic_type);
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
      */
     public static function tokenize($return_type)
     {
         $return_type_tokens = [''];
         $was_char = false;
+        $return_type = str_replace(' ', '', $return_type);
 
         foreach (str_split($return_type) as $char) {
             if ($was_char) {
                 $return_type_tokens[] = '';
             }
 
-            if ($char === '<' || $char === '>' || $char === '|' || $char === '?') {
+            if ($char === '<' || $char === '>' || $char === '|' || $char === '?' || $char === ',') {
                 if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
                     $return_type_tokens[count($return_type_tokens) - 1] = $char;
                 }
@@ -138,7 +154,7 @@ abstract class Type
                 $dimensionality = strlen($matches[2]) / 2;
 
                 for ($i = 0; $i < $dimensionality; $i++) {
-                    $inner_type = 'array<' . $inner_type . '>';
+                    $inner_type = 'array<int, ' . $inner_type . '>';
                 }
 
                 return $inner_type;
@@ -147,114 +163,83 @@ abstract class Type
         );
     }
 
-    public static function getInt($enclose_with_union = true)
+    public static function getInt()
     {
         $type = new Atomic('int');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getString($enclose_with_union = true)
+    public static function getString()
     {
         $type = new Atomic('string');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getNull($enclose_with_union = true)
+    public static function getNull()
     {
         $type = new Atomic('null');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getMixed($enclose_with_union = true)
+    public static function getMixed()
     {
         $type = new Atomic('mixed');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getBool($enclose_with_union = true)
+    public static function getBool()
     {
         $type = new Atomic('bool');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getFloat($enclose_with_union = true)
+    public static function getFloat()
     {
         $type = new Atomic('float');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getObject($enclose_with_union = true)
+    public static function getObject()
     {
         $type = new Atomic('object');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getArray($enclose_with_union = true)
+    public static function getArray()
     {
-        $type = new Atomic('array');
+        $type = new Generic(
+            'array',
+            [
+                new Union([
+                    new Atomic('int'),
+                    new Atomic('string')
+                ]),
+                Type::getMixed()
+            ]
+        );
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getVoid($enclose_with_union = true)
+    public static function getVoid()
     {
         $type = new Atomic('void');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
-    public static function getFalse($enclose_with_union = true)
+    public static function getFalse()
     {
         $type = new Atomic('false');
 
-        if ($enclose_with_union) {
-            return new Union([$type]);
-        }
-
-        return $type;
+        return new Union([$type]);
     }
 
     public function isMixed()
@@ -449,14 +434,29 @@ abstract class Type
                         $redefined_atomic_type instanceof Type\Generic &&
                         $context_type->value === $redefined_atomic_type->value
                     ) {
-                        if ($context_type->type_params[0]->isEmpty()) {
-                            $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
+                        // index of last param
+                        $i = count($context_type->type_params) - 1;
+
+                        if ($context_type->type_params[$i]->isEmpty()) {
+                            $context_type->type_params[$i] = $redefined_atomic_type->type_params[$i];
                         }
                         else {
-                            $context_type->type_params[0] = Type::combineUnionTypes(
-                                $redefined_atomic_type->type_params[0],
-                                $context_type->type_params[0]
+                            $context_type->type_params[$i] = Type::combineUnionTypes(
+                                $redefined_atomic_type->type_params[$i],
+                                $context_type->type_params[$i]
                             );
+                        }
+
+                        if ($i) {
+                            if ($context_type->type_params[0]->isEmpty()) {
+                                $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
+                            }
+                            else {
+                                $context_type->type_params[0] = Type::combineUnionTypes(
+                                    $redefined_atomic_type->type_params[0],
+                                    $context_type->type_params[0]
+                                );
+                            }
                         }
                     }
                 }
@@ -505,6 +505,7 @@ abstract class Type
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
+        $key_types = [];
         $value_types = [];
 
         foreach ($types as $type) {
@@ -537,8 +538,18 @@ abstract class Type
                 $value_types[$type->value] = [];
             }
 
-            // @todo this doesn't support multiple type params right now
-            $value_types[$type->value][(string) $type] = $type instanceof Generic ? $type->type_params[0] : null;
+            if ($type instanceof Generic) {
+                $value_type_param_index = count($type->type_params) - 1;
+                $value_types[$type->value][(string) $type->type_params[$value_type_param_index]] = $type->type_params[$value_type_param_index];
+
+                if ($value_type_param_index) {
+                    $key_types[$type->value][(string) $type->type_params[0]] = $type->type_params[0];
+                }
+            }
+            else {
+                $key_types[$type->value][(string) $type] = null;
+                $value_types[$type->value][(string) $type] = null;
+            }
         }
 
         if (count($value_types) === 1) {
@@ -549,26 +560,42 @@ abstract class Type
 
         $new_types = [];
 
-        foreach ($value_types as $key => $value_type) {
+        foreach ($value_types as $generic_type => $value_type) {
+            $key_type = $key_types[$generic_type];
+
             if (count($value_type) === 1) {
                 $value_type_param = array_values($value_type)[0];
-                $new_types[] = $value_type_param ? new Generic($key, [$value_type_param]) : new Atomic($key);
+                $generic_type_params = [$value_type_param];
+
+                // if we're continuing, also add the correspoinding key type param if it exists
+                if (count($key_type) === 1) {
+                    array_unshift($generic_type_params, array_values($key_type)[0]);
+                }
+
+                $new_types[] = $value_type_param ? new Generic($generic_type, $generic_type_params) : new Atomic($generic_type);
                 continue;
             }
 
             $expanded_value_types = [];
 
-            foreach ($value_types[$key] as $expandable_value_type) {
-                if ($expandable_value_type instanceof Union) {
-                    $expanded_value_types = array_merge($expanded_value_types, array_values($expandable_value_type->types));
-                    continue;
-                }
+            foreach ($value_type as $expandable_value_type) {
+                $expanded_value_types = array_merge($expanded_value_types, array_values($expandable_value_type->types));
+            }
 
-                $expanded_value_types[] = $expandable_value_type;
+            $expanded_key_types = [];
+
+            foreach ($key_type as $expandable_key_type) {
+                $expanded_key_types = array_merge($expanded_key_types, array_values($expandable_key_type->types));
+            }
+
+            $generic_type_params = [self::combineTypes($expanded_value_types)];
+
+            if ($expanded_key_types) {
+                array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
             }
 
             // we have a generic type with
-            $new_types[] = new Generic($key, [self::combineTypes($expanded_value_types)]);
+            $new_types[] = new Generic($generic_type, $generic_type_params);
         }
 
         $new_types = array_values($new_types);
