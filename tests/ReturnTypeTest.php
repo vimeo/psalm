@@ -370,7 +370,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$_parser->parse('<?php
         abstract class A {
-            /** @return array<static> */
+            /** @return array<int,static> */
             public static function loadMultiple() {
                 return [new static()];
             }
@@ -386,6 +386,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
-        $this->assertEquals('array<B>', (string) $context->vars_in_scope['bees']);
+        $this->assertEquals('array<int,B>', (string) $context->vars_in_scope['bees']);
     }
 }

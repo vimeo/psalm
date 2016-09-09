@@ -35,7 +35,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     public function testArrayOfIntOrString()
     {
         $this->assertEquals(
-            'array<int|string>',
+            'array<int|string,int|string>',
             (string) Type::combineTypes([
                 self::getAtomic('array<int>'),
                 self::getAtomic('array<string>')
@@ -46,7 +46,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     public function testArrayOfIntOrAlsoString()
     {
         $this->assertEquals(
-            'array<int>|string',
+            'array<int|string,int>|string',
             (string) Type::combineTypes([
                 self::getAtomic('array<int>'),
                 self::getAtomic('string')
@@ -57,10 +57,10 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     public function testEmptyArrays()
     {
         $this->assertEquals(
-            'array<empty>',
+            'array<empty,empty>',
             (string) Type::combineTypes([
-                self::getAtomic('array<empty>'),
-                self::getAtomic('array<empty>')
+                self::getAtomic('array<empty,empty>'),
+                self::getAtomic('array<empty,empty>')
             ])
         );
     }
@@ -68,7 +68,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     public function testArrayStringOrEmptyArray()
     {
         $this->assertEquals(
-            'array<string>',
+            'array<int|string,string>',
             (string) Type::combineTypes([
                 self::getAtomic('array<empty>'),
                 self::getAtomic('array<string>')
@@ -79,7 +79,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     public function testArrayMixedOrString()
     {
         $this->assertEquals(
-            'array<mixed>',
+            'array<int|string,mixed>',
             (string) Type::combineTypes([
                 self::getAtomic('array<mixed>'),
                 self::getAtomic('array<string>')
@@ -90,7 +90,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     public function testArrayMixedOrEmpty()
     {
         $this->assertEquals(
-            'array<mixed>',
+            'array<int|string,mixed>',
             (string) Type::combineTypes([
                 self::getAtomic('array<empty>'),
                 self::getAtomic('array<mixed>')
@@ -101,7 +101,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     public function testArrayBigCombination()
     {
         $this->assertEquals(
-            'array<int|float|string>',
+            'array<int|string,int|float|string>',
             (string) Type::combineTypes([
                 self::getAtomic('array<int|float>'),
                 self::getAtomic('array<string>')
