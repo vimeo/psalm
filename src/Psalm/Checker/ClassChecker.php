@@ -8,10 +8,29 @@ use Psalm\Context;
 
 class ClassChecker extends ClassLikeChecker
 {
+    /**
+     * A lookup table of existing classes
+     * @var array
+     */
     protected static $existing_classes = [];
+
+    /**
+     * A lookup table of existing classes, all lowercased
+     * @var array
+     */
     protected static $existing_classes_ci = [];
+
+    /**
+     * A lookup table used for caching the results of classExtends calls
+     * @var array
+     */
     protected static $class_extends = [];
 
+    /**
+     * @param PhpParser\Node\Stmt\Class_ $class
+     * @param StatementsSource           $source
+     * @param string                     $absolute_class
+     */
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
         parent::__construct($class, $source, $absolute_class);
@@ -32,6 +51,12 @@ class ClassChecker extends ClassLikeChecker
         }
     }
 
+    /**
+     * Determine whether or not a given class exists
+     *
+     * @param  string $absolute_class
+     * @return bool
+     */
     public static function classExists($absolute_class)
     {
         if (isset(self::$existing_classes_ci[strtolower($absolute_class)])) {
@@ -57,6 +82,12 @@ class ClassChecker extends ClassLikeChecker
         return false;
     }
 
+    /**
+     * Determine whether or not a class has the correct casing
+     *
+     * @param  string  $absolute_class
+     * @return bool
+     */
     public static function hasCorrectCasing($absolute_class)
     {
         if (!self::classExists($absolute_class)) {
@@ -67,6 +98,8 @@ class ClassChecker extends ClassLikeChecker
     }
 
     /**
+     * Determine whether or not a class extends a parent
+     *
      * @param  string $absolute_class
      * @param  string $possible_parent
      * @return bool
@@ -90,6 +123,12 @@ class ClassChecker extends ClassLikeChecker
         return self::$class_extends[$absolute_class][$possible_parent];
     }
 
+    /**
+     * Get all the interfaces a given class implements
+     *
+     * @param  string $absolute_class
+     * @return array<string>
+     */
     public static function getInterfacesForClass($absolute_class)
     {
         if (!isset(self::$class_implements[$absolute_class])) {
@@ -106,6 +145,10 @@ class ClassChecker extends ClassLikeChecker
     }
 
     /**
+     * Check whether a class implements an interface
+     *
+     * @param  string $absolute_class
+     * @param  string $interface
      * @return bool
      */
     public static function classImplements($absolute_class, $interface)

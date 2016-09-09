@@ -22,16 +22,51 @@ abstract class ClassLikeChecker implements StatementsSource
 {
     protected static $SPECIAL_TYPES = ['int', 'string', 'float', 'bool', 'false', 'object', 'empty', 'callable', 'array'];
 
+    /**
+     * @var string
+     */
     protected $file_name;
+
+    /**
+     * @var string
+     */
     protected $include_file_name;
+
+    /**
+     * @var PhpParser\Node\Stmt\ClassLike
+     */
     protected $class;
+
+    /**
+     * @var string
+     */
     protected $namespace;
+
+    /**
+     * @var array<string>
+     */
     protected $aliased_classes;
+
+    /**
+     * @var string
+     */
     protected $absolute_class;
+
+    /**
+     * @var bool
+     */
     protected $has_custom_get = false;
+
+    /**
+     * @var StatementsSource
+     */
     protected $source;
 
-    /** @var string|null */
+    /**
+     * The parent class
+     *
+     * @var string
+     */
     protected $parent_class;
 
     /**
@@ -44,22 +79,84 @@ abstract class ClassLikeChecker implements StatementsSource
      */
     protected static $method_checkers = [];
 
+
     protected static $this_class = null;
 
+    /**
+     * A lookup table of all methods on a given class
+     *
+     * @var array<string, string>
+     */
     protected static $class_methods = [];
+
+    /**
+     * A lookup table of cached ClassLikeCheckers
+     *
+     * @var array<string, self>
+     */
     protected static $class_checkers = [];
 
+    /**
+     * A lookup table for public class properties
+     *
+     * @var array<string, string>
+     */
     protected static $public_class_properties = [];
+
+    /**
+     * A lookup table for protected class properties
+     *
+     * @var array<string, string>
+     */
     protected static $protected_class_properties = [];
+
+    /**
+     * A lookup table for protected class properties
+     *
+     * @var array<string, string>
+     */
     protected static $private_class_properties = [];
 
+    /**
+     * A lookup table for public static class properties
+     *
+     * @var array<string, string>
+     */
     protected static $public_static_class_properties = [];
+
+    /**
+     * A lookup table for protected static class properties
+     *
+     * @var array<string, string>
+     */
     protected static $protected_static_class_properties = [];
+
+    /**
+     * A lookup table for private static class properties
+     *
+     * @var array<string, string>
+     */
     protected static $private_static_class_properties = [];
 
+    /**
+     * A lookup table for public class constants
+     *
+     * @var array<string, string>
+     */
     protected static $public_class_constants = [];
 
+    /**
+     * A lookup table to record which classes have been scanned
+     *
+     * @var array<string, bool>
+     */
     protected static $registered_classes = [];
+
+    /**
+     * A lookup table used for storing the results of ClassChecker::classImplements
+     *
+     * @var array<string, bool>
+     */
     protected static $class_implements = [];
 
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
@@ -360,6 +457,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
     /**
      * Returns a class checker for the given class, if one has already been registered
+     *
      * @param  string $class_name
      * @return self|null
      */
@@ -373,6 +471,13 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
+     * Checks a Name object to see if the class specified exists
+     *
+     * @param  PhpParser\Node\Name $class_name
+     * @param  string              $namespace
+     * @param  array<string>       $aliased_classes
+     * @param  string              $file_name
+     * @param  array               $suppressed_issues
      * @return bool|null
      */
     public static function checkClassName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes, $file_name, array $suppressed_issues)
@@ -387,6 +492,8 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
+     * Check whether a class/interface exists
+     *
      * @param  string $absolute_class
      * @return bool
      */
