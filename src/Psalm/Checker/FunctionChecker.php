@@ -241,7 +241,7 @@ class FunctionChecker extends FunctionLikeChecker
                     else {
                         $inner_type = new Type\Union($closure_return_types);
 
-                        return new Type\Union([new Type\Generic('array', [$inner_type])]);
+                        return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                     }
                 }
                 elseif ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
@@ -250,7 +250,7 @@ class FunctionChecker extends FunctionLikeChecker
                     if (isset($call_map[$mapped_function_id][0])) {
                         if ($call_map[$mapped_function_id][0]) {
                             $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
-                            return new Type\Union([new Type\Generic('array', [$mapped_function_return])]);
+                            return new Type\Union([new Type\Generic('array', [Type::getInt(), $mapped_function_return])]);
                         }
                     }
                     else {
@@ -272,7 +272,7 @@ class FunctionChecker extends FunctionLikeChecker
             $inner_value_types = [];
             $inner_key_types = [];
 
-            foreach ($call_args as $call_arg) {
+            foreach ($call_args as $offset => $call_arg) {
                 if (!isset($call_arg->value->inferredType)) {
                     return Type::getArray();
                 }
@@ -290,7 +290,7 @@ class FunctionChecker extends FunctionLikeChecker
                     $inner_value_types = array_merge(array_values($type_part->type_params[1]->types), $inner_value_types);
                 }
 
-                if ($inner_types) {
+                if ($inner_value_types) {
                     return new Type\Union([
                         new Type\Generic('array',
                             [
@@ -306,7 +306,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_map_key === 'explode') {
-            return Type::parseString('array<string>');
+            return Type::parseString('array<int, string>');
         }
 
         if (!isset($call_map[$call_map_key]) || !$call_map[$call_map_key][0]) {

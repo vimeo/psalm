@@ -27,6 +27,10 @@ abstract class Type
         if (count($type_tokens) === 1) {
             $type_tokens[0] = self::fixScalarTerms($type_tokens[0]);
 
+            if ($type_tokens[0] === 'array') {
+                return Type::getArray();
+            }
+
             return new Union([new Atomic($type_tokens[0])]);
         }
 
@@ -547,7 +551,10 @@ abstract class Type
                 }
             }
             else {
-                $key_types[$type->value][(string) $type] = null;
+                if ($type->value === 'array') {
+                    throw new \InvalidArgumentException('Cannot have a non-generic array');
+                }
+
                 $value_types[$type->value][(string) $type] = null;
             }
         }
@@ -561,15 +568,21 @@ abstract class Type
         $new_types = [];
 
         foreach ($value_types as $generic_type => $value_type) {
-            $key_type = $key_types[$generic_type];
+            $key_type = isset($key_types[$generic_type]) ? $key_types[$generic_type] : [];
+
+            $expanded_key_types = [];
+
+            foreach ($key_type as $expandable_key_type) {
+                $expanded_key_types = array_merge($expanded_key_types, array_values($expandable_key_type->types));
+            }
 
             if (count($value_type) === 1) {
                 $value_type_param = array_values($value_type)[0];
                 $generic_type_params = [$value_type_param];
 
                 // if we're continuing, also add the correspoinding key type param if it exists
-                if (count($key_type) === 1) {
-                    array_unshift($generic_type_params, array_values($key_type)[0]);
+                if ($expanded_key_types) {
+                    array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
                 }
 
                 $new_types[] = $value_type_param ? new Generic($generic_type, $generic_type_params) : new Atomic($generic_type);
@@ -580,12 +593,6 @@ abstract class Type
 
             foreach ($value_type as $expandable_value_type) {
                 $expanded_value_types = array_merge($expanded_value_types, array_values($expandable_value_type->types));
-            }
-
-            $expanded_key_types = [];
-
-            foreach ($key_type as $expandable_key_type) {
-                $expanded_key_types = array_merge($expanded_key_types, array_values($expandable_key_type->types));
             }
 
             $generic_type_params = [self::combineTypes($expanded_value_types)];

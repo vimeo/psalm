@@ -87,6 +87,17 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testArrayMixedOrStringKeys()
+    {
+        $this->assertEquals(
+            'array<mixed,string>',
+            (string) Type::combineTypes([
+                self::getAtomic('array<int|string,string>'),
+                self::getAtomic('array<mixed,string>')
+            ])
+        );
+    }
+
     public function testArrayMixedOrEmpty()
     {
         $this->assertEquals(

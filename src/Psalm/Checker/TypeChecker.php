@@ -727,6 +727,11 @@ class TypeChecker
                     $line_number,
                     $suppressed_issues
                 );
+
+                // special case if result is just a simple array
+                if ((string) $result_type === 'array') {
+                    $result_type = Type::getArray();
+                }
             }
 
             //echo((string) $new_types[$key] . ' and ' . (isset($existing_types[$key]) ? (string) $existing_types[$key] : '') . ' => ' . $result_type . PHP_EOL);

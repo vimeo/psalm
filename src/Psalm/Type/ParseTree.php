@@ -74,8 +74,16 @@ class ParseTree
 
                 case ',':
                     $current_parent = $current_leaf->parent;
-                    if (!$current_parent || $current_parent->value !== self::GENERIC) {
+                    if (!$current_parent) {
                         throw new \InvalidArgumentException('Cannot parse comma in non-generic type');
+                    }
+
+                    if ($current_parent->value !== self::GENERIC) {
+                        if (!$current_parent->parent->value) {
+                            throw new \InvalidArgumentException('Cannot parse comma in non-generic type');
+                        }
+
+                        $current_leaf = $current_leaf->parent;
                     }
 
                     break;

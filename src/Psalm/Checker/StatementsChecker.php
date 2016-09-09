@@ -683,8 +683,6 @@ class StatementsChecker
                     $context->update($old_else_context, $else_context, $has_leaving_statements, array_keys($negatable_if_types), $updated_vars);
                 }
 
-
-
                 if (!$has_ending_statements) {
                     $vars = array_diff_key($else_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
 
@@ -1793,7 +1791,7 @@ class StatementsChecker
                     }
 
                     if ($value_index) {
-                        $key_type_part = $return_type->type_params[$key_index];
+                        $key_type_part = $return_type->type_params[0];
 
                         if (!$key_type) {
                             $key_type = $key_type_part;
@@ -2286,7 +2284,7 @@ class StatementsChecker
                 if ($type->type_params[1]->isEmpty()) {
                     // boil this down to a regular array
                     if ($assignment_value_type->isMixed()) {
-                        return Type::getArray();
+                        return Type::getArray()->types['array'];
                     }
 
                     $type->type_params[0] = $assignment_key_type;
@@ -3496,6 +3494,10 @@ class StatementsChecker
             }
         }
 
+        if (!isset($stmt->inferredType)) {
+            $stmt->inferredType = Type::getMixed();
+        }
+
         if (!$key_type) {
             $key_type = new Type\Union([
                 new Type\Atomic('int'),
@@ -3510,7 +3512,10 @@ class StatementsChecker
 
             if (isset($stmt->dim->inferredType) && $key_type) {
                 foreach ($stmt->dim->inferredType->types as $at) {
-                    if (!$at->isIn($key_type)) {
+                    if ($at->isMixed()) {
+                        // @todo emit issue
+                    }
+                    elseif (!$at->isIn($key_type)) {
                         $var_id = self::getVarId($stmt->var);
 
                         if (IssueBuffer::accepts(
