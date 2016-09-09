@@ -942,6 +942,10 @@ class TypeChecker
 
     public static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type, $absolute_class)
     {
+        if ($declared_type->isMixed() || $inferred_type->isEmpty()) {
+            return true;
+        }
+
         if ($declared_type->isNullable() !== $inferred_type->isNullable()) {
             return false;
         }
