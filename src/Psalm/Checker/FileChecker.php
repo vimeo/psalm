@@ -83,7 +83,7 @@ class FileChecker implements StatementsSource
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
-                    $this->aliased_classes[$use->alias] = implode('\\', $use->name->parts);
+                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
                 }
             }
 

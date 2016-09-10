@@ -592,7 +592,12 @@ abstract class Type
             $expanded_value_types = [];
 
             foreach ($value_type as $expandable_value_type) {
-                $expanded_value_types = array_merge($expanded_value_types, array_values($expandable_value_type->types));
+                if ($expandable_value_type) {
+                    $expanded_value_types = array_merge($expanded_value_types, array_values($expandable_value_type->types));
+                }
+                else {
+                    $expanded_value_types = [Type::getMixed()->types['mixed']];
+                }
             }
 
             $generic_type_params = [self::combineTypes($expanded_value_types)];

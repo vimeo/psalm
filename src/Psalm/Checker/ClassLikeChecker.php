@@ -579,11 +579,11 @@ abstract class ClassLikeChecker implements StatementsSource
             $class_parts = explode('\\', $class);
             $first_namespace = array_shift($class_parts);
 
-            if (isset($imported_namespaces[$first_namespace])) {
-                return $imported_namespaces[$first_namespace] . '\\' . implode('\\', $class_parts);
+            if (isset($imported_namespaces[strtolower($first_namespace)])) {
+                return $imported_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $class_parts);
             }
-        } elseif (isset($imported_namespaces[$class])) {
-            return $imported_namespaces[$class];
+        } elseif (isset($imported_namespaces[strtolower($class)])) {
+            return $imported_namespaces[strtolower($class)];
         }
 
         return ($namespace ? $namespace . '\\' : '') . $class;

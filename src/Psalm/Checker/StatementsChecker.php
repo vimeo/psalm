@@ -206,7 +206,7 @@ class StatementsChecker
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
-                    $this->aliased_classes[$use->alias] = implode('\\', $use->name->parts);
+                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
@@ -1651,7 +1651,7 @@ class StatementsChecker
             new Type\Generic(
                 'array',
                 [
-                    $item_key_type,
+                    $item_key_type ?: new Type\Union([new Type\Atomic('int'), new Type\Atomic('string')]),
                     $item_value_type ?: Type::getMixed()
                 ]
             )
