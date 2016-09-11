@@ -266,6 +266,8 @@ class TypeChecker
         else if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
             $null_position = self::hasNullVariable($conditional);
             $false_position = self::hasFalseVariable($conditional);
+            $gettype_position = self::hasGetTypeCheck($conditional);
+
             $var_name = null;
 
             if ($null_position !== null) {
@@ -316,6 +318,22 @@ class TypeChecker
                     else {
                         $if_types[$var_name] = 'empty';
                     }
+                }
+            }
+            elseif ($gettype_position) {
+                $var_type = null;
+
+                if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $var_name = StatementsChecker::getVarId($conditional->right->args[0]->value);
+                    $var_type = $conditional->left->value;
+                }
+                else if ($gettype_position === self::ASSIGNMENT_TO_LEFT) {
+                    $var_name = StatementsChecker::getVarId($conditional->left->args[0]->value);
+                    $var_type = $conditional->right->value;
+                }
+
+                if ($var_name) {
+                    $if_types[$var_name] = $var_type;
                 }
             }
         }
@@ -543,6 +561,28 @@ class TypeChecker
         }
 
         return null;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasGetTypeCheck(PhpParser\Node\Expr\BinaryOp $conditional)
+    {
+        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall &&
+            $conditional->right->name instanceof PhpParser\Node\Name &&
+            $conditional->right->name->parts === ['gettype'] &&
+            $conditional->left instanceof PhpParser\Node\Scalar\String_) {
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall &&
+            $conditional->left->name instanceof PhpParser\Node\Name &&
+            $conditional->left->name->parts === ['gettype'] &&
+            $conditional->right instanceof PhpParser\Node\Scalar\String_) {
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
     }
 
     /**
@@ -825,6 +865,20 @@ class TypeChecker
             }
 
             return $existing_var_type;
+        }
+
+        if ($new_var_type === 'object' && !$existing_var_type->isMixed()) {
+            $object_types = [];
+
+            foreach ($existing_var_type->types as $type) {
+                if ($type->isObjectType()) {
+                    $object_types[] = $type;
+                }
+            }
+
+            if ($object_types) {
+                return new Type\Union($object_types);
+            }
         }
 
         return Type::parseString($new_var_type);
