@@ -3648,7 +3648,7 @@ class StatementsChecker
         }
 
         if ($stmt->dim) {
-            if (isset($stmt->dim->inferredType) && $key_type) {
+            if (isset($stmt->dim->inferredType) && $key_type && !$key_type->isEmpty()) {
                 foreach ($stmt->dim->inferredType->types as $at) {
                     if ($at->isMixed()) {
                         // @todo emit issue
