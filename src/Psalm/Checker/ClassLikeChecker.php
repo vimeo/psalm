@@ -342,9 +342,21 @@ abstract class ClassLikeChecker implements StatementsSource
                         $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
                     }
 
-                    $property_type = $type_in_comment ? $type_in_comment : Type::getMixed();
+                    $property_group_type = $type_in_comment ? $type_in_comment : null;
 
                     foreach ($stmt->props as $property) {
+                        if (!$property_group_type) {
+                            if (!$property->default) {
+                                $property_type = Type::getMixed();
+                            }
+                            else {
+                                $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();
+                            }
+                        }
+                        else {
+                            $property_type = $property_group_type;
+                        }
+
                         if ($stmt->isStatic()) {
                             if ($stmt->isPublic()) {
                                 self::$public_static_class_properties[$class_context->self][$property->name] = $property_type;
@@ -366,10 +378,6 @@ abstract class ClassLikeChecker implements StatementsSource
                             elseif ($stmt->isPrivate()) {
                                 self::$private_class_properties[$class_context->self][$property->name] = $property_type;
                             }
-                        }
-
-                        if (!$stmt->isStatic()) {
-                            $class_context->vars_in_scope['this->' . $property->name] = $property_type;
                         }
                     }
                 }
@@ -398,6 +406,16 @@ abstract class ClassLikeChecker implements StatementsSource
 
         if ($leftover_stmts) {
             (new StatementsChecker($this))->check($leftover_stmts, $class_context);
+        }
+
+        $all_instance_properties = array_merge(
+            self::$public_class_properties[$this->absolute_class],
+            self::$protected_class_properties[$this->absolute_class],
+            self::$private_class_properties[$this->absolute_class]
+        );
+
+        foreach ($all_instance_properties as $property_name => $property_type) {
+            $class_context->vars_in_scope['this->' . $property_name] = $property_type;
         }
 
         $config = Config::getInstance();

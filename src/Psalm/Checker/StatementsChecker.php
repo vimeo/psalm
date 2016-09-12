@@ -1129,6 +1129,50 @@ class StatementsChecker
         }
     }
 
+    public static function getSimpleType(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
+            // @todo support this
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            // @todo support this as well
+        }
+        elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
+            return Type::getString();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+            return Type::getInt();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+            return Type::getFloat();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
+            return Type::getArray();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
+            return Type::getInt();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
+            return Type::getFloat();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
+            return Type::getBool();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
+            return Type::getString();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
+            return Type::getObject();
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
+            return Type::getArray();
+        }
+        else {
+            var_dump('Unrecognised default property type in ' . $this->checked_file_name);
+            var_dump($stmt);
+        }
+    }
+
     /**
      * @param  PhpParser\Node\Expr\Variable|PhpParser\Node\Expr\PropertyFetch $stmt
      * @param  string $method_id
@@ -2232,29 +2276,36 @@ class StatementsChecker
                 }
             }
 
-            if ($nesting) {
-                $context_type = clone $context->vars_in_scope[$var_id];
+            if ($return_type) {
+                if ($nesting && $var_id) {
+                    $context_type = clone $context->vars_in_scope[$var_id];
 
-                $array_type = $context_type;
+                    $array_type = $context_type;
 
-                for ($i = 0; $i < $nesting + 1; $i++) {
-                    if ($i < $nesting) {
-                        if ($array_type->types['array']->type_params[1]->isEmpty()) {
-                            $array_type->types['array']->type_params[1] = $return_type;
-                            break;
+                    for ($i = 0; $i < $nesting + 1; $i++) {
+                        if ($array_type->isArray()) {
+                            if ($i < $nesting) {
+                                if ($array_type->types['array']->type_params[1]->isEmpty()) {
+                                    $array_type->types['array']->type_params[1] = $return_type;
+                                    break;
+                                }
+
+                                $array_type = $array_type->types['array']->type_params[1];
+                            }
+                            else {
+                                $array_type->types['array']->type_params[1] = $return_type->types['array']->type_params[1];
+                            }
                         }
+                    }
 
-                        $array_type = $array_type->types['array']->type_params[1];
-                    }
-                    else {
-                        $array_type->types['array']->type_params[1] = $return_type->types['array']->type_params[1];
-                    }
+                    $context->vars_in_scope[$var_id] = $context_type;
                 }
-
-                $context->vars_in_scope[$var_id] = $context_type;
+                else {
+                    $context->vars_in_scope[$var_id] = $return_type;
+                }
             }
             else {
-                $context->vars_in_scope[$var_id] = $return_type;
+                $context->vars_in_scope[$var_id] = Type::getMixed();
             }
         }
     }
@@ -2289,10 +2340,15 @@ class StatementsChecker
             }
         }
 
+        if ($type->isMixed()) {
+            // @todo emit issue
+            return;
+        }
+
         if ($type->value !== 'array' && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
-                    'Cannot assign value on variable ' . $var_id . ' that does not implement ArrayAccess',
+                    'Cannot assign value on variable $' . $var_id . ' of type ' . $type->value . ' that does not implement ArrayAccess',
                     $this->checked_file_name,
                     $line_number
                 ),
@@ -3621,6 +3677,8 @@ class StatementsChecker
                 return false;
             }
         }
+
+        $stmt->inferredType = Type::getString();
     }
 
     public function registerVariable($var_name, $line_number)
