@@ -1231,7 +1231,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $return_stmt = array_pop($stmts);
 
-        $this->assertSame('mixed', (string) $return_stmt->exprs[0]->inferredType);
+        $this->assertSame('int|string', (string) $return_stmt->exprs[0]->inferredType);
     }
 
     public function testTypeAdjustmentIfNull()
