@@ -815,6 +815,20 @@ class TypeChecker
         }
 
         if ($new_var_type[0] === '!') {
+            if ($new_var_type === '!object' && !$existing_var_type->isMixed()) {
+                $non_object_types = [];
+
+                foreach ($existing_var_type->types as $type) {
+                    if (!$type->isObjectType()) {
+                        $non_object_types[] = $type;
+                    }
+                }
+
+                if ($non_object_types) {
+                    return new Type\Union($non_object_types);
+                }
+            }
+
             if (in_array($new_var_type, ['!empty', '!null'])) {
                 $existing_var_type->removeType('null');
 
