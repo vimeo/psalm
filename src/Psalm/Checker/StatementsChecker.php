@@ -2139,7 +2139,7 @@ class StatementsChecker
         }
     }
 
-    public static function getVarId(PhpParser\Node\Expr $stmt, &$nesting = 0)
+    public static function getVarId(PhpParser\Node\Expr $stmt, &$nesting = null)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return $stmt->name;
@@ -2156,7 +2156,7 @@ class StatementsChecker
 
             return $object_id . '->' . $stmt->name;
         }
-        else if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+        else if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $nesting !== null ) {
             $nesting++;
             return self::getVarId($stmt->var, $nesting);
         }
@@ -3551,7 +3551,7 @@ class StatementsChecker
                             if ($i < $nesting) {
                                 if ($array_type->types['array']->type_params[1]->isEmpty()) {
                                     $new_empty = clone $empty_type;
-                                    $new_empty->types['array']->type_params[0] = $stmt->dim ? $stmt->dim->inferredType : Type::getInt();
+                                    $new_empty->types['array']->type_params[0] = self::getArrayTypeFromDim($stmt->dim);
                                     $array_type->types['array']->type_params[1] = $new_empty;
                                     continue;
                                 }
@@ -3559,7 +3559,7 @@ class StatementsChecker
                                 $array_type = $array_type->types['array']->type_params[1];
                             }
                             else {
-                                $array_type->types['array']->type_params[0] = $stmt->dim ? $stmt->dim->inferredType : Type::getInt();
+                                $array_type->types['array']->type_params[0] = self::getArrayTypeFromDim($stmt->dim);
                             }
                         }
 
@@ -3627,6 +3627,21 @@ class StatementsChecker
     {
         if (!isset($this->all_vars[$var_name])) {
             $this->all_vars[$var_name] = $line_number;
+        }
+    }
+
+    protected static function getArrayTypeFromDim($dim)
+    {
+        if ($dim) {
+            if ($dim->inferredType) {
+                return $dim->inferredType;
+            }
+            else {
+                return new Type\Union([Type::getInt()->types['int'], Type::getString()->types['string']]);
+            }
+        }
+        else {
+            return Type::getInt();
         }
     }
 
