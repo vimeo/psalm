@@ -1172,7 +1172,7 @@ class StatementsChecker
             return Type::getArray();
         }
         else {
-            var_dump('Unrecognised default property type in ' . $this->checked_file_name);
+            var_dump('Unrecognised default property type');
             var_dump($stmt);
         }
     }
