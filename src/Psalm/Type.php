@@ -232,6 +232,19 @@ abstract class Type
         return new Union([$type]);
     }
 
+    public static function getEmptyArray()
+    {
+        return new Type\Union([
+            new Type\Generic(
+                'array',
+                [
+                    new Type\Union([new Type\Atomic('empty')]),
+                    new Type\Union([new Type\Atomic('empty')])
+                ]
+            )
+        ]);
+    }
+
     public static function getVoid()
     {
         $type = new Atomic('void');
