@@ -152,6 +152,17 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testAAndAOfB()
+    {
+        $this->assertEquals(
+            'A<mixed>',
+            (string) Type::combineTypes([
+                self::getAtomic('A'),
+                self::getAtomic('A<B>')
+            ])
+        );
+    }
+
     public function testMultipleValuedArray()
     {
         $stmts = self::$_parser->parse('<?php
