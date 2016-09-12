@@ -530,7 +530,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 continue;
             }
 
-            if (in_array($return_type_token, ['<', '>', '|', '?'])) {
+            if (in_array($return_type_token, ['<', '>', '|', '?', ','])) {
                 continue;
             }
 
