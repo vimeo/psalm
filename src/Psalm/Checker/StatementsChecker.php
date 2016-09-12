@@ -765,20 +765,24 @@ class StatementsChecker
     protected function checkStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
     {
         foreach ($stmt->vars as $var) {
-            if (is_string($var->name)) {
-                if ($this->check_variables) {
-                    $context->vars_in_scope[$var->name] = Type::getMixed();
-                    $context->vars_possibly_in_scope[$var->name] = true;
-                    $this->registerVariable($var->name, $var->getLine());
-                }
-            } else {
-                if ($this->checkExpression($var->name, $context) === false) {
+            if ($var->default) {
+                if ($this->checkExpression($var->default, $context) === false) {
                     return false;
                 }
             }
 
-            if ($var->default) {
-                if ($this->checkExpression($var->default, $context) === false) {
+            if (is_string($var->name)) {
+                if ($this->check_variables) {
+                    $context->vars_in_scope[$var->name] = $var->default && isset($var->default->inferredType)
+                                                            ? $var->default->inferredType
+                                                            : Type::getMixed();
+
+                    $context->vars_possibly_in_scope[$var->name] = true;
+                    $this->registerVariable($var->name, $var->getLine());
+                }
+            }
+            else {
+                if ($this->checkExpression($var->name, $context) === false) {
                     return false;
                 }
             }
@@ -1688,7 +1692,7 @@ class StatementsChecker
                 'array',
                 [
                     $item_key_type ?: new Type\Union([new Type\Atomic('int'), new Type\Atomic('string')]),
-                    $item_value_type ?: Type::getMixed()
+                    $item_value_type && count($item_value_type->types) === 1 ? $item_value_type : Type::getMixed()
                 ]
             )
         ]);
@@ -2200,7 +2204,7 @@ class StatementsChecker
 
             return $object_id . '->' . $stmt->name;
         }
-        else if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $nesting !== null ) {
+        else if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $nesting !== null) {
             $nesting++;
             return self::getVarId($stmt->var, $nesting);
         }
@@ -3656,7 +3660,7 @@ class StatementsChecker
                     elseif (!$at->isIn($key_type)) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
-                                'Cannot access value on variable $' . $var_id . ' using ' . $at . ' offset',
+                                'Cannot access value on variable $' . $var_id . ' using ' . $at . ' offset - expecting ' . $key_type,
                                 $this->checked_file_name,
                                 $stmt->getLine()
                             ),
@@ -3691,7 +3695,7 @@ class StatementsChecker
     protected static function getArrayTypeFromDim($dim)
     {
         if ($dim) {
-            if ($dim->inferredType) {
+            if (isset($dim->inferredType)) {
                 return $dim->inferredType;
             }
             else {
