@@ -2366,11 +2366,6 @@ class StatementsChecker
         if ($type instanceof Type\Generic) {
             if ($type->isArray()) {
                 if ($type->type_params[1]->isEmpty()) {
-                    // boil this down to a regular array
-                    if ($assignment_value_type->isMixed()) {
-                        return Type::getArray()->types['array'];
-                    }
-
                     $type->type_params[0] = $assignment_key_type;
                     $type->type_params[1] = $assignment_value_type;
                     return $type;
