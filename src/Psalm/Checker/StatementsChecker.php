@@ -2211,6 +2211,16 @@ class StatementsChecker
         return null;
     }
 
+    public static function getArrayVarId(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+            $root_var_id = self::getArrayVarId($stmt->var);
+            return $root_var_id ? $root_var_id . '[\'' . $stmt->dim->value . '\']' : null;
+        }
+
+        return self::getVarId($stmt);
+    }
+
     protected function checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, Type\Union $assignment_value_type)
     {
         if ($stmt->dim && $this->checkExpression($stmt->dim, $context, false) === false) {

@@ -256,7 +256,7 @@ class TypeChecker
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
                 foreach ($conditional->expr->vars as $isset_var) {
-                    $var_name = StatementsChecker::getVarId($isset_var);
+                    $var_name = StatementsChecker::getVarId($isset_var) ?: StatementsChecker::getArrayVarId($isset_var);
                     if ($var_name) {
                         $if_types[$var_name] = 'null';
                     }
@@ -409,7 +409,7 @@ class TypeChecker
         }
         else if ($conditional instanceof PhpParser\Node\Expr\Isset_) {
             foreach ($conditional->vars as $isset_var) {
-                $var_name = StatementsChecker::getVarId($isset_var);
+                $var_name = StatementsChecker::getVarId($isset_var) ?: StatementsChecker::getArrayVarId($isset_var);
                 if ($var_name) {
                     $if_types[$var_name] = '!null';
                 }
