@@ -2295,7 +2295,7 @@ class StatementsChecker
 
                                 $array_type = $array_type->types['array']->type_params[1];
                             }
-                            else {
+                            elseif (!$return_type->isMixed()) {
                                 $array_type->types['array']->type_params[1] = $return_type->types['array']->type_params[1];
                             }
                         }
