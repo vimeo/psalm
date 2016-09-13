@@ -190,5 +190,31 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<string,array<int|string,mixed>>', (string) $context->vars_in_scope['foo']);
     }
 
+    public function testConflictingTypesWithAssignment2()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $foo = [];
+        $foo["a"] = "hello";
+        $foo["b"][] = "goodbye";
+        ');
 
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<string,mixed>', (string) $context->vars_in_scope['foo']);
+    }
+
+    public function testConflictingTypesWithAssignment3()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $foo = [];
+        $foo["a"] = "hello";
+        $foo["b"]["c"]["d"] = "goodbye";
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<string,mixed>', (string) $context->vars_in_scope['foo']);
+    }
 }
