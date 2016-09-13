@@ -1911,10 +1911,7 @@ class StatementsChecker
         }
 
         if ($stmt->keyVar) {
-            $foreach_context->vars_in_scope[$stmt->keyVar->name] = $key_type ?: new Type\Union([
-                new Type\Atomic('int'),
-                new Type\Atomic('string')
-            ]);
+            $foreach_context->vars_in_scope[$stmt->keyVar->name] = $key_type ?: Type::getMixed();
             $foreach_context->vars_possibly_in_scope[$stmt->keyVar->name] = true;
             $this->registerVariable($stmt->keyVar->name, $stmt->getLine());
         }
