@@ -1679,7 +1679,7 @@ class StatementsChecker
 
             if (isset($item->value->inferredType)) {
                 if ($item_value_type) {
-                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type);
+                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type, true);
                 }
                 else {
                     $item_value_type = $item->value->inferredType;
@@ -1692,7 +1692,9 @@ class StatementsChecker
                 'array',
                 [
                     $item_key_type ?: new Type\Union([new Type\Atomic('int'), new Type\Atomic('string')]),
-                    $item_value_type && count($item_value_type->types) === 1 ? $item_value_type : Type::getMixed()
+                    $item_value_type && count($item_value_type->types) === ($item_value_type->isNullable() ? 2 : 1)
+                        ? $item_value_type
+                        : Type::getMixed()
                 ]
             )
         ]);
