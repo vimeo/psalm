@@ -261,7 +261,9 @@ abstract class ClassLikeChecker implements StatementsSource
             }
 
             foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_id => $interface_name) {
-                self::$public_class_constants[$this->absolute_class] += self::$public_class_constants[$interface_name];
+                if (isset(self::$public_class_constants[$interface_name])) {
+                    self::$public_class_constants[$this->absolute_class] += self::$public_class_constants[$interface_name];
+                }
             }
         }
 
