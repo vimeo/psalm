@@ -79,6 +79,31 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int,array<int,array<int,array<int,string>>>>', (string) $context->vars_in_scope['foo']);
     }
 
+    public function testImplicitIndexedIntArrayCreation()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $foo = [];
+        $foo[0] = "hello";
+        $foo[1] = "hello";
+        $foo[2] = "hello";
+
+        $bar = [0, 1, 2];
+
+        $bat = [];
+
+        foreach ($foo as $i => $text) {
+            $bat[$text] = $bar[$i];
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int,string>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('array<int,int>', (string) $context->vars_in_scope['bar']);
+        $this->assertEquals('array<string,int>', (string) $context->vars_in_scope['bat']);
+    }
+
     public function testImplicitStringArrayCreation()
     {
         $stmts = self::$_parser->parse('<?php
