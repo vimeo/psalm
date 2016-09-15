@@ -82,10 +82,7 @@ abstract class Type
             $generic_type_value = self::fixScalarTerms($generic_type->value);
 
             if ($generic_type_value === 'array' && count($generic_params) === 1) {
-                array_unshift($generic_params, new Union([
-                    new Atomic('int'),
-                    new Atomic('string')
-                ]));
+                array_unshift($generic_params, Type::getMixed());
             }
 
             if (!$generic_params) {
@@ -221,10 +218,7 @@ abstract class Type
         $type = new Generic(
             'array',
             [
-                new Union([
-                    new Atomic('int'),
-                    new Atomic('string')
-                ]),
+                Type::getMixed(),
                 Type::getMixed()
             ]
         );
