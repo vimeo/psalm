@@ -2705,7 +2705,8 @@ class StatementsChecker
                 $absolute_class = ($this->namespace ? $this->namespace . '\\' : '') . $this->class_name;
             }
 
-        } elseif ($this->check_classes) {
+        }
+        elseif ($this->check_classes) {
             $does_class_exist = ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues);
 
             if (!$does_class_exist) {
@@ -3522,20 +3523,22 @@ class StatementsChecker
 
         $method_id = null;
 
-        if ($stmt->name instanceof PhpParser\Node\Name && $this->check_functions) {
-            $method_id = implode('', $stmt->name->parts);
+        if ($this->check_functions) {
+            if ($stmt->name instanceof PhpParser\Node\Name) {
+                $method_id = implode('', $stmt->name->parts);
 
-            if ($context->self) {
-                //$method_id = $this->absolute_class . '::' . $method_id;
+                if ($context->self) {
+                    //$method_id = $this->absolute_class . '::' . $method_id;
+                }
+
+                if ($this->checkFunctionExists($method_id, $context, $stmt) === false) {
+                    return false;
+                }
             }
 
-            if ($this->checkFunctionExists($method_id, $context, $stmt) === false) {
+            if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
                 return false;
             }
-        }
-
-        if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
-            return false;
         }
 
         if ($stmt->name instanceof PhpParser\Node\Name && $this->check_functions) {
@@ -3755,7 +3758,7 @@ class StatementsChecker
             }
         }
         else {
-            $path_to_file = self::getPathTo($stmt->expr, $this->checked_file_name);
+            $path_to_file = self::getPathTo($stmt->expr, $this->include_file_name ?: $this->file_name);
         }
 
         if ($path_to_file) {
