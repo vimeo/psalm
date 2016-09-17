@@ -66,4 +66,67 @@ class Atomic extends Type
 
         return false;
     }
+
+    public function isArray()
+    {
+        return $this->value === 'array';
+    }
+
+    public function isObject()
+    {
+        return $this->value === 'object';
+    }
+
+    public function isNumericType()
+    {
+        return $this->value === 'int' || $this->value === 'float';
+    }
+
+    public function isScalarType()
+    {
+        return $this->value === 'int' ||
+                $this->value === 'string' ||
+                $this->value === 'float' ||
+                $this->value === 'bool' ||
+                $this->value === 'false' ||
+                $this->value === 'numeric';
+    }
+
+    public function isObjectType()
+    {
+        return $this->isObject()
+                || (
+                    !$this->isScalarType()
+                    && !$this->isCallable()
+                    && !$this->isArray()
+                    && !$this->isMixed()
+                    && !$this->isNull()
+                    && !$this->isResource()
+                );
+    }
+
+    public function isString()
+    {
+        return $this->value === 'string';
+    }
+
+    public function isNumeric()
+    {
+        return $this->value === 'numeric';
+    }
+
+    public function isScalar()
+    {
+        return $this->value === 'scalar';
+    }
+
+    public function isResource()
+    {
+        return $this->value === 'resource';
+    }
+
+    public function isCallable()
+    {
+        return $this->value === 'callable';
+    }
 }

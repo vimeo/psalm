@@ -212,7 +212,7 @@ class FunctionChecker extends FunctionLikeChecker
 
                 $subject_type = $call_args[2]->value->inferredType;
 
-                if (!$subject_type->isString() && $subject_type->isArray()) {
+                if (!$subject_type->hasString() && $subject_type->hasArray()) {
                     return Type::getArray();
                 }
 
@@ -263,7 +263,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if (in_array($call_map_key, ['array_filter', 'array_values'])) {
-            if (isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->isArray()) {
+            if (isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->hasArray()) {
                 return clone $call_args[0]->value->inferredType;
             }
         }

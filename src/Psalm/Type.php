@@ -275,17 +275,6 @@ abstract class Type
         }
     }
 
-    public function isString()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'string';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['string']);
-        }
-    }
-
     public function isVoid()
     {
         if ($this instanceof Atomic) {
@@ -294,50 +283,6 @@ abstract class Type
 
         if ($this instanceof Union) {
             return isset($this->types['void']);
-        }
-    }
-
-    public function isNumeric()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'numeric';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['numeric']);
-        }
-    }
-
-    public function isScalar()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'scalar';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['scalar']);
-        }
-    }
-
-    public function isResource()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'resource';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['resource']);
-        }
-    }
-
-    public function isCallable()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'callable';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['callable']);
         }
     }
 
@@ -350,85 +295,6 @@ abstract class Type
         if ($this instanceof Union) {
             return isset($this->types['empty']);
         }
-    }
-
-    public function isObject()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'object';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['object']);
-        }
-    }
-
-    public function isArray()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'array';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['array']);
-        }
-    }
-
-    public function isNullable()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'null';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['null']);
-        }
-
-        return false;
-    }
-
-    public function hasGeneric()
-    {
-        if ($this instanceof Union) {
-            foreach ($this->types as $type) {
-                if ($type instanceof Generic) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        return $this instanceof Generic;
-    }
-
-    public function isScalarType()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'int' ||
-                    $this->value === 'string' ||
-                    $this->value === 'float' ||
-                    $this->value === 'bool' ||
-                    $this->value === 'false' ||
-                    $this->value === 'numeric';
-        }
-
-        return false;
-    }
-
-    public function isNumericType()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'int' ||
-                    $this->value === 'float';
-        }
-
-        return false;
-    }
-
-    public function isObjectType()
-    {
-        return $this->isObject() || (!$this->isScalarType() && !$this->isCallable() && !$this->isArray() && !$this->isMixed() && !$this->isNull() && !$this->isResource());
     }
 
     /**

@@ -52,6 +52,68 @@ class Union extends Type
         return isset($this->types[$type_string]);
     }
 
+    public function hasGeneric()
+    {
+        foreach ($this->types as $type) {
+            if ($type instanceof Generic) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function hasArray()
+    {
+        return isset($this->types['array']);
+    }
+
+    public function hasObject()
+    {
+        return isset($this->types['object']);
+    }
+
+    public function hasObjectType()
+    {
+        foreach ($this->types as $type) {
+            if ($type->isObjectType()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function isNullable()
+    {
+        return isset($this->types['null']);
+    }
+
+    public function hasString()
+    {
+        return isset($this->types['string']);
+    }
+
+    public function hasNumeric()
+    {
+        return isset($this->types['numeric']);
+    }
+
+    public function hasScalar()
+    {
+        return isset($this->types['scalar']);
+    }
+
+    public function hasResource()
+    {
+        return isset($this->types['resource']);
+    }
+
+    public function hasCallable()
+    {
+        return isset($this->types['callable']);
+    }
+
     public function removeObjects()
     {
         foreach ($this->types as $key => $type) {

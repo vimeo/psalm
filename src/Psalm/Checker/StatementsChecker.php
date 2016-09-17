@@ -167,7 +167,13 @@ class StatementsChecker
                 }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
-                // do nothing
+                foreach ($stmt->vars as $var) {
+                    $var_id = self::getArrayVarId($var);
+
+                    if ($var_id) {
+                        $context->remove($var_id);
+                    }
+                }
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
@@ -1268,9 +1274,14 @@ class StatementsChecker
                         $stmt->inferredType = Type::getNull();
                     }
 
-                    if ($stmt_var_type->isObjectType() && is_string($stmt->name)) {
+                    if (is_string($stmt->name)) {
                         foreach ($stmt_var_type->types as $lhs_type_part) {
                             if ($lhs_type_part->isNull()) {
+                                continue;
+                            }
+
+                            if (!$lhs_type_part->isObjectType()) {
+                                // @todo InvalidPropertyFetch
                                 continue;
                             }
 
@@ -1282,10 +1293,7 @@ class StatementsChecker
                                 continue;
                             }
 
-                            if (!$lhs_type_part->isObjectType()) {
-                                // @todo InvalidPropertyFetch
-                                continue;
-                            }
+
 
                             if (method_exists((string) $lhs_type_part, '__get')) {
                                 continue;
@@ -1380,9 +1388,6 @@ class StatementsChecker
                         }
 
                         return;
-                    }
-                    else {
-                        // @todo ScalarPropertyFetch issue
                     }
                 }
                 else {
@@ -2127,6 +2132,13 @@ class StatementsChecker
     {
         $var_id = self::getVarId($stmt->var);
 
+        $array_var_id = self::getArrayVarId($stmt->var);
+
+        if ($array_var_id) {
+            // removes dependennt vars from $context
+            $context->removeDescendents($array_var_id);
+        }
+
         if ($this->checkExpression($stmt->expr, $context) === false) {
             // if we're not exiting immediately, make everything mixed
             $context->vars_in_scope[$var_id] = Type::getMixed();
@@ -2296,7 +2308,7 @@ class StatementsChecker
                     $array_type = $context_type;
 
                     for ($i = 0; $i < $nesting + 1; $i++) {
-                        if ($array_type->isArray()) {
+                        if ($array_type->hasArray()) {
                             if ($i < $nesting) {
                                 if ($array_type->types['array']->type_params[1]->isEmpty()) {
                                     $array_type->types['array']->type_params[1] = $return_type;
