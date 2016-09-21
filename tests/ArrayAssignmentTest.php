@@ -125,6 +125,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["bar"]["baz"] = "hello";
         ');
 
+        // check array access of baz on foo
+        // with some extra data – if we need to create an array for type $foo["bar"],
+
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
@@ -196,7 +199,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array<string,array<int|string,mixed>>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('object-like', (string) $context->vars_in_scope['foo']);
     }
 
     public function testConflictingTypesWithAssignment()
@@ -212,7 +215,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array<string,array<int|string,mixed>>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('object-like', (string) $context->vars_in_scope['foo']);
     }
 
     public function testConflictingTypesWithAssignment2()
@@ -226,7 +229,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array<string,mixed>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('array<string,string|array<int,string>>', (string) $context->vars_in_scope['foo']);
     }
 
     public function testConflictingTypesWithAssignment3()
@@ -240,6 +243,6 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array<string,mixed>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('array<string,string|array<string,array<string,string>>>', (string) $context->vars_in_scope['foo']);
     }
 }

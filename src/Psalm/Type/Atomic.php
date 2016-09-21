@@ -72,6 +72,11 @@ class Atomic extends Type
         return $this->value === 'array';
     }
 
+    public function isObjectLike()
+    {
+        return $this->value === 'object-like';
+    }
+
     public function isObject()
     {
         return $this->value === 'object';

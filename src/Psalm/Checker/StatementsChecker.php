@@ -798,7 +798,7 @@ class StatementsChecker
     /**
      * @return false|null
      */
-    protected function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $array_assignment = false)
+    protected function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $array_assignment = false, Type\Union $assignment_key_type = null, Type\Union $assignment_value_type = null)
     {
         foreach (Config::getInstance()->getPlugins() as $plugin) {
             if ($plugin->checkExpression($stmt, $context, $this->checked_file_name) === false) {
@@ -945,7 +945,7 @@ class StatementsChecker
             $closure_checker->check($use_context, $this->check_methods);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            return $this->checkArrayAccess($stmt, $context, $array_assignment);
+            return $this->checkArrayAccess($stmt, $context, $array_assignment, $assignment_key_type, $assignment_value_type);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if ($this->checkExpression($stmt->expr, $context) === false) {
@@ -1684,7 +1684,7 @@ class StatementsChecker
 
             if (isset($item->value->inferredType)) {
                 if ($item_value_type) {
-                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type, true);
+                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type);
                 }
                 else {
                     $item_value_type = $item->value->inferredType;
@@ -1692,14 +1692,21 @@ class StatementsChecker
             }
         }
 
+        var_dump($item_value_type . ' ' . ($item_value_type->isSingle() ? ' yes': 'no'));
+
+        // if this array looks like an object-like array, let's return that instead
+        if ($item_value_type && !$item_value_type->isSingle() && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
+            var_dump('creating object-like array for ' . $item_value_type);
+            $stmt->inferredType = new Type\Union([new Type\Atomic('object-like')]);
+            return;
+        }
+
         $stmt->inferredType = new Type\Union([
             new Type\Generic(
                 'array',
                 [
                     $item_key_type ?: new Type\Union([new Type\Atomic('int'), new Type\Atomic('string')]),
-                    $item_value_type && count($item_value_type->types) === ($item_value_type->isNullable() ? 2 : 1)
-                        ? $item_value_type
-                        : Type::getMixed()
+                    $item_value_type ?: Type::getMixed()
                 ]
             )
         ]);
@@ -2239,99 +2246,97 @@ class StatementsChecker
             return false;
         }
 
-        if ($this->checkExpression($stmt->var, $context, true) === false) {
-            return false;
-        }
-
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType)) {
                 $assignment_key_type = $stmt->dim->inferredType;
             }
             else {
-                $assignment_key_type = new Type\Union([
-                    new Type\Atomic('int'),
-                    new Type\Atomic('string')
-                ]);
+                $assignment_key_type = Type::getMixed();
             }
         }
         else {
             $assignment_key_type = Type::getInt();
         }
 
+        if ($this->checkExpression($stmt->var, $context, true, $assignment_key_type, $assignment_value_type) === false) {
+            return false;
+        }
+
         $nesting = 0;
 
         $var_id = self::getVarId($stmt->var, $nesting);
+        $array_var_id = self::getArrayVarId($stmt->var);
+        $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
+                                ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
+                                : null;
+
+        // we want to support multiple array types:
+        // - Dictionaries (which have the type array<string,T>)
+        // - pseudo-objects (which have the type array<string,mixed>)
+        // - typed arrays (which have the type array<int,T>)
+        // and completely freeform arrays
+        //
+        // When making assignments, we generally only know the shape of the array
+        // as it is being created.
+        if ($assignment_key_type) {
+
+        }
 
         if (isset($stmt->var->inferredType)) {
             $return_type = $stmt->var->inferredType;
 
-            if ($return_type->isEmpty()) {
-                $return_type = Type::getEmptyArray();
-                $return_type->types['array']->type_params[0] = $assignment_key_type;
-                $return_type->types['array']->type_params[1] = $assignment_value_type;
-            }
-            else {
-                foreach ($return_type->types as &$type) {
-                    if ($type->isScalarType() && !$type->isString()) {
-                        if (IssueBuffer::accepts(
-                            new InvalidArrayAssignment(
-                                'Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value,
-                                $this->checked_file_name,
-                                $stmt->getLine()
-                            ),
-                            $this->suppressed_issues
-                        )) {
-                            return false;
-                        }
+            if ($keyed_var_id) {
+                // when we have a pattern like
+                // $a = [];
+                // $a['b']['c']['d'] = 1;
+                // $a['c'] = 2;
+                // we need to create each type in turn
+                // so we get
+                // typeof $a['b']['c']['d'] => int
+                // typeof $a['b']['c'] => array<string,int>
+                // typeof $a['b'] => array<string,array<string,int>>
+                // typeof $a['c'] => int
+                // typeof $a => array<string,int|array<string,array<string,int>>>
 
-                        continue;
-                    }
-
-                    $refined_type = $this->refineArrayType($type, $assignment_key_type, $assignment_value_type, $var_id, $stmt->getLine());
-
-                    if ($refined_type === false) {
-                        return false;
-                    }
-
-                    if ($refined_type === null) {
-                        continue;
-                    }
-
-                    $type = $refined_type;
-                }
-            }
-
-            if ($return_type) {
-                if ($nesting && $var_id) {
-                    $context_type = clone $context->vars_in_scope[$var_id];
-
-                    $array_type = $context_type;
-
-                    for ($i = 0; $i < $nesting + 1; $i++) {
-                        if ($array_type->hasArray()) {
-                            if ($i < $nesting) {
-                                if ($array_type->types['array']->type_params[1]->isEmpty()) {
-                                    $array_type->types['array']->type_params[1] = $return_type;
-                                    break;
-                                }
-
-                                $array_type = $array_type->types['array']->type_params[1];
-                            }
-                            elseif (!$return_type->isMixed()) {
-                                $array_type->types['array']->type_params[1] = $return_type->types['array']->type_params[1];
-                            }
-                        }
-                    }
-
-                    $context->vars_in_scope[$var_id] = $context_type;
+                if (isset($context->vars_in_scope[$keyed_array_var_id])) {
+                    $context->vars_in_scope[$keyed_array_var_id] = Type::combineUnionTypes(
+                        $assignment_value_type,
+                        $context->vars_in_scope[$keyed_array_var_id]
+                    );
                 }
                 else {
-                    $context->vars_in_scope[$var_id] = $return_type;
+                    $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
                 }
+
+                $stmt->inferredType = $assignment_value_type;
+
+                var_dump('checkArrayAssignment: setting ' . $keyed_array_var_id . ' to ' . $context->vars_in_scope[$keyed_array_var_id]);
             }
-            else {
-                $context->vars_in_scope[$var_id] = Type::getMixed();
+            elseif (!$nesting) {
+                $assignment_type = new Type\Union([
+                    new Type\Generic(
+                        'array',
+                        [
+                            $assignment_key_type,
+                            $assignment_value_type
+                        ]
+                    )
+                ]);
+
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $assignment_type
+                    );
+                }
+
+                $context->vars_in_scope[$var_id] = $assignment_type;
+
+                var_dump('checkArrayAssignment: setting ' . $var_id . ' to ' . $context->vars_in_scope[$var_id]);
             }
+        }
+        else {
+            $context->vars_in_scope[$var_id] = Type::getMixed();
         }
     }
 
@@ -2359,10 +2364,9 @@ class StatementsChecker
             return $type;
         }
 
-        foreach ($assignment_value_type->types as $at) {
-            if ($type->value === 'string' && $at->isString()) {
-                return;
-            }
+        if ($type->value === 'string' && $assignment_value_type->hasString() && !$assignment_key_type->hasString()) {
+            var_dump((string)$assignment_key_type . $line_number);
+            return;
         }
 
         if ($type->isMixed()) {
@@ -3572,21 +3576,81 @@ class StatementsChecker
      * @param  array                             &$context->vars_possibly_in_scope
      * @return false|null
      */
-    protected function checkArrayAccess(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, $array_assignment = false)
+    protected function checkArrayAccess(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, $array_assignment = false, Type\Union $assignment_key_type = null, Type\Union $assignment_value_type = null)
     {
-        if ($this->checkExpression($stmt->var, $context, $array_assignment) === false) {
-            return false;
-        }
-
-        if ($stmt->dim && $this->checkExpression($stmt->dim, $context) === false) {
-            return false;
-        }
-
         $var_type = null;
         $key_type = null;
 
         $nesting = 0;
         $var_id = self::getVarId($stmt->var, $nesting);
+        $array_var_id = self::getArrayVarId($stmt->var);
+        $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
+                                ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
+                                : null;
+
+        if ($stmt->dim && $this->checkExpression($stmt->dim, $context) === false) {
+            return false;
+        }
+
+        if ($stmt->dim) {
+            if (isset($stmt->dim->inferredType)) {
+                $key_type = $stmt->dim->inferredType;
+            }
+            else {
+                $key_type = Type::getMixed();
+            }
+        }
+        else {
+            $key_type = Type::getInt();
+        }
+
+        $keyed_assignment_type = null;
+
+        if ($array_assignment) {
+            $keyed_assignment_type = $keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])
+                                ? $context->vars_in_scope[$keyed_array_var_id]
+                                : null;
+
+            if (!$keyed_assignment_type || $keyed_assignment_type->isEmpty()) {
+                $keyed_assignment_type = Type::getEmptyArray();
+                $keyed_assignment_type->types['array']->type_params[0] = $assignment_key_type;
+                $keyed_assignment_type->types['array']->type_params[1] = $assignment_value_type;
+            }
+            else {
+                foreach ($keyed_assignment_type->types as &$type) {
+                    if ($type->isScalarType() && !$type->isString()) {
+                        if (IssueBuffer::accepts(
+                            new InvalidArrayAssignment(
+                                'Cannot assign value on variable $' . $var_id . ' of scalar type ' . $type->value,
+                                $this->checked_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->suppressed_issues
+                        )) {
+                            return false;
+                        }
+
+                        continue;
+                    }
+
+                    $refined_type = $this->refineArrayType($type, $assignment_key_type, $assignment_value_type, $var_id, $stmt->getLine());
+
+                    if ($refined_type === false) {
+                        return false;
+                    }
+
+                    if ($refined_type === null) {
+                        continue;
+                    }
+
+                    $type = $refined_type;
+                }
+            }
+        }
+
+        if ($this->checkExpression($stmt->var, $context, $array_assignment, $key_type, $keyed_assignment_type) === false) {
+            return false;
+        }
 
         if (isset($stmt->var->inferredType)) {
             $var_type = $stmt->var->inferredType;
@@ -3615,34 +3679,88 @@ class StatementsChecker
 
                     }
 
-                    if ($array_assignment && $type->type_params[$value_index]->isEmpty()) {
-                        // if in array assignment and the referenced variable does not have
-                        // an array at this level, create one
-                        $empty_type = Type::getEmptyArray();
+                    if ($array_assignment) {
+                        var_dump('checkArrayAccess: in array assignment');
 
-                        $stmt->inferredType = $empty_type;
-
-                        $context_type = clone $context->vars_in_scope[$var_id];
-
-                        $array_type = $context_type;
-
-                        for ($i = 0; $i < $nesting + 1; $i++) {
-                            if ($i < $nesting) {
-                                if ($array_type->types['array']->type_params[1]->isEmpty()) {
-                                    $new_empty = clone $empty_type;
-                                    $new_empty->types['array']->type_params[0] = self::getArrayTypeFromDim($stmt->dim);
-                                    $array_type->types['array']->type_params[1] = $new_empty;
-                                    continue;
-                                }
-
-                                $array_type = $array_type->types['array']->type_params[1];
+                        // if we're in an array assignment then we need to create some variables
+                        // e.g.
+                        // $a = [];
+                        // $a['b']['c']['d'] = 3;
+                        //
+                        // means we need add $a['b'], $a['b']['c'] to the current context
+                        // (but not $a['b']['c']['d'], which is handled in checkArrayAssignment)
+                        if ($keyed_array_var_id && $keyed_assignment_type) {
+                            if (isset($context->vars_in_scope[$keyed_array_var_id])) {
+                                $context->vars_in_scope[$keyed_array_var_id] = Type::combineUnionTypes(
+                                    $keyed_assignment_type,
+                                    $context->vars_in_scope[$keyed_array_var_id]
+                                );
                             }
                             else {
-                                $array_type->types['array']->type_params[0] = self::getArrayTypeFromDim($stmt->dim);
+                                $context->vars_in_scope[$keyed_array_var_id] = $keyed_assignment_type;
                             }
+
+                            $stmt->inferredType = $keyed_assignment_type;
+
+                            var_dump('checkArrayAccess: setting ' . $keyed_array_var_id . ' to ' . $context->vars_in_scope[$keyed_array_var_id]);
                         }
 
-                        $context->vars_in_scope[$var_id] = $context_type;
+                        if ($array_var_id === $var_id) {
+                            $assignment_type = new Type\Union([
+                                new Type\Generic(
+                                    'array',
+                                    [
+                                        $key_type,
+                                        $keyed_assignment_type
+                                    ]
+                                )
+                            ]);
+
+                            if (isset($context->vars_in_scope[$var_id])) {
+                                $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                    $context->vars_in_scope[$var_id],
+                                    $assignment_type
+                                );
+                            }
+                            else {
+                                $context->vars_in_scope[$var_id] = $assignment_type;
+                            }
+
+                            var_dump('checkArrayAccess: setting ' . $var_id . ' to ' . $context->vars_in_scope[$var_id]);
+                        }
+
+                        if ($type->type_params[$value_index]->isEmpty()) {
+                            $empty_type = Type::getEmptyArray();
+
+                            if (!isset($stmt->inferredType)) {
+                                // if in array assignment and the referenced variable does not have
+                                // an array at this level, create one
+                                $stmt->inferredType = $empty_type;
+                            }
+
+                            $context_type = clone $context->vars_in_scope[$var_id];
+
+                            $array_type = $context_type;
+
+                            for ($i = 0; $i < $nesting + 1; $i++) {
+                                if ($i < $nesting) {
+                                    if ($array_type->types['array']->type_params[1]->isEmpty()) {
+                                        $new_empty = clone $empty_type;
+                                        $new_empty->types['array']->type_params[0] = $key_type;
+
+                                        $array_type->types['array']->type_params[1] = $new_empty;
+                                        continue;
+                                    }
+
+                                    $array_type = $array_type->types['array']->type_params[1];
+                                }
+                                else {
+                                    $array_type->types['array']->type_params[0] = $key_type;
+                                }
+                            }
+
+                            $context->vars_in_scope[$var_id] = $context_type;
+                        }
                     }
                     else {
                         $stmt->inferredType = $type->type_params[$value_index];

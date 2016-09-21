@@ -94,6 +94,11 @@ class Union extends Type
         return isset($this->types['string']);
     }
 
+    public function hasInt()
+    {
+        return isset($this->types['int']);
+    }
+
     public function hasNumeric()
     {
         return isset($this->types['numeric']);
@@ -149,5 +154,20 @@ class Union extends Type
         }
 
         return true;
+    }
+
+    public function isSingle()
+    {
+        if (count($this->types) > 1) {
+            return false;
+        }
+
+        $type = array_values($this->types)[0];
+
+        if (!$type instanceof Generic) {
+            return true;
+        }
+
+        return $type->type_params[count($type->type_params) - 1]->isSingle();
     }
 }

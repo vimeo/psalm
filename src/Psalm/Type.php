@@ -213,6 +213,13 @@ abstract class Type
         return new Union([$type]);
     }
 
+    public static function getObjectLike()
+    {
+        $type = new Atomic('object-like');
+
+        return new Union([$type]);
+    }
+
     public static function getArray()
     {
         $type = new Generic(
@@ -345,12 +352,11 @@ abstract class Type
      * Combines two union types into one
      * @param  Union  $type_1
      * @param  Union  $type_2
-     * @param  bool   $combine_to_mixed if true, combine differing types A and B to mixed, not A|B
      * @return Union
      */
-    public static function combineUnionTypes(Union $type_1, Union $type_2, $combine_to_mixed = false)
+    public static function combineUnionTypes(Union $type_1, Union $type_2)
     {
-        return self::combineTypes(array_merge(array_values($type_1->types), array_values($type_2->types)), $combine_to_mixed);
+        return self::combineTypes(array_merge(array_values($type_1->types), array_values($type_2->types)));
     }
 
     /**
@@ -363,10 +369,9 @@ abstract class Type
      * and array + array<string> = array<mixed>
      *
      * @param  array<Atomic>    $types
-     * @param  bool             $combine_to_mixed if true, combine differing types A and B to mixed, not A|B
      * @return Union
      */
-    public static function combineTypes(array $types, $combine_to_mixed = false)
+    public static function combineTypes(array $types)
     {
         if (in_array(null, $types)) {
             return Type::getMixed();
@@ -457,7 +462,7 @@ abstract class Type
 
                 // if we're continuing, also add the correspoinding key type param if it exists
                 if ($expanded_key_types) {
-                    array_unshift($generic_type_params, self::combineTypes($expanded_key_types, $combine_to_mixed));
+                    array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
                 }
 
                 $new_types[] = $value_type_param ? new Generic($generic_type, $generic_type_params) : new Atomic($generic_type);
@@ -478,18 +483,10 @@ abstract class Type
                 }
             }
 
-            // if $combine_to_mixed is true, we want to combine multiple non-null types to a single mixed type.
-            if ($combine_to_mixed) {
-
-                if (count($expanded_value_types) > ($has_null ? 2 : 1)) {
-                    $expanded_value_types = [Type::getMixed()->types['mixed']];
-                }
-            }
-
-            $generic_type_params = [self::combineTypes($expanded_value_types, $combine_to_mixed)];
+            $generic_type_params = [self::combineTypes($expanded_value_types)];
 
             if ($expanded_key_types) {
-                array_unshift($generic_type_params, self::combineTypes($expanded_key_types, $combine_to_mixed));
+                array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
             }
 
             // we have a generic type with
