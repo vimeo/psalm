@@ -39,6 +39,10 @@ class Atomic extends Type
             return true;
         }
 
+        if ($parent->hasType('array') && $this->isObjectLike()) {
+            return true;
+        }
+
         if ($this->value === 'false' && $parent->hasType('bool')) {
             // this is fine
             return true;

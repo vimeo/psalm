@@ -613,6 +613,10 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $type_match_found = true;
                 }
 
+                if ($param_type_part->isArray() && $input_type_part->isObjectLike()) {
+                    $type_match_found = true;
+                }
+
                 if ($param_type_part->isScalar() && $input_type_part->isScalarType()) {
                     $type_match_found = true;
                 }

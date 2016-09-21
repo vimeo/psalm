@@ -1692,11 +1692,8 @@ class StatementsChecker
             }
         }
 
-        var_dump($item_value_type . ' ' . ($item_value_type->isSingle() ? ' yes': 'no'));
-
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type && !$item_value_type->isSingle() && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
-            var_dump('creating object-like array for ' . $item_value_type);
             $stmt->inferredType = new Type\Union([new Type\Atomic('object-like')]);
             return;
         }
@@ -1829,7 +1826,7 @@ class StatementsChecker
         if ($iterator_type) {
             foreach ($iterator_type->types as $return_type) {
                 // if it's an empty array, we cannot iterate over it
-                if ((string) $return_type === 'array<empty, empty>') {
+                if ((string) $return_type === 'array<empty,empty>') {
                     continue;
                 }
 
@@ -1942,6 +1939,11 @@ class StatementsChecker
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
+                continue;
+            }
+
+            if (!isset($foreach_context->vars_in_scope[$var])) {
+                unset($context->vars_in_scope[$var]);
                 continue;
             }
 
@@ -2285,7 +2287,7 @@ class StatementsChecker
         if (isset($stmt->var->inferredType)) {
             $return_type = $stmt->var->inferredType;
 
-            if ($keyed_var_id) {
+            if ($keyed_array_var_id) {
                 // when we have a pattern like
                 // $a = [];
                 // $a['b']['c']['d'] = 1;
@@ -2309,10 +2311,9 @@ class StatementsChecker
                 }
 
                 $stmt->inferredType = $assignment_value_type;
-
-                var_dump('checkArrayAssignment: setting ' . $keyed_array_var_id . ' to ' . $context->vars_in_scope[$keyed_array_var_id]);
             }
-            elseif (!$nesting) {
+
+            if (!$nesting) {
                 $assignment_type = new Type\Union([
                     new Type\Generic(
                         'array',
@@ -2331,8 +2332,6 @@ class StatementsChecker
                 }
 
                 $context->vars_in_scope[$var_id] = $assignment_type;
-
-                var_dump('checkArrayAssignment: setting ' . $var_id . ' to ' . $context->vars_in_scope[$var_id]);
             }
         }
         else {
@@ -2365,7 +2364,6 @@ class StatementsChecker
         }
 
         if ($type->value === 'string' && $assignment_value_type->hasString() && !$assignment_key_type->hasString()) {
-            var_dump((string)$assignment_key_type . $line_number);
             return;
         }
 
@@ -3680,8 +3678,6 @@ class StatementsChecker
                     }
 
                     if ($array_assignment) {
-                        var_dump('checkArrayAccess: in array assignment');
-
                         // if we're in an array assignment then we need to create some variables
                         // e.g.
                         // $a = [];
@@ -3701,8 +3697,6 @@ class StatementsChecker
                             }
 
                             $stmt->inferredType = $keyed_assignment_type;
-
-                            var_dump('checkArrayAccess: setting ' . $keyed_array_var_id . ' to ' . $context->vars_in_scope[$keyed_array_var_id]);
                         }
 
                         if ($array_var_id === $var_id) {
@@ -3725,8 +3719,6 @@ class StatementsChecker
                             else {
                                 $context->vars_in_scope[$var_id] = $assignment_type;
                             }
-
-                            var_dump('checkArrayAccess: setting ' . $var_id . ' to ' . $context->vars_in_scope[$var_id]);
                         }
 
                         if ($type->type_params[$value_index]->isEmpty()) {
@@ -3775,6 +3767,10 @@ class StatementsChecker
                     }
                 }
             }
+        }
+
+        if ($keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])) {
+            $stmt->inferredType = $context->vars_in_scope[$keyed_array_var_id];
         }
 
         if (!isset($stmt->inferredType)) {
