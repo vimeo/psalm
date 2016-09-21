@@ -2280,10 +2280,6 @@ class StatementsChecker
         //
         // When making assignments, we generally only know the shape of the array
         // as it is being created.
-        if ($assignment_key_type) {
-
-        }
-
         if (isset($stmt->var->inferredType)) {
             $return_type = $stmt->var->inferredType;
 
@@ -2300,15 +2296,7 @@ class StatementsChecker
                 // typeof $a['c'] => int
                 // typeof $a => array<string,int|array<string,array<string,int>>>
 
-                if (isset($context->vars_in_scope[$keyed_array_var_id])) {
-                    $context->vars_in_scope[$keyed_array_var_id] = Type::combineUnionTypes(
-                        $assignment_value_type,
-                        $context->vars_in_scope[$keyed_array_var_id]
-                    );
-                }
-                else {
-                    $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
-                }
+                $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
 
                 $stmt->inferredType = $assignment_value_type;
             }
