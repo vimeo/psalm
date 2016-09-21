@@ -2372,7 +2372,7 @@ class StatementsChecker
             return;
         }
 
-        if ($type->value !== 'array' && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
+        if (!$type->isArray() && !$type->isObjectLike() && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable $' . $var_id . ' of type ' . $type->value . ' that does not implement ArrayAccess',
