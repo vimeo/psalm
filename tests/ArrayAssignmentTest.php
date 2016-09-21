@@ -115,7 +115,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string,string>', (string) $context->vars_in_scope['foo']);
-
+        $this->assertEquals('string', (string) $context->vars_in_scope['foo[\'bar\']']);
     }
 
     public function testImplicit2DStringArrayCreation()
@@ -132,7 +132,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string,array<string,string>>', (string) $context->vars_in_scope['foo']);
-
+        $this->assertEquals('string', (string) $context->vars_in_scope['foo[\'bar\'][\'baz\']']);
     }
 
     public function testImplicit3DStringArrayCreation()
@@ -146,6 +146,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string,array<string,array<string,string>>>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['foo[\'bar\'][\'baz\'][\'bat\']']);
     }
 
     public function testImplicit4DStringArrayCreation()
@@ -159,6 +160,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string,array<string,array<string,array<string,string>>>>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['foo[\'bar\'][\'baz\'][\'bat\'][\'bap\']']);
     }
 
     public function test2Step2DIntArrayCreation()
@@ -172,6 +174,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string,array<string,string>>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['foo[\'bar\'][\'baz\']']);
     }
 
     public function test2StepImplicit3DIntArrayCreation()
@@ -224,12 +227,16 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo = [];
         $foo["a"] = "hello";
         $foo["b"][] = "goodbye";
+        $bar = $foo["a"];
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string,string|array<int,string>>', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['foo[\'a\']']);
+        $this->assertEquals('array<int,string>', (string) $context->vars_in_scope['foo[\'b\']']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['bar']);
     }
 
     public function testConflictingTypesWithAssignment3()
@@ -244,5 +251,21 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string,string|array<string,array<string,string>>>', (string) $context->vars_in_scope['foo']);
+    }
+
+    public function testIssetKeyedOffset()
+    {
+        $file_checker = new \Psalm\Checker\FileChecker(
+            'somefile.php',
+            self::$_parser->parse('<?php
+                if (!isset($foo["a"])) {
+                    $foo["a"] = "hello";
+                }
+            ')
+        );
+        $context = new Context('somefile.php');
+        $context->vars_in_scope['foo'] = \Psalm\Type::getArray();
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string', (string) $context->vars_in_scope['foo[\'a\']']);
     }
 }
