@@ -1659,6 +1659,8 @@ class StatementsChecker
         $item_key_type = null;
         $item_value_type = null;
 
+        $property_types = [];
+
         foreach ($stmt->items as $item) {
             if ($item->key) {
                 if ($this->checkExpression($item->key, $context) === false) {
@@ -1683,6 +1685,10 @@ class StatementsChecker
             }
 
             if (isset($item->value->inferredType)) {
+                if ($item->key instanceof PhpParser\Node\Scalar\String_) {
+                    $property_types[$item->key->value] = $item->value->inferredType;
+                }
+
                 if ($item_value_type) {
                     $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type);
                 }
@@ -1694,7 +1700,7 @@ class StatementsChecker
 
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type && !$item_value_type->isSingle() && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
-            $stmt->inferredType = new Type\Union([new Type\Atomic('object-like')]);
+            $stmt->inferredType = new Type\Union([new Type\ObjectLike('object-like', $property_types)]);
             return;
         }
 
