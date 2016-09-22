@@ -284,6 +284,22 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context->vars_in_scope['b'] = \Psalm\Type::getBool();
         $context->vars_in_scope['foo'] = \Psalm\Type::getArray();
         $file_checker->check(true, true, $context);
-        $this->assertEquals(false, isset($context->vars_in_scope['foo[\'a\']']));
+        $this->assertFalse(isset($context->vars_in_scope['foo[\'a\']']));
+    }
+
+    public function testImplementsArrayAccess()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A implements \ArrayAccess { }
+
+        $a = new A();
+        $a["bar"] = "cool";
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('A', (string) $context->vars_in_scope['a']);
+        $this->assertFalse(isset($context->vars_in_scope['a[\'bar\']']));
     }
 }
