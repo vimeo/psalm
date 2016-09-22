@@ -2279,13 +2279,14 @@ class StatementsChecker
             $assignment_key_type = Type::getInt();
         }
 
-        if ($this->checkExpression($stmt->var, $context, true, $assignment_key_type, $assignment_value_type) === false) {
+        $nesting = 0;
+        $var_id = self::getVarId($stmt->var, $nesting);
+        $is_object = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasObjectType();
+
+        if ($this->checkExpression($stmt->var, $context, !$is_object, $assignment_key_type, $assignment_value_type) === false) {
             return false;
         }
 
-        $nesting = 0;
-
-        $var_id = self::getVarId($stmt->var, $nesting);
         $array_var_id = self::getArrayVarId($stmt->var);
         $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
                                 ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
@@ -2302,7 +2303,7 @@ class StatementsChecker
         if (isset($stmt->var->inferredType)) {
             $return_type = $stmt->var->inferredType;
 
-            if ($keyed_array_var_id) {
+            if ($keyed_array_var_id && !$is_object) {
                 // when we have a pattern like
                 // $a = [];
                 // $a['b']['c']['d'] = 1;
@@ -2320,7 +2321,7 @@ class StatementsChecker
                 $stmt->inferredType = $assignment_value_type;
             }
 
-            if (!$nesting) {
+            if (!$nesting && !$is_object) {
                 $assignment_type = new Type\Union([
                     new Type\Generic(
                         'array',
@@ -3588,6 +3589,8 @@ class StatementsChecker
 
         $nesting = 0;
         $var_id = self::getVarId($stmt->var, $nesting);
+
+        $is_object = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasObjectType();
         $array_var_id = self::getArrayVarId($stmt->var);
         $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
                                 ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
@@ -3684,7 +3687,7 @@ class StatementsChecker
 
                     }
 
-                    if ($array_assignment) {
+                    if ($array_assignment && !$is_object) {
                         // if we're in an array assignment then we need to create some variables
                         // e.g.
                         // $a = [];
