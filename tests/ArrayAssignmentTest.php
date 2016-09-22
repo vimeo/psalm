@@ -202,7 +202,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('object-like{bar:array<string,string>,baz:array<int,int>}', (string) $context->vars_in_scope['foo']);
     }
 
     public function testConflictingTypesWithAssignment()
@@ -218,7 +218,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like', (string) $context->vars_in_scope['foo']);
+        $this->assertEquals('object-like{bar:array<string,string|array<string,string>>,baz:array<int,int>}', (string) $context->vars_in_scope['foo']);
     }
 
     public function testConflictingTypesWithAssignment2()
