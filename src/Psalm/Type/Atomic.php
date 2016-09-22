@@ -108,6 +108,7 @@ class Atomic extends Type
                     !$this->isScalarType()
                     && !$this->isCallable()
                     && !$this->isArray()
+                    && !$this->isObjectLike()
                     && !$this->isMixed()
                     && !$this->isNull()
                     && !$this->isResource()
