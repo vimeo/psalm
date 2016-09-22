@@ -5,6 +5,8 @@ namespace Psalm\Type;
 class ParseTree
 {
     const GENERIC = '<>';
+    const OBJECT_LIKE = '{}';
+    const OBJECT_PROPERTY = ':';
     const UNION = '|';
 
     /** @var array<ParseTree> */
@@ -45,8 +47,9 @@ class ParseTree
 
             switch ($type_token) {
                 case '<':
+                case '{':
                     $current_parent = $current_leaf->parent;
-                    $new_parent_leaf = new self(ParseTree::GENERIC, $current_parent);
+                    $new_parent_leaf = new self($type_token === '<' ? ParseTree::GENERIC : ParseTree::OBJECT_LIKE, $current_parent);
                     $new_parent_leaf->children = [$current_leaf];
                     $current_leaf->parent = $new_parent_leaf;
 
@@ -72,19 +75,60 @@ class ParseTree
 
                     break;
 
-                case ',':
-                    $current_parent = $current_leaf->parent;
-                    if (!$current_parent) {
-                        throw new \InvalidArgumentException('Cannot parse comma in non-generic type');
-                    }
-
-                    if ($current_parent->value !== self::GENERIC) {
-                        if (!$current_parent->parent->value) {
-                            throw new \InvalidArgumentException('Cannot parse comma in non-generic type');
+                case '}':
+                    do {
+                        if ($current_leaf->parent === null) {
+                            throw new \InvalidArgumentException('Cannot parse object-like type');
                         }
 
                         $current_leaf = $current_leaf->parent;
                     }
+                    while ($current_leaf->value !== self::OBJECT_LIKE);
+
+                    break;
+
+                case ',':
+                    $current_parent = $current_leaf->parent;
+
+                    $context_node = $current_leaf;
+
+                    while ($context_node && $context_node->value !== self::GENERIC && $context_node->value !== self::OBJECT_LIKE) {
+                        $context_node = $context_node->parent;
+                    }
+
+                    if (!$context_node) {
+                        throw new \InvalidArgumentException('Cannot parse comma in non-generic/object-like type');
+                    }
+
+                    if ($context_node->value === self::GENERIC && $current_parent->value !== self::GENERIC) {
+                        if (!$current_parent->parent->value) {
+                            throw new \InvalidArgumentException('Cannot parse comma in non-generic/object-like type');
+                        }
+
+                        $current_leaf = $current_leaf->parent;
+                    }
+                    elseif ($context_node->value === self::OBJECT_LIKE && $current_parent->value !== self::OBJECT_LIKE) {
+                        do {
+                            $current_leaf = $current_leaf->parent;
+                        }
+                        while ($current_leaf->parent->value !== self::OBJECT_LIKE);
+                    }
+
+                    break;
+
+                case ':':
+                    $current_parent = $current_leaf->parent;
+
+                    if ($current_parent && $current_parent->value === ParseTree::OBJECT_PROPERTY) {
+                        continue;
+                    }
+
+                    $new_parent_leaf = new self(self::OBJECT_PROPERTY, $current_parent);
+                    $new_parent_leaf->children = [$current_leaf];
+                    $current_leaf->parent = $new_parent_leaf;
+
+                    array_pop($current_parent->children);
+                    $current_parent->children[] = $new_parent_leaf;
 
                     break;
 

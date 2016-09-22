@@ -107,6 +107,18 @@ abstract class Type
             return new Union($union_types);
         }
 
+        if ($parse_tree->value === ParseTree::OBJECT_LIKE) {
+            $properties = [];
+
+            $type = array_shift($parse_tree->children);
+
+            foreach ($parse_tree->children as $property_branch) {
+                $properties[$property_branch->children[0]->value] = self::getTypeFromTree($property_branch->children[1]);
+            }
+
+            return new Type\ObjectLike($type, $properties);
+        }
+
         $atomic_type = self::fixScalarTerms($parse_tree->value);
 
         if ($atomic_type === 'array') {
@@ -130,7 +142,7 @@ abstract class Type
                 $return_type_tokens[] = '';
             }
 
-            if ($char === '<' || $char === '>' || $char === '|' || $char === '?' || $char === ',') {
+            if ($char === '<' || $char === '>' || $char === '|' || $char === '?' || $char === ',' || $char === '{' || $char === '}' || $char === ':') {
                 if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
                     $return_type_tokens[count($return_type_tokens) - 1] = $char;
                 }
