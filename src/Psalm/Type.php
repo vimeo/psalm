@@ -89,6 +89,10 @@ abstract class Type
                 throw new \InvalidArgumentException('No generic params provided for type');
             }
 
+            if ($generic_type_value === 'array') {
+                return new Type\GenericArray($generic_type_value, $generic_params);
+            }
+
             return new Generic($generic_type_value, $generic_params);
         }
 
@@ -222,7 +226,7 @@ abstract class Type
 
     public static function getArray()
     {
-        $type = new Generic(
+        $type = new Type\GenericArray(
             'array',
             [
                 Type::getMixed(),
@@ -236,7 +240,7 @@ abstract class Type
     public static function getEmptyArray()
     {
         return new Type\Union([
-            new Type\Generic(
+            new Type\GenericArray(
                 'array',
                 [
                     new Type\Union([new Type\Atomic('empty')]),
