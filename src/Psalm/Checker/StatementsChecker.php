@@ -378,6 +378,7 @@ class StatementsChecker
             return false;
         }
 
+        $forced_new_vars = null;
         $new_vars = null;
         $new_vars_possibly_in_scope = [];
         $redefined_vars = null;
@@ -395,9 +396,15 @@ class StatementsChecker
             if (!$has_leaving_statements) {
                 $new_vars = array_diff_key($if_context->vars_in_scope, $context->vars_in_scope);
 
+                // if we have a check like if (!isset($a)) { $a = true; } we want to make sure $a is always set
+                foreach ($new_vars as $var_id => $type) {
+                    if (isset($negated_if_types[$var_id]) && $negated_if_types[$var_id] === '!null') {
+                        $forced_new_vars[$var_id] = Type::getMixed();
+                    }
+                }
+
                 $redefined_vars = Context::getRedefinedVars($context, $if_context);
                 $possibly_redefined_vars = $redefined_vars;
-
             }
             elseif (!$stmt->else && !$stmt->elseifs && $negated_types) {
                 $context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
@@ -729,13 +736,14 @@ class StatementsChecker
             }
         }
 
-        if ($new_vars) {
-            $context->vars_in_scope = array_merge($context->vars_in_scope, $new_vars);
-        }
         $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $new_vars_possibly_in_scope);
 
-        // vars can only be redefined if there was an else (defined in every block)
+        // vars can only be defined/redefined if there was an else (defined in every block)
         if ($stmt->else) {
+            if ($new_vars) {
+                $context->vars_in_scope = array_merge($context->vars_in_scope, $new_vars);
+            }
+
             if ($redefined_vars) {
                 foreach ($redefined_vars as $var => $type) {
                     $context->vars_in_scope[$var] = $type;
@@ -748,6 +756,11 @@ class StatementsChecker
                     $loop_context->vars_in_scope[$var] = $type;
                     $updated_loop_vars[$var] = true;
                 }
+            }
+        }
+        else {
+            if ($forced_new_vars) {
+                $context->vars_in_scope = array_merge($context->vars_in_scope, $forced_new_vars);
             }
         }
 

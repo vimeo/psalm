@@ -33,6 +33,24 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 
+    /**
+     * @expectedException Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, first seen on line 3
+     */
+    public function testPossiblyUndefinedVarInIf()
+    {
+        $stmts = self::$_parser->parse('<?php
+        if (rand(0,100) === 10) {
+            $b = "s";
+        }
+
+        echo $b;
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testNewVarInIf()
     {
         $stmts = self::$_parser->parse('<?php
