@@ -73,6 +73,11 @@ class Union extends Type
         return isset($this->types['object']);
     }
 
+    public function hasObjectLike()
+    {
+        return isset($this->types['object-like']);
+    }
+
     public function hasObjectType()
     {
         foreach ($this->types as $type) {
