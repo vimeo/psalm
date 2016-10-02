@@ -5,6 +5,7 @@ namespace Psalm;
 use Psalm\Type\Atomic;
 use Psalm\Type\Generic;
 use Psalm\Type\Union;
+use Psalm\Type\ObjectLike;
 use Psalm\Type\ParseTree;
 
 abstract class Type
@@ -113,10 +114,14 @@ abstract class Type
             $type = array_shift($parse_tree->children);
 
             foreach ($parse_tree->children as $property_branch) {
-                $properties[$property_branch->children[0]->value] = self::getTypeFromTree($property_branch->children[1]);
+                $property_type = self::getTypeFromTree($property_branch->children[1]);
+                if (!$property_type instanceof Union) {
+                    $property_type = new Union([$property_type]);
+                }
+                $properties[$property_branch->children[0]->value] = $property_type;
             }
 
-            return new Type\ObjectLike($type, $properties);
+            return new ObjectLike($type, $properties);
         }
 
         $atomic_type = self::fixScalarTerms($parse_tree->value);
@@ -446,6 +451,19 @@ abstract class Type
                     $key_types[$type->value][(string) $type->type_params[0]] = $type->type_params[0];
                 }
             }
+            elseif ($type instanceof ObjectLike) {
+                foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
+                    if (!isset($value_types[$type->value][$candidate_property_name])) {
+                        $value_types[$type->value][$candidate_property_name] = $candidate_property_type;
+                    }
+                    else {
+                        $value_types[$type->value][$candidate_property_name] = Type::combineUnionTypes(
+                            $value_types[$type->value][$candidate_property_name],
+                            $candidate_property_type
+                        );
+                    }
+                }
+            }
             else {
                 if ($type->value === 'array') {
                     throw new \InvalidArgumentException('Cannot have a non-generic array');
@@ -464,6 +482,12 @@ abstract class Type
         $new_types = [];
 
         foreach ($value_types as $generic_type => $value_type) {
+            // special case for ObjectLike where $value_type is actually an array of properties
+            if ($generic_type === 'object-like') {
+                $new_types[] = new ObjectLike('object-like', $value_type);
+                continue;
+            }
+
             $key_type = isset($key_types[$generic_type]) ? $key_types[$generic_type] : [];
 
             $expanded_key_types = [];
