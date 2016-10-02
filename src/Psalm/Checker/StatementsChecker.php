@@ -1202,6 +1202,9 @@ class StatementsChecker
         elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             return Type::getArray();
         }
+        elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+            return self::getSimpleType($stmt->expr);
+        }
         else {
             var_dump('Unrecognised default property type');
             var_dump($stmt);
