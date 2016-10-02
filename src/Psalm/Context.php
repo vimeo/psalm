@@ -58,7 +58,7 @@ class Context
             // this is only true if there was some sort of type negation
             if (in_array($var, $vars_to_update)) {
                 // if we're leaving, we're effectively deleting the possibility of the if types
-                $new_type = !$has_leaving_statements ? $end_context->vars_in_scope[$var] : null;
+                $new_type = !$has_leaving_statements && isset($end_context->vars_in_scope[$var]) ? $end_context->vars_in_scope[$var] : null;
 
                 // if the type changed within the block of statements, process the replacement
                 if ((string)$old_type !== (string)$new_type) {
@@ -106,7 +106,8 @@ class Context
             $vars_to_remove = [];
 
             foreach ($this->vars_in_scope as $var_id => $context_type) {
-                if (preg_match('/^' . preg_quote($var_id, '/') . '[\[\-]/', $var_id)) {
+                if (preg_match('/^' . preg_quote($remove_var_id, '/') . '[\[\-]/', $var_id)) {
+
                     $vars_to_remove[] = $var_id;
                 }
             }
