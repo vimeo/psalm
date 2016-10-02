@@ -1893,6 +1893,7 @@ class StatementsChecker
 
                     case 'array':
                     case 'object':
+                    case 'object-like':
                         $value_type = Type::getMixed();
                         break;
 
