@@ -491,27 +491,6 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * Checks a Name object to see if the class specified exists
-     *
-     * @param  PhpParser\Node\Name $class_name
-     * @param  string              $namespace
-     * @param  array<string>       $aliased_classes
-     * @param  string              $file_name
-     * @param  array               $suppressed_issues
-     * @return bool|null
-     */
-    public static function checkClassName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes, $file_name, array $suppressed_issues)
-    {
-        if ($class_name->parts[0] === 'static') {
-            return;
-        }
-
-        $absolute_class = self::getAbsoluteClassFromName($class_name, $namespace, $aliased_classes);
-
-        return self::checkAbsoluteClassOrInterface($absolute_class, $file_name, $class_name->getLine(), $suppressed_issues);
-    }
-
-    /**
      * Check whether a class/interface exists
      *
      * @param  string $absolute_class

@@ -73,6 +73,12 @@ class StatementsChecker
 
     protected $existing_functions = [];
 
+    /**
+     * A list of classes checked with class_exists
+     * @var array
+     */
+    protected $phantom_classes = [];
+
     protected static $method_call_index = [];
     protected static $reflection_functions = [];
     protected static $this_assignments = [];
@@ -1024,7 +1030,9 @@ class StatementsChecker
 
             if ($stmt->class instanceof PhpParser\Node\Name && !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($this->check_classes) {
-                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
+                    $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+
+                    if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
@@ -1638,12 +1646,16 @@ class StatementsChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($this->check_classes) {
-                    if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
+                    $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+
+                    if ($this->isPhantomClass($absolute_class)) {
+                        return;
+                    }
+
+                    if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                         return false;
                     }
                 }
-
-                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
             }
             else {
                 switch ($stmt->class->parts[0]) {
@@ -1768,8 +1780,10 @@ class StatementsChecker
             $this->registerVariable($catch->var, $catch->getLine());
 
             if ($this->check_classes) {
-                if (ClassLikeChecker::checkClassName($catch->type, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
-                    return;
+                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($catch->type, $this->namespace, $this->aliased_classes);
+
+                if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                    return false;
                 }
             }
 
@@ -2528,7 +2542,7 @@ class StatementsChecker
             }
         }
 
-        if (!$this->check_methods) {
+        if (!$this->check_methods || !$this->check_classes) {
             return;
         }
 
@@ -2585,9 +2599,10 @@ class StatementsChecker
 
                     case 'static':
                         $absolute_class = (string) $context->self;
+                        // fall through to default
 
                     default:
-                        if (!method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
+                        if (!method_exists($absolute_class, '__call') && !self::isMock($absolute_class) && !$this->isPhantomClass($absolute_class)) {
                             $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
                                 $absolute_class,
                                 $this->checked_file_name,
@@ -2776,15 +2791,27 @@ class StatementsChecker
                 $absolute_class = ($this->namespace ? $this->namespace . '\\' : '') . $this->class_name;
             }
 
+            if ($this->isPhantomClass($absolute_class)) {
+                return;
+            }
         }
         elseif ($this->check_classes) {
-            $does_class_exist = ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues);
+            $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+
+            if ($this->isPhantomClass($absolute_class)) {
+                return;
+            }
+
+            $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
+                $absolute_class,
+                $this->checked_file_name,
+                $stmt->getLine(),
+                $this->suppressed_issues
+            );
 
             if (!$does_class_exist) {
                 return $does_class_exist;
             }
-
-            $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
         }
 
         if (!$this->check_methods) {
@@ -3141,12 +3168,21 @@ class StatementsChecker
             } else {
                 $absolute_class = ($this->namespace ? $this->namespace . '\\' : '') . $this->class_name;
             }
+
+            if ($this->isPhantomClass($absolute_class)) {
+                return null;
+            }
         }
         elseif ($this->check_classes) {
-            if (ClassLikeChecker::checkClassName($stmt->class, $this->namespace, $this->aliased_classes, $this->checked_file_name, $this->suppressed_issues) === false) {
+            $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
+
+            if ($this->isPhantomClass($absolute_class)) {
+                return;
+            }
+
+            if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                 return false;
             }
-            $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
         }
 
         if ($absolute_class && $this->check_variables && is_string($stmt->name) && !self::isMock($absolute_class)) {
@@ -3559,6 +3595,15 @@ class StatementsChecker
         if ($method instanceof PhpParser\Node\Name) {
             if ($method->parts === ['method_exists']) {
                 $this->check_methods = false;
+
+            }
+            elseif ($method->parts === ['class_exists']) {
+                if ($stmt->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                    $this->phantom_classes[$stmt->args[0]->value->value] = true;
+                }
+                else {
+                    $this->check_classes = false;
+                }
 
             } elseif ($method->parts === ['function_exists']) {
                 $this->check_functions = false;
@@ -4329,5 +4374,10 @@ class StatementsChecker
         }
 
         return null;
+    }
+
+    protected function isPhantomClass($class_name)
+    {
+        return isset($this->phantom_classes[$class_name]);
     }
 }
