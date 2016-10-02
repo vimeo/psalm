@@ -2030,12 +2030,14 @@ class StatementsChecker
                 continue;
             }
 
-            if ($while_context->vars_in_scope[$var]->isMixed()) {
-                $context->vars_in_scope[$var] = $while_context->vars_in_scope[$var];
-            }
+            if (isset($while_context->vars_in_scope[$var])) {
+                if ($while_context->vars_in_scope[$var]->isMixed()) {
+                    $context->vars_in_scope[$var] = $while_context->vars_in_scope[$var];
+                }
 
-            if ((string) $while_context->vars_in_scope[$var] !== (string) $type) {
-                $context->vars_in_scope[$var] = Type::combineUnionTypes($while_context->vars_in_scope[$var], $type);
+                if ((string) $while_context->vars_in_scope[$var] !== (string) $type) {
+                    $context->vars_in_scope[$var] = Type::combineUnionTypes($while_context->vars_in_scope[$var], $type);
+                }
             }
         }
 
