@@ -306,12 +306,24 @@ class StatementsChecker
      */
     protected function checkIf(PhpParser\Node\Stmt\If_ $stmt, Context $context, Context $loop_context = null)
     {
+        // get the first expression in the if, which should be evaluated on its own
+        // this allows us to update the context of $matches in
+        // if (!preg_match('/a/', 'aa', $matches)) {
+        //   exit
+        // }
+        // echo $matches[0];
+        $first_if_cond_expr = $this->getFirstFunctionCall($stmt->cond);
+
+        if ($first_if_cond_expr && $this->checkExpression($first_if_cond_expr, $context) === false) {
+            return false;
+        }
+
         $if_context = clone $context;
 
         // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
         $original_context = clone $context;
 
-        if ($this->checkExpression($stmt->cond, $if_context) === false) {
+        if ($first_if_cond_expr !== $stmt->cond && $this->checkExpression($stmt->cond, $if_context) === false) {
             return false;
         }
 
@@ -4261,5 +4273,25 @@ class StatementsChecker
         }
 
         return $this_assignments;
+    }
+
+    protected static function getFirstFunctionCall(PhpParser\Node\Expr $stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\MethodCall
+            || $stmt instanceof PhpParser\Node\Expr\StaticCall
+            || $stmt instanceof PhpParser\Node\Expr\FuncCall
+        ) {
+            return $stmt;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
+            return self::getFirstFunctionCall($stmt->left);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
+            return self::getFirstFunctionCall($stmt->expr);
+        }
+
+        return null;
     }
 }
