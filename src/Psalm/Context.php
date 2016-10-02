@@ -53,17 +53,19 @@ class Context
     public function update(Context $start_context, Context $end_context, $has_leaving_statements, array $vars_to_update, array &$updated_vars)
     {
         foreach ($this->vars_in_scope as $var => &$context_type) {
-            $old_type = $start_context->vars_in_scope[$var];
+            if (isset($start_context->vars_in_scope[$var])) {
+                $old_type = $start_context->vars_in_scope[$var];
 
-            // this is only true if there was some sort of type negation
-            if (in_array($var, $vars_to_update)) {
-                // if we're leaving, we're effectively deleting the possibility of the if types
-                $new_type = !$has_leaving_statements && isset($end_context->vars_in_scope[$var]) ? $end_context->vars_in_scope[$var] : null;
+                // this is only true if there was some sort of type negation
+                if (in_array($var, $vars_to_update)) {
+                    // if we're leaving, we're effectively deleting the possibility of the if types
+                    $new_type = !$has_leaving_statements && isset($end_context->vars_in_scope[$var]) ? $end_context->vars_in_scope[$var] : null;
 
-                // if the type changed within the block of statements, process the replacement
-                if ((string)$old_type !== (string)$new_type) {
-                    $context_type->substitute($old_type, $new_type);
-                    $updated_vars[$var] = true;
+                    // if the type changed within the block of statements, process the replacement
+                    if ((string)$old_type !== (string)$new_type) {
+                        $context_type->substitute($old_type, $new_type);
+                        $updated_vars[$var] = true;
+                    }
                 }
             }
         }
