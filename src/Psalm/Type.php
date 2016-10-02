@@ -490,6 +490,16 @@ abstract class Type
 
             $key_type = isset($key_types[$generic_type]) ? $key_types[$generic_type] : [];
 
+            // if we're merging an empty array with an object-like, clobber empty array
+            if ($generic_type === 'array'
+                && count($value_type) === 1
+                && isset($value_type['empty'])
+                && count($key_type) === 1
+                && isset($key_type['empty'])
+            ) {
+                continue;
+            }
+
             $expanded_key_types = [];
 
             foreach ($key_type as $expandable_key_type) {
