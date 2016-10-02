@@ -2295,6 +2295,7 @@ class StatementsChecker
         $nesting = 0;
         $var_id = self::getVarId($stmt->var, $nesting);
         $is_object = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasObjectType();
+        $is_string = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasString();
 
         if ($this->checkExpression($stmt->var, $context, !$is_object, $assignment_key_type, $assignment_value_type) === false) {
             return false;
@@ -2305,55 +2306,84 @@ class StatementsChecker
                                 ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
                                 : null;
 
-        // we want to support multiple array types:
-        // - Dictionaries (which have the type array<string,T>)
-        // - pseudo-objects (which have the type array<string,mixed>)
-        // - typed arrays (which have the type array<int,T>)
-        // and completely freeform arrays
-        //
-        // When making assignments, we generally only know the shape of the array
-        // as it is being created.
         if (isset($stmt->var->inferredType)) {
             $return_type = $stmt->var->inferredType;
 
-            if ($keyed_array_var_id && !$is_object) {
-                // when we have a pattern like
-                // $a = [];
-                // $a['b']['c']['d'] = 1;
-                // $a['c'] = 2;
-                // we need to create each type in turn
-                // so we get
-                // typeof $a['b']['c']['d'] => int
-                // typeof $a['b']['c'] => array<string,int>
-                // typeof $a['b'] => array<string,array<string,int>>
-                // typeof $a['c'] => int
-                // typeof $a => array<string,int|array<string,array<string,int>>>
-
-                $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
-
-                $stmt->inferredType = $assignment_value_type;
+            if ($is_object) {
+                // do nothing
             }
+            elseif ($is_string) {
+                foreach ($assignment_value_type->types as $value_type) {
+                    if (!$value_type->isString()) {
+                        if ($value_type->isMixed()) {
+                            // @todo emit Mixed issue
+                        }
+                        else {
+                            if (IssueBuffer::accepts(
+                                new InvalidArrayAssignment(
+                                    'Cannot assign string offset value $' . $var_id . ' of type ' . $value_type . ' that does not implement ArrayAccess',
+                                    $this->checked_file_name,
+                                    $stmt->getLine()
+                                ),
+                                $this->suppressed_issues
+                            )) {
+                                return false;
+                            }
 
-            if (!$nesting && !$is_object) {
-                $assignment_type = new Type\Union([
-                    new Type\Generic(
-                        'array',
-                        [
-                            $assignment_key_type,
-                            $assignment_value_type
-                        ]
-                    )
-                ]);
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                // we want to support multiple array types:
+                // - Dictionaries (which have the type array<string,T>)
+                // - pseudo-objects (which have the type array<string,mixed>)
+                // - typed arrays (which have the type array<int,T>)
+                // and completely freeform arrays
+                //
+                // When making assignments, we generally only know the shape of the array
+                // as it is being created.
+                if ($keyed_array_var_id) {
+                    // when we have a pattern like
+                    // $a = [];
+                    // $a['b']['c']['d'] = 1;
+                    // $a['c'] = 2;
+                    // we need to create each type in turn
+                    // so we get
+                    // typeof $a['b']['c']['d'] => int
+                    // typeof $a['b']['c'] => array<string,int>
+                    // typeof $a['b'] => array<string,array<string,int>>
+                    // typeof $a['c'] => int
+                    // typeof $a => array<string,int|array<string,array<string,int>>>
 
-                if (isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
-                        $assignment_type
-                    );
+                    $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
+
+                    $stmt->inferredType = $assignment_value_type;
                 }
 
-                $context->vars_in_scope[$var_id] = $assignment_type;
+                if (!$nesting) {
+                    $assignment_type = new Type\Union([
+                        new Type\Generic(
+                            'array',
+                            [
+                                $assignment_key_type,
+                                $assignment_value_type
+                            ]
+                        )
+                    ]);
+
+                    if (isset($context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->vars_in_scope[$var_id],
+                            $assignment_type
+                        );
+                    }
+
+                    $context->vars_in_scope[$var_id] = $assignment_type;
+                }
             }
+
         }
         else {
             $context->vars_in_scope[$var_id] = Type::getMixed();
