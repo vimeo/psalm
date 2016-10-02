@@ -2539,9 +2539,7 @@ class StatementsChecker
                         $absolute_class = (string) $context->self;
 
                     default:
-                        if (!method_exists($absolute_class, '__call')
-                            && !self::isMock($absolute_class)
-                        ) {
+                        if (!method_exists($absolute_class, '__call') && !self::isMock($absolute_class)) {
                             $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
                                 $absolute_class,
                                 $this->checked_file_name,
@@ -2602,6 +2600,9 @@ class StatementsChecker
                             else {
                                 $return_type = Type::getMixed();
                             }
+                        }
+                        else {
+                            $return_type = Type::getMixed();
                         }
                 }
             }
@@ -3797,7 +3798,7 @@ class StatementsChecker
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType) && $key_type && !$key_type->isEmpty()) {
                 foreach ($stmt->dim->inferredType->types as $at) {
-                    if ($at->isMixed()) {
+                    if ($at->isMixed() || $at->isEmpty()) {
                         // @todo emit issue
                     }
                     elseif (!$at->isIn($key_type)) {
