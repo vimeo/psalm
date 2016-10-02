@@ -364,6 +364,19 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testPassByRefInIfCheckAfter()
+    {
+        $stmts = self::$_parser->parse('<?php
+        if (!preg_match("/bad/", "badger", $matches)) {
+            exit();
+        }
+        echo $matches[0];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testPassByRefInIfWithBoolean()
     {
         $stmts = self::$_parser->parse('<?php
