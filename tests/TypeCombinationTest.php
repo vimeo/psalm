@@ -163,6 +163,25 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testCombineObjectType()
+    {
+        $this->assertEquals(
+            'object-like{a:int,b:string}',
+            (string) Type::combineTypes([
+                self::getAtomic('object-like{a:int}'),
+                self::getAtomic('object-like{b:string}')
+            ])
+        );
+
+        $this->assertEquals(
+            'object-like{a:int|string,b:string}',
+            (string) Type::combineTypes([
+                self::getAtomic('object-like{a:int}'),
+                self::getAtomic('object-like{a:string,b:string}')
+            ])
+        );
+    }
+
     public function testMultipleValuedArray()
     {
         $stmts = self::$_parser->parse('<?php
