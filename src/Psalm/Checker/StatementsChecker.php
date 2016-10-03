@@ -3790,17 +3790,30 @@ class StatementsChecker
                         continue;
                     }
 
-                    $refined_type = $this->refineArrayType($type, $assignment_key_type, $assignment_value_type, $var_id, $stmt->getLine());
+                    if ($type instanceof Type\Generic) {
+                        $refined_type = $this->refineArrayType($type, $assignment_key_type, $assignment_value_type, $var_id, $stmt->getLine());
 
-                    if ($refined_type === false) {
-                        return false;
+                        if ($refined_type === false) {
+                            return false;
+                        }
+
+                        if ($refined_type === null) {
+                            continue;
+                        }
+
+                        $type = $refined_type;
                     }
-
-                    if ($refined_type === null) {
-                        continue;
+                    elseif ($type instanceof Type\ObjectLike && $assignment_key_value) {
+                        if (isset($type->properties[$assignment_key_value])) {
+                            $type->properties[$assignment_key_value] = Type::combineUnionTypes(
+                                $type->properties[$assignment_key_value],
+                                $assignment_value_type
+                            );
+                        }
+                        else {
+                            $type->properties[$assignment_key_value] = $assignment_value_type;
+                        }
                     }
-
-                    $type = $refined_type;
                 }
             }
         }
@@ -3927,7 +3940,7 @@ class StatementsChecker
                             $context->vars_in_scope[$var_id] = $context_type;
                         }
                     }
-                    else {
+                    elseif ($type instanceof Type\Generic) {
                         $stmt->inferredType = $type->type_params[$value_index];
                     }
                 }
