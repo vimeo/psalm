@@ -8,7 +8,7 @@ use Psalm\Type;
 
 class CommentChecker
 {
-    const TYPE_REGEX = '(\\\?[A-Za-z0-9_\<,\>\[\]|\\\]+[A-Za-z0-9_\<,\>\[\]]|\$[a-zA-Z_0-9_\<,\>\|\[\]]+)';
+    const TYPE_REGEX = '(\\\?[A-Za-z0-9_\<,\>\[\]\-\{\}:|\\\]+[A-Za-z0-9_\<,\>\[\]-\{\}:]|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
 
     /**
      * @param  string           $comment
@@ -65,7 +65,9 @@ class CommentChecker
         if (isset($comments['specials']['return'])) {
             $return_blocks = preg_split('/[\s]+/', $comments['specials']['return'][0]);
 
-            if (preg_match('/^' . self::TYPE_REGEX . '$/', $return_blocks[0]) && !preg_match('/\[[^\]]+\]/', $return_blocks[0])) {
+            if (preg_match('/^' . self::TYPE_REGEX . '$/', $return_blocks[0])
+                && !preg_match('/\[[^\]]+\]/', $return_blocks[0])
+                && !strpos($return_blocks[0], '::')) {
                 $info['return_type'] = $return_blocks[0];
             }
         }
@@ -74,10 +76,11 @@ class CommentChecker
             foreach ($comments['specials']['param'] as $param) {
                 $param_blocks = preg_split('/[\s]+/', $param);
 
-                if (count($param_blocks) > 1 &&
-                    preg_match('/^' . self::TYPE_REGEX . '$/', $param_blocks[0]) &&
-                    !preg_match('/\[[^\]]+\]/', $param_blocks[0]) &&
-                    preg_match('/^\$[A-Za-z0-9_]+$/', $param_blocks[1])
+                if (count($param_blocks) > 1
+                    && preg_match('/^' . self::TYPE_REGEX . '$/', $param_blocks[0])
+                    && !preg_match('/\[[^\]]+\]/', $param_blocks[0])
+                    && preg_match('/^\$[A-Za-z0-9_]+$/', $param_blocks[1])
+                    && !strpos($param_blocks[0], '::')
                 ) {
                     $info['params'][] = ['name' => substr($param_blocks[1], 1), 'type' => $param_blocks[0]];
                 }
