@@ -3945,6 +3945,9 @@ class StatementsChecker
                     elseif ($type instanceof Type\Generic) {
                         $stmt->inferredType = $type->type_params[$value_index];
                     }
+                    elseif ($key_value && isset($type->properties[$key_value])) {
+                        $stmt->inferredType = clone $type->properties[$key_value];
+                    }
                 }
                 elseif ($type->isString()) {
                     if ($key_type) {
