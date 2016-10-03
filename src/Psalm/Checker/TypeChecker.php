@@ -1089,6 +1089,33 @@ class TypeChecker
                     return false;
                 }
             }
+        }
+
+        foreach ($declared_type->types as $key => $declared_atomic_type) {
+            if (!isset($inferred_type->types[$key])) {
+                continue;
+            }
+
+            $inferred_atomic_type = $inferred_type->types[$key];
+
+            if (!($declared_atomic_type instanceof Type\ObjectLike)) {
+                continue;
+            }
+
+            if (!($inferred_atomic_type instanceof Type\ObjectLike)) {
+                // @todo handle this better
+                continue;
+            }
+
+            foreach ($declared_atomic_type->properties as $property_name => $type_param) {
+                if (!isset($inferred_atomic_type->properties[$property_name])) {
+                    return false;
+                }
+
+                if (!self::hasIdenticalTypes($type_param, $inferred_atomic_type->properties[$property_name], $absolute_class)) {
+                    return false;
+                }
+            }
 
         }
 
