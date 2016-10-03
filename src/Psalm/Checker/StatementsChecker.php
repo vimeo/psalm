@@ -3946,8 +3946,22 @@ class StatementsChecker
                     elseif ($type instanceof Type\Generic && $value_index !== null) {
                         $stmt->inferredType = $type->type_params[$value_index];
                     }
-                    elseif ($type instanceof Type\ObjectLike && $key_value && isset($type->properties[$key_value])) {
-                        $stmt->inferredType = clone $type->properties[$key_value];
+                    elseif ($type instanceof Type\ObjectLike) {
+                        if ($key_value && isset($type->properties[$key_value])) {
+                            $stmt->inferredType = clone $type->properties[$key_value];
+                        }
+                        elseif ($key_type->hasInt()) {
+                            if (IssueBuffer::accepts(
+                                new InvalidArrayAccess(
+                                    'Cannot access value on object-like variable $' . $var_id . ' using int offset - expecting string',
+                                    $this->checked_file_name,
+                                    $stmt->getLine()
+                                ),
+                                $this->suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        }
                     }
                 }
                 elseif ($type->isString()) {
