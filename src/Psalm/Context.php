@@ -7,9 +7,10 @@ use Psalm\Checker\StatementsChecker;
 
 class Context
 {
-    /** @var array<string, Type\Union> */
+    /** @var array<string,Type\Union> */
     public $vars_in_scope = [];
 
+    /** @var array<string,bool> */
     public $vars_possibly_in_scope = [];
 
     /** @var boolean */

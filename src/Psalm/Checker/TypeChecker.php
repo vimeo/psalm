@@ -922,8 +922,8 @@ class TypeChecker
     /**
      * Takes two arrays of types and merges them
      *
-     * @param  array<UnionType>  $new_types
-     * @param  array<UnionType>  $existing_types
+     * @param  array<Type\Union>  $new_types
+     * @param  array<Type\Union>  $existing_types
      * @return array
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types)
@@ -1079,7 +1079,7 @@ class TypeChecker
                 continue;
             }
 
-            if (!($inferred_atomic_type instanceof Type\Generic) && $declared_atomic_type instanceof Type\Generic) {
+            if (!($inferred_atomic_type instanceof Type\Generic)) {
                 // @todo handle this better
                 continue;
             }

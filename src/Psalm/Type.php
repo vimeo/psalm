@@ -134,7 +134,7 @@ abstract class Type
     }
 
     /**
-     * @return array<int, string>
+     * @return array<int,string>
      */
     public static function tokenize($return_type)
     {
@@ -411,6 +411,8 @@ abstract class Type
         }
 
         $key_types = [];
+
+        /** @var array<string,array<string,Union>> */
         $value_types = [];
 
         foreach ($types as $type) {

@@ -10,7 +10,7 @@ class ParseTree
     const UNION = '|';
 
     /** @var array<ParseTree> */
-    public $children;
+    public $children = [];
 
     /** @var string|null */
     public $value;
@@ -26,7 +26,6 @@ class ParseTree
     {
         $this->value = $value;
         $this->parent = $parent;
-        $this->children = [];
     }
 
     /**
@@ -121,6 +120,10 @@ class ParseTree
 
                     if ($current_parent && $current_parent->value === ParseTree::OBJECT_PROPERTY) {
                         continue;
+                    }
+
+                    if (!$current_parent) {
+                        throw new \InvalidArgumentException('Cannot process colon without parent');
                     }
 
                     $new_parent_leaf = new self(self::OBJECT_PROPERTY, $current_parent);

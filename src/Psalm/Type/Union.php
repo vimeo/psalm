@@ -8,12 +8,12 @@ use Psalm\Checker\ClassChecker;
 
 class Union extends Type
 {
-    /** @var array<string, Atomic> */
+    /** @var array<string,Atomic> */
     public $types = [];
 
     /**
      * Constructs an Union instance
-     * @param array<int, AtomicType>     $types
+     * @param array<int,Atomic>     $types
      */
     public function __construct(array $types)
     {

@@ -8,13 +8,13 @@ class ObjectLike extends Atomic
 {
     public $value = 'object-like';
 
-    /** @var array<string,Type\Union> */
+    /** @var array<string,Union> */
     public $properties;
 
     /**
      * Constructs a new instance of a generic type
      * @param string            $value
-     * @param array<string,Type\Union> $type_params
+     * @param array<string,Union> $type_params
      */
     public function __construct($value, array $properties)
     {

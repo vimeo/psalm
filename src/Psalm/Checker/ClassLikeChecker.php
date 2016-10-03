@@ -65,7 +65,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * The parent class
      *
-     * @var string
+     * @var string|null
      */
     protected $parent_class;
 

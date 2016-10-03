@@ -11,7 +11,7 @@ class GenericArray extends Generic
     /**
      * Constructs a new instance of a generic type
      * @param string            $value
-     * @param array<Type\Union> $type_params
+     * @param array<int,Union> $type_params
      */
     public function __construct($value, array $type_params)
     {

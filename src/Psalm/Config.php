@@ -58,7 +58,7 @@ class Config
     protected $filetype_handlers = [];
 
     /**
-     * @var array<string, FileFilter>
+     * @var array<string,FileFilter>
      */
     protected $issue_handlers = [];
 

@@ -55,6 +55,8 @@ abstract class FunctionLikeChecker implements StatementsSource
 
             $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
 
+            $hash = null;
+
             if ($this instanceof MethodChecker) {
                 if (ClassLikeChecker::getThisClass()) {
                     $hash = $this->getMethodId() . json_encode([$context->vars_in_scope, $context->vars_possibly_in_scope]);
@@ -87,6 +89,8 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $param_type = null;
 
                     if ($param->type) {
+                        $param_type_string = '';
+
                         if (is_string($param->type)) {
                             $param_type_string = $param->type;
                         }
@@ -167,7 +171,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 }
             }
 
-            if (ClassLikeChecker::getThisClass() && $this instanceof MethodChecker) {
+            if ($hash && ClassLikeChecker::getThisClass() && $this instanceof MethodChecker) {
                 self::$no_effects_hashes[$hash] = [$context->vars_in_scope, $context->vars_possibly_in_scope];
             }
         }
