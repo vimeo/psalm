@@ -268,6 +268,38 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('object-like{a:string,b:object-like{c:object-like{d:string}}}', (string) $context->vars_in_scope['foo']);
     }
 
+    public function testNestedObjectLikeAssignment()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $foo = [];
+        $foo["a"]["b"] = "hello";
+        $foo["a"]["c"] = 1;
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('object-like{a:object-like{b:string,c:int}}', (string) $context->vars_in_scope['foo']);
+    }
+
+    public function testConditionalObjectLikeAssignment()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $foo = ["a" => "hello"];
+        if (rand(0, 10) === 5) {
+            $foo["b"] = 1;
+        }
+        else {
+            $foo["b"] = 2;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('object-like{a:string,b:int}', (string) $context->vars_in_scope['foo']);
+    }
+
     public function testIssetKeyedOffset()
     {
         $file_checker = new \Psalm\Checker\FileChecker(
