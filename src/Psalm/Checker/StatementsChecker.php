@@ -3951,9 +3951,23 @@ class StatementsChecker
                             $stmt->inferredType = clone $type->properties[$key_value];
                         }
                         elseif ($key_type->hasInt()) {
+                            $object_like_keys = array_keys($type->properties);
+                            if ($object_like_keys) {
+                                if (count($object_like_keys) === 1) {
+                                    $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
+                                }
+                                else {
+                                    $last_key = array_pop($object_like_keys);
+                                    $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) . '\' or \'' . $last_key . '\'';
+                                }
+                            }
+                            else {
+                                $expected_keys_string = 'string';
+                            }
+
                             if (IssueBuffer::accepts(
                                 new InvalidArrayAccess(
-                                    'Cannot access value on object-like variable $' . $var_id . ' using int offset - expecting string',
+                                    'Cannot access value on object-like variable $' . $var_id . ' using int offset - expecting ' . $expected_keys_string,
                                     $this->checked_file_name,
                                     $stmt->getLine()
                                 ),
