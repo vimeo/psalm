@@ -216,13 +216,17 @@ class MethodChecker extends FunctionLikeChecker
 
         $return_type_tokens = Type::tokenize($return_type);
 
-        foreach ($return_type_tokens as &$return_type_token) {
+        foreach ($return_type_tokens as $i => &$return_type_token) {
             if ($return_type_token[0] === '\\') {
                 $return_type_token = substr($return_type_token, 1);
                 continue;
             }
 
-            if (in_array($return_type_token, ['<', '>', '|', ','])) {
+            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'])) {
+                continue;
+            }
+
+            if (isset($return_type_token[$i + 1]) && $return_type_token[$i + 1] === ':') {
                 continue;
             }
 
