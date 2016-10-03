@@ -829,8 +829,14 @@ class StatementsChecker
     /**
      * @return false|null
      */
-    protected function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $array_assignment = false, Type\Union $assignment_key_type = null, Type\Union $assignment_value_type = null)
-    {
+    protected function checkExpression(
+        PhpParser\Node\Expr $stmt,
+        Context $context,
+        $array_assignment = false,
+        Type\Union $assignment_key_type = null,
+        Type\Union $assignment_value_type = null,
+        $assignment_key_value = null
+    ) {
         foreach (Config::getInstance()->getPlugins() as $plugin) {
             if ($plugin->checkExpression($stmt, $context, $this->checked_file_name) === false) {
                 return false;
@@ -976,7 +982,7 @@ class StatementsChecker
             $closure_checker->check($use_context, $this->check_methods);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            return $this->checkArrayAccess($stmt, $context, $array_assignment, $assignment_key_type, $assignment_value_type);
+            return $this->checkArrayAccess($stmt, $context, $array_assignment, $assignment_key_type, $assignment_value_type, $assignment_key_value);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if ($this->checkExpression($stmt->expr, $context) === false) {
@@ -1739,7 +1745,7 @@ class StatementsChecker
         }
 
         // if this array looks like an object-like array, let's return that instead
-        if ($item_value_type && !$item_value_type->isSingle() && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
+        if ($item_value_type && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
             $stmt->inferredType = new Type\Union([new Type\ObjectLike('object-like', $property_types)]);
             return;
         }
@@ -2299,9 +2305,15 @@ class StatementsChecker
             return false;
         }
 
+        $assignment_key_value = null;
+
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType)) {
                 $assignment_key_type = $stmt->dim->inferredType;
+
+                if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+                    $assignment_key_value = $stmt->dim->value;
+                }
             }
             else {
                 $assignment_key_type = Type::getMixed();
@@ -2316,7 +2328,7 @@ class StatementsChecker
         $is_object = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasObjectType();
         $is_string = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasString();
 
-        if ($this->checkExpression($stmt->var, $context, !$is_object, $assignment_key_type, $assignment_value_type) === false) {
+        if ($this->checkExpression($stmt->var, $context, !$is_object, $assignment_key_type, $assignment_value_type, $assignment_key_value) === false) {
             return false;
         }
 
@@ -2371,10 +2383,10 @@ class StatementsChecker
                     // we need to create each type in turn
                     // so we get
                     // typeof $a['b']['c']['d'] => int
-                    // typeof $a['b']['c'] => array<string,int>
-                    // typeof $a['b'] => array<string,array<string,int>>
+                    // typeof $a['b']['c'] => object-like{d:int}
+                    // typeof $a['b'] => object-like{c:object-like{d:int}}
                     // typeof $a['c'] => int
-                    // typeof $a => array<string,int|array<string,array<string,int>>>
+                    // typeof $a => object-like{b:object-like{c:object-like{d:int}},c:int}
 
                     $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
 
@@ -2382,15 +2394,33 @@ class StatementsChecker
                 }
 
                 if (!$nesting) {
-                    $assignment_type = new Type\Union([
-                        new Type\Generic(
-                            'array',
-                            [
-                                $assignment_key_type,
-                                $assignment_value_type
-                            ]
-                        )
-                    ]);
+                    if ($assignment_key_type->hasString()
+                        && $assignment_key_value
+                        && (!isset($context->vars_in_scope[$var_id])
+                            || $context->vars_in_scope[$var_id]->hasObjectLike()
+                            || ($context->vars_in_scope[$var_id]->hasArray()
+                                && $context->vars_in_scope[$var_id]->types['array']->type_params[0]->isEmpty()))
+                    ) {
+                        $assignment_type = new Type\Union([
+                            new Type\ObjectLike(
+                                'object-like',
+                                [
+                                    $assignment_key_value => $assignment_value_type
+                                ]
+                            )
+                        ]);
+                    }
+                    else {
+                        $assignment_type = new Type\Union([
+                            new Type\Generic(
+                                'array',
+                                [
+                                    $assignment_key_type,
+                                    $assignment_value_type
+                                ]
+                            )
+                        ]);
+                    }
 
                     if (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
@@ -2398,8 +2428,9 @@ class StatementsChecker
                             $assignment_type
                         );
                     }
-
-                    $context->vars_in_scope[$var_id] = $assignment_type;
+                    else {
+                        $context->vars_in_scope[$var_id] = $assignment_type;
+                    }
                 }
             }
 
@@ -3676,10 +3707,17 @@ class StatementsChecker
      * @param  array                             &$context->vars_possibly_in_scope
      * @return false|null
      */
-    protected function checkArrayAccess(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, $array_assignment = false, Type\Union $assignment_key_type = null, Type\Union $assignment_value_type = null)
-    {
+    protected function checkArrayAccess(
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Context $context,
+        $array_assignment = false,
+        Type\Union $assignment_key_type = null,
+        Type\Union $assignment_value_type = null,
+        $assignment_key_value = null
+    ) {
         $var_type = null;
         $key_type = null;
+        $key_value = null;
 
         $nesting = 0;
         $var_id = self::getVarId($stmt->var, $nesting);
@@ -3697,6 +3735,10 @@ class StatementsChecker
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType)) {
                 $key_type = $stmt->dim->inferredType;
+
+                if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+                    $key_value = $stmt->dim->value;
+                }
             }
             else {
                 $key_type = Type::getMixed();
@@ -3709,14 +3751,27 @@ class StatementsChecker
         $keyed_assignment_type = null;
 
         if ($array_assignment) {
-            $keyed_assignment_type = $keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])
-                                ? $context->vars_in_scope[$keyed_array_var_id]
-                                : null;
+            $keyed_assignment_type =
+                $keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])
+                    ? $context->vars_in_scope[$keyed_array_var_id]
+                    : null;
 
             if (!$keyed_assignment_type || $keyed_assignment_type->isEmpty()) {
-                $keyed_assignment_type = Type::getEmptyArray();
-                $keyed_assignment_type->types['array']->type_params[0] = $assignment_key_type;
-                $keyed_assignment_type->types['array']->type_params[1] = $assignment_value_type;
+                if (!$assignment_key_type->isMixed() && !$assignment_key_type->hasInt() && $assignment_key_value) {
+                    $keyed_assignment_type = new Type\Union([
+                        new Type\ObjectLike(
+                            'object-like',
+                            [
+                                $assignment_key_value => $assignment_value_type
+                            ]
+                        )
+                    ]);
+                }
+                else {
+                    $keyed_assignment_type = Type::getEmptyArray();
+                    $keyed_assignment_type->types['array']->type_params[0] = $assignment_key_type;
+                    $keyed_assignment_type->types['array']->type_params[1] = $assignment_value_type;
+                }
             }
             else {
                 foreach ($keyed_assignment_type->types as &$type) {
@@ -3750,7 +3805,7 @@ class StatementsChecker
             }
         }
 
-        if ($this->checkExpression($stmt->var, $context, $array_assignment, $key_type, $keyed_assignment_type) === false) {
+        if ($this->checkExpression($stmt->var, $context, $array_assignment, $key_type, $keyed_assignment_type, $key_value) === false) {
             return false;
         }
 
@@ -3758,27 +3813,28 @@ class StatementsChecker
             $var_type = $stmt->var->inferredType;
 
             foreach ($var_type->types as &$type) {
-                if ($type instanceof Type\Generic) {
-                    // create a union type to pass back to the statement
-                    $value_index = count($type->type_params) - 1;
+                if ($type instanceof Type\Generic || $type instanceof Type\ObjectLike) {
 
-                    if ($value_index) {
-                        // if we're assigning to an empty array with a key offset, refashion that array
-                        if ($array_assignment && $type->type_params[0]->isEmpty()) {
-                            if (isset($stmt->dim->inferredType)) {
-                                $key_type = $stmt->dim->inferredType;
-                                $type->type_params[0] = $key_type;
-                            }
-                        }
-                        else {
-                            if ($key_type) {
-                                $key_type = Type::combineUnionTypes($key_type, $type->type_params[0]);
+                    if ($type instanceof Type\Generic) {
+                        // create a union type to pass back to the statement
+                        $value_index = count($type->type_params) - 1;
+
+                        if ($value_index) {
+                            // if we're assigning to an empty array with a key offset, refashion that array
+                            if ($array_assignment && $type->type_params[0]->isEmpty()) {
+                                if ($key_type) {
+                                    $type->type_params[0] = $key_type;
+                                }
                             }
                             else {
-                                $key_type = $type->type_params[0];
+                                if ($key_type) {
+                                    $key_type = Type::combineUnionTypes($key_type, $type->type_params[0]);
+                                }
+                                else {
+                                    $key_type = $type->type_params[0];
+                                }
                             }
                         }
-
                     }
 
                     if ($array_assignment && !$is_object) {
@@ -3804,15 +3860,27 @@ class StatementsChecker
                         }
 
                         if ($array_var_id === $var_id) {
-                            $assignment_type = new Type\Union([
-                                new Type\Generic(
-                                    'array',
-                                    [
-                                        $key_type,
-                                        $keyed_assignment_type
-                                    ]
-                                )
-                            ]);
+                            if ($type instanceof Type\ObjectLike || ($type->isArray() && !$key_type->hasInt() && $type->type_params[1]->isEmpty())) {
+                                $properties = $key_value ? [$key_value => $keyed_assignment_type] : [];
+
+                                $assignment_type = new Type\Union([
+                                    new Type\ObjectLike(
+                                        'object-like',
+                                        $properties
+                                    )
+                                ]);
+                            }
+                            else {
+                                $assignment_type = new Type\Union([
+                                    new Type\Generic(
+                                        'array',
+                                        [
+                                            $key_type,
+                                            $keyed_assignment_type
+                                        ]
+                                    )
+                                ]);
+                            }
 
                             if (isset($context->vars_in_scope[$var_id])) {
                                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
@@ -3825,7 +3893,7 @@ class StatementsChecker
                             }
                         }
 
-                        if ($type->type_params[$value_index]->isEmpty()) {
+                        if ($type instanceof Type\Generic && $type->type_params[$value_index]->isEmpty()) {
                             $empty_type = Type::getEmptyArray();
 
                             if (!isset($stmt->inferredType)) {
@@ -3842,6 +3910,7 @@ class StatementsChecker
                                 if ($i < $nesting) {
                                     if ($array_type->types['array']->type_params[1]->isEmpty()) {
                                         $new_empty = clone $empty_type;
+
                                         $new_empty->types['array']->type_params[0] = $key_type;
 
                                         $array_type->types['array']->type_params[1] = $new_empty;
@@ -3850,7 +3919,7 @@ class StatementsChecker
 
                                     $array_type = $array_type->types['array']->type_params[1];
                                 }
-                                else {
+                                elseif (isset($array_type->types['array'])) {
                                     $array_type->types['array']->type_params[0] = $key_type;
                                 }
                             }
