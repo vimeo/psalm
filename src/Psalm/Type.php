@@ -492,11 +492,13 @@ abstract class Type
 
             // if we're merging an empty array with an object-like, clobber empty array
             if ($generic_type === 'array'
+                && isset($value_types['object-like'])
                 && count($value_type) === 1
                 && isset($value_type['empty'])
                 && count($key_type) === 1
-                && isset($key_type['empty'])
+                && (isset($key_type['empty']) || isset($key_type['string']))
             ) {
+
                 continue;
             }
 
