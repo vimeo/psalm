@@ -508,7 +508,7 @@ class StatementsChecker
             $negated_types = array_merge($negated_types, $negated_elseif_types);
 
             // if the elseif has an || in the conditional, we cannot easily reason about it
-            if (!($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp) || !self::containsBooleanOr($elseif->cond)) {
+            if ($reconcilable_elseif_types) {
                 $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                     $reconcilable_elseif_types,
                     $elseif_context->vars_in_scope,
@@ -3750,7 +3750,7 @@ class StatementsChecker
 
         $keyed_assignment_type = null;
 
-        if ($array_assignment) {
+        if ($array_assignment && $assignment_key_type && $assignment_value_type) {
             $keyed_assignment_type =
                 $keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])
                     ? $context->vars_in_scope[$keyed_array_var_id]
@@ -3827,6 +3827,7 @@ class StatementsChecker
 
             foreach ($var_type->types as &$type) {
                 if ($type instanceof Type\Generic || $type instanceof Type\ObjectLike) {
+                    $value_index = null;
 
                     if ($type instanceof Type\Generic) {
                         // create a union type to pass back to the statement
@@ -3942,10 +3943,10 @@ class StatementsChecker
                             $context->vars_in_scope[$var_id] = $context_type;
                         }
                     }
-                    elseif ($type instanceof Type\Generic) {
+                    elseif ($type instanceof Type\Generic && $value_index !== null) {
                         $stmt->inferredType = $type->type_params[$value_index];
                     }
-                    elseif ($key_value && isset($type->properties[$key_value])) {
+                    elseif ($type instanceof Type\ObjectLike && $key_value && isset($type->properties[$key_value])) {
                         $stmt->inferredType = clone $type->properties[$key_value];
                     }
                 }
