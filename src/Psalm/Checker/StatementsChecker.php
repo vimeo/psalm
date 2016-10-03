@@ -3920,20 +3920,22 @@ class StatementsChecker
                             $array_type = $context_type;
 
                             for ($i = 0; $i < $nesting + 1; $i++) {
-                                if ($i < $nesting) {
-                                    if ($array_type->types['array']->type_params[1]->isEmpty()) {
-                                        $new_empty = clone $empty_type;
+                                if ($array_type->hasArray()) {
+                                    if ($i < $nesting) {
+                                        if ($array_type->types['array']->type_params[1]->isEmpty()) {
+                                            $new_empty = clone $empty_type;
 
-                                        $new_empty->types['array']->type_params[0] = $key_type;
+                                            $new_empty->types['array']->type_params[0] = $key_type;
 
-                                        $array_type->types['array']->type_params[1] = $new_empty;
-                                        continue;
+                                            $array_type->types['array']->type_params[1] = $new_empty;
+                                            continue;
+                                        }
+
+                                        $array_type = $array_type->types['array']->type_params[1];
                                     }
-
-                                    $array_type = $array_type->types['array']->type_params[1];
-                                }
-                                elseif (isset($array_type->types['array'])) {
-                                    $array_type->types['array']->type_params[0] = $key_type;
+                                    else {
+                                        $array_type->types['array']->type_params[0] = $key_type;
+                                    }
                                 }
                             }
 
