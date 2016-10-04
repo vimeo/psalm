@@ -75,7 +75,7 @@ abstract class ClassLikeChecker implements StatementsSource
     protected $suppressed_issues;
 
     /**
-     * @var array<string, MethodChecker>
+     * @var array<string,MethodChecker>
      */
     protected static $method_checkers = [];
 
@@ -85,79 +85,85 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * A lookup table of all methods on a given class
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $class_methods = [];
 
     /**
      * A lookup table of cached ClassLikeCheckers
      *
-     * @var array<string, self>
+     * @var array<string,self>
      */
     protected static $class_checkers = [];
 
     /**
      * A lookup table for public class properties
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $public_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $protected_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $private_class_properties = [];
 
     /**
      * A lookup table for public static class properties
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $public_static_class_properties = [];
 
     /**
      * A lookup table for protected static class properties
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $protected_static_class_properties = [];
 
     /**
      * A lookup table for private static class properties
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $private_static_class_properties = [];
 
     /**
      * A lookup table for public class constants
      *
-     * @var array<string, string>
+     * @var array<string,string>
      */
     protected static $public_class_constants = [];
 
     /**
      * A lookup table to record which classes have been scanned
      *
-     * @var array<string, bool>
+     * @var array<string,bool>
      */
     protected static $registered_classes = [];
 
     /**
      * A lookup table used for storing the results of ClassChecker::classImplements
      *
-     * @var array<string, bool>
+     * @var array<string,bool>
      */
     protected static $class_implements = [];
+
+    /** @var array<string,string> */
+    protected static $class_files = [];
+
+    /** @var array<string,array<int,string>> */
+    protected static $file_classes = [];
 
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
@@ -169,6 +175,9 @@ abstract class ClassLikeChecker implements StatementsSource
         $this->absolute_class = $absolute_class;
 
         $this->suppressed_issues = $source->getSuppressedIssues();
+
+        self::$class_files[$absolute_class] = $this->file_name;
+        self::$file_classes[$this->file_name][] = $absolute_class;
 
         if (self::$this_class) {
             self::$class_checkers[$absolute_class] = $this;
@@ -552,6 +561,8 @@ abstract class ClassLikeChecker implements StatementsSource
             }
         }
 
+        FileChecker::addFileReferenceToClass($file_name, $absolute_class);
+
         return true;
     }
 
@@ -667,8 +678,15 @@ abstract class ClassLikeChecker implements StatementsSource
         if ($reflected_class->isUserDefined()) {
             $class_file_name = $reflected_class->getFileName();
 
+            $file_checker = new FileChecker($class_file_name);
+
+            $short_file_name = $file_checker->getFileName();
+
+            self::$class_files[$class_name] = $short_file_name;
+            self::$file_classes[$short_file_name][] = $class_name;
+
             // this doesn't work on traits
-            (new FileChecker($class_file_name))->check(true, false);
+            $file_checker->check(true, false);
         }
         else {
             $class_properties = $reflected_class->getProperties();
@@ -890,6 +908,11 @@ abstract class ClassLikeChecker implements StatementsSource
         return $method_name;
     }
 
+    public static function getClassesForFile($file_name)
+    {
+        return array_unique(self::$file_classes[$file_name]);
+    }
+
     public static function clearCache()
     {
         self::$method_checkers = [];
@@ -908,6 +931,8 @@ abstract class ClassLikeChecker implements StatementsSource
         self::$public_static_class_properties = [];
         self::$protected_static_class_properties = [];
         self::$private_static_class_properties = [];
+
+        self::$class_references = [];
 
         ClassChecker::clearCache();
         InterfaceChecker::clearCache();

@@ -40,6 +40,13 @@ class FileChecker implements StatementsSource
 
     public static $show_notices = true;
 
+    /**
+     * A lookup table used for getting all the files that reference a class
+     *
+     * @var array<string,array<string,bool>>
+     */
+    protected static $file_references_to_class = [];
+
     public function __construct($file_name, array $preloaded_statements = [])
     {
         $this->real_file_name = $file_name;
@@ -368,6 +375,26 @@ class FileChecker implements StatementsSource
         $file_checker->check(true, false, null, false);
 
         return ClassLikeChecker::getClassLikeCheckerFromClass($class_name);
+    }
+
+    public static function addFileReferenceToClass($source_file, $absolute_class)
+    {
+        self::$file_references_to_class[$absolute_class][$source_file] = true;
+    }
+
+    public static function getFilesReferencingFile($file)
+    {
+        $referenced_files = [];
+
+        $file_classes = ClassLikeChecker::getClassesForFile($file);
+
+        foreach ($file_classes as $file_class) {
+            if (isset(self::$file_references_to_class[$file_class])) {
+                $referenced_files = array_merge($referenced_files, array_keys(self::$file_references_to_class[$file_class]));
+            }
+        }
+
+        return array_unique($referenced_files);
     }
 
     public static function clearCache()
