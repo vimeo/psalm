@@ -4180,9 +4180,9 @@ class StatementsChecker
 
         // Parse @specials.
         $matches = null;
-        $have_specials = preg_match_all('/^\s?@(\w+)\s*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
+        $have_specials = preg_match_all('/^\s?@([\w\-:]+)\s*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
         if ($have_specials) {
-            $docblock = preg_replace('/^\s?@(\w+)\s*([^\n]*)/m', '', $docblock);
+            $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
             foreach ($matches as $match) {
                 list($_, $type, $data) = $match;
 

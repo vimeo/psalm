@@ -62,8 +62,13 @@ class CommentChecker
 
         $info = ['return_type' => null, 'params' => [], 'deprecated' => false, 'suppress' => []];
 
-        if (isset($comments['specials']['return'])) {
-            $return_blocks = preg_split('/[\s]+/', $comments['specials']['return'][0]);
+        if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
+            $return_blocks = preg_split(
+                '/[\s]+/',
+                isset($comments['specials']['psalm-return'])
+                    ? $comments['specials']['psalm-return'][0]
+                    : $comments['specials']['return'][0]
+            );
 
             if (preg_match('/^' . self::TYPE_REGEX . '$/', $return_blocks[0])
                 && !preg_match('/\[[^\]]+\]/', $return_blocks[0])
