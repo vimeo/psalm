@@ -36,9 +36,11 @@ class FileChecker implements StatementsSource
 
     protected static $functions_checked = [];
     protected static $classes_checked = [];
-    protected static $file_checked = [];
+    protected static $files_checked = [];
 
     public static $show_notices = true;
+
+    const REFERENCE_CACHE_NAME = 'references';
 
     /**
      * A lookup table used for getting all the files that reference a class
@@ -46,6 +48,20 @@ class FileChecker implements StatementsSource
      * @var array<string,array<string,bool>>
      */
     protected static $file_references_to_class = [];
+
+    /**
+     * A lookup table used for getting all the files referenced by a file
+     *
+     * @var array<string,array<string,bool>>
+     */
+    protected static $file_references = [];
+
+    /**
+     * A lookup table used for getting all the files that reference any other file
+     *
+     * @var array<string,array<string,bool>>
+     */
+    protected static $referencing_files = [];
 
     public function __construct($file_name, array $preloaded_statements = [])
     {
@@ -62,7 +78,7 @@ class FileChecker implements StatementsSource
 
     public function check($check_classes = true, $check_functions = true, Context $file_context = null, $cache = true)
     {
-        if ($cache && isset(self::$functions_checked[$this->real_file_name])) {
+        if ($cache && isset(self::$functions_checked[$this->short_file_name])) {
             return;
         }
 
@@ -70,7 +86,7 @@ class FileChecker implements StatementsSource
             return;
         }
 
-        if ($cache && !$check_classes && !$check_functions && isset(self::$file_checked[$this->real_file_name])) {
+        if ($cache && !$check_classes && !$check_functions && isset(self::$files_checked[$this->real_file_name])) {
             return;
         }
 
@@ -162,7 +178,7 @@ class FileChecker implements StatementsSource
             self::$classes_checked[$this->real_file_name] = true;
         }
 
-        self::$file_checked[$this->real_file_name] = true;
+        self::$files_checked[$this->real_file_name] = true;
 
         return $stmts;
     }
@@ -267,6 +283,31 @@ class FileChecker implements StatementsSource
         return $stmts;
     }
 
+    public static function loadReferenceCache()
+    {
+        if (self::$cache_dir) {
+            $cache_location = self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME;
+
+            if (is_readable($cache_location)) {
+                self::$file_references = unserialize((string) file_get_contents($cache_location));
+            }
+        }
+    }
+
+    public static function updateReferenceCache()
+    {
+        if (self::$cache_dir) {
+            $cache_location = self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME;
+
+            foreach (self::$files_checked as $file => $_) {
+                $existing_references_to_file = isset(self::$file_references[$file]) ? self::$file_references[$file] : [];
+                self::$file_references[$file] = array_unique(array_merge($existing_references_to_file, self::calculateFilesReferencingFile($file)));
+            }
+
+            file_put_contents($cache_location, serialize(self::$file_references));
+        }
+    }
+
     public static function setCacheDir($cache_dir)
     {
         self::$cache_dir = $cache_dir;
@@ -321,6 +362,11 @@ class FileChecker implements StatementsSource
     public function getFileName()
     {
         return $this->short_file_name;
+    }
+
+    public function getRealFileName()
+    {
+        return $this->real_file_name;
     }
 
     public function getIncludeFileName()
@@ -379,10 +425,11 @@ class FileChecker implements StatementsSource
 
     public static function addFileReferenceToClass($source_file, $absolute_class)
     {
+        self::$referencing_files[$source_file] = true;
         self::$file_references_to_class[$absolute_class][$source_file] = true;
     }
 
-    public static function getFilesReferencingFile($file)
+    public static function calculateFilesReferencingFile($file)
     {
         $referenced_files = [];
 
@@ -397,13 +444,18 @@ class FileChecker implements StatementsSource
         return array_unique($referenced_files);
     }
 
+    public static function getFilesReferencingFile($file)
+    {
+        return isset(self::$file_references[$file]) ? self::$file_references[$file] : [];
+    }
+
     public static function clearCache()
     {
         self::$file_checkers = [];
 
         self::$functions_checked = [];
         self::$classes_checked = [];
-        self::$file_checked = [];
+        self::$files_checked = [];
 
         ClassLikeChecker::clearCache();
     }

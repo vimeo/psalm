@@ -29,14 +29,23 @@ class ProjectChecker
      */
     public static $show_info = true;
 
-    public static function check($debug = false)
+    public static function check($debug = false, array $diff_files = [])
     {
         if (!self::$config) {
             self::$config = self::getConfigForPath(getcwd());
         }
 
-        foreach (self::$config->getIncludeDirs() as $dir_name) {
-            self::checkDirWithConfig($dir_name, self::$config, $debug);
+        $file_list = [];
+
+        if ($diff_files) {
+            FileChecker::loadReferenceCache();
+            $file_list = self::getReferencedFilesFromDiff($diff_files);
+            self::checkDiffFilesWithConfig($file_list, self::$config, $debug);
+        }
+        else {
+            foreach (self::$config->getIncludeDirs() as $dir_name) {
+                self::checkDirWithConfig($dir_name, self::$config, $debug, $file_list);
+            }
         }
 
         IssueBuffer::finish();
@@ -49,12 +58,14 @@ class ProjectChecker
             self::$config->hide_external_errors = self::$config->isInProjectDirs(self::$config->shortenFileName($dir_name));
         }
 
+        FileChecker::loadReferenceCache();
+
         self::checkDirWithConfig($dir_name, self::$config, $debug);
 
         IssueBuffer::finish();
     }
 
-    protected static function checkDirWithConfig($dir_name, Config $config, $debug)
+    protected static function checkDirWithConfig($dir_name, Config $config, $debug, array $file_list = [])
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
@@ -75,6 +86,15 @@ class ProjectChecker
                         echo 'Checking ' . $file_name . PHP_EOL;
                     }
 
+                    if ($file_list) {
+                        if (in_array($file_name, $file_list)) {
+                            echo 'Checking affected file ' . $file_name . PHP_EOL;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
+
                     if (isset($filetype_handlers[$extension])) {
                         /** @var FileChecker */
                         $file_checker = new $filetype_handlers[$extension]($file_name);
@@ -88,6 +108,30 @@ class ProjectChecker
             }
 
             $iterator->next();
+        }
+    }
+
+    protected static function checkDiffFilesWithConfig(array $file_list = [], Config $config, $debug)
+    {
+        $file_extensions = $config->getFileExtensions();
+        $filetype_handlers = $config->getFiletypeHandlers();
+
+        foreach ($file_list as $file_name) {
+            $extension = pathinfo($file_name, PATHINFO_EXTENSION);
+
+            if ($debug) {
+                echo 'Checking affected file ' . $file_name . PHP_EOL;
+            }
+
+            if (isset($filetype_handlers[$extension])) {
+                /** @var FileChecker */
+                $file_checker = new $filetype_handlers[$extension]($file_name);
+            }
+            else {
+                $file_checker = new FileChecker($file_name);
+            }
+
+            $file_checker->check(true);
         }
     }
 
@@ -108,6 +152,8 @@ class ProjectChecker
         $extension = array_pop($file_name_parts);
 
         $filetype_handlers = self::$config->getFiletypeHandlers();
+
+        FileChecker::loadReferenceCache();
 
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
@@ -176,5 +222,22 @@ class ProjectChecker
         if (self::$config->autoloader) {
             require_once($dir_path . self::$config->autoloader);
         }
+    }
+
+    public static function getReferencedFilesFromDiff(array $diff_files)
+    {
+        $all_files_to_check = $diff_files;
+
+        while ($diff_files) {
+            $diff_file = array_shift($diff_files);
+            $dependent_files = FileChecker::getFilesReferencingFile($diff_file);
+            //var_dump($dependent_files);
+            $new_files = array_diff($dependent_files, $all_files_to_check);
+
+            $all_files_to_check += $new_files;
+            $diff_files += $new_files;
+        }
+
+        return $all_files_to_check;
     }
 }

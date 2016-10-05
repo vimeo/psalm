@@ -561,7 +561,7 @@ abstract class ClassLikeChecker implements StatementsSource
             }
         }
 
-        FileChecker::addFileReferenceToClass($file_name, $absolute_class);
+        FileChecker::addFileReferenceToClass(Config::getInstance()->getBaseDir() . $file_name, $absolute_class);
 
         return true;
     }
@@ -682,8 +682,8 @@ abstract class ClassLikeChecker implements StatementsSource
 
             $short_file_name = $file_checker->getFileName();
 
-            self::$class_files[$class_name] = $short_file_name;
-            self::$file_classes[$short_file_name][] = $class_name;
+            self::$class_files[$class_name] = $class_file_name;
+            self::$file_classes[$class_file_name][] = $class_name;
 
             // this doesn't work on traits
             $file_checker->check(true, false);
@@ -910,7 +910,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public static function getClassesForFile($file_name)
     {
-        return array_unique(self::$file_classes[$file_name]);
+        return isset(self::$file_classes[$file_name]) ? array_unique(self::$file_classes[$file_name]) : [];
     }
 
     public static function clearCache()

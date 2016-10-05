@@ -66,6 +66,8 @@ class IssueBuffer
 
     public static function finish()
     {
+        Checker\FileChecker::updateReferenceCache();
+
         if (count(self::$errors)) {
             exit(1);
         }
