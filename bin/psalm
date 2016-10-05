@@ -29,7 +29,7 @@ $use_color = !array_key_exists('monochrome', $options);
 $show_info = isset($options['show-info'])
             ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
             : true;
-$diff_files = isset($options['diff']) ? explode(',', $options['diff']) : [];
+$diff_files = isset($options['diff']) ? explode(' ', $options['diff']) : [];
 
 // set the cache directory for the file checker
 FileChecker::setCacheDir('/var/tmp/php-parser');

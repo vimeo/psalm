@@ -52,7 +52,7 @@ class FileChecker implements StatementsSource
     /**
      * A lookup table used for getting all the files referenced by a file
      *
-     * @var array<string,array<string,bool>>
+     * @var array<string,object-like{a:array<int,string>,i:array<int,string>}>
      */
     protected static $file_references = [];
 
@@ -62,6 +62,9 @@ class FileChecker implements StatementsSource
      * @var array<string,array<string,bool>>
      */
     protected static $referencing_files = [];
+
+    /** @var array<string,array<int,string>> */
+    protected static $files_inheriting_classes = [];
 
     public function __construct($file_name, array $preloaded_statements = [])
     {
@@ -290,8 +293,11 @@ class FileChecker implements StatementsSource
 
             if (is_readable($cache_location)) {
                 self::$file_references = unserialize((string) file_get_contents($cache_location));
+                return true;
             }
         }
+
+        return false;
     }
 
     public static function updateReferenceCache()
@@ -300,8 +306,24 @@ class FileChecker implements StatementsSource
             $cache_location = self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME;
 
             foreach (self::$files_checked as $file => $_) {
-                $existing_references_to_file = isset(self::$file_references[$file]) ? self::$file_references[$file] : [];
-                self::$file_references[$file] = array_unique(array_merge($existing_references_to_file, self::calculateFilesReferencingFile($file)));
+                $all_file_references = array_unique(
+                    array_merge(
+                        isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [],
+                        self::calculateFilesReferencingFile($file)
+                    )
+                );
+
+                $inheritance_references = array_unique(
+                    array_merge(
+                        isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [],
+                        self::calculateFilesInheritingFile($file)
+                    )
+                );
+
+                self::$file_references[$file] = [
+                    'a' => $all_file_references,
+                    'i' => $inheritance_references
+                ];
             }
 
             file_put_contents($cache_location, serialize(self::$file_references));
@@ -429,6 +451,11 @@ class FileChecker implements StatementsSource
         self::$file_references_to_class[$absolute_class][$source_file] = true;
     }
 
+    public static function addFileInheritanceToClass($source_file, $absolute_class)
+    {
+        self::$files_inheriting_classes[$absolute_class][$source_file] = true;
+    }
+
     public static function calculateFilesReferencingFile($file)
     {
         $referenced_files = [];
@@ -444,9 +471,29 @@ class FileChecker implements StatementsSource
         return array_unique($referenced_files);
     }
 
+    public static function calculateFilesInheritingFile($file)
+    {
+        $referenced_files = [];
+
+        $file_classes = ClassLikeChecker::getClassesForFile($file);
+
+        foreach ($file_classes as $file_class) {
+            if (isset(self::$files_inheriting_classes[$file_class])) {
+                $referenced_files = array_merge($referenced_files, array_keys(self::$files_inheriting_classes[$file_class]));
+            }
+        }
+
+        return array_unique($referenced_files);
+    }
+
     public static function getFilesReferencingFile($file)
     {
-        return isset(self::$file_references[$file]) ? self::$file_references[$file] : [];
+        return isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [];
+    }
+
+    public static function getFilesInheritingFromFile($file)
+    {
+        return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
     }
 
     public static function clearCache()

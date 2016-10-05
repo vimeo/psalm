@@ -241,6 +241,8 @@ abstract class ClassLikeChecker implements StatementsSource
 
                 $this->registerInheritedMethods($this->parent_class);
 
+                FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $this->parent_class);
+
                 self::$class_implements[$this->absolute_class] += self::$class_implements[$this->parent_class];
 
                 self::$public_class_properties[$this->absolute_class] = self::$public_class_properties[$this->parent_class];
@@ -267,6 +269,8 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
 
                 self::registerClass($interface_name);
+
+                FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $interface_name);
             }
 
             foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_id => $interface_name) {
@@ -340,6 +344,8 @@ abstract class ClassLikeChecker implements StatementsSource
                         $trait_checker->setMethodMap($method_map);
 
                         $trait_checker->check(false, $class_context);
+
+                        FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $this->parent_class);
 
                         $trait_checkers[] = $trait_checker;
                     }

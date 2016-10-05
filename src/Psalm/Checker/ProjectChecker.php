@@ -37,8 +37,7 @@ class ProjectChecker
 
         $file_list = [];
 
-        if ($diff_files) {
-            FileChecker::loadReferenceCache();
+        if ($diff_files && FileChecker::loadReferenceCache()) {
             $file_list = self::getReferencedFilesFromDiff($diff_files);
             self::checkDiffFilesWithConfig($file_list, self::$config, $debug);
         }
@@ -226,18 +225,25 @@ class ProjectChecker
 
     public static function getReferencedFilesFromDiff(array $diff_files)
     {
-        $all_files_to_check = $diff_files;
+        $all_inherited_files_to_check = $diff_files;
 
         while ($diff_files) {
             $diff_file = array_shift($diff_files);
-            $dependent_files = FileChecker::getFilesReferencingFile($diff_file);
-            //var_dump($dependent_files);
-            $new_files = array_diff($dependent_files, $all_files_to_check);
 
-            $all_files_to_check += $new_files;
-            $diff_files += $new_files;
+            $dependent_files = FileChecker::getFilesInheritingFromFile($diff_file);
+            $new_dependent_files = array_diff($dependent_files, $all_inherited_files_to_check);
+
+            $all_inherited_files_to_check += $new_dependent_files;
+            $diff_files += $new_dependent_files;
         }
 
-        return $all_files_to_check;
+        $all_files_to_check = $all_inherited_files_to_check;
+
+        foreach ($all_inherited_files_to_check as $file_name) {
+            $dependent_files = FileChecker::getFilesReferencingFile($file_name);
+            $all_files_to_check = array_merge($dependent_files, $all_files_to_check);
+        }
+
+        return array_unique($all_files_to_check);
     }
 }
