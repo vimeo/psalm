@@ -30,11 +30,13 @@ $show_info = isset($options['show-info'])
             ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
             : true;
 $diff_files = isset($options['diff'])
-                ? array_map(
-                    function($file) {
-                        return realpath($file);
-                    },
-                    explode(' ', $options['diff'])
+                ? array_filter(
+                    array_map(
+                        function($file) {
+                            return realpath($file);
+                        },
+                        explode(' ', $options['diff'])
+                    )
                 ) : [];
 
 // set the cache directory for the file checker
