@@ -36,16 +36,18 @@ class ProjectChecker
         }
 
         $diff_files = null;
+        $deleted_files = null;
 
         if ($is_diff && FileChecker::loadReferenceCache() && FileChecker::canDiffFiles()) {
-            $diff_files = [];
+            $deleted_files = FileChecker::getDeletedReferencedFiles();
+            $diff_files = $deleted_files;
 
             foreach (self::$config->getIncludeDirs() as $dir_name) {
                 $diff_files = array_merge($diff_files, self::getDiffFilesInDir($dir_name, self::$config));
             }
         }
 
-        if ($diff_files === null || count($diff_files) > 200) {
+        if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
             foreach (self::$config->getIncludeDirs() as $dir_name) {
                 self::checkDirWithConfig($dir_name, self::$config, $debug);
             }
@@ -56,6 +58,8 @@ class ProjectChecker
             }
 
             $file_list = self::getReferencedFilesFromDiff($diff_files);
+            // strip out deleted files
+            $file_list = array_diff($file_list, $deleted_files);
             self::checkDiffFilesWithConfig($file_list, self::$config, $debug);
         }
 

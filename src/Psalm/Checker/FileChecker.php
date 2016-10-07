@@ -69,6 +69,9 @@ class FileChecker implements StatementsSource
     /** @var array<string,array<int,string>> */
     protected static $files_inheriting_classes = [];
 
+    /** @var array<int,string>|null A list of all files deleted since the last successful run */
+    protected static $deleted_files = null;
+
     public function __construct($file_name, array $preloaded_statements = [])
     {
         $this->real_file_name = $file_name;
@@ -513,12 +516,37 @@ class FileChecker implements StatementsSource
         return filemtime($file) > self::$last_good_run;
     }
 
+    public static function getDeletedReferencedFiles()
+    {
+        if (self::$deleted_files === null) {
+            self::$deleted_files = array_filter(
+                array_keys(self::$file_references),
+                function($file_name) {
+                    return !file_exists($file_name);
+                }
+            );
+        }
+
+        return self::$deleted_files;
+    }
+
     public static function goodRun()
     {
         if (self::$cache_dir) {
-            $cache_location = self::$cache_dir . '/' . self::GOOD_RUN_NAME;
+            $run_cache_location = self::$cache_dir . '/' . self::GOOD_RUN_NAME;
 
-            touch($cache_location);
+            touch($run_cache_location);
+
+            $deleted_files = self::getDeletedReferencedFiles();
+
+            if ($deleted_files) {
+
+                foreach ($deleted_files as $file) {
+                    unset(self::$file_references[$file]);
+                }
+
+                file_put_contents(self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME, serialize(self::$file_references));
+            }
         }
     }
 
