@@ -41,6 +41,9 @@ class FileChecker implements StatementsSource
     public static $show_notices = true;
 
     const REFERENCE_CACHE_NAME = 'references';
+    const GOOD_RUN_NAME = 'good_run';
+
+    protected static $last_good_run = null;
 
     /**
      * A lookup table used for getting all the files that reference a class
@@ -494,6 +497,29 @@ class FileChecker implements StatementsSource
     public static function getFilesInheritingFromFile($file)
     {
         return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
+    }
+
+    public static function canDiffFiles()
+    {
+        return self::$cache_dir && file_exists(self::$cache_dir . '/' . self::GOOD_RUN_NAME);
+    }
+
+    public static function hasFileChanged($file)
+    {
+        if (self::$last_good_run === null) {
+            self::$last_good_run = filemtime(self::$cache_dir . '/' . self::GOOD_RUN_NAME);
+        }
+
+        return filemtime($file) > self::$last_good_run;
+    }
+
+    public static function goodRun()
+    {
+        if (self::$cache_dir) {
+            $cache_location = self::$cache_dir . '/' . self::GOOD_RUN_NAME;
+
+            touch($cache_location);
+        }
     }
 
     public static function clearCache()

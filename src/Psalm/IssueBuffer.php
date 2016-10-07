@@ -64,12 +64,16 @@ class IssueBuffer
         return true;
     }
 
-    public static function finish()
+    public static function finish($is_full = false)
     {
         Checker\FileChecker::updateReferenceCache();
 
         if (count(self::$errors)) {
             exit(1);
+        }
+
+        if ($is_full) {
+            Checker\FileChecker::goodRun();
         }
     }
 }

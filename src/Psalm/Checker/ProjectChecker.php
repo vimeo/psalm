@@ -29,25 +29,37 @@ class ProjectChecker
      */
     public static $show_info = true;
 
-    public static function check($debug = false, array $diff_files = [])
+    public static function check($debug = false, $is_diff = false)
     {
         if (!self::$config) {
             self::$config = self::getConfigForPath(getcwd());
         }
 
-        $file_list = [];
+        $diff_files = null;
 
-        if ($diff_files && FileChecker::loadReferenceCache()) {
-            $file_list = self::getReferencedFilesFromDiff($diff_files);
-            self::checkDiffFilesWithConfig($file_list, self::$config, $debug);
-        }
-        else {
+        if ($is_diff && FileChecker::loadReferenceCache() && FileChecker::canDiffFiles()) {
+            $diff_files = [];
+
             foreach (self::$config->getIncludeDirs() as $dir_name) {
-                self::checkDirWithConfig($dir_name, self::$config, $debug, $file_list);
+                $diff_files = array_merge($diff_files, self::getDiffFilesInDir($dir_name, self::$config));
             }
         }
 
-        IssueBuffer::finish();
+        if ($diff_files === null || count($diff_files) > 200) {
+            foreach (self::$config->getIncludeDirs() as $dir_name) {
+                self::checkDirWithConfig($dir_name, self::$config, $debug);
+            }
+        }
+        else {
+            if ($debug) {
+                echo count($diff_files) . ' changed files' . PHP_EOL;
+            }
+
+            $file_list = self::getReferencedFilesFromDiff($diff_files);
+            self::checkDiffFilesWithConfig($file_list, self::$config, $debug);
+        }
+
+        IssueBuffer::finish(true);
     }
 
     public static function checkDir($dir_name, $debug = false)
@@ -64,7 +76,7 @@ class ProjectChecker
         IssueBuffer::finish();
     }
 
-    protected static function checkDirWithConfig($dir_name, Config $config, $debug, array $file_list = [])
+    protected static function checkDirWithConfig($dir_name, Config $config, $debug)
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
@@ -85,15 +97,6 @@ class ProjectChecker
                         echo 'Checking ' . $file_name . PHP_EOL;
                     }
 
-                    if ($file_list) {
-                        if (in_array($file_name, $file_list)) {
-                            echo 'Checking affected file ' . $file_name . PHP_EOL;
-                        }
-                        else {
-                            continue;
-                        }
-                    }
-
                     if (isset($filetype_handlers[$extension])) {
                         /** @var FileChecker */
                         $file_checker = new $filetype_handlers[$extension]($file_name);
@@ -108,6 +111,35 @@ class ProjectChecker
 
             $iterator->next();
         }
+    }
+
+    protected static function getDiffFilesInDir($dir_name, Config $config)
+    {
+        $file_extensions = $config->getFileExtensions();
+        $filetype_handlers = $config->getFiletypeHandlers();
+
+        /** @var RecursiveDirectoryIterator */
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
+        $iterator->rewind();
+
+        $diff_files = [];
+
+        while ($iterator->valid()) {
+            if (!$iterator->isDot()) {
+                $extension = $iterator->getExtension();
+                if (in_array($extension, $file_extensions)) {
+                    $file_name = $iterator->getRealPath();
+
+                    if (FileChecker::hasFileChanged($file_name)) {
+                        $diff_files[] = $file_name;
+                    }
+                }
+            }
+
+            $iterator->next();
+        }
+
+        return $diff_files;
     }
 
     protected static function checkDiffFilesWithConfig(array $file_list = [], Config $config, $debug)
