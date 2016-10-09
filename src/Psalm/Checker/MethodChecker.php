@@ -55,6 +55,10 @@ class MethodChecker extends FunctionLikeChecker
         return self::$method_params[$method_id];
     }
 
+    /**
+     * @param  string $method_id
+     * @return Type\Union|null
+     */
     public static function getMethodReturnTypes($method_id)
     {
         self::registerClassMethod($method_id);
@@ -98,7 +102,7 @@ class MethodChecker extends FunctionLikeChecker
             $param_array = self::getReflectionParamArray($param);
             self::$method_params[$method_id][] = $param_array;
             $method_param_names[$param->name] = true;
-            $method_param_types[$param->name] = $param_array['type'];
+            $method_param_types[$param->name] = $param_array->type;
         }
 
         $return_types = null;
@@ -167,7 +171,7 @@ class MethodChecker extends FunctionLikeChecker
         foreach ($method->getParams() as $param) {
             $param_array = $this->getParamArray($param);
             self::$method_params[$method_id][] = $param_array;
-            $method_param_names[$param->name] = $param_array['type'];
+            $method_param_names[$param->name] = $param_array->type;
         }
 
         $config = Config::getInstance();

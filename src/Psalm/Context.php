@@ -38,7 +38,9 @@ class Context
     public function __clone()
     {
         foreach ($this->vars_in_scope as $key => &$type) {
-            $type = clone $type;
+            if ($type) {
+                $type = clone $type;
+            }
         }
     }
 
@@ -46,9 +48,11 @@ class Context
      * Updates the parent context, looking at the changes within a block
      * and then applying those changes, where necessary, to the parent context
      *
-     * @param  Context $start_context
-     * @param  Context $end_context
-     * @param  bool    $has_leaving_statements   whether or not the parent scope is abandoned between $start_context and $end_context
+     * @param  Context     $start_context
+     * @param  Context     $end_context
+     * @param  bool        $has_leaving_statements   whether or not the parent scope is abandoned between $start_context and $end_context
+     * @param  array       $vars_to_update
+     * @param  array       $updated_vars
      * @return void
      */
     public function update(Context $start_context, Context $end_context, $has_leaving_statements, array $vars_to_update, array &$updated_vars)
@@ -72,6 +76,11 @@ class Context
         }
     }
 
+    /**
+     * @param  Context $original_context
+     * @param  Context $new_context
+     * @return array<string,Type\Union>
+     */
     public static function getRedefinedVars(Context $original_context, Context $new_context)
     {
         $redefined_vars = [];

@@ -7,6 +7,7 @@ ini_set('xdebug.max_nesting_level', 512);
 use PhpParser;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
+use Psalm\FunctionLikeParameter;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Config;
@@ -26,6 +27,10 @@ abstract class FunctionLikeChecker implements StatementsSource
     protected $return_vars_in_scope = [];
     protected $return_vars_possibly_in_scope = [];
     protected $class_name;
+
+    /**
+     * @var string|null
+     */
     protected $class_extends;
 
     /**
@@ -115,16 +120,17 @@ abstract class FunctionLikeChecker implements StatementsSource
                         $param_type = Type::getMixed();
                     }
 
-                    $function_params[] = [
-                        'name' => $param->name,
-                        'type' => $param_type,
-                    ];
+                    $function_params[] = new FunctionLikeParameter(
+                        $param->name,
+                        false,
+                        $param_type
+                    );
                 }
             }
 
             foreach ($function_params as $function_param) {
                 $param_type = StatementsChecker::fleshOutTypes(
-                    clone $function_param['type'],
+                    clone $function_param->type,
                     [],
                     $context->self,
                     $this->getMethodId()
@@ -144,9 +150,9 @@ abstract class FunctionLikeChecker implements StatementsSource
                     }
                 }
 
-                $context->vars_in_scope[$function_param['name']] = $param_type;
+                $context->vars_in_scope[$function_param->name] = $param_type;
 
-                $statements_checker->registerVariable($function_param['name'], $this->function->getLine());
+                $statements_checker->registerVariable($function_param->name, $this->function->getLine());
             }
 
             $statements_checker->check($this->function->stmts, $context);
@@ -237,6 +243,9 @@ abstract class FunctionLikeChecker implements StatementsSource
         return $this->source->getClassLikeChecker();
     }
 
+    /**
+     * @return string|null
+     */
     public function getParentClass()
     {
         return $this->class_extends;
@@ -252,6 +261,9 @@ abstract class FunctionLikeChecker implements StatementsSource
         return $this->include_file_name;
     }
 
+    /**
+     * @param string|null $file_name
+     */
     public function setIncludeFileName($file_name)
     {
         $this->include_file_name = $file_name;
@@ -272,6 +284,10 @@ abstract class FunctionLikeChecker implements StatementsSource
         return $this->source;
     }
 
+    /**
+     * Get a list of suppressed issues
+     * @return array<string>
+     */
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
@@ -409,20 +425,24 @@ abstract class FunctionLikeChecker implements StatementsSource
             }
 
             foreach ($function_signature as &$function_signature_param) {
-                if ($function_signature_param['name'] === $param_name) {
-                    $existing_param_type_nullable = $function_signature_param['is_nullable'];
+                if ($function_signature_param->name === $param_name) {
+                    $existing_param_type_nullable = $function_signature_param->is_nullable;
 
                     if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
                         $new_param_type->types['null'] = new Type\Atomic('null');
                     }
 
-                    $function_signature_param['type'] = $new_param_type;
+                    $function_signature_param->type = $new_param_type;
                     break;
                 }
             }
         }
     }
 
+    /**
+     * @param  PhpParser\Node\Param $param
+     * @return FunctionLikeParameter
+     */
     protected function getParamArray(PhpParser\Node\Param $param)
     {
         $param_type = null;
@@ -461,13 +481,13 @@ abstract class FunctionLikeChecker implements StatementsSource
 
         $is_optional = $param->default !== null;
 
-        return [
-            'name' => $param->name,
-            'by_ref' => $param->byRef,
-            'type' => $param_type ?: Type::getMixed(),
-            'is_optional' => $is_optional,
-            'is_nullable' => $is_nullable,
-        ];
+        return new FunctionLikeParameter(
+            $param->name,
+            $param->byRef,
+            $param_type ?: Type::getMixed(),
+            $is_optional,
+            $is_nullable
+        );
     }
 
     protected static function getReflectionParamArray(\ReflectionParameter $param)
@@ -511,13 +531,13 @@ abstract class FunctionLikeChecker implements StatementsSource
         $param_name = $param->getName();
         $param_type = $param_type_string ? Type::parseString($param_type_string) : Type::getMixed();
 
-        return [
-            'name' => $param_name,
-            'by_ref' => $param->isPassedByReference(),
-            'type' => $param_type,
-            'is_nullable' => $is_nullable,
-            'is_optional' => $is_optional,
-        ];
+        return new FunctionLikeParameter(
+            $param_name,
+            $param->isPassedByReference(),
+            $param_type,
+            $is_nullable,
+            $is_optional
+        );
     }
 
     public static function fixUpLocalType($return_type, $absolute_class, $namespace, $aliased_classes)
@@ -566,18 +586,14 @@ abstract class FunctionLikeChecker implements StatementsSource
      * @param  Type\Union $input_type
      * @param  Type\Union $param_type
      * @param  bool       &$has_scalar_match
+     * @param  bool       &$type_coerced    whether or not there was type coercion involved
      * @return bool
      */
-    public static function doesParamMatch(Type\Union $input_type, Type\Union $param_type, &$has_scalar_match = null)
+    public static function doesParamMatch(Type\Union $input_type, Type\Union $param_type, &$has_scalar_match = null, &$type_coerced = null)
     {
         $has_scalar_match = true;
 
         if ($param_type->isMixed()) {
-            return true;
-        }
-
-        if ($input_type->isMixed()) {
-            // @todo make this a config
             return true;
         }
 
@@ -649,7 +665,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 }
 
                 if (ClassChecker::classExtendsOrImplements($param_type_part->value, $input_type_part->value)) {
-                    // @todo handle coercion
+                    $type_coerced = true;
                     $type_match_found = true;
                     break;
                 }
@@ -668,6 +684,12 @@ abstract class FunctionLikeChecker implements StatementsSource
         return true;
     }
 
+    /**
+     * @param  string                       $method_id
+     * @param  array<PhpParser\Node\Arg>    $args
+     * @param  string                       $file_name
+     * @return array<int,FunctionLikeParameter>
+     */
     public static function getParamsById($method_id, array $args, $file_name)
     {
         if (strpos($method_id, '::')) {
@@ -694,14 +716,16 @@ abstract class FunctionLikeChecker implements StatementsSource
                     break;
                 }
 
-                $param_type = $possible_function_params[$argument_offset]['type'];
+                $param_type = $possible_function_params[$argument_offset]->type;
 
                 if (!isset($arg->value->inferredType)) {
                     continue;
                 }
 
-                if (FunctionLikeChecker::doesParamMatch($arg->value->inferredType, $param_type)) {
-                    continue;
+                if (!$arg->value->inferredType->isMixed()) {
+                    if (FunctionLikeChecker::doesParamMatch($arg->value->inferredType, $param_type)) {
+                        continue;
+                    }
                 }
 
                 $all_args_match = false;

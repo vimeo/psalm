@@ -126,7 +126,7 @@ class NamespaceChecker implements StatementsSource
     }
 
     /**
-     * @return null
+     * @return string|null
      */
     public function getParentClass()
     {
@@ -143,6 +143,9 @@ class NamespaceChecker implements StatementsSource
         return $this->include_file_name;
     }
 
+    /**
+     * @param string|null $file_name
+     */
     public function setIncludeFileName($file_name)
     {
         $this->include_file_name = $file_name;
@@ -166,6 +169,10 @@ class NamespaceChecker implements StatementsSource
         return null;
     }
 
+    /**
+     * Get a list of suppressed issues
+     * @return array<string>
+     */
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;

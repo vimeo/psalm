@@ -15,7 +15,7 @@ interface StatementsSource
     public function getClassLikeChecker();
 
     /**
-     * @return \PhpParser\Node\Name
+     * @return string|null
      */
     public function getParentClass();
 
@@ -26,7 +26,7 @@ interface StatementsSource
     public function getCheckedFileName();
 
     /**
-     * @param string $file_name
+     * @param string|null $file_name
      */
     public function setIncludeFileName($file_name);
 
@@ -36,7 +36,7 @@ interface StatementsSource
 
     /**
      * Get a list of suppressed issues
-     * @return array
+     * @return array<string>
      */
     public function getSuppressedIssues();
 }

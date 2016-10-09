@@ -166,6 +166,7 @@ abstract class Type
         return $return_type_tokens;
     }
 
+    /** @return string */
     public static function convertSquareBrackets($type)
     {
         return preg_replace_callback(
@@ -185,6 +186,7 @@ abstract class Type
         );
     }
 
+    /** @return Type\Union */
     public static function getInt()
     {
         $type = new Atomic('int');
@@ -192,6 +194,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getString()
     {
         $type = new Atomic('string');
@@ -199,6 +202,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getNull()
     {
         $type = new Atomic('null');
@@ -206,6 +210,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getMixed()
     {
         $type = new Atomic('mixed');
@@ -213,6 +218,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getBool()
     {
         $type = new Atomic('bool');
@@ -220,6 +226,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getFloat()
     {
         $type = new Atomic('float');
@@ -227,6 +234,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getObject()
     {
         $type = new Atomic('object');
@@ -234,6 +242,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getObjectLike()
     {
         $type = new Atomic('object-like');
@@ -241,6 +250,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getArray()
     {
         $type = new Type\GenericArray(
@@ -254,6 +264,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getEmptyArray()
     {
         return new Type\Union([
@@ -267,6 +278,7 @@ abstract class Type
         ]);
     }
 
+    /** @return Type\Union */
     public static function getVoid()
     {
         $type = new Atomic('void');
@@ -274,6 +286,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return Type\Union */
     public static function getFalse()
     {
         $type = new Atomic('false');
@@ -281,6 +294,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @return bool */
     public function isMixed()
     {
         if ($this instanceof Atomic) {
@@ -292,6 +306,7 @@ abstract class Type
         }
     }
 
+    /** @return bool */
     public function isNull()
     {
         if ($this instanceof Atomic) {
@@ -303,6 +318,7 @@ abstract class Type
         }
     }
 
+    /** @return bool */
     public function isVoid()
     {
         if ($this instanceof Atomic) {
@@ -314,6 +330,7 @@ abstract class Type
         }
     }
 
+    /** @return bool */
     public function isEmpty()
     {
         if ($this instanceof Atomic) {

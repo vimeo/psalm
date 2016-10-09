@@ -30,7 +30,7 @@ class TypeChecker
     /**
      * Gets all the type assertions in a conditional that are && together
      * @param  PhpParser\Node\Expr $conditional [description]
-     * @return array<string>
+     * @return array<string,string>
      */
     public function getReconcilableTypeAssertions(PhpParser\Node\Expr $conditional)
     {
@@ -61,6 +61,10 @@ class TypeChecker
         return $this->getTypeAssertions($conditional);
     }
 
+    /**
+     * @param  PhpParser\Node\Expr $conditional
+     * @return array<string,string>
+     */
     public function getNegatableTypeAssertions(PhpParser\Node\Expr $conditional)
     {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
@@ -108,7 +112,7 @@ class TypeChecker
      * Gets all the type assertions in a conditional
      *
      * @param  PhpParser\Node\Expr $conditional
-     * @return array
+     * @return array<string,string>
      */
     public function getTypeAssertions(PhpParser\Node\Expr $conditional)
     {
@@ -756,7 +760,7 @@ class TypeChecker
 
             $new_type_parts = explode('&', $new_types[$key]);
 
-            $result_type = isset($existing_types[$key]) ? clone $existing_types[$key] : Type::getMixed();
+            $result_type = isset($existing_types[$key]) ? clone $existing_types[$key] : self::getValueForKey($key, $existing_types);
 
             foreach ($new_type_parts as $new_type_part) {
                 $result_type = self::reconcileTypes(
@@ -774,7 +778,9 @@ class TypeChecker
                 }
             }
 
-            //echo((string) $new_types[$key] . ' and ' . (isset($existing_types[$key]) ? (string) $existing_types[$key] : '') . ' => ' . $result_type . PHP_EOL);
+            if ($result_type === null) {
+                continue;
+            }
 
             if ($result_type === false) {
                 return false;
@@ -800,11 +806,19 @@ class TypeChecker
      * @param  string       $key
      * @param  string       $file_name
      * @param  int          $line_number
-     * @return Type\Union|false
+     * @return Type\Union|null|false
      */
-    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type, $key = null, $file_name = null, $line_number = null, array $suppressed_issues = [])
+    public static function reconcileTypes($new_var_type, Type\Union $existing_var_type = null, $key = null, $file_name = null, $line_number = null, array $suppressed_issues = [])
     {
         $result_var_types = null;
+
+        if ($existing_var_type === null) {
+            if ($new_var_type[0] !== '!') {
+                return Type::parseString($new_var_type);
+            }
+
+            return null;
+        }
 
         if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
             return $existing_var_type;
@@ -898,6 +912,62 @@ class TypeChecker
         return Type::parseString($new_var_type);
     }
 
+    /**
+     * Gets the type for a given (non-existent key) based on the passed keys
+     * @param  string                    $key
+     * @param  array<string,Type\Union>  $existing_keys
+     * @return Type\Union|null
+     */
+    protected static function getValueForKey($key, array &$existing_keys)
+    {
+        $key_parts = explode('->', $key);
+
+        if (count($key_parts) === 1) {
+            return null;
+        }
+
+        if (!isset($existing_keys[$key_parts[0]])) {
+            return null;
+        }
+
+        $base_type = $existing_keys[$key_parts[0]];
+        $base_key = $key_parts[0];
+
+        // for an expression like $obj->key1->key2
+        for ($i = 1; $i < count($key_parts); $i++) {
+            $new_base_key = $base_key . '->' . $key_parts[$i];
+
+            if (!isset($existing_keys[$new_base_key])) {
+                $new_base_type = null;
+
+                foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
+                    $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
+                        $existing_key_type_part->value,
+                        \ReflectionProperty::IS_PUBLIC
+                    );
+
+                    if (!isset($class_properties[$key_parts[$i]])) {
+                        return null;
+                    }
+
+                    if (!$new_base_type) {
+                        $new_base_type = clone $class_properties[$key_parts[$i]];
+                    }
+                    else {
+                        $new_base_type = Type::combineUnionTypes($new_base_type, clone $class_properties[$key_parts[$i]]);
+                    }
+
+                    $existing_keys[$new_base_key] = $new_base_type;
+                }
+            }
+
+            $base_type = $existing_keys[$new_base_key];
+            $base_key = $new_base_key;
+        }
+
+        return $existing_keys[$base_key];
+    }
+
     public static function isNegation($type, $existing_type)
     {
         if ($type === 'mixed' || $existing_type === 'mixed') {
@@ -924,7 +994,7 @@ class TypeChecker
      *
      * @param  array<Type\Union>  $new_types
      * @param  array<Type\Union>  $existing_types
-     * @return array
+     * @return array<string,Type\Union>
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types)
     {
@@ -991,6 +1061,10 @@ class TypeChecker
         return array_keys($all_types);
     }
 
+    /**
+     * @param  array<string>  $types
+     * @return array<string>
+     */
     public static function negateTypes(array $types)
     {
         return array_map(function ($type) {

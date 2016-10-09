@@ -5,6 +5,8 @@ namespace Psalm\Checker;
 use PhpParser;
 use Psalm\StatementsSource;
 use Psalm\Config;
+use Psalm\FunctionLikeParameter;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
 class FunctionChecker extends FunctionLikeChecker
@@ -108,7 +110,7 @@ class FunctionChecker extends FunctionLikeChecker
         foreach ($function->getParams() as $param) {
             $param_array = $this->getParamArray($param);
             self::$file_function_params[$file_name][$function_id][] = $param_array;
-            $function_param_names[$param->name] = $param_array['type'];
+            $function_param_names[$param->name] = $param_array->type;
         }
 
         $config = Config::getInstance();
@@ -150,7 +152,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
-     * @return array<array<array>>|null
+     * @psalm-return array<array<FunctionLikeParameter>>|null
      */
     public static function getParamsFromCallMap($function_id)
     {
@@ -189,12 +191,12 @@ class FunctionChecker extends FunctionLikeChecker
                     $by_reference = true;
                 }
 
-                $function_types[] = [
-                    'name' => $arg_name,
-                    'by_ref' => $by_reference,
-                    'type' => $arg_type ? Type::parseString($arg_type) : Type::getMixed(),
-                    'is_optional' => true, // @todo - need to have non-optional parameters
-                ];
+                $function_types[] = new FunctionLikeParameter(
+                    $arg_name,
+                    $by_reference,
+                    $arg_type ? Type::parseString($arg_type) : Type::getMixed(),
+                    true // @todo - need to have non-optional parameters
+                );
             }
 
             $function_type_options[] = $function_types;
@@ -203,7 +205,7 @@ class FunctionChecker extends FunctionLikeChecker
         return $function_type_options;
     }
 
-    public static function getReturnTypeFromCallMap($function_id, array $call_args)
+    public static function getReturnTypeFromCallMap($function_id, array $call_args, $file_name, $line_number, array $suppressed_issues)
     {
         $call_map_key = strtolower($function_id);
 
@@ -236,7 +238,16 @@ class FunctionChecker extends FunctionLikeChecker
                     $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($call_args[0]->value->stmts, true);
 
                     if (!$closure_return_types) {
-                        // @todo report issue
+                        if (IssueBuffer::accepts(
+                            new InvalidReturnType(
+                                'No return type could be found in the closure passed to array_map',
+                                $file_name,
+                                $line_number
+                            ),
+                            $suppressed_issues
+                        )) {
+                            return false;
+                        }
                     }
                     else {
                         $inner_type = new Type\Union($closure_return_types);
@@ -305,7 +316,30 @@ class FunctionChecker extends FunctionLikeChecker
             return Type::getArray();
         }
 
-        if ($call_map_key === 'explode') {
+        if ($call_map_key === 'array_diff') {
+            if (!isset($call_args[0]->value->inferredType) || !$call_args[0]->value->inferredType->hasArray()) {
+                return Type::getArray();
+            }
+
+            return new Type\Union([
+                new Type\Generic('array',
+                    [
+                        Type::getInt(),
+                        clone $call_args[0]->value->inferredType->type_paams[1]
+                    ]
+                )
+            ]);
+        }
+
+        if ($call_map_key === 'array_diff_key') {
+            if (!isset($call_args[0]->value->inferredType) || !$call_args[0]->value->inferredType->hasArray()) {
+                return Type::getArray();
+            }
+
+            return clone $call_args[0]->value->inferredType;
+        }
+
+        if ($call_map_key === 'explode' || $call_map_key === 'preg_split') {
             return Type::parseString('array<int, string>');
         }
 

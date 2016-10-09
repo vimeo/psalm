@@ -79,7 +79,9 @@ abstract class ClassLikeChecker implements StatementsSource
      */
     protected static $method_checkers = [];
 
-
+    /**
+     * @var string|null
+     */
     protected static $this_class = null;
 
     /**
@@ -237,7 +239,7 @@ abstract class ClassLikeChecker implements StatementsSource
                     return false;
                 }
 
-                self::registerClass($this->parent_class);
+            self::registerClass($this->parent_class);
 
                 $this->registerInheritedMethods($this->parent_class);
 
@@ -572,6 +574,14 @@ abstract class ClassLikeChecker implements StatementsSource
         return true;
     }
 
+    /**
+     * Gets the fully-qualified classname from a Name object
+     *
+     * @param  PhpParser\Node\Name $class_name
+     * @param  string              $namespace
+     * @param  array<int,string>   $aliased_classes
+     * @return string
+     */
     public static function getAbsoluteClassFromName(PhpParser\Node\Name $class_name, $namespace, array $aliased_classes)
     {
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
@@ -625,6 +635,9 @@ abstract class ClassLikeChecker implements StatementsSource
         return $this->class->name;
     }
 
+    /**
+     * @return string|null
+     */
     public function getParentClass()
     {
         return $this->parent_class;
@@ -640,6 +653,9 @@ abstract class ClassLikeChecker implements StatementsSource
         return $this->include_file_name;
     }
 
+    /**
+     * @param string|null $file_name
+     */
     public function setIncludeFileName($file_name)
     {
         $this->include_file_name = $file_name;
@@ -892,6 +908,10 @@ abstract class ClassLikeChecker implements StatementsSource
         return null;
     }
 
+    /**
+     * Get a list of suppressed issues
+     * @return array<string>
+     */
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
@@ -904,6 +924,9 @@ abstract class ClassLikeChecker implements StatementsSource
         self::$class_checkers = [];
     }
 
+    /**
+     * @return string|null
+     */
     public static function getThisClass()
     {
         return self::$this_class;
@@ -937,8 +960,6 @@ abstract class ClassLikeChecker implements StatementsSource
         self::$public_static_class_properties = [];
         self::$protected_static_class_properties = [];
         self::$private_static_class_properties = [];
-
-        self::$class_references = [];
 
         ClassChecker::clearCache();
         InterfaceChecker::clearCache();
