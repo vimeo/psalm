@@ -152,6 +152,10 @@ class ProjectChecker
         $filetype_handlers = $config->getFiletypeHandlers();
 
         foreach ($file_list as $file_name) {
+            if (!file_exists($file_name)) {
+                continue;
+            }
+
             $extension = pathinfo($file_name, PATHINFO_EXTENSION);
 
             if ($debug) {
