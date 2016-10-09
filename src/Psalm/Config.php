@@ -63,11 +63,6 @@ class Config
     protected $issue_handlers = [];
 
     protected $custom_error_levels = [
-        'InvalidDocblock' => self::REPORT_INFO,
-        'NullPropertyFetch' => self::REPORT_INFO,
-        'MissingPropertyDeclaration' => self::REPORT_INFO,
-        'MixedMethodCall' => self::REPORT_SUPPRESS,
-        'TooManyArguments' => self::REPORT_SUPPRESS
     ];
 
     protected $mock_classes = [];
@@ -228,6 +223,10 @@ class Config
         }
     }
 
+    /**
+     * @param  string $file_name
+     * @return string
+     */
     public function shortenFileName($file_name)
     {
         return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
@@ -298,11 +297,17 @@ class Config
         return $this->filetype_handlers;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getMockClasses()
     {
         return $this->mock_classes;
     }
 
+    /**
+     * @return array<Plugin>
+     */
     public function getPlugins()
     {
         return $this->plugins;
