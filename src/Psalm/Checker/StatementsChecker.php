@@ -38,8 +38,10 @@ use Psalm\Issue\TypeCoercion;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedFunction;
-use Psalm\Issue\UndefinedProperty;
-use Psalm\Issue\UndefinedThisProperty;
+use Psalm\Issue\UndefinedPropertyAssignment;
+use Psalm\Issue\UndefinedPropertyFetch;
+use Psalm\Issue\UndefinedThisPropertyAssignment;
+use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UndefinedVariable;
 
 use Psalm\Type;
@@ -1505,7 +1507,7 @@ class StatementsChecker
             if (!$class_properties || !isset($class_properties[$stmt->name])) {
                 if ($stmt_var_id === 'this') {
                     if (IssueBuffer::accepts(
-                        new UndefinedThisProperty(
+                        new UndefinedThisPropertyFetch(
                             'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
                             $this->checked_file_name,
                             $stmt->getLine()
@@ -1517,7 +1519,7 @@ class StatementsChecker
                 }
                 else {
                     if (IssueBuffer::accepts(
-                        new UndefinedProperty(
+                        new UndefinedPropertyFetch(
                             'Property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
                             $this->checked_file_name,
                             $stmt->getLine()
@@ -1724,7 +1726,7 @@ class StatementsChecker
                 if (!isset($class_properties[$prop_name])) {
                     if ($stmt->var->name === 'this') {
                         if (IssueBuffer::accepts(
-                            new UndefinedThisProperty(
+                            new UndefinedThisPropertyAssignment(
                                 'Instance property ' . $lhs_type_part->value . '::' . $prop_name . ' is not defined',
                                 $this->checked_file_name,
                                 $stmt->getLine()
@@ -1736,7 +1738,7 @@ class StatementsChecker
                     }
                     else {
                         if (IssueBuffer::accepts(
-                            new UndefinedProperty(
+                            new UndefinedPropertyAssignment(
                                 'Instance property ' . $lhs_type_part->value . '::' . $prop_name . ' is not defined',
                                 $this->checked_file_name,
                                 $stmt->getLine()
@@ -3558,7 +3560,7 @@ class StatementsChecker
                 }
                 else {
                     IssueBuffer::add(
-                        new UndefinedProperty('Static property ' . $var_id . ' does not exist', $this->checked_file_name, $stmt->getLine())
+                        new UndefinedPropertyFetch('Static property ' . $var_id . ' does not exist', $this->checked_file_name, $stmt->getLine())
                     );
                 }
 
