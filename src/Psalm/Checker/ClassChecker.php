@@ -9,6 +9,11 @@ use Psalm\Context;
 class ClassChecker extends ClassLikeChecker
 {
     /**
+     * @var PhpParser\Node\Stmt\Class_
+     */
+    protected $class;
+
+    /**
      * A lookup table of existing classes
      * @var array
      */

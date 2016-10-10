@@ -325,7 +325,7 @@ class FunctionChecker extends FunctionLikeChecker
                 new Type\Generic('array',
                     [
                         Type::getInt(),
-                        clone $call_args[0]->value->inferredType->type_paams[1]
+                        clone $call_args[0]->value->inferredType->types['array']->type_params[1]
                     ]
                 )
             ]);

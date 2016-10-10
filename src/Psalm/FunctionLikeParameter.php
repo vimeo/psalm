@@ -19,7 +19,7 @@ class FunctionLikeParameter
     /** @var bool */
     public $is_nullable;
 
-    public function __construct($name, $by_ref, $type, $is_optional = false, $is_nullable = false)
+    public function __construct($name, $by_ref, $type, $is_optional = true, $is_nullable = false)
     {
         $this->name = $name;
         $this->by_ref = $by_ref;

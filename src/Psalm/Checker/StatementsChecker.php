@@ -1546,7 +1546,7 @@ class StatementsChecker
         }
 
         if ($var_id) {
-            $context->vars_in_scope[$var_id] = $stmt->inferredType;
+            $context->vars_in_scope[$var_id] = isset($stmt->inferredType) ? $stmt->inferredType : Type::getMixed();
         }
     }
 
@@ -1722,15 +1722,29 @@ class StatementsChecker
                 );
 
                 if (!isset($class_properties[$prop_name])) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedProperty(
-                            'Instance property ' . $lhs_type_part->value . '::' . $prop_name . ' is not defined',
-                            $this->checked_file_name,
-                            $stmt->getLine()
-                        ),
-                        $this->suppressed_issues
-                    )) {
-                        return false;
+                    if ($stmt->var->name === 'this') {
+                        if (IssueBuffer::accepts(
+                            new UndefinedThisProperty(
+                                'Instance property ' . $lhs_type_part->value . '::' . $prop_name . ' is not defined',
+                                $this->checked_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->suppressed_issues
+                        )) {
+                            return false;
+                        }
+                    }
+                    else {
+                        if (IssueBuffer::accepts(
+                            new UndefinedProperty(
+                                'Instance property ' . $lhs_type_part->value . '::' . $prop_name . ' is not defined',
+                                $this->checked_file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->suppressed_issues
+                        )) {
+                            return false;
+                        }
                     }
 
                     continue;
@@ -3204,7 +3218,7 @@ class StatementsChecker
             foreach ($args as $i => $arg) {
                 $method_param = $method_params[$i];
 
-                if ($return_type->value === '$' . $method_param['name']) {
+                if ($return_type->value === '$' . $method_param->name) {
                     $arg_value = $arg->value;
                     if ($arg_value instanceof PhpParser\Node\Scalar\String_) {
                         $return_type->value = preg_replace('/^\\\/', '', $arg_value->value);

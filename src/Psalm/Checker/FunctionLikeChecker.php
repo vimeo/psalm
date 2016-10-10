@@ -535,8 +535,8 @@ abstract class FunctionLikeChecker implements StatementsSource
             $param_name,
             $param->isPassedByReference(),
             $param_type,
-            $is_nullable,
-            $is_optional
+            $is_optional,
+            $is_nullable
         );
     }
 
