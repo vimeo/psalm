@@ -722,10 +722,12 @@ abstract class FunctionLikeChecker implements StatementsSource
                     continue;
                 }
 
-                if (!$arg->value->inferredType->isMixed()) {
-                    if (FunctionLikeChecker::doesParamMatch($arg->value->inferredType, $param_type)) {
-                        continue;
-                    }
+                if ($arg->value->inferredType->isMixed()) {
+                    continue;
+                }
+
+                if (FunctionLikeChecker::doesParamMatch($arg->value->inferredType, $param_type)) {
+                    continue;
                 }
 
                 $all_args_match = false;
