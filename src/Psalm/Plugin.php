@@ -12,7 +12,7 @@ abstract class Plugin
      * @param  Context              $context
      * @param  string               $file_name
      * @return null|false
-     * @suppress InvalidReturnType
+     * @psalm-suppress InvalidReturnType
      */
     public function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $file_name)
     {
@@ -25,7 +25,7 @@ abstract class Plugin
      * @param  Context              $context
      * @param  string               $file_name
      * @return null|false
-     * @suppress InvalidReturnType
+     * @psalm-suppress InvalidReturnType
      */
     public function checkStatement(PhpParser\Node $stmt, Context $context, $file_name)
     {

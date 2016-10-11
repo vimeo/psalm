@@ -2526,7 +2526,7 @@ class StatementsChecker
 
     /**
      * @return false|null
-     * @suppress MixedMethodCall - some funky logic here
+     * @psalm-suppress MixedMethodCall - some funky logic here
      */
     protected function checkArrayAssignment(PhpParser\Node\Expr\ArrayDimFetch $stmt, Context $context, Type\Union $assignment_value_type)
     {
