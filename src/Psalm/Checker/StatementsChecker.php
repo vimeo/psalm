@@ -1447,7 +1447,7 @@ class StatementsChecker
             // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
             // but we don't want to throw an error
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-            if ($lhs_type_part->isObject() || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement', 'dateinterval'])) {
+            if ($lhs_type_part->isObject() || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'])) {
                 $stmt->inferredType = Type::getMixed();
                 continue;
             }
@@ -1668,8 +1668,11 @@ class StatementsChecker
                     continue;
                 }
 
-                if ($lhs_type_part->value === 'stdClass') {
-                    $class_property_types[] = new Type\Union([$lhs_type_part]);
+                // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
+                // but we don't want to throw an error
+                // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
+                if ($lhs_type_part->isObject() || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'])) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
                     continue;
                 }
 
