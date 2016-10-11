@@ -2425,7 +2425,7 @@ return [
 'get_magic_quotes_gpc' => ['bool'],
 'get_magic_quotes_runtime' => ['bool'],
 'get_meta_tags' => ['array', 'filename'=>'string', 'use_include_path='=>'bool'],
-'getmxrr' => ['bool', 'hostname'=>'string', 'mxhosts'=>'array', 'weight='=>'array'],
+'getmxrr' => ['bool', 'hostname'=>'string', '&mxhosts'=>'array', '&weight='=>'array'],
 'getmygid' => ['int'],
 'getmyinode' => ['int'],
 'getmypid' => ['int'],
