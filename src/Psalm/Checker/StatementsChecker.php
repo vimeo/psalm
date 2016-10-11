@@ -200,8 +200,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['item_key_type'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['item_key_type']);
+            if (isset($context->vars_in_scope['source_video->id'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['source_video->id']);
             }
             */
 
@@ -1468,6 +1468,7 @@ class StatementsChecker
             }
 
             if (method_exists((string) $lhs_type_part, '__get')) {
+                $stmt->inferredType = Type::getMixed();
                 continue;
             }
 
