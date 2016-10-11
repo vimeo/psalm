@@ -1388,6 +1388,21 @@ class StatementsChecker
             return;
         }
 
+        if ($stmt_var_type->isEmpty()) {
+            if (IssueBuffer::accepts(
+                new NullReference(
+                    'Cannot fetch property on empty var $' . $stmt_var_id,
+                    $this->checked_file_name,
+                    $stmt->getLine()
+                ),
+                $this->suppressed_issues
+            )) {
+                return false;
+            }
+
+            return;
+        }
+
         if ($stmt_var_type->isMixed()) {
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
