@@ -442,6 +442,10 @@ class FileChecker implements StatementsSource
         return self::$file_checkers[$file_name];
     }
 
+    /**
+     * @param  string $class_name
+     * @return ClassLikeChecker|null
+     */
     public static function getClassLikeCheckerFromClass($class_name)
     {
         $file_name = (new \ReflectionClass($class_name))->getFileName();

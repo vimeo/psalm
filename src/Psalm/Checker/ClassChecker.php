@@ -137,6 +137,7 @@ class ClassChecker extends ClassLikeChecker
     public static function getInterfacesForClass($absolute_class)
     {
         if (!isset(self::$class_implements[$absolute_class])) {
+            /** @var string[] */
             $class_implements = class_implements($absolute_class);
 
             self::$class_implements[$absolute_class] = [];

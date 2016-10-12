@@ -28,7 +28,7 @@ abstract class ClassLikeChecker implements StatementsSource
     protected $file_name;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $include_file_name;
 
@@ -87,7 +87,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * A lookup table of all methods on a given class
      *
-     * @var array<string,string>
+     * @var array<string,array<string,bool>>
      */
     protected static $class_methods = [];
 
@@ -101,49 +101,49 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * A lookup table for public class properties
      *
-     * @var array<string,string>
+     * @var array<string,array<string,Type\Union|null>>
      */
     protected static $public_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string,string>
+     * @var array<string,array<string,Type\Union|null>>
      */
     protected static $protected_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string,string>
+     * @var array<string,array<string,Type\Union|null>>
      */
     protected static $private_class_properties = [];
 
     /**
      * A lookup table for public static class properties
      *
-     * @var array<string,string>
+     * @var array<string,array<string,Type\Union|null>>
      */
     protected static $public_static_class_properties = [];
 
     /**
      * A lookup table for protected static class properties
      *
-     * @var array<string,string>
+     * @var array<string,array<string,Type\Union|null>>
      */
     protected static $protected_static_class_properties = [];
 
     /**
      * A lookup table for private static class properties
      *
-     * @var array<string,string>
+     * @var array<string,array<string,Type\Union|null>>
      */
     protected static $private_static_class_properties = [];
 
     /**
      * A lookup table for public class constants
      *
-     * @var array<string,string>
+     * @var array<string,array<string,Type\Union>>
      */
     protected static $public_class_constants = [];
 
@@ -157,7 +157,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * A lookup table used for storing the results of ClassChecker::classImplements
      *
-     * @var array<string,bool>
+     * @var array<string,array<string,string>>
      */
     protected static $class_implements = [];
 
@@ -239,7 +239,7 @@ abstract class ClassLikeChecker implements StatementsSource
                     return false;
                 }
 
-            self::registerClass($this->parent_class);
+                self::registerClass($this->parent_class);
 
                 $this->registerInheritedMethods($this->parent_class);
 
@@ -341,6 +341,7 @@ abstract class ClassLikeChecker implements StatementsSource
                             continue;
                         }
 
+                        /** @var TraitChecker */
                         $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
 
                         $trait_checker->setMethodMap($method_map);
@@ -591,6 +592,12 @@ abstract class ClassLikeChecker implements StatementsSource
         return self::getAbsoluteClassFromString(implode('\\', $class_name->parts), $namespace, $aliased_classes);
     }
 
+    /**
+     * @param  string $class
+     * @param  string $namespace
+     * @param  array  $imported_namespaces
+     * @return string
+     */
     public static function getAbsoluteClassFromString($class, $namespace, array $imported_namespaces)
     {
         if (empty($class)) {
@@ -684,6 +691,10 @@ abstract class ClassLikeChecker implements StatementsSource
         return $this->has_custom_get;
     }
 
+    /**
+     * @param  string $class_name
+     * @return boolean
+     */
     public static function registerClass($class_name)
     {
         if (isset(self::$registered_classes[$class_name])) {
@@ -721,6 +732,7 @@ abstract class ClassLikeChecker implements StatementsSource
             self::$protected_static_class_properties[$class_name] = [];
             self::$private_static_class_properties[$class_name] = [];
 
+            /** @var \ReflectionProperty $class_property */
             foreach ($class_properties as $class_property) {
                 if ($class_property->isStatic()) {
                     if ($class_property->isPublic()) {
@@ -793,6 +805,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
             self::$class_methods[$class_name] = [];
 
+            /** @var \ReflectionMethod $reflection_method */
             foreach ($reflection_methods as $reflection_method) {
                 MethodChecker::extractReflectionMethodInfo($reflection_method);
 
@@ -830,6 +843,11 @@ abstract class ClassLikeChecker implements StatementsSource
         }
     }
 
+    /**
+     * @param  string $class_name
+     * @param  mixed  $visibility
+     * @return array<string,Type\Union|null>
+     */
     public static function getInstancePropertiesForClass($class_name, $visibility)
     {
         if (self::registerClass($class_name) === false) {
@@ -856,6 +874,11 @@ abstract class ClassLikeChecker implements StatementsSource
         throw new \InvalidArgumentException('Must specify $visibility');
     }
 
+    /**
+     * @param  string $class_name
+     * @param  mixed  $visibility
+     * @return array<string,Type\Union|null>
+     */
     public static function getStaticPropertiesForClass($class_name, $visibility)
     {
         if (self::registerClass($class_name) === false) {
@@ -882,6 +905,11 @@ abstract class ClassLikeChecker implements StatementsSource
         throw new \InvalidArgumentException('Must specify $visibility');
     }
 
+    /**
+     * @param  string $class_name
+     * @param  mixed  $visibility
+     * @return array<string,Type\Union>
+     */
     public static function getConstantsForClass($class_name, $visibility)
     {
         // remove for PHP 7.1 support

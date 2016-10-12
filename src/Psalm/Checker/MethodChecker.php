@@ -383,6 +383,10 @@ class MethodChecker extends FunctionLikeChecker
         self::$declaring_methods[$method_id] = $declaring_method_id;
     }
 
+    /**
+     * @param  string $method_id
+     * @return string
+     */
     public static function getDeclaringMethod($method_id)
     {
         return self::$declaring_methods[$method_id];
