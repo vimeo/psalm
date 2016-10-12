@@ -3560,9 +3560,9 @@ class StatementsChecker
                 $class_visibility
             );
 
-            if (!isset($visible_class_properties[$stmt->name])) {
-                $var_id = $absolute_class . '::$' . $stmt->name;
+            $var_id = $absolute_class . '::$' . $stmt->name;
 
+            if (!isset($visible_class_properties[$stmt->name])) {
                 $all_class_properties = [];
 
                 if ($absolute_class !== $context->self) {
@@ -3585,6 +3585,9 @@ class StatementsChecker
 
                 return false;
             }
+
+            $context->vars_in_scope[$var_id] = clone $visible_class_properties[$stmt->name];
+            $stmt->inferredType = clone  $visible_class_properties[$stmt->name];
         }
     }
 
