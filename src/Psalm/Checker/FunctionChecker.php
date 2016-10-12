@@ -339,6 +339,14 @@ class FunctionChecker extends FunctionLikeChecker
             return clone $call_args[0]->value->inferredType;
         }
 
+        if ($call_map_key === 'array_shift' || $call_map_key === 'array_pop') {
+            if (!isset($call_args[0]->value->inferredType) || !$call_args[0]->value->inferredType->hasArray()) {
+                return Type::getMixed();
+            }
+
+            return clone $call_args[0]->value->inferredType->types['array']->type_params[1];
+        }
+
         if ($call_map_key === 'explode' || $call_map_key === 'preg_split') {
             return Type::parseString('array<int, string>');
         }
