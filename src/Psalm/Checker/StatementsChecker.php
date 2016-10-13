@@ -4312,7 +4312,7 @@ class StatementsChecker
             $var = $stmt->args[0]->value;
 
             if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
-                $stmt->inferredType = new Type\Union([new Type\T($var->name)]);
+                $stmt->inferredType = new Type\Union([new Type\T('$' . $var->name)]);
             }
         }
     }

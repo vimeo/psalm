@@ -34,7 +34,7 @@ class CommentChecker
                 // support PHPStorm-style docblocks like
                 // @var Type $variable
                 if (count($var_parts) > 1 && $var_parts[1][0] === '$') {
-                    $type_in_comments_var_id = substr($var_parts[1], 1);
+                    $type_in_comments_var_id = $var_parts[1];
                 }
             }
         }
