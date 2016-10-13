@@ -73,7 +73,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     }
                 }
                 elseif ($context->self) {
-                    $context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($context->self)]);
+                    $context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
                 }
 
                 $function_params = MethodChecker::getMethodParams($this->getMethodId());
@@ -150,7 +150,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     }
                 }
 
-                $context->vars_in_scope[$function_param->name] = $param_type;
+                $context->vars_in_scope['$' . $function_param->name] = $param_type;
 
                 $statements_checker->registerVariable($function_param->name, $this->function->getLine());
             }
@@ -166,13 +166,13 @@ abstract class FunctionLikeChecker implements StatementsSource
             }
 
             foreach ($context->vars_in_scope as $var => $type) {
-                if (strpos($var, 'this->') !== 0) {
+                if (strpos($var, '$this->') !== 0) {
                     unset($context->vars_in_scope[$var]);
                 }
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $type) {
-                if (strpos($var, 'this->') !== 0) {
+                if (strpos($var, '$this->') !== 0) {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
             }

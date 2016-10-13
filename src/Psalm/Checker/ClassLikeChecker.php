@@ -215,7 +215,7 @@ abstract class ClassLikeChecker implements StatementsSource
         if (!$class_context) {
             $class_context = new Context($this->file_name, $this->absolute_class);
             $class_context->parent = $this->parent_class;
-            $class_context->vars_in_scope['this'] = new Type\Union([new Type\Atomic($this->absolute_class)]);
+            $class_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($this->absolute_class)]);
         }
 
         // set all constants first
@@ -435,7 +435,17 @@ abstract class ClassLikeChecker implements StatementsSource
         );
 
         foreach ($all_instance_properties as $property_name => $property_type) {
-            $class_context->vars_in_scope['this->' . $property_name] = $property_type;
+            $class_context->vars_in_scope['$this->' . $property_name] = $property_type;
+        }
+
+        $all_static_properties = array_merge(
+            self::$public_static_class_properties[$this->absolute_class],
+            self::$protected_static_class_properties[$this->absolute_class],
+            self::$private_static_class_properties[$this->absolute_class]
+        );
+
+        foreach ($all_static_properties as $property_name => $property_type) {
+            $class_context->vars_in_scope[$this->absolute_class . '::$' . $property_name] = $property_type;
         }
 
         $config = Config::getInstance();
