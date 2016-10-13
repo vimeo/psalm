@@ -907,7 +907,7 @@ class StatementsChecker
                                                         : Type::getMixed();
 
                 $context->vars_possibly_in_scope['$' . $var->name] = true;
-                $this->registerVariable($var->name, $var->getLine());
+                $this->registerVariable('$' . $var->name, $var->getLine());
             }
         }
     }
@@ -1194,7 +1194,7 @@ class StatementsChecker
                 if (is_string($stmt->var->name)) {
                     $context->vars_in_scope['$' . $stmt->var->name] = Type::getMixed();
                     $context->vars_possibly_in_scope['$' . $stmt->var->name] = true;
-                    $this->registerVariable($stmt->var->name, $stmt->var->getLine());
+                    $this->registerVariable('$' . $stmt->var->name, $stmt->var->getLine());
                 }
                 else {
                     if ($this->checkExpression($stmt->var->name, $context) === false) {
@@ -2161,7 +2161,7 @@ class StatementsChecker
 
             $catch_context->vars_possibly_in_scope['$' . $catch->var] = true;
 
-            $this->registerVariable($catch->var, $catch->getLine());
+            $this->registerVariable('$' . $catch->var, $catch->getLine());
 
             $this->check($catch->stmts, $catch_context);
 
@@ -2357,7 +2357,7 @@ class StatementsChecker
         if ($stmt->keyVar) {
             $foreach_context->vars_in_scope['$' . $stmt->keyVar->name] = $key_type ?: Type::getMixed();
             $foreach_context->vars_possibly_in_scope['$' . $stmt->keyVar->name] = true;
-            $this->registerVariable($stmt->keyVar->name, $stmt->getLine());
+            $this->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
         }
 
         if ($value_type && $value_type instanceof Type\Atomic) {
@@ -2366,7 +2366,7 @@ class StatementsChecker
 
         $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
         $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
-        $this->registerVariable($stmt->valueVar->name, $stmt->getLine());
+        $this->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());
 
         CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $foreach_context, $this->source, null);
 
@@ -2645,7 +2645,7 @@ class StatementsChecker
                 if ($var) {
                     $context->vars_in_scope['$' . $var->name] = Type::getMixed();
                     $context->vars_possibly_in_scope['$' . $var->name] = true;
-                    $this->registerVariable($var->name, $var->getLine());
+                    $this->registerVariable('$' . $var->name, $var->getLine());
                 }
             }
 
@@ -3217,7 +3217,7 @@ class StatementsChecker
                 if ($use->byRef) {
                     $context->vars_in_scope['$' . $use->var] = Type::getMixed();
                     $context->vars_possibly_in_scope['$' . $use->var] = true;
-                    $this->registerVariable($use->var, $use->getLine());
+                    $this->registerVariable('$' . $use->var, $use->getLine());
                     return;
                 }
 
@@ -3552,7 +3552,7 @@ class StatementsChecker
                         // we don't know if it exists, assume it's passed by reference
                         $context->vars_in_scope[$var_id] = Type::getMixed();
                         $context->vars_possibly_in_scope[$var_id] = true;
-                        $this->registerVariable($var_id, $arg->value->getLine());
+                        $this->registerVariable('$' . $var_id, $arg->value->getLine());
                     }
                 }
             }
@@ -3575,7 +3575,7 @@ class StatementsChecker
                         // we don't know if it exists, assume it's passed by reference
                         $context->vars_in_scope['$' . $arg->value->name] = Type::getMixed();
                         $context->vars_possibly_in_scope['$' . $arg->value->name] = true;
-                        $this->registerVariable($arg->value->name, $arg->value->getLine());
+                        $this->registerVariable('$' . $arg->value->name, $arg->value->getLine());
                     }
                 }
             }
