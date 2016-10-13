@@ -3236,7 +3236,7 @@ class StatementsChecker
                         $this->warn_vars[$use->var] = true;
                         if (IssueBuffer::accepts(
                             new PossiblyUndefinedVariable(
-                                'Possibly undefined variable $' . $use->var . ', first seen on line ' . $this->all_vars[$use->var],
+                                'Possibly undefined variable $' . $use->var . ', first seen on line ' . $this->all_vars['$' . $use->var],
                                 $this->checked_file_name,
                                 $use->getLine()
                             ),
