@@ -894,29 +894,35 @@ class StatementsChecker
         Type\Union $assignment_value_type = null,
         $assignment_key_value = null
     ) {
-        foreach (Config::getInstance()->getPlugins() as $plugin) {
-            if ($plugin->checkExpression($stmt, $context, $this->checked_file_name) === false) {
+        if ($stmt instanceof PhpParser\Node\Expr\Variable) {
+            if ($this->checkVariable($stmt, $context, null, null, $array_assignment) === false) {
                 return false;
             }
         }
-
-        if ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            return $this->checkVariable($stmt, $context, null, null, $array_assignment);
-
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            return $this->checkAssignment($stmt, $context);
-
-        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp) {
-            return $this->checkAssignmentOperation($stmt, $context);
-
-        } elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
-            return $this->checkMethodCall($stmt, $context);
-
-        } elseif ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
-            return $this->checkStaticCall($stmt, $context);
+        elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
+            if ($this->checkAssignment($stmt, $context) === false) {
+                return false;
+            }
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp) {
+            if ($this->checkAssignmentOperation($stmt, $context) === false) {
+                return false;
+            }
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
+            if ($this->checkMethodCall($stmt, $context) === false) {
+                return false;
+            }
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
+            if ($this->checkStaticCall($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            return $this->checkConstFetch($stmt);
+            if ($this->checkConstFetch($stmt) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
             $stmt->inferredType = Type::getString();
@@ -934,10 +940,14 @@ class StatementsChecker
             $stmt->inferredType = Type::getFloat();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
-            return $this->checkExpression($stmt->expr, $context);
+            if ($this->checkExpression($stmt->expr, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
-            return $this->checkExpression($stmt->expr, $context);
+            if ($this->checkExpression($stmt->expr, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             foreach ($stmt->vars as $isset_var) {
@@ -953,52 +963,84 @@ class StatementsChecker
             }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
-            return $this->checkClassConstFetch($stmt, $context);
+            if ($this->checkClassConstFetch($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
-            return $this->checkPropertyFetch($stmt, $context, $array_assignment);
+            if ($this->checkPropertyFetch($stmt, $context, $array_assignment) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-            return $this->checkStaticPropertyFetch($stmt, $context);
+            if ($this->checkStaticPropertyFetch($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
-            return $this->checkExpression($stmt->expr, $context);
+            if ($this->checkExpression($stmt->expr, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            return $this->checkBinaryOp($stmt, $context);
+            if ($this->checkBinaryOp($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostInc) {
-            return $this->checkExpression($stmt->var, $context);
+            if ($this->checkExpression($stmt->var, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostDec) {
-            return $this->checkExpression($stmt->var, $context);
+            if ($this->checkExpression($stmt->var, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PreInc) {
-            return $this->checkExpression($stmt->var, $context);
+            if ($this->checkExpression($stmt->var, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\PreDec) {
-            return $this->checkExpression($stmt->var, $context);
+            if ($this->checkExpression($stmt->var, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\New_) {
-            return $this->checkNew($stmt, $context);
+            if ($this->checkNew($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
-            return $this->checkArray($stmt, $context);
+            if ($this->checkArray($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Scalar\Encapsed) {
-            return $this->checkEncapsulatedString($stmt, $context);
+            if ($this->checkEncapsulatedString($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
-            return $this->checkFunctionCall($stmt, $context);
+            if ($this->checkFunctionCall($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Ternary) {
-            return $this->checkTernary($stmt, $context);
+            if ($this->checkTernary($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            return $this->checkBooleanNot($stmt, $context);
+            if ($this->checkBooleanNot($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Empty_) {
-            return $this->checkEmpty($stmt, $context);
+            if ($this->checkEmpty($stmt, $context) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Closure) {
             $closure_checker = new ClosureChecker($stmt, $this->source);
@@ -1040,7 +1082,9 @@ class StatementsChecker
             $closure_checker->check($use_context, $this->check_methods);
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            return $this->checkArrayAccess($stmt, $context, $array_assignment, $assignment_key_type, $assignment_value_type, $assignment_key_value);
+            if ($this->checkArrayAccess($stmt, $context, $array_assignment, $assignment_key_type, $assignment_value_type, $assignment_key_value) === false) {
+                return false;
+            }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if ($this->checkExpression($stmt->expr, $context) === false) {
@@ -1157,6 +1201,12 @@ class StatementsChecker
         } else {
             var_dump('Unrecognised expression in ' . $this->checked_file_name);
             var_dump($stmt);
+        }
+
+        foreach (Config::getInstance()->getPlugins() as $plugin) {
+            if ($plugin->checkExpression($stmt, $context, $this->checked_file_name) === false) {
+                return false;
+            }
         }
     }
 
@@ -1594,6 +1644,8 @@ class StatementsChecker
 
                 return;
             }
+
+            $stmt->var->inferredType = $context->vars_in_scope[$stmt->var->name];
 
             $lhs_type = $context->vars_in_scope[$stmt->var->name];
 
