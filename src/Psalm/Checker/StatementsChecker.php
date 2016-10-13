@@ -200,8 +200,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['Vimeo\Test\Framework\API\VimeoAPIUnitTest::$_factory'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['Vimeo\Test\Framework\API\VimeoAPIUnitTest::$_factory']);
+            if (isset($context->vars_in_scope['$is_following'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$is_following']);
             }
             */
 
@@ -3231,8 +3231,8 @@ class StatementsChecker
                     }
                 }
 
-                if (isset($this->all_vars[$use->var])) {
-                    if (!isset($this->warn_vars[$use->var])) {
+                if (isset($this->all_vars['$' . $use->var])) {
+                    if (!isset($this->warn_vars['$' . $use->var])) {
                         $this->warn_vars[$use->var] = true;
                         if (IssueBuffer::accepts(
                             new PossiblyUndefinedVariable(
