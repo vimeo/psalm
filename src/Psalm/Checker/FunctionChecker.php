@@ -7,6 +7,7 @@ use Psalm\StatementsSource;
 use Psalm\Config;
 use Psalm\FunctionLikeParameter;
 use Psalm\IssueBuffer;
+use Psalm\Issue\InvalidReturnType;
 use Psalm\Type;
 
 class FunctionChecker extends FunctionLikeChecker
@@ -16,6 +17,10 @@ class FunctionChecker extends FunctionLikeChecker
     protected static $existing_functions = [];
     protected static $deprecated_functions = [];
     protected static $have_registered_function = [];
+
+    /**
+     * @var array<string,array<string,array<FunctionLikeParameter>>>
+     */
     protected static $file_function_params = [];
     protected static $builtin_function_params = [];
     protected static $builtin_functions = [];
@@ -33,6 +38,11 @@ class FunctionChecker extends FunctionLikeChecker
         $this->registerFunction($function, $base_file_name);
     }
 
+    /**
+     * @param  string $function_id
+     * @param  string $file_name
+     * @return boolean
+     */
     public static function functionExists($function_id, $file_name)
     {
         if (isset(self::$existing_functions[$file_name][$function_id])) {
@@ -59,6 +69,10 @@ class FunctionChecker extends FunctionLikeChecker
         return self::$file_function_params[$file_name][$function_id];
     }
 
+    /**
+     * @param  string $function_id
+     * @return void
+     */
     protected static function extractReflectionInfo($function_id)
     {
         try {
@@ -68,6 +82,7 @@ class FunctionChecker extends FunctionLikeChecker
 
             self::$builtin_function_params[$function_id] = [];
 
+            /** @var \ReflectionParameter $param */
             foreach ($reflection_params as $param) {
                 self::$builtin_function_params[$function_id][] = self::getReflectionParamArray($param);
             }
@@ -90,6 +105,11 @@ class FunctionChecker extends FunctionLikeChecker
             : null;
     }
 
+    /**
+     * @param  PhpParser\Node\Stmt\Function_ $function
+     * @param  string                        $file_name
+     * @return void
+     */
     protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
     {
         $function_id = strtolower($function->name);
@@ -107,6 +127,7 @@ class FunctionChecker extends FunctionLikeChecker
 
         $function_param_names = [];
 
+        /** @var PhpParser\Node\Param $param */
         foreach ($function->getParams() as $param) {
             $param_array = $this->getParamArray($param);
             self::$file_function_params[$file_name][$function_id][] = $param_array;
@@ -116,7 +137,7 @@ class FunctionChecker extends FunctionLikeChecker
         $config = Config::getInstance();
         $return_type = null;
 
-        $docblock_info = CommentChecker::extractDocblockInfo($function->getDocComment());
+        $docblock_info = CommentChecker::extractDocblockInfo((string)$function->getDocComment());
 
         if ($docblock_info['deprecated']) {
             self::$deprecated_functions[$file_name][$function_id] = true;
@@ -205,6 +226,14 @@ class FunctionChecker extends FunctionLikeChecker
         return $function_type_options;
     }
 
+    /**
+     * @param  string                       $function_id
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  string                       $file_name
+     * @param  int                          $line_number
+     * @param  array                        $suppressed_issues
+     * @return Type\Union
+     */
     public static function getReturnTypeFromCallMap($function_id, array $call_args, $file_name, $line_number, array $suppressed_issues)
     {
         $call_map_key = strtolower($function_id);
@@ -212,6 +241,7 @@ class FunctionChecker extends FunctionLikeChecker
         if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'])) {
             if (isset($call_args[2]->value->inferredType)) {
 
+                /** @var Type\Union */
                 $subject_type = $call_args[2]->value->inferredType;
 
                 if (!$subject_type->hasString() && $subject_type->hasArray()) {
@@ -232,15 +262,18 @@ class FunctionChecker extends FunctionLikeChecker
 
         $call_map = self::getCallMap();
 
-        if ($call_map_key === 'array_map') {
-            if (isset($call_args[0])) {
-                if ($call_args[0]->value instanceof PhpParser\Node\Expr\Closure) {
-                    $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($call_args[0]->value->stmts, true);
+        if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
+            $function_index = $call_map_key === 'array_map' ? 0 : 1;
+            if (isset($call_args[$function_index])) {
+                $function_call_arg = $call_args[$function_index];
+
+                if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure) {
+                    $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($function_call_arg->value->stmts, true);
 
                     if (!$closure_return_types) {
                         if (IssueBuffer::accepts(
                             new InvalidReturnType(
-                                'No return type could be found in the closure passed to array_map',
+                                'No return type could be found in the closure passed to ' . $call_map_key,
                                 $file_name,
                                 $line_number
                             ),
@@ -250,13 +283,19 @@ class FunctionChecker extends FunctionLikeChecker
                         }
                     }
                     else {
-                        $inner_type = new Type\Union($closure_return_types);
+                        if ($call_map_key === 'array_map') {
+                            $inner_type = new Type\Union($closure_return_types);
+                            return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                        }
+                        else {
+                            $inner_type = clone $call_args[0]->value->inferredType->types['array']->type_params[1];
+                            return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                        }
 
-                        return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                     }
                 }
-                elseif ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
-                    $mapped_function_id = strtolower($call_args[0]->value->value);
+                elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    $mapped_function_id = strtolower($function_call_arg->value->value);
 
                     if (isset($call_map[$mapped_function_id][0])) {
                         if ($call_map[$mapped_function_id][0]) {
@@ -270,12 +309,26 @@ class FunctionChecker extends FunctionLikeChecker
                 }
             }
 
+            // where there's no function passed to array_filter
+            if ($call_map_key === 'array_filter' && isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->hasArray()) {
+                $inner_type = clone $call_args[0]->value->inferredType->types['array']->type_params[1];
+                return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+            }
+
             return Type::getArray();
         }
 
-        if (in_array($call_map_key, ['array_filter', 'array_values'])) {
+        if ($call_map_key === 'array_values') {
             if (isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->hasArray()) {
-                return clone $call_args[0]->value->inferredType;
+                $inner_type = clone $call_args[0]->value->inferredType->types['array']->type_params[1];
+                return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+            }
+        }
+
+        if ($call_map_key === 'array_keys') {
+            if (isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->hasArray()) {
+                $inner_type = clone $call_args[0]->value->inferredType->types['array']->type_params[0];
+                return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
             }
         }
 
@@ -361,7 +414,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * Gets the method/function call map
      *
-     * @return array<array<string>>
+     * @return array<array<string,string>>
      */
     protected static function getCallMap()
     {

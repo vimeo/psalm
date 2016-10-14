@@ -16,14 +16,46 @@ use Psalm\IssueBuffer;
 
 abstract class FunctionLikeChecker implements StatementsSource
 {
+    /**
+     * @var PhpParser\Node\FunctionLike
+     */
     protected $function;
+
+    /**
+     * @var string
+     */
     protected $namespace;
+
+    /**
+     * @var string
+     */
     protected $file_name;
+
+    /**
+     * @var string
+     */
     protected $include_file_name;
+
+    /**
+     * @var bool
+     */
     protected $is_static = false;
+
+    /**
+     * @var string
+     */
     protected $absolute_class;
+
+    /**
+     * @var StatementsChecker|null
+     */
     protected $statements_checker;
+
+    /**
+     * @var StatementsSource
+     */
     protected $source;
+
     protected $return_vars_in_scope = [];
     protected $return_vars_possibly_in_scope = [];
     protected $class_name;
@@ -55,7 +87,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
     public function check(Context $context, $check_methods = true)
     {
-        if ($this->function->stmts) {
+        if ($function_stmts = $this->function->getStmts()) {
             $has_context = (bool) count($context->vars_in_scope);
 
             $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
@@ -85,7 +117,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 $function_params = [];
                 // @todo deprecate this code
-                foreach ($this->function->params as $param) {
+                foreach ($this->function->getParams() as $param) {
                     $is_nullable = $param->default !== null &&
                                     $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
                                     $param->default->name instanceof PhpParser\Node\Name &&
@@ -155,7 +187,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $statements_checker->registerVariable($function_param->name, $this->function->getLine());
             }
 
-            $statements_checker->check($this->function->stmts, $context);
+            $statements_checker->check($function_stmts, $context);
 
             if (isset($this->return_vars_in_scope[''])) {
                 $context->vars_in_scope = TypeChecker::combineKeyedTypes($context->vars_in_scope, $this->return_vars_in_scope['']);
@@ -540,7 +572,14 @@ abstract class FunctionLikeChecker implements StatementsSource
         );
     }
 
-    public static function fixUpLocalType($return_type, $absolute_class, $namespace, $aliased_classes)
+    /**
+     * @param  string $return_type
+     * @param  string $absolute_class  [description]
+     * @param  string $namespace       [description]
+     * @param  array  $aliased_classes [description]
+     * @return string
+     */
+    public static function fixUpLocalType($return_type, $absolute_class, $namespace, array $aliased_classes)
     {
         if (strpos($return_type, '[') !== false) {
             $return_type = Type::convertSquareBrackets($return_type);

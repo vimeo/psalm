@@ -1912,7 +1912,6 @@ class StatementsChecker
 
     /**
      * @param  PhpParser\Node\Expr\StaticPropertyFetch    $stmt
-     * @param  string     $prop_name
      * @param  Type\Union $assignment_type
      * @param  Context    $context
      * @return false|null
@@ -3615,7 +3614,7 @@ class StatementsChecker
         }
 
         if ($method_id) {
-            if (count($args) > count($function_params)) {
+            if (count($args) > count($function_params) && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')) {
                 if (IssueBuffer::accepts(
                     new TooManyArguments('Too many arguments for method ' . $cased_method_id, $this->checked_file_name, $line_number),
                     $this->suppressed_issues
@@ -4164,7 +4163,7 @@ class StatementsChecker
         if ($input_type->isMixed()) {
             if (IssueBuffer::accepts(
                 new MixedArgument(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be mixed',
+                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be mixed, expecting ' . $param_type,
                     $this->checked_file_name,
                     $line_number
                 ),

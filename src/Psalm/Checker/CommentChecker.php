@@ -26,7 +26,7 @@ class CommentChecker
         $comments = StatementsChecker::parseDocComment($comment);
 
         if ($comments && isset($comments['specials']['var'][0])) {
-            $var_parts = array_filter(preg_split('/[\s\t]+/', $comments['specials']['var'][0]));
+            $var_parts = array_filter(preg_split('/[\s\t]+/', (string)$comments['specials']['var'][0]));
 
             if ($var_parts) {
                 $type_in_comments = FunctionLikeChecker::fixUpLocalType($var_parts[0], $source->getAbsoluteClass(), $source->getNamespace(), $source->getAliasedClasses());
@@ -56,6 +56,10 @@ class CommentChecker
         return $defined_type;
     }
 
+    /**
+     * @param  string $comment
+     * @psalm-return object-like{return_type:null|string,params:array<object-like{name:string,type:string},deprecated:bool,suppress:array<string>}
+     */
     public static function extractDocblockInfo($comment)
     {
         $comments = StatementsChecker::parseDocComment($comment);
@@ -66,8 +70,8 @@ class CommentChecker
             $return_blocks = preg_split(
                 '/[\s]+/',
                 isset($comments['specials']['psalm-return'])
-                    ? $comments['specials']['psalm-return'][0]
-                    : $comments['specials']['return'][0]
+                    ? (string)$comments['specials']['psalm-return'][0]
+                    : (string)$comments['specials']['return'][0]
             );
 
             if (preg_match('/^' . self::TYPE_REGEX . '$/', $return_blocks[0])
@@ -79,7 +83,7 @@ class CommentChecker
 
         if (isset($comments['specials']['param'])) {
             foreach ($comments['specials']['param'] as $param) {
-                $param_blocks = preg_split('/[\s]+/', $param);
+                $param_blocks = preg_split('/[\s]+/', (string)$param);
 
                 if (count($param_blocks) > 1
                     && preg_match('/^' . self::TYPE_REGEX . '$/', $param_blocks[0])
@@ -98,7 +102,7 @@ class CommentChecker
 
         if (isset($comments['specials']['psalm-suppress'])) {
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
-                $info['suppress'][] = preg_split('/[\s]+/', $suppress_entry)[0];
+                $info['suppress'][] = preg_split('/[\s]+/', (string)$suppress_entry)[0];
             }
         }
 

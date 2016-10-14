@@ -704,6 +704,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @param  string $class_name
      * @return boolean
+     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
     public static function registerClass($class_name)
     {
@@ -719,7 +720,7 @@ abstract class ClassLikeChecker implements StatementsSource
         }
 
         if ($reflected_class->isUserDefined()) {
-            $class_file_name = $reflected_class->getFileName();
+            $class_file_name = (string)$reflected_class->getFileName();
 
             $file_checker = new FileChecker($class_file_name);
 
@@ -821,15 +822,15 @@ abstract class ClassLikeChecker implements StatementsSource
 
                 if ($reflection_method->class !== $class_name) {
                     MethodChecker::setDeclaringMethod(
-                        $class_name . '::' . strtolower($reflection_method->name),
-                        $reflection_method->class . '::' . strtolower($reflection_method->name)
+                        $class_name . '::' . strtolower((string)$reflection_method->name),
+                        $reflection_method->class . '::' . strtolower((string)$reflection_method->name)
                     );
 
-                    self::$class_methods[$class_name][strtolower($reflection_method->name)] = true;
+                    self::$class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
                 }
 
                 if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $class_name) {
-                    self::$class_methods[$class_name][strtolower($reflection_method->getName())] = true;
+                    self::$class_methods[$class_name][strtolower((string)$reflection_method->getName())] = true;
                 }
             }
         }

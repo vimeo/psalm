@@ -12,10 +12,29 @@ use Psalm\Context;
 
 class FileChecker implements StatementsSource
 {
+    /**
+     * @var string
+     */
     protected $real_file_name;
+
+    /**
+     * @var string
+     */
     protected $short_file_name;
+
+    /**
+     * @var string|null
+     */
     protected $include_file_name;
+
+    /**
+     * @var string
+     */
     protected $namespace;
+
+    /**
+     * @var array
+     */
     protected $aliased_classes = [];
 
     protected $class_name;
@@ -31,7 +50,14 @@ class FileChecker implements StatementsSource
      */
     protected $suppressed_issues = [];
 
+    /**
+     * @var string|null
+     */
     protected static $cache_dir = null;
+
+    /**
+     * @var array<string,static>
+     */
     protected static $file_checkers = [];
 
     protected static $functions_checked = [];
@@ -66,12 +92,22 @@ class FileChecker implements StatementsSource
      */
     protected static $referencing_files = [];
 
-    /** @var array<string,array<int,string>> */
+    /**
+     * @var array<string,array<int,string>>
+     */
     protected static $files_inheriting_classes = [];
 
-    /** @var array<int,string>|null A list of all files deleted since the last successful run */
+    /**
+     * A list of all files deleted since the last successful run
+     *
+     * @var array<int,string>|null
+     */
     protected static $deleted_files = null;
 
+    /**
+     * @param string $file_name
+     * @param array  $preloaded_statements
+     */
     public function __construct($file_name, array $preloaded_statements = [])
     {
         $this->real_file_name = $file_name;
@@ -157,7 +193,7 @@ class FileChecker implements StatementsSource
                         $trait_checker->check($check_functions);
                     }
 
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_ && $stmt->name instanceof PhpParser\Node\Name) {
                     $namespace_name = implode('\\', $stmt->name->parts);
 
                     $namespace_checker = new NamespaceChecker($stmt, $this);
@@ -192,6 +228,12 @@ class FileChecker implements StatementsSource
         return $stmts;
     }
 
+    /**
+     * @param  string $class
+     * @param  string $namespace
+     * @param  string $file_name
+     * @return string
+     */
     public static function getAbsoluteClassFromNameInFile($class, $namespace, $file_name)
     {
         if (isset(self::$file_checkers[$file_name])) {
@@ -244,6 +286,7 @@ class FileChecker implements StatementsSource
     }
 
     /**
+     * @param  string $file_name
      * @return array<\PhpParser\Node>
      */
     public static function getStatementsForFile($file_name)
@@ -349,6 +392,10 @@ class FileChecker implements StatementsSource
         return null;
     }
 
+    /**
+     * @param  string|null $namespace_name
+     * @return array<string>
+     */
     public function getAliasedClasses($namespace_name = null)
     {
         if ($namespace_name && isset($this->namespace_aliased_classes[$namespace_name])) {
@@ -448,7 +495,7 @@ class FileChecker implements StatementsSource
      */
     public static function getClassLikeCheckerFromClass($class_name)
     {
-        $file_name = (new \ReflectionClass($class_name))->getFileName();
+        $file_name = (string)(new \ReflectionClass($class_name))->getFileName();
 
         if (isset(self::$file_checkers[$file_name])) {
             $file_checker = self::$file_checkers[$file_name];
@@ -518,6 +565,10 @@ class FileChecker implements StatementsSource
         return self::$cache_dir && file_exists(self::$cache_dir . '/' . self::GOOD_RUN_NAME);
     }
 
+    /**
+     * @param  string  $file
+     * @return boolean
+     */
     public static function hasFileChanged($file)
     {
         if (self::$last_good_run === null) {
@@ -527,13 +578,16 @@ class FileChecker implements StatementsSource
         return filemtime($file) > self::$last_good_run;
     }
 
+    /**
+     * @return array<string>
+     */
     public static function getDeletedReferencedFiles()
     {
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
                 function($file_name) {
-                    return !file_exists($file_name);
+                    return !file_exists((string)$file_name);
                 }
             );
         }
