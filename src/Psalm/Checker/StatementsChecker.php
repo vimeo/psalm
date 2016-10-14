@@ -200,8 +200,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$is_following'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$is_following']);
+            if (isset($context->vars_in_scope['$this->_input_filter'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$this->_input_filter']);
             }
             */
 
@@ -1663,7 +1663,7 @@ class StatementsChecker
 
             $class_property_types[] = clone $class_properties[$prop_name];
 
-            $var_id = 'this->' . $prop_name;
+            $var_id = '$this->' . $prop_name;
         }
         elseif ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (!isset($context->vars_in_scope['$' . $stmt->var->name])) {
@@ -3179,21 +3179,21 @@ class StatementsChecker
         $method_checker = ClassLikeChecker::getMethodChecker($method_id);
 
         if ($method_checker && $this->source instanceof FunctionLikeChecker && $method_checker->getMethodId() !== $this->source->getMethodId()) {
-            $this_context = new Context($this->file_name, (string) $context->vars_in_scope['this']);
+            $this_context = new Context($this->file_name, (string) $context->vars_in_scope['$this']);
 
             foreach ($context->vars_possibly_in_scope as $var => $type) {
-                if (strpos($var, 'this->') === 0) {
+                if (strpos($var, '$this->') === 0) {
                     $this_context->vars_possibly_in_scope[$var] = true;
                 }
             }
 
             foreach ($context->vars_in_scope as $var => $type) {
-                if (strpos($var, 'this->') === 0) {
+                if (strpos($var, '$this->') === 0) {
                     $this_context->vars_in_scope[$var] = $type;
                 }
             }
 
-            $this_context->vars_in_scope['this'] = $context->vars_in_scope['this'];
+            $this_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
 
             $method_checker->check($this_context);
 
