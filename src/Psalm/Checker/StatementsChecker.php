@@ -200,8 +200,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$keys'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$keys']);
+            if (isset($context->vars_in_scope['$a[\'b\']'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$a[\'b\']']);
             }
             */
 
@@ -1842,7 +1842,7 @@ class StatementsChecker
                     if ($stmt->var->name === 'this') {
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
-                                'Instance property ' . $lhs_type_part->value . '::' . $prop_name . ' is not defined',
+                                'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
                                 $this->checked_file_name,
                                 $stmt->getLine()
                             ),
@@ -1854,7 +1854,7 @@ class StatementsChecker
                     else {
                         if (IssueBuffer::accepts(
                             new UndefinedPropertyAssignment(
-                                'Instance property ' . $lhs_type_part->value . '::' . $prop_name . ' is not defined',
+                                'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
                                 $this->checked_file_name,
                                 $stmt->getLine()
                             ),
@@ -3640,7 +3640,7 @@ class StatementsChecker
         if ($method_id) {
             if (count($args) > count($function_params) && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')) {
                 if (IssueBuffer::accepts(
-                    new TooManyArguments('Too many arguments for method ' . $cased_method_id, $this->checked_file_name, $line_number),
+                    new TooManyArguments('Too many arguments for method ' . ($cased_method_id ?: $method_id), $this->checked_file_name, $line_number),
                     $this->suppressed_issues
                 )) {
                     return false;
