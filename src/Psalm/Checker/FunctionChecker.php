@@ -297,7 +297,7 @@ class FunctionChecker extends FunctionLikeChecker
                             $inner_type = new Type\Union($closure_return_types);
                             return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                         }
-                        else {
+                        elseif (isset($call_args[0]->value->inferredType->types['array'])) {
                             $inner_type = clone $call_args[0]->value->inferredType->types['array']->type_params[1];
                             return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                         }
