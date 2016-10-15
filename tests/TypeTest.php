@@ -162,6 +162,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            public $a;
+
             public function bar(A $a = null) {
                 $this->a = $a;
                 $b = $this->a ? $this->a->foo() : null;
@@ -180,6 +182,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            public $a;
+
             public function bar(A $a = null) {
                 $this->a = $a;
                 $b = $this->a === null ? null : $this->a->foo();
@@ -198,6 +202,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            public $a;
+
             public function bar(A $a = null) {
                 $this->a = $a;
 
@@ -262,6 +268,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$_parser->parse('<?php
         class One {
+            public $two;
+
             public function foo() {}
         }
 
@@ -723,6 +731,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            /**
+             * @psalm-suppress TooManyArguments
+             */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -934,6 +945,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            public $one;
+
             public function bar(One $one = null) {
                 $this->one = $one;
 
@@ -1107,15 +1120,18 @@ class TypeTest extends PHPUnit_Framework_TestCase
             public function foo() {}
         }
 
-        /** @var One|null */
-        $var = null;
+        /**
+         * @psalm-suppress TooManyArguments
+         */
+        function a(One $var = null) {
+            if (!$var) {
+                throw new \Exception("some exception");
+            }
+            else {
+                $var->foo();
+            }
+        }
 
-        if (!$var) {
-            throw new \Exception("some exception");
-        }
-        else {
-            $var->foo();
-        }
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
@@ -1459,7 +1475,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
-        $this->assertSame('bool', (string) $context->vars_in_scope['b']);
+        $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
     }
 
     public function testAssignInsideForeachWithBreak()
@@ -1479,7 +1495,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
-        $this->assertSame('bool', (string) $context->vars_in_scope['b']);
+        $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
     }
 
     /**

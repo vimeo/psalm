@@ -40,6 +40,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         class A{
             /**
              * @psalm-suppress UndefinedClass
+             * @psalm-suppress MixedMethodCall
              */
             public function a() {
                 B::foo()->bar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();

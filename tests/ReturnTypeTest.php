@@ -325,7 +325,10 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$_parser->parse('<?php
         class A {
-            /** @return bool */
+            /**
+             * @psalm-suppress TooManyArguments
+             * @return bool
+             */
             public function foo() {
                 switch (rand(0,10)) {
                     case 1:
@@ -363,7 +366,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
-        $this->assertEquals('B', (string) $context->vars_in_scope['b']);
+        $this->assertEquals('B', (string) $context->vars_in_scope['$b']);
     }
 
     public function testExtendsStaticCallArrayReturnType()
@@ -386,6 +389,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
-        $this->assertEquals('array<int,B>', (string) $context->vars_in_scope['bees']);
+        $this->assertEquals('array<int,B>', (string) $context->vars_in_scope['$bees']);
     }
 }

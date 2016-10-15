@@ -188,9 +188,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
-        $context->vars_in_scope['a'] = Type::parseString('A');
+        $context->vars_in_scope['$a'] = Type::parseString('A');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('null|A', (string) $context->vars_in_scope['out']);
+        $this->assertEquals('null|A', (string) $context->vars_in_scope['$out']);
     }
 
     public function testNotInstanceOfProperty()
@@ -217,9 +217,41 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
-        $context->vars_in_scope['a'] = Type::parseString('A');
+        $context->vars_in_scope['$a'] = Type::parseString('A');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('null|B', (string) $context->vars_in_scope['out']);
+        $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
+    }
+
+    public function testNotInstanceOfPropertyElseif()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class B { }
+
+        class C extends B { }
+
+        class A {
+            /** @var string|B */
+            public $foo;
+        }
+
+        $out = null;
+
+        if (is_string($a->foo)) {
+
+        }
+        elseif ($a->foo instanceof C) {
+            // do something
+        }
+        else {
+            $out = $a->foo;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $context->vars_in_scope['$a'] = Type::parseString('A');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
     }
 
     public function testTypeArguments()
@@ -233,7 +265,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['a']);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['b']);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$b']);
     }
 }

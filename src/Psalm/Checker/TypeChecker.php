@@ -861,7 +861,7 @@ class TypeChecker
                 return Type::parseString($new_var_type);
             }
 
-            return null;
+            return $new_var_type === '!empty' ? Type::getMixed() : null;
         }
 
         if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
@@ -966,15 +966,12 @@ class TypeChecker
     {
         $key_parts = explode('->', $key);
 
-        if (count($key_parts) === 1) {
+        $base_type = self::getArrayValueForKey($key_parts[0], $existing_keys);
+
+        if (!$base_type) {
             return null;
         }
 
-        if (!isset($existing_keys[$key_parts[0]])) {
-            return null;
-        }
-
-        $base_type = $existing_keys[$key_parts[0]];
         $base_key = $key_parts[0];
 
         // for an expression like $obj->key1->key2
@@ -1000,6 +997,65 @@ class TypeChecker
                     }
                     else {
                         $new_base_type = Type::combineUnionTypes($new_base_type, clone $class_properties[$key_parts[$i]]);
+                    }
+
+                    $existing_keys[$new_base_key] = $new_base_type;
+                }
+            }
+
+            $base_type = $existing_keys[$new_base_key];
+            $base_key = $new_base_key;
+        }
+
+        return $existing_keys[$base_key];
+    }
+
+    /**
+     * Gets the type for a given (non-existent key) based on the passed keys
+     * @param  string                    $key
+     * @param  array<string,Type\Union>  $existing_keys
+     * @return Type\Union|null
+     */
+    protected static function getArrayValueForKey($key, array &$existing_keys)
+    {
+        $key_parts = array_filter(preg_split('/(\'\]|\[\')/', $key));
+
+        if (count($key_parts) === 1) {
+            return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
+        }
+
+        if (!isset($existing_keys[$key_parts[0]])) {
+            return null;
+        }
+
+        $base_type = $existing_keys[$key_parts[0]];
+        $base_key = $key_parts[0];
+
+        // for an expression like $obj->key1->key2
+        for ($i = 1; $i < count($key_parts); $i++) {
+            $new_base_key = $base_key . '[\'' . $key_parts[$i] . '\']';
+
+            if (!isset($existing_keys[$new_base_key])) {
+                /** @var Type\Union|null */
+                $new_base_type = null;
+
+                foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
+                    if (!$existing_key_type_part->isObjectLike()) {
+                        return null;
+                    }
+
+                    /** @var Type\ObjectLike $existing_key_type_part */
+                    $array_properties = $existing_key_type_part->properties;
+
+                    if (!isset($array_properties[$key_parts[$i]])) {
+                        return null;
+                    }
+
+                    if (!$new_base_type) {
+                        $new_base_type = clone $array_properties[$key_parts[$i]];
+                    }
+                    else {
+                        $new_base_type = Type::combineUnionTypes($new_base_type, clone $array_properties[$key_parts[$i]]);
                     }
 
                     $existing_keys[$new_base_key] = $new_base_type;

@@ -76,7 +76,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('null|string|int', (string) $context->vars_in_scope['b']);
+        $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
     }
 
     public function testSharedPropertyInElseIf()
@@ -105,6 +105,6 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('null|string|int', (string) $context->vars_in_scope['b']);
+        $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
     }
 }
