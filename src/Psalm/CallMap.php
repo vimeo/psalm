@@ -2400,7 +2400,7 @@ return [
 'get_class' => ['string', 'object='=>'object'],
 'get_class_vars' => ['array', 'class_name'=>'string'],
 'get_current_user' => ['string'],
-'getcwd' => [''],
+'getcwd' => ['string|false'],
 'getdate' => ['array', 'timestamp='=>'int'],
 'get_declared_classes' => ['array'],
 'get_declared_interfaces' => ['array'],

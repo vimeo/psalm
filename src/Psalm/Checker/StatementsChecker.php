@@ -200,8 +200,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$this->_input_filter'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$this->_input_filter']);
+            if (isset($context->vars_in_scope['$keys'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$keys']);
             }
             */
 
@@ -595,7 +595,18 @@ class StatementsChecker
                                     ? TypeChecker::negateTypes($negatable_elseif_types)
                                     : [];
 
-            $negated_types = array_merge($negated_types, $negated_elseif_types);
+            $all_negated_vars = array_unique(array_merge(array_keys($negated_elseif_types), array_keys($negated_types)));
+
+            foreach ($all_negated_vars as $var_id) {
+                if (isset($negated_elseif_types[$var_id])) {
+                    if (isset($negated_types[$var_id])) {
+                        $negated_types[$var_id] = $negated_types[$var_id] . '&' . $negated_elseif_types[$var_id];
+                    }
+                    else {
+                        $negated_types[$var_id] = $negated_elseif_types[$var_id];
+                    }
+                }
+            }
 
             // if the elseif has an || in the conditional, we cannot easily reason about it
             if ($reconcilable_elseif_types) {
@@ -1659,6 +1670,10 @@ class StatementsChecker
         $class_property_types = [];
 
         if ($stmt instanceof PhpParser\Node\Stmt\PropertyProperty) {
+            if (!$context->self) {
+                return;
+            }
+
             $class_properties = ClassLikeChecker::getInstancePropertiesForClass($context->self, \ReflectionProperty::IS_PRIVATE);
 
             $class_property_types[] = clone $class_properties[$prop_name];
@@ -1931,7 +1946,7 @@ class StatementsChecker
         if ($stmt->class->parts[0] === 'this' || $absolute_class === $context->self) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
         }
-        elseif (ClassChecker::classExtends($absolute_class, $context->self)) {
+        elseif ($context->self && ClassChecker::classExtends($absolute_class, $context->self)) {
             $class_visibility = \ReflectionProperty::IS_PROTECTED;
         }
         else {
@@ -2683,9 +2698,14 @@ class StatementsChecker
     }
 
     /**
+     * @param  PhpParser\Node\Expr $stmt
+     * @param  string              $this_class_name
+     * @param  string              $namespace
+     * @param  array               $aliased_classes
+     * @param  int|null            &$nesting
      * @return string|null
      */
-    public static function getVarId(PhpParser\Node\Expr $stmt, $this_class_name, $namespace = null, array $aliased_classes = null, &$nesting = null)
+    public static function getVarId(PhpParser\Node\Expr $stmt, $this_class_name, $namespace, array $aliased_classes, &$nesting = null)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return '$' . $stmt->name;
@@ -2725,6 +2745,10 @@ class StatementsChecker
     }
 
     /**
+     * @param  PhpParser\Node\Expr $stmt
+     * @param  string              $this_class_name
+     * @param  string              $namespace
+     * @param  array               $aliased_classes
      * @return string|null
      */
     public static function getArrayVarId(PhpParser\Node\Expr $stmt, $this_class_name, $namespace, array $aliased_classes)
@@ -3446,7 +3470,7 @@ class StatementsChecker
 
             $return_type->value = $calling_class;
         }
-        else if ($return_type->value[0] === '$') {
+        else if ($return_type->value[0] === '$' && $method_id) {
             $method_params = MethodChecker::getMethodParams($method_id);
 
             foreach ($args as $i => $arg) {
@@ -3683,8 +3707,9 @@ class StatementsChecker
     {
         if ($this->check_consts && $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts !== ['static']) {
             if ($stmt->class->parts === ['self']) {
-                $absolute_class = $context->self;
-            } else {
+                $absolute_class = (string)$context->self;
+            }
+            else {
                 $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $this->namespace, $this->aliased_classes);
                 if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
                     return false;
@@ -4251,16 +4276,20 @@ class StatementsChecker
                     $this->check_classes = false;
                 }
 
-            } elseif ($method->parts === ['function_exists']) {
+            }
+            elseif ($method->parts === ['function_exists']) {
                 $this->check_functions = false;
 
-            } elseif ($method->parts === ['defined']) {
+            }
+            elseif ($method->parts === ['defined']) {
                 $this->check_consts = false;
 
-            } elseif ($method->parts === ['extract']) {
+            }
+            elseif ($method->parts === ['extract']) {
                 $this->check_variables = false;
 
-            } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
+            }
+            elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
                 if (IssueBuffer::accepts(
                     new ForbiddenCode('Unsafe ' . implode('', $method->parts), $this->checked_file_name, $stmt->getLine()),
                     $this->suppressed_issues
@@ -4602,6 +4631,8 @@ class StatementsChecker
                     else {
                         $key_type = Type::getInt();
                     }
+
+                    $stmt->inferredType = Type::getString();
                 }
             }
         }
@@ -5029,6 +5060,9 @@ class StatementsChecker
         return false;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getAliasedClasses()
     {
         return $this->aliased_classes;

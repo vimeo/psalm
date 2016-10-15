@@ -13,6 +13,11 @@ class InterfaceChecker extends ClassLikeChecker
     protected static $existing_interfaces = [];
     protected static $existing_interfaces_ci = [];
 
+    /**
+     * @param PhpParser\Node\Stmt\Interface_ $interface
+     * @param StatementsSource               $source
+     * @param string                         $interface_name
+     */
     public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source, $interface_name)
     {
         parent::__construct($interface, $source, $interface_name);
@@ -25,6 +30,10 @@ class InterfaceChecker extends ClassLikeChecker
         }
     }
 
+    /**
+     * @param  string $interface
+     * @return boolean
+     */
     public static function interfaceExists($interface)
     {
         if (isset(self::$existing_interfaces_ci[strtolower($interface)])) {
@@ -49,6 +58,10 @@ class InterfaceChecker extends ClassLikeChecker
         return false;
     }
 
+    /**
+     * @param  string  $interface
+     * @return boolean
+     */
     public static function hasCorrectCasing($interface)
     {
         if (!self::interfaceExists(strtolower($interface))) {

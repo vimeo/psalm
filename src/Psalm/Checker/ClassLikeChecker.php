@@ -101,42 +101,42 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * A lookup table for public class properties
      *
-     * @var array<string,array<string,Type\Union|null>>
+     * @var array<string,array<string,Type\Union>>
      */
     protected static $public_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string,array<string,Type\Union|null>>
+     * @var array<string,array<string,Type\Union>>
      */
     protected static $protected_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string,array<string,Type\Union|null>>
+     * @var array<string,array<string,Type\Union>>
      */
     protected static $private_class_properties = [];
 
     /**
      * A lookup table for public static class properties
      *
-     * @var array<string,array<string,Type\Union|null>>
+     * @var array<string,array<string,Type\Union>>
      */
     protected static $public_static_class_properties = [];
 
     /**
      * A lookup table for protected static class properties
      *
-     * @var array<string,array<string,Type\Union|null>>
+     * @var array<string,array<string,Type\Union>>
      */
     protected static $protected_static_class_properties = [];
 
     /**
      * A lookup table for private static class properties
      *
-     * @var array<string,array<string,Type\Union|null>>
+     * @var array<string,array<string,Type\Union>>
      */
     protected static $private_static_class_properties = [];
 
@@ -274,12 +274,6 @@ abstract class ClassLikeChecker implements StatementsSource
 
                 FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $interface_name);
             }
-
-            foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_id => $interface_name) {
-                if (isset(self::$public_class_constants[$interface_name])) {
-                    self::$public_class_constants[$this->absolute_class] += self::$public_class_constants[$interface_name];
-                }
-            }
         }
 
         $trait_checkers = [];
@@ -301,7 +295,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
 
                 if (!$stmt->isAbstract()) {
-                    MethodChecker::setDeclaringMethod($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
+                    MethodChecker::setDeclaringMethodId($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
                     self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
                 }
 
@@ -464,6 +458,35 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
             }
         }
+
+        if ($this instanceof ClassChecker) {
+            foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_id => $interface_name) {
+                if (isset(self::$public_class_constants[$interface_name])) {
+                    self::$public_class_constants[$this->absolute_class] += self::$public_class_constants[$interface_name];
+                }
+
+                foreach (self::$class_methods[$interface_name] as $method_name => $_) {
+                    $mentioned_method_id = $interface_name . '::' . $method_name;
+                    $implemented_method_id = $this->absolute_class . '::' . $method_name;
+                    MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
+
+                    if (!isset(self::$class_methods[$this->absolute_class])) {
+                        if (IssueBuffer::accepts(
+                            new UnimplementedInterfaceMethod(
+                                'Method ' . $method_name . ' is not defined on class ' . $this->absolute_class,
+                                $file_name,
+                                $line_number
+                            ),
+                            $suppressed_issues
+                        )) {
+                            return false;
+                        }
+
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -481,7 +504,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
         MethodChecker::registerClassMethod($method_id);
 
-        $declaring_method_id = MethodChecker::getDeclaringMethod($method_id);
+        $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
         $declaring_class = explode('::', $declaring_method_id)[0];
 
         $class_checker = FileChecker::getClassLikeCheckerFromClass($declaring_class);
@@ -821,7 +844,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 MethodChecker::extractReflectionMethodInfo($reflection_method);
 
                 if ($reflection_method->class !== $class_name) {
-                    MethodChecker::setDeclaringMethod(
+                    MethodChecker::setDeclaringMethodId(
                         $class_name . '::' . strtolower((string)$reflection_method->name),
                         $reflection_method->class . '::' . strtolower((string)$reflection_method->name)
                     );
@@ -844,12 +867,13 @@ abstract class ClassLikeChecker implements StatementsSource
 
         foreach ($class_methods as $method_name => $_) {
             $parent_method_id = $parent_class . '::' . $method_name;
-            $declaring_method_id = MethodChecker::getDeclaringMethod($parent_method_id);
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
             $implemented_method_id = $this->absolute_class . '::' . $method_name;
 
             if (!isset(self::$class_methods[$this->absolute_class][$method_name])) {
-                MethodChecker::setDeclaringMethod($implemented_method_id, $declaring_method_id);
+                MethodChecker::setDeclaringMethodId($implemented_method_id, $declaring_method_id);
                 self::$class_methods[$this->absolute_class][$method_name] = true;
+                MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
             }
         }
     }
@@ -857,7 +881,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @param  string $class_name
      * @param  mixed  $visibility
-     * @return array<string,Type\Union|null>
+     * @return array<string,Type\Union>
      */
     public static function getInstancePropertiesForClass($class_name, $visibility)
     {
@@ -888,7 +912,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @param  string $class_name
      * @param  mixed  $visibility
-     * @return array<string,Type\Union|null>
+     * @return array<string,Type\Union>
      */
     public static function getStaticPropertiesForClass($class_name, $visibility)
     {

@@ -34,7 +34,7 @@ interface StatementsSource
     public function getFileName();
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getIncludeFileName();
 

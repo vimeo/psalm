@@ -550,11 +550,19 @@ class FileChecker implements StatementsSource
         return array_unique($referenced_files);
     }
 
+    /**
+     * @param  string $file
+     * @return array<string>
+     */
     public static function getFilesReferencingFile($file)
     {
         return isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [];
     }
 
+    /**
+     * @param  string $file
+     * @return array<string>
+     */
     public static function getFilesInheritingFromFile($file)
     {
         return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];

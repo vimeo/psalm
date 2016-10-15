@@ -5,6 +5,9 @@ namespace Psalm\Checker;
 ini_set('xdebug.max_nesting_level', 512);
 
 use PhpParser;
+use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Stmt\Function_;
+use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\FunctionLikeParameter;
@@ -17,7 +20,7 @@ use Psalm\IssueBuffer;
 abstract class FunctionLikeChecker implements StatementsSource
 {
     /**
-     * @var PhpParser\Node\FunctionLike
+     * @var Closure|Function_|ClassMethod
      */
     protected $function;
 
@@ -32,7 +35,7 @@ abstract class FunctionLikeChecker implements StatementsSource
     protected $file_name;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $include_file_name;
 
@@ -56,7 +59,14 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     protected $source;
 
+    /**
+     * @var array<string,array<string,Psalm\Type\Union>>
+     */
     protected $return_vars_in_scope = [];
+
+    /**
+     * @var array<string,array<string,bool>>
+     */
     protected $return_vars_possibly_in_scope = [];
     protected $class_name;
 
@@ -72,7 +82,11 @@ abstract class FunctionLikeChecker implements StatementsSource
 
     protected static $no_effects_hashes = [];
 
-    public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source)
+    /**
+     * @param Closure|Function_|ClassMethod $function
+     * @param StatementsSource $source
+     */
+    public function __construct($function, StatementsSource $source)
     {
         $this->function = $function;
         $this->namespace = $source->getNamespace();
@@ -108,10 +122,10 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
                 }
 
-                $function_params = MethodChecker::getMethodParams($this->getMethodId());
+                $function_params = MethodChecker::getMethodParams((string)$this->getMethodId());
             }
             else if ($this instanceof FunctionChecker) {
-                $function_params = FunctionChecker::getParams($this->getMethodId(), $this->file_name);
+                $function_params = FunctionChecker::getParams((string)$this->getMethodId(), $this->file_name);
             }
             else { // Closure
 
@@ -155,7 +169,10 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $function_params[] = new FunctionLikeParameter(
                         $param->name,
                         false,
-                        $param_type
+                        $param_type,
+                        false,
+                        false,
+                        $param->getLine()
                     );
                 }
             }
@@ -171,6 +188,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 foreach ($param_type->types as $atomic_type) {
                     if ($atomic_type->isObjectType()
                         && !$atomic_type->isObject()
+                        && $this->function instanceof PhpParser\Node
                         && ClassLikeChecker::checkAbsoluteClassOrInterface(
                             $atomic_type->value,
                             $this->file_name,
@@ -184,7 +202,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 $context->vars_in_scope['$' . $function_param->name] = $param_type;
 
-                $statements_checker->registerVariable($function_param->name, $this->function->getLine());
+                $statements_checker->registerVariable($function_param->name, $function_param->line);
             }
 
             $statements_checker->check($function_stmts, $context);
@@ -243,11 +261,9 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public function getMethodId()
     {
-        if ($this->function instanceof PhpParser\Node\Expr\Closure) {
-            return null;
+        if ($this->function instanceof Function_ || $this->function instanceof ClassMethod) {
+            return ($this instanceof MethodChecker ? $this->absolute_class . '::' : '') . strtolower($this->function->name);
         }
-
-        return ($this instanceof MethodChecker ? $this->absolute_class . '::' : '') . strtolower($this->function->name);
     }
 
     public function getNamespace()
@@ -255,6 +271,9 @@ abstract class FunctionLikeChecker implements StatementsSource
         return $this->namespace;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getAliasedClasses()
     {
         return $this->source->getAliasedClasses();
@@ -311,6 +330,9 @@ abstract class FunctionLikeChecker implements StatementsSource
         return $this->is_static;
     }
 
+    /**
+     * @return StatementsSource
+     */
     public function getSource()
     {
         return $this->source;
@@ -330,16 +352,18 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public function checkReturnTypes($update_doc_comment = false)
     {
-        if (!$this->function->stmts) {
+        if (!$this->function->getStmts()) {
             return;
         }
 
-        if ($this->function->name === '__construct') {
-            // we know that constructors always return this
-            return;
+        if ($this->function instanceof ClassMethod || $this->function instanceof Function_) {
+            if ($this->function->name === '__construct') {
+                // we know that constructors always return this
+                return;
+            }
         }
 
-        $method_id = $this->getMethodId();
+        $method_id = (string)$this->getMethodId();
 
         if ($this instanceof MethodChecker) {
             $method_return_types = MethodChecker::getMethodReturnTypes($method_id);
@@ -361,14 +385,14 @@ abstract class FunctionLikeChecker implements StatementsSource
         );
 
         if ($declared_return_type) {
-            $inferred_return_types = \Psalm\EffectsAnalyser::getReturnTypes($this->function->stmts, true);
+            $inferred_return_types = \Psalm\EffectsAnalyser::getReturnTypes($this->function->getStmts(), true);
 
             if (!$inferred_return_types) {
                 if ($declared_return_type->isVoid()) {
                     return;
                 }
 
-                if (ScopeChecker::onlyThrows($this->function->stmts)) {
+                if (ScopeChecker::onlyThrows($this->function->getStmts())) {
                     // if there's a single throw statement, it's presumably an exception saying this method is not to be used
                     return;
                 }
@@ -411,6 +435,13 @@ abstract class FunctionLikeChecker implements StatementsSource
         }
     }
 
+    /**
+     * @param  array<object-like{type:string,name:string}>  $docblock_params
+     * @param  array<string,Type\Union>                     $function_param_names
+     * @param  array<\Psalm\FunctionLikeParameter>          &$function_signature
+     * @param  int                                          $method_line_number
+     * @return false|null
+     */
     protected function improveParamsFromDocblock(array $docblock_params, array $function_param_names, array &$function_signature, $method_line_number)
     {
         foreach ($docblock_params as $docblock_param) {
@@ -518,10 +549,15 @@ abstract class FunctionLikeChecker implements StatementsSource
             $param->byRef,
             $param_type ?: Type::getMixed(),
             $is_optional,
-            $is_nullable
+            $is_nullable,
+            $param->getLine()
         );
     }
 
+    /**
+     * @param  \ReflectionParameter $param
+     * @return FunctionLikeParameter
+     */
     protected static function getReflectionParamArray(\ReflectionParameter $param)
     {
         $param_type_string = null;
@@ -534,6 +570,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $param_class = null;
 
             try {
+                /** @var \ReflectionClass */
                 $param_class = $param->getClass();
             }
             catch (\ReflectionException $e) {
@@ -541,13 +578,13 @@ abstract class FunctionLikeChecker implements StatementsSource
             }
 
             if ($param_class) {
-                $param_type_string = $param->getClass()->getName();
+                $param_type_string = (string)$param_class->getName();
             }
         }
 
         $is_nullable = false;
 
-        $is_optional = $param->isOptional();
+        $is_optional = (bool)$param->isOptional();
 
         try {
             $is_nullable = $param->getDefaultValue() === null;
@@ -560,12 +597,12 @@ abstract class FunctionLikeChecker implements StatementsSource
             // do nothing
         }
 
-        $param_name = $param->getName();
+        $param_name = (string)$param->getName();
         $param_type = $param_type_string ? Type::parseString($param_type_string) : Type::getMixed();
 
         return new FunctionLikeParameter(
             $param_name,
-            $param->isPassedByReference(),
+            (bool)$param->isPassedByReference(),
             $param_type,
             $is_optional,
             $is_nullable
@@ -573,10 +610,10 @@ abstract class FunctionLikeChecker implements StatementsSource
     }
 
     /**
-     * @param  string $return_type
-     * @param  string $absolute_class  [description]
-     * @param  string $namespace       [description]
-     * @param  array  $aliased_classes [description]
+     * @param  string       $return_type
+     * @param  string|null  $absolute_class
+     * @param  string       $namespace
+     * @param  array        $aliased_classes
      * @return string
      */
     public static function fixUpLocalType($return_type, $absolute_class, $namespace, array $aliased_classes)
@@ -735,7 +772,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             return MethodChecker::getMethodParams($method_id);
         }
 
-        $function_param_options = FunctionChecker::getParamsFromCallMap($method_id, $args);
+        $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
 
         if ($function_param_options === null) {
             return FunctionChecker::getParams(strtolower($method_id), $file_name);

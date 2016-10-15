@@ -137,6 +137,9 @@ class FileFilter
         return true;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getIncludeDirs()
     {
         return $this->include_dirs;

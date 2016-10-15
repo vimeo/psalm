@@ -46,9 +46,7 @@ class CommentChecker
         $defined_type = Type::parseString($type_in_comments);
 
         if ($context && $type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
-            if (isset($context->vars_in_scope[$type_in_comments_var_id])) {
-                $context->vars_in_scope[$type_in_comments_var_id] = $defined_type;
-            }
+            $context->vars_in_scope[$type_in_comments_var_id] = $defined_type;
 
             return null;
         }
@@ -88,9 +86,13 @@ class CommentChecker
                 if (count($param_blocks) > 1
                     && preg_match('/^' . self::TYPE_REGEX . '$/', $param_blocks[0])
                     && !preg_match('/\[[^\]]+\]/', $param_blocks[0])
-                    && preg_match('/^\$[A-Za-z0-9_]+$/', $param_blocks[1])
+                    && preg_match('/^&?\$[A-Za-z0-9_]+$/', $param_blocks[1])
                     && !strpos($param_blocks[0], '::')
                 ) {
+                    if ($param_blocks[1][0] === '&') {
+                        $param_blocks[1] = substr($param_blocks[1], 1);
+                    }
+
                     $info['params'][] = ['name' => substr($param_blocks[1], 1), 'type' => $param_blocks[0]];
                 }
             }

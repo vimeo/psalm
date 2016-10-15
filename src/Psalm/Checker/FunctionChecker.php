@@ -60,6 +60,11 @@ class FunctionChecker extends FunctionLikeChecker
         return self::$builtin_functions[$function_id];
     }
 
+    /**
+     * @param  string $function_id
+     * @param  string $file_name
+     * @return array<FunctionLikeParameter>
+     */
     public static function getParams($function_id, $file_name)
     {
         if (isset(self::$builtin_functions[$function_id]) && self::$builtin_functions[$function_id]) {
@@ -94,6 +99,11 @@ class FunctionChecker extends FunctionLikeChecker
         }
     }
 
+    /**
+     * @param  string $function_id
+     * @param  string $file_name
+     * @return Type\Union|null
+     */
     public static function getFunctionReturnTypes($function_id, $file_name)
     {
         if (!isset(self::$function_return_types[$file_name][$function_id])) {
@@ -150,7 +160,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $return_type =
                     Type::parseString(
                         self::fixUpLocalType(
-                            $docblock_info['return_type'],
+                            (string)$docblock_info['return_type'],
                             null,
                             $this->namespace,
                             $this->getAliasedClasses()
@@ -318,7 +328,7 @@ class FunctionChecker extends FunctionLikeChecker
             return Type::getArray();
         }
 
-        if ($call_map_key === 'array_values') {
+        if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
             if (isset($call_args[0]->value->inferredType) && $call_args[0]->value->inferredType->hasArray()) {
                 $inner_type = clone $call_args[0]->value->inferredType->types['array']->type_params[1];
                 return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);

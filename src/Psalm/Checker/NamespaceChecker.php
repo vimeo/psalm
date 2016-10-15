@@ -2,6 +2,7 @@
 
 namespace Psalm\Checker;
 
+use PhpParser\Node\Stmt\Namespace_;
 use Psalm\StatementsSource;
 use Psalm\Context;
 
@@ -9,11 +10,34 @@ use PhpParser;
 
 class NamespaceChecker implements StatementsSource
 {
+    /**
+     * @var Namespace_
+     */
     protected $namespace;
+
+    /**
+     * @var string
+     */
     protected $namespace_name;
+
+    /**
+     * @var array
+     */
     protected $declared_classes = [];
+
+    /**
+     * @var array
+     */
     protected $aliased_classes = [];
+
+    /**
+     * @var string
+     */
     protected $file_name;
+
+    /**
+     * @var string|null
+     */
     protected $include_file_name;
 
     /**
@@ -21,10 +45,10 @@ class NamespaceChecker implements StatementsSource
      */
     protected $suppressed_issues;
 
-    public function __construct(\PhpParser\Node\Stmt\Namespace_ $namespace, StatementsSource $source)
+    public function __construct(Namespace_ $namespace, StatementsSource $source)
     {
         $this->namespace = $namespace;
-        $this->namespace_name = implode('\\', $this->namespace->name->parts);
+        $this->namespace_name = $this->namespace->name ? implode('\\', $this->namespace->name->parts) : '';
         $this->file_name = $source->getFileName();
         $this->include_file_name = $source->getIncludeFileName();
         $this->suppressed_issues = $source->getSuppressedIssues();

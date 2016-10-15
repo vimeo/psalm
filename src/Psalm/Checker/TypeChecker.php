@@ -13,7 +13,15 @@ use PhpParser;
 class TypeChecker
 {
     protected $absolute_class;
+
+    /**
+     * @var string
+     */
     protected $namespace;
+
+    /**
+     * @var StatementsChecker
+     */
     protected $checker;
     protected $check_nulls;
 
@@ -29,7 +37,11 @@ class TypeChecker
 
     /**
      * Gets all the type assertions in a conditional that are && together
-     * @param  PhpParser\Node\Expr $conditional [description]
+     *
+     * @param  PhpParser\Node\Expr  $conditional
+     * @param  string               $this_class_name
+     * @param  string               $namespace
+     * @param  array<string>        $aliased_classes
      * @return array<string,string>
      */
     public function getReconcilableTypeAssertions(PhpParser\Node\Expr $conditional, $this_class_name, $namespace, array $aliased_classes)
@@ -62,7 +74,10 @@ class TypeChecker
     }
 
     /**
-     * @param  PhpParser\Node\Expr $conditional
+     * @param  PhpParser\Node\Expr  $conditional
+     * @param  string               $this_class_name
+     * @param  string               $namespace
+     * @param  array<string>        $aliased_classes
      * @return array<string,string>
      */
     public function getNegatableTypeAssertions(PhpParser\Node\Expr $conditional, $this_class_name, $namespace, array $aliased_classes)
@@ -111,7 +126,10 @@ class TypeChecker
     /**
      * Gets all the type assertions in a conditional
      *
-     * @param  PhpParser\Node\Expr $conditional
+     * @param  PhpParser\Node\Expr  $conditional
+     * @param  string               $this_class_name
+     * @param  string               $namespace
+     * @param  array<string>        $aliased_classes
      * @return array<string,string>
      */
     public function getTypeAssertions(PhpParser\Node\Expr $conditional, $this_class_name, $namespace, array $aliased_classes)
@@ -328,11 +346,17 @@ class TypeChecker
                 $var_type = null;
 
                 if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
+                    /** @var PhpParser\Node\Expr\FuncCall $conditional->right */
                     $var_name = StatementsChecker::getArrayVarId($conditional->right->args[0]->value, $this_class_name, $namespace, $aliased_classes);
+
+                    /** @var PhpParser\Node\Scalar\String_ $conditional->left */
                     $var_type = $conditional->left->value;
                 }
                 else if ($gettype_position === self::ASSIGNMENT_TO_LEFT) {
+                    /** @var PhpParser\Node\Expr\FuncCall $conditional->left */
                     $var_name = StatementsChecker::getArrayVarId($conditional->left->args[0]->value, $this_class_name, $namespace, $aliased_classes);
+
+                    /** @var PhpParser\Node\Scalar\String_ $conditional->right */
                     $var_type = $conditional->right->value;
                 }
 
@@ -423,6 +447,15 @@ class TypeChecker
         return $if_types;
     }
 
+    /**
+     * @param  PhpParser\Node\Expr\FuncCall $expr
+     * @param  array<string>                &$if_types
+     * @param  boolean                      $negate
+     * @param  string                       $this_class_name
+     * @param  string                       $namespace
+     * @param  array<string>                $aliased_classes]
+     * @return void
+     */
     protected static function processFunctionCall(
         PhpParser\Node\Expr\FuncCall $expr,
         array &$if_types,
@@ -442,7 +475,9 @@ class TypeChecker
         else if (self::hasIsACheck($expr)) {
             $var_name = StatementsChecker::getArrayVarId($expr->args[0]->value, $this_class_name, $namespace, $aliased_classes);
             if ($var_name) {
-                $if_types[$var_name] = $prefix . $expr->args[1]->value->value;
+                /** @var PhpParser\Node\Scalar\String_ */
+                $is_a_type = $expr->args[1]->value;
+                $if_types[$var_name] = $prefix . $is_a_type->value;
             }
         }
         else if (self::hasArrayCheck($expr)) {
@@ -743,8 +778,11 @@ class TypeChecker
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
-     * @param  array  $new_types
-     * @param  array  $existing_types
+     * @param  array<string,string>     $new_types
+     * @param  array<string,Type\Union> $existing_types
+     * @param  string                   $file_name
+     * @param  int                      $line_number
+     * @param  array<string>            $suppressed_issues
      * @return array|false
      */
     public static function reconcileKeyedTypes(array $new_types, array $existing_types, $file_name, $line_number, array $suppressed_issues = [])
@@ -944,6 +982,7 @@ class TypeChecker
             $new_base_key = $base_key . '->' . $key_parts[$i];
 
             if (!isset($existing_keys[$new_base_key])) {
+                /** @var Type\Union|null */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
@@ -1042,6 +1081,10 @@ class TypeChecker
         return $result_types;
     }
 
+    /**
+     * @param  array<string,string>  $all_types
+     * @return array<string>
+     */
     public static function reduceTypes(array $all_types)
     {
         if (in_array('mixed', $all_types)) {
@@ -1049,7 +1092,7 @@ class TypeChecker
         }
 
         $array_types = array_filter($all_types, function($type) {
-            return preg_match('/^array(\<|$)/', $type);
+            return preg_match('/^array(\<|$)/', (string)$type);
         });
 
         $all_types = array_flip($all_types);
@@ -1073,21 +1116,30 @@ class TypeChecker
      */
     public static function negateTypes(array $types)
     {
-        return array_map(function ($type) {
-            if ($type === 'mixed') {
-                return $type;
-            }
+        return array_map(
+            function ($type) {
+                if ($type === 'mixed') {
+                    return $type;
+                }
 
-            $type_parts = explode('&', $type);
+                $type_parts = explode('&', (string)$type);
 
-            foreach ($type_parts as &$type_part) {
-                $type_part = $type_part[0] === '!' ? substr($type_part, 1) : '!' . $type_part;
-            }
+                foreach ($type_parts as &$type_part) {
+                    $type_part = $type_part[0] === '!' ? substr($type_part, 1) : '!' . $type_part;
+                }
 
-            return implode('&', $type_parts);
-        }, $types);
+                return implode('&', $type_parts);
+            },
+            $types
+        );
     }
 
+    /**
+     * @param  Type\Union $declared_type
+     * @param  Type\Union $inferred_type
+     * @param  string     $absolute_class
+     * @return boolean
+     */
     public static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type, $absolute_class)
     {
         if ($declared_type->isMixed() || $inferred_type->isEmpty()) {

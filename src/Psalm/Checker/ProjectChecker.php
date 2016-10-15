@@ -29,10 +29,21 @@ class ProjectChecker
      */
     public static $show_info = true;
 
+    /**
+     * @param  boolean $debug
+     * @param  boolean $is_diff
+     * @return void
+     */
     public static function check($debug = false, $is_diff = false)
     {
+        $cwd = getcwd();
+
+        if (!$cwd) {
+            throw new \InvalidArgumentException('Cannot work with empty cwd');
+        }
+
         if (!self::$config) {
-            self::$config = self::getConfigForPath(getcwd());
+            self::$config = self::getConfigForPath($cwd);
         }
 
         $diff_files = null;
@@ -66,6 +77,11 @@ class ProjectChecker
         IssueBuffer::finish(true);
     }
 
+    /**
+     * @param  string  $dir_name
+     * @param  boolean $debug
+     * @return void
+     */
     public static function checkDir($dir_name, $debug = false)
     {
         if (!self::$config) {
@@ -80,6 +96,12 @@ class ProjectChecker
         IssueBuffer::finish();
     }
 
+    /**
+     * @param  string $dir_name
+     * @param  Config $config
+     * @param  bool   $debug
+     * @return void
+     */
     protected static function checkDirWithConfig($dir_name, Config $config, $debug)
     {
         $file_extensions = $config->getFileExtensions();
@@ -95,7 +117,7 @@ class ProjectChecker
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
                 if (in_array($extension, $file_extensions)) {
-                    $file_name = $iterator->getRealPath();
+                    $file_name = (string)$iterator->getRealPath();
 
                     if ($debug) {
                         echo 'Checking ' . $file_name . PHP_EOL;
@@ -117,6 +139,11 @@ class ProjectChecker
         }
     }
 
+    /**
+     * @param  string $dir_name
+     * @param  Config $config
+     * @return array<string>
+     */
     protected static function getDiffFilesInDir($dir_name, Config $config)
     {
         $file_extensions = $config->getFileExtensions();
@@ -132,7 +159,7 @@ class ProjectChecker
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
                 if (in_array($extension, $file_extensions)) {
-                    $file_name = $iterator->getRealPath();
+                    $file_name = (string)$iterator->getRealPath();
 
                     if (FileChecker::hasFileChanged($file_name)) {
                         $diff_files[] = $file_name;
@@ -146,6 +173,12 @@ class ProjectChecker
         return $diff_files;
     }
 
+    /**
+     * @param  array<string>    $file_list
+     * @param  Config           $config
+     * @param  bool             $debug
+     * @return void
+     */
     protected static function checkDiffFilesWithConfig(array $file_list = [], Config $config, $debug)
     {
         $file_extensions = $config->getFileExtensions();
@@ -174,6 +207,11 @@ class ProjectChecker
         }
     }
 
+    /**
+     * @param  string  $file_name
+     * @param  boolean $debug
+     * @return void
+     */
     public static function checkFile($file_name, $debug = false)
     {
         if ($debug) {
@@ -248,6 +286,9 @@ class ProjectChecker
         return $config;
     }
 
+    /**
+     * @param string $path_to_config
+     */
     public static function setConfigXML($path_to_config)
     {
         if (!file_exists($path_to_config)) {
@@ -263,6 +304,10 @@ class ProjectChecker
         }
     }
 
+    /**
+     * @param  array<string>  $diff_files
+     * @return array<string>
+     */
     public static function getReferencedFilesFromDiff(array $diff_files)
     {
         $all_inherited_files_to_check = $diff_files;

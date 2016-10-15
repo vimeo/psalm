@@ -46,6 +46,10 @@ abstract class Type
         return $parsed_type;
     }
 
+    /**
+     * @param  string $type_string
+     * @return string
+     */
     public static function fixScalarTerms($type_string)
     {
         if (in_array(

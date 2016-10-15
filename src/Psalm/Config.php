@@ -273,6 +273,9 @@ class Config
         return self::REPORT_ERROR;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getIncludeDirs()
     {
         if (!$this->inspect_files) {
@@ -287,6 +290,9 @@ class Config
         return $this->base_dir;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getFileExtensions()
     {
         return $this->file_extensions;
