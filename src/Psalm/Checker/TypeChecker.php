@@ -1018,7 +1018,7 @@ class TypeChecker
      */
     protected static function getArrayValueForKey($key, array &$existing_keys)
     {
-        $key_parts = array_filter(preg_split('/(\'\]|\[\')/', $key));
+        $key_parts = preg_split('/(\'\]|\[\')/', $key, -1, PREG_SPLIT_NO_EMPTY);
 
         if (count($key_parts) === 1) {
             return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
