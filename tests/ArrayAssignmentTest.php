@@ -348,4 +348,24 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
         $this->assertFalse(isset($context->vars_in_scope['$a[\'bar\']']));
     }
+
+    public function testConditionalCheck()
+    {
+        $file_checker = new \Psalm\Checker\FileChecker(
+            'somefile.php',
+            self::$_parser->parse('<?php
+                /**
+                 * @param  object-like{b:string} $a
+                 * @return null|string
+                 */
+                function foo($a) {
+                    if ($a["b"]) {
+                        return $a["b"];
+                    }
+                }
+            ')
+        );
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
