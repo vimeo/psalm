@@ -129,6 +129,10 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 if ($implemented_method_ids) {
                     foreach ($implemented_method_ids as $implemented_method_id) {
+                        if ($implemented_method_id === 'ArrayObject::__construct') {
+                            continue;
+                        }
+
                         $implemented_params = MethodChecker::getMethodParams($implemented_method_id);
 
                         foreach ($implemented_params as $i => $implemented_param) {
@@ -138,7 +142,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                                 if (IssueBuffer::accepts(
                                     new MethodSignatureMismatch(
-                                        'Method ' . $cased_method_id .' has fewer methods than parent method ' . $parent_method_id,
+                                        'Method ' . $cased_method_id .' has fewer arguments than parent method ' . $parent_method_id,
                                         $this->getCheckedFileName(),
                                         $this->function->getLine()
                                     )
