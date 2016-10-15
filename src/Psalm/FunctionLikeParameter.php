@@ -13,6 +13,9 @@ class FunctionLikeParameter
     /** @var Type\Union */
     public $type;
 
+    /** @var Type\Union */
+    public $signature_type;
+
     /** @var bool */
     public $is_optional;
 
@@ -35,6 +38,7 @@ class FunctionLikeParameter
         $this->name = $name;
         $this->by_ref = $by_ref;
         $this->type = $type;
+        $this->signature_type = $type;
         $this->is_optional = $is_optional;
         $this->is_nullable = $is_nullable;
     }

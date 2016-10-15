@@ -444,21 +444,6 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $config = Config::getInstance();
 
-        if ($check_methods) {
-            foreach ($trait_checkers as $trait_checker) {
-                $trait_checker->check(true, $class_context);
-            }
-
-            // do the method checks after all class methods have been initialised
-            foreach ($method_checkers as $method_checker) {
-                $method_checker->check(clone $class_context);
-
-                if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                    $method_checker->checkReturnTypes();
-                }
-            }
-        }
-
         if ($this instanceof ClassChecker) {
             foreach (ClassChecker::getInterfacesForClass($this->absolute_class) as $interface_id => $interface_name) {
                 if (isset(self::$public_class_constants[$interface_name])) {
@@ -484,6 +469,21 @@ abstract class ClassLikeChecker implements StatementsSource
 
                         return;
                     }
+                }
+            }
+        }
+
+        if ($check_methods) {
+            foreach ($trait_checkers as $trait_checker) {
+                $trait_checker->check(true, $class_context);
+            }
+
+            // do the method checks after all class methods have been initialised
+            foreach ($method_checkers as $method_checker) {
+                $method_checker->check(clone $class_context);
+
+                if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+                    $method_checker->checkReturnTypes();
                 }
             }
         }

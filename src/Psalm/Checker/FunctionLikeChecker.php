@@ -10,6 +10,7 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
+use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\FunctionLikeParameter;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -123,6 +124,50 @@ abstract class FunctionLikeChecker implements StatementsSource
                 }
 
                 $function_params = MethodChecker::getMethodParams((string)$this->getMethodId());
+
+                $implemented_method_ids = MethodChecker::getOverriddenMethodIds((string)$this->getMethodId());
+
+                if ($implemented_method_ids) {
+                    foreach ($implemented_method_ids as $implemented_method_id) {
+                        $implemented_params = MethodChecker::getMethodParams($implemented_method_id);
+
+                        foreach ($implemented_params as $i => $implemented_param) {
+                            if (!isset($function_params[$i])) {
+                                $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
+                                $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+
+                                if (IssueBuffer::accepts(
+                                    new MethodSignatureMismatch(
+                                        'Method ' . $cased_method_id .' has fewer methods than parent method ' . $parent_method_id,
+                                        $this->getCheckedFileName(),
+                                        $this->function->getLine()
+                                    )
+                                )) {
+                                    return false;
+                                }
+
+                                break;
+                            }
+
+                            if ((string)$function_params[$i]->signature_type !== (string)$implemented_param->signature_type) {
+                                $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
+                                $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+
+                                if (IssueBuffer::accepts(
+                                    new MethodSignatureMismatch(
+                                        'Argument ' . ($i + 1) . ' of ' . $cased_method_id .' has wrong type \'' . $function_params[$i]->signature_type . '\', expecting \'' . $implemented_param->signature_type . '\' as defined by ' . $parent_method_id,
+                                        $this->getCheckedFileName(),
+                                        $this->function->getLine()
+                                    )
+                                )) {
+                                    return false;
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             else if ($this instanceof FunctionChecker) {
                 $function_params = FunctionChecker::getParams((string)$this->getMethodId(), $this->file_name);
@@ -130,50 +175,9 @@ abstract class FunctionLikeChecker implements StatementsSource
             else { // Closure
 
                 $function_params = [];
-                // @todo deprecate this code
+
                 foreach ($this->function->getParams() as $param) {
-                    $is_nullable = $param->default !== null &&
-                                    $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
-                                    $param->default->name instanceof PhpParser\Node\Name &&
-                                    $param->default->name->parts = ['null'];
-
-                    $param_type = null;
-
-                    if ($param->type) {
-                        $param_type_string = '';
-
-                        if (is_string($param->type)) {
-                            $param_type_string = $param->type;
-                        }
-                        elseif ($param->type instanceof PhpParser\Node\Name) {
-                            $param_type_string = $param->type->parts === ['self']
-                                                    ? $this->absolute_class
-                                                    : ClassLikeChecker::getAbsoluteClassFromName(
-                                                        $param->type,
-                                                        $this->namespace,
-                                                        $this->getAliasedClasses()
-                                                    );
-                        }
-
-                        if ($is_nullable) {
-                            $param_type_string .= '|null';
-                        }
-
-                        $param_type = Type::parseString($param_type_string);
-                    }
-
-                    if (!$param_type) {
-                        $param_type = Type::getMixed();
-                    }
-
-                    $function_params[] = new FunctionLikeParameter(
-                        $param->name,
-                        false,
-                        $param_type,
-                        false,
-                        false,
-                        $param->getLine()
-                    );
+                    $function_params[] = self::getParamArray($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
                 }
             }
 
@@ -494,7 +498,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
                         $new_param_type->types['null'] = new Type\Atomic('null');
                     }
-
+                    $function_signature_param->signature_type = $function_signature_param->type;
                     $function_signature_param->type = $new_param_type;
                     break;
                 }
@@ -504,9 +508,12 @@ abstract class FunctionLikeChecker implements StatementsSource
 
     /**
      * @param  PhpParser\Node\Param $param
+     * @param  string               $absolute_class
+     * @param  string               $namespace
+     * @param  array<string>        $aliased_classes
      * @return FunctionLikeParameter
      */
-    protected function getParamArray(PhpParser\Node\Param $param)
+    protected static function getParamArray(PhpParser\Node\Param $param, $absolute_class, $namespace, array $aliased_classes)
     {
         $param_type = null;
 
@@ -523,13 +530,13 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $param_type_string = implode('\\', $param->type->parts);
             }
             elseif ($param->type->parts === ['self']) {
-                $param_type_string = $this->absolute_class;
+                $param_type_string = $absolute_class;
             }
             else {
                 $param_type_string = ClassLikeChecker::getAbsoluteClassFromString(
                     implode('\\', $param->type->parts),
-                    $this->namespace,
-                    $this->getAliasedClasses()
+                    $namespace,
+                    $aliased_classes
                 );
             }
 
