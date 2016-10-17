@@ -5,6 +5,7 @@ namespace Psalm\Checker;
 use PhpParser;
 
 use Psalm\IssueBuffer;
+use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidArrayAccess;
@@ -209,7 +210,7 @@ class StatementsChecker
                 $this->checkIf($stmt, $context, $loop_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                $this->checkTryCatch($stmt, $context);
+                $this->checkTryCatch($stmt, $context, $loop_context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 $this->checkFor($stmt, $context);
@@ -254,6 +255,15 @@ class StatementsChecker
                 // do nothing
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
+                if ($loop_context === null) {
+                    if (IssueBuffer::accepts(
+                        new ContinueOutsideLoop('Continue call outside loop context', $this->checked_file_name, $stmt->getLine()),
+                        $this->suppressed_issues
+                    )) {
+                        return false;
+                    }
+                }
+
                 $has_returned = true;
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
@@ -2148,9 +2158,9 @@ class StatementsChecker
     /**
      * @return false|null
      */
-    protected function checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, Context $context)
+    protected function checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, Context $context, Context $loop_context = null)
     {
-        $this->check($stmt->stmts, $context);
+        $this->check($stmt->stmts, $context, $loop_context);
 
         // clone context for catches after running the try block, as
         // we optimistically assume it only failed at the very end
@@ -2177,7 +2187,7 @@ class StatementsChecker
 
             $this->registerVariable('$' . $catch->var, $catch->getLine());
 
-            $this->check($catch->stmts, $catch_context);
+            $this->check($catch->stmts, $catch_context, $loop_context);
 
             if (!ScopeChecker::doesAlwaysReturnOrThrow($catch->stmts)) {
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {
@@ -2191,7 +2201,7 @@ class StatementsChecker
         }
 
         if ($stmt->finallyStmts) {
-            $this->check($stmt->finallyStmts, $context);
+            $this->check($stmt->finallyStmts, $context, $loop_context);
         }
     }
 
@@ -2474,7 +2484,7 @@ class StatementsChecker
     protected function checkDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
         // do not clone context for do, because it executes in current scope always
-        if ($this->check($stmt->stmts, $context) === false) {
+        if ($this->check($stmt->stmts, $context, $context) === false) {
             return false;
         }
 
@@ -4083,7 +4093,7 @@ class StatementsChecker
                 $leftover_statements = [];
             }
 
-            $this->check($case_stmts, $case_context);
+            $this->check($case_stmts, $case_context, $loop_context);
 
             // has a return/throw at end
             $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
