@@ -184,8 +184,18 @@ class ProjectChecker
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
 
+
+
         foreach ($file_list as $file_name) {
             if (!file_exists($file_name)) {
+                continue;
+            }
+
+            if (!$config->isInProjectDirs(preg_replace('/^' . preg_quote($config->getBaseDir(), '/') . '/', '', $file_name))) {
+                if ($debug) {
+                    echo('skipping ' . $file_name . PHP_EOL);
+                }
+
                 continue;
             }
 
