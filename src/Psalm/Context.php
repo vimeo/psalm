@@ -7,23 +7,60 @@ use Psalm\Checker\StatementsChecker;
 
 class Context
 {
-    /** @var array<string,Type\Union> */
+    /**
+     * @var array<string,Type\Union>
+     */
     public $vars_in_scope = [];
 
-    /** @var array<string,bool> */
+    /**
+     * @var array<string,bool>
+     */
     public $vars_possibly_in_scope = [];
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $in_loop = false;
 
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     public $self;
 
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     public $parent;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     public $file_name;
+
+    /**
+     * @var boolean
+     */
+    public $check_classes = true;
+
+    /**
+     * @var boolean
+     */
+    public $check_variables = true;
+
+    /**
+     * @var boolean
+     */
+    public $check_methods = true;
+
+    /**
+     * @var boolean
+     */
+    public $check_consts = true;
+
+    /**
+     * @var boolean
+     */
+    public $check_functions = true;
 
     /**
      * @param string      $file_name
@@ -128,5 +165,14 @@ class Context
                 unset($this->vars_in_scope[$var_id]);
             }
         }
+    }
+
+    public function updateChecks(Context $op_context)
+    {
+        $this->check_classes = $this->check_classes && $op_context->check_classes;
+        $this->check_variables = $this->check_variables && $op_context->check_variables;
+        $this->check_methods = $this->check_methods && $op_context->check_methods;
+        $this->check_functions = $this->check_functions && $op_context->check_functions;
+        $this->check_consts = $this->check_consts && $op_context->check_consts;
     }
 }

@@ -412,4 +412,16 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    public function testFunctionExists()
+    {
+        $stmts = self::$_parser->parse('<?php
+        if (true && function_exists("flabble")) {
+            flabble();
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }
