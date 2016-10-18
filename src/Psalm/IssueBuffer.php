@@ -7,6 +7,7 @@ use Psalm\Checker\ProjectChecker;
 class IssueBuffer
 {
     protected static $errors = [];
+    protected static $emitted = [];
 
     public static function accepts(Issue\CodeIssue $e, array $suppressed_issues = [])
     {
@@ -37,10 +38,9 @@ class IssueBuffer
 
         $reporting_level = $config->getReportingLevel($issue_type);
 
-
         switch ($reporting_level) {
             case Config::REPORT_INFO:
-                if (ProjectChecker::$show_info) {
+                if (ProjectChecker::$show_info && !self::alreadyEmitted($error_message)) {
                     echo 'INFO: ' . $error_message . PHP_EOL;
                 }
                 return false;
@@ -53,7 +53,9 @@ class IssueBuffer
             throw new Exception\CodeException($error_message);
         }
 
-        echo (ProjectChecker::$use_color ? "\033[0;31m" : '') . 'ERROR: ' . (ProjectChecker::$use_color ? "\033[0m" : '') . $error_message . PHP_EOL;
+        if (!self::alreadyEmitted($error_message)) {
+            echo (ProjectChecker::$use_color ? "\033[0;31m" : '') . 'ERROR: ' . (ProjectChecker::$use_color ? "\033[0m" : '') . $error_message . PHP_EOL;
+        }
 
         if ($config->stop_on_first_error) {
             exit(1);
@@ -75,5 +77,18 @@ class IssueBuffer
         if ($is_full) {
             Checker\FileChecker::goodRun();
         }
+    }
+
+    protected static function alreadyEmitted($message)
+    {
+        $sham = sha1($message);
+
+        if (isset(self::$emitted[$sham])) {
+            return true;
+        }
+
+        self::$emitted[$sham] = true;
+
+        return false;
     }
 }
