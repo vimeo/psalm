@@ -136,7 +136,7 @@ class StatementsChecker
 
     protected static $user_constants = [];
 
-    public function __construct(StatementsSource $source, $enforce_variable_checks = false, $check_methods = true)
+    public function __construct(StatementsSource $source)
     {
         $this->source = $source;
         $this->file_name = $this->source->getFileName();

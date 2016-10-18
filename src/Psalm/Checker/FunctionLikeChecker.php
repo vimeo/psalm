@@ -100,12 +100,10 @@ abstract class FunctionLikeChecker implements StatementsSource
         $this->suppressed_issues = $source->getSuppressedIssues();
     }
 
-    public function check(Context $context, $check_methods = true)
+    public function check(Context $context)
     {
         if ($function_stmts = $this->function->getStmts()) {
-            $has_context = (bool) count($context->vars_in_scope);
-
-            $statements_checker = new StatementsChecker($this, $has_context, $check_methods);
+            $statements_checker = new StatementsChecker($this);
 
             $hash = null;
 
