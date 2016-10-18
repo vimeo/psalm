@@ -19,7 +19,27 @@ ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '2048M');
 
 // get options from command line
-$options = getopt('f:m:', ['debug', 'config:', 'monochrome', 'show-info:','diff']);
+$options = getopt('f:m:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff']);
+
+if (isset($options['help'])) {
+    echo <<< HELP
+Usage:
+    psalm [options]
+
+Options:
+    --help                  Display this help message
+    --debug                 Debug information
+    --config                Path to a psalm.xml configuration file
+    -f [FILE_PATH]          Path to run checks against
+    --monochrome            Enable monochrome output
+    --show-info[=BOOLEAN]   Show non-exception parser findings.
+    --diff                  File to check is a diff
+
+
+HELP;
+
+    exit;
+}
 
 // get vars from options
 $debug = array_key_exists('debug', $options);
