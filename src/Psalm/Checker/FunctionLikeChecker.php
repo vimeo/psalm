@@ -128,7 +128,12 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $implemented_method_ids = MethodChecker::getOverriddenMethodIds((string)$this->getMethodId());
 
                 if ($implemented_method_ids) {
+                    $have_emitted = false;
                     foreach ($implemented_method_ids as $implemented_method_id) {
+                        if ($have_emitted) {
+                            break;
+                        }
+
                         if ($implemented_method_id === 'ArrayObject::__construct') {
                             continue;
                         }
@@ -150,6 +155,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                                     return false;
                                 }
 
+                                $have_emitted = true;
                                 break;
                             }
 
@@ -167,6 +173,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                                     return false;
                                 }
 
+                                $have_emitted = true;
                                 break;
                             }
                         }
