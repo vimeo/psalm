@@ -3062,11 +3062,17 @@ class StatementsChecker
             return;
         }
 
+        $has_mock = false;
+
         if ($class_type && is_string($stmt->name)) {
             $return_type = null;
 
             foreach ($class_type->types as $type) {
                 $absolute_class = $type->value;
+
+                $is_mock = self::isMock($absolute_class);
+
+                $has_mock = $has_mock || $is_mock;
 
                 switch ($absolute_class) {
                     case 'null':
@@ -3118,66 +3124,66 @@ class StatementsChecker
                         // fall through to default
 
                     default:
-                        if (!method_exists($absolute_class, '__call') && !self::isMock($absolute_class) && !$this->isPhantomClass($absolute_class)) {
-                            $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
-                                $absolute_class,
-                                $this->checked_file_name,
-                                $stmt->getLine(),
-                                $this->suppressed_issues
-                            );
+                        if (method_exists($absolute_class, '__call') || $is_mock || $this->isPhantomClass($absolute_class)) {
+                            $return_type = Type::getMixed();
+                            continue;
+                        }
 
-                            if (!$does_class_exist) {
-                                return $does_class_exist;
-                            }
+                        $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
+                            $absolute_class,
+                            $this->checked_file_name,
+                            $stmt->getLine(),
+                            $this->suppressed_issues
+                        );
 
-                            $method_id = $absolute_class . '::' . strtolower($stmt->name);
-                            $cased_method_id = $absolute_class . '::' . $stmt->name;
+                        if (!$does_class_exist) {
+                            return $does_class_exist;
+                        }
 
-                            if (!isset(self::$method_call_index[$method_id])) {
-                                self::$method_call_index[$method_id] = [];
-                            }
+                        $method_id = $absolute_class . '::' . strtolower($stmt->name);
+                        $cased_method_id = $absolute_class . '::' . $stmt->name;
 
-                            if ($this->source instanceof MethodChecker) {
-                                self::$method_call_index[$method_id][] = $this->source->getMethodId();
+                        if (!isset(self::$method_call_index[$method_id])) {
+                            self::$method_call_index[$method_id] = [];
+                        }
+
+                        if ($this->source instanceof MethodChecker) {
+                            self::$method_call_index[$method_id][] = $this->source->getMethodId();
+                        }
+                        else {
+                            self::$method_call_index[$method_id][] = $this->source->getFileName();
+                        }
+
+                        $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues);
+
+                        if (!$does_method_exist) {
+                            return $does_method_exist;
+                        }
+
+                        /**
+                        if (ClassLikeChecker::getThisClass() && ClassChecker::classExtends(ClassLikeChecker::getThisClass(), $this->absolute_class)) {
+                            $calling_context = $context->self;
+                        }
+                        **/
+
+                        if (MethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
+                            return false;
+                        }
+
+                        if (MethodChecker::checkMethodNotDeprecated($method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
+                            return false;
+                        }
+
+                        $return_type_candidate = MethodChecker::getMethodReturnTypes($method_id);
+
+                        if ($return_type_candidate) {
+                            $return_type_candidate = self::fleshOutTypes($return_type_candidate, $stmt->args, $absolute_class, $method_id);
+
+                            if (!$return_type) {
+                                $return_type = $return_type_candidate;
                             }
                             else {
-                                self::$method_call_index[$method_id][] = $this->source->getFileName();
-                            }
-
-                            $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues);
-
-                            if (!$does_method_exist) {
-                                return $does_method_exist;
-                            }
-
-                            /**
-                            if (ClassLikeChecker::getThisClass() && ClassChecker::classExtends(ClassLikeChecker::getThisClass(), $this->absolute_class)) {
-                                $calling_context = $context->self;
-                            }
-                            **/
-
-                            if (MethodChecker::checkMethodVisibility($method_id, $context->self, $this->source, $stmt->getLine(), $this->suppressed_issues) === false) {
-                                return false;
-                            }
-
-                            if (MethodChecker::checkMethodNotDeprecated($method_id, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
-                                return false;
-                            }
-
-                            $return_type_candidate = MethodChecker::getMethodReturnTypes($method_id);
-
-                            if ($return_type_candidate) {
-                                $return_type_candidate = self::fleshOutTypes($return_type_candidate, $stmt->args, $absolute_class, $method_id);
-
-                                if (!$return_type) {
-                                    $return_type = $return_type_candidate;
-                                }
-                                else {
-                                    $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
-                                }
-                            }
-                            else {
-                                $return_type = Type::getMixed();
+                                $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
                             }
                         }
                         else {
@@ -3189,7 +3195,7 @@ class StatementsChecker
             $stmt->inferredType = $return_type;
         }
 
-        if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
+        if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine(), $has_mock) === false) {
             return false;
         }
     }
@@ -3369,10 +3375,16 @@ class StatementsChecker
             return;
         }
 
+        $has_mock = false;
+
         foreach ($lhs_type->types as $lhs_type_part) {
             $absolute_class = $lhs_type_part->value;
 
-            if (is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !self::isMock($absolute_class)) {
+            $is_mock = self::isMock($absolute_class);
+
+            $has_mock = $has_mock || $is_mock;
+
+            if (is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !$is_mock) {
                 $method_id = $absolute_class . '::' . strtolower($stmt->name);
                 $cased_method_id = $absolute_class . '::' . $stmt->name;
 
@@ -3428,7 +3440,7 @@ class StatementsChecker
                 }
             }
 
-            if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
+            if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine(), $has_mock) === false) {
                 return false;
             }
         }
@@ -3540,9 +3552,10 @@ class StatementsChecker
      * @param  string                 $method_id
      * @param  Context                $context
      * @param  int                    $line_number
+     * @param  boolean                $is_mock
      * @return false|null
      */
-    protected function checkFunctionArguments(array $args, $method_id, Context $context, $line_number)
+    protected function checkFunctionArguments(array $args, $method_id, Context $context, $line_number, $is_mock = false)
     {
         $function_params = null;
 
@@ -3552,7 +3565,7 @@ class StatementsChecker
             $function_params = FunctionLikeChecker::getParamsById($method_id, $args, $this->file_name);
 
             if (strpos($method_id, '::')) {
-                $is_variadic = MethodChecker::isVariadic($method_id);
+                $is_variadic = $is_mock || MethodChecker::isVariadic($method_id);
             }
             else {
                 $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $this->file_name);
