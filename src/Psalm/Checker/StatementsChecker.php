@@ -4291,6 +4291,10 @@ class StatementsChecker
                 $this->check_functions = false;
 
             }
+            elseif ($method->parts === ['is_callable']) {
+                $this->check_methods = false;
+                $this->check_functions = false;
+            }
             elseif ($method->parts === ['defined']) {
                 $this->check_consts = false;
 
