@@ -803,8 +803,11 @@ abstract class FunctionLikeChecker implements StatementsSource
         foreach ($function_param_options as $possible_function_params) {
             $all_args_match = true;
 
+            $last_param = count($possible_function_params) ? $possible_function_params[count($possible_function_params) - 1] : null;
+
             foreach ($args as $argument_offset => $arg) {
-                if (count($possible_function_params) <= $argument_offset) {
+                if (count($possible_function_params) <= $argument_offset && (!$last_param || $last_param->name !== '...')) {
+                    $all_args_match = false;
                     break;
                 }
 
