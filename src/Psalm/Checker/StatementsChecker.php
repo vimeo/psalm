@@ -1795,7 +1795,7 @@ class StatementsChecker
                 // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
                 if ($lhs_type_part->isObject() || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'])) {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
-                    continue;
+                    return;
                 }
 
                 if (self::isMock($lhs_type_part->value)) {
