@@ -53,6 +53,12 @@ class MethodChecker extends FunctionLikeChecker
     protected static $method_suppress = [];
     protected static $deprecated_methods = [];
 
+    /**
+     * A dictionary of variadic methods
+     * @var array<string,bool>
+     */
+    protected static $variadic_methods = [];
+
     const VISIBILITY_PUBLIC = 1;
     const VISIBILITY_PROTECTED = 2;
     const VISIBILITY_PRIVATE = 3;
@@ -80,6 +86,19 @@ class MethodChecker extends FunctionLikeChecker
         $method_id = self::getDeclaringMethodId($method_id);
 
         return self::$method_params[$method_id];
+    }
+
+    /**
+     * @param  string $method_id
+     * @return boolean
+     */
+    public static function isVariadic($method_id)
+    {
+        self::registerClassMethod($method_id);
+
+        $method_id = self::getDeclaringMethodId($method_id);
+
+        return isset(self::$variadic_methods[$method_id]);
     }
 
     /**
@@ -237,6 +256,10 @@ class MethodChecker extends FunctionLikeChecker
                 self::$deprecated_methods[$method_id] = true;
             }
 
+            if ($docblock_info['variadic']) {
+                self::$variadic_methods[$method_id] = true;
+            }
+
             $this->suppressed_issues = $docblock_info['suppress'];
             self::$method_suppress[$method_id] = $this->suppressed_issues;
 
@@ -329,12 +352,17 @@ class MethodChecker extends FunctionLikeChecker
 
         $cased_method_id = $method_id;
         $method_parts = explode('::', $method_id);
-        $method_id = $method_parts[0] . '::' . strtolower($method_parts[1]);
+        $method_parts[1] = strtolower($method_parts[1]);
+        $method_id = implode('::', $method_parts);
 
         self::registerClassMethod($method_id);
 
         if (isset(self::$declaring_methods[$method_id])) {
             return true;
+        }
+
+        if ($method_parts[1] === '__construct') {
+
         }
 
         if (IssueBuffer::accepts(

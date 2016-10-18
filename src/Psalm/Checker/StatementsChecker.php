@@ -3546,8 +3546,17 @@ class StatementsChecker
     {
         $function_params = null;
 
+        $is_variadic = false;
+
         if ($method_id) {
             $function_params = FunctionLikeChecker::getParamsById($method_id, $args, $this->file_name);
+
+            if (strpos($method_id, '::')) {
+                $is_variadic = MethodChecker::isVariadic($method_id);
+            }
+            else {
+                $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $this->file_name);
+            }
         }
 
         foreach ($args as $argument_offset => $arg) {
@@ -3640,7 +3649,10 @@ class StatementsChecker
         }
 
         if ($method_id) {
-            if (count($args) > count($function_params) && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')) {
+            if (!$is_variadic
+                && count($args) > count($function_params)
+                && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
+            ) {
                 if (IssueBuffer::accepts(
                     new TooManyArguments('Too many arguments for method ' . ($cased_method_id ?: $method_id), $this->checked_file_name, $line_number),
                     $this->suppressed_issues

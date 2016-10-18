@@ -22,6 +22,12 @@ class FunctionChecker extends FunctionLikeChecker
      * @var array<string,array<string,array<FunctionLikeParameter>>>
      */
     protected static $file_function_params = [];
+
+    /**
+     * @var array<string,bool>
+     */
+    protected static $variadic_functions = [];
+
     protected static $builtin_function_params = [];
     protected static $builtin_functions = [];
     protected static $call_map = null;
@@ -72,6 +78,16 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         return self::$file_function_params[$file_name][$function_id];
+    }
+
+    /**
+     * @param  string $function_id
+     * @param  string $file_name
+     * @return boolean
+     */
+    public static function isVariadic($function_id, $file_name)
+    {
+        return isset(self::$variadic_functions[$file_name][$function_id]);
     }
 
     /**
@@ -151,6 +167,10 @@ class FunctionChecker extends FunctionLikeChecker
 
         if ($docblock_info['deprecated']) {
             self::$deprecated_functions[$file_name][$function_id] = true;
+        }
+
+        if ($docblock_info['variadic']) {
+            self::$variadic_functions[$file_name][$function_id] = true;
         }
 
         $this->suppressed_issues = $docblock_info['suppress'];

@@ -56,7 +56,7 @@ class CommentChecker
 
     /**
      * @param  string $comment
-     * @psalm-return object-like{return_type:null|string,params:array<object-like{name:string,type:string},deprecated:bool,suppress:array<string>}
+     * @psalm-return object-like{return_type:null|string,params:array<object-like{name:string,type:string},deprecated:bool,suppress:array<string>,variadic:boolean}
      */
     public static function extractDocblockInfo($comment)
     {
@@ -107,6 +107,8 @@ class CommentChecker
                 $info['suppress'][] = preg_split('/[\s]+/', (string)$suppress_entry)[0];
             }
         }
+
+        $info['variadic'] = isset($comments['specials']['psalm-variadic']);
 
         return $info;
     }
