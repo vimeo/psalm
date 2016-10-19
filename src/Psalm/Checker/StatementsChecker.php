@@ -1980,7 +1980,7 @@ class StatementsChecker
                 }
             }
 
-            continue;
+            return;
         }
 
         $context->vars_in_scope[$var_id] = $assignment_type;
