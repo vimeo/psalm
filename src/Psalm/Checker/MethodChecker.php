@@ -249,6 +249,10 @@ class MethodChecker extends FunctionLikeChecker
 
         self::$method_suppress[$method_id] = [];
 
+        if (isset($method->returnType)) {
+            $return_type = Type::parseString($method->returnType);
+        }
+
         if ($doc_comment) {
             $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment);
 

@@ -4364,7 +4364,13 @@ class StatementsChecker
                 return false;
             }
 
-            $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMap($method_id, $stmt->args, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues);
+            try {
+                $stmt->inferredType = FunctionChecker::getFunctionReturnTypes($method_id, $this->checked_file_name);
+            }
+            catch (\InvalidArgumentException $e) {
+                $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMap($method_id, $stmt->args, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues);
+            }
+
         }
 
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['get_class'] && $stmt->args) {

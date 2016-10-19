@@ -175,6 +175,10 @@ class FunctionChecker extends FunctionLikeChecker
 
         $this->suppressed_issues = $docblock_info['suppress'];
 
+        if (isset($function->returnType)) {
+            $return_type = Type::parseString($function->returnType);
+        }
+
         if ($config->use_docblock_types) {
             if ($docblock_info['return_type']) {
                 $return_type =
