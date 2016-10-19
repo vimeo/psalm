@@ -3659,10 +3659,28 @@ class StatementsChecker
             $cased_method_id = MethodChecker::getCasedMethodId($method_id);
         }
 
+        if ($function_params) {
+            foreach ($function_params as $function_param) {
+                $is_variadic = $is_variadic || $function_param->is_variadic;
+            }
+        }
+
+
+        $has_packed_var = false;
+
+        foreach ($args as $arg) {
+            $has_packed_var = $has_packed_var || $arg->unpack;
+        }
+
         foreach ($args as $argument_offset => $arg) {
             if ($method_id && isset($arg->value->inferredType)) {
                 if (count($function_params) > $argument_offset) {
                     $param_type = $function_params[$argument_offset]->type;
+
+                    // for now stop when we encounter a variadic param pr a packed argument
+                    if ($function_params[$argument_offset]->is_variadic || $arg->unpack) {
+                        break;
+                    }
 
                     if ($this->checkFunctionArgumentType(
                         $arg->value->inferredType,
@@ -3693,11 +3711,11 @@ class StatementsChecker
                 return;
             }
 
-            if (count($args) < count($function_params)) {
+            if (!$has_packed_var && count($args) < count($function_params)) {
                 for ($i = count($args); $i < count($function_params); $i++) {
                     $param = $function_params[$i];
 
-                    if (!$param->is_optional) {
+                    if (!$param->is_optional && !$param->is_variadic) {
                         if (IssueBuffer::accepts(
                             new TooFewArguments('Too few arguments for method ' . $cased_method_id, $this->checked_file_name, $line_number),
                             $this->suppressed_issues

@@ -123,6 +123,8 @@ class Php56Test extends PHPUnit_Framework_TestCase
 
     public function testUse()
     {
+        $this->markTestIncomplete('This passes, but I think there‘s cheating afoot');
+
         $stmts = self::$_parser->parse('<?php
         namespace Name\Space {
             const FOO = 42;

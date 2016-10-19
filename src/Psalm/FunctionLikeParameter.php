@@ -31,9 +31,9 @@ class FunctionLikeParameter
      * @param Type\Union    $type
      * @param boolean       $is_optional
      * @param boolean       $is_nullable
-     * @param int           $line_number
+     * @param boolean       $is_variadic
      */
-    public function __construct($name, $by_ref, Type\Union $type, $is_optional = true, $is_nullable = false, $line_number = -1)
+    public function __construct($name, $by_ref, Type\Union $type, $is_optional = true, $is_nullable = false, $is_variadic = false)
     {
         $this->name = $name;
         $this->by_ref = $by_ref;
@@ -41,5 +41,6 @@ class FunctionLikeParameter
         $this->signature_type = $type;
         $this->is_optional = $is_optional;
         $this->is_nullable = $is_nullable;
+        $this->is_variadic = $is_variadic;
     }
 }

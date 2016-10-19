@@ -566,7 +566,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $param_type ?: Type::getMixed(),
             $is_optional,
             $is_nullable,
-            $param->getLine()
+            $param->variadic
         );
     }
 
