@@ -109,6 +109,11 @@ class Union extends Type
         return isset($this->types['numeric']);
     }
 
+    public function hasNumericType()
+    {
+        return isset($this->types['int']) || isset($this->types['float']) || isset($this->types['numeric']);
+    }
+
     public function hasScalar()
     {
         return isset($this->types['scalar']);
@@ -122,6 +127,11 @@ class Union extends Type
     public function hasCallable()
     {
         return isset($this->types['callable']);
+    }
+
+    public function isInt()
+    {
+        return isset($this->types['int']) && count($this->types) === 1;
     }
 
     public function removeObjects()

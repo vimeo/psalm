@@ -62,6 +62,8 @@ class Php56Test extends PHPUnit_Framework_TestCase
 
         $d = (new C)->f();
         $e = C::SENTENCE;
+        $f = TWO;
+        $g = C::ONE_THIRD;
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
@@ -69,6 +71,8 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$d']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$e']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$f']);
+        $this->assertEquals('float', (string) $context->vars_in_scope['$g']);
     }
 
     public function testVariadic()

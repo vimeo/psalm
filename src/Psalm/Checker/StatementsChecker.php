@@ -213,11 +213,7 @@ class StatementsChecker
                 $this->checkDo($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
-                foreach ($stmt->consts as $const) {
-                    $this->checkExpression($const->value, $context);
-
-                    self::$user_constants[$this->file_name][$const->name] = isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed();
-                }
+                $this->checkConstAssignment($stmt, $context);
 
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 foreach ($stmt->vars as $var) {
@@ -2598,16 +2594,37 @@ class StatementsChecker
             }
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller ||
-            $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+        // let's do some fun type assignment
+        if (isset($stmt->left->inferredType) && isset($stmt->right->inferredType)) {
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
+            ) {
+                if ($stmt->left->inferredType->isInt() && $stmt->right->inferredType->isInt()) {
+                    $stmt->inferredType = Type::getInt();
+                }
+                elseif ($stmt->left->inferredType->hasNumericType() && $stmt->right->inferredType->hasNumericType()) {
+                    $stmt->inferredType = Type::getFloat();
+                }
+            }
+            elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div
+                && $stmt->left->inferredType->hasNumericType()
+                && $stmt->right->inferredType->hasNumericType()
+            ) {
+                $stmt->inferredType = Type::getFloat();
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
             $stmt->inferredType = Type::getBool();
         }
@@ -3695,6 +3712,15 @@ class StatementsChecker
         }
     }
 
+    protected function checkConstAssignment(PhpParser\Node\Stmt\Const_ $stmt, Context $context)
+    {
+        foreach ($stmt->consts as $const) {
+            $this->checkExpression($const->value, $context);
+
+            self::$user_constants[$this->file_name][$const->name] = isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed();
+        }
+    }
+
     /**
      * @return null|false
      */
@@ -3716,7 +3742,10 @@ class StatementsChecker
                 break;
 
             default:
-                if (!defined($const_name) && !isset(self::$user_constants[$this->file_name][$const_name])) {
+                if (isset(self::$user_constants[$this->file_name][$const_name])) {
+                    $stmt->inferredType = clone self::$user_constants[$this->file_name][$const_name];
+                }
+                elseif (!defined($const_name)) {
                     if (IssueBuffer::accepts(
                         new UndefinedConstant('Const ' . $const_name . ' is not defined', $this->checked_file_name, $stmt->getLine()),
                         $this->suppressed_issues
