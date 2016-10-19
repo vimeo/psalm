@@ -13,7 +13,7 @@ use Psalm\Checker\ProjectChecker;
 use Psalm\IssueBuffer;
 
 // show all errors
-error_reporting(E_ALL & ~E_STRICT & ~E_DEPRECATED);
+error_reporting(E_ALL & ~E_STRICT & ~E_DEPRECATED & ~E_WARNING);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '2048M');
@@ -50,6 +50,10 @@ $show_info = isset($options['show-info'])
             ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
             : true;
 $is_diff = isset($options['diff']);
+
+if ($debug) {
+    error_reporting(E_ALL & ~E_STRICT & ~E_DEPRECATED);
+}
 
 // set the cache directory for the file checker
 FileChecker::setCacheDir('/var/tmp/php-parser');
