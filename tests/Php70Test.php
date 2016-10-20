@@ -89,7 +89,6 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testSpaceship()
     {
-        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         $a = 1 <=> 1;
         ');

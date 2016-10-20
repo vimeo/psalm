@@ -2684,6 +2684,10 @@ class StatementsChecker
         ) {
             $stmt->inferredType = Type::getBool();
         }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
+            $stmt->inferredType = Type::getInt();
+        }
     }
 
     /**
