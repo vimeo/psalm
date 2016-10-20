@@ -21,7 +21,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Psalm\\Tests": "tests"
+            "Psalm\\Tests\\": "tests"
         }
     }
 }
