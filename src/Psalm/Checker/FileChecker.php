@@ -139,6 +139,8 @@ class FileChecker implements StatementsSource
             $file_context = new Context($this->short_file_name);
         }
 
+        $config = Config::getInstance();
+
         $stmts = $this->getStatements();
 
         $leftover_stmts = [];
@@ -204,6 +206,10 @@ class FileChecker implements StatementsSource
                 elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
                     $function_context = new Context($this->short_file_name, $file_context->self);
                     $function_checkers[$stmt->name]->check($function_context);
+
+                    if (!$config->excludeIssueInFile('InvalidReturnType', $this->checked_file_name)) {
+                        $function_checkers[$stmt->name]->checkReturnTypes();
+                    }
                 }
             }
             else {

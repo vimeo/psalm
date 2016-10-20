@@ -139,4 +139,9 @@ class Atomic extends Type
     {
         return $this->value === 'callable';
     }
+
+    public function isGenerator()
+    {
+        return $this->value === 'Generator';
+    }
 }

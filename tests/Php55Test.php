@@ -34,7 +34,7 @@ class Php55Test extends PHPUnit_Framework_TestCase
          * @param  int  $start
          * @param  int  $limit
          * @param  int  $step
-         * @return int[]
+         * @return Generator<int>
          */
         function xrange($start, $limit, $step = 1) {
             for ($i = $start; $i <= $limit; $i += $step) {
@@ -42,20 +42,21 @@ class Php55Test extends PHPUnit_Framework_TestCase
             }
         }
 
+        $a = null;
+
         /*
          * Note that an array is never created or returned,
          * which saves memory.
          */
         foreach (xrange(1, 9, 2) as $number) {
-            echo "$number ";
+            $a = $number;
         }
-
-        echo "\n";
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
+        $this->assertEquals('null|int', (string) $context->vars_in_scope['$a']);
     }
 
     public function testFinally()

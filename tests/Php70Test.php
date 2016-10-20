@@ -89,6 +89,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testSpaceship()
     {
+        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         $a = 1 <=> 1;
         ');
@@ -101,6 +102,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testDefineArray()
     {
+        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         define("ANIMALS", [
             "dog",
@@ -119,6 +121,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testAnonymousClass()
     {
+        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         interface Logger {
             public function log(string $msg);
@@ -149,8 +152,32 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
     }
 
+    public function testGeneratorWithReturn()
+    {
+        $this->markTestIncomplete('Not yet supported');
+        $stmts = self::$_parser->parse('<?php
+        /**
+         * @return array<int,int>
+         */
+        function foo(int $i) : Generator {
+            if ($i === 1) {
+                return "bash";
+            }
+
+            yield 1;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int,int>', (string) $context->vars_in_scope['$gen']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$gen2']);
+    }
+
     public function testClosureCall()
     {
+        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         class A {private $x = 1;}
 
@@ -175,9 +202,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$_parser->parse('<?php
         /**
-         * @return array<int,int>
+         * @return Generator<int,int>
          */
-        function count_to_ten() {
+        function count_to_ten() : Generator {
             yield 1;
             yield 2;
             yield from [3, 4];
@@ -187,24 +214,24 @@ class Php70Test extends PHPUnit_Framework_TestCase
         }
 
         /**
-         * @return array<int,int>
+         * @return Generator<int,int>
          */
-        function seven_eight() {
+        function seven_eight() : Generator {
             yield 7;
             yield from eight();
         }
 
         /**
-         * @return array<int,int>
+         * @return Generator<int,int>
          */
-        function eight() {
+        function eight() : Generator {
             yield 8;
         }
 
         /**
-         * @return array<int,int>
+         * @return Generator<int,int>
          */
-        function nine_ten() {
+        function nine_ten() : Generator {
             yield 9;
             return 10;
         }
@@ -219,7 +246,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array<int,int>', (string) $context->vars_in_scope['$gen']);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$gen2']);
+        $this->assertEquals('Generator<int,int>', (string) $context->vars_in_scope['$gen']);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$gen2']);
     }
 }

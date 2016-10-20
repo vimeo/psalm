@@ -123,7 +123,7 @@ class FunctionChecker extends FunctionLikeChecker
     public static function getFunctionReturnTypes($function_id, $file_name)
     {
         if (!isset(self::$function_return_types[$file_name][$function_id])) {
-            throw new \InvalidArgumentException('Do not know function');
+            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_name);
         }
 
         return self::$function_return_types[$file_name][$function_id]
@@ -202,7 +202,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
         }
 
-        self::$function_return_types[$file_name][$function_id] = $return_type;
+        self::$function_return_types[$file_name][$function_id] = $return_type ?: Type::getMixed();
     }
 
     /**

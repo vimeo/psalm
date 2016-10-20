@@ -86,7 +86,7 @@ abstract class Type
 
             $generic_type_value = self::fixScalarTerms($generic_type->value);
 
-            if ($generic_type_value === 'array' && count($generic_params) === 1) {
+            if (($generic_type_value === 'array' || $generic_type_value === 'Generator') && count($generic_params) === 1) {
                 array_unshift($generic_params, Type::getMixed());
             }
 

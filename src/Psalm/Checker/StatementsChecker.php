@@ -1235,7 +1235,10 @@ class StatementsChecker
 
         }
         elseif ($stmt instanceof PhpParser\Node\Expr\Yield_) {
-            // @todo handle yield
+            $this->checkYield($stmt, $context);
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+            $this->checkYieldFrom($stmt, $context);
         }
         else {
             var_dump('Unrecognised expression in ' . $this->checked_file_name);
@@ -2064,6 +2067,42 @@ class StatementsChecker
                 if ($this->checkFunctionArguments($stmt->args, $method_id, $context, $stmt->getLine()) === false) {
                     return false;
                 }
+
+                if ($absolute_class === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType) && $stmt->args[0]->value->inferredType->hasGeneric()) {
+                    $key_type = null;
+                    $value_type = null;
+
+                    foreach ($stmt->args[0]->value->inferredType->types as $type) {
+                        if ($type instanceof Type\Generic) {
+                            $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
+                            $last_type_param = $type->type_params[count($type->type_params) - 1];
+
+                            if ($value_type === null) {
+                                $value_type = clone $last_type_param;
+                            }
+                            else {
+                                $value_type = Type::combineUnionTypes($value_type, $last_type_param);
+                            }
+
+                            if (!$key_type || !$first_type_param) {
+                                $key_type = $first_type_param ? clone $first_type_param : Type::getMixed();
+                            }
+                            else {
+                                $key_type = Type::combineUnionTypes($key_type, $first_type_param);
+                            }
+                        }
+                    }
+
+                    $stmt->inferredType = new Type\Union([
+                        new Type\Generic(
+                            $absolute_class,
+                            [
+                                $key_type,
+                                $value_type
+                            ]
+                        )
+                    ]);
+                }
             }
         }
     }
@@ -2304,6 +2343,7 @@ class StatementsChecker
                 switch ($return_type->value) {
                     case 'mixed':
                     case 'empty':
+                    case 'Generator':
                         $value_type = Type::getMixed();
                         break;
 
@@ -3962,6 +4002,57 @@ class StatementsChecker
 
         if ($this->source instanceof FunctionLikeChecker) {
             $this->source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
+        }
+    }
+
+    /**
+     * @param  PhpParser\Node\Stmt\Return_ $stmt
+     * @param  Context                     $context
+     * @return false|null
+     */
+    protected function checkYield(PhpParser\Node\Expr\Yield_ $stmt, Context $context)
+    {
+        $type_in_comments = CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $context, $this->source);
+
+        if ($stmt->key) {
+            if ($this->checkExpression($stmt->key, $context) === false) {
+                return false;
+            }
+        }
+
+        if ($stmt->value) {
+            if ($this->checkExpression($stmt->value, $context) === false) {
+                return false;
+            }
+
+            if ($type_in_comments) {
+                $stmt->inferredType = $type_in_comments;
+            }
+            elseif (isset($stmt->value->inferredType)) {
+                $stmt->inferredType = $stmt->value->inferredType;
+            }
+            else {
+                $stmt->inferredType = Type::getMixed();
+            }
+        }
+        else {
+            $stmt->inferredType = Type::getNull();
+        }
+    }
+
+    /**
+     * @param  PhpParser\Node\Stmt\Return_ $stmt
+     * @param  Context                     $context
+     * @return false|null
+     */
+    protected function checkYieldFrom(PhpParser\Node\Expr\YieldFrom $stmt, Context $context)
+    {
+        if ($this->checkExpression($stmt->expr, $context) === false) {
+            return false;
+        }
+
+        if (isset($stmt->expr->inferredType)) {
+            $stmt->inferredType = $stmt->expr->inferredType;
         }
     }
 

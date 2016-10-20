@@ -129,6 +129,11 @@ class Union extends Type
         return isset($this->types['callable']);
     }
 
+    public function hasGenerator()
+    {
+        return isset($this->types['Generator']);
+    }
+
     public function isInt()
     {
         return isset($this->types['int']) && count($this->types) === 1;
