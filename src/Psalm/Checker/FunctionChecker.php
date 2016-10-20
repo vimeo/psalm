@@ -467,4 +467,20 @@ class FunctionChecker extends FunctionLikeChecker
 
         return self::$call_map;
     }
+
+    public static function clearCache()
+    {
+        self::$function_return_types = [];
+        self::$function_namespaces = [];
+        self::$existing_functions = [];
+        self::$deprecated_functions = [];
+        self::$have_registered_function = [];
+
+        self::$file_function_params = [];
+
+        self::$variadic_functions = [];
+
+        self::$builtin_function_params = [];
+        self::$builtin_functions = [];
+    }
 }

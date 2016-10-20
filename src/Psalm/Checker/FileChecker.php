@@ -638,5 +638,6 @@ class FileChecker implements StatementsSource
         self::$files_checked = [];
 
         ClassLikeChecker::clearCache();
+        FunctionChecker::clearCache();
     }
 }

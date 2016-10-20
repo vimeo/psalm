@@ -1007,22 +1007,35 @@ abstract class ClassLikeChecker implements StatementsSource
 
     public static function clearCache()
     {
-        self::$method_checkers = [];
-
         self::$this_class = null;
 
-        self::$class_implements = [];
+        self::$method_checkers = [];
 
         self::$class_methods = [];
+
         self::$class_checkers = [];
 
         self::$public_class_properties = [];
+
         self::$protected_class_properties = [];
+
         self::$private_class_properties = [];
 
         self::$public_static_class_properties = [];
+
         self::$protected_static_class_properties = [];
+
         self::$private_static_class_properties = [];
+
+        self::$public_class_constants = [];
+
+        self::$registered_classes = [];
+
+        self::$class_implements = [];
+
+        self::$class_files = [];
+
+        self::$file_classes = [];
 
         ClassChecker::clearCache();
         InterfaceChecker::clearCache();
