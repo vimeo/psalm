@@ -74,4 +74,129 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
+
+    public function testNullCoalesce()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $a = $_GET["bar"] ?? "nobody";
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
+    }
+
+    public function testSpaceship()
+    {
+        $stmts = self::$_parser->parse('<?php
+        $a = 1 <=> 1;
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+    }
+
+    public function testDefineArray()
+    {
+        $stmts = self::$_parser->parse('<?php
+        define("ANIMALS", [
+            "dog",
+            "cat",
+            "bird"
+        ]);
+
+        $a = ANIMALS[1];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
+    }
+
+    public function testAnonymousClass()
+    {
+        $stmts = self::$_parser->parse('<?php
+        interface Logger {
+            public function log(string $msg);
+        }
+
+        class Application {
+            private $logger;
+
+            public function getLogger(): Logger {
+                 return $this->logger;
+            }
+
+            public function setLogger(Logger $logger) {
+                 $this->logger = $logger;
+            }
+        }
+
+        $app = new Application;
+        $app->setLogger(new class implements Logger {
+            public function log(string $msg) {
+                echo $msg;
+            }
+        });
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testClosureCall()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {private $x = 1;}
+
+        // Pre PHP 7 code
+        $getXCB = function() {return $this->x;};
+        $getX = $getXCB->bindTo(new A, "A"); // intermediate closure
+        $a = $getX();
+
+        // PHP 7+ code
+        $getX = function() {return $this->x;};
+        $b = $getX->call(new A);
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$b']);
+    }
+
+    public function testGeneratorDelegation()
+    {
+        $stmts = self::$_parser->parse('<?php
+        function gen()
+        {
+            yield 1;
+            yield 2;
+            yield from gen2();
+        }
+
+        function gen2()
+        {
+            yield 3;
+            yield 4;
+        }
+
+        foreach (gen() as $val)
+        {
+            echo $val, PHP_EOL;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('mixed', (string) $context->vars_in_scope['$b']);
+    }
 }
