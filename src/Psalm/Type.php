@@ -255,6 +255,14 @@ abstract class Type
     }
 
     /** @return Type\Union */
+    public static function getClosure()
+    {
+        $type = new Atomic('Closure');
+
+        return new Union([$type]);
+    }
+
+    /** @return Type\Union */
     public static function getArray()
     {
         $type = new Type\GenericArray(

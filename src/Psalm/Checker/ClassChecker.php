@@ -161,6 +161,10 @@ class ClassChecker extends ClassLikeChecker
     {
         $interface_id = strtolower($interface);
 
+        if ($interface_id === 'callable' && $absolute_class === 'Closure') {
+            return true;
+        }
+
         if (isset(self::$class_implements[$absolute_class][$interface_id])) {
             return true;
         }

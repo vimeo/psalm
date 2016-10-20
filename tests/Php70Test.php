@@ -153,10 +153,10 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testGeneratorWithReturn()
     {
-        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         /**
-         * @return array<int,int>
+         * @return Generator<int,int>
+         * @psalm-generator-return string
          */
         function foo(int $i) : Generator {
             if ($i === 1) {
@@ -170,31 +170,6 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array<int,int>', (string) $context->vars_in_scope['$gen']);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$gen2']);
-    }
-
-    public function testClosureCall()
-    {
-        $this->markTestIncomplete('Not yet supported');
-        $stmts = self::$_parser->parse('<?php
-        class A {private $x = 1;}
-
-        // Pre PHP 7 code
-        $getXCB = function() {return $this->x;};
-        $getX = $getXCB->bindTo(new A, "A"); // intermediate closure
-        $a = $getX();
-
-        // PHP 7+ code
-        $getX = function() {return $this->x;};
-        $b = $getX->call(new A);
-        ');
-
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
-        $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$b']);
     }
 
     public function testGeneratorDelegation()
@@ -202,6 +177,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $stmts = self::$_parser->parse('<?php
         /**
          * @return Generator<int,int>
+         * @psalm-generator-return int
          */
         function count_to_ten() : Generator {
             yield 1;
@@ -229,6 +205,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
         /**
          * @return Generator<int,int>
+         * @psalm-generator-return int
          */
         function nine_ten() : Generator {
             yield 9;

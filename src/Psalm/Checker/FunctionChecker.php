@@ -302,7 +302,8 @@ class FunctionChecker extends FunctionLikeChecker
                 $function_call_arg = $call_args[$function_index];
 
                 if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure) {
-                    $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($function_call_arg->value->stmts, true);
+                    $closure_yield_types = [];
+                    $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($function_call_arg->value->stmts, $closure_yield_types, true);
 
                     if (!$closure_return_types) {
                         if (IssueBuffer::accepts(

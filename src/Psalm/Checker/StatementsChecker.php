@@ -1116,6 +1116,8 @@ class StatementsChecker
 
             $closure_checker->check($use_context, $context->check_methods);
 
+            $stmt->inferredType = Type::getClosure();
+
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             if ($this->checkArrayAccess($stmt, $context, $array_assignment, $assignment_key_type, $assignment_value_type, $assignment_key_value) === false) {
                 return false;
