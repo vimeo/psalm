@@ -328,7 +328,8 @@ class StatementsChecker
 
                 $namespace_checker = new NamespaceChecker($stmt, $this->source);
                 $namespace_checker->check(true);
-            } else {
+            }
+            else {
                 var_dump('Unrecognised statement in ' . $this->checked_file_name);
                 var_dump($stmt);
             }
@@ -1232,7 +1233,11 @@ class StatementsChecker
                 return false;
             }
 
-        } else {
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\Yield_) {
+            // @todo handle yield
+        }
+        else {
             var_dump('Unrecognised expression in ' . $this->checked_file_name);
             var_dump($stmt);
         }
@@ -2372,9 +2377,20 @@ class StatementsChecker
             $value_type = new Type\Union([$value_type]);
         }
 
-        $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
-        $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
-        $this->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());
+        if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
+            foreach ($stmt->valueVar->vars as $var) {
+                if ($var) {
+                    $foreach_context->vars_in_scope['$' . $var->name] = Type::getMixed();
+                    $foreach_context->vars_possibly_in_scope['$' . $var->name] = true;
+                    $this->registerVariable('$' . $var->name, $var->getLine());
+                }
+            }
+        }
+        else {
+            $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
+            $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
+            $this->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());
+        }
 
         CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $foreach_context, $this->source, null);
 
@@ -3791,6 +3807,11 @@ class StatementsChecker
             }
 
             $const_id = $absolute_class . '::' . $stmt->name;
+
+            if ($stmt->name === 'class') {
+                $stmt->inferredType = Type::getString();
+                return;
+            }
 
             $class_constants = ClassLikeChecker::getConstantsForClass($absolute_class, \ReflectionProperty::IS_PUBLIC);
 
