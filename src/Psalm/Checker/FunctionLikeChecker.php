@@ -403,9 +403,10 @@ abstract class FunctionLikeChecker implements StatementsSource
         );
 
         if ($declared_return_type) {
-            $inferred_return_types = \Psalm\EffectsAnalyser::getReturnTypes($this->function->getStmts(), true);
+            $inferred_yield_types = [];
+            $inferred_return_types = \Psalm\EffectsAnalyser::getReturnTypes($this->function->getStmts(), $inferred_yield_types, true);
 
-            if (!$inferred_return_types) {
+            if (!$inferred_return_types && !$inferred_yield_types) {
                 if ($declared_return_type->isVoid()) {
                     return;
                 }
@@ -428,7 +429,16 @@ abstract class FunctionLikeChecker implements StatementsSource
                 return;
             }
 
-            $inferred_return_type = Type::combineTypes($inferred_return_types);
+            $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : null;
+
+            $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
+
+            $inferred_generator_return_type = null;
+
+            if ($inferred_yield_type) {
+                $inferred_generator_return_type = $inferred_return_type;
+                $inferred_return_type = $inferred_yield_type;
+            }
 
             if ($inferred_return_type && !$inferred_return_type->isMixed() && !$declared_return_type->isMixed()) {
                 if ($inferred_return_type->isNull() && $declared_return_type->isVoid()) {

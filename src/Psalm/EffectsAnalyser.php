@@ -13,10 +13,11 @@ class EffectsAnalyser
     /**
      * Gets the return types from a list of statements
      *
-     * @param  array<int,PhpParser\Node\Stmt>  $stmts
+     * @param  array<int,PhpParser\Node\Stmt>   $stmts
+     * @param  array<int,Type\Atomic>           $yield_types
      * @return array<int,Type\Atomic>    a list of return types
      */
-    public static function getReturnTypes(array $stmts, $collapse_types = false)
+    public static function getReturnTypes(array $stmts, array &$yield_types, $collapse_types = false)
     {
         /** @var array<int,Type\Atomic> */
         $return_types = [];
@@ -29,36 +30,20 @@ class EffectsAnalyser
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                if (isset($stmt->inferredType)) {
-                    $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
+                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr));
                 }
                 else {
-                    $return_types[] = new Type\Atomic('mixed');
+                    if (isset($stmt->inferredType)) {
+                        $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
+                    }
+                    else {
+                        $return_types[] = new Type\Atomic('mixed');
+                    }
                 }
-
             }
-            elseif ($stmt instanceof PhpParser\Node\Expr\Yield_) {
-                $key_type = null;
-
-                if (isset($stmt->key->inferredType)) {
-                    $key_type = $stmt->key->inferredType;
-                }
-
-                if (isset($stmt->inferredType)) {
-                    $generator_type = new Type\Generic(
-                        'Generator',
-                        [
-                            $key_type ?: Type::getInt(),
-                            $stmt->inferredType
-                        ]
-                    );
-
-                    $return_types = array_merge([$generator_type], $return_types);
-                }
-                else {
-                    $return_types[] = new Type\Atomic('mixed');
-                }
-
+            elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
             }
             elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
                 $key_type = null;
@@ -72,68 +57,60 @@ class EffectsAnalyser
 
             }
             elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts));
+                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
                 foreach ($stmt->elseifs as $elseif) {
-                    $return_types = array_merge($return_types, self::getReturnTypes($elseif->stmts));
+                    $return_types = array_merge($return_types, self::getReturnTypes($elseif->stmts, $yield_types));
                 }
 
                 if ($stmt->else) {
-                    $return_types = array_merge($return_types, self::getReturnTypes($stmt->else->stmts));
+                    $return_types = array_merge($return_types, self::getReturnTypes($stmt->else->stmts, $yield_types));
                 }
 
             }
             elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts));
+                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
                 foreach ($stmt->catches as $catch) {
-                    $return_types = array_merge($return_types, self::getReturnTypes($catch->stmts));
+                    $return_types = array_merge($return_types, self::getReturnTypes($catch->stmts, $yield_types));
                 }
 
                 if ($stmt->finallyStmts) {
-                    $return_types = array_merge($return_types, self::getReturnTypes($stmt->finallyStmts));
+                    $return_types = array_merge($return_types, self::getReturnTypes($stmt->finallyStmts, $yield_types));
                 }
 
             }
             elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
-                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts));
+                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
             }
             elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
-                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts));
+                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
             }
             elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts));
+                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
             }
             elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
-                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts));
+                $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
             }
             elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 foreach ($stmt->cases as $case) {
-                    $return_types = array_merge($return_types, self::getReturnTypes($case->stmts));
+                    $return_types = array_merge($return_types, self::getReturnTypes($case->stmts, $yield_types));
                 }
             }
         }
 
         // if we're at the top level and we're not ending in a return, make sure to add possible null
         if ($collapse_types) {
-            $has_generator = false;
-
-            foreach ($return_types as $return_type) {
-                if ($return_type->isGenerator()) {
-                    $has_generator = true;
-                }
-            }
-
             // if it's a generator, boil everything down to a single generator return type
-            if ($has_generator) {
+            if ($yield_types) {
                 $key_type = null;
                 $value_type = null;
 
-                foreach ($return_types as $type) {
+                foreach ($yield_types as $type) {
                     if ($type instanceof Type\Generic) {
                         $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
                         $last_type_param = $type->type_params[count($type->type_params) - 1];
@@ -154,7 +131,7 @@ class EffectsAnalyser
                     }
                 }
 
-                $return_types = [
+                $yield_types = [
                     new Type\Generic(
                         'Generator',
                         [
@@ -164,13 +141,49 @@ class EffectsAnalyser
                     )
                 ];
             }
-            else {
-                if (!$last_stmt instanceof PhpParser\Node\Stmt\Return_ && !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts)) {
-                    $return_types[] = new Type\Atomic('null');
-                }
+
+            if (!$last_stmt instanceof PhpParser\Node\Stmt\Return_ && !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts) && !$yield_types) {
+                $return_types[] = new Type\Atomic('null');
             }
         }
 
         return $return_types;
+    }
+
+    protected static function getYieldTypeFromExpression($stmt)
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
+            $key_type = null;
+
+            if (isset($stmt->key->inferredType)) {
+                $key_type = $stmt->key->inferredType;
+            }
+
+            if (isset($stmt->inferredType)) {
+                $generator_type = new Type\Generic(
+                    'Generator',
+                    [
+                        $key_type ?: Type::getInt(),
+                        $stmt->inferredType
+                    ]
+                );
+
+                return [$generator_type];
+            }
+            else {
+                return [new Type\Atomic('mixed')];
+            }
+
+        }
+        elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+            $key_type = null;
+
+            if (isset($stmt->inferredType)) {
+                return [$stmt->inferredType->types];
+            }
+            else {
+                return [new Type\Atomic('mixed')];
+            }
+        }
     }
 }
