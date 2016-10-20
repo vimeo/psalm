@@ -30,6 +30,12 @@ class Php55Test extends PHPUnit_Framework_TestCase
     public function testGenerator()
     {
         $stmts = self::$_parser->parse('<?php
+        /**
+         * @param  int  $start
+         * @param  int  $limit
+         * @param  int  $step
+         * @return int[]
+         */
         function xrange($start, $limit, $step = 1) {
             for ($i = $start; $i <= $limit; $i += $step) {
                 yield $i;
