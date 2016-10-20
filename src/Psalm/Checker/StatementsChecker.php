@@ -5330,4 +5330,17 @@ class StatementsChecker
     {
         return isset($this->phantom_classes[$class_name]);
     }
+
+    public static function clearCache()
+    {
+        self::$method_call_index = [];
+        self::$reflection_functions = [];
+
+        self::$this_assignments = [];
+        self::$this_calls = [];
+
+        self::$mock_interfaces = [];
+
+        self::$user_constants = [];
+    }
 }

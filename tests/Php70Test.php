@@ -101,7 +101,6 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testDefineArray()
     {
-        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         define("ANIMALS", [
             "dog",

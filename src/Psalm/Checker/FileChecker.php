@@ -639,5 +639,6 @@ class FileChecker implements StatementsSource
 
         ClassLikeChecker::clearCache();
         FunctionChecker::clearCache();
+        StatementsChecker::clearCache();
     }
 }
