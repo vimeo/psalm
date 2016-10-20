@@ -174,29 +174,52 @@ class Php70Test extends PHPUnit_Framework_TestCase
     public function testGeneratorDelegation()
     {
         $stmts = self::$_parser->parse('<?php
-        function gen()
-        {
+        /**
+         * @return array<int,int>
+         */
+        function count_to_ten() {
             yield 1;
             yield 2;
-            yield from gen2();
+            yield from [3, 4];
+            yield from new ArrayIterator([5, 6]);
+            yield from seven_eight();
+            return yield from nine_ten();
         }
 
-        function gen2()
-        {
-            yield 3;
-            yield 4;
+        /**
+         * @return array<int,int>
+         */
+        function seven_eight() {
+            yield 7;
+            yield from eight();
         }
 
-        foreach (gen() as $val)
-        {
-            echo $val, PHP_EOL;
+        /**
+         * @return array<int,int>
+         */
+        function eight() {
+            yield 8;
         }
+
+        /**
+         * @return array<int,int>
+         */
+        function nine_ten() {
+            yield 9;
+            return 10;
+        }
+
+        $gen = count_to_ten();
+        foreach ($gen as $num) {
+            echo "$num ";
+        }
+        $gen2 = $gen->getReturn();
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$b']);
+        $this->assertEquals('array<int,int>', (string) $context->vars_in_scope['$gen']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$gen2']);
     }
 }
