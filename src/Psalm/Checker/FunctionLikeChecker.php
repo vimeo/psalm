@@ -382,7 +382,12 @@ abstract class FunctionLikeChecker implements StatementsSource
             $method_return_types = MethodChecker::getMethodReturnTypes($method_id);
         }
         else {
-            $method_return_types = FunctionChecker::getFunctionReturnTypes($method_id, $this->file_name);
+            try {
+                $method_return_types = FunctionChecker::getFunctionReturnTypes($method_id, $this->file_name);
+            }
+            catch (\Exception $e) {
+                $method_return_types = null;
+            }
         }
 
         if (!$method_return_types) {

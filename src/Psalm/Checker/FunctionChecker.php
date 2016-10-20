@@ -202,7 +202,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
         }
 
-        self::$function_return_types[$file_name][$function_id] = $return_type ?: Type::getMixed();
+        self::$function_return_types[$file_name][$function_id] = $return_type;
     }
 
     /**

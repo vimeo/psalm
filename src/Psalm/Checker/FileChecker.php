@@ -207,7 +207,7 @@ class FileChecker implements StatementsSource
                     $function_context = new Context($this->short_file_name, $file_context->self);
                     $function_checkers[$stmt->name]->check($function_context);
 
-                    if (!$config->excludeIssueInFile('InvalidReturnType', $this->checked_file_name)) {
+                    if (!$config->excludeIssueInFile('InvalidReturnType', $this->short_file_name)) {
                         $function_checkers[$stmt->name]->checkReturnTypes();
                     }
                 }
