@@ -329,6 +329,14 @@ class StatementsChecker
                 $namespace_checker = new NamespaceChecker($stmt, $this->source);
                 $namespace_checker->check(true);
             }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
+                // do nothing
+
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
+                // do nothing
+
+            }
             else {
                 var_dump('Unrecognised statement in ' . $this->checked_file_name);
                 var_dump($stmt);
@@ -955,7 +963,7 @@ class StatementsChecker
             }
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            if ($this->checkConstFetch($stmt) === false) {
+            if ($this->checkConstFetch($stmt, $context) === false) {
                 return false;
             }
 
@@ -1158,6 +1166,12 @@ class StatementsChecker
                 return false;
             }
             $stmt->inferredType = Type::getArray();
+
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_) {
+            if ($this->checkExpression($stmt->expr, $context) === false) {
+                return false;
+            }
+            $stmt->inferredType = Type::getNull();
 
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
             if ($this->checkExpression($stmt->expr, $context) === false) {
@@ -3647,10 +3661,13 @@ class StatementsChecker
 
         $is_variadic = false;
 
+        $absolute_class = null;
+
         if ($method_id) {
             $function_params = FunctionLikeChecker::getParamsById($method_id, $args, $this->file_name);
 
             if (strpos($method_id, '::')) {
+                $absolute_class = explode('::', $method_id)[0];
                 $is_variadic = $is_mock || MethodChecker::isVariadic($method_id);
             }
             else {
@@ -3753,7 +3770,12 @@ class StatementsChecker
 
                     if ($this->checkFunctionArgumentType(
                         $arg->value->inferredType,
-                        $param_type,
+                        StatementsChecker::fleshOutTypes(
+                            clone $param_type,
+                            [],
+                            $absolute_class,
+                            $method_id
+                        ),
                         $cased_method_id,
                         $argument_offset,
                         $arg->value->getLine()
@@ -3811,7 +3833,7 @@ class StatementsChecker
     /**
      * @return null|false
      */
-    protected function checkConstFetch(PhpParser\Node\Expr\ConstFetch $stmt)
+    protected function checkConstFetch(PhpParser\Node\Expr\ConstFetch $stmt, Context $context)
     {
         $const_name = implode('', $stmt->name->parts);
         switch (strtolower($const_name)) {
@@ -3832,7 +3854,7 @@ class StatementsChecker
                 if (isset(self::$user_constants[$this->file_name][$const_name])) {
                     $stmt->inferredType = clone self::$user_constants[$this->file_name][$const_name];
                 }
-                elseif (!defined($const_name)) {
+                elseif ($context->check_consts && !defined($const_name)) {
                     if (IssueBuffer::accepts(
                         new UndefinedConstant('Const ' . $const_name . ' is not defined', $this->checked_file_name, $stmt->getLine()),
                         $this->suppressed_issues
