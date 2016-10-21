@@ -487,6 +487,10 @@ abstract class ClassLikeChecker implements StatementsSource
                 }
             }
         }
+
+        if (!$this->class->name) {
+            $this->class->name = $this->absolute_class;
+        }
     }
 
     /**

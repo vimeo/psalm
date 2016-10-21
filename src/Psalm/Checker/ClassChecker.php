@@ -31,13 +31,19 @@ class ClassChecker extends ClassLikeChecker
      */
     protected static $class_extends = [];
 
+    protected static $anonymous_class_count = 0;
+
     /**
      * @param PhpParser\Node\Stmt\Class_ $class
      * @param StatementsSource           $source
-     * @param string                     $absolute_class
+     * @param string|null                $absolute_class
      */
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
     {
+        if ($absolute_class === null) {
+            $absolute_class = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
+        }
+
         parent::__construct($class, $source, $absolute_class);
 
         self::$existing_classes[$absolute_class] = true;
@@ -192,6 +198,8 @@ class ClassChecker extends ClassLikeChecker
         self::$existing_classes_ci = [];
 
         self::$class_extends = [];
+
+        self::$anonymous_class_count = 0;
 
         MethodChecker::clearCache();
     }

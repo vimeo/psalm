@@ -119,7 +119,6 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testAnonymousClass()
     {
-        $this->markTestIncomplete('Not yet supported');
         $stmts = self::$_parser->parse('<?php
         interface Logger {
             public function log(string $msg);

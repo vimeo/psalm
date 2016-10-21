@@ -2059,6 +2059,13 @@ class StatementsChecker
                 }
             }
         }
+        elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
+            $this->check([$stmt->class], $context);
+            $absolute_class = $stmt->class->name;
+        }
+        else {
+            $this->checkExpression($stmt->class, $context);
+        }
 
         if ($absolute_class) {
             $stmt->inferredType = new Type\Union([new Type\Atomic($absolute_class)]);
