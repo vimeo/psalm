@@ -2520,7 +2520,7 @@ class ExpressionChecker
 
                     if (self::checkFunctionArgumentType($statements_checker,
                         $arg->value->inferredType,
-                        StatementsChecker::fleshOutTypes(
+                        self::fleshOutTypes(
                             clone $param_type,
                             [],
                             $absolute_class,
