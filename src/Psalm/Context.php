@@ -63,6 +63,12 @@ class Context
     public $check_functions = true;
 
     /**
+     * A list of classes checked with class_exists
+     * @var array<string,bool>
+     */
+    protected $phantom_classes = [];
+
+    /**
      * @param string      $file_name
      * @param string|null $self
      */
@@ -174,5 +180,15 @@ class Context
         $this->check_methods = $this->check_methods && $op_context->check_methods;
         $this->check_functions = $this->check_functions && $op_context->check_functions;
         $this->check_consts = $this->check_consts && $op_context->check_consts;
+    }
+
+    public function isPhantomClass($class_name)
+    {
+        return isset($this->phantom_classes[$class_name]);
+    }
+
+    public function addPhantomClass($class_name)
+    {
+        $this->phantom_classes[$class_name] = true;
     }
 }

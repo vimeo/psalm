@@ -8,6 +8,7 @@ use PhpParser;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\ClassMethod;
+use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
@@ -191,7 +192,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             }
 
             foreach ($function_params as $function_param) {
-                $param_type = StatementsChecker::fleshOutTypes(
+                $param_type = ExpressionChecker::fleshOutTypes(
                     clone $function_param->type,
                     [],
                     $context->self,
@@ -395,7 +396,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         }
 
         // passing it through fleshOutTypes eradicates errant $ vars
-        $declared_return_type = StatementsChecker::fleshOutTypes(
+        $declared_return_type = ExpressionChecker::fleshOutTypes(
             $method_return_types,
             [],
             $this->absolute_class,
@@ -722,7 +723,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 if ($input_type_part->value === $param_type_part->value ||
                     ClassChecker::classExtendsOrImplements($input_type_part->value, $param_type_part->value) ||
-                    StatementsChecker::isMock($input_type_part->value)
+                    ExpressionChecker::isMock($input_type_part->value)
                 ) {
                     $type_match_found = true;
                     break;
