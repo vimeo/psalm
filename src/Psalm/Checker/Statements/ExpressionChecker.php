@@ -547,19 +547,6 @@ class ExpressionChecker
         if ($var_id && !isset($context->vars_in_scope[$var_id])) {
             $context->vars_possibly_in_scope[$var_id] = true;
             $statements_checker->registerVariable($var_id, $stmt->getLine());
-
-            $source = $statements_checker->getSource();
-
-            if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
-                && $source instanceof FunctionLikeChecker
-                && ($this_method_id = $source->getMethodId())
-            ) {
-                if (!isset(self::$this_assignments[$this_method_id])) {
-                    self::$this_assignments[$this_method_id] = [];
-                }
-
-                self::$this_assignments[$this_method_id][$stmt->name] = Type::getMixed();
-            }
         }
 
         $stmt->inferredType = $by_ref_type;
@@ -1977,7 +1964,7 @@ class ExpressionChecker
 
                 $method_id = $statements_checker->getAbsoluteClass() . '::' . strtolower($stmt->name);
 
-                if (self::checkInsideMethod($statements_checker, $method_id, $context) === false) {
+                if ($statements_checker->checkInsideMethod($method_id, $context) === false) {
                     return false;
                 }
             }
@@ -2290,7 +2277,7 @@ class ExpressionChecker
                 if (ClassLikeChecker::getThisClass()) {
                     $method_id = $absolute_class . '::' . strtolower($stmt->name);
 
-                    if (self::checkInsideMethod($statements_checker, $method_id, $context) === false) {
+                    if ($statements_checker->checkInsideMethod($method_id, $context) === false) {
                         return false;
                     }
                 }
@@ -3067,7 +3054,13 @@ class ExpressionChecker
                 $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMap($method_id, $stmt->args, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues());
             }
             else {
-                $stmt->inferredType = FunctionChecker::getFunctionReturnTypes($method_id, $statements_checker->getCheckedFileName());
+                try {
+                    $stmt->inferredType = FunctionChecker::getFunctionReturnTypes($method_id, $statements_checker->getCheckedFileName());
+                }
+                catch (\InvalidArgumentException $e) {
+                    // this can happen when the function was defined in the Config startup script
+                    $stmt->inferredType = Type::getMixed();
+                }
             }
         }
 
