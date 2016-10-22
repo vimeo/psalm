@@ -369,6 +369,10 @@ class MethodChecker extends FunctionLikeChecker
 
         }
 
+        if (FunctionChecker::inCallMap($method_id)) {
+            return true;
+        }
+
         if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $cased_method_id . ' does not exist', $file_name, $line_number),
             $suppresssed_issues

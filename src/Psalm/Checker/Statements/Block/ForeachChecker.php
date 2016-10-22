@@ -19,7 +19,7 @@ class ForeachChecker
     /**
      * @return false|null
      */
-    public function check(StatementsChecker $statements_checker, PhpParser\Node\Stmt\Foreach_ $stmt, Context $context)
+    public static function check(StatementsChecker $statements_checker, PhpParser\Node\Stmt\Foreach_ $stmt, Context $context)
     {
         if (ExpressionChecker::check($statements_checker, $stmt->expr, $context) === false) {
             return false;

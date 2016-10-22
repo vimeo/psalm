@@ -55,7 +55,6 @@ use Psalm\Type;
 class ExpressionChecker
 {
     /** @var array<string,array<int,string>> */
-    protected static $method_call_index = [];
     protected static $reflection_functions = [];
 
     /**
@@ -2069,38 +2068,26 @@ class ExpressionChecker
                         $method_id = $absolute_class . '::' . strtolower($stmt->name);
                         $cased_method_id = $absolute_class . '::' . $stmt->name;
 
-                        if (!isset(self::$method_call_index[$method_id])) {
-                            self::$method_call_index[$method_id] = [];
-                        }
-
-                        if ($statements_checker->getSource() instanceof MethodChecker) {
-                            self::$method_call_index[$method_id][] = $statements_checker->getSource()->getMethodId();
-                        }
-                        else {
-                            self::$method_call_index[$method_id][] = $statements_checker->getSource()->getFileName();
-                        }
-
                         $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues());
 
                         if (!$does_method_exist) {
                             return $does_method_exist;
                         }
 
-                        /**
-                        if (ClassLikeChecker::getThisClass() && ClassChecker::classExtends(ClassLikeChecker::getThisClass(), $statements_checker->getAbsoluteClass())) {
-                            $calling_context = $context->self;
+                        if (FunctionChecker::inCallMap($cased_method_id)) {
+                            $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
                         }
-                        **/
+                        else {
+                            if (MethodChecker::checkMethodVisibility($method_id, $context->self, $statements_checker->getSource(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
+                                return false;
+                            }
 
-                        if (MethodChecker::checkMethodVisibility($method_id, $context->self, $statements_checker->getSource(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
-                            return false;
+                            if (MethodChecker::checkMethodNotDeprecated($method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
+                                return false;
+                            }
+
+                            $return_type_candidate = MethodChecker::getMethodReturnTypes($method_id);
                         }
-
-                        if (MethodChecker::checkMethodNotDeprecated($method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
-                            return false;
-                        }
-
-                        $return_type_candidate = MethodChecker::getMethodReturnTypes($method_id);
 
                         if ($return_type_candidate) {
                             $return_type_candidate = self::fleshOutTypes($return_type_candidate, $stmt->args, $absolute_class, $method_id);
@@ -2336,17 +2323,6 @@ class ExpressionChecker
             if (is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !$is_mock) {
                 $method_id = $absolute_class . '::' . strtolower($stmt->name);
                 $cased_method_id = $absolute_class . '::' . $stmt->name;
-
-                if (!isset(self::$method_call_index[$method_id])) {
-                    self::$method_call_index[$method_id] = [];
-                }
-
-                if ($statements_checker->getSource() instanceof MethodChecker) {
-                    self::$method_call_index[$method_id][] = $statements_checker->getSource()->getMethodId();
-                }
-                else {
-                    self::$method_call_index[$method_id][] = $statements_checker->getSource()->getFileName();
-                }
 
                 $does_method_exist = MethodChecker::checkMethodExists($cased_method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues());
 
@@ -3077,7 +3053,9 @@ class ExpressionChecker
                 //$method_id = $statements_checker->getAbsoluteClass() . '::' . $method_id;
             }
 
-            if (self::checkFunctionExists($statements_checker, $method_id, $context, $stmt->getLine()) === false) {
+            $in_call_map = FunctionChecker::inCallMap($method_id);
+
+            if (!$in_call_map && self::checkFunctionExists($statements_checker, $method_id, $context, $stmt->getLine()) === false) {
                 return false;
             }
 
@@ -3085,13 +3063,12 @@ class ExpressionChecker
                 return false;
             }
 
-            try {
-                $stmt->inferredType = FunctionChecker::getFunctionReturnTypes($method_id, $statements_checker->getCheckedFileName());
-            }
-            catch (\InvalidArgumentException $e) {
+            if ($in_call_map) {
                 $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMap($method_id, $stmt->args, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues());
             }
-
+            else {
+                $stmt->inferredType = FunctionChecker::getFunctionReturnTypes($method_id, $statements_checker->getCheckedFileName());
+            }
         }
 
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['get_class'] && $stmt->args) {
@@ -3502,5 +3479,10 @@ class ExpressionChecker
     public static function isMock($absolute_class)
     {
         return in_array($absolute_class, Config::getInstance()->getMockClasses());
+    }
+
+    public static function clearCache()
+    {
+        self::$reflection_functions = [];
     }
 }

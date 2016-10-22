@@ -4,13 +4,15 @@ namespace Psalm\Checker;
 
 use PhpParser;
 
+use Psalm\Checker\Statements\Block\ForChecker;
 use Psalm\Checker\Statements\Block\ForeachChecker;
 use Psalm\Checker\Statements\Block\IfChecker;
 use Psalm\Checker\Statements\Block\SwitchChecker;
+use Psalm\Checker\Statements\Block\TryChecker;
+use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\IssueBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
-use Psalm\Issue\InvalidContinue;
 use Psalm\Issue\InvalidNamespace;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -146,25 +148,32 @@ class StatementsChecker
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 IfChecker::check($this, $stmt, $context, $loop_context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                $this->checkTryCatch($stmt, $context, $loop_context);
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
+                TryChecker::check($this, $stmt, $context, $loop_context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
-                $this->checkFor($stmt, $context);
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
+                ForChecker::check($this, $stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 ForeachChecker::check($this, $stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                $this->checkWhile($stmt, $context);
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
+                WhileChecker::check($this, $stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
                 $this->checkDo($stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 $this->checkConstAssignment($stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 foreach ($stmt->vars as $var) {
                     $var_id = ExpressionChecker::getArrayVarId($var, $this->absolute_class, $this->namespace, $this->aliased_classes);
 
@@ -173,21 +182,26 @@ class StatementsChecker
                     }
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
                 $this->checkReturn($stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $has_returned = true;
                 $this->checkThrow($stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchChecker::check($this, $stmt, $context, $loop_context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 if ($loop_context === null) {
                     if (IssueBuffer::accepts(
                         new ContinueOutsideLoop('Continue call outside loop context', $this->checked_file_name, $stmt->getLine()),
@@ -199,30 +213,37 @@ class StatementsChecker
 
                 $has_returned = true;
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 $this->checkStatic($stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
                 foreach ($stmt->exprs as $expr) {
                     ExpressionChecker::check($this, $expr, $context);
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($this->file_name, $context->self);
                 $function_checkers[$stmt->name]->check($function_context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Expr) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Expr) {
                 ExpressionChecker::check($this, $stmt, $context);
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
                         if (is_string($var->name)) {
@@ -234,7 +255,8 @@ class StatementsChecker
                     }
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
                     if ($prop->default) {
                         ExpressionChecker::check($this, $prop->default, $context);
@@ -250,7 +272,8 @@ class StatementsChecker
                     }
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 foreach ($stmt->consts as $const) {
                     ExpressionChecker::check($this, $const->value, $context);
 
@@ -259,10 +282,12 @@ class StatementsChecker
                     }
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 (new ClassChecker($stmt, $this->source, $stmt->name))->check();
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 // do nothing
 
             }
@@ -273,7 +298,8 @@ class StatementsChecker
             elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
                 // do nothing
 
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 if ($this->namespace) {
                     if (IssueBuffer::accepts(
                         new InvalidNamespace('Cannot redeclare namespace', $this->require_file_name, $stmt->getLine()),
@@ -366,162 +392,6 @@ class StatementsChecker
         }
     }
 
-    /**
-     * @return false|null
-     */
-    protected function checkTryCatch(PhpParser\Node\Stmt\TryCatch $stmt, Context $context, Context $loop_context = null)
-    {
-        $this->check($stmt->stmts, $context, $loop_context);
-
-        // clone context for catches after running the try block, as
-        // we optimistically assume it only failed at the very end
-        $original_context = clone $context;
-
-        foreach ($stmt->catches as $catch) {
-            $catch_context = clone $original_context;
-
-            $catch_class = ClassLikeChecker::getAbsoluteClassFromName($catch->type, $this->namespace, $this->aliased_classes);
-
-            if ($context->check_classes) {
-                $absolute_class = $catch_class;
-
-                if (ClassLikeChecker::checkAbsoluteClassOrInterface($absolute_class, $this->checked_file_name, $stmt->getLine(), $this->suppressed_issues) === false) {
-                    return false;
-                }
-            }
-
-            $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union([
-                new Type\Atomic($catch_class)
-            ]);
-
-            $catch_context->vars_possibly_in_scope['$' . $catch->var] = true;
-
-            $this->registerVariable('$' . $catch->var, $catch->getLine());
-
-            $this->check($catch->stmts, $catch_context, $loop_context);
-
-            if (!ScopeChecker::doesAlwaysReturnOrThrow($catch->stmts)) {
-                foreach ($catch_context->vars_in_scope as $catch_var => $type) {
-                    if ($catch->var !== $catch_var && isset($context->vars_in_scope[$catch_var]) && (string) $context->vars_in_scope[$catch_var] !== (string) $type) {
-                        $context->vars_in_scope[$catch_var] = Type::combineUnionTypes($context->vars_in_scope[$catch_var], $type);
-                    }
-                }
-
-                $context->vars_possibly_in_scope = array_merge($catch_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
-            }
-        }
-
-        if ($stmt->finallyStmts) {
-            $this->check($stmt->finallyStmts, $context, $loop_context);
-        }
-    }
-
-    /**
-     * @return false|null
-     */
-    protected function checkFor(PhpParser\Node\Stmt\For_ $stmt, Context $context)
-    {
-        $for_context = clone $context;
-        $for_context->in_loop = true;
-
-        foreach ($stmt->init as $init) {
-            if (ExpressionChecker::check($this, $init, $for_context) === false) {
-                return false;
-            }
-        }
-
-        foreach ($stmt->cond as $condition) {
-            if (ExpressionChecker::check($this, $condition, $for_context) === false) {
-                return false;
-            }
-        }
-
-        foreach ($stmt->loop as $expr) {
-            if (ExpressionChecker::check($this, $expr, $for_context) === false) {
-                return false;
-            }
-        }
-
-        $this->check($stmt->stmts, $for_context, $context);
-
-        foreach ($context->vars_in_scope as $var => $type) {
-            if ($type->isMixed()) {
-                continue;
-            }
-
-            if ($for_context->vars_in_scope[$var]->isMixed()) {
-                $context->vars_in_scope[$var] = $for_context->vars_in_scope[$var];
-            }
-
-            if ((string) $for_context->vars_in_scope[$var] !== (string) $type) {
-                $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $for_context->vars_in_scope[$var]);
-            }
-        }
-
-        $context->vars_possibly_in_scope = array_merge($for_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
-    }
-
-
-
-    /**
-     * @return false|null
-     */
-    protected function checkWhile(PhpParser\Node\Stmt\While_ $stmt, Context $context)
-    {
-        $while_context = clone $context;
-
-        if (ExpressionChecker::check($this, $stmt->cond, $while_context) === false) {
-            return false;
-        }
-
-        $while_types = TypeChecker::getTypeAssertions(
-                        $stmt->cond,
-                        $this->absolute_class,
-                        $this->namespace,
-                        $this->aliased_classes);
-
-        // if the while has an or as the main component, we cannot safely reason about it
-        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && self::containsBooleanOr($stmt->cond)) {
-            // do nothing
-        }
-        else {
-            $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
-                $while_types,
-                $while_context->vars_in_scope,
-                $this->checked_file_name,
-                $stmt->getLine(),
-                $this->suppressed_issues
-            );
-
-            if ($while_vars_in_scope_reconciled === false) {
-                return false;
-            }
-
-            $while_context->vars_in_scope = $while_vars_in_scope_reconciled;
-        }
-
-        if ($this->check($stmt->stmts, $while_context, $context) === false) {
-            return false;
-        }
-
-        foreach ($context->vars_in_scope as $var => $type) {
-            if ($type->isMixed()) {
-                continue;
-            }
-
-            if (isset($while_context->vars_in_scope[$var])) {
-                if ($while_context->vars_in_scope[$var]->isMixed()) {
-                    $context->vars_in_scope[$var] = $while_context->vars_in_scope[$var];
-                }
-
-                if ((string) $while_context->vars_in_scope[$var] !== (string) $type) {
-                    $context->vars_in_scope[$var] = Type::combineUnionTypes($while_context->vars_in_scope[$var], $type);
-                }
-            }
-        }
-
-        $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $while_context->vars_possibly_in_scope);
-    }
 
     /**
      * @return false|null
@@ -978,19 +848,6 @@ class StatementsChecker
     }
 
     /**
-     * @return bool
-     */
-    protected static function containsBooleanOr(PhpParser\Node\Expr\BinaryOp $stmt)
-    {
-        // we only want to discount expressions where either the whole thing is an or
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @return array<string>
      */
     public function getAliasedClasses()
@@ -1082,11 +939,9 @@ class StatementsChecker
 
     public static function clearCache()
     {
-        self::$method_call_index = [];
-        self::$reflection_functions = [];
-
         self::$mock_interfaces = [];
-
         self::$user_constants = [];
+
+        ExpressionChecker::clearCache();
     }
 }
