@@ -31,6 +31,8 @@ class MethodChecker extends FunctionLikeChecker
      * @var array<string,string>
      */
     protected static $method_namespaces = [];
+
+    /** @var array<string,Type\Union> */
     protected static $method_return_types = [];
     protected static $cased_method_ids = [];
     protected static $static_methods = [];
@@ -250,7 +252,11 @@ class MethodChecker extends FunctionLikeChecker
         self::$method_suppress[$method_id] = [];
 
         if (isset($method->returnType)) {
-            $return_type = Type::parseString($method->returnType);
+            $return_type = Type::parseString(
+                is_string($method->returnType)
+                    ? $method->returnType
+                    : ClassLikeChecker::getAbsoluteClassFromName($method->returnType, $this->namespace, $this->getAliasedClasses())
+            );
         }
 
         if ($doc_comment) {

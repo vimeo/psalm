@@ -150,7 +150,7 @@ class ForeachChecker
             }
         }
 
-        if ($stmt->keyVar) {
+        if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable) {
             $foreach_context->vars_in_scope['$' . $stmt->keyVar->name] = $key_type ?: Type::getMixed();
             $foreach_context->vars_possibly_in_scope['$' . $stmt->keyVar->name] = true;
             $statements_checker->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
@@ -162,14 +162,14 @@ class ForeachChecker
 
         if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->valueVar->vars as $var) {
-                if ($var) {
+                if ($var && $var instanceof PhpParser\Node\Expr\Variable) {
                     $foreach_context->vars_in_scope['$' . $var->name] = Type::getMixed();
                     $foreach_context->vars_possibly_in_scope['$' . $var->name] = true;
                     $statements_checker->registerVariable('$' . $var->name, $var->getLine());
                 }
             }
         }
-        else {
+        elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable) {
             $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
             $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
             $statements_checker->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());

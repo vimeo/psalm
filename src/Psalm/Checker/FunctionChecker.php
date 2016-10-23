@@ -37,8 +37,12 @@ class FunctionChecker extends FunctionLikeChecker
      * @param StatementsSource              $source
      * @param string                        $base_file_name
      */
-    public function __construct(PhpParser\Node\Stmt\Function_ $function, StatementsSource $source, $base_file_name)
+    public function __construct($function, StatementsSource $source, $base_file_name)
     {
+        if ($function instanceof PhpParser\Node\Stmt\Function_) {
+            throw new \InvalidArgumentException('Bad');
+        }
+
         parent::__construct($function, $source);
 
         $this->registerFunction($function, $base_file_name);
@@ -175,8 +179,12 @@ class FunctionChecker extends FunctionLikeChecker
 
         $this->suppressed_issues = $docblock_info['suppress'];
 
-        if (isset($function->returnType)) {
-            $return_type = Type::parseString($function->returnType);
+        if ($function->returnType) {
+            $return_type = Type::parseString(
+                is_string($function->returnType)
+                    ? $function->returnType
+                    : ClassLikeChecker::getAbsoluteClassFromName($function->returnType, $this->namespace, $this->getAliasedClasses())
+            );
         }
 
         if ($config->use_docblock_types) {
@@ -305,7 +313,7 @@ class FunctionChecker extends FunctionLikeChecker
             throw new \InvalidArgumentException('Function ' . $function_id . ' was not found in callmap');
         }
 
-        if ($call_args) {
+        if ($call_args && $suppressed_issues !== null) {
             if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
                 $function_index = $call_map_key === 'array_map' ? 0 : 1;
                 if (isset($call_args[$function_index])) {

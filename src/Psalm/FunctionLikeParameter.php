@@ -25,6 +25,8 @@ class FunctionLikeParameter
     /** @var int */
     public $line;
 
+    public $is_variadic;
+
     /**
      * @param string        $name
      * @param boolean       $by_ref

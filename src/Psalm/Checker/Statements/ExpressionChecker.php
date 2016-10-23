@@ -11,6 +11,7 @@ use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Checker\TraitChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Config;
 use Psalm\Context;
@@ -280,7 +281,7 @@ class ExpressionChecker
                 $use_context->vars_possibly_in_scope['$' . $use->var] = true;
             }
 
-            $closure_checker->check($use_context, $context->check_methods);
+            $closure_checker->check($use_context);
 
             $stmt->inferredType = Type::getClosure();
 
@@ -450,7 +451,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkVariable(
+    protected static function checkVariable(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\Variable $stmt,
         Context $context,
@@ -540,7 +541,7 @@ class ExpressionChecker
      * @param  Context $context
      * @return void
      */
-    protected function assignByRefParam(StatementsChecker $statements_checker, PhpParser\Node\Expr $stmt, Type\Union $by_ref_type, Context $context)
+    protected static function assignByRefParam(StatementsChecker $statements_checker, PhpParser\Node\Expr $stmt, Type\Union $by_ref_type, Context $context)
     {
         $var_id = self::getVarId($stmt, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
 
@@ -557,7 +558,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkPropertyFetch(
+    protected static function checkPropertyFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
@@ -755,6 +756,12 @@ class ExpressionChecker
             );
 
             if (!$class_properties || !isset($class_properties[$stmt->name])) {
+                $stmt->inferredType = Type::getMixed();
+
+                if ($var_id) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                }
+
                 if ($stmt_var_id === '$this') {
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
@@ -780,12 +787,6 @@ class ExpressionChecker
                     }
                 }
 
-                if ($var_id) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                }
-
-                $stmt->inferredType = Type::getMixed();
-
                 return;
             }
 
@@ -809,7 +810,7 @@ class ExpressionChecker
      * @param  Context    $context
      * @return false|null
      */
-    public function checkPropertyAssignment(
+    public static function checkPropertyAssignment(
         StatementsChecker $statements_checker,
         $stmt,
         $prop_name,
@@ -1080,7 +1081,7 @@ class ExpressionChecker
      * @param  Context    $context
      * @return false|null
      */
-    protected function checkStaticPropertyAssignment(
+    protected static function checkStaticPropertyAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Type\Union $assignment_type,
@@ -1094,9 +1095,9 @@ class ExpressionChecker
 
         $var_id = self::getVarId($stmt, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
 
-        $absolute_class = (string)$stmt->class->inferredType;
+        $absolute_class = (string)$stmt->inferredType;
 
-        if ($stmt->class->parts[0] === 'this' || $absolute_class === $context->self) {
+        if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') || $absolute_class === $context->self) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
         }
         elseif ($context->self && ClassChecker::classExtends($absolute_class, $context->self)) {
@@ -1114,7 +1115,7 @@ class ExpressionChecker
         $prop_name = $stmt->name;
 
         if (!isset($class_properties[$prop_name])) {
-            if ($stmt->class->parts[0] === 'this') {
+            if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
                 if (IssueBuffer::accepts(
                     new UndefinedThisPropertyAssignment(
                         'Static property ' . $var_id . ' is not defined',
@@ -1173,7 +1174,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkNew(
+    protected static function checkNew(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context
@@ -1229,40 +1230,46 @@ class ExpressionChecker
                     return false;
                 }
 
-                if ($absolute_class === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType) && $stmt->args[0]->value->inferredType->hasGeneric()) {
-                    $key_type = null;
-                    $value_type = null;
+                if ($absolute_class === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
+                    /** @var Type\Union */
+                    $first_arg_type = $stmt->args[0]->value->inferredType;
 
-                    foreach ($stmt->args[0]->value->inferredType->types as $type) {
-                        if ($type instanceof Type\Generic) {
-                            $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
-                            $last_type_param = $type->type_params[count($type->type_params) - 1];
+                    if ($first_arg_type->hasGeneric()) {
+                        $key_type = null;
+                        $value_type = null;
 
-                            if ($value_type === null) {
-                                $value_type = clone $last_type_param;
-                            }
-                            else {
-                                $value_type = Type::combineUnionTypes($value_type, $last_type_param);
-                            }
+                        foreach ($first_arg_type->types as $type) {
+                            if ($type instanceof Type\Generic) {
+                                $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
+                                $last_type_param = $type->type_params[count($type->type_params) - 1];
 
-                            if (!$key_type || !$first_type_param) {
-                                $key_type = $first_type_param ? clone $first_type_param : Type::getMixed();
-                            }
-                            else {
-                                $key_type = Type::combineUnionTypes($key_type, $first_type_param);
+                                if ($value_type === null) {
+                                    $value_type = clone $last_type_param;
+                                }
+                                else {
+                                    $value_type = Type::combineUnionTypes($value_type, $last_type_param);
+                                }
+
+                                if (!$key_type || !$first_type_param) {
+                                    $key_type = $first_type_param ? clone $first_type_param : Type::getMixed();
+                                }
+                                else {
+                                    $key_type = Type::combineUnionTypes($key_type, $first_type_param);
+                                }
                             }
                         }
-                    }
 
-                    $stmt->inferredType = new Type\Union([
-                        new Type\Generic(
-                            $absolute_class,
-                            [
-                                $key_type,
-                                $value_type
-                            ]
-                        )
-                    ]);
+                        $stmt->inferredType = new Type\Union([
+                            new Type\Generic(
+                                $absolute_class,
+                                [
+                                    $key_type,
+                                    $value_type
+                                ]
+                            )
+                        ]);
+
+                    }
                 }
             }
         }
@@ -1271,7 +1278,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkArray(
+    protected static function checkArray(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\Array_ $stmt,
         Context $context
@@ -1350,7 +1357,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkBinaryOp(
+    protected static function checkBinaryOp(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
@@ -1513,7 +1520,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkAssignment(
+    protected static function checkAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\Assign $stmt,
         Context $context
@@ -1558,7 +1565,7 @@ class ExpressionChecker
         }
         elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $var) {
-                if ($var) {
+                if ($var && $var instanceof PhpParser\Node\Expr\Variable) {
                     $context->vars_in_scope['$' . $var->name] = Type::getMixed();
                     $context->vars_possibly_in_scope['$' . $var->name] = true;
                     $statements_checker->registerVariable('$' . $var->name, $var->getLine());
@@ -1672,7 +1679,7 @@ class ExpressionChecker
      * @return false|null
      * @psalm-suppress MixedMethodCall - some funky logic here
      */
-    protected function checkArrayAssignment(
+    protected static function checkArrayAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
@@ -1783,12 +1790,14 @@ class ExpressionChecker
                 }
 
                 if (!$nesting) {
+                    /** @var Type\Generic|null */
+                    $array_type = isset($context->vars_in_scope[$var_id]->types['array']) ? $context->vars_in_scope[$var_id]->types['array'] : null;
+
                     if ($assignment_key_type->hasString()
                         && $assignment_key_value
-                        && (!isset($context->vars_in_scope[$var_id])
+                        && !isset($context->vars_in_scope[$var_id])
                             || $context->vars_in_scope[$var_id]->hasObjectLike()
-                            || ($context->vars_in_scope[$var_id]->hasArray()
-                                && $context->vars_in_scope[$var_id]->types['array']->type_params[0]->isEmpty()))
+                            || ($array_type && $array_type->type_params[0]->isEmpty())
                     ) {
                         $assignment_type = new Type\Union([
                             new Type\ObjectLike(
@@ -1835,7 +1844,7 @@ class ExpressionChecker
      * @param  int         $line_number
      * @return Type\Atomic|null|false
      */
-    protected function refineArrayType(
+    protected static function refineArrayType(
         StatementsChecker $statements_checker,
         Type\Atomic $type,
         Type\Union $assignment_key_type,
@@ -1901,7 +1910,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkAssignmentOperation(
+    protected static function checkAssignmentOperation(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
@@ -1916,7 +1925,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkMethodCall(StatementsChecker $statements_checker, PhpParser\Node\Expr\MethodCall $stmt, Context $context)
+    protected static function checkMethodCall(StatementsChecker $statements_checker, PhpParser\Node\Expr\MethodCall $stmt, Context $context)
     {
         if (self::check($statements_checker, $stmt->var, $context) === false) {
             return false;
@@ -1948,12 +1957,14 @@ class ExpressionChecker
             $stmt->inferredType = Type::getMixed();
         }
 
+        $source = $statements_checker->getSource();
+
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable
             && $stmt->var->name === 'this'
             && is_string($stmt->name)
-            && $statements_checker->getSource() instanceof FunctionLikeChecker
+            && $source instanceof FunctionLikeChecker
         ) {
-            $this_method_id = $statements_checker->getSource()->getMethodId();
+            $this_method_id = $source->getMethodId();
 
             if (($this_class = ClassLikeChecker::getThisClass()) &&
                 (
@@ -2167,7 +2178,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkClosureUses(StatementsChecker $statements_checker, PhpParser\Node\Expr\Closure $stmt, Context $context)
+    protected static function checkClosureUses(StatementsChecker $statements_checker, PhpParser\Node\Expr\Closure $stmt, Context $context)
     {
         foreach ($stmt->uses as $use) {
             if (!isset($context->vars_in_scope['$' . $use->var])) {
@@ -2217,7 +2228,7 @@ class ExpressionChecker
     /**
      * @return false|null
      */
-    protected function checkStaticCall(StatementsChecker $statements_checker, PhpParser\Node\Expr\StaticCall $stmt, Context $context)
+    protected static function checkStaticCall(StatementsChecker $statements_checker, PhpParser\Node\Expr\StaticCall $stmt, Context $context)
     {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             // this is when calling $some_class::staticMethod() - which is a shitty way of doing things
@@ -2327,7 +2338,7 @@ class ExpressionChecker
                     }
                 }
                 else {
-                    if ($stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
+                    if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
                         if (MethodChecker::checkMethodStatic($method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
                             return false;
                         }
@@ -2362,13 +2373,13 @@ class ExpressionChecker
 
     /**
      * @param  PhpParser\Node\Arg[]   $args
-     * @param  string                 $method_id
+     * @param  string|null            $method_id
      * @param  Context                $context
      * @param  int                    $line_number
      * @param  boolean                $is_mock
      * @return false|null
      */
-    protected function checkFunctionArguments(StatementsChecker $statements_checker, array $args, $method_id, Context $context, $line_number, $is_mock = false)
+    protected static function checkFunctionArguments(StatementsChecker $statements_checker, array $args, $method_id, Context $context, $line_number, $is_mock = false)
     {
         $function_params = null;
 
@@ -2454,7 +2465,7 @@ class ExpressionChecker
 
         $cased_method_id = $method_id;
 
-        if (strpos($method_id, '::')) {
+        if ($method_id && strpos($method_id, '::')) {
             $cased_method_id = MethodChecker::getCasedMethodId($method_id);
         }
 
@@ -2472,7 +2483,7 @@ class ExpressionChecker
         }
 
         foreach ($args as $argument_offset => $arg) {
-            if ($method_id && isset($arg->value->inferredType)) {
+            if ($method_id && $cased_method_id && isset($arg->value->inferredType)) {
                 if (count($function_params) > $argument_offset) {
                     $param_type = $function_params[$argument_offset]->type;
 
@@ -2537,7 +2548,7 @@ class ExpressionChecker
     /**
      * @return null|false
      */
-    protected function checkConstFetch(StatementsChecker $statements_checker, PhpParser\Node\Expr\ConstFetch $stmt, Context $context)
+    protected static function checkConstFetch(StatementsChecker $statements_checker, PhpParser\Node\Expr\ConstFetch $stmt, Context $context)
     {
         $const_name = implode('', $stmt->name->parts);
         switch (strtolower($const_name)) {
@@ -2572,7 +2583,7 @@ class ExpressionChecker
     /**
      * @return null|false
      */
-    protected function checkClassConstFetch(StatementsChecker $statements_checker, PhpParser\Node\Expr\ClassConstFetch $stmt, Context $context)
+    protected static function checkClassConstFetch(StatementsChecker $statements_checker, PhpParser\Node\Expr\ClassConstFetch $stmt, Context $context)
     {
         if ($context->check_consts && $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts !== ['static']) {
             if ($stmt->class->parts === ['self']) {
@@ -2619,7 +2630,7 @@ class ExpressionChecker
     /**
      * @return null|false
      */
-    protected function checkStaticPropertyFetch(StatementsChecker $statements_checker, PhpParser\Node\Expr\StaticPropertyFetch $stmt, Context $context)
+    protected static function checkStaticPropertyFetch(StatementsChecker $statements_checker, PhpParser\Node\Expr\StaticPropertyFetch $stmt, Context $context)
     {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable || $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             // @todo check this
@@ -2712,11 +2723,11 @@ class ExpressionChecker
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\Return_ $stmt
+     * @param  PhpParser\Node\Expr\Yield_  $stmt
      * @param  Context                     $context
      * @return false|null
      */
-    protected function checkYield(StatementsChecker $statements_checker, PhpParser\Node\Expr\Yield_ $stmt, Context $context)
+    protected static function checkYield(StatementsChecker $statements_checker, PhpParser\Node\Expr\Yield_ $stmt, Context $context)
     {
         $type_in_comments = CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $context, $statements_checker->getSource());
 
@@ -2747,11 +2758,11 @@ class ExpressionChecker
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\Return_ $stmt
-     * @param  Context                     $context
+     * @param  PhpParser\Node\Expr\YieldFrom    $stmt
+     * @param  Context                          $context
      * @return false|null
      */
-    protected function checkYieldFrom(StatementsChecker $statements_checker, PhpParser\Node\Expr\YieldFrom $stmt, Context $context)
+    protected static function checkYieldFrom(StatementsChecker $statements_checker, PhpParser\Node\Expr\YieldFrom $stmt, Context $context)
     {
         if (self::check($statements_checker, $stmt->expr, $context) === false) {
             return false;
@@ -2762,7 +2773,7 @@ class ExpressionChecker
         }
     }
 
-    protected function checkTernary(StatementsChecker $statements_checker, PhpParser\Node\Expr\Ternary $stmt, Context $context)
+    protected static function checkTernary(StatementsChecker $statements_checker, PhpParser\Node\Expr\Ternary $stmt, Context $context)
     {
         if (self::check($statements_checker, $stmt->cond, $context) === false) {
             return false;
@@ -2865,12 +2876,12 @@ class ExpressionChecker
         }
     }
 
-    protected function checkBooleanNot(StatementsChecker $statements_checker, PhpParser\Node\Expr\BooleanNot $stmt, Context $context)
+    protected static function checkBooleanNot(StatementsChecker $statements_checker, PhpParser\Node\Expr\BooleanNot $stmt, Context $context)
     {
         return self::check($statements_checker, $stmt->expr, $context);
     }
 
-    protected function checkEmpty(StatementsChecker $statements_checker, PhpParser\Node\Expr\Empty_ $stmt, Context $context)
+    protected static function checkEmpty(StatementsChecker $statements_checker, PhpParser\Node\Expr\Empty_ $stmt, Context $context)
     {
         return self::check($statements_checker, $stmt->expr, $context);
     }
@@ -2883,7 +2894,7 @@ class ExpressionChecker
      * @param  int        $line_number
      * @return null|false
      */
-    protected function checkFunctionArgumentType(
+    protected static function checkFunctionArgumentType(
         StatementsChecker $statements_checker,
         Type\Union $input_type,
         Type\Union $param_type,
@@ -2969,18 +2980,20 @@ class ExpressionChecker
      * @param  Context                      $context
      * @return false|null
      */
-    protected function checkFunctionCall(StatementsChecker $statements_checker, PhpParser\Node\Expr\FuncCall $stmt, Context $context)
+    protected static function checkFunctionCall(StatementsChecker $statements_checker, PhpParser\Node\Expr\FuncCall $stmt, Context $context)
     {
         $method = $stmt->name;
 
         if ($method instanceof PhpParser\Node\Name) {
+            $first_arg = $stmt->args[0];
+
             if ($method->parts === ['method_exists']) {
                 $context->check_methods = false;
 
             }
             elseif ($method->parts === ['class_exists']) {
-                if ($stmt->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
-                    $context->addPhantomClass($stmt->args[0]->value->value);
+                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    $context->addPhantomClass($first_arg->value->value);
                 }
                 else {
                     $context->check_classes = false;
@@ -3012,13 +3025,14 @@ class ExpressionChecker
                 }
             }
             elseif ($method->parts === ['define']) {
-                if ($stmt->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
-                    self::check($statements_checker, $stmt->args[1]->value, $context);
-                    $const_name = $stmt->args[0]->value->value;
+                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    $second_arg = $stmt->args[1];
+                    self::check($statements_checker, $second_arg->value, $context);
+                    $const_name = $first_arg->value->value;
 
                     $statements_checker->setConstType(
                         $const_name,
-                        isset($stmt->args[1]->value->inferredType) ? $stmt->args[1]->value->inferredType : Type::getMixed()
+                        isset($second_arg->value->inferredType) ? $second_arg->value->inferredType : Type::getMixed()
                     );
                 }
                 else {
@@ -3079,7 +3093,7 @@ class ExpressionChecker
      * @param  array                             &$context->vars_possibly_in_scope
      * @return false|null
      */
-    protected function checkArrayAccess(
+    protected static function checkArrayAccess(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
@@ -3149,8 +3163,10 @@ class ExpressionChecker
                 }
                 else {
                     $keyed_assignment_type = Type::getEmptyArray();
-                    $keyed_assignment_type->types['array']->type_params[0] = $assignment_key_type;
-                    $keyed_assignment_type->types['array']->type_params[1] = $assignment_value_type;
+                    /** @var Type\Generic */
+                    $keyed_assignment_type_array = $keyed_assignment_type->types['array'];
+                    $keyed_assignment_type_array->type_params[0] = $assignment_key_type;
+                    $keyed_assignment_type_array->type_params[1] = $assignment_value_type;
                 }
             }
             else {
@@ -3310,20 +3326,24 @@ class ExpressionChecker
 
                             for ($i = 0; $i < $nesting + 1; $i++) {
                                 if ($array_type->hasArray()) {
+                                    /** @var Type\Generic */
+                                    $atomic_array = $array_type->types['array'];
+
                                     if ($i < $nesting) {
-                                        if ($array_type->types['array']->type_params[1]->isEmpty()) {
+                                        if ($atomic_array->type_params[1]->isEmpty()) {
                                             $new_empty = clone $empty_type;
+                                            /** @var Type\Generic */
+                                            $new_atomic_empty = $new_empty->types['array'];
+                                            $new_atomic_empty->type_params[0] = $key_type;
 
-                                            $new_empty->types['array']->type_params[0] = $key_type;
-
-                                            $array_type->types['array']->type_params[1] = $new_empty;
+                                            $atomic_array->type_params[1] = $new_empty;
                                             continue;
                                         }
 
-                                        $array_type = $array_type->types['array']->type_params[1];
+                                        $array_type = $atomic_array->type_params[1];
                                     }
                                     else {
-                                        $array_type->types['array']->type_params[0] = $key_type;
+                                        $atomic_array->type_params[0] = $key_type;
                                     }
                                 }
                             }
@@ -3448,7 +3468,7 @@ class ExpressionChecker
      * @param  Context $context
      * @return bool
      */
-    protected function checkFunctionExists(StatementsChecker $statements_checker, $function_id, Context $context, $line_number)
+    protected static function checkFunctionExists(StatementsChecker $statements_checker, $function_id, Context $context, $line_number)
     {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);

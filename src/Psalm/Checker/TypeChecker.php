@@ -536,7 +536,14 @@ class TypeChecker
         }
     }
 
-    protected function getInstanceOfTypes(PhpParser\Node\Expr\Instanceof_ $stmt, $this_class_name, $namespace, $aliased_classes)
+    /**
+     * @param  PhpParser\Node\Expr\Instanceof_ $stmt
+     * @param  string                          $this_class_name
+     * @param  string                          $namespace
+     * @param  array                           $aliased_classes
+     * @return string|null
+     */
+    protected static function getInstanceOfTypes(PhpParser\Node\Expr\Instanceof_ $stmt, $this_class_name, $namespace, array $aliased_classes)
     {
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {

@@ -38,8 +38,12 @@ class ClassChecker extends ClassLikeChecker
      * @param StatementsSource           $source
      * @param string|null                $absolute_class
      */
-    public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $absolute_class)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
+        if (!$class instanceof PhpParser\Node\Stmt\Class_) {
+            throw new \InvalidArgumentException('Bad');
+        }
+
         if ($absolute_class === null) {
             $absolute_class = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
         }

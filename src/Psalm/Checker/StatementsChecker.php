@@ -411,7 +411,7 @@ class StatementsChecker
      * @param  Context $context
      * @return void
      */
-    protected function checkInsideMethod($method_id, Context $context)
+    public function checkInsideMethod($method_id, Context $context)
     {
         $method_checker = ClassLikeChecker::getMethodChecker($method_id);
 
@@ -880,7 +880,7 @@ class StatementsChecker
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getParentClass()
     {

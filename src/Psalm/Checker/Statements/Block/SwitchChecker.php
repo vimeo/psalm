@@ -27,7 +27,9 @@ class SwitchChecker
         }
 
         if (isset($stmt->cond->inferredType) && array_values($stmt->cond->inferredType->types)[0] instanceof Type\T) {
-            $type_candidate_var = array_values($stmt->cond->inferredType->types)[0]->typeof;
+            /** @var Type\T */
+            $type_type = array_values($stmt->cond->inferredType->types)[0];
+            $type_candidate_var = $type_type->typeof;
         }
 
         $original_context = clone $context;
