@@ -20,17 +20,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $config = \Psalm\Config::getInstance();
         $config->throw_exception = true;
 
-        $filter = new \Psalm\Config\FileFilter();
-        $filter->addExcludeFile('somefile.php');
-        $filter->makeExclusive();
-
         self::$_file_filter = $filter;
     }
 
     public function setUp()
     {
         \Psalm\Checker\FileChecker::clearCache();
-        \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 
     /**
@@ -418,6 +413,28 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$_parser->parse('<?php
         if (true && function_exists("flabble")) {
             flabble();
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNestedPropertyFetchInElseif()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @var A|null */
+            public $foo;
+        }
+
+        $a = rand(0, 10) === 5 ? new A() : null;
+
+        if (false) {
+
+        }
+        elseif ($a && $a->foo) {
+            echo $a;
         }
         ');
 

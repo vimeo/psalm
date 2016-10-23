@@ -140,8 +140,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$a[\'b\']'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$a[\'b\']']);
+            if (isset($context->vars_in_scope['$first_arg'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$first_arg']);
             }
             */
 

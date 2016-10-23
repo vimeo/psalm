@@ -285,6 +285,9 @@ class Config
         return $this->inspect_files->getIncludeDirs();
     }
 
+    /**
+     * @return string
+     */
     public function getBaseDir()
     {
         return $this->base_dir;

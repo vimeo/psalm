@@ -354,7 +354,7 @@ class TypeChecker
                     $var_type = $conditional->right->value;
                 }
 
-                if ($var_name) {
+                if ($var_name && $var_type) {
                     $if_types[$var_name] = $var_type;
                 }
             }
@@ -984,20 +984,27 @@ class TypeChecker
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
-                    $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
-                        $existing_key_type_part->value,
-                        \ReflectionProperty::IS_PUBLIC
-                    );
+                    if ($existing_key_type_part->isNull()) {
+                        $class_property_type = Type::getNull();
+                    }
+                    else {
+                        $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
+                            $existing_key_type_part->value,
+                            \ReflectionProperty::IS_PRIVATE
+                        );
 
-                    if (!isset($class_properties[$key_parts[$i]])) {
-                        return null;
+                        if (!isset($class_properties[$key_parts[$i]])) {
+                            return null;
+                        }
+
+                        $class_property_type = clone $class_properties[$key_parts[$i]];
                     }
 
                     if (!$new_base_type) {
-                        $new_base_type = clone $class_properties[$key_parts[$i]];
+                        $new_base_type = $class_property_type;
                     }
                     else {
-                        $new_base_type = Type::combineUnionTypes($new_base_type, clone $class_properties[$key_parts[$i]]);
+                        $new_base_type = Type::combineUnionTypes($new_base_type, $class_property_type);
                     }
 
                     $existing_keys[$new_base_key] = $new_base_type;

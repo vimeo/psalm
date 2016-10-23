@@ -357,10 +357,27 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function checkMethodExists($method_id, $file_name, $line_number, array $suppresssed_issues)
     {
+        if (self::methodExists($method_id)) {
+            return true;
+        }
+
+        if (IssueBuffer::accepts(
+            new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $line_number),
+            $suppresssed_issues
+        )) {
+            return false;
+        }
+    }
+
+    /**
+     * Whether or not a given method exists
+     * @param  string $method_id
+     * @return bool
+     */
+    public static function methodExists($method_id)
+    {
         // remove trailing backslash if it exists
         $method_id = preg_replace('/^\\\\/', '', $method_id);
-
-        $cased_method_id = $method_id;
         $method_parts = explode('::', $method_id);
         $method_parts[1] = strtolower($method_parts[1]);
         $method_id = implode('::', $method_parts);
@@ -379,12 +396,7 @@ class MethodChecker extends FunctionLikeChecker
             return true;
         }
 
-        if (IssueBuffer::accepts(
-            new UndefinedMethod('Method ' . $cased_method_id . ' does not exist', $file_name, $line_number),
-            $suppresssed_issues
-        )) {
-            return false;
-        }
+        return false;
     }
 
     /**

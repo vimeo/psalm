@@ -530,7 +530,8 @@ class ExpressionChecker
                 }
             }
 
-        } else {
+        }
+        else {
             $stmt->inferredType = $context->vars_in_scope[$var_name];
         }
     }
@@ -702,7 +703,7 @@ class ExpressionChecker
                 continue;
             }
 
-            if (method_exists((string) $lhs_type_part, '__get')) {
+            if (MethodChecker::methodExists($lhs_type_part . '::__get')) {
                 $stmt->inferredType = Type::getMixed();
                 continue;
             }
@@ -743,7 +744,7 @@ class ExpressionChecker
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             }
-            elseif (ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
+            elseif ($context->self && ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             }
             else {
@@ -904,7 +905,7 @@ class ExpressionChecker
                     continue;
                 }
 
-                if (method_exists((string) $lhs_type_part, '__set')) {
+                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
                     continue;
                 }
@@ -946,7 +947,7 @@ class ExpressionChecker
                 if ($stmt->var->name === 'this' || $lhs_type_part->value === $context->self) {
                     $class_visibility = \ReflectionProperty::IS_PRIVATE;
                 }
-                elseif (ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
+                elseif ($context->self && ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
                     $class_visibility = \ReflectionProperty::IS_PROTECTED;
                 }
                 else {
@@ -1095,7 +1096,7 @@ class ExpressionChecker
 
         $var_id = self::getVarId($stmt, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
 
-        $absolute_class = (string)$stmt->inferredType;
+        $absolute_class = (string)$stmt->class->inferredType;
 
         if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') || $absolute_class === $context->self) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
@@ -1112,13 +1113,27 @@ class ExpressionChecker
             $class_visibility
         );
 
+        $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
+            $absolute_class,
+            $class_visibility
+        );
+
         $prop_name = $stmt->name;
 
         if (!isset($class_properties[$prop_name])) {
-            if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
+            $all_class_properties = null;
+
+            if ($class_visibility !== \ReflectionProperty::IS_PRIVATE) {
+                $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
+                    $absolute_class,
+                    \ReflectionProperty::IS_PRIVATE
+                );
+            }
+
+            if (isset($all_class_properties[$prop_name])) {
                 if (IssueBuffer::accepts(
-                    new UndefinedThisPropertyAssignment(
-                        'Static property ' . $var_id . ' is not defined',
+                    new InvisibleProperty(
+                        'Static property ' . $var_id . ' is not visible in this context',
                         $statements_checker->getCheckedFileName(),
                         $stmt->getLine()
                     ),
@@ -1128,17 +1143,33 @@ class ExpressionChecker
                 }
             }
             else {
-                if (IssueBuffer::accepts(
-                    new UndefinedPropertyAssignment(
-                        'Static property ' . $var_id . ' is not defined',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
+                if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
+                    if (IssueBuffer::accepts(
+                        new UndefinedThisPropertyAssignment(
+                            'Static property ' . $var_id . ' is not defined',
+                            $statements_checker->getCheckedFileName(),
+                            $stmt->getLine()
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+                else {
+                    if (IssueBuffer::accepts(
+                        new UndefinedPropertyAssignment(
+                            'Static property ' . $var_id . ' is not defined',
+                            $statements_checker->getCheckedFileName(),
+                            $stmt->getLine()
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
                 }
             }
+
+
 
             return;
         }
@@ -1795,9 +1826,9 @@ class ExpressionChecker
 
                     if ($assignment_key_type->hasString()
                         && $assignment_key_value
-                        && !isset($context->vars_in_scope[$var_id])
+                        && (!isset($context->vars_in_scope[$var_id])
                             || $context->vars_in_scope[$var_id]->hasObjectLike()
-                            || ($array_type && $array_type->type_params[0]->isEmpty())
+                            || ($array_type && $array_type->type_params[0]->isEmpty()))
                     ) {
                         $assignment_type = new Type\Union([
                             new Type\ObjectLike(
@@ -2265,8 +2296,11 @@ class ExpressionChecker
                 }
             }
             elseif ($context->check_classes) {
-
-                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName($stmt->class, $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
+                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName(
+                    $stmt->class,
+                    $statements_checker->getNamespace(),
+                    $statements_checker->getAliasedClasses()
+                );
 
                 if ($context->isPhantomClass($absolute_class)) {
                     return;
@@ -2985,14 +3019,14 @@ class ExpressionChecker
         $method = $stmt->name;
 
         if ($method instanceof PhpParser\Node\Name) {
-            $first_arg = $stmt->args[0];
+            $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
 
             if ($method->parts === ['method_exists']) {
                 $context->check_methods = false;
 
             }
             elseif ($method->parts === ['class_exists']) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $context->addPhantomClass($first_arg->value->value);
                 }
                 else {
@@ -3025,7 +3059,7 @@ class ExpressionChecker
                 }
             }
             elseif ($method->parts === ['define']) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $second_arg = $stmt->args[1];
                     self::check($statements_checker, $second_arg->value, $context);
                     $const_name = $first_arg->value->value;
