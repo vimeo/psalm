@@ -9704,7 +9704,7 @@ return [
 'UnderflowException::getTraceAsString' => ['string'],
 'UnderflowException::__toString' => ['string'],
 'UnexpectedValueException::__clone' => ['Throwable|UnexpectedValueException'],
-'UnexpectedValueException::__construct' => ['UnexpectedValueException', 'message='=>'string', 'code='=>'int', 'previous='=>'Throwable|UnexpectedValueException'],
+'UnexpectedValueException::__construct' => ['UnexpectedValueException', 'message='=>'string', 'code='=>'int', 'previous='=>'Throwable|null'],
 'UnexpectedValueException::getCode' => ['int'],
 'UnexpectedValueException::getFile' => ['string'],
 'UnexpectedValueException::getLine' => ['int'],
