@@ -1858,7 +1858,7 @@ return [
 'Exception::__clone' => ['Throwable|Exception'],
 'Exception::__construct\'1' => ['Exception', 'message='=>'string'],
 'Exception::__construct\'2' => ['Exception', 'message='=>'string', 'code='=>'int'],
-'Exception::__construct' => ['Exception', 'message='=>'string', 'code='=>'int', 'previous='=>'Throwable|Exception'],
+'Exception::__construct' => ['Exception', 'message='=>'string', 'code='=>'int', 'previous='=>'Throwable|null'],
 'Exception::getCode' => ['int'],
 'Exception::getFile' => ['string'],
 'Exception::getLine' => ['int'],
