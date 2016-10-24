@@ -96,7 +96,7 @@ class Config
         $config_xml = new SimpleXMLElement($file_contents);
 
         if (isset($config_xml['stopOnFirstError'])) {
-            $attribute_text = (string) $config_xml['stopOnError'];
+            $attribute_text = (string) $config_xml['stopOnFirstError'];
             $config->stop_on_first_error = $attribute_text === 'true' || $attribute_text === '1';
         }
 
