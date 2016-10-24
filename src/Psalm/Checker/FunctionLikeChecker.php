@@ -800,10 +800,10 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public static function getParamsById($method_id, array $args, $file_name)
     {
-        if (FunctionChecker::inCallMap($method_id)) {
+        if (FunctionChecker::inCallMap($method_id) || !strpos($method_id, '::')) {
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
         }
-        elseif (strpos($method_id, '::')) {
+        else {
             return MethodChecker::getMethodParams($method_id);
         }
 

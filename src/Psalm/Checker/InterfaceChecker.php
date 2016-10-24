@@ -8,7 +8,10 @@ use Psalm\Context;
 
 class InterfaceChecker extends ClassLikeChecker
 {
-    protected $parent_interfaces = [];
+    /**
+     * @var array<string,array<string>>
+     */
+    protected static $parent_interfaces = [];
 
     protected static $existing_interfaces = [];
     protected static $existing_interfaces_ci = [];
@@ -25,8 +28,13 @@ class InterfaceChecker extends ClassLikeChecker
         self::$existing_interfaces[$interface_name] = true;
         self::$existing_interfaces_ci[strtolower($interface_name)] = true;
 
-        foreach ($interface->extends as $extended_interface) {
-            $this->parent_interfaces[] = self::getAbsoluteClassFromName($extended_interface, $this->namespace, $this->aliased_classes);
+        if ($interface->extends) {
+            self::$parent_interfaces[$interface_name] = [];
+
+            foreach ($interface->extends as $extended_interface) {
+                $extended_interface_name = self::getAbsoluteClassFromName($extended_interface, $this->namespace, $this->aliased_classes);
+                self::$parent_interfaces[$interface_name][] = $extended_interface_name;
+            }
         }
     }
 
@@ -75,5 +83,31 @@ class InterfaceChecker extends ClassLikeChecker
     {
         self::$existing_interfaces = [];
         self::$existing_interfaces_ci = [];
+    }
+
+    /**
+     * @param  string $interface_name
+     * @return array<string>   all interfaces extended by $interface_name
+     */
+    public static function getParentInterfaces($interface_name)
+    {
+        self::registerClass($interface_name);
+
+        $extended_interfaces = [];
+
+        if (!isset(self::$parent_interfaces[$interface_name])) {
+            return [];
+        }
+
+        foreach (self::$parent_interfaces[$interface_name] as $extended_interface_name) {
+            $extended_interfaces[] = $extended_interface_name;
+
+            $extended_interfaces = array_merge(
+                self::getParentInterfaces($extended_interface_name),
+                $extended_interfaces
+            );
+        }
+
+        return $extended_interfaces;
     }
 }

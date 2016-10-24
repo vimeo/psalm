@@ -200,6 +200,8 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $method_checkers = [];
 
+        $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
+
         self::$class_methods[$this->absolute_class] = [];
 
         self::$public_class_properties[$this->absolute_class] = [];
@@ -259,6 +261,8 @@ abstract class ClassLikeChecker implements StatementsSource
                 );
             }
 
+            $extra_interfaces = [];
+
             foreach (self::$class_implements[$this->absolute_class] as $interface_id => $interface_name) {
                 if (self::checkAbsoluteClassOrInterface(
                     $interface_name,
@@ -270,10 +274,18 @@ abstract class ClassLikeChecker implements StatementsSource
                     return false;
                 }
 
-                self::registerClass($interface_name);
+                $extra_interfaces = array_merge($extra_interfaces, InterfaceChecker::getParentInterfaces($interface_name));
 
-                FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $interface_name);
+                FileChecker::addFileInheritanceToClass($long_file_name, $interface_name);
             }
+
+            $extra_interfaces = array_unique($extra_interfaces);
+
+            foreach ($extra_interfaces as $extra_interface_name) {
+                FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
+            }
+
+            self::$class_implements[$this->absolute_class] = array_merge(self::$class_implements[$this->absolute_class], $extra_interfaces);
         }
 
         $trait_checkers = [];
