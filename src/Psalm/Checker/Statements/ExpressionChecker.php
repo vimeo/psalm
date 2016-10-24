@@ -2421,15 +2421,17 @@ class ExpressionChecker
 
         $absolute_class = null;
 
+        $in_call_map = FunctionChecker::inCallMap($method_id);
+
         if ($method_id) {
             $function_params = FunctionLikeChecker::getParamsById($method_id, $args, $statements_checker->getFileName());
 
-            if (strpos($method_id, '::')) {
-                $absolute_class = explode('::', $method_id)[0];
-                $is_variadic = $is_mock || MethodChecker::isVariadic($method_id);
+            if ($in_call_map || !strpos($method_id, '::')) {
+                $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFileName());
             }
             else {
-                $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFileName());
+                $absolute_class = explode('::', $method_id)[0];
+                $is_variadic = $is_mock || MethodChecker::isVariadic($method_id);
             }
         }
 
@@ -2499,7 +2501,7 @@ class ExpressionChecker
 
         $cased_method_id = $method_id;
 
-        if ($method_id && strpos($method_id, '::')) {
+        if ($method_id && strpos($method_id, '::') && !$in_call_map) {
             $cased_method_id = MethodChecker::getCasedMethodId($method_id);
         }
 

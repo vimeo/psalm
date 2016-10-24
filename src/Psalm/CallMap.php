@@ -799,6 +799,7 @@ return [
 'Closure::bindTo' => ['Closure', 'new'=>'object|null', 'newscope='=>'object|string'],
 'Closure::call' => ['Closure', 'to'=>'object', 'parameter='=>'', '...='=>''],
 'Closure::__construct' => [''],
+'Closure::__invoke' => ['', '...=' => ''],
 'Collator::asort' => ['bool', 'arr'=>'array', 'sort_flag='=>'int'],
 'collator_asort' => ['bool', 'coll='=>'collator', 'arr'=>'array', 'sort_flag='=>'int'],
 'collator_compare' => ['int', 'coll'=>'collator', 'str1'=>'string', 'str2'=>'string'],
