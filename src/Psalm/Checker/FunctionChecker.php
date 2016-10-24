@@ -365,7 +365,7 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 // where there's no function passed to array_filter
-                if ($call_map_key === 'array_filter' && $first_arg && $first_arg->inferredType && $first_arg->inferredType->hasArray()) {
+                if ($call_map_key === 'array_filter' && $first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
                     $inner_type = clone $first_arg->inferredType->types['array']->type_params[1];
                     return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                 }
@@ -381,7 +381,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_keys') {
-                if ($first_arg && $first_arg->inferredType && $first_arg->inferredType->hasArray()) {
+                if ($first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
                     $inner_type = clone $first_arg->inferredType->types['array']->type_params[0];
                     return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                 }
