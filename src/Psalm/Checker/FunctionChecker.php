@@ -374,7 +374,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
-                if ($first_arg && $first_arg->inferredType && $first_arg->inferredType->hasArray()) {
+                if ($first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
                     $inner_type = clone $first_arg->inferredType->types['array']->type_params[1];
                     return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                 }
@@ -425,7 +425,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_diff') {
-                if (!$first_arg || !$first_arg->inferredType || !$first_arg->inferredType->hasArray()) {
+                if (!$first_arg || !isset($first_arg->inferredType) || !$first_arg->inferredType->hasArray()) {
                     return Type::getArray();
                 }
 
@@ -440,7 +440,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_diff_key') {
-                if (!$first_arg || !$first_arg->inferredType || !$first_arg->inferredType->hasArray()) {
+                if (!$first_arg || !isset($first_arg->inferredType) || !$first_arg->inferredType->hasArray()) {
                     return Type::getArray();
                 }
 
@@ -448,7 +448,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_shift' || $call_map_key === 'array_pop') {
-                if (!$first_arg || !$first_arg->inferredType || !$first_arg->inferredType->hasArray()) {
+                if (!$first_arg || !isset($first_arg->inferredType) || !$first_arg->inferredType->hasArray()) {
                     return Type::getMixed();
                 }
 
