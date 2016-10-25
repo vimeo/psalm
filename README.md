@@ -1,4 +1,4 @@
-# PHP Static Analysis Linting Machine
+# ![Logo](PsalmLogo.png)
 
 Inspects your code and finds errors
 
