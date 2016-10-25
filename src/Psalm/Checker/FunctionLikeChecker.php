@@ -800,14 +800,19 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public static function getParamsById($method_id, array $args, $file_name)
     {
-        if (FunctionChecker::inCallMap($method_id) || !strpos($method_id, '::')) {
-            $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
-        }
-        else {
+        $absolute_class = strpos($method_id, '::') ? explode($method_id, '::')[0] : null;
+
+        if ($absolute_class && ClassLikeChecker::isUserDefined($absolute_class)) {
             return MethodChecker::getMethodParams($method_id);
         }
-
-        if ($function_param_options === null) {
+        elseif (!$absolute_class && FunctionChecker::inCallMap($method_id)) {
+            $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
+        }
+        elseif ($absolute_class) {
+            // fall back to using reflected params anyway
+            return MethodChecker::getMethodParams($method_id);
+        }
+        else {
             return FunctionChecker::getParams(strtolower($method_id), $file_name);
         }
 

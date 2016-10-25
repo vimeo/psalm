@@ -155,6 +155,13 @@ abstract class ClassLikeChecker implements StatementsSource
     protected static $registered_classes = [];
 
     /**
+     * A lookup table to record which classes are user-defined
+     *
+     * @var array<string,bool>
+     */
+    protected static $user_defined = [];
+
+    /**
      * A lookup table used for storing the results of ClassChecker::classImplements
      *
      * @var array<string,array<string,string>>
@@ -195,6 +202,7 @@ abstract class ClassLikeChecker implements StatementsSource
         $config = Config::getInstance();
 
         self::$registered_classes[$this->absolute_class] = true;
+        self::$user_defined[$this->absolute_class] = true;
 
         $leftover_stmts = [];
 
@@ -1019,6 +1027,12 @@ abstract class ClassLikeChecker implements StatementsSource
     public static function getClassesForFile($file_name)
     {
         return isset(self::$file_classes[$file_name]) ? array_unique(self::$file_classes[$file_name]) : [];
+    }
+
+    public static function isUserDefined($absolute_class)
+    {
+        self::registerClass($absolute_class);
+        return isset(self::$user_defined[$absolute_class]);
     }
 
     public static function clearCache()
