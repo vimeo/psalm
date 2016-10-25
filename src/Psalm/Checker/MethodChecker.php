@@ -492,7 +492,7 @@ class MethodChecker extends FunctionLikeChecker
                     }
                 }
 
-                if (ClassChecker::classExtends($method_class, $calling_context) && method_exists($calling_context, $method_name)) {
+                if (ClassChecker::classExtends($method_class, $calling_context) && MethodChecker::methodExists($calling_context . '::' . $method_name)) {
                     return;
                 }
 

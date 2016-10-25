@@ -1248,6 +1248,7 @@ class TypeChecker
                     if ($simple_declared_type === 'mixed'
                         || ($simple_declared_type === 'object' && ClassLikeChecker::classOrInterfaceExists($differing_type))
                         || ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type)
+                        || (InterfaceChecker::interfaceExists($differing_type) && InterfaceChecker::interfaceExtends($differing_type, $simple_declared_type))
                         || (in_array($differing_type, ['array', 'object-like']) && in_array($simple_declared_type, ['array', 'object-like']))
                         || (in_array($differing_type, ['float', 'int']) && in_array($simple_declared_type, ['float', 'int']))
                     ) {

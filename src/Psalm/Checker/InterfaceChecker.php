@@ -85,6 +85,11 @@ class InterfaceChecker extends ClassLikeChecker
         self::$existing_interfaces_ci = [];
     }
 
+    public static function interfaceExtends($interface_name, $possible_parent)
+    {
+        return in_array($possible_parent, self::getParentInterfaces($interface_name));
+    }
+
     /**
      * @param  string $interface_name
      * @return array<string>   all interfaces extended by $interface_name
