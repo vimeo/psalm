@@ -85,7 +85,7 @@ return [
 'APCIterator::valid' => ['bool'],
 'apc_load_constants' => ['bool', 'key'=>'string', 'case_sensitive='=>'bool'],
 'apc_sma_info' => ['array', 'limited='=>'bool'],
-'apc_store' => ['bool', 'key'=>'string', 'ttl='=>'int'],
+'apc_store' => ['bool', 'key'=>'string', 'var'=>'', 'ttl='=>'int'],
 'apc_store\'1' => ['array', 'values'=>'array', 'unused='=>'', 'ttl='=>'int'],
 'apcu_add' => ['bool', 'key'=>'string', 'ttl='=>'int'],
 'apcu_add\'1' => ['array', 'values'=>'array', 'unused='=>'', 'ttl='=>'int'],
