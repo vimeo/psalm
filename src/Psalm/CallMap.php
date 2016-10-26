@@ -10621,7 +10621,7 @@ return [
 'zip_open' => ['resource', 'filename'=>'string'],
 'zip_read' => ['resource', 'zip'=>''],
 'zlib_decode' => ['string', 'data'=>'string', 'max_decoded_len'=>'int'],
-'zlib_encode' => ['string', 'data'=>'string', 'encoding'=>'int', 'level'=>'int'],
+'zlib_encode' => ['string', 'data'=>'string', 'encoding'=>'int', 'level='=>'string|int'],
 'zlib_get_coding_type' => ['string|false'],
 'ZMQ::__construct' => ['ZMQ'],
 'ZMQContext::__construct' => ['ZMQContext', 'io_threads='=>'int', 'is_persistent='=>'bool'],
