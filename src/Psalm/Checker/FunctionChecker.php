@@ -373,6 +373,14 @@ class FunctionChecker extends FunctionLikeChecker
                 // where there's no function passed to array_filter
                 if ($call_map_key === 'array_filter' && $first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
                     $inner_type = clone $first_arg->inferredType->types['array']->type_params[1];
+
+                    $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+
+                    if (!$second_arg) {
+                        $inner_type->removeType('null');
+                        $inner_type->removeType('false');
+                    }
+
                     return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                 }
 
