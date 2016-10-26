@@ -248,17 +248,23 @@ class FunctionChecker extends FunctionLikeChecker
 
             foreach ($call_map_function_args as $arg_name => $arg_type) {
                 $by_reference = false;
+                $optional = false;
 
                 if ($arg_name[0] === '&') {
                     $arg_name = substr($arg_name, 1);
                     $by_reference = true;
                 }
 
+                if (substr($arg_name, -1) === '=') {
+                    $arg_name = substr($arg_name, 0, -1);
+                    $optional = true;
+                }
+
                 $function_types[] = new FunctionLikeParameter(
                     $arg_name,
                     $by_reference,
                     $arg_type ? Type::parseString($arg_type) : Type::getMixed(),
-                    true // @todo - need to have non-optional parameters
+                    $optional
                 );
             }
 

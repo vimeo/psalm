@@ -827,8 +827,21 @@ abstract class FunctionLikeChecker implements StatementsSource
 
             $last_param = count($possible_function_params) ? $possible_function_params[count($possible_function_params) - 1] : null;
 
+            $mandatory_param_count = count($possible_function_params);
+
+            foreach ($possible_function_params as $i => $possible_function_param) {
+                if ($possible_function_param->is_optional) {
+                    $mandatory_param_count = $i;
+                    break;
+                }
+            }
+
+            if ($mandatory_param_count > count($args)) {
+                continue;
+            }
+
             foreach ($args as $argument_offset => $arg) {
-                if (count($possible_function_params) <= $argument_offset && (!$last_param || $last_param->name !== '...')) {
+                if (count($possible_function_params) <= $argument_offset && (!$last_param || substr($last_param->name, 0, 3) !== '...')) {
                     $all_args_match = false;
                     break;
                 }
