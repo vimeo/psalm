@@ -174,6 +174,9 @@ abstract class ClassLikeChecker implements StatementsSource
     /** @var array<string,array<int,string>> */
     protected static $file_classes = [];
 
+    /** @var array<string,array<string,string>>|null */
+    protected static $property_map;
+
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
         $this->class = $class;
@@ -780,8 +783,6 @@ abstract class ClassLikeChecker implements StatementsSource
             $file_checker->check(true, false);
         }
         else {
-            $class_properties = $reflected_class->getProperties();
-
             self::$public_class_properties[$class_name] = [];
             self::$protected_class_properties[$class_name] = [];
             self::$private_class_properties[$class_name] = [];
@@ -789,6 +790,21 @@ abstract class ClassLikeChecker implements StatementsSource
             self::$public_static_class_properties[$class_name] = [];
             self::$protected_static_class_properties[$class_name] = [];
             self::$private_static_class_properties[$class_name] = [];
+
+            $parent_class = $reflected_class->getParentClass();
+
+            if ($parent_class) {
+                $parent_class_name = $parent_class->getName();
+                self::registerClass($parent_class_name);
+
+                self::$public_class_properties[$class_name] = self::$public_class_properties[$parent_class_name];
+                self::$protected_class_properties[$class_name] = self::$protected_class_properties[$parent_class_name];
+
+                self::$public_static_class_properties[$class_name] = self::$public_static_class_properties[$parent_class_name];
+                self::$protected_static_class_properties[$class_name] = self::$protected_static_class_properties[$parent_class_name];
+            }
+
+            $class_properties = $reflected_class->getProperties();
 
             /** @var \ReflectionProperty $class_property */
             foreach ($class_properties as $class_property) {
@@ -813,6 +829,14 @@ abstract class ClassLikeChecker implements StatementsSource
                     elseif ($class_property->isPrivate()) {
                         self::$private_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
                     }
+                }
+            }
+
+            if (self::inPropertyMap($class_name)) {
+                $public_mapped_properties = self::getPropertyMap()[strtolower($class_name)];
+
+                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                    self::$public_class_properties[$class_name][$property_name] = Type::parseString($public_mapped_property);
                 }
             }
 
@@ -1033,6 +1057,34 @@ abstract class ClassLikeChecker implements StatementsSource
     {
         self::registerClass($absolute_class);
         return isset(self::$user_defined[$absolute_class]);
+    }
+
+    /**
+     * Gets the method/function call map
+     *
+     * @return array<string,array<string,string>>
+     */
+    protected static function getPropertyMap()
+    {
+        if (self::$property_map !== null) {
+            return self::$property_map;
+        }
+
+        $property_map = require_once(__DIR__.'/../PropertyMap.php');
+
+        self::$property_map = [];
+
+        foreach ($property_map as $key => $value) {
+            $cased_key = strtolower($key);
+            self::$property_map[$cased_key] = $value;
+        }
+
+        return self::$property_map;
+    }
+
+    public static function inPropertyMap($class_name)
+    {
+        return isset(self::getPropertyMap()[strtolower($class_name)]);
     }
 
     public static function clearCache()
