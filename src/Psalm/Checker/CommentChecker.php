@@ -56,7 +56,7 @@ class CommentChecker
 
     /**
      * @param  string $comment
-     * @psalm-return object-like{return_type:null|string,params:array<object-like{name:string,type:string},deprecated:bool,suppress:array<string>,variadic:boolean}
+     * @psalm-return object-like{return_type:null|string,params:array<object-like{name:string,type:string}>,deprecated:bool,suppress:array<string>,variadic:boolean}
      */
     public static function extractDocblockInfo($comment)
     {
@@ -71,7 +71,12 @@ class CommentChecker
                     : (string)$comments['specials']['return'][0]
             );
 
-            $line_parts = self::splitDocLine($return_block);
+            try {
+                $line_parts = self::splitDocLine($return_block);
+            }
+            catch (\Psalm\Exception\DocblockParseException $e) {
+                throw $e;
+            }
 
             if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
                 && !preg_match('/\[[^\]]+\]/', $line_parts[0])
@@ -82,7 +87,12 @@ class CommentChecker
 
         if (isset($comments['specials']['param'])) {
             foreach ($comments['specials']['param'] as $param) {
-                $line_parts = self::splitDocLine((string)$param);
+                try {
+                    $line_parts = self::splitDocLine((string)$param);
+                }
+                catch (\Psalm\Exception\DocblockParseException $e) {
+                    throw $e;
+                }
 
                 if (count($line_parts) > 1
                     && preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
