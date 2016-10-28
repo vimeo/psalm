@@ -442,7 +442,7 @@ class ExpressionChecker
         }
 
         foreach (Config::getInstance()->getPlugins() as $plugin) {
-            if ($plugin->checkExpression($stmt, $context, $statements_checker->getCheckedFileName()) === false) {
+            if ($plugin->checkExpression($stmt, $context, $statements_checker->getCheckedFileName(), $statements_checker->getSuppressedIssues()) === false) {
                 return false;
             }
         }

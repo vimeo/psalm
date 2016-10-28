@@ -129,7 +129,7 @@ class StatementsChecker
 
         foreach ($stmts as $stmt) {
             foreach (Config::getInstance()->getPlugins() as $plugin) {
-                if ($plugin->checkStatement($stmt, $context, $this->checked_file_name) === false) {
+                if ($plugin->checkStatement($stmt, $context, $this->checked_file_name, $this->getSuppressedIssues()) === false) {
                     return false;
                 }
             }
