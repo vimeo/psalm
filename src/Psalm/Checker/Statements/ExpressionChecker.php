@@ -2366,16 +2366,11 @@ class ExpressionChecker
                     return false;
                 }
 
-                if ($statements_checker->isStatic()) {
+                if ($stmt->class->parts[0] !== 'parent'
+                    && ($statements_checker->isStatic() || !ClassChecker::classExtends($context->self, $absolute_class))
+                ) {
                     if (MethodChecker::checkMethodStatic($method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
                         return false;
-                    }
-                }
-                else {
-                    if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self' && $stmt->name !== '__construct') {
-                        if (MethodChecker::checkMethodStatic($method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
-                            return false;
-                        }
                     }
                 }
 
