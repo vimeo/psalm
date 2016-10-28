@@ -23,7 +23,7 @@ class CommentChecker
 
         $type_in_comments = null;
 
-        $comments = StatementsChecker::parseDocComment($comment);
+        $comments = self::parseDocComment($comment);
 
         if ($comments && isset($comments['specials']['var'][0])) {
             $var_parts = array_filter(preg_split('/[\s\t]+/', (string)$comments['specials']['var'][0]));
@@ -60,40 +60,41 @@ class CommentChecker
      */
     public static function extractDocblockInfo($comment)
     {
-        $comments = StatementsChecker::parseDocComment($comment);
+        $comments = self::parseDocComment($comment);
 
         $info = ['return_type' => null, 'params' => [], 'deprecated' => false, 'suppress' => []];
 
         if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
-            $return_blocks = preg_split(
-                '/[\s]+/',
+            $return_block = trim(
                 isset($comments['specials']['psalm-return'])
                     ? (string)$comments['specials']['psalm-return'][0]
                     : (string)$comments['specials']['return'][0]
             );
 
-            if (preg_match('/^' . self::TYPE_REGEX . '$/', $return_blocks[0])
-                && !preg_match('/\[[^\]]+\]/', $return_blocks[0])
-                && !strpos($return_blocks[0], '::')) {
-                $info['return_type'] = $return_blocks[0];
+            $line_parts = self::splitDocLine($return_block);
+
+            if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
+                && !preg_match('/\[[^\]]+\]/', $line_parts[0])
+                && !strpos($line_parts[0], '::')) {
+                $info['return_type'] = $line_parts[0];
             }
         }
 
         if (isset($comments['specials']['param'])) {
             foreach ($comments['specials']['param'] as $param) {
-                $param_blocks = preg_split('/[\s]+/', (string)$param);
+                $line_parts = self::splitDocLine((string)$param);
 
-                if (count($param_blocks) > 1
-                    && preg_match('/^' . self::TYPE_REGEX . '$/', $param_blocks[0])
-                    && !preg_match('/\[[^\]]+\]/', $param_blocks[0])
-                    && preg_match('/^&?\$[A-Za-z0-9_]+$/', $param_blocks[1])
-                    && !strpos($param_blocks[0], '::')
+                if (count($line_parts) > 1
+                    && preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
+                    && !preg_match('/\[[^\]]+\]/', $line_parts[0])
+                    && preg_match('/^&?\$[A-Za-z0-9_]+$/', $line_parts[1])
+                    && !strpos($line_parts[0], '::')
                 ) {
-                    if ($param_blocks[1][0] === '&') {
-                        $param_blocks[1] = substr($param_blocks[1], 1);
+                    if ($line_parts[1][0] === '&') {
+                        $line_parts[1] = substr($line_parts[1], 1);
                     }
 
-                    $info['params'][] = ['name' => substr($param_blocks[1], 1), 'type' => $param_blocks[0]];
+                    $info['params'][] = ['name' => substr($line_parts[1], 1), 'type' => $line_parts[0]];
                 }
             }
         }
@@ -111,5 +112,124 @@ class CommentChecker
         $info['variadic'] = isset($comments['specials']['psalm-variadic']);
 
         return $info;
+    }
+
+    /**
+     * @param  string $return_block
+     * @return array<string>
+     */
+    protected static function splitDocLine($return_block)
+    {
+        $brackets = '';
+
+        $type = '';
+
+        for ($i = 0; $i < strlen($return_block); $i++) {
+            $char = $return_block[$i];
+
+            if ($char === '[' || $char === '{' || $char === '(' || $char === '<') {
+                $brackets .= $char;
+            }
+            elseif ($char === ']' || $char === '}' || $char === ')' || $char === '>') {
+                $last_bracket = substr($brackets, -1);
+                $brackets = substr($brackets, 0, -1);
+
+                if (($char === ']' && $last_bracket !== '[')
+                    || ($char === '}' && $last_bracket !== '{')
+                    || ($char === ')' && $last_bracket !== '(')
+                    || ($char === '>' && $last_bracket !== '<')
+                ) {
+                    throw new \Psalm\Exception\DocblockParseException('Invalid string ' . $return_block);
+                }
+            }
+            elseif ($char === ' ') {
+                if ($brackets) {
+                    continue;
+                }
+
+                return array_merge([$type], preg_split('/[\s]+/', trim(substr($return_block, $i + 1))));
+            }
+
+            $type .= $char;
+        }
+
+        return [$type];
+    }
+
+     /**
+     * Parse a docblock comment into its parts.
+     *
+     * Taken from advanced api docmaker
+     * Which was taken from https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
+     *
+     * @param  string  $docblock
+     * @return array Array of the main comment and specials
+     */
+    public static function parseDocComment($docblock)
+    {
+        // Strip off comments.
+        $docblock = trim($docblock);
+        $docblock = preg_replace('@^/\*\*@', '', $docblock);
+        $docblock = preg_replace('@\*/$@', '', $docblock);
+        $docblock = preg_replace('@^\s*\*@m', '', $docblock);
+
+        // Normalize multi-line @specials.
+        $lines = explode("\n", $docblock);
+        $last = false;
+        foreach ($lines as $k => $line) {
+            if (preg_match('/^\s?@\w/i', $line)) {
+                $last = $k;
+            } elseif (preg_match('/^\s*$/', $line)) {
+                $last = false;
+            } elseif ($last !== false) {
+                $lines[$last] = rtrim($lines[$last]).' '.trim($line);
+                unset($lines[$k]);
+            }
+        }
+        $docblock = implode("\n", $lines);
+
+        $special = array();
+
+        // Parse @specials.
+        $matches = null;
+        $have_specials = preg_match_all('/^\s?@([\w\-:]+)\s*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
+        if ($have_specials) {
+            $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
+            foreach ($matches as $match) {
+                list($_, $type, $data) = $match;
+
+                if (empty($special[$type])) {
+                    $special[$type] = array();
+                }
+
+                $special[$type][] = $data;
+            }
+        }
+
+        $docblock = str_replace("\t", '  ', $docblock);
+
+        // Smush the whole docblock to the left edge.
+        $min_indent = 80;
+        $indent = 0;
+        foreach (array_filter(explode("\n", $docblock)) as $line) {
+            for ($ii = 0; $ii < strlen($line); $ii++) {
+                if ($line[$ii] != ' ') {
+                    break;
+                }
+                $indent++;
+            }
+
+            /** @var int */
+            $min_indent = min($indent, $min_indent);
+        }
+
+        $docblock = preg_replace('/^' . str_repeat(' ', $min_indent) . '/m', '', $docblock);
+        $docblock = rtrim($docblock);
+
+        // Trim any empty lines off the front, but leave the indent level if there
+        // is one.
+        $docblock = preg_replace('/^\s*\n/', '', $docblock);
+
+        return array('description' => $docblock, 'specials' => $special);
     }
 }
