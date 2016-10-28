@@ -270,7 +270,7 @@ class MethodChecker extends FunctionLikeChecker
                     new InvalidDocblock(
                         'Invalid type passed in docblock for ' . $this->getMethodId(),
                         $this->getCheckedFileName(),
-                        $function->getLine()
+                        $method->getLine()
                     )
                 )) {
                     return false;
