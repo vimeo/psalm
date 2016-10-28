@@ -167,46 +167,65 @@ class FunctionChecker extends FunctionLikeChecker
         $config = Config::getInstance();
         $return_type = null;
 
-        $docblock_info = CommentChecker::extractDocblockInfo((string)$function->getDocComment());
+        $docblock_info = null;
 
-        if ($docblock_info['deprecated']) {
-            self::$deprecated_functions[$file_name][$function_id] = true;
+        $this->suppressed_issues = [];
+
+        try {
+            $docblock_info = CommentChecker::extractDocblockInfo((string)$function->getDocComment());
+        }
+        catch (\Psalm\Exception\DocblockParseException $e) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    'Invalid type passed in docblock for ' . $this->getMethodId(),
+                    $this->getCheckedFileName(),
+                    $function->getLine()
+                )
+            )) {
+                return false;
+            }
         }
 
-        if ($docblock_info['variadic']) {
-            self::$variadic_functions[$file_name][$function_id] = true;
-        }
-
-        $this->suppressed_issues = $docblock_info['suppress'];
-
-        if ($function->returnType) {
-            $return_type = Type::parseString(
-                is_string($function->returnType)
-                    ? $function->returnType
-                    : ClassLikeChecker::getAbsoluteClassFromName($function->returnType, $this->namespace, $this->getAliasedClasses())
-            );
-        }
-
-        if ($config->use_docblock_types) {
-            if ($docblock_info['return_type']) {
-                $return_type =
-                    Type::parseString(
-                        self::fixUpLocalType(
-                            (string)$docblock_info['return_type'],
-                            null,
-                            $this->namespace,
-                            $this->getAliasedClasses()
-                        )
-                    );
+        if ($docblock_info) {
+            if ($docblock_info['deprecated']) {
+                self::$deprecated_functions[$file_name][$function_id] = true;
             }
 
-            if ($docblock_info['params']) {
-                $this->improveParamsFromDocblock(
-                    $docblock_info['params'],
-                    $function_param_names,
-                    self::$file_function_params[$file_name][$function_id],
-                    $function->getLine()
+            if ($docblock_info['variadic']) {
+                self::$variadic_functions[$file_name][$function_id] = true;
+            }
+
+            $this->suppressed_issues = $docblock_info['suppress'];
+
+            if ($function->returnType) {
+                $return_type = Type::parseString(
+                    is_string($function->returnType)
+                        ? $function->returnType
+                        : ClassLikeChecker::getAbsoluteClassFromName($function->returnType, $this->namespace, $this->getAliasedClasses())
                 );
+            }
+
+            if ($config->use_docblock_types) {
+                if ($docblock_info['return_type']) {
+                    $return_type =
+                        Type::parseString(
+                            self::fixUpLocalType(
+                                (string)$docblock_info['return_type'],
+                                null,
+                                $this->namespace,
+                                $this->getAliasedClasses()
+                            )
+                        );
+                }
+
+                if ($docblock_info['params']) {
+                    $this->improveParamsFromDocblock(
+                        $docblock_info['params'],
+                        $function_param_names,
+                        self::$file_function_params[$file_name][$function_id],
+                        $function->getLine()
+                    );
+                }
             }
         }
 

@@ -260,39 +260,56 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         if ($doc_comment) {
-            $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment);
+            $docblock_info = null;
 
-            if ($docblock_info['deprecated']) {
-                self::$deprecated_methods[$method_id] = true;
+            try {
+                $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment);
+            }
+            catch (\Psalm\Exception\DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Invalid type passed in docblock for ' . $this->getMethodId(),
+                        $this->getCheckedFileName(),
+                        $function->getLine()
+                    )
+                )) {
+                    return false;
+                }
             }
 
-            if ($docblock_info['variadic']) {
-                self::$variadic_methods[$method_id] = true;
-            }
-
-            $this->suppressed_issues = $docblock_info['suppress'];
-            self::$method_suppress[$method_id] = $this->suppressed_issues;
-
-            if ($config->use_docblock_types) {
-                if ($docblock_info['return_type']) {
-                    $return_type =
-                        Type::parseString(
-                            $this->fixUpLocalType(
-                                (string)$docblock_info['return_type'],
-                                $this->absolute_class,
-                                $this->namespace,
-                                $this->getAliasedClasses()
-                            )
-                        );
+            if ($docblock_info) {
+                if ($docblock_info['deprecated']) {
+                    self::$deprecated_methods[$method_id] = true;
                 }
 
-                if ($docblock_info['params']) {
-                    $this->improveParamsFromDocblock(
-                        $docblock_info['params'],
-                        $method_param_names,
-                        self::$method_params[$method_id],
-                        $method->getLine()
-                    );
+                if ($docblock_info['variadic']) {
+                    self::$variadic_methods[$method_id] = true;
+                }
+
+                $this->suppressed_issues = $docblock_info['suppress'];
+                self::$method_suppress[$method_id] = $this->suppressed_issues;
+
+                if ($config->use_docblock_types) {
+                    if ($docblock_info['return_type']) {
+                        $return_type =
+                            Type::parseString(
+                                $this->fixUpLocalType(
+                                    (string)$docblock_info['return_type'],
+                                    $this->absolute_class,
+                                    $this->namespace,
+                                    $this->getAliasedClasses()
+                                )
+                            );
+                    }
+
+                    if ($docblock_info['params']) {
+                        $this->improveParamsFromDocblock(
+                            $docblock_info['params'],
+                            $method_param_names,
+                            self::$method_params[$method_id],
+                            $method->getLine()
+                        );
+                    }
                 }
             }
         }
