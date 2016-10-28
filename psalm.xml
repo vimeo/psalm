@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <codeinspector
     name="Psalm for Psalm"
-    stopOnFirstError="true"
+    stopOnFirstError="false"
     useDocblockTypes="true"
 >
     <inspectFiles>

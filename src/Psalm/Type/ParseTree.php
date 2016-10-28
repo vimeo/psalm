@@ -77,7 +77,7 @@ class ParseTree
                 case '}':
                     do {
                         if ($current_leaf->parent === null) {
-                            throw new \InvalidArgumentException('Cannot parse object-like type');
+                            throw new \InvalidArgumentException('Cannot parse array type');
                         }
 
                         $current_leaf = $current_leaf->parent;
@@ -96,12 +96,12 @@ class ParseTree
                     }
 
                     if (!$context_node) {
-                        throw new \InvalidArgumentException('Cannot parse comma in non-generic/object-like type');
+                        throw new \InvalidArgumentException('Cannot parse comma in non-generic/array type');
                     }
 
                     if ($context_node->value === self::GENERIC && $current_parent->value !== self::GENERIC) {
                         if (!$current_parent->parent->value) {
-                            throw new \InvalidArgumentException('Cannot parse comma in non-generic/object-like type');
+                            throw new \InvalidArgumentException('Cannot parse comma in non-generic/array type');
                         }
 
                         $current_leaf = $current_leaf->parent;

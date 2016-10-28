@@ -81,7 +81,7 @@ class FileChecker implements StatementsSource
     /**
      * A lookup table used for getting all the files referenced by a file
      *
-     * @var array<string,object-like{a:array<int,string>,i:array<int,string>}>
+     * @var array<string,array{a:array<int,string>,i:array<int,string>}>
      */
     protected static $file_references = [];
 

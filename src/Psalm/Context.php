@@ -157,7 +157,7 @@ class Context
             return;
         }
 
-        if ($type->hasArray() || $type->hasObjectType() || $type->hasObjectLike() || $type->isMixed()) {
+        if ($type->hasArray() || $type->isMixed()) {
             $vars_to_remove = [];
 
             foreach ($this->vars_in_scope as $var_id => $context_type) {

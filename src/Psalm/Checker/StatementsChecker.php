@@ -634,7 +634,7 @@ class StatementsChecker
     }
 
     /**
-     * @param  object-like{description:string,specials:array<string,array<string>>} $parsed_doc_comment
+     * @param  array{description:string,specials:array<string,array<string>>} $parsed_doc_comment
      * @return string
      */
     public static function renderDocComment(array $parsed_doc_comment)

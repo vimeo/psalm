@@ -247,14 +247,6 @@ abstract class Type
     }
 
     /** @return Type\Union */
-    public static function getObjectLike()
-    {
-        $type = new Atomic('object-like');
-
-        return new Union([$type]);
-    }
-
-    /** @return Type\Union */
     public static function getClosure()
     {
         $type = new Atomic('Closure');
@@ -435,6 +427,8 @@ abstract class Type
             return new Union([$types[0]]);
         }
 
+        $bar = rand(1000, 9999);
+
         if (!$types) {
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
@@ -470,11 +464,11 @@ abstract class Type
                 unset($value_types['false']);
             }
 
-            if (!isset($value_types[$type->value])) {
-                $value_types[$type->value] = [];
-            }
-
             if ($type instanceof Generic) {
+                if (!isset($value_types[$type->value])) {
+                    $value_types[$type->value] = [];
+                }
+
                 $value_type_param_index = count($type->type_params) - 1;
                 $value_types[$type->value][(string) $type->type_params[$value_type_param_index]] = $type->type_params[$value_type_param_index];
 
@@ -483,19 +477,27 @@ abstract class Type
                 }
             }
             elseif ($type instanceof ObjectLike) {
+                if (!isset($value_types['object-like'])) {
+                    $value_types['object-like'] = [];
+                }
+
                 foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
-                    if (!isset($value_types[$type->value][$candidate_property_name])) {
-                        $value_types[$type->value][$candidate_property_name] = $candidate_property_type;
+                    if (!isset($value_types['object-like'][$candidate_property_name])) {
+                        $value_types['object-like'][$candidate_property_name] = $candidate_property_type;
                     }
                     else {
-                        $value_types[$type->value][$candidate_property_name] = Type::combineUnionTypes(
-                            $value_types[$type->value][$candidate_property_name],
+                        $value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
+                            $value_types['object-like'][$candidate_property_name],
                             $candidate_property_type
                         );
                     }
                 }
             }
             else {
+                if (!isset($value_types[$type->value])) {
+                    $value_types[$type->value] = [];
+                }
+
                 if ($type->value === 'array') {
                     throw new \InvalidArgumentException('Cannot have a non-generic array');
                 }
@@ -515,7 +517,7 @@ abstract class Type
         foreach ($value_types as $generic_type => $value_type) {
             // special case for ObjectLike where $value_type is actually an array of properties
             if ($generic_type === 'object-like') {
-                $new_types[] = new ObjectLike('object-like', $value_type);
+                $new_types[] = new ObjectLike('array', $value_type);
                 continue;
             }
 
@@ -577,6 +579,7 @@ abstract class Type
         }
 
         $new_types = array_values($new_types);
+
         return new Union($new_types);
     }
 }

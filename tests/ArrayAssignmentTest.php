@@ -114,7 +114,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:string}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:string}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\']']);
     }
 
@@ -131,7 +131,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:object-like{baz:string}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:array{baz:string}}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\']']);
     }
 
@@ -145,7 +145,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:object-like{baz:object-like{bat:string}}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:array{baz:array{bat:string}}}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\'][\'bat\']']);
     }
 
@@ -159,7 +159,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:object-like{baz:object-like{bat:object-like{bap:string}}}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:array{baz:array{bat:array{bap:string}}}}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\'][\'bat\'][\'bap\']']);
     }
 
@@ -173,7 +173,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:object-like{baz:string}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:array{baz:string}}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\']']);
     }
 
@@ -187,7 +187,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:object-like{baz:object-like{bat:string}}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:array{baz:array{bat:string}}}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testConflictingTypes()
@@ -202,7 +202,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:object-like{a:string},baz:array<int,int>}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:array{a:string},baz:array<int,int>}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testImplicitObjectLikeCreation()
@@ -217,7 +217,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:int,baz:string}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:int,baz:string}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testConflictingTypesWithAssignment()
@@ -233,7 +233,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{bar:object-like{a:string,bam:object-like{baz:string}},baz:array<int,int>}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{bar:array{a:string,bam:array{baz:string}},baz:array<int,int>}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testConflictingTypesWithAssignment2()
@@ -248,7 +248,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{a:string,b:array<int,string>}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{a:string,b:array<int,string>}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'a\']']);
         $this->assertEquals('array<int,string>', (string) $context->vars_in_scope['$foo[\'b\']']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$bar']);
@@ -265,7 +265,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{a:string,b:object-like{c:object-like{d:string}}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{a:string,b:array{c:array{d:string}}}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testNestedObjectLikeAssignment()
@@ -279,7 +279,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{a:object-like{b:string,c:int}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{a:array{b:string,c:int}}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testConditionalObjectLikeAssignment()
@@ -297,7 +297,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('object-like{a:string,b:int}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals('array{a:string,b:int}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testIssetKeyedOffset()
@@ -355,7 +355,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
             'somefile.php',
             self::$_parser->parse('<?php
                 /**
-                 * @param  object-like{b:string} $a
+                 * @param  array{b:string} $a
                  * @return null|string
                  */
                 function foo($a) {

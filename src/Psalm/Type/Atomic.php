@@ -76,9 +76,14 @@ class Atomic extends Type
         return $this->value === 'array';
     }
 
+    public function isGenericArray()
+    {
+        return $this->value === 'array' && $this instanceof Generic;
+    }
+
     public function isObjectLike()
     {
-        return $this->value === 'object-like';
+        return $this instanceof ObjectLike;
     }
 
     public function isObject()
@@ -108,7 +113,6 @@ class Atomic extends Type
                     !$this->isScalarType()
                     && !$this->isCallable()
                     && !$this->isArray()
-                    && !$this->isObjectLike()
                     && !$this->isMixed()
                     && !$this->isNull()
                     && !$this->isResource()

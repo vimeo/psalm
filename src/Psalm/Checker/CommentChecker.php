@@ -56,7 +56,7 @@ class CommentChecker
 
     /**
      * @param  string $comment
-     * @psalm-return object-like{return_type:null|string,params:array<object-like{name:string,type:string}>,deprecated:bool,suppress:array<string>,variadic:boolean}
+     * @psalm-return array{return_type: null|string, params: array<int, array{name:string, type:string}>, deprecated: bool, suppress: array<string>, variadic: boolean}
      */
     public static function extractDocblockInfo($comment)
     {
@@ -80,7 +80,8 @@ class CommentChecker
 
             if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
                 && !preg_match('/\[[^\]]+\]/', $line_parts[0])
-                && !strpos($line_parts[0], '::')) {
+                && !strpos($line_parts[0], '::')
+            ) {
                 $info['return_type'] = $line_parts[0];
             }
         }

@@ -41,8 +41,8 @@ class TypeParseTest extends PHPUnit_Framework_TestCase
 
     public function testObjectLike()
     {
-        $this->assertEquals('object-like{a:int,b:string}', (string) Type::parseString('object-like{a:int,b:string}'));
-        $this->assertEquals('object-like{a:int|string,b:string}', (string) Type::parseString('object-like{a:int|string,b:string}'));
-        $this->assertEquals('object-like{a:array<int,string|int>,b:string}', (string) Type::parseString('object-like{a:array<int,string|int>,b:string}'));
+        $this->assertEquals('array{a:int,b:string}', (string) Type::parseString('array{a:int,b:string}'));
+        $this->assertEquals('array{a:int|string,b:string}', (string) Type::parseString('array{a:int|string,b:string}'));
+        $this->assertEquals('array{a:array<int,string|int>,b:string}', (string) Type::parseString('array{a:array<int,string|int>,b:string}'));
     }
 }

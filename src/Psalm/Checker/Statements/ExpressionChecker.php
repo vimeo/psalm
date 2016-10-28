@@ -1370,7 +1370,7 @@ class ExpressionChecker
 
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
-            $stmt->inferredType = new Type\Union([new Type\ObjectLike('object-like', $property_types)]);
+            $stmt->inferredType = new Type\Union([new Type\ObjectLike('array', $property_types)]);
             return;
         }
 
@@ -1742,7 +1742,12 @@ class ExpressionChecker
 
         $nesting = 0;
         $var_id = self::getVarId($stmt->var, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses(), $nesting);
-        $is_object = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasObjectType();
+
+        // checks whether or not the thing we're looking at implements ArrayAccess
+        $is_object = $var_id
+                        && isset($context->vars_in_scope[$var_id])
+                        && $context->vars_in_scope[$var_id]->hasObjectType();
+
         $is_string = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasString();
 
         if (self::check($statements_checker, $stmt->var, $context, !$is_object, $assignment_key_type, $assignment_value_type, $assignment_key_value) === false) {
@@ -1810,10 +1815,10 @@ class ExpressionChecker
                     // we need to create each type in turn
                     // so we get
                     // typeof $a['b']['c']['d'] => int
-                    // typeof $a['b']['c'] => object-like{d:int}
-                    // typeof $a['b'] => object-like{c:object-like{d:int}}
+                    // typeof $a['b']['c'] => array{d:int}
+                    // typeof $a['b'] => array{c:array{d:int}}
                     // typeof $a['c'] => int
-                    // typeof $a => object-like{b:object-like{c:object-like{d:int}},c:int}
+                    // typeof $a => array{b:array{c:array{d:int}},c:int}
 
                     $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
 
@@ -1822,7 +1827,10 @@ class ExpressionChecker
 
                 if (!$nesting) {
                     /** @var Type\Generic|null */
-                    $array_type = isset($context->vars_in_scope[$var_id]->types['array']) ? $context->vars_in_scope[$var_id]->types['array'] : null;
+                    $array_type = isset($context->vars_in_scope[$var_id]->types['array'])
+                                    && $context->vars_in_scope[$var_id]->types['array'] instanceof Type\Generic
+                                    ? $context->vars_in_scope[$var_id]->types['array']
+                                    : null;
 
                     if ($assignment_key_type->hasString()
                         && $assignment_key_value
@@ -1832,7 +1840,7 @@ class ExpressionChecker
                     ) {
                         $assignment_type = new Type\Union([
                             new Type\ObjectLike(
-                                'object-like',
+                                'array',
                                 [
                                     $assignment_key_value => $assignment_value_type
                                 ]
@@ -1902,7 +1910,7 @@ class ExpressionChecker
             return;
         }
 
-        if (!$type->isArray() && !$type->isObjectLike() && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
+        if (!$type->isArray() && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable ' . $var_id . ' of type ' . $type->value . ' that does not implement ArrayAccess',
@@ -1917,21 +1925,19 @@ class ExpressionChecker
             return $type;
         }
 
-        if ($type instanceof Type\Generic) {
-            if ($type->isArray()) {
-                if ($type->type_params[1]->isEmpty()) {
-                    $type->type_params[0] = $assignment_key_type;
-                    $type->type_params[1] = $assignment_value_type;
-                    return $type;
-                }
+        if ($type instanceof Type\Generic && $type->value === 'array') {
+            if ($type->type_params[1]->isEmpty()) {
+                $type->type_params[0] = $assignment_key_type;
+                $type->type_params[1] = $assignment_value_type;
+                return $type;
+            }
 
-                if ((string) $type->type_params[0] !== (string) $assignment_key_type) {
-                    $type->type_params[0] = Type::combineUnionTypes($type->type_params[0], $assignment_key_type);
-                }
+            if ((string) $type->type_params[0] !== (string) $assignment_key_type) {
+                $type->type_params[0] = Type::combineUnionTypes($type->type_params[0], $assignment_key_type);
+            }
 
-                if ((string) $type->type_params[1] !== (string) $assignment_value_type) {
-                    $type->type_params[1] = Type::combineUnionTypes($type->type_params[1], $assignment_value_type);
-                }
+            if ((string) $type->type_params[1] !== (string) $assignment_value_type) {
+                $type->type_params[1] = Type::combineUnionTypes($type->type_params[1], $assignment_value_type);
             }
         }
 
@@ -3146,7 +3152,11 @@ class ExpressionChecker
             $nesting
         );
 
-        $is_object = $var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->hasObjectType();
+        // checks whether or not the thing we're looking at implements ArrayAccess
+        $is_object = $var_id
+                        && isset($context->vars_in_scope[$var_id])
+                        && $context->vars_in_scope[$var_id]->hasObjectType();
+
         $array_var_id = self::getArrayVarId($stmt->var, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
         $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
                                 ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
@@ -3185,7 +3195,7 @@ class ExpressionChecker
                 if (!$assignment_key_type->isMixed() && !$assignment_key_type->hasInt() && $assignment_key_value) {
                     $keyed_assignment_type = new Type\Union([
                         new Type\ObjectLike(
-                            'object-like',
+                            'array',
                             [
                                 $assignment_key_value => $assignment_value_type
                             ]
@@ -3309,12 +3319,12 @@ class ExpressionChecker
                         }
 
                         if ($array_var_id === $var_id) {
-                            if ($type instanceof Type\ObjectLike || ($type->isArray() && !$key_type->hasInt() && $type->type_params[1]->isEmpty())) {
+                            if ($type instanceof Type\ObjectLike || ($type->isGenericArray() && !$key_type->hasInt() && $type->type_params[1]->isEmpty())) {
                                 $properties = $key_value ? [$key_value => $keyed_assignment_type] : [];
 
                                 $assignment_type = new Type\Union([
                                     new Type\ObjectLike(
-                                        'object-like',
+                                        'array',
                                         $properties
                                     )
                                 ]);
@@ -3356,8 +3366,7 @@ class ExpressionChecker
                             $array_type = $context_type;
 
                             for ($i = 0; $i < $nesting + 1; $i++) {
-                                if ($array_type->hasArray()) {
-                                    /** @var Type\Generic */
+                                if (isset($array_type->types['array']) && $array_type->types['array'] instanceof Type\Generic) {
                                     $atomic_array = $array_type->types['array'];
 
                                     if ($i < $nesting) {
@@ -3406,7 +3415,7 @@ class ExpressionChecker
 
                             if (IssueBuffer::accepts(
                                 new InvalidArrayAccess(
-                                    'Cannot access value on object-like variable ' . $var_id . ' using int offset - expecting ' . $expected_keys_string,
+                                    'Cannot access value on array variable ' . $var_id . ' using int offset - expecting ' . $expected_keys_string,
                                     $statements_checker->getCheckedFileName(),
                                     $stmt->getLine()
                                 ),

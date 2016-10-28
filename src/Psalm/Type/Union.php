@@ -75,7 +75,7 @@ class Union extends Type
 
     public function hasObjectLike()
     {
-        return isset($this->types['object-like']);
+        return isset($this->types['array']) && $this->types['array'] instanceof ObjectLike;
     }
 
     public function hasObjectType()

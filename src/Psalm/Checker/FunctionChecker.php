@@ -7,6 +7,7 @@ use Psalm\StatementsSource;
 use Psalm\Config;
 use Psalm\FunctionLikeParameter;
 use Psalm\IssueBuffer;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Type;
 
@@ -340,6 +341,13 @@ class FunctionChecker extends FunctionLikeChecker
 
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
 
+        $first_arg_array = $first_arg
+                                && isset($first_arg->inferredType)
+                                && isset($first_arg->inferredType->types['array'])
+                                && $first_arg->inferredType->types['array'] instanceof Type\Generic
+                            ? $first_arg->inferredType->types['array']
+                            : null;
+
         if ($call_args && $suppressed_issues !== null) {
             if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
                 $function_index = $call_map_key === 'array_map' ? 0 : 1;
@@ -367,8 +375,8 @@ class FunctionChecker extends FunctionLikeChecker
                                 $inner_type = new Type\Union($closure_return_types);
                                 return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                             }
-                            elseif ($first_arg && $first_arg->inferredType && isset($first_arg->inferredType->types['array'])) {
-                                $inner_type = clone $first_arg->inferredType->types['array']->type_params[1];
+                            elseif ($first_arg_array) {
+                                $inner_type = clone $first_arg_array->type_params[1];
                                 return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                             }
 
@@ -390,8 +398,8 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 // where there's no function passed to array_filter
-                if ($call_map_key === 'array_filter' && $first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
-                    $inner_type = clone $first_arg->inferredType->types['array']->type_params[1];
+                if ($call_map_key === 'array_filter' && $first_arg_array) {
+                    $inner_type = clone $first_arg_array->type_params[1];
 
                     $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
@@ -407,15 +415,15 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
-                if ($first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
-                    $inner_type = clone $first_arg->inferredType->types['array']->type_params[1];
+                if ($first_arg_array) {
+                    $inner_type = clone $first_arg_array->type_params[1];
                     return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                 }
             }
 
             if ($call_map_key === 'array_keys') {
-                if ($first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
-                    $inner_type = clone $first_arg->inferredType->types['array']->type_params[0];
+                if ($first_arg_array) {
+                    $inner_type = clone $first_arg_array->type_params[0];
                     return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                 }
             }
@@ -458,7 +466,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_diff') {
-                if (!$first_arg || !isset($first_arg->inferredType) || !$first_arg->inferredType->hasArray()) {
+                if (!$first_arg_array) {
                     return Type::getArray();
                 }
 
@@ -466,14 +474,14 @@ class FunctionChecker extends FunctionLikeChecker
                     new Type\Generic('array',
                         [
                             Type::getInt(),
-                            clone $first_arg->inferredType->types['array']->type_params[1]
+                            clone $first_arg_array->type_params[1]
                         ]
                     )
                 ]);
             }
 
             if ($call_map_key === 'array_diff_key') {
-                if (!$first_arg || !isset($first_arg->inferredType) || !$first_arg->inferredType->hasArray()) {
+                if (!$first_arg_array) {
                     return Type::getArray();
                 }
 
@@ -481,11 +489,11 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'array_shift' || $call_map_key === 'array_pop') {
-                if (!$first_arg || !isset($first_arg->inferredType) || !$first_arg->inferredType->hasArray()) {
+                if (!$first_arg_array) {
                     return Type::getMixed();
                 }
 
-                return clone $first_arg->inferredType->types['array']->type_params[1];
+                return clone $first_arg_array->type_params[1];
             }
 
             if ($call_map_key === 'explode' || $call_map_key === 'preg_split') {

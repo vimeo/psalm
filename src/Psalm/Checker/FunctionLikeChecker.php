@@ -465,7 +465,7 @@ abstract class FunctionLikeChecker implements StatementsSource
     }
 
     /**
-     * @param  array<object-like{type:string,name:string}>  $docblock_params
+     * @param  array<array{type:string,name:string}>  $docblock_params
      * @param  array<string,Type\Union>                     $function_param_names
      * @param  array<\Psalm\FunctionLikeParameter>          &$function_signature
      * @param  int                                          $method_line_number
@@ -745,7 +745,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $type_match_found = true;
                 }
 
-                if ($param_type_part->isArray() && $input_type_part->isObjectLike()) {
+                if ($param_type_part->isGenericArray() && $input_type_part->isObjectLike()) {
                     $type_match_found = true;
                 }
 
