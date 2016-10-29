@@ -1,4 +1,4 @@
-<img src="PsalmLogo.png" height="64" alt="logo" />
+<h1><img src="PsalmLogo.png" height="64" alt="logo" /></h1>
 
 Inspects your code and finds errors
 
