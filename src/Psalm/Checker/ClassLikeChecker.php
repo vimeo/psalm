@@ -301,7 +301,10 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $trait_checkers = [];
 
+
+
         foreach ($this->class->stmts as $stmt) {
+
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_id = $this->absolute_class . '::' . strtolower($stmt->name);
 
@@ -321,8 +324,8 @@ abstract class ClassLikeChecker implements StatementsSource
                     MethodChecker::setDeclaringMethodId($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
                     self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
                 }
-
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 $method_map = [];
                 foreach ($stmt->adaptations as $adaptation) {
                     if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
@@ -437,7 +440,7 @@ abstract class ClassLikeChecker implements StatementsSource
             }
         }
 
-        if (method_exists($this->absolute_class, '__get')) {
+        if (MethodChecker::methodExists($this->absolute_class . '::__get')) {
             $this->has_custom_get = true;
         }
 
@@ -763,7 +766,10 @@ abstract class ClassLikeChecker implements StatementsSource
         }
 
         try {
+            $old_level = error_reporting();
+            error_reporting(0);
             $reflected_class = new ReflectionClass($class_name);
+            error_reporting($old_level);
         }
         catch (\ReflectionException $e) {
             return false;

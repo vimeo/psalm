@@ -169,39 +169,40 @@ class FileChecker implements StatementsSource
                 || $stmt instanceof PhpParser\Node\Stmt\Namespace_
                 || $stmt instanceof PhpParser\Node\Stmt\Function_
             ) {
-
                 if ($leftover_stmts) {
                     $statments_checker->check($leftover_stmts, $file_context);
                     $leftover_stmts = [];
                 }
 
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
                         $this->declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check($check_functions);
                     }
-
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                }
+                elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new InterfaceChecker($stmt, $this, $stmt->name);
                         $this->declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check(false);
                     }
 
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                }
+                elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
                         $trait_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
                         $trait_checker->check($check_functions);
                     }
 
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_ && $stmt->name instanceof PhpParser\Node\Name) {
+                }
+                elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_ && $stmt->name instanceof PhpParser\Node\Name) {
                     $namespace_name = implode('\\', $stmt->name->parts);
 
                     $namespace_checker = new NamespaceChecker($stmt, $this);
                     $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_functions);
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
-
                 }
                 elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
                     $function_context = new Context($this->short_file_name, $file_context->self);
@@ -211,11 +212,14 @@ class FileChecker implements StatementsSource
                         $function_checkers[$stmt->name]->checkReturnTypes();
                     }
                 }
+
             }
             else {
                 $leftover_stmts[] = $stmt;
             }
         }
+
+
 
         if ($leftover_stmts) {
             $statments_checker->check($leftover_stmts, $file_context);
@@ -230,6 +234,8 @@ class FileChecker implements StatementsSource
         }
 
         self::$files_checked[$this->real_file_name] = true;
+
+
 
         return $stmts;
     }
@@ -501,7 +507,10 @@ class FileChecker implements StatementsSource
      */
     public static function getClassLikeCheckerFromClass($class_name)
     {
+        $old_level = error_reporting();
+        error_reporting(0);
         $file_name = (string)(new \ReflectionClass($class_name))->getFileName();
+        error_reporting($old_level);
 
         if (isset(self::$file_checkers[$file_name])) {
             $file_checker = self::$file_checkers[$file_name];

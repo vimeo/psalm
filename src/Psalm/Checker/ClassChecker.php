@@ -82,8 +82,16 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        if (class_exists($absolute_class)) {
+        $old_level = error_reporting();
+        error_reporting(0);
+        $class_exists = class_exists($absolute_class);
+        error_reporting($old_level);
+
+        if ($class_exists) {
+            $old_level = error_reporting();
+            error_reporting(0);
             $reflected_class = new \ReflectionClass($absolute_class);
+            error_reporting($old_level);
 
             self::$existing_classes_ci[strtolower($absolute_class)] = true;
             self::$existing_classes[$reflected_class->getName()] = true;

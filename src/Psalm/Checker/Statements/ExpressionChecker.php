@@ -1263,7 +1263,7 @@ class ExpressionChecker
         if ($absolute_class) {
             $stmt->inferredType = new Type\Union([new Type\Atomic($absolute_class)]);
 
-            if (method_exists($absolute_class, '__construct')) {
+            if (MethodChecker::methodExists($absolute_class . '::__construct')) {
                 $method_id = $absolute_class . '::__construct';
 
                 if (self::checkFunctionArguments($statements_checker, $stmt->args, $method_id, $context, $stmt->getLine()) === false) {
@@ -2093,7 +2093,7 @@ class ExpressionChecker
                         // fall through to default
 
                     default:
-                        if (method_exists($absolute_class, '__call') || $is_mock || $context->isPhantomClass($absolute_class)) {
+                        if (MethodChecker::methodExists($absolute_class . '::__call') || $is_mock || $context->isPhantomClass($absolute_class)) {
                             $return_type = Type::getMixed();
                             continue;
                         }
@@ -2367,7 +2367,7 @@ class ExpressionChecker
 
             $has_mock = $has_mock || $is_mock;
 
-            if (is_string($stmt->name) && !method_exists($absolute_class, '__callStatic') && !$is_mock) {
+            if (is_string($stmt->name) && !MethodChecker::methodExists($absolute_class . '::__callStatic') && !$is_mock) {
                 $method_id = $absolute_class . '::' . strtolower($stmt->name);
                 $cased_method_id = $absolute_class . '::' . $stmt->name;
 

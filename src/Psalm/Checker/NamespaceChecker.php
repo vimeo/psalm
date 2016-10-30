@@ -59,6 +59,7 @@ class NamespaceChecker implements StatementsSource
         $leftover_stmts = [];
 
         foreach ($this->namespace->stmts as $stmt) {
+
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $absolute_class = ClassLikeChecker::getAbsoluteClassFromString($stmt->name, $this->namespace_name, []);
 
@@ -70,33 +71,42 @@ class NamespaceChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class) ?: new ClassChecker($stmt, $this, $absolute_class);
                         $class_checker->check($check_class_statements);
                     }
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+
+                }
+                elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new InterfaceChecker($stmt, $this, $absolute_class);
                         $this->declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check(false);
                     }
 
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                }
+                elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
                         // register the trait checker
                         ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class) ?: new TraitChecker($stmt, $this, $absolute_class);
                     }
                 }
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+            }
+            elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
                 }
-            } else {
+            }
+            else {
                 $leftover_stmts[] = $stmt;
             }
+
         }
+
 
         if ($leftover_stmts) {
             $statments_checker = new StatementsChecker($this);
             $context = new Context($this->file_name);
             $statments_checker->check($leftover_stmts, $context);
         }
+
+
 
         return $this->aliased_classes;
     }
