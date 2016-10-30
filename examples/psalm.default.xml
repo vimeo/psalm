@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<codeinspector
+    name="Example Psalm config with recommended defaults"
+    stopOnFirstError="false"
+    useDocblockTypes="true"
+>
+    <inspectFiles>
+        <directory name="src" />
+    </inspectFiles>
+
+    <issueHandler>
+        <MixedArgument errorLevel="suppress" />
+        <MixedMethodCall errorLevel="suppress" />
+        <MixedPropertyFetch errorLevel="suppress" />
+        <MixedPropertyAssignment errorLevel="suppress" />
+        <InvalidDocblock errorLevel="info" />
+    </issueHandler>
+
+</codeinspector>
