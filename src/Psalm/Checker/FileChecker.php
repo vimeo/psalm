@@ -149,14 +149,10 @@ class FileChecker implements StatementsSource
 
         $function_checkers = [];
 
+        $this->registerUses();
+
         // hoist functions to the top
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                foreach ($stmt->uses as $use) {
-                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
-                }
-            }
-
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checkers[$stmt->name] = new FunctionChecker($stmt, $this, $file_context->file_name);
             }
@@ -522,6 +518,17 @@ class FileChecker implements StatementsSource
         $file_checker->check(true, false, null, false);
 
         return ClassLikeChecker::getClassLikeCheckerFromClass($class_name);
+    }
+
+    protected function registerUses()
+    {
+        foreach ($this->getStatements() as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                foreach ($stmt->uses as $use) {
+                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                }
+            }
+        }
     }
 
     public static function addFileReferenceToClass($source_file, $absolute_class)
