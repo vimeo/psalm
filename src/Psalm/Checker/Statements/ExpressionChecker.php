@@ -2643,6 +2643,10 @@ class ExpressionChecker
                     $param_type = $translated_param->type;
                     $input_type = $array_arg_types[$i]->type_params[1];
 
+                    if ($input_type->isMixed()) {
+                        continue;
+                    }
+
                     $type_match_found = FunctionLikeChecker::doesParamMatch($input_type, $param_type, $scalar_type_match_found, $coerced_type);
 
                     if ($coerced_type) {
