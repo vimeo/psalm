@@ -2629,6 +2629,10 @@ class ExpressionChecker
 
 
                 foreach ($closure_arg->params as $i => $closure_param) {
+                    if (!$array_arg_types[$i]) {
+                        continue;
+                    }
+
                     $translated_param = FunctionLikeChecker::getTranslatedParam(
                         $closure_param,
                         $statements_checker->getAbsoluteClass(),
