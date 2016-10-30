@@ -174,14 +174,14 @@ abstract class Type
     public static function convertSquareBrackets($type)
     {
         return preg_replace_callback(
-            '/([a-zA-Z\<\>\\\\_]+)((\[\])+)/',
+            '/([a-zA-Z\<\>\\\\_\(\)|]+)((\[\])+)/',
             function ($matches) {
-                $inner_type = $matches[1];
+                $inner_type = str_replace(['(', ')'], '', $matches[1]);
 
                 $dimensionality = strlen($matches[2]) / 2;
 
                 for ($i = 0; $i < $dimensionality; $i++) {
-                    $inner_type = 'array<int, ' . $inner_type . '>';
+                    $inner_type = 'array<mixed, ' . $inner_type . '>';
                 }
 
                 return $inner_type;
