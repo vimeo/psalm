@@ -5,6 +5,7 @@ namespace Psalm\Checker;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedTrait;
+use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
 use Psalm\Context;
 use Psalm\Config;
@@ -338,7 +339,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 foreach ($stmt->traits as $trait) {
                     $trait_name = self::getAbsoluteClassFromName($trait, $this->namespace, $this->aliased_classes);
 
-                    if (!trait_exists($trait_name)) {
+                    if (!TraitChecker::traitExists($trait_name)) {
                         if (IssueBuffer::accepts(
                             new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->file_name, $trait->getLine()),
                             $this->suppressed_issues
@@ -485,10 +486,10 @@ abstract class ClassLikeChecker implements StatementsSource
                         if (IssueBuffer::accepts(
                             new UnimplementedInterfaceMethod(
                                 'Method ' . $method_name . ' is not defined on class ' . $this->absolute_class,
-                                $file_name,
-                                $line_number
+                                $this->file_name,
+                                $this->class->getLine()
                             ),
-                            $suppressed_issues
+                            $this->suppressed_issues
                         )) {
                             return false;
                         }
@@ -787,6 +788,14 @@ abstract class ClassLikeChecker implements StatementsSource
 
             // this doesn't work on traits
             $file_checker->check(true, false);
+
+            if (self::inPropertyMap($class_name)) {
+                $public_mapped_properties = self::getPropertyMap()[strtolower($class_name)];
+
+                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                    self::$public_class_properties[$class_name][$property_name] = Type::parseString($public_mapped_property);
+                }
+            }
         }
         else {
             self::$public_class_properties[$class_name] = [];
@@ -1059,6 +1068,10 @@ abstract class ClassLikeChecker implements StatementsSource
         return isset(self::$file_classes[$file_name]) ? array_unique(self::$file_classes[$file_name]) : [];
     }
 
+    /**
+     * @param  string  $absolute_class
+     * @return boolean
+     */
     public static function isUserDefined($absolute_class)
     {
         self::registerClass($absolute_class);

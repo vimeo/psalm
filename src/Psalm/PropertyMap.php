@@ -359,4 +359,13 @@ return [
         'file' => 'string',
         'line' => 'int'
     ],
+    'phpparser\\node\\expr' => [
+        'inferredType' => 'Psalm\\Type\\Union|null'
+    ],
+    'phpparser\\node\\name' => [
+        'inferredType' => 'Psalm\\Type\\Union|null'
+    ],
+    'phpparser\\node\\stmt\\return_' => [
+        'inferredType' => 'Psalm\\Type\\Union|null'
+    ]
 ];
