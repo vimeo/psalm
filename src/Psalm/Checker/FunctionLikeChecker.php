@@ -571,6 +571,18 @@ abstract class FunctionLikeChecker implements StatementsSource
                 }
 
                 $param_type = Type::parseString($param_type_string);
+
+                if ($param->variadic) {
+                    $param_type = new Type\Union([
+                        new Type\GenericArray(
+                            'array',
+                            [
+                                Type::getInt(),
+                                $param_type
+                            ]
+                        )
+                    ]);
+                }
             }
         }
 

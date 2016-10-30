@@ -93,6 +93,25 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
     }
 
+    public function testVariadicArray()
+    {
+        $stmts = self::$_parser->parse('<?php
+        function f(int ...$a_list) {
+            return array_map(function (int $a) {
+                return $a + 1;
+            }, $a_list);
+        }
+
+        f(1);
+        f(1, 2);
+        f(1, 2, 3);
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
     public function testArgumentUnpacking()
     {
         $stmts = self::$_parser->parse('<?php
