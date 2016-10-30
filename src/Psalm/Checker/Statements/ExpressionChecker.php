@@ -1568,9 +1568,19 @@ class ExpressionChecker
         PhpParser\Node\Expr\Assign $stmt,
         Context $context
     ) {
-        $var_id = self::getVarId($stmt->var, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
+        $var_id = self::getVarId(
+            $stmt->var,
+            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
 
-        $array_var_id = self::getArrayVarId($stmt->var, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
+        $array_var_id = self::getArrayVarId(
+            $stmt->var,
+            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
 
         if ($array_var_id) {
             // removes dependennt vars from $context
@@ -1604,17 +1614,26 @@ class ExpressionChecker
             $context->vars_in_scope[$var_id] = $return_type;
             $context->vars_possibly_in_scope[$var_id] = true;
             $statements_checker->registerVariable($var_id, $stmt->var->getLine());
-
         }
         elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $var) {
-                if ($var && $var instanceof PhpParser\Node\Expr\Variable) {
-                    $context->vars_in_scope['$' . $var->name] = Type::getMixed();
-                    $context->vars_possibly_in_scope['$' . $var->name] = true;
-                    $statements_checker->registerVariable('$' . $var->name, $var->getLine());
+                $list_var_id = self::getVarId(
+                    $var,
+                    $statements_checker->getAbsoluteClass(),
+                    $statements_checker->getNamespace(),
+                    $statements_checker->getAliasedClasses()
+                );
+
+                $array_type = isset($return_type->types['array']) && $return_type->types['array'] instanceof Type\Generic
+                                ? $return_type->types['array']->type_params[1]
+                                : null;
+
+                if ($list_var_id) {
+                    $context->vars_in_scope[$list_var_id] = $array_type ? clone $array_type : Type::getMixed();
+                    $context->vars_possibly_in_scope[$list_var_id] = true;
+                    $statements_checker->registerVariable($list_var_id, $var->getLine());
                 }
             }
-
         }
         else if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             if (self::checkArrayAssignment($statements_checker, $stmt->var, $context, $return_type) === false) {
