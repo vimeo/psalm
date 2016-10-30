@@ -187,7 +187,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $function_params = [];
 
                 foreach ($this->function->getParams() as $param) {
-                    $function_params[] = self::getParamArray($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
+                    $function_params[] = self::getTranslatedParam($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
                 }
             }
 
@@ -538,7 +538,7 @@ abstract class FunctionLikeChecker implements StatementsSource
      * @param  array<string>        $aliased_classes
      * @return FunctionLikeParameter
      */
-    protected static function getParamArray(PhpParser\Node\Param $param, $absolute_class, $namespace, array $aliased_classes)
+    public static function getTranslatedParam(PhpParser\Node\Param $param, $absolute_class, $namespace, array $aliased_classes)
     {
         $param_type = null;
 

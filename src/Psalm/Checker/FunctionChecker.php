@@ -160,7 +160,7 @@ class FunctionChecker extends FunctionLikeChecker
 
         /** @var PhpParser\Node\Param $param */
         foreach ($function->getParams() as $param) {
-            $param_array = self::getParamArray($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
+            $param_array = self::getTranslatedParam($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
             self::$file_function_params[$file_name][$function_id][] = $param_array;
             $function_param_names[$param->name] = $param_array->type;
         }

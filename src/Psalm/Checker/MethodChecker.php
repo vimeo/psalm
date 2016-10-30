@@ -239,7 +239,7 @@ class MethodChecker extends FunctionLikeChecker
         $method_param_names = [];
 
         foreach ($method->getParams() as $param) {
-            $param_array = $this->getParamArray($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
+            $param_array = $this->getTranslatedParam($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
             self::$method_params[$method_id][] = $param_array;
             $method_param_names[$param->name] = $param_array->type;
         }
