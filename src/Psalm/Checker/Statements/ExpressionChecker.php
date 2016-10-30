@@ -1616,7 +1616,7 @@ class ExpressionChecker
             $statements_checker->registerVariable($var_id, $stmt->var->getLine());
         }
         elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
-            foreach ($stmt->var->vars as $var) {
+            foreach ($stmt->var->vars as $offset => $var) {
                 $list_var_id = self::getVarId(
                     $var,
                     $statements_checker->getAbsoluteClass(),
@@ -1624,9 +1624,17 @@ class ExpressionChecker
                     $statements_checker->getAliasedClasses()
                 );
 
-                $array_type = isset($return_type->types['array']) && $return_type->types['array'] instanceof Type\Generic
-                                ? $return_type->types['array']->type_params[1]
-                                : null;
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Array_
+                    && isset($stmt->expr->items[$offset]->value->inferredType)
+                ) {
+                    $array_type = $stmt->expr->items[$offset]->value->inferredType;
+                }
+                elseif (isset($return_type->types['array']) && $return_type->types['array'] instanceof Type\Generic) {
+                    $array_type = $return_type->types['array']->type_params[1];
+                }
+                else {
+                    $array_type = null;
+                }
 
                 if ($list_var_id) {
                     $context->vars_in_scope[$list_var_id] = $array_type ? clone $array_type : Type::getMixed();
