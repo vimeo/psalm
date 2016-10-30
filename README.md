@@ -4,7 +4,20 @@ Inspects your code and finds errors
 
 ...
 
-Because it's based on nikic's PhpParser, it supports @var declarations on lines where etsy/phan does not. Yay.
+## Checking non-PHP files (e.g. templates)
+
+Psalm supports the ability to check various PHPish files by extending the `FileChecker` class. For example, if you have a template where the variables are set elsewhere, Psalm can scrape those variables and check the template with those variables pre-populated.
+
+An example TemplateChecker is provided [here](examples/TemplateChecker.php).
+
+To ensure your custom `FileChecker` is used, you must update the Psalm `fileExtensions` config in psalm.xml:
+```xml
+<fileExtensions>
+    <extension name=".php" />
+    <extension name=".phpt" filetypeHandler="path/to/TemplateChecker.php" />
+</fileExtensions>
+```
+
 
 ### Typing arrays
 
