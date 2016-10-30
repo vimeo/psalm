@@ -139,7 +139,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  PhpParser\Node\Stmt\Function_ $function
      * @param  string                        $file_name
-     * @return void
+     * @return null|false
      */
     protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
     {
@@ -284,7 +284,9 @@ class FunctionChecker extends FunctionLikeChecker
                     $arg_name,
                     $by_reference,
                     $arg_type ? Type::parseString($arg_type) : Type::getMixed(),
-                    $optional
+                    $optional,
+                    false,
+                    $arg_name === '...'
                 );
             }
 
@@ -359,16 +361,16 @@ class FunctionChecker extends FunctionLikeChecker
                         $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($function_call_arg->value->stmts, $closure_yield_types, true);
 
                         if (!$closure_return_types) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::accepts(
                                 new InvalidReturnType(
                                     'No return type could be found in the closure passed to ' . $call_map_key,
                                     $file_name,
                                     $line_number
                                 ),
                                 $suppressed_issues
-                            )) {
-                                return false;
-                            }
+                            );
+
+                            return Type::getArray();
                         }
                         else {
                             if ($call_map_key === 'array_map') {

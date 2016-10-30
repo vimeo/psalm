@@ -1275,7 +1275,10 @@ class ExpressionChecker
                     $first_arg_type = $stmt->args[0]->value->inferredType;
 
                     if ($first_arg_type->hasGeneric()) {
+                        /** @var Type\Union|null */
                         $key_type = null;
+
+                        /** @var Type\Union|null */
                         $value_type = null;
 
                         foreach ($first_arg_type->types as $type) {
@@ -2016,7 +2019,7 @@ class ExpressionChecker
                 (
                     $this_class === $statements_checker->getAbsoluteClass() ||
                     ClassChecker::classExtends($this_class, $statements_checker->getAbsoluteClass()) ||
-                    trait_exists($statements_checker->getAbsoluteClass())
+                    TraitChecker::traitExists($statements_checker->getAbsoluteClass())
                 )) {
 
                 $method_id = $statements_checker->getAbsoluteClass() . '::' . strtolower($stmt->name);
@@ -2034,6 +2037,7 @@ class ExpressionChecker
         $has_mock = false;
 
         if ($class_type && is_string($stmt->name)) {
+            /** @var Type\Union|null */
             $return_type = null;
 
             foreach ($class_type->types as $type) {
@@ -2381,7 +2385,8 @@ class ExpressionChecker
                     return false;
                 }
 
-                if ($stmt->class->parts[0] !== 'parent'
+                if ($stmt->class instanceof PhpParser\Node\Name
+                    && $stmt->class->parts[0] !== 'parent'
                     && ($statements_checker->isStatic() || !ClassChecker::classExtends($context->self, $absolute_class))
                 ) {
                     if (MethodChecker::checkMethodStatic($method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
@@ -2396,7 +2401,14 @@ class ExpressionChecker
                 $return_types = MethodChecker::getMethodReturnTypes($method_id);
 
                 if ($return_types) {
-                    $return_types = self::fleshOutTypes($return_types, $stmt->args, $stmt->class->parts === ['parent'] ? $statements_checker->getAbsoluteClass() : $absolute_class, $method_id);
+                    $return_types = self::fleshOutTypes(
+                        $return_types,
+                        $stmt->args,
+                        $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
+                            ? $statements_checker->getAbsoluteClass()
+                            : $absolute_class,
+                        $method_id
+                    );
 
                     if (isset($stmt->inferredType)) {
                         $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, $return_types);
@@ -2416,11 +2428,11 @@ class ExpressionChecker
     }
 
     /**
-     * @param  PhpParser\Node\Arg[]   $args
-     * @param  string|null            $method_id
-     * @param  Context                $context
-     * @param  int                    $line_number
-     * @param  boolean                $is_mock
+     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  string|null                      $method_id
+     * @param  Context                          $context
+     * @param  int                              $line_number
+     * @param  boolean                          $is_mock
      * @return false|null
      */
     protected static function checkFunctionArguments(StatementsChecker $statements_checker, array $args, $method_id, Context $context, $line_number, $is_mock = false)
@@ -2521,7 +2533,6 @@ class ExpressionChecker
             }
         }
 
-
         $has_packed_var = false;
 
         foreach ($args as $arg) {
@@ -2559,24 +2570,38 @@ class ExpressionChecker
         }
 
         if ($method_id === 'array_map' || $method_id === 'array_filter') {
-            $array_index = $method_id === 'array_map' ? 1 : 0;
             $closure_index = $method_id === 'array_map' ? 0 : 1;
 
-            $array_arg = isset($args[$array_index]->value) ? $args[$array_index]->value : null;
+            $array_arg_types = [];
 
-            $array_arg_type = $array_arg
-                            && isset($array_arg->inferredType)
-                            && isset($array_arg->inferredType->types['array'])
-                            && $array_arg->inferredType->types['array'] instanceof Type\Generic
-                        ? $array_arg->inferredType->types['array']
-                        : null;
+            foreach ($args as $i => $arg) {
+                if ($i === 0 && $method_id === 'array_map') {
+                    continue;
+                }
 
+                if ($i === 1 && $method_id === 'array_filter') {
+                    break;
+                }
+
+                $array_arg = isset($args[$i]->value) ? $args[$i]->value : null;
+
+                $array_arg_types[] = $array_arg
+                        && isset($array_arg->inferredType)
+                        && isset($array_arg->inferredType->types['array'])
+                        && $array_arg->inferredType->types['array'] instanceof Type\Generic
+                    ? $array_arg->inferredType->types['array']
+                    : null;
+            }
+
+            /** @var PhpParser\Node\Expr\Closure|null */
             $closure_arg = isset($args[$closure_index]) && $args[$closure_index]->value instanceof PhpParser\Node\Expr\Closure
                             ? $args[$closure_index]->value
                             : null;
 
-            if ($array_arg_type && !$array_arg_type->type_params[1]->isMixed() && $closure_arg) {
-                if (count($closure_arg->params) > 1) {
+            if ($closure_arg) {
+                $expected_closure_param_count = $method_id === 'array_filter' ? 1 : count($array_arg_types);
+
+                if (count($closure_arg->params) > $expected_closure_param_count) {
                     if (IssueBuffer::accepts(
                         new TooManyArguments(
                             'Too many arguments in closure for ' . ($cased_method_id ?: $method_id),
@@ -2588,8 +2613,7 @@ class ExpressionChecker
                         return false;
                     }
                 }
-
-                if (count($closure_arg->params) === 0) {
+                elseif (count($closure_arg->params) < $expected_closure_param_count) {
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
                             'You must supply a param in the closure for ' . ($cased_method_id ?: $method_id),
@@ -2602,38 +2626,25 @@ class ExpressionChecker
                     }
                 }
 
-                $closure_param = $closure_arg->params[0];
 
-                $translated_param = FunctionLikeChecker::getTranslatedParam(
-                    $closure_param,
-                    $statements_checker->getAbsoluteClass(),
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
-                );
 
-                $param_type = $translated_param->type;
-                $input_type = $array_arg_type->type_params[1];
+                foreach ($closure_arg->params as $i => $closure_param) {
+                    $translated_param = FunctionLikeChecker::getTranslatedParam(
+                        $closure_param,
+                        $statements_checker->getAbsoluteClass(),
+                        $statements_checker->getNamespace(),
+                        $statements_checker->getAliasedClasses()
+                    );
 
-                $type_match_found = FunctionLikeChecker::doesParamMatch($input_type, $param_type, $scalar_type_match_found, $coerced_type);
+                    $param_type = $translated_param->type;
+                    $input_type = $array_arg_types[$i]->type_params[1];
 
-                if ($coerced_type) {
-                    if (IssueBuffer::accepts(
-                        new TypeCoercion(
-                            'First parameter of closure passed to function ' . $cased_method_id . ' expects ' . $param_type . ', parent type ' . $input_type . ' provided',
-                            $statements_checker->getCheckedFileName(),
-                            $closure_param->getLine()
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-                }
+                    $type_match_found = FunctionLikeChecker::doesParamMatch($input_type, $param_type, $scalar_type_match_found, $coerced_type);
 
-                if (!$type_match_found) {
-                    if ($scalar_type_match_found) {
+                    if ($coerced_type) {
                         if (IssueBuffer::accepts(
-                            new InvalidScalarArgument(
-                                'First parameter of closure passed to function ' . $cased_method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                            new TypeCoercion(
+                                'First parameter of closure passed to function ' . $cased_method_id . ' expects ' . $param_type . ', parent type ' . $input_type . ' provided',
                                 $statements_checker->getCheckedFileName(),
                                 $closure_param->getLine()
                             ),
@@ -2642,15 +2653,30 @@ class ExpressionChecker
                             return false;
                         }
                     }
-                    else if (IssueBuffer::accepts(
-                        new InvalidArgument(
-                            'First parameter of closure passed to function ' . $cased_method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
-                            $statements_checker->getCheckedFileName(),
-                            $closure_param->getLine()
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
+
+                    if (!$type_match_found) {
+                        if ($scalar_type_match_found) {
+                            if (IssueBuffer::accepts(
+                                new InvalidScalarArgument(
+                                    'First parameter of closure passed to function ' . $cased_method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                                    $statements_checker->getCheckedFileName(),
+                                    $closure_param->getLine()
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                        }
+                        else if (IssueBuffer::accepts(
+                            new InvalidArgument(
+                                'First parameter of closure passed to function ' . $cased_method_id . ' expects ' . $param_type . ', ' . $input_type . ' provided',
+                                $statements_checker->getCheckedFileName(),
+                                $closure_param->getLine()
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
                     }
                 }
             }

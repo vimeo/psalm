@@ -107,7 +107,9 @@ class EffectsAnalyser
         if ($collapse_types) {
             // if it's a generator, boil everything down to a single generator return type
             if ($yield_types) {
+                /** @var Type\Union */
                 $key_type = null;
+                /** @var Type\Union */
                 $value_type = null;
 
                 foreach ($yield_types as $type) {

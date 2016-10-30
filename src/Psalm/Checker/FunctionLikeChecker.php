@@ -812,12 +812,13 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public static function getParamsById($method_id, array $args, $file_name)
     {
-        $absolute_class = strpos($method_id, '::') ? explode($method_id, '::')[0] : null;
+        $absolute_class = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
         if ($absolute_class && ClassLikeChecker::isUserDefined($absolute_class)) {
             return MethodChecker::getMethodParams($method_id);
         }
         elseif (!$absolute_class && FunctionChecker::inCallMap($method_id)) {
+            /** @var array<array<FunctionLikeParameter>> */
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
         }
         elseif ($absolute_class) {

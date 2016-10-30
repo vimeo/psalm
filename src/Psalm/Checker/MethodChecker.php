@@ -65,7 +65,12 @@ class MethodChecker extends FunctionLikeChecker
     const VISIBILITY_PROTECTED = 2;
     const VISIBILITY_PRIVATE = 3;
 
-    public function __construct(PhpParser\Node\FunctionLike $function, StatementsSource $source, array $this_vars = [])
+    /**
+     * @param PhpParser\Node\FunctionLike $function
+     * @param StatementsSource            $source
+     * @param array                       $this_vars
+     */
+    public function __construct($function, StatementsSource $source, array $this_vars = [])
     {
         if (!$function instanceof PhpParser\Node\Stmt\ClassMethod) {
             throw new \InvalidArgumentException('Must be called with a ClassMethod');

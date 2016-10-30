@@ -49,4 +49,13 @@ class TraitChecker extends ClassLikeChecker
 
         return $method_name;
     }
+
+    /**
+     * @param  string $trait_name
+     * @return boolean
+     */
+    public static function traitExists($trait_name)
+    {
+        return trait_exists($trait_name);
+    }
 }

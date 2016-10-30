@@ -44,28 +44,28 @@ class FileFilter
 
             if ($e->directory) {
                 foreach ($e->directory as $directory) {
-                    $filter->include_dirs[] = self::slashify($directory['name']);
+                    $filter->include_dirs[] = self::slashify((string)$directory['name']);
                 }
             }
 
             if ($e->file) {
                 foreach ($e->file as $file) {
                     $filter->include_files[] = $file['name'];
-                    $filter->include_files_lowercase[] = strtolower($file['name']);
+                    $filter->include_files_lowercase[] = strtolower((string)$file['name']);
                 }
             }
         }
         else {
             if ($e->directory) {
                 foreach ($e->directory as $directory) {
-                    $filter->exclude_dirs[] = self::slashify($directory['name']);
+                    $filter->exclude_dirs[] = self::slashify((string)$directory['name']);
                 }
             }
 
             if ($e->file) {
                 foreach ($e->file as $file) {
                     $filter->exclude_files[] = (string)$file['name'];
-                    $filter->exclude_files_lowercase[] = strtolower($file['name']);
+                    $filter->exclude_files_lowercase[] = strtolower((string)$file['name']);
                 }
             }
         }
@@ -73,11 +73,20 @@ class FileFilter
         return $filter;
     }
 
+    /**
+     * @param  string $str
+     * @return string
+     */
     protected static function slashify($str)
     {
         return preg_replace('/\/?$/', '/', $str);
     }
 
+    /**
+     * @param  string  $file_name
+     * @param  boolean $case_sensitive
+     * @return boolean
+     */
     public function allows($file_name, $case_sensitive = false)
     {
         if ($this->inclusive) {

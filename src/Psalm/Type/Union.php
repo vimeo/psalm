@@ -139,6 +139,36 @@ class Union extends Type
         return isset($this->types['int']) && count($this->types) === 1;
     }
 
+    /** @return bool */
+    public function isMixed()
+    {
+        return isset($this->types['mixed']);
+    }
+
+    /** @return bool */
+    public function isNull()
+    {
+        return count($this->types) === 1 && isset($this->types['null']);
+    }
+
+    /** @return bool */
+    public function isVoid()
+    {
+        return isset($this->types['void']);
+    }
+
+    /** @return bool */
+    public function isEmpty()
+    {
+        if ($this instanceof Atomic) {
+            return $this->value === 'empty';
+        }
+
+        if ($this instanceof Union) {
+            return isset($this->types['empty']);
+        }
+    }
+
     public function removeObjects()
     {
         foreach ($this->types as $key => $type) {

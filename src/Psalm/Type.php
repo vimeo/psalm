@@ -73,6 +73,10 @@ abstract class Type
 
     private static function getTypeFromTree(ParseTree $parse_tree)
     {
+        if (!$parse_tree->value) {
+            throw new \InvalidArgumentException('Parse tree must have a value');
+        }
+
         if ($parse_tree->value === ParseTree::GENERIC) {
             $generic_type = array_shift($parse_tree->children);
 
@@ -83,6 +87,10 @@ abstract class Type
                 },
                 $parse_tree->children
             );
+
+            if (!$generic_type->value) {
+                throw new \InvalidArgumentException('Generic type must have a value');
+            }
 
             $generic_type_value = self::fixScalarTerms($generic_type->value);
 
@@ -125,7 +133,11 @@ abstract class Type
                 $properties[$property_branch->children[0]->value] = $property_type;
             }
 
-            return new ObjectLike($type, $properties);
+            if (!$type->value) {
+                throw new \InvalidArgumentException('Object-like type must have a value');
+            }
+
+            return new ObjectLike($type->value, $properties);
         }
 
         $atomic_type = self::fixScalarTerms($parse_tree->value);
@@ -138,6 +150,7 @@ abstract class Type
     }
 
     /**
+     * @param  string $return_type
      * @return array<int,string>
      */
     public static function tokenize($return_type)
@@ -170,15 +183,18 @@ abstract class Type
         return $return_type_tokens;
     }
 
-    /** @return string */
+    /**
+     * @param  string $type
+     * @return string
+     */
     public static function convertSquareBrackets($type)
     {
         return preg_replace_callback(
             '/([a-zA-Z\<\>\\\\_\(\)|]+)((\[\])+)/',
             function ($matches) {
-                $inner_type = str_replace(['(', ')'], '', $matches[1]);
+                $inner_type = str_replace(['(', ')'], '', (string)$matches[1]);
 
-                $dimensionality = strlen($matches[2]) / 2;
+                $dimensionality = strlen((string)$matches[2]) / 2;
 
                 for ($i = 0; $i < $dimensionality; $i++) {
                     $inner_type = 'array<mixed, ' . $inner_type . '>';
@@ -298,54 +314,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return bool */
-    public function isMixed()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'mixed';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['mixed']);
-        }
-    }
-
-    /** @return bool */
-    public function isNull()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'null';
-        }
-
-        if ($this instanceof Union) {
-            return count($this->types) === 1 && isset($this->types['null']);
-        }
-    }
-
-    /** @return bool */
-    public function isVoid()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'void';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['void']);
-        }
-    }
-
-    /** @return bool */
-    public function isEmpty()
-    {
-        if ($this instanceof Atomic) {
-            return $this->value === 'empty';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['empty']);
-        }
-    }
-
     /**
      * @param  array<Union> $redefined_vars
      * @param  Context      $context
@@ -433,6 +401,7 @@ abstract class Type
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
+        /** @var array<string,array<string,Union>> */
         $key_types = [];
 
         /** @var array<string,array<string,Union>> */
@@ -478,6 +447,7 @@ abstract class Type
             }
             elseif ($type instanceof ObjectLike) {
                 if (!isset($value_types['object-like'])) {
+                    /** @var array<string,Union> */
                     $value_types['object-like'] = [];
                 }
 

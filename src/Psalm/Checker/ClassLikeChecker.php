@@ -766,6 +766,10 @@ abstract class ClassLikeChecker implements StatementsSource
             return true;
         }
 
+        if (!$class_name || strpos($class_name, '::') !== false) {
+            throw new \InvalidArgumentException('Invalid class name ' . $class_name);
+        }
+
         try {
             $old_level = error_reporting();
             error_reporting(0);

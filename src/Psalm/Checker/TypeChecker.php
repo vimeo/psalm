@@ -64,7 +64,7 @@ class TypeChecker
             return self::combineTypeAssertions($left_assertions, $right_assertions);
         }
 
-        return self::getTypeAssertions($conditional, $this_class_name, $namespace, $aliased_classes);
+        return self::getTypeAssertions($conditional, $this_class_name, $namespace, $aliased_classes, true);
     }
 
     /**
@@ -124,10 +124,16 @@ class TypeChecker
      * @param  string               $this_class_name
      * @param  string               $namespace
      * @param  array<string>        $aliased_classes
+     * @param  bool                 $allow_non_negatable Allow type assertions that should not be negated
      * @return array<string,string>
      */
-    public static function getTypeAssertions(PhpParser\Node\Expr $conditional, $this_class_name, $namespace, array $aliased_classes)
-    {
+    public static function getTypeAssertions(
+        PhpParser\Node\Expr $conditional,
+        $this_class_name,
+        $namespace,
+        array $aliased_classes,
+        $allow_non_negatable = false
+    ) {
         $if_types = [];
 
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -283,6 +289,7 @@ class TypeChecker
             $null_position = self::hasNullVariable($conditional);
             $false_position = self::hasFalseVariable($conditional);
             $gettype_position = self::hasGetTypeCheck($conditional);
+            $scalar_value_position = $allow_non_negatable ? self::hasScalarValueComparison($conditional) : false;
 
             $var_name = null;
 
@@ -352,6 +359,42 @@ class TypeChecker
 
                     /** @var PhpParser\Node\Scalar\String_ $conditional->right */
                     $var_type = $conditional->right->value;
+                }
+
+                if ($var_name && $var_type) {
+                    $if_types[$var_name] = $var_type;
+                }
+            }
+            elseif ($scalar_value_position) {
+                $var_type = null;
+
+                if ($scalar_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                    /** @var PhpParser\Node\Expr $conditional->right */
+                    $var_name = ExpressionChecker::getArrayVarId($conditional->left, $this_class_name, $namespace, $aliased_classes);
+
+                    if ($conditional->right instanceof PhpParser\Node\Scalar\String_) {
+                        $var_type = 'string';
+                    }
+                    elseif ($conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
+                        $var_type = 'int';
+                    }
+                    elseif ($conditional->right instanceof PhpParser\Node\Scalar\DNumber) {
+                        $var_type = 'float';
+                    }
+                }
+                else if ($scalar_value_position === self::ASSIGNMENT_TO_LEFT) {
+                    /** @var PhpParser\Node\Expr $conditional->left */
+                    $var_name = ExpressionChecker::getArrayVarId($conditional->right, $this_class_name, $namespace, $aliased_classes);
+
+                    if ($conditional->left instanceof PhpParser\Node\Scalar\String_) {
+                        $var_type = 'string';
+                    }
+                    elseif ($conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
+                        $var_type = 'int';
+                    }
+                    elseif ($conditional->left instanceof PhpParser\Node\Scalar\DNumber) {
+                        $var_type = 'float';
+                    }
                 }
 
                 if ($var_name && $var_type) {
@@ -625,6 +668,26 @@ class TypeChecker
             $conditional->left->name instanceof PhpParser\Node\Name &&
             $conditional->left->name->parts === ['gettype'] &&
             $conditional->right instanceof PhpParser\Node\Scalar\String_) {
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected static function hasScalarValueComparison(PhpParser\Node\Expr\BinaryOp $conditional)
+    {
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+            return false;
+        }
+
+        if ($conditional->right instanceof PhpParser\Node\Scalar) {
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Scalar) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 

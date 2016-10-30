@@ -193,6 +193,10 @@ class Config
         return new self();
     }
 
+    /**
+     * @param  array<\SimpleXMLElement> $extensions
+     * @return void
+     */
     protected function loadFileExtensions($extensions)
     {
         foreach ($extensions as $extension) {

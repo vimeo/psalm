@@ -148,4 +148,28 @@ class Atomic extends Type
     {
         return $this->value === 'Generator';
     }
+
+    /** @return bool */
+    public function isMixed()
+    {
+        return $this->value === 'mixed';
+    }
+
+    /** @return bool */
+    public function isNull()
+    {
+        return $this->value === 'null';
+    }
+
+    /** @return bool */
+    public function isVoid()
+    {
+        return $this->value === 'void';
+    }
+
+    /** @return bool */
+    public function isEmpty()
+    {
+        return $this->value === 'empty';
+    }
 }

@@ -137,6 +137,10 @@ class Context
         return $redefined_vars;
     }
 
+    /**
+     * @param  string $remove_var_id
+     * @return void
+     */
     public function remove($remove_var_id)
     {
         if (isset($this->vars_in_scope[$remove_var_id])) {
@@ -147,6 +151,11 @@ class Context
         }
     }
 
+    /**
+     * @param  string                 $remove_var_id
+     * @param  \Psalm\Type\Union|null $type
+     * @return void
+     */
     public function removeDescendents($remove_var_id, \Psalm\Type\Union $type = null)
     {
         if (!$type && isset($this->vars_in_scope[$remove_var_id])) {
