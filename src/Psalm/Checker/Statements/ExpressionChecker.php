@@ -1617,6 +1617,11 @@ class ExpressionChecker
         }
         elseif ($stmt->var instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->var->vars as $offset => $var) {
+                // $var can be null e.g. list($a, ) = ['a', 'b']
+                if (!$var) {
+                    continue;
+                }
+
                 $list_var_id = self::getVarId(
                     $var,
                     $statements_checker->getAbsoluteClass(),
