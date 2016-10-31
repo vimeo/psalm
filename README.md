@@ -20,6 +20,9 @@ To ensure your custom `FileChecker` is used, you must update the Psalm `fileExte
 
 ## Typing in Psalm
 
+Psalm is able to interpret all PHPDoc type annotations, and use them to further understand the codebase.
+
+
 ### Property types vs Assignment typehints
 
 You can use the `/** @var Type */` docblock to annotate both property declarations and to help Psalm understand variable assignment.
@@ -78,22 +81,31 @@ $a = foo();
 $a = 6; // $a is now typed as an int
 ```
 
+You can also use typehints on specific variables e.g.
+
+```php
+/** @var string $a */
+echo strpos($a, 'hello');
+```
+
+This tells Psalm to assume that `$a` is a string (though it will still throw an error if `$a` is undefined).
+
 ### Typing arrays
 
 In PHP, the `array` type is commonly used to represent three different data structures:
  - a [List](https://en.wikipedia.org/wiki/List_(abstract_data_type))
-   
+
    ```php
    $a = [1, 2, 3, 4, 5];
    ```
  - an [Associative array](https://en.wikipedia.org/wiki/Associative_array)
-   
+
    ```php
    $a = [0 => 'hello', 5 => 'goodbye'];
    $a = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
    ```
  - makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language))
-   
+
    ```php
    $a = ['name' => 'Psalm', 'type' => 'tool'];
    ```
@@ -122,7 +134,7 @@ Psalm solves this by adding another way annotate array types, by using an object
 
 So, for instance,
 ```php
-$a = ['name' => 'Psalm', 'type' => 'tool']; // 
+$a = ['name' => 'Psalm', 'type' => 'tool'];
 ```
 is assigned the type `array{ name: string, type: string}`.
 
