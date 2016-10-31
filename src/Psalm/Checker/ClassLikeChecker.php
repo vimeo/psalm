@@ -22,6 +22,9 @@ use ReflectionProperty;
 
 abstract class ClassLikeChecker implements StatementsSource
 {
+    /**
+     * @var array
+     */
     protected static $SPECIAL_TYPES = ['int', 'string', 'float', 'bool', 'false', 'object', 'empty', 'callable', 'array'];
 
     /**
@@ -992,7 +995,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @param  string $class_name
      * @param  mixed  $visibility
-     * @return array<string,Type\Union>
+     * @return array<string,Type\Union|false>
      */
     public static function getStaticPropertiesForClass($class_name, $visibility)
     {

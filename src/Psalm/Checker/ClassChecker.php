@@ -31,6 +31,9 @@ class ClassChecker extends ClassLikeChecker
      */
     protected static $class_extends = [];
 
+    /**
+     * @var integer
+     */
     protected static $anonymous_class_count = 0;
 
     /**

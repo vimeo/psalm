@@ -28,25 +28,24 @@ class FileChecker implements StatementsSource
     protected $include_file_name;
 
     /**
-     * @var string
-     */
-    protected $namespace;
-
-    /**
      * @var array
      */
     protected $aliased_classes = [];
 
-    protected $class_name;
-
+    /**
+     * @var array<string, array<int, string>>
+     */
     protected $namespace_aliased_classes = [];
 
+    /**
+     * @var array<int, \PhpParser\Node>
+     */
     protected $preloaded_statements = [];
 
     protected $declared_classes = [];
 
     /**
-     * @var array
+     * @var array<int, string>
      */
     protected $suppressed_issues = [];
 
@@ -423,7 +422,7 @@ class FileChecker implements StatementsSource
 
     public function getClassName()
     {
-        return $this->class_name;
+        return null;
     }
 
     /**
