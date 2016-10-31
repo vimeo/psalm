@@ -13,7 +13,10 @@
         <MixedMethodCall errorLevel="suppress" />
         <MixedPropertyFetch errorLevel="suppress" />
         <MixedPropertyAssignment errorLevel="suppress" />
+
         <InvalidDocblock errorLevel="info" />
+        <DeprecatedMethod errorLevel="info" />
+        <PossiblyUndefinedVariable errorLevel="info">
     </issueHandler>
 
 </codeinspector>
