@@ -1,12 +1,46 @@
 <h1><img src="PsalmLogo.png" height="64" alt="logo" /></h1>
 
-Inspects your code and finds errors
+Psalm is a static analysis tool for finding errors in PHP scripts.
 
-...
 
+- [Installation](#installation)
+- [Configuration](#configuration)
 - [Dealing with code issues](#dealing-with-code-issues)
 - [Typing in Psalm](#typing-in-psalm)
+- [Plugins](#plugins)
 - [Checking non-PHP files](#checking-non-php-files)
+
+## Installation
+
+To install Psalm, you can use composer @todo update with github.com address
+
+## Configuration
+
+Psalm uses an XML config file. A recommended default Psalm config is located [here](examples/psalm.default.xml).
+
+### Options
+
+- `stopOnFirstError`<br />
+  whether or not to stop when the first error is encountered
+- `useDocblockTypes`<br />
+  whether or not to use types as defined in docblocks
+- `autoloader` (optional)
+  if you script that registers a custom autoloader and/or universal constants/functions, register them here
+
+### Parameters
+
+- `<inspectFiles>`<br />
+  Contains a list of all the directories that Psalm should inspect
+- `<fileExtensions>` (optional)<br />
+  A list of extensions to search over. See [Checking non-PHP files](#checking-non-php-files) to understand how to extend this.
+- `<plugins>` (optional)<br />
+  A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](#plugins) section for more information.
+- `<issueHandler>` (optional)<br />
+  If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [Dealing with code issues](#dealing-with-code-issues) tells you more.
+- `<includeHandler>` (optional)<br />
+  If there are files that your scripts include that you don't want Psalm to traverse, include them here with `<file name="path_to_file.php" />`.
+- `<mockClasses>` (optional)<br />
+  Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
 
 ## Dealing with code issues
 
@@ -182,6 +216,9 @@ is assigned the type `array{ name: string, type: string}`.
 
 Psalm fully supports PHPDoc's array typing syntax, such that any array typed with `TValue[]` will be typed in Psalm as `array<mixed, TValue>`. That also extends to generic type definitions with only one param e.g. `array<TValue>`, which is equivalent to `array<mixed, TValue>`.
 
+## Plugins
+
+@todo add this
 
 ## Checking non-PHP files
 
