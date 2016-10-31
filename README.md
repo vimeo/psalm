@@ -22,7 +22,7 @@ To ensure your custom `FileChecker` is used, you must update the Psalm `fileExte
 
 ### Property types vs Assignment typehints
 
-You can use the `/** @var Type */ docblock to annotate both property declarations and to help Psalm understand variable assignment.
+You can use the `/** @var Type */` docblock to annotate both property declarations and to help Psalm understand variable assignment.
 
 #### Property types
 
