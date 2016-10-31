@@ -4,18 +4,52 @@ Inspects your code and finds errors
 
 ...
 
-## Checking non-PHP files (e.g. templates)
+## Dealing with code issues
 
-Psalm supports the ability to check various PHPish files by extending the `FileChecker` class. For example, if you have a template where the variables are set elsewhere, Psalm can scrape those variables and check the template with those variables pre-populated.
+Code issues in Psalm fall into three categories:
+<dl>
+  <dt>error</dt>
+  <dd>this will cause Psalm to print a message, and to ultimately terminate with a non-zero exist status</dd>
+  <dt>info</dt>
+  <dd>this will cause Psalm to print a message</dd>
+  <dt>suppress</dt>
+  <dd>this will cause Psalm to ignore the code issue entirely</dd>
+</dl>
 
-An example TemplateChecker is provided [here](examples/TemplateChecker.php).
+The third category, `suppress`, is the one you will probably be most interested in, especially when introducing Psalm to a large codebase.
 
-To ensure your custom `FileChecker` is used, you must update the Psalm `fileExtensions` config in psalm.xml:
+### Suppressing issues
+
+There are two ways to suppress an issue – via the Psalm config or via a function docblock.
+
+#### Config suppression
+
+You can use the `<issueHandler>` tag in the config file to influence how issues are treated.
+
 ```xml
-<fileExtensions>
-    <extension name=".php" />
-    <extension name=".phpt" filetypeHandler="path/to/TemplateChecker.php" />
-</fileExtensions>
+<issueHandler>
+  <MissingPropertyType errorLevel="suppress" />
+
+  <InvalidReturnType>
+    <excludeFiles>
+      <directory name="some_bad_directory" /> <!-- all InvalidReturnType issues in this directory are suppressed -->
+      <file name="some_bad_file.php" />  <!-- all InvalidReturnType issues in this file are suppressed -->
+    </excludeFiles>
+  </InvalidReturnType>
+</issueHandler>
+```
+
+#### Docblock suppression
+
+You can also use `@psalm-suppress IssueName` on a function's docblock to suppress Psalm issues e.g.
+
+```php
+/**
+ * @psalm-suppress InvalidReturnType
+ */
+function (int $a) : string {
+  return $a;
+}
 ```
 
 ## Typing in Psalm
@@ -37,6 +71,8 @@ public $foo;
 ```
 
 When checking `$this->foo = $some_variable;`, Psalm will check to see whether `$some_variable` is either `string` or `null` and, if neither, emit an issue.
+
+If you leave off the property type docblock, Psalm will emit a `MissingPropertyType` issue.
 
 #### Assignment typehints
 
@@ -141,3 +177,18 @@ is assigned the type `array{ name: string, type: string}`.
 #### Backwards compatibility
 
 Psalm fully supports PHPDoc's array typing syntax, such that any array typed with `TValue[]` will be typed in Psalm as `array<mixed, TValue>`. That also extends to generic type definitions with only one param e.g. `array<TValue>`, which is equivalent to `array<mixed, TValue>`.
+
+
+## Checking non-PHP files (e.g. templates)
+
+Psalm supports the ability to check various PHPish files by extending the `FileChecker` class. For example, if you have a template where the variables are set elsewhere, Psalm can scrape those variables and check the template with those variables pre-populated.
+
+An example TemplateChecker is provided [here](examples/TemplateChecker.php).
+
+To ensure your custom `FileChecker` is used, you must update the Psalm `fileExtensions` config in psalm.xml:
+```xml
+<fileExtensions>
+    <extension name=".php" />
+    <extension name=".phpt" filetypeHandler="path/to/TemplateChecker.php" />
+</fileExtensions>
+```
