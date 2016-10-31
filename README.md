@@ -18,6 +18,65 @@ To ensure your custom `FileChecker` is used, you must update the Psalm `fileExte
 </fileExtensions>
 ```
 
+## Typing in Psalm
+
+### Property types vs Assignment typehints
+
+You can use the `/** @var Type */ docblock to annotate both property declarations and to help Psalm understand variable assignment.
+
+#### Property types
+
+You can specify a particular type for an class property in Psalm by using the `@var` declaration:
+
+```php
+/** @var string|null */
+public $foo;
+```
+
+When checking `$this->foo = $some_variable;`, Psalm will check to see whether `$some_variable` is either `string` or `null` and, if neither, emit an issue.
+
+#### Assignment typehints
+
+Consider the following code:
+
+```php
+$a = null;
+
+foreach ([1, 2, 3] as $i) {
+  if ($a) {
+    return $a;
+  }
+  else {
+    $a = $i;
+  }
+}
+```
+
+Because Psalm scans a file progressively, it cannot tell that `return $a` produces an integer. Instead it returns knows only that `$a` is not `empty`. We can fix this by adding a type hint docblock:
+
+```php
+/** @var int|null */
+$a = null;
+
+foreach ([1, 2, 3] as $i) {
+  if ($a) {
+    return $a;
+  }
+  else {
+    $a = $i;
+  }
+}
+```
+
+This tells Psalm that `int` is a possible type for `$a`, and allows it to infer that `return $a;` produces an integer.
+
+Unlike property types, however, assignment typehints are not binding – they can be overridden by a new assignment without Psalm emitting an issue e.g.
+
+```php
+/** @var string|null */
+$a = foo();
+$a = 6; // $a is now typed as an int
+```
 
 ### Typing arrays
 
