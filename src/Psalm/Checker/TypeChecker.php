@@ -1060,7 +1060,7 @@ class TypeChecker
                             return null;
                         }
 
-                        $class_property_type = clone $class_properties[$key_parts[$i]];
+                        $class_property_type = $class_properties[$key_parts[$i]] ? clone $class_properties[$key_parts[$i]] : Type::getMixed();
                     }
 
                     if (!$new_base_type) {

@@ -3,6 +3,7 @@
 namespace Psalm\Checker;
 
 use Psalm\Issue\InvalidClass;
+use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedInterfaceMethod;
@@ -102,42 +103,42 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * A lookup table for public class properties
      *
-     * @var array<string,array<string,Type\Union>>
+     * @var array<string,array<string,Type\Union|false>>
      */
     protected static $public_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string,array<string,Type\Union>>
+     * @var array<string,array<string,Type\Union|false>>
      */
     protected static $protected_class_properties = [];
 
     /**
      * A lookup table for protected class properties
      *
-     * @var array<string,array<string,Type\Union>>
+     * @var array<string,array<string,Type\Union|false>>
      */
     protected static $private_class_properties = [];
 
     /**
      * A lookup table for public static class properties
      *
-     * @var array<string,array<string,Type\Union>>
+     * @var array<string,array<string,Type\Union|false>>
      */
     protected static $public_static_class_properties = [];
 
     /**
      * A lookup table for protected static class properties
      *
-     * @var array<string,array<string,Type\Union>>
+     * @var array<string,array<string,Type\Union|false>>
      */
     protected static $protected_static_class_properties = [];
 
     /**
      * A lookup table for private static class properties
      *
-     * @var array<string,array<string,Type\Union>>
+     * @var array<string,array<string,Type\Union|false>>
      */
     protected static $private_static_class_properties = [];
 
@@ -379,8 +380,20 @@ abstract class ClassLikeChecker implements StatementsSource
                     $comment = $stmt->getDocComment();
                     $type_in_comment = null;
 
-                    if ($comment && $config->use_docblock_types && count($stmt->props) === 1) {
+                    if ($comment && $config->use_docblock_types) {
                         $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
+                    }
+                    elseif (!$comment && $check_methods) {
+                        if (IssueBuffer::accepts(
+                            new MissingPropertyType(
+                                'Property ' . $this->absolute_class . '::$' . $stmt->props[0]->name . ' does not have a declared type',
+                                $this->file_name,
+                                $stmt->getLine()
+                            ),
+                            $this->suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
 
                     $property_group_type = $type_in_comment ? $type_in_comment : null;
@@ -388,14 +401,14 @@ abstract class ClassLikeChecker implements StatementsSource
                     foreach ($stmt->props as $property) {
                         if (!$property_group_type) {
                             if (!$property->default) {
-                                $property_type = Type::getMixed();
+                                $property_type = false;
                             }
                             else {
                                 $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();
                             }
                         }
                         else {
-                            $property_type = $property_group_type;
+                            $property_type = count($stmt->props) === 1 ? $property_group_type : clone $property_group_type;
                         }
 
                         if ($stmt->isStatic()) {
@@ -456,7 +469,7 @@ abstract class ClassLikeChecker implements StatementsSource
         );
 
         foreach ($all_instance_properties as $property_name => $property_type) {
-            $class_context->vars_in_scope['$this->' . $property_name] = $property_type;
+            $class_context->vars_in_scope['$this->' . $property_name] = $property_type ?: Type::getMixed();
         }
 
         $all_static_properties = array_merge(
@@ -466,7 +479,7 @@ abstract class ClassLikeChecker implements StatementsSource
         );
 
         foreach ($all_static_properties as $property_name => $property_type) {
-            $class_context->vars_in_scope[$this->absolute_class . '::$' . $property_name] = $property_type;
+            $class_context->vars_in_scope[$this->absolute_class . '::$' . $property_name] = $property_type ?: Type::getMixed();
         }
 
         $config = Config::getInstance();
@@ -948,7 +961,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @param  string $class_name
      * @param  mixed  $visibility
-     * @return array<string,Type\Union>
+     * @return array<string,Type\Union|false>
      */
     public static function getInstancePropertiesForClass($class_name, $visibility)
     {

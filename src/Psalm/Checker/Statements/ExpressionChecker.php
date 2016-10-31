@@ -27,13 +27,14 @@ use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\InvisibleProperty;
+use Psalm\Issue\MissingPropertyDeclaration;
+use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedPropertyFetch;
 use Psalm\Issue\MixedStringOffsetAssignment;
-use Psalm\Issue\MissingPropertyDeclaration;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
 use Psalm\Issue\NullPropertyFetch;
@@ -800,11 +801,29 @@ class ExpressionChecker
                 return;
             }
 
-            if (isset($stmt->inferredType)) {
-                $stmt->inferredType = Type::combineUnionTypes(clone $class_properties[$stmt->name], $stmt->inferredType);
+            if ($class_properties[$stmt->name] === false) {
+                if (IssueBuffer::accepts(
+                    new MissingPropertyType(
+                        'Property ' . $lhs_type_part->value . '::$' . $stmt->name . ' does not have a declared type',
+                        $statements_checker->getCheckedFileName(),
+                        $stmt->getLine()
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                $class_property_type = Type::getMixed();
             }
             else {
-                $stmt->inferredType = $class_properties[$stmt->name];
+                $class_property_type = clone $class_properties[$stmt->name];
+            }
+
+            if (isset($stmt->inferredType)) {
+                $stmt->inferredType = Type::combineUnionTypes($class_property_type, $stmt->inferredType);
+            }
+            else {
+                $stmt->inferredType = $class_property_type;
             }
         }
 
@@ -836,7 +855,7 @@ class ExpressionChecker
 
             $class_properties = ClassLikeChecker::getInstancePropertiesForClass($context->self, \ReflectionProperty::IS_PRIVATE);
 
-            $class_property_types[] = clone $class_properties[$prop_name];
+            $class_property_types[] = $class_properties[$prop_name] ? clone $class_properties[$prop_name] : Type::getMixed();
 
             $var_id = '$this->' . $prop_name;
         }
@@ -1027,7 +1046,23 @@ class ExpressionChecker
                     continue;
                 }
 
-                $class_property_types[] = clone $class_properties[$prop_name];
+                if ($class_properties[$prop_name] === false) {
+                    if (IssueBuffer::accepts(
+                        new MissingPropertyType(
+                            'Property ' . $lhs_type_part->value . '::$' . $stmt->name . ' does not have a declared type',
+                            $statements_checker->getCheckedFileName(),
+                            $stmt->getLine()
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    $class_property_types[] = Type::getMixed();
+                }
+                else {
+                    $class_property_types[] = clone $class_properties[$prop_name];
+                }
             }
 
             if (!$has_regular_setter) {
@@ -1178,14 +1213,28 @@ class ExpressionChecker
                 }
             }
 
-
-
             return;
         }
 
         $context->vars_in_scope[$var_id] = $assignment_type;
 
-        $class_property_type = clone $class_properties[$prop_name];
+        if ($class_properties[$prop_name] === false) {
+            if (IssueBuffer::accepts(
+                new MissingPropertyType(
+                    'Property ' . $absolute_class . '::$' . $prop_name . ' does not have a declared type',
+                    $statements_checker->getCheckedFileName(),
+                    $stmt->getLine()
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+
+            $class_property_type = Type::getMixed();
+        }
+        else {
+            $class_property_type = clone $class_properties[$prop_name];
+        }
 
         if ($assignment_type->isMixed()) {
             return;
