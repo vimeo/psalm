@@ -183,7 +183,7 @@ is assigned the type `array{ name: string, type: string}`.
 Psalm fully supports PHPDoc's array typing syntax, such that any array typed with `TValue[]` will be typed in Psalm as `array<mixed, TValue>`. That also extends to generic type definitions with only one param e.g. `array<TValue>`, which is equivalent to `array<mixed, TValue>`.
 
 
-## Checking non-PHP files (e.g. templates)
+## Checking non-PHP files
 
 Psalm supports the ability to check various PHPish files by extending the `FileChecker` class. For example, if you have a template where the variables are set elsewhere, Psalm can scrape those variables and check the template with those variables pre-populated.
 
