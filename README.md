@@ -4,6 +4,10 @@ Inspects your code and finds errors
 
 ...
 
+- [Dealing with code issues](#dealing-with-code-issues)
+- [Typing in Psalm](#typing-in-psalm)
+- [Checking non-PHP files](#checking-non-php-files)
+
 ## Dealing with code issues
 
 Code issues in Psalm fall into three categories:
