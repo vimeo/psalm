@@ -245,8 +245,6 @@ function getToolsData() : array {
     ['name' => 'PhpParser', 'type' => 'tool', 'active' => true]
   ];
 }
-
- // Psalm evaluates this as string|bool
 ```
 
 Using the type annotation for associative arrays, we could evaluate the expression
