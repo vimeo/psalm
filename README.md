@@ -262,8 +262,6 @@ function getToolsData() : array {
     ['name' => 'PhpParser', 'type' => 'tool', 'active' => true]
   ];
 }
-
- // Psalm evaluates this as string
 ```
 
 This time, Psalm can evaluate `getToolsData()[0]['name']` and it knows that the expression evaluates to a string.
