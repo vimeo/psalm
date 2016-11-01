@@ -25,15 +25,15 @@ class CommentChecker
 
         $comments = self::parseDocComment($comment);
 
-        if ($comments && isset($comments['specials']['var'][0])) {
+        if ($comments && isset($comments['specials']['var'][0]) && trim((string)$comments['specials']['var'][0])) {
             try {
-                $line_parts = self::splitDocLine((string)$comments['specials']['var'][0]);
+                $line_parts = self::splitDocLine(trim((string)$comments['specials']['var'][0]));
             }
             catch (\Psalm\Exception\DocblockParseException $e) {
                 throw $e;
             }
 
-            if ($line_parts) {
+            if ($line_parts && $line_parts[0]) {
                 $type_in_comments = FunctionLikeChecker::fixUpLocalType(
                     $line_parts[0],
                     $source->getAbsoluteClass(),
