@@ -11,6 +11,7 @@ use Psalm\Checker\Statements\Block\SwitchChecker;
 use Psalm\Checker\Statements\Block\TryChecker;
 use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\IssueBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidNamespace;
@@ -260,7 +261,7 @@ class StatementsChecker
 
                         if (isset($prop->default->inferredType)) {
                             if (!$stmt->isStatic()) {
-                                if (ExpressionChecker::checkPropertyAssignment($this, $prop, $prop->name, $prop->default->inferredType, $context) === false) {
+                                if (AssignmentChecker::checkPropertyAssignment($this, $prop, $prop->name, $prop->default->inferredType, $context) === false) {
                                     return false;
                                 }
                             }
