@@ -125,13 +125,13 @@ Psalm is able to interpret all PHPDoc type annotations, and use them to further 
 
 @todo describe how Union types work
 
-### Property types vs Assignment typehints
+### Property declaration types vs Assignment typehints
 
-You can use the `/** @var Type */` docblock to annotate both property declarations and to help Psalm understand variable assignment.
+You can use the `/** @var Type */` docblock to annotate both [property declarations](http://php.net/manual/en/language.oop5.properties.php) and to help Psalm understand variable assignment.
 
-#### Property types
+#### Property declaration types
 
-You can specify a particular type for a class property in Psalm by using the `@var` declaration:
+You can specify a particular type for a class property declarion in Psalm by using the `@var` declaration:
 
 ```php
 /** @var string|null */
@@ -216,7 +216,7 @@ In PHP, the `array` type is commonly used to represent three different data stru
 
 PHP treats all these arrays the same, essentially (though there are some optimisations under the hood for the first case).
 
-PHPDoc [allows you to specify](https://phpdoc.org/docs/latest/references/phpdoc/types.html#arrays) the  type of values the array holds with the anootation:
+PHPDoc [allows you to specify](https://phpdoc.org/docs/latest/references/phpdoc/types.html#arrays) the  type of values the array holds with the annotation:
 ```php
 /** @return TValue[] */
 ```
