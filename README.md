@@ -5,6 +5,7 @@ Psalm is a static analysis tool for finding errors in PHP scripts.
 
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [Running Psalm](#running-psalm)
 - [Dealing with code issues](#dealing-with-code-issues)
 - [Typing in Psalm](#typing-in-psalm)
 - [Plugins](#plugins)
@@ -12,7 +13,9 @@ Psalm is a static analysis tool for finding errors in PHP scripts.
 
 ## Installation
 
-To install Psalm, you can use composer @todo update with github.com address
+To install Psalm, use [Composer](https://getcomposer.org/).
+
+@todo add detailed composer instructions with public github.com address
 
 ## Configuration
 
@@ -41,6 +44,30 @@ Psalm uses an XML config file. A recommended default Psalm config is located [he
   If there are files that your scripts include that you don't want Psalm to traverse, include them here with `<file name="path_to_file.php" />`.
 - `<mockClasses>` (optional)<br />
   Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
+
+## Running Psalm
+
+Once you've set up your config file, you can run Psalm from your project's root directory with
+```bash
+./vendor/bin/psalm
+```
+
+### Command-line options
+
+- `--help`<br />
+  Display the list of help options
+- `--debug`<br />
+  With this flag, Psalm will list the files it's scanning, and provide a summary of memory usage
+- `--config`<br />
+  Path to a configuration file, if not ./psalm.xml
+- `-f [FILE_PATH]`<br />
+  Path to run checks against (if ommitted, Psalm will scan all files in the project referenced by `<inspectFiles>`
+- `--monochrome`<br />
+  Disables colored output
+- `--show-info=[BOOLEAN]`
+  Show non-error parser findings.
+- `--diff`<br />
+  Only check files that have changed (and their dependents) since the last successful run
 
 ## Dealing with code issues
 
