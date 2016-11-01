@@ -64,7 +64,7 @@ Once you've set up your config file, you can run Psalm from your project's root 
   Path to run checks against (if ommitted, Psalm will scan all files in the project referenced by `<inspectFiles>`
 - `--monochrome`<br />
   Disables colored output
-- `--show-info=[BOOLEAN]`
+- `--show-info=[BOOLEAN]`<br />
   Show non-error parser findings.
 - `--diff`<br />
   Only check files that have changed (and their dependents) since the last successful run
