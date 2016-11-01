@@ -236,11 +236,39 @@ Hack (by Facebook) supports this usage by way of the [Shape datastructure](https
 
 Psalm solves this by adding another way annotate array types, by using an object-like syntax when describing them.
 
-So, for instance,
+So, for instance, the method below returns an array of arrays, both of which have the same keys:
 ```php
-$a = ['name' => 'Psalm', 'type' => 'tool'];
+/** @return array<int, array<string, string|bool>> */
+function getToolsData() : array {
+  return [
+    ['name' => 'Psalm',     'type' => 'tool', 'active' => true],
+    ['name' => 'PhpParser', 'type' => 'tool', 'active' => true]
+  ];
+}
+
+ // Psalm evaluates this as string|bool
 ```
-is assigned the type `array{ name: string, type: string}`.
+
+Using the type annotation for associative arrays, we could evaluate the expression
+```php
+getToolsData()[0]['name']
+```
+and Psalm would know that it was had the type `string|bool`.
+
+However, we can provide a more-specific return type by using a brace annotation:
+```php
+/** @return array<int, array{name: string, type: string, active: bool}> */
+function getToolsData() : array {
+  return [
+    ['name' => 'Psalm',     'type' => 'tool', 'active' => true],
+    ['name' => 'PhpParser', 'type' => 'tool', 'active' => true]
+  ];
+}
+
+ // Psalm evaluates this as string
+```
+
+This time, Psalm can evaluate `getToolsData()[0]['name']` and it knows that the expression evaluates to a string.
 
 #### Backwards compatibility
 
