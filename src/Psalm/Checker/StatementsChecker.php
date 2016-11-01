@@ -21,15 +21,17 @@ use Psalm\Context;
 
 class StatementsChecker
 {
-    protected $stmts;
-
     /**
      * @var StatementsSource
      */
     protected $source;
 
+    /**
+     * @var array<string, int>
+     */
     protected $all_vars = [];
-    protected $warn_vars = [];
+
+    /** @var string|null */
     protected $class_name;
 
     /**
@@ -73,18 +75,13 @@ class StatementsChecker
      */
     protected $type_checker;
 
-    protected $available_functions = [];
-
     /**
      * A list of suppressed issues
-     * @var array
+     * @var array<string>
      */
     protected $suppressed_issues;
 
-    protected $require_file_name = null;
-
-    protected static $mock_interfaces = [];
-
+    /** @var array<string, array<string, Type\Union>> */
     protected static $user_constants = [];
 
     public function __construct(StatementsSource $source)
@@ -302,7 +299,11 @@ class StatementsChecker
             elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 if ($this->namespace) {
                     if (IssueBuffer::accepts(
-                        new InvalidNamespace('Cannot redeclare namespace', $this->require_file_name, $stmt->getLine()),
+                        new InvalidNamespace(
+                            'Cannot redeclare namespace',
+                            $this->checked_file_name,
+                            $stmt->getLine()
+                        ),
                         $this->suppressed_issues
                     )) {
                         return false;
@@ -763,11 +764,6 @@ class StatementsChecker
         }
     }
 
-    public static function setMockInterfaces(array $classes)
-    {
-        self::$mock_interfaces = $classes;
-    }
-
     /**
      * @return array<string>
      */
@@ -809,7 +805,7 @@ class StatementsChecker
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getClassName()
     {
@@ -860,7 +856,6 @@ class StatementsChecker
 
     public static function clearCache()
     {
-        self::$mock_interfaces = [];
         self::$user_constants = [];
 
         ExpressionChecker::clearCache();

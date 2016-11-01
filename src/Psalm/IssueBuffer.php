@@ -6,7 +6,10 @@ use Psalm\Checker\ProjectChecker;
 
 class IssueBuffer
 {
+    /** @var array<int, string> */
     protected static $errors = [];
+
+    /** @var array<string, bool> */
     protected static $emitted = [];
 
     public static function accepts(Issue\CodeIssue $e, array $suppressed_issues = [])

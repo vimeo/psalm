@@ -6,10 +6,20 @@ abstract class CodeIssue
 {
     const CODE_EXCEPTION = 1;
 
+    /** @var string */
     protected $file_name;
+
+    /** @var int */
     protected $line_number;
+
+    /** @var string */
     protected $message;
 
+    /**
+     * @param string $message
+     * @param string $file_name
+     * @param int    $line_number
+     */
     public function __construct($message, $file_name, $line_number)
     {
         $this->line_number = $line_number;
@@ -19,7 +29,7 @@ abstract class CodeIssue
 
     public function getLineNumber()
     {
-    	return $this->line_number;
+        return $this->line_number;
     }
 
     public function getFileName()

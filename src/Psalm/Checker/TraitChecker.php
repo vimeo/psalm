@@ -9,7 +9,8 @@ use Psalm\Context;
 
 class TraitChecker extends ClassLikeChecker
 {
-    protected $method_map;
+    /** @var array<string, string> */
+    protected $method_map = [];
 
     public function __construct(PhpParser\Node\Stmt\Trait_ $class, StatementsSource $source, $absolute_class)
     {
@@ -20,7 +21,6 @@ class TraitChecker extends ClassLikeChecker
         $this->absolute_class = $absolute_class;
 
         $this->parent_class = null;
-        $this->method_map = [];
 
         $this->suppressed_issues = $source->getSuppressedIssues();
 
@@ -41,6 +41,10 @@ class TraitChecker extends ClassLikeChecker
         $this->method_map = $method_map;
     }
 
+    /**
+     * @param  string $method_name
+     * @return string
+     */
     protected function getMappedMethodName($method_name)
     {
         if (isset($this->method_map[$method_name])) {

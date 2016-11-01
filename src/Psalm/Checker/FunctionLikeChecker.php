@@ -70,6 +70,10 @@ abstract class FunctionLikeChecker implements StatementsSource
      * @var array<string,array<string,bool>>
      */
     protected $return_vars_possibly_in_scope = [];
+
+    /**
+     * @var string|null
+     */
     protected $class_name;
 
     /**
@@ -82,6 +86,9 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     protected $suppressed_issues;
 
+    /**
+     * @var array<string, array>
+     */
     protected static $no_effects_hashes = [];
 
     /**

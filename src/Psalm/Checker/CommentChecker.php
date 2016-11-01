@@ -26,15 +26,25 @@ class CommentChecker
         $comments = self::parseDocComment($comment);
 
         if ($comments && isset($comments['specials']['var'][0])) {
-            $var_parts = array_filter(preg_split('/[\s\t]+/', (string)$comments['specials']['var'][0]));
+            try {
+                $line_parts = self::splitDocLine((string)$comments['specials']['var'][0]);
+            }
+            catch (\Psalm\Exception\DocblockParseException $e) {
+                throw $e;
+            }
 
-            if ($var_parts) {
-                $type_in_comments = FunctionLikeChecker::fixUpLocalType($var_parts[0], $source->getAbsoluteClass(), $source->getNamespace(), $source->getAliasedClasses());
+            if ($line_parts) {
+                $type_in_comments = FunctionLikeChecker::fixUpLocalType(
+                    $line_parts[0],
+                    $source->getAbsoluteClass(),
+                    $source->getNamespace(),
+                    $source->getAliasedClasses()
+                );
 
                 // support PHPStorm-style docblocks like
                 // @var Type $variable
-                if (count($var_parts) > 1 && $var_parts[1][0] === '$') {
-                    $type_in_comments_var_id = $var_parts[1];
+                if (count($line_parts) > 1 && $line_parts[1][0] === '$') {
+                    $type_in_comments_var_id = $line_parts[1];
                 }
             }
         }
@@ -153,12 +163,18 @@ class CommentChecker
                     throw new \Psalm\Exception\DocblockParseException('Invalid string ' . $return_block);
                 }
             }
-            elseif ($char === ' ') {
+            elseif ($char === ' ' || $char === "\t") {
                 if ($brackets) {
                     continue;
                 }
 
-                return array_merge([$type], preg_split('/[\s]+/', trim(substr($return_block, $i + 1))));
+                $remaining = trim(substr($return_block, $i + 1));
+
+                if ($remaining) {
+                    return array_merge([$type], preg_split('/[\s\t]+/', $remaining));
+                }
+
+                return [$type];
             }
 
             $type .= $char;

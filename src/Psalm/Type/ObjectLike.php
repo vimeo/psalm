@@ -6,6 +6,7 @@ use Psalm\Type;
 
 class ObjectLike extends Atomic
 {
+    /** @var string */
     public $value = 'array';
 
     /** @var array<string,Union> */

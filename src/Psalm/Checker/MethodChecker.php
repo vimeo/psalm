@@ -15,8 +15,6 @@ use PhpParser;
 
 class MethodChecker extends FunctionLikeChecker
 {
-    protected static $method_comments = [];
-
     /**
      * @var array<string,string>
      */
@@ -34,30 +32,41 @@ class MethodChecker extends FunctionLikeChecker
 
     /** @var array<string,Type\Union> */
     protected static $method_return_types = [];
+
+    /** @var array<string, string> */
     protected static $cased_method_ids = [];
+
+    /** @var array<string, bool> */
     protected static $static_methods = [];
 
     /**
-     * @var array<string,string>
+     * @var array<string, string>
      */
     protected static $declaring_methods = [];
 
     /**
-     * @var array<string,array<string>>
+     * @var array<string, array<string>>
      */
     protected static $overridden_methods = [];
-    protected static $existing_methods = [];
+
+    /** @var array<string, bool> */
     protected static $have_reflected = [];
+
+    /** @var array<string, bool> */
     protected static $have_registered = [];
-    protected static $inherited_methods = [];
-    protected static $declaring_class = [];
+
+    /** @var array<string, string> */
     protected static $method_visibility = [];
+
+    /** @var array<string, array<int, string>> */
     protected static $method_suppress = [];
+
+    /** @var array<string, bool> */
     protected static $deprecated_methods = [];
 
     /**
      * A dictionary of variadic methods
-     * @var array<string,bool>
+     * @var array<string, bool>
      */
     protected static $variadic_methods = [];
 
@@ -191,7 +200,10 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * Determines whether a given method is static or not
-     * @param  string  $method_id
+     * @param  string               $method_id
+     * @param  string               $file_name
+     * @param  int                  $line_number
+     * @param  array<int, string>   $suppressed_issues
      */
     public static function checkMethodStatic($method_id, $file_name, $line_number, array $suppressed_issues)
     {
@@ -201,7 +213,11 @@ class MethodChecker extends FunctionLikeChecker
 
         if (!self::$static_methods[$method_id]) {
             if (IssueBuffer::accepts(
-                new InvalidStaticInvocation('Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static', $file_name, $line_number),
+                new InvalidStaticInvocation(
+                    'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static',
+                    $file_name,
+                    $line_number
+                ),
                 $suppressed_issues
             )) {
                 return false;
@@ -227,7 +243,6 @@ class MethodChecker extends FunctionLikeChecker
 
         self::$method_namespaces[$method_id] = $this->namespace;
         self::$method_files[$method_id] = $this->file_name;
-        self::$existing_methods[$method_id] = 1;
 
         if ($method->isPrivate()) {
             self::$method_visibility[$method_id] = self::VISIBILITY_PRIVATE;
@@ -453,7 +468,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string           $method_id
-     * @param  string           $calling_context
+     * @param  string|null      $calling_context
      * @param  StatementsSource $source
      * @param  int              $line_number
      * @param  array            $suppresssed_issues
@@ -512,6 +527,8 @@ class MethodChecker extends FunctionLikeChecker
                     )) {
                         return false;
                     }
+
+                    return;
                 }
 
                 if (ClassChecker::classExtends($method_class, $calling_context) && MethodChecker::methodExists($calling_context . '::' . $method_name)) {
@@ -581,7 +598,6 @@ class MethodChecker extends FunctionLikeChecker
 
     public static function clearCache()
     {
-        self::$method_comments = [];
         self::$method_files = [];
         self::$method_params = [];
         self::$cased_method_ids = [];
@@ -589,11 +605,8 @@ class MethodChecker extends FunctionLikeChecker
         self::$method_return_types = [];
         self::$static_methods = [];
         self::$declaring_methods = [];
-        self::$existing_methods = [];
         self::$have_reflected = [];
         self::$have_registered = [];
-        self::$inherited_methods = [];
-        self::$declaring_class = [];
         self::$method_visibility = [];
     }
 }

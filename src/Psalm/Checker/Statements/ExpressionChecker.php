@@ -801,7 +801,9 @@ class ExpressionChecker
                 return;
             }
 
-            if ($class_properties[$stmt->name] === false) {
+            $class_property_type = $class_properties[$stmt->name];
+
+            if ($class_property_type === false) {
                 if (IssueBuffer::accepts(
                     new MissingPropertyType(
                         'Property ' . $lhs_type_part->value . '::$' . $stmt->name . ' does not have a declared type',
@@ -816,7 +818,7 @@ class ExpressionChecker
                 $class_property_type = Type::getMixed();
             }
             else {
-                $class_property_type = clone $class_properties[$stmt->name];
+                $class_property_type = clone $class_property_type;
             }
 
             if (isset($stmt->inferredType)) {
@@ -855,7 +857,9 @@ class ExpressionChecker
 
             $class_properties = ClassLikeChecker::getInstancePropertiesForClass($context->self, \ReflectionProperty::IS_PRIVATE);
 
-            $class_property_types[] = $class_properties[$prop_name] ? clone $class_properties[$prop_name] : Type::getMixed();
+            $class_property_type = $class_properties[$prop_name];
+
+            $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
 
             $var_id = '$this->' . $prop_name;
         }
@@ -1046,7 +1050,9 @@ class ExpressionChecker
                     continue;
                 }
 
-                if ($class_properties[$prop_name] === false) {
+                $class_property_type = $class_properties[$prop_name];
+
+                if ($class_property_type === false) {
                     if (IssueBuffer::accepts(
                         new MissingPropertyType(
                             'Property ' . $lhs_type_part->value . '::$' . $stmt->name . ' does not have a declared type',
@@ -1058,11 +1064,13 @@ class ExpressionChecker
                         // fall through
                     }
 
-                    $class_property_types[] = Type::getMixed();
+                    $class_property_type = Type::getMixed();
                 }
                 else {
-                    $class_property_types[] = clone $class_properties[$prop_name];
+                    $class_property_type = clone $class_property_type;
                 }
+
+                $class_property_types[] = $class_property_type;
             }
 
             if (!$has_regular_setter) {
@@ -1218,7 +1226,9 @@ class ExpressionChecker
 
         $context->vars_in_scope[$var_id] = $assignment_type;
 
-        if ($class_properties[$prop_name] === false) {
+        $class_property_type = $class_properties[$prop_name];
+
+        if ($class_property_type === false) {
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     'Property ' . $absolute_class . '::$' . $prop_name . ' does not have a declared type',
@@ -1233,7 +1243,7 @@ class ExpressionChecker
             $class_property_type = Type::getMixed();
         }
         else {
-            $class_property_type = clone $class_properties[$prop_name];
+            $class_property_type = clone $class_property_type;
         }
 
         if ($assignment_type->isMixed()) {
@@ -2468,6 +2478,7 @@ class ExpressionChecker
 
                 if ($stmt->class instanceof PhpParser\Node\Name
                     && $stmt->class->parts[0] !== 'parent'
+                    && $context->self
                     && ($statements_checker->isStatic() || !ClassChecker::classExtends($context->self, $absolute_class))
                 ) {
                     if (MethodChecker::checkMethodStatic($method_id, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
@@ -2707,12 +2718,13 @@ class ExpressionChecker
                     }
                 }
 
-
-
                 foreach ($closure_arg->params as $i => $closure_param) {
                     if (!$array_arg_types[$i]) {
                         continue;
                     }
+
+                    /** @var Type\Generic */
+                    $array_arg_type = $array_arg_types[$i];
 
                     $translated_param = FunctionLikeChecker::getTranslatedParam(
                         $closure_param,
@@ -2722,7 +2734,7 @@ class ExpressionChecker
                     );
 
                     $param_type = $translated_param->type;
-                    $input_type = $array_arg_types[$i]->type_params[1];
+                    $input_type = $array_arg_type->type_params[1];
 
                     if ($input_type->isMixed()) {
                         continue;
@@ -2981,8 +2993,10 @@ class ExpressionChecker
                 return false;
             }
 
-            $context->vars_in_scope[$var_id] = clone $visible_class_properties[$stmt->name];
-            $stmt->inferredType = clone  $visible_class_properties[$stmt->name];
+            $visible_class_property = $visible_class_properties[$stmt->name];
+
+            $context->vars_in_scope[$var_id] = $visible_class_property ? clone $visible_class_property : Type::getMixed();
+            $stmt->inferredType = clone $context->vars_in_scope[$var_id];
         }
     }
 
@@ -3329,7 +3343,13 @@ class ExpressionChecker
             }
 
             if ($in_call_map) {
-                $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMap($method_id, $stmt->args, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues());
+                $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
+                    $method_id,
+                    $stmt->args,
+                    $statements_checker->getCheckedFileName(),
+                    $stmt->getLine(),
+                    $statements_checker->getSuppressedIssues()
+                );
             }
             else {
                 try {
@@ -3731,8 +3751,10 @@ class ExpressionChecker
     }
 
     /**
-     * @param  string  $function_id
-     * @param  Context $context
+     * @param  StatementsChecker    $statements_checker
+     * @param  string               $function_id
+     * @param  Context              $context
+     * @param  int                  $line_number
      * @return bool
      */
     protected static function checkFunctionExists(StatementsChecker $statements_checker, $function_id, Context $context, $line_number)
@@ -3742,7 +3764,11 @@ class ExpressionChecker
 
         if (!FunctionChecker::functionExists($function_id, $context->file_name)) {
             if (IssueBuffer::accepts(
-                new UndefinedFunction('Function ' . $cased_function_id . ' does not exist', $statements_checker->getCheckedFileName(), $line_number),
+                new UndefinedFunction(
+                    'Function ' . $cased_function_id . ' does not exist',
+                    $statements_checker->getCheckedFileName(),
+                    $line_number
+                ),
                 $statements_checker->getSuppressedIssues()
             )) {
                 return false;

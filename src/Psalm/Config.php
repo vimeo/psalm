@@ -13,60 +13,74 @@ class Config
     const REPORT_ERROR = 'error';
     const REPORT_SUPPRESS = 'suppress';
 
+    /** @var array<string> */
     public static $ERROR_LEVELS = [
         self::REPORT_INFO,
         self::REPORT_ERROR,
         self::REPORT_SUPPRESS
     ];
 
+    /** @var self|null */
     protected static $_config;
 
     /**
      * Whether or not to stop when the first error is seen
+     *
      * @var boolean
      */
     public $stop_on_first_error = true;
 
     /**
      * Whether or not to use types as defined in docblocks
+     *
      * @var boolean
      */
     public $use_docblock_types = true;
 
     /**
      * Whether or not to throw an exception on first error
+     *
      * @var boolean
      */
     public $throw_exception = false;
 
     /**
      * Path to the autoader
+     *
      * @var string|null
      */
     public $autoloader;
 
+    /** @var FileFilter|null */
     protected $inspect_files;
 
     /**
      * The base directory of this config file
+     *
      * @var string
      */
     protected $base_dir;
 
+    /** @var array<int, string> */
     protected $file_extensions = ['php'];
 
+     /** @var array<int, string> */
     protected $filetype_handlers = [];
 
     /**
-     * @var array<string,FileFilter>
+     * @var array<string, FileFilter>
      */
     protected $issue_handlers = [];
 
-    protected $custom_error_levels = [
-    ];
+    /**
+     * @var array<string, string>
+     */
+    protected $custom_error_levels = [];
 
+    /** @var array<int, string> */
     protected $mock_classes = [];
 
+    /** @var boolean */
     public $hide_external_errors = true;
 
     /**
@@ -83,7 +97,7 @@ class Config
     /**
      * Creates a new config object from the file
      * @param  string $file_name
-     * @return $this
+     * @return self
      */
     public static function loadFromXML($file_name)
     {
@@ -311,7 +325,7 @@ class Config
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
      */
     public function getMockClasses()
     {

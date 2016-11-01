@@ -6,6 +6,7 @@ use Psalm\Type;
 
 class GenericArray extends Generic
 {
+    /** @var string */
     public $value = 'array';
 
     /**

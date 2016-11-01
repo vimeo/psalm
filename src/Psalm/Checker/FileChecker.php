@@ -42,6 +42,9 @@ class FileChecker implements StatementsSource
      */
     protected $preloaded_statements = [];
 
+    /**
+     * @var array<int, string>
+     */
     protected $declared_classes = [];
 
     /**
@@ -55,19 +58,36 @@ class FileChecker implements StatementsSource
     protected static $cache_dir = null;
 
     /**
-     * @var array<string,static>
+     * @var array<string, static>
      */
     protected static $file_checkers = [];
 
+    /**
+     * @var array<string, bool>
+     */
     protected static $functions_checked = [];
+
+    /**
+     * @var array<string, bool>
+     */
     protected static $classes_checked = [];
+
+    /**
+     * @var array<string, bool>
+     */
     protected static $files_checked = [];
 
+    /**
+     * @var bool
+     */
     public static $show_notices = true;
 
     const REFERENCE_CACHE_NAME = 'references';
     const GOOD_RUN_NAME = 'good_run';
 
+    /**
+     * @var int|null
+     */
     protected static $last_good_run = null;
 
     /**
@@ -257,7 +277,7 @@ class FileChecker implements StatementsSource
 
     /**
      * Gets a list of the classes declared
-     * @return array<string>
+     * @return array<int, string>
      */
     public function getDeclaredClasses()
     {
@@ -294,7 +314,7 @@ class FileChecker implements StatementsSource
 
     /**
      * @param  string $file_name
-     * @return array<\PhpParser\Node>
+     * @return array<int, \PhpParser\Node>
      */
     public static function getStatementsForFile($file_name)
     {
@@ -601,7 +621,7 @@ class FileChecker implements StatementsSource
     public static function hasFileChanged($file)
     {
         if (self::$last_good_run === null) {
-            self::$last_good_run = filemtime(self::$cache_dir . '/' . self::GOOD_RUN_NAME);
+            self::$last_good_run = filemtime(self::$cache_dir . '/' . self::GOOD_RUN_NAME) ?: 0;
         }
 
         return filemtime($file) > self::$last_good_run;

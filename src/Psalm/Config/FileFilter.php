@@ -15,11 +15,13 @@ class FileFilter
     /** @var array<string> */
     protected $include_files = [];
 
+    /** @var array<string> */
     protected $include_files_lowercase = [];
 
     /** @var array<string> */
     protected $exclude_files = [];
 
+    /** @var array<string> */
     protected $exclude_files_lowercase = [];
 
     /** @var array<string> */
@@ -31,10 +33,11 @@ class FileFilter
     /** @var bool */
     protected $inclusive;
 
-    public function __construct() {
-
-    }
-
+    /**
+     * @param  SimpleXMLElement $e
+     * @param  bool             $inclusive
+     * @return self
+     */
     public static function loadFromXML(SimpleXMLElement $e, $inclusive)
     {
         $filter = new self();

@@ -13,19 +13,6 @@ use PhpParser;
 
 class TypeChecker
 {
-    protected $absolute_class;
-
-    /**
-     * @var string
-     */
-    protected $namespace;
-
-    /**
-     * @var StatementsChecker
-     */
-    protected $checker;
-    protected $check_nulls;
-
     const ASSIGNMENT_TO_RIGHT = 1;
     const ASSIGNMENT_TO_LEFT = -1;
 
@@ -972,8 +959,7 @@ class TypeChecker
             $existing_var_type->removeType($negated_type);
 
             if (empty($existing_var_type->types)) {
-                if ($key) {
-
+                if ($key && $file_name && $line_number) {
                     if (IssueBuffer::accepts(
                         new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number),
                         $suppressed_issues
@@ -1060,7 +1046,9 @@ class TypeChecker
                             return null;
                         }
 
-                        $class_property_type = $class_properties[$key_parts[$i]] ? clone $class_properties[$key_parts[$i]] : Type::getMixed();
+                        $class_property_type = $class_properties[$key_parts[$i]];
+
+                        $class_property_type = $class_property_type ? clone $class_property_type : Type::getMixed();
                     }
 
                     if (!$new_base_type) {

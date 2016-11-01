@@ -9,11 +9,14 @@ use Psalm\Context;
 class InterfaceChecker extends ClassLikeChecker
 {
     /**
-     * @var array<string,array<string>>
+     * @var array<string, array<string>>
      */
     protected static $parent_interfaces = [];
 
+    /** @var array<string, bool> */
     protected static $existing_interfaces = [];
+
+    /** @var array<string, bool> */
     protected static $existing_interfaces_ci = [];
 
     /**
