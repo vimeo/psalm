@@ -401,10 +401,10 @@ abstract class Type
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
-        /** @var array<string,array<string,Union>> */
+        /** @var array<string, array<string, Union>> */
         $key_types = [];
 
-        /** @var array<string,array<string,Union>> */
+        /** @var array<string, array<string, Union>> */
         $value_types = [];
 
         foreach ($types as $type) {
@@ -447,7 +447,7 @@ abstract class Type
             }
             elseif ($type instanceof ObjectLike) {
                 if (!isset($value_types['object-like'])) {
-                    /** @var array<string,Union> */
+                    /** @var array<string, Union> */
                     $value_types['object-like'] = [];
                 }
 

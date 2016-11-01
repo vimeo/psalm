@@ -99,8 +99,12 @@ class ParseTree
                         throw new \InvalidArgumentException('Cannot parse comma in non-generic/array type');
                     }
 
+                    if (!$current_parent) {
+                        throw new \InvalidArgumentException('Cannot parse comma in with no parent node');
+                    }
+
                     if ($context_node->value === self::GENERIC && $current_parent->value !== self::GENERIC) {
-                        if (!$current_parent->parent->value) {
+                        if (!isset($current_parent->parent) || !$current_parent->parent->value) {
                             throw new \InvalidArgumentException('Cannot parse comma in non-generic/array type');
                         }
 
@@ -110,7 +114,7 @@ class ParseTree
                         do {
                             $current_leaf = $current_leaf->parent;
                         }
-                        while ($current_leaf->parent->value !== self::OBJECT_LIKE);
+                        while ($current_leaf->parent && $current_leaf->parent->value !== self::OBJECT_LIKE);
                     }
 
                     break;
@@ -163,6 +167,11 @@ class ParseTree
                     }
 
                     $new_leaf = new self($type_token, $current_leaf->parent);
+
+                    if (!isset($current_leaf->parent)) {
+                        throw new \InvalidArgumentException('Current leaf must have a parent');
+                    }
+
                     $current_leaf->parent->children[] = $new_leaf;
 
                     $current_leaf = $new_leaf;

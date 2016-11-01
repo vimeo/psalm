@@ -160,13 +160,7 @@ class Union extends Type
     /** @return bool */
     public function isEmpty()
     {
-        if ($this instanceof Atomic) {
-            return $this->value === 'empty';
-        }
-
-        if ($this instanceof Union) {
-            return isset($this->types['empty']);
-        }
+        return isset($this->types['empty']);
     }
 
     public function removeObjects()
