@@ -162,6 +162,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            /** @var A|null */
             public $a;
 
             public function bar(A $a = null) {
@@ -182,6 +183,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            /** @var A|null */
             public $a;
 
             public function bar(A $a = null) {
@@ -202,6 +204,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            /** @var A|null */
             public $a;
 
             public function bar(A $a = null) {
@@ -268,6 +271,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$_parser->parse('<?php
         class One {
+            /** @var int|null */
             public $two;
 
             public function foo() {}
@@ -390,6 +394,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$_parser->parse('<?php
         class One {
+            /** @var string */
             public $a;
 
             public function foo() {}
@@ -945,6 +950,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            /** @var One|null */
             public $one;
 
             public function bar(One $one = null) {

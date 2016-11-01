@@ -101,6 +101,13 @@ class AssignmentChecker
                     continue;
                 }
 
+                if ($assign_value instanceof PhpParser\Node\Expr\Array_
+                    && isset($assign_value->items[$offset]->value->inferredType)
+                ) {
+                    self::check($statements_checker, $var, $assign_value->items[$offset]->value, $context, $doc_comment);
+                    continue;
+                }
+
                 $list_var_id = ExpressionChecker::getVarId(
                     $var,
                     $statements_checker->getAbsoluteClass(),
@@ -108,19 +115,14 @@ class AssignmentChecker
                     $statements_checker->getAliasedClasses()
                 );
 
-                if ($assign_value instanceof PhpParser\Node\Expr\Array_
-                    && isset($assign_value->items[$offset]->value->inferredType)
-                ) {
-                    $array_type = $assign_value->items[$offset]->value->inferredType;
-                }
-                elseif (isset($return_type->types['array']) && $return_type->types['array'] instanceof Type\Generic) {
-                    $array_type = $return_type->types['array']->type_params[1];
-                }
-                else {
-                    $array_type = null;
-                }
-
                 if ($list_var_id) {
+                    if (isset($return_type->types['array']) && $return_type->types['array'] instanceof Type\Generic) {
+                        $array_type = $return_type->types['array']->type_params[1];
+                    }
+                    else {
+                        $array_type = null;
+                    }
+
                     $context->vars_in_scope[$list_var_id] = $array_type ? clone $array_type : Type::getMixed();
                     $context->vars_possibly_in_scope[$list_var_id] = true;
                     $statements_checker->registerVariable($list_var_id, $var->getLine());

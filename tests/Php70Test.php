@@ -125,11 +125,8 @@ class Php70Test extends PHPUnit_Framework_TestCase
         }
 
         class Application {
+            /** @var Logger|null */
             private $logger;
-
-            public function getLogger(): Logger {
-                 return $this->logger;
-            }
 
             public function setLogger(Logger $logger) {
                  $this->logger = $logger;

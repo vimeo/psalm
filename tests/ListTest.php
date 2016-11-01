@@ -9,7 +9,7 @@ use Psalm\Context;
 use Psalm\Checker\TypeChecker;
 use Psalm\Type;
 
-class InterfaceTest extends PHPUnit_Framework_TestCase
+class ListTest extends PHPUnit_Framework_TestCase
 {
     protected static $_parser;
 
@@ -71,7 +71,38 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$_parser->parse('<?php
         class A {
+            /** @var string */
             public $a;
+
+            /** @var string */
+            public $b;
+
+            public function foo() : string
+            {
+                list($this->a, $this->b) = ["a", "b"];
+
+                return $this->a;
+            }
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyAssignment - somefile.php:11
+     */
+    public function testThisVarWithBadType()
+    {
+        $stmts = self::$_parser->parse('<?php
+        class A {
+            /** @var int */
+            public $a;
+
+            /** @var string */
             public $b;
 
             public function foo() : string
