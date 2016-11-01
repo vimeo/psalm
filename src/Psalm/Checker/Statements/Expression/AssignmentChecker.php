@@ -233,7 +233,12 @@ class AssignmentChecker
                 }
             }
 
-            $var_id = ExpressionChecker::getVarId($stmt, $statements_checker->getAbsoluteClass(), $statements_checker->getNamespace(), $statements_checker->getAliasedClasses());
+            $var_id = ExpressionChecker::getVarId(
+                $stmt,
+                $statements_checker->getAbsoluteClass(),
+                $statements_checker->getNamespace(),
+                $statements_checker->getAliasedClasses()
+            );
 
             if ($lhs_type->isMixed()) {
                 if (IssueBuffer::accepts(
