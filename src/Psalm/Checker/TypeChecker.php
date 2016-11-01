@@ -112,7 +112,7 @@ class TypeChecker
      * @param  string               $namespace
      * @param  array<string>        $aliased_classes
      * @param  bool                 $allow_non_negatable Allow type assertions that should not be negated
-     * @return array<string,string>
+     * @return array<string, string>
      */
     public static function getTypeAssertions(
         PhpParser\Node\Expr $conditional,
@@ -158,7 +158,10 @@ class TypeChecker
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\Assign) {
                 $var_name = ExpressionChecker::getArrayVarId($conditional->expr->var, $this_class_name, $namespace, $aliased_classes);
-                $if_types[$var_name] = 'empty';
+
+                if ($var_name) {
+                    $if_types[$var_name] = 'empty';
+                }
             }
             else if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
                 $null_position = self::hasNullVariable($conditional->expr);

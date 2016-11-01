@@ -218,7 +218,7 @@ class CommentChecker
         $special = array();
 
         // Parse @specials.
-        $matches = null;
+        $matches = [];
         $have_specials = preg_match_all('/^\s?@([\w\-:]+)\s*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
         if ($have_specials) {
             $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
