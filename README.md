@@ -121,6 +121,9 @@ function (int $a) : string {
 
 Psalm is able to interpret all PHPDoc type annotations, and use them to further understand the codebase.
 
+### Union Types
+
+@todo describe how Union types work
 
 ### Property types vs Assignment typehints
 
