@@ -1,40 +1,38 @@
 <?php
-
 namespace Psalm\Tests;
 
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
 use Psalm\Context;
-use Psalm\Checker\TypeChecker;
-use Psalm\Type;
 
 class Php56Test extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
         $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     public function testConstArray()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         const ARR = ["a", "b"];
         $a = ARR[0];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
@@ -42,7 +40,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
 
     public function testConstFeatures()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         const ONE = 1;
         const TWO = ONE * 2;
 
@@ -66,7 +64,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $g = C::ONE_THIRD;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$d']);
@@ -77,7 +75,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
 
     public function testVariadic()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         function f($req, $opt = null, ...$params) {
         }
 
@@ -88,14 +86,14 @@ class Php56Test extends PHPUnit_Framework_TestCase
         f(1, 2, 3, 4, 5);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
 
     public function testVariadicArray()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         function f(int ...$a_list) {
             return array_map(function (int $a) {
                 return $a + 1;
@@ -107,14 +105,14 @@ class Php56Test extends PHPUnit_Framework_TestCase
         f(1, 2, 3);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
 
     public function testArgumentUnpacking()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         function add($a, $b, $c) {
             return $a + $b + $c;
         }
@@ -123,19 +121,19 @@ class Php56Test extends PHPUnit_Framework_TestCase
         echo add(1, ...$operators);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
 
     public function testExponentiation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $a = 2;
         $a **= 3;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
@@ -144,7 +142,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
     {
         $this->markTestIncomplete('This passes, but I think there‘s cheating afoot');
 
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         namespace Name\Space {
             const FOO = 42;
             function f() { echo __FUNCTION__."\n"; }
@@ -159,7 +157,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }

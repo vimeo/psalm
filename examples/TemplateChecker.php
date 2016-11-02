@@ -1,15 +1,13 @@
 <?php
-
 namespace Psalm\Example\Template;
 
 use Psalm;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\CommentChecker;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Context;
-use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\CommentChecker;
 use Psalm\Type;
 use PhpParser;
 
@@ -17,12 +15,24 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 {
     const THIS_CLASS = 'Psalm\\Example\\Template\\Base';
 
-    public function check($check_classes = true, $check_class_statements = true, Context $file_context = null, $cache = true)
+    /**
+     * @param   bool            $check_classes
+     * @param   bool            $check_class_statements
+     * @param   Context|null    $file_context
+     * @param   bool            $cache
+     * @return  false|null
+     */
+    public function check(
+        $check_classes = true,
+        $check_class_statements = true,
+        Context $file_context = null,
+        $cache = true
+    )
     {
         $stmts = $this->getStatements();
 
         if (empty($stmts)) {
-            return;
+            return null;
         }
 
         $first_stmt = $stmts[0];
@@ -44,7 +54,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
                     throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                $this_params = $this->_checkMethod($matches[1]);
+                $this_params = $this->checkMethod($matches[1]);
 
                 if ($this_params === false) {
                     return false;
@@ -60,10 +70,15 @@ class TemplateChecker extends Psalm\Checker\FileChecker
             $this_params->self = self::THIS_CLASS;
         }
 
-        $this->_checkWithViewClass($this_params);
+        $this->checkWithViewClass($this_params);
+        return null;
     }
 
-    private function _checkMethod($method_id)
+    /**
+     * @param   string $method_id
+     * @return  bool|Context
+     */
+    private function checkMethod($method_id)
     {
         $class = explode('::', $method_id)[0];
 
@@ -114,7 +129,11 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         return $view_context;
     }
 
-    protected function _checkWithViewClass(Context $context)
+    /**
+     * @param   Context $context
+     * @return  void
+     */
+    protected function checkWithViewClass(Context $context)
     {
         $class_name = self::THIS_CLASS;
 

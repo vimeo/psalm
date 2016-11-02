@@ -3,18 +3,24 @@ namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
 use Psalm\Context;
-use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Type;
 
 class WhileChecker
 {
     /**
-     * @return false|null
+     * @param   StatementsChecker           $statements_checker
+     * @param   PhpParser\Node\Stmt\While_  $stmt
+     * @param   Context                     $context
+     * @return  false|null
      */
-    public static function check(StatementsChecker $statements_checker, PhpParser\Node\Stmt\While_ $stmt, Context $context)
-    {
+    public static function check(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Stmt\While_ $stmt,
+        Context $context
+    ) {
         $while_context = clone $context;
 
         if (ExpressionChecker::check($statements_checker, $stmt->cond, $while_context) === false) {
@@ -22,17 +28,18 @@ class WhileChecker
         }
 
         $while_types = TypeChecker::getTypeAssertions(
-                        $stmt->cond,
-                        $statements_checker->getAbsoluteClass(),
-                        $statements_checker->getNamespace(),
-                        $statements_checker->getAliasedClasses()
-                    );
+            $stmt->cond,
+            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
 
         // if the while has an or as the main component, we cannot safely reason about it
-        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp && $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp &&
+            $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+        ) {
             // do nothing
-        }
-        else {
+        } else {
             $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $while_types,
                 $while_context->vars_in_scope,
@@ -68,6 +75,11 @@ class WhileChecker
             }
         }
 
-        $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $while_context->vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge(
+            $context->vars_possibly_in_scope,
+            $while_context->vars_possibly_in_scope
+        );
+
+        return null;
     }
 }

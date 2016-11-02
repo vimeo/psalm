@@ -1,10 +1,8 @@
 <?php
-
 namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\StatementsSource;
-use Psalm\Context;
 
 class InterfaceChecker extends ClassLikeChecker
 {
@@ -13,10 +11,14 @@ class InterfaceChecker extends ClassLikeChecker
      */
     protected static $parent_interfaces = [];
 
-    /** @var array<string, bool> */
+    /**
+     * @var array<string, bool>
+     */
     protected static $existing_interfaces = [];
 
-    /** @var array<string, bool> */
+    /**
+     * @var array<string, bool>
+     */
     protected static $existing_interfaces_ci = [];
 
     /**
@@ -35,7 +37,12 @@ class InterfaceChecker extends ClassLikeChecker
             self::$parent_interfaces[$interface_name] = [];
 
             foreach ($interface->extends as $extended_interface) {
-                $extended_interface_name = self::getAbsoluteClassFromName($extended_interface, $this->namespace, $this->aliased_classes);
+                $extended_interface_name = self::getAbsoluteClassFromName(
+                    $extended_interface,
+                    $this->namespace,
+                    $this->aliased_classes
+                );
+
                 self::$parent_interfaces[$interface_name][] = $extended_interface_name;
             }
         }
@@ -82,12 +89,6 @@ class InterfaceChecker extends ClassLikeChecker
         return isset(self::$existing_interfaces[$interface]);
     }
 
-    public static function clearCache()
-    {
-        self::$existing_interfaces = [];
-        self::$existing_interfaces_ci = [];
-    }
-
     /**
      * @param  string $interface_name
      * @param  string $possible_parent
@@ -122,5 +123,14 @@ class InterfaceChecker extends ClassLikeChecker
         }
 
         return $extended_interfaces;
+    }
+
+    /**
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$existing_interfaces = [];
+        self::$existing_interfaces_ci = [];
     }
 }

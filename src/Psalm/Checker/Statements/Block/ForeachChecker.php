@@ -8,19 +8,25 @@ use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\MethodChecker;
-use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
-use Psalm\Issue\NullReference;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Issue\InvalidIterator;
+use Psalm\Issue\NullReference;
 use Psalm\Type;
 
 class ForeachChecker
 {
     /**
-     * @return false|null
+     * @param   StatementsChecker               $statements_checker
+     * @param   PhpParser\Node\Stmt\Foreach_    $stmt
+     * @param   Context                         $context
+     * @return  false|null
      */
-    public static function check(StatementsChecker $statements_checker, PhpParser\Node\Stmt\Foreach_ $stmt, Context $context)
-    {
+    public static function check(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        Context $context
+    ) {
         if (ExpressionChecker::check($statements_checker, $stmt->expr, $context) === false) {
             return false;
         }
@@ -44,11 +50,9 @@ class ForeachChecker
         if (isset($stmt->expr->inferredType)) {
             /** @var Type\Union */
             $iterator_type = $stmt->expr->inferredType;
-        }
-        elseif (isset($foreach_context->vars_in_scope[$var_id])) {
+        } elseif (isset($foreach_context->vars_in_scope[$var_id])) {
             $iterator_type = $foreach_context->vars_in_scope[$var_id];
-        }
-        else {
+        } else {
             $iterator_type = null;
         }
 
@@ -65,8 +69,7 @@ class ForeachChecker
 
                     if (!$value_type) {
                         $value_type = $value_type_part;
-                    }
-                    else {
+                    } else {
                         $value_type = Type::combineUnionTypes($value_type, $value_type_part);
                     }
 
@@ -75,8 +78,7 @@ class ForeachChecker
 
                         if (!$key_type) {
                             $key_type = $key_type_part;
-                        }
-                        else {
+                        } else {
                             $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                         }
                     }
@@ -97,7 +99,11 @@ class ForeachChecker
 
                     case 'null':
                         if (IssueBuffer::accepts(
-                            new NullReference('Cannot iterate over ' . $return_type->value, $statements_checker->getCheckedFileName(), $stmt->getLine()),
+                            new NullReference(
+                                'Cannot iterate over ' . $return_type->value,
+                                $statements_checker->getCheckedFileName(),
+                                $stmt->getLine()
+                            ),
                             $statements_checker->getSuppressedIssues()
                         )) {
                             return false;
@@ -112,11 +118,16 @@ class ForeachChecker
                     case 'bool':
                     case 'false':
                         if (IssueBuffer::accepts(
-                            new InvalidIterator('Cannot iterate over ' . $return_type->value, $statements_checker->getCheckedFileName(), $stmt->getLine()),
+                            new InvalidIterator(
+                                'Cannot iterate over ' . $return_type->value,
+                                $statements_checker->getCheckedFileName(),
+                                $stmt->getLine()
+                            ),
                             $statements_checker->getSuppressedIssues()
                         )) {
                             return false;
                         }
+
                         $value_type = Type::getMixed();
                         break;
 
@@ -126,22 +137,32 @@ class ForeachChecker
                             $iterator_class_type = MethodChecker::getMethodReturnTypes($iterator_method);
 
                             if ($iterator_class_type) {
-                                $value_type_part = ExpressionChecker::fleshOutTypes($iterator_class_type, [], $return_type->value, $iterator_method);
+                                $value_type_part = ExpressionChecker::fleshOutTypes(
+                                    $iterator_class_type,
+                                    [],
+                                    $return_type->value,
+                                    $iterator_method
+                                );
 
                                 if (!$value_type) {
                                     $value_type = $value_type_part;
-                                }
-                                else {
+                                } else {
                                     $value_type = Type::combineUnionTypes($value_type, $value_type_part);
                                 }
-                            }
-                            else {
+                            } else {
                                 $value_type = Type::getMixed();
                             }
                         }
 
-                        if ($return_type->value !== 'Traversable' && $return_type->value !== $statements_checker->getClassName()) {
-                            if (ClassLikeChecker::checkAbsoluteClassOrInterface($return_type->value, $statements_checker->getCheckedFileName(), $stmt->getLine(), $statements_checker->getSuppressedIssues()) === false) {
+                        if ($return_type->value !== 'Traversable' &&
+                            $return_type->value !== $statements_checker->getClassName()
+                        ) {
+                            if (ClassLikeChecker::checkAbsoluteClassOrInterface(
+                                $return_type->value,
+                                $statements_checker->getCheckedFileName(),
+                                $stmt->getLine(),
+                                $statements_checker->getSuppressedIssues()
+                            ) === false) {
                                 return false;
                             }
                         }
@@ -167,14 +188,18 @@ class ForeachChecker
                     $statements_checker->registerVariable('$' . $var->name, $var->getLine());
                 }
             }
-        }
-        elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable) {
+        } elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable) {
             $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
             $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
             $statements_checker->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());
         }
 
-        CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $foreach_context, $statements_checker->getSource(), null);
+        CommentChecker::getTypeFromComment(
+            (string) $stmt->getDocComment(),
+            $foreach_context,
+            $statements_checker->getSource(),
+            null
+        );
 
         $statements_checker->check($stmt->stmts, $foreach_context, $context);
 
@@ -193,10 +218,18 @@ class ForeachChecker
             }
 
             if ((string) $foreach_context->vars_in_scope[$var] !== (string) $type) {
-                $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $foreach_context->vars_in_scope[$var]);
+                $context->vars_in_scope[$var] = Type::combineUnionTypes(
+                    $context->vars_in_scope[$var],
+                    $foreach_context->vars_in_scope[$var]
+                );
             }
         }
 
-        $context->vars_possibly_in_scope = array_merge($foreach_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge(
+            $foreach_context->vars_possibly_in_scope,
+            $context->vars_possibly_in_scope
+        );
+
+        return null;
     }
 }

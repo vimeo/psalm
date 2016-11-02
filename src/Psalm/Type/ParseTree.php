@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Type;
 
 class ParseTree
@@ -9,13 +8,19 @@ class ParseTree
     const OBJECT_PROPERTY = ':';
     const UNION = '|';
 
-    /** @var array<ParseTree> */
+    /**
+     * @var array<ParseTree>
+     */
     public $children = [];
 
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     public $value;
 
-    /** @var null|ParseTree */
+    /**
+     * @var null|ParseTree
+     */
     public $parent;
 
     /**
@@ -30,6 +35,7 @@ class ParseTree
 
     /**
      * Create a parse tree from a tokenised type
+     *
      * @param  array<string>  $type_tokens
      * @return self
      */
@@ -48,15 +54,18 @@ class ParseTree
                 case '<':
                 case '{':
                     $current_parent = $current_leaf->parent;
-                    $new_parent_leaf = new self($type_token === '<' ? ParseTree::GENERIC : ParseTree::OBJECT_LIKE, $current_parent);
+                    $new_parent_leaf = new self(
+                        $type_token === '<' ? ParseTree::GENERIC : ParseTree::OBJECT_LIKE,
+                        $current_parent
+                    );
+
                     $new_parent_leaf->children = [$current_leaf];
                     $current_leaf->parent = $new_parent_leaf;
 
                     if ($current_parent) {
                         array_pop($current_parent->children);
                         $current_parent->children[] = $new_parent_leaf;
-                    }
-                    else {
+                    } else {
                         $parse_tree = $new_parent_leaf;
                     }
 
@@ -69,8 +78,7 @@ class ParseTree
                         }
 
                         $current_leaf = $current_leaf->parent;
-                    }
-                    while ($current_leaf->value !== self::GENERIC);
+                    } while ($current_leaf->value !== self::GENERIC);
 
                     break;
 
@@ -81,8 +89,7 @@ class ParseTree
                         }
 
                         $current_leaf = $current_leaf->parent;
-                    }
-                    while ($current_leaf->value !== self::OBJECT_LIKE);
+                    } while ($current_leaf->value !== self::OBJECT_LIKE);
 
                     break;
 
@@ -91,7 +98,10 @@ class ParseTree
 
                     $context_node = $current_leaf;
 
-                    while ($context_node && $context_node->value !== self::GENERIC && $context_node->value !== self::OBJECT_LIKE) {
+                    while ($context_node &&
+                        $context_node->value !== self::GENERIC &&
+                        $context_node->value !== self::OBJECT_LIKE
+                    ) {
                         $context_node = $context_node->parent;
                     }
 
@@ -109,12 +119,12 @@ class ParseTree
                         }
 
                         $current_leaf = $current_leaf->parent;
-                    }
-                    elseif ($context_node->value === self::OBJECT_LIKE && $current_parent->value !== self::OBJECT_LIKE) {
+                    } elseif ($context_node->value === self::OBJECT_LIKE &&
+                        $current_parent->value !== self::OBJECT_LIKE
+                    ) {
                         do {
                             $current_leaf = $current_leaf->parent;
-                        }
-                        while ($current_leaf->parent && $current_leaf->parent->value !== self::OBJECT_LIKE);
+                        } while ($current_leaf->parent && $current_leaf->parent->value !== self::OBJECT_LIKE);
                     }
 
                     break;
@@ -153,8 +163,7 @@ class ParseTree
                     if ($current_parent) {
                         array_pop($current_parent->children);
                         $current_parent->children[] = $new_parent_leaf;
-                    }
-                    else {
+                    } else {
                         $parse_tree = $new_parent_leaf;
                     }
 

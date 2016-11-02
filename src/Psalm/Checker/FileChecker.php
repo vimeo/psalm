@@ -1,17 +1,17 @@
 <?php
-
 namespace Psalm\Checker;
 
-use PhpParser;
-use PhpParser\Error;
 use PhpParser\ParserFactory;
-
-use Psalm\StatementsSource;
+use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\StatementsSource;
 
 class FileChecker implements StatementsSource
 {
+    const REFERENCE_CACHE_NAME = 'references';
+    const GOOD_RUN_NAME = 'good_run';
+
     /**
      * @var string
      */
@@ -82,9 +82,6 @@ class FileChecker implements StatementsSource
      */
     public static $show_notices = true;
 
-    const REFERENCE_CACHE_NAME = 'references';
-    const GOOD_RUN_NAME = 'good_run';
-
     /**
      * @var int|null
      */
@@ -140,18 +137,25 @@ class FileChecker implements StatementsSource
         }
     }
 
+    /**
+     * @param   bool            $check_classes
+     * @param   bool            $check_functions
+     * @param   Context|null    $file_context
+     * @param   bool            $cache
+     * @return  array|null
+     */
     public function check($check_classes = true, $check_functions = true, Context $file_context = null, $cache = true)
     {
         if ($cache && isset(self::$functions_checked[$this->short_file_name])) {
-            return;
+            return null;
         }
 
         if ($cache && $check_classes && !$check_functions && isset(self::$classes_checked[$this->real_file_name])) {
-            return;
+            return null;
         }
 
         if ($cache && !$check_classes && !$check_functions && isset(self::$files_checked[$this->real_file_name])) {
-            return;
+            return null;
         }
 
         if (!$file_context) {
@@ -190,36 +194,41 @@ class FileChecker implements StatementsSource
                 }
 
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-
                     if ($check_classes) {
-                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new ClassChecker($stmt, $this, $stmt->name);
+                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
+                            ?: new ClassChecker($stmt, $this, $stmt->name);
+
                         $this->declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check($check_functions);
                     }
-                }
-                elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
-                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new InterfaceChecker($stmt, $this, $stmt->name);
+                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
+                            ?: new InterfaceChecker($stmt, $this, $stmt->name);
+
                         $this->declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check(false);
                     }
-
-                }
-                elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
-                        $trait_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new TraitChecker($stmt, $this, $stmt->name);
+                        $trait_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
+                            ?: new TraitChecker($stmt, $this, $stmt->name);
+
                         $trait_checker->check($check_functions);
                     }
-
-                }
-                elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_ && $stmt->name instanceof PhpParser\Node\Name) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_ &&
+                    $stmt->name instanceof PhpParser\Node\Name
+                ) {
                     $namespace_name = implode('\\', $stmt->name->parts);
 
                     $namespace_checker = new NamespaceChecker($stmt, $this);
-                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check($check_classes, $check_functions);
+                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check(
+                        $check_classes,
+                        $check_functions
+                    );
+
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
-                }
-                elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
                     $function_context = new Context($this->short_file_name, $file_context->self);
                     $function_checkers[$stmt->name]->check($function_context);
 
@@ -227,14 +236,10 @@ class FileChecker implements StatementsSource
                         $function_checkers[$stmt->name]->checkReturnTypes();
                     }
                 }
-
-            }
-            else {
+            } else {
                 $leftover_stmts[] = $stmt;
             }
         }
-
-
 
         if ($leftover_stmts) {
             $statments_checker->check($leftover_stmts, $file_context);
@@ -250,8 +255,6 @@ class FileChecker implements StatementsSource
 
         self::$files_checked[$this->real_file_name] = true;
 
-
-
         return $stmts;
     }
 
@@ -265,7 +268,6 @@ class FileChecker implements StatementsSource
     {
         if (isset(self::$file_checkers[$file_name])) {
             $aliased_classes = self::$file_checkers[$file_name]->getAliasedClasses($namespace);
-
         } else {
             $file_checker = new FileChecker($file_name);
             $file_checker->check(false, false, new Context($file_name));
@@ -277,6 +279,7 @@ class FileChecker implements StatementsSource
 
     /**
      * Gets a list of the classes declared
+     *
      * @return array<int, string>
      */
     public function getDeclaredClasses()
@@ -286,6 +289,7 @@ class FileChecker implements StatementsSource
 
     /**
      * Gets a list of the classes declared in that file
+     *
      * @param  string $file_name
      * @return array<string>
      */
@@ -293,8 +297,7 @@ class FileChecker implements StatementsSource
     {
         if (isset(self::$file_checkers[$file_name])) {
             $file_checker = self::$file_checkers[$file_name];
-        }
-        else {
+        } else {
             $file_checker = new FileChecker($file_name);
             $file_checker->check(false, false, new Context($file_name));
         }
@@ -307,9 +310,9 @@ class FileChecker implements StatementsSource
      */
     protected function getStatements()
     {
-        return $this->preloaded_statements ?
-                    $this->preloaded_statements :
-                    self::getStatementsForFile($this->real_file_name);
+        return $this->preloaded_statements
+            ? $this->preloaded_statements
+            : self::getStatementsForFile($this->real_file_name);
     }
 
     /**
@@ -362,6 +365,9 @@ class FileChecker implements StatementsSource
         return $stmts;
     }
 
+    /**
+     * @return bool
+     */
     public static function loadReferenceCache()
     {
         if (self::$cache_dir) {
@@ -376,6 +382,9 @@ class FileChecker implements StatementsSource
         return false;
     }
 
+    /**
+     * @return void
+     */
     public static function updateReferenceCache()
     {
         if (self::$cache_dir) {
@@ -406,6 +415,10 @@ class FileChecker implements StatementsSource
         }
     }
 
+    /**
+     * @param   string  $cache_dir
+     * @return  void
+     */
     public static function setCacheDir($cache_dir)
     {
         self::$cache_dir = $cache_dir;
@@ -440,6 +453,9 @@ class FileChecker implements StatementsSource
         return null;
     }
 
+    /**
+     * @return null
+     */
     public function getClassName()
     {
         return null;
@@ -461,16 +477,25 @@ class FileChecker implements StatementsSource
         return null;
     }
 
+    /**
+     * @return string
+     */
     public function getFileName()
     {
         return $this->short_file_name;
     }
 
+    /**
+     * @return string
+     */
     public function getRealFileName()
     {
         return $this->real_file_name;
     }
 
+    /**
+     * @return null|string
+     */
     public function getIncludeFileName()
     {
         return $this->include_file_name;
@@ -484,6 +509,9 @@ class FileChecker implements StatementsSource
         $this->include_file_name = $file_name;
     }
 
+    /**
+     * @return string
+     */
     public function getCheckedFileName()
     {
         return $this->include_file_name ?: $this->short_file_name;
@@ -497,6 +525,9 @@ class FileChecker implements StatementsSource
         return false;
     }
 
+    /**
+     * @return null
+     */
     public function getSource()
     {
         return null;
@@ -504,6 +535,7 @@ class FileChecker implements StatementsSource
 
     /**
      * Get a list of suppressed issues
+     *
      * @return array<string>
      */
     public function getSuppressedIssues()
@@ -511,6 +543,10 @@ class FileChecker implements StatementsSource
         return $this->suppressed_issues;
     }
 
+    /**
+     * @param   string  $file_name
+     * @return  mixed
+     */
     public static function getFileCheckerFromFileName($file_name)
     {
         return self::$file_checkers[$file_name];
@@ -529,8 +565,7 @@ class FileChecker implements StatementsSource
 
         if (isset(self::$file_checkers[$file_name])) {
             $file_checker = self::$file_checkers[$file_name];
-        }
-        else {
+        } else {
             $file_checker = new FileChecker($file_name);
         }
 
@@ -539,6 +574,9 @@ class FileChecker implements StatementsSource
         return ClassLikeChecker::getClassLikeCheckerFromClass($class_name);
     }
 
+    /**
+     * @return void
+     */
     protected function registerUses()
     {
         foreach ($this->getStatements() as $stmt) {
@@ -550,17 +588,31 @@ class FileChecker implements StatementsSource
         }
     }
 
+    /**
+     * @param string $source_file
+     * @param string $absolute_class
+     * @return void
+     */
     public static function addFileReferenceToClass($source_file, $absolute_class)
     {
         self::$referencing_files[$source_file] = true;
         self::$file_references_to_class[$absolute_class][$source_file] = true;
     }
 
+    /**
+     * @param string $source_file
+     * @param string $absolute_class
+     * @return void
+     */
     public static function addFileInheritanceToClass($source_file, $absolute_class)
     {
         self::$files_inheriting_classes[$absolute_class][$source_file] = true;
     }
 
+    /**
+     * @param   string $file
+     * @return  array
+     */
     public static function calculateFilesReferencingFile($file)
     {
         $referenced_files = [];
@@ -569,13 +621,20 @@ class FileChecker implements StatementsSource
 
         foreach ($file_classes as $file_class) {
             if (isset(self::$file_references_to_class[$file_class])) {
-                $referenced_files = array_merge($referenced_files, array_keys(self::$file_references_to_class[$file_class]));
+                $referenced_files = array_merge(
+                    $referenced_files,
+                    array_keys(self::$file_references_to_class[$file_class])
+                );
             }
         }
 
         return array_unique($referenced_files);
     }
 
+    /**
+     * @param   string $file
+     * @return  array
+     */
     public static function calculateFilesInheritingFile($file)
     {
         $referenced_files = [];
@@ -584,7 +643,10 @@ class FileChecker implements StatementsSource
 
         foreach ($file_classes as $file_class) {
             if (isset(self::$files_inheriting_classes[$file_class])) {
-                $referenced_files = array_merge($referenced_files, array_keys(self::$files_inheriting_classes[$file_class]));
+                $referenced_files = array_merge(
+                    $referenced_files,
+                    array_keys(self::$files_inheriting_classes[$file_class])
+                );
             }
         }
 
@@ -609,6 +671,9 @@ class FileChecker implements StatementsSource
         return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
     }
 
+    /**
+     * @return bool
+     */
     public static function canDiffFiles()
     {
         return self::$cache_dir && file_exists(self::$cache_dir . '/' . self::GOOD_RUN_NAME);
@@ -635,7 +700,7 @@ class FileChecker implements StatementsSource
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
-                function($file_name) {
+                function ($file_name) {
                     return !file_exists((string)$file_name);
                 }
             );
@@ -644,6 +709,9 @@ class FileChecker implements StatementsSource
         return self::$deleted_files;
     }
 
+    /**
+     * @return void
+     */
     public static function goodRun()
     {
         if (self::$cache_dir) {
@@ -654,16 +722,21 @@ class FileChecker implements StatementsSource
             $deleted_files = self::getDeletedReferencedFiles();
 
             if ($deleted_files) {
-
                 foreach ($deleted_files as $file) {
                     unset(self::$file_references[$file]);
                 }
 
-                file_put_contents(self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME, serialize(self::$file_references));
+                file_put_contents(
+                    self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME,
+                    serialize(self::$file_references)
+                );
             }
         }
     }
 
+    /**
+     * @return void
+     */
     public static function clearCache()
     {
         self::$file_checkers = [];

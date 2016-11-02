@@ -1,16 +1,16 @@
 <?php
-
 namespace Psalm\Type;
-
-use Psalm\Type;
 
 class GenericArray extends Generic
 {
-    /** @var string */
+    /**
+     * @var string
+     */
     public $value = 'array';
 
     /**
      * Constructs a new instance of a generic type
+     *
      * @param string            $value
      * @param array<int,Union> $type_params
      */

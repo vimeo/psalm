@@ -1,35 +1,33 @@
 <?php
-
 namespace Psalm\Tests;
 
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
 use Psalm\Context;
-use Psalm\Checker\TypeChecker;
-use Psalm\Type;
 
 class Php70Test extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
         $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     public function testFunctionTypeHints()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         function indexof(string $haystack, string $needle) : int
         {
             $pos = strpos($haystack, $needle);
@@ -44,7 +42,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = indexof("arr", "a");
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
@@ -52,7 +50,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testMethodTypeHints()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class Foo {
             public static function indexof(string $haystack, string $needle) : int
             {
@@ -69,7 +67,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = Foo::indexof("arr", "a");
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
@@ -77,11 +75,11 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testNullCoalesce()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $a = $_GET["bar"] ?? "nobody";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
@@ -89,11 +87,11 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testSpaceship()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $a = 1 <=> 1;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
@@ -101,7 +99,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testDefineArray()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         define("ANIMALS", [
             "dog",
             "cat",
@@ -111,7 +109,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = ANIMALS[1];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
@@ -119,7 +117,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testAnonymousClass()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         interface Logger {
             public function log(string $msg);
         }
@@ -141,14 +139,14 @@ class Php70Test extends PHPUnit_Framework_TestCase
         });
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
 
     public function testGeneratorWithReturn()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         /**
          * @return Generator<int,int>
          * @psalm-generator-return string
@@ -162,14 +160,14 @@ class Php70Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
 
     public function testGeneratorDelegation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         /**
          * @return Generator<int,int>
          * @psalm-generator-return int
@@ -214,7 +212,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $gen2 = $gen->getReturn();
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('Generator<int,int>', (string) $context->vars_in_scope['$gen']);

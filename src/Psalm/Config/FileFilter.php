@@ -1,36 +1,53 @@
 <?php
-
 namespace Psalm\Config;
 
 use SimpleXMLElement;
 
 class FileFilter
 {
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $include_dirs = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $exclude_dirs = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $include_files = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $include_files_lowercase = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $exclude_files = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $exclude_files_lowercase = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $include_patterns = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     protected $exclude_patterns = [];
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     protected $inclusive;
 
     /**
@@ -57,8 +74,7 @@ class FileFilter
                     $filter->include_files_lowercase[] = strtolower((string)$file['name']);
                 }
             }
-        }
-        else {
+        } else {
             if ($e->directory) {
                 foreach ($e->directory as $directory) {
                     $filter->exclude_dirs[] = self::slashify((string)$directory['name']);
@@ -98,21 +114,18 @@ class FileFilter
                     if (strpos($file_name, $include_dir) === 0) {
                         return true;
                     }
-                }
-                else {
+                } else {
                     if (stripos($file_name, $include_dir) === 0) {
                         return true;
                     }
                 }
-
             }
 
             if ($case_sensitive) {
                 if (in_array($file_name, $this->include_files)) {
                     return true;
                 }
-            }
-            else {
+            } else {
                 if (in_array(strtolower($file_name), $this->include_files_lowercase)) {
                     return true;
                 }
@@ -127,8 +140,7 @@ class FileFilter
                 if (strpos($file_name, $exclude_dir) === 0) {
                     return false;
                 }
-            }
-            else {
+            } else {
                 if (stripos($file_name, $exclude_dir) === 0) {
                     return false;
                 }
@@ -139,8 +151,7 @@ class FileFilter
             if (in_array($file_name, $this->exclude_files)) {
                 return false;
             }
-        }
-        else {
+        } else {
             if (in_array(strtolower($file_name), $this->exclude_files_lowercase)) {
                 return false;
             }
@@ -157,26 +168,42 @@ class FileFilter
         return $this->include_dirs;
     }
 
+    /**
+     * @return array
+     */
     public function getExcludeDirs()
     {
         return $this->exclude_dirs;
     }
 
+    /**
+     * @return array
+     */
     public function getIncludeFiles()
     {
         return $this->include_files;
     }
 
+    /**
+     * @return array
+     */
     public function getExcludeFiles()
     {
         return $this->exclude_files;
     }
 
+    /**
+     * @return void
+     */
     public function makeExclusive()
     {
         $this->inclusive = false;
     }
 
+    /**
+     * @param   string $file_name
+     * @return  void
+     */
     public function addExcludeFile($file_name)
     {
         $this->exclude_files[] = $file_name;

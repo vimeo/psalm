@@ -1,9 +1,9 @@
 <?php
-
 namespace Psalm;
 
-use Psalm\Config\FileFilter;
 use Psalm\Checker\FileChecker;
+use Psalm\Config\FileFilter;
+use Psalm\Exception\ConfigException;
 use SimpleXMLElement;
 
 class Config
@@ -13,15 +13,19 @@ class Config
     const REPORT_ERROR = 'error';
     const REPORT_SUPPRESS = 'suppress';
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     public static $ERROR_LEVELS = [
         self::REPORT_INFO,
         self::REPORT_ERROR,
         self::REPORT_SUPPRESS
     ];
 
-    /** @var self|null */
-    protected static $_config;
+    /**
+     * @var self|null
+     */
+    protected static $config;
 
     /**
      * Whether or not to stop when the first error is seen
@@ -45,13 +49,15 @@ class Config
     public $throw_exception = false;
 
     /**
-     * Path to the autoader
+     * Path to the autoloader
      *
      * @var string|null
      */
     public $autoloader;
 
-    /** @var FileFilter|null */
+    /**
+     * @var FileFilter|null
+     */
     protected $inspect_files;
 
     /**
@@ -61,10 +67,14 @@ class Config
      */
     protected $base_dir;
 
-    /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     protected $file_extensions = ['php'];
 
-     /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     protected $filetype_handlers = [];
 
     /**
@@ -77,25 +87,31 @@ class Config
      */
     protected $custom_error_levels = [];
 
-    /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     protected $mock_classes = [];
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $hide_external_errors = true;
 
     /**
      * Psalm plugins
+     *
      * @var array<Plugin>
      */
     protected $plugins = [];
 
     private function __construct()
     {
-        self::$_config = $this;
+        self::$config = $this;
     }
 
     /**
      * Creates a new config object from the file
+     *
      * @param  string $file_name
      * @return self
      */
@@ -163,11 +179,16 @@ class Config
                 $loaded_plugin = require($path);
 
                 if (!$loaded_plugin) {
-                    throw new \InvalidArgumentException('Plugins must return an instance of that plugin at the end of the file - ' . $plugin_file_name . ' does not');
+                    throw new \InvalidArgumentException(
+                        'Plugins must return an instance of that plugin at the end of the file - ' .
+                            $plugin_file_name . ' does not'
+                    );
                 }
 
                 if (!($loaded_plugin instanceof Plugin)) {
-                    throw new \InvalidArgumentException('Plugins must extend \Psalm\Plugin - ' . $plugin_file_name . ' does not');
+                    throw new \InvalidArgumentException(
+                        'Plugins must extend \Psalm\Plugin - ' . $plugin_file_name . ' does not'
+                    );
                 }
 
                 $config->plugins[] = $loaded_plugin;
@@ -200,8 +221,8 @@ class Config
      */
     public static function getInstance()
     {
-        if (self::$_config) {
-            return self::$_config;
+        if (self::$config) {
+            return self::$config;
         }
 
         return new self();
@@ -210,6 +231,7 @@ class Config
     /**
      * @param  array<\SimpleXMLElement> $extensions
      * @return void
+     * @throws ConfigException If a Config file could not be found.
      */
     protected function loadFileExtensions($extensions)
     {
@@ -227,13 +249,18 @@ class Config
                 $declared_classes = FileChecker::getDeclaredClassesInFile($path);
 
                 if (count($declared_classes) !== 1) {
-                    throw new \InvalidArgumentException('Filetype handlers must have exactly one class in the file - ' . $path . ' has ' . count($declared_classes));
+                    throw new \InvalidArgumentException(
+                        'Filetype handlers must have exactly one class in the file - ' . $path . ' has ' .
+                            count($declared_classes)
+                    );
                 }
 
                 require_once($path);
 
                 if (!is_subclass_of($declared_classes[0], 'Psalm\\Checker\\FileChecker')) {
-                    throw new \InvalidArgumentException('Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not');
+                    throw new \InvalidArgumentException(
+                        'Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not'
+                    );
                 }
 
                 $this->filetype_handlers[$extension_name] = $declared_classes[0];
@@ -250,6 +277,11 @@ class Config
         return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
     }
 
+    /**
+     * @param   string $issue_type
+     * @param   string $file_name
+     * @return  bool
+     */
     public function excludeIssueInFile($issue_type, $file_name)
     {
         if ($this->getReportingLevel($issue_type) === self::REPORT_SUPPRESS) {
@@ -271,6 +303,10 @@ class Config
         return !$this->issue_handlers[$issue_type]->allows($file_name);
     }
 
+    /**
+     * @param   string $file_name
+     * @return  bool
+     */
     public function isInProjectDirs($file_name)
     {
         foreach ($this->getIncludeDirs() as $dir_name) {
@@ -282,6 +318,10 @@ class Config
         return false;
     }
 
+    /**
+     * @param   string $issue_type
+     * @return  string
+     */
     public function getReportingLevel($issue_type)
     {
         if (isset($this->custom_error_levels[$issue_type])) {
@@ -319,6 +359,9 @@ class Config
         return $this->file_extensions;
     }
 
+    /**
+     * @return array
+     */
     public function getFiletypeHandlers()
     {
         return $this->filetype_handlers;
@@ -340,6 +383,11 @@ class Config
         return $this->plugins;
     }
 
+    /**
+     * @param string            $issue_name
+     * @param FileFilter|null   $filter
+     * @return void
+     */
     public function setIssueHandler($issue_name, FileFilter $filter = null)
     {
         $this->issue_handlers[$issue_name] = $filter;

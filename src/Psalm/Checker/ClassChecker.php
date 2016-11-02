@@ -1,10 +1,8 @@
 <?php
-
 namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\StatementsSource;
-use Psalm\Context;
 
 class ClassChecker extends ClassLikeChecker
 {
@@ -15,18 +13,21 @@ class ClassChecker extends ClassLikeChecker
 
     /**
      * A lookup table of existing classes
+     *
      * @var array
      */
     protected static $existing_classes = [];
 
     /**
      * A lookup table of existing classes, all lowercased
+     *
      * @var array
      */
     protected static $existing_classes_ci = [];
 
     /**
      * A lookup table used for caching the results of classExtends calls
+     *
      * @var array
      */
     protected static $class_extends = [];
@@ -37,9 +38,9 @@ class ClassChecker extends ClassLikeChecker
     protected static $anonymous_class_count = 0;
 
     /**
-     * @param PhpParser\Node\Stmt\Class_ $class
-     * @param StatementsSource           $source
-     * @param string|null                $absolute_class
+     * @param PhpParser\Node\Stmt\ClassLike $class
+     * @param StatementsSource              $source
+     * @param string|null                   $absolute_class
      */
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
@@ -59,11 +60,19 @@ class ClassChecker extends ClassLikeChecker
         self::$class_implements[$absolute_class] = [];
 
         if ($this->class->extends) {
-            $this->parent_class = self::getAbsoluteClassFromName($this->class->extends, $this->namespace, $this->aliased_classes);
+            $this->parent_class = self::getAbsoluteClassFromName(
+                $this->class->extends,
+                $this->namespace,
+                $this->aliased_classes
+            );
         }
 
         foreach ($class->implements as $interface_name) {
-            $absolute_interface_name = self::getAbsoluteClassFromName($interface_name, $this->namespace, $this->aliased_classes);
+            $absolute_interface_name = self::getAbsoluteClassFromName(
+                $interface_name,
+                $this->namespace,
+                $this->aliased_classes
+            );
 
             self::$class_implements[$absolute_class][strtolower($absolute_interface_name)] = $absolute_interface_name;
         }
@@ -207,6 +216,9 @@ class ClassChecker extends ClassLikeChecker
         return isset($class_implementations[$interface_id]);
     }
 
+    /**
+     * @return void
+     */
     public static function clearCache()
     {
         self::$existing_classes = [];

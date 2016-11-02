@@ -1,19 +1,17 @@
 <?php
-
 namespace Psalm\Tests;
 
-use PhpParser;
-use Psalm\Context;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Context;
 
 class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
         $config = \Psalm\Config::getInstance();
         $config->throw_exception = true;
@@ -27,7 +25,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplicitIntArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo[] = "hello";
         ');
@@ -36,12 +34,11 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<int,string>', (string) $context->vars_in_scope['$foo']);
-
     }
 
     public function testImplicit2DIntArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo[][] = "hello";
         ');
@@ -50,12 +47,11 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<int,array<int,string>>', (string) $context->vars_in_scope['$foo']);
-
     }
 
     public function testImplicit3DIntArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo[][][] = "hello";
         ');
@@ -68,7 +64,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplicit4DIntArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo[][][][] = "hello";
         ');
@@ -76,12 +72,15 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array<int,array<int,array<int,array<int,string>>>>', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals(
+            'array<int,array<int,array<int,array<int,string>>>>',
+            (string) $context->vars_in_scope['$foo']
+        );
     }
 
     public function testImplicitIndexedIntArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo[0] = "hello";
         $foo[1] = "hello";
@@ -106,7 +105,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplicitStringArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo["bar"] = "hello";
         ');
@@ -120,7 +119,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplicit2DStringArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo["bar"]["baz"] = "hello";
         ');
@@ -137,7 +136,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplicit3DStringArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo["bar"]["baz"]["bat"] = "hello";
         ');
@@ -151,7 +150,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplicit4DStringArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo["bar"]["baz"]["bat"]["bap"] = "hello";
         ');
@@ -159,13 +158,17 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array{bar:array{baz:array{bat:array{bap:string}}}}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals(
+            'array{bar:array{baz:array{bat:array{bap:string}}}}',
+            (string) $context->vars_in_scope['$foo']
+        );
+
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\'][\'bat\'][\'bap\']']);
     }
 
     public function test2Step2DStringArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = ["bar" => []];
         $foo["bar"]["baz"] = "hello";
         ');
@@ -179,7 +182,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function test2StepImplicit3DStringArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = ["bar" => []];
         $foo["bar"]["baz"]["bat"] = "hello";
         ');
@@ -192,7 +195,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testConflictingTypes()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [
             "bar" => ["a" => "b"],
             "baz" => [1]
@@ -207,7 +210,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplicitObjectLikeCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [
             "bar" => 1,
         ];
@@ -222,7 +225,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testConflictingTypesWithAssignment()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [
             "bar" => ["a" => "b"],
             "baz" => [1]
@@ -233,12 +236,15 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('array{bar:array{a:string,bam:array{baz:string}},baz:array<int,int>}', (string) $context->vars_in_scope['$foo']);
+        $this->assertEquals(
+            'array{bar:array{a:string,bam:array{baz:string}},baz:array<int,int>}',
+            (string) $context->vars_in_scope['$foo']
+        );
     }
 
     public function testConflictingTypesWithAssignment2()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo["a"] = "hello";
         $foo["b"][] = "goodbye";
@@ -256,7 +262,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testConflictingTypesWithAssignment3()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo["a"] = "hello";
         $foo["b"]["c"]["d"] = "goodbye";
@@ -270,7 +276,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testNestedObjectLikeAssignment()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = [];
         $foo["a"]["b"] = "hello";
         $foo["a"]["c"] = 1;
@@ -284,7 +290,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testConditionalObjectLikeAssignment()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $foo = ["a" => "hello"];
         if (rand(0, 10) === 5) {
             $foo["b"] = 1;
@@ -304,7 +310,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     {
         $file_checker = new \Psalm\Checker\FileChecker(
             'somefile.php',
-            self::$_parser->parse('<?php
+            self::$parser->parse('<?php
                 if (!isset($foo["a"])) {
                     $foo["a"] = "hello";
                 }
@@ -320,12 +326,13 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     {
         $file_checker = new \Psalm\Checker\FileChecker(
             'somefile.php',
-            self::$_parser->parse('<?php
+            self::$parser->parse('<?php
                 if ($b) {
                     $foo["a"] = "hello";
                 }
             ')
         );
+
         $context = new Context('somefile.php');
         $context->vars_in_scope['$b'] = \Psalm\Type::getBool();
         $context->vars_in_scope['$foo'] = \Psalm\Type::getArray();
@@ -335,7 +342,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 
     public function testImplementsArrayAccess()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A implements \ArrayAccess { }
 
         $a = new A();
@@ -353,7 +360,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     {
         $file_checker = new \Psalm\Checker\FileChecker(
             'somefile.php',
-            self::$_parser->parse('<?php
+            self::$parser->parse('<?php
                 /**
                  * @param  array{b:string} $a
                  * @return null|string
@@ -365,6 +372,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
                 }
             ')
         );
+
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }

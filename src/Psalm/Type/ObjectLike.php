@@ -1,19 +1,21 @@
 <?php
-
 namespace Psalm\Type;
-
-use Psalm\Type;
 
 class ObjectLike extends Atomic
 {
-    /** @var string */
+    /**
+     * @var string
+     */
     public $value = 'array';
 
-    /** @var array<string,Union> */
+    /**
+     * @var array<string,Union>
+     */
     public $properties;
 
     /**
      * Constructs a new instance of a generic type
+     *
      * @param string            $value
      * @param array<string,Union> $properties
      */
@@ -22,6 +24,9 @@ class ObjectLike extends Atomic
         $this->properties = $properties;
     }
 
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return $this->value .

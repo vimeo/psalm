@@ -1,33 +1,33 @@
 <?php
-
 namespace Psalm\Tests;
 
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
 use Psalm\Context;
 
 class ReturnTypeTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
         $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     public function testReturnTypeAfterUselessNullcheck()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -48,13 +48,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testReturnTypeNotEmptyCheck()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @param string|null $str
@@ -68,13 +68,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testReturnTypeNotEmptyCheckInElseIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @param string|null $str
@@ -91,13 +91,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testReturnTypeNotEmptyCheckInElse()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @param string|null $str
@@ -114,13 +114,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testReturnTypeAfterIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return string|null
@@ -135,13 +135,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testReturnTypeAfterTwoIfsWithThrow()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A1 {
         }
         class A2 {
@@ -161,13 +161,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testReturnTypeAfterIfElseIfWithThrow()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A1 {
         }
         class A2 {
@@ -187,13 +187,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testTryCatchReturnType()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
             public function foo() {
@@ -208,13 +208,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSwitchReturnTypeWithFallthrough()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
             public function foo() {
@@ -227,13 +227,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSwitchReturnTypeWithFallthroughAndStatement()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
             public function foo() {
@@ -247,16 +247,16 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testSwitchReturnTypeWithFallthroughAndBreak()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
             public function foo() {
@@ -270,16 +270,16 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testSwitchReturnTypeWithFallthroughAndConditionalBreak()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
             public function foo() {
@@ -295,16 +295,16 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testSwitchReturnTypeWithNoDefault()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
             public function foo() {
@@ -317,13 +317,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSwitchReturnTypeWitDefaultException()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /**
              * @psalm-suppress TooManyArguments
@@ -342,13 +342,13 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testExtendsStaticCallReturnType()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         abstract class A {
             /** @return static */
             public static function load() {
@@ -362,7 +362,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $b = B::load();
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
@@ -371,7 +371,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
     public function testExtendsStaticCallArrayReturnType()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         abstract class A {
             /** @return array<int,static> */
             public static function loadMultiple() {
@@ -385,7 +385,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $bees = B::loadMultiple();
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 

@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Checker;
 
 use PhpParser;
@@ -10,7 +9,8 @@ class ScopeChecker
      * Do all code paths in this list of statements exit the block (return/throw)
      *
      * @param  array<PhpParser\Node\Stmt>  $stmts
-     * @param  bool $check_continue - also looks for a continue
+     * @param  bool                        $check_continue - also looks for a continue
+     * @param  bool                        $check_break
      * @return bool
      */
     public static function doesLeaveBlock(array $stmts, $check_continue = true, $check_break = true)
@@ -26,16 +26,16 @@ class ScopeChecker
                 $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
                 $stmt instanceof PhpParser\Node\Expr\Exit_ ||
                 ($check_continue && $stmt instanceof PhpParser\Node\Stmt\Continue_) ||
-                ($check_break && $stmt instanceof PhpParser\Node\Stmt\Break_)) {
-
+                ($check_break && $stmt instanceof PhpParser\Node\Stmt\Break_)
+            ) {
                 return true;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 if ($stmt->else &&
                     self::doesLeaveBlock($stmt->stmts, $check_continue, $check_break) &&
-                    self::doesLeaveBlock($stmt->else->stmts, $check_continue, $check_break)) {
-
+                    self::doesLeaveBlock($stmt->else->stmts, $check_continue, $check_break)
+                ) {
                     if (empty($stmt->elseifs)) {
                         return true;
                     }
@@ -87,6 +87,11 @@ class ScopeChecker
         return false;
     }
 
+    /**
+     * @param   array   $stmts
+     * @param   bool    $ignore_break
+     * @return  bool
+     */
     public static function doesEverBreakOrContinue(array $stmts, $ignore_break = false)
     {
         if (empty($stmts)) {
@@ -96,7 +101,9 @@ class ScopeChecker
         for ($i = count($stmts) - 1; $i >= 0; $i--) {
             $stmt = $stmts[$i];
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Continue_ || (!$ignore_break && $stmt instanceof PhpParser\Node\Stmt\Break_)) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Continue_ ||
+                (!$ignore_break && $stmt instanceof PhpParser\Node\Stmt\Break_)
+            ) {
                 return true;
             }
 
@@ -136,6 +143,11 @@ class ScopeChecker
         return false;
     }
 
+    /**
+     * @param   array   $stmts
+     * @param   bool    $ignore_break
+     * @return  bool
+     */
     public static function doesAlwaysBreakOrContinue(array $stmts, $ignore_break = false)
     {
         if (empty($stmts)) {
@@ -145,7 +157,9 @@ class ScopeChecker
         for ($i = count($stmts) - 1; $i >= 0; $i--) {
             $stmt = $stmts[$i];
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Continue_ || (!$ignore_break && $stmt instanceof PhpParser\Node\Stmt\Break_)) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Continue_ ||
+                (!$ignore_break && $stmt instanceof PhpParser\Node\Stmt\Break_)
+            ) {
                 return true;
             }
 
@@ -189,6 +203,10 @@ class ScopeChecker
         return false;
     }
 
+    /**
+     * @param   array $stmts
+     * @return  bool
+     */
     public static function doesAlwaysReturnOrThrow(array $stmts)
     {
         if (empty($stmts)) {
@@ -206,7 +224,10 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                if ($stmt->else && self::doesAlwaysReturnOrThrow($stmt->stmts) && self::doesAlwaysReturnOrThrow($stmt->else->stmts)) {
+                if ($stmt->else &&
+                    self::doesAlwaysReturnOrThrow($stmt->stmts) &&
+                    self::doesAlwaysReturnOrThrow($stmt->else->stmts)
+                ) {
                     if (empty($stmt->elseifs)) {
                         return true;
                     }
@@ -279,6 +300,10 @@ class ScopeChecker
         return false;
     }
 
+    /**
+     * @param   array $stmts
+     * @return  bool
+     */
     public static function onlyThrows(array $stmts)
     {
         if (empty($stmts)) {

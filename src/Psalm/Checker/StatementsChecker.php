@@ -1,9 +1,7 @@
 <?php
-
 namespace Psalm\Checker;
 
 use PhpParser;
-
 use Psalm\Checker\Statements\Block\ForChecker;
 use Psalm\Checker\Statements\Block\ForeachChecker;
 use Psalm\Checker\Statements\Block\IfChecker;
@@ -12,13 +10,13 @@ use Psalm\Checker\Statements\Block\TryChecker;
 use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
-use Psalm\IssueBuffer;
-use Psalm\Issue\ContinueOutsideLoop;
-use Psalm\Issue\InvalidNamespace;
-use Psalm\StatementsSource;
-use Psalm\Type;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Issue\ContinueOutsideLoop;
+use Psalm\Issue\InvalidNamespace;
+use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class StatementsChecker
 {
@@ -32,7 +30,9 @@ class StatementsChecker
      */
     protected $all_vars = [];
 
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     protected $class_name;
 
     /**
@@ -40,10 +40,14 @@ class StatementsChecker
      */
     protected $parent_class;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     protected $namespace;
 
-    /** @var array<string,string> */
+    /**
+     * @var array<string,string>
+     */
     protected $aliased_classes;
 
     /**
@@ -78,13 +82,19 @@ class StatementsChecker
 
     /**
      * A list of suppressed issues
+     *
      * @var array<string>
      */
     protected $suppressed_issues;
 
-    /** @var array<string, array<string, Type\Union>> */
+    /**
+     * @var array<string, array<string, Type\Union>>
+     */
     protected static $user_constants = [];
 
+    /**
+     * @param StatementsSource $source
+     */
     public function __construct(StatementsSource $source)
     {
         $this->source = $source;
@@ -127,13 +137,20 @@ class StatementsChecker
 
         foreach ($stmts as $stmt) {
             foreach (Config::getInstance()->getPlugins() as $plugin) {
-                if ($plugin->checkStatement($stmt, $context, $this->checked_file_name, $this->getSuppressedIssues()) === false) {
+                if ($plugin->checkStatement(
+                    $stmt,
+                    $context,
+                    $this->checked_file_name,
+                    $this->getSuppressedIssues()
+                ) === false) {
                     return false;
                 }
             }
 
-            if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)) {
-                echo('Warning: Expressions after return/throw/continue in ' . $this->checked_file_name . ' on line ' . $stmt->getLine() . PHP_EOL);
+            if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
+                !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)) {
+                echo('Warning: Expressions after return/throw/continue in ' . $this->checked_file_name . ' on line ' .
+                    $stmt->getLine() . PHP_EOL);
                 break;
             }
 
@@ -145,64 +162,49 @@ class StatementsChecker
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 IfChecker::check($this, $stmt, $context, $loop_context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 TryChecker::check($this, $stmt, $context, $loop_context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 ForChecker::check($this, $stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 ForeachChecker::check($this, $stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
                 WhileChecker::check($this, $stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
                 $this->checkDo($stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 $this->checkConstAssignment($stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 foreach ($stmt->vars as $var) {
-                    $var_id = ExpressionChecker::getArrayVarId($var, $this->absolute_class, $this->namespace, $this->aliased_classes);
+                    $var_id = ExpressionChecker::getArrayVarId(
+                        $var,
+                        $this->absolute_class,
+                        $this->namespace,
+                        $this->aliased_classes
+                    );
 
                     if ($var_id) {
                         $context->remove($var_id);
                     }
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
                 $this->checkReturn($stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $has_returned = true;
                 $this->checkThrow($stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchChecker::check($this, $stmt, $context, $loop_context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 if ($loop_context === null) {
                     if (IssueBuffer::accepts(
-                        new ContinueOutsideLoop('Continue call outside loop context', $this->checked_file_name, $stmt->getLine()),
+                        new ContinueOutsideLoop(
+                            'Continue call outside loop context',
+                            $this->checked_file_name,
+                            $stmt->getLine()
+                        ),
                         $this->suppressed_issues
                     )) {
                         return false;
@@ -210,38 +212,24 @@ class StatementsChecker
                 }
 
                 $has_returned = true;
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 $this->checkStatic($stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
                 foreach ($stmt->exprs as $expr) {
                     ExpressionChecker::check($this, $expr, $context);
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($this->file_name, $context->self);
                 $function_checkers[$stmt->name]->check($function_context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Expr) {
+            } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 ExpressionChecker::check($this, $stmt, $context);
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
                         if (is_string($var->name)) {
@@ -252,52 +240,47 @@ class StatementsChecker
                         }
                     }
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
                     if ($prop->default) {
                         ExpressionChecker::check($this, $prop->default, $context);
 
                         if (isset($prop->default->inferredType)) {
                             if (!$stmt->isStatic()) {
-                                if (AssignmentChecker::checkPropertyAssignment($this, $prop, $prop->name, $prop->default->inferredType, $context) === false) {
+                                if (AssignmentChecker::checkPropertyAssignment(
+                                    $this,
+                                    $prop,
+                                    $prop->name,
+                                    $prop->default->inferredType,
+                                    $context
+                                ) === false) {
                                     return false;
                                 }
                             }
-
                         }
                     }
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 foreach ($stmt->consts as $const) {
                     ExpressionChecker::check($this, $const->value, $context);
 
                     if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
-                        ClassLikeChecker::setConstantType($this->absolute_class, $const->name, $const->value->inferredType);
+                        ClassLikeChecker::setConstantType(
+                            $this->absolute_class,
+                            $const->name,
+                            $const->value->inferredType
+                        );
                     }
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 (new ClassChecker($stmt, $this->source, $stmt->name))->check();
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 // do nothing
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
                 // do nothing
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
                 // do nothing
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 if ($this->namespace) {
                     if (IssueBuffer::accepts(
                         new InvalidNamespace(
@@ -313,16 +296,19 @@ class StatementsChecker
 
                 $namespace_checker = new NamespaceChecker($stmt, $this->source);
                 $namespace_checker->check(true);
-            }
-            else {
+            } else {
                 var_dump('Unrecognised statement in ' . $this->checked_file_name);
                 var_dump($stmt);
             }
         }
+
+        return null;
     }
 
     /**
-     * @return false|null
+     * @param   PhpParser\Node\Stmt\Static_ $stmt
+     * @param   Context                     $context
+     * @return  false|null
      */
     protected function checkStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
     {
@@ -335,66 +321,58 @@ class StatementsChecker
 
             if ($context->check_variables) {
                 $context->vars_in_scope['$' . $var->name] = $var->default && isset($var->default->inferredType)
-                                                        ? $var->default->inferredType
-                                                        : Type::getMixed();
+                    ? $var->default->inferredType
+                    : Type::getMixed();
 
                 $context->vars_possibly_in_scope['$' . $var->name] = true;
                 $this->registerVariable('$' . $var->name, $var->getLine());
             }
         }
+
+        return null;
     }
 
     /**
-     * @return Type\Union|null
+     * @param   PhpParser\Node\Expr $stmt
+     * @return  Type\Union|null
      */
     public static function getSimpleType(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             // @todo support this
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             // @todo support this as well
-        }
-        elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
             return Type::getString();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
             return Type::getInt();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             return Type::getFloat();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
             return Type::getArray();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             return Type::getInt();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             return Type::getFloat();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             return Type::getBool();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
             return Type::getString();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             return Type::getObject();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             return Type::getArray();
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
             return self::getSimpleType($stmt->expr);
         }
 
         return null;
     }
 
-
     /**
-     * @return false|null
+     * @param   PhpParser\Node\Stmt\Do_ $stmt
+     * @param   Context                 $context
+     * @return  false|null
      */
     protected function checkDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
@@ -415,7 +393,10 @@ class StatementsChecker
     {
         $method_checker = ClassLikeChecker::getMethodChecker($method_id);
 
-        if ($method_checker && $this->source instanceof FunctionLikeChecker && $method_checker->getMethodId() !== $this->source->getMethodId()) {
+        if ($method_checker &&
+            $this->source instanceof FunctionLikeChecker &&
+            $method_checker->getMethodId() !== $this->source->getMethodId()
+        ) {
             $this_context = new Context($this->file_name, (string) $context->vars_in_scope['$this']);
 
             foreach ($context->vars_possibly_in_scope as $var => $type) {
@@ -479,20 +460,39 @@ class StatementsChecker
         return $original_call === $call || strpos($call, '$') !== false ? null : $call;
     }
 
+    /**
+     * @param   PhpParser\Node\Stmt\Const_  $stmt
+     * @param   Context                     $context
+     * @return  void
+     */
     protected function checkConstAssignment(PhpParser\Node\Stmt\Const_ $stmt, Context $context)
     {
         foreach ($stmt->consts as $const) {
             ExpressionChecker::check($this, $const->value, $context);
 
-            $this->setConstType($const->name, isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed());
+            $this->setConstType(
+                $const->name,
+                isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed()
+            );
         }
     }
 
+    /**
+     * @param   string  $const_name
+     * @return  null
+     */
     public function getConstType($const_name)
     {
-        return isset(self::$user_constants[$this->file_name][$const_name]) ? self::$user_constants[$this->file_name][$const_name] : null;
+        return isset(self::$user_constants[$this->file_name][$const_name])
+            ? self::$user_constants[$this->file_name][$const_name]
+            : null;
     }
 
+    /**
+     * @param   string      $const_name
+     * @param   Type\Union  $const_type
+     * @return  void
+     */
     public function setConstType($const_name, Type\Union $const_type)
     {
         self::$user_constants[$this->file_name][$const_name] = $const_type;
@@ -505,7 +505,11 @@ class StatementsChecker
      */
     protected function checkReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
     {
-        $type_in_comments = CommentChecker::getTypeFromComment((string) $stmt->getDocComment(), $context, $this->source);
+        $type_in_comments = CommentChecker::getTypeFromComment(
+            (string) $stmt->getDocComment(),
+            $context,
+            $this->source
+        );
 
         if ($stmt->expr) {
             if (ExpressionChecker::check($this, $stmt->expr, $context) === false) {
@@ -514,23 +518,27 @@ class StatementsChecker
 
             if ($type_in_comments) {
                 $stmt->inferredType = $type_in_comments;
-            }
-            elseif (isset($stmt->expr->inferredType)) {
+            } elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;
-            }
-            else {
+            } else {
                 $stmt->inferredType = Type::getMixed();
             }
-        }
-        else {
+        } else {
             $stmt->inferredType = Type::getVoid();
         }
 
         if ($this->source instanceof FunctionLikeChecker) {
             $this->source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
         }
+
+        return null;
     }
 
+    /**
+     * @param   PhpParser\Node\Stmt\Throw_  $stmt
+     * @param   Context                     $context
+     * @return  false|null
+     */
     protected function checkThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
     {
         return ExpressionChecker::check($this, $stmt->expr, $context);
@@ -557,12 +565,10 @@ class StatementsChecker
         if ($dim) {
             if (isset($dim->inferredType)) {
                 return $dim->inferredType;
-            }
-            else {
+            } else {
                 return new Type\Union([Type::getInt()->types['int'], Type::getString()->types['string']]);
             }
-        }
-        else {
+        } else {
             return Type::getInt();
         }
     }
@@ -590,8 +596,7 @@ class StatementsChecker
             if ($path_to_file[0] !== '/') {
                 $path_to_file = getcwd() . '/' . $path_to_file;
             }
-        }
-        else {
+        } else {
             $path_to_file = self::getPathTo($stmt->expr, $this->include_file_name ?: $this->file_name);
         }
 
@@ -604,7 +609,7 @@ class StatementsChecker
 
             // if the file is already included, we can't check much more
             if (in_array($path_to_file, get_included_files())) {
-                return;
+                return null;
             }
 
             /*
@@ -612,7 +617,7 @@ class StatementsChecker
                 $context->check_classes = false;
                 $context->check_variables = false;
 
-                return;
+                return null;
             }
              */
 
@@ -624,13 +629,14 @@ class StatementsChecker
                 $this->check($include_stmts, $context);
                 $this->include_file_name = $old_include_file_name;
                 $this->source->setIncludeFileName($old_include_file_name);
-                return;
+                return null;
             }
         }
 
         $context->check_classes = false;
         $context->check_variables = false;
         $context->check_functions = false;
+        return null;
     }
 
     /**
@@ -669,8 +675,6 @@ class StatementsChecker
             }
         }
 
-
-
         $doc_comment_text .= ' */';
 
         return $doc_comment_text;
@@ -701,7 +705,6 @@ class StatementsChecker
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_) {
             return $stmt->value;
-
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             $left_string = self::getPathTo($stmt->left, $file_name);
             $right_string = self::getPathTo($stmt->right, $file_name);
@@ -709,31 +712,27 @@ class StatementsChecker
             if ($left_string && $right_string) {
                 return $left_string . $right_string;
             }
-
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
             $stmt->name instanceof PhpParser\Node\Name &&
-            $stmt->name->parts === ['dirname']) {
-
+            $stmt->name->parts === ['dirname']
+        ) {
             if ($stmt->args) {
                 $evaled_path = self::getPathTo($stmt->args[0]->value, $file_name);
 
                 if (!$evaled_path) {
-                    return;
+                    return null;
                 }
 
                 return dirname($evaled_path);
             }
-
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name instanceof PhpParser\Node\Name) {
             $const_name = implode('', $stmt->name->parts);
 
             if (defined($const_name)) {
                 return constant($const_name);
             }
-
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
             return dirname($file_name);
-
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File) {
             return $file_name;
         }
@@ -744,11 +743,17 @@ class StatementsChecker
     /**
      * @return string|null
      */
+
+    /**
+     * @param   string  $file_name
+     * @param   string  $current_directory
+     * @return  string|null
+     */
     protected static function resolveIncludePath($file_name, $current_directory)
     {
-        $paths = PATH_SEPARATOR == ':' ?
-            preg_split('#(?<!phar):#', get_include_path()) :
-            explode(PATH_SEPARATOR, get_include_path());
+        $paths = PATH_SEPARATOR == ':'
+            ? preg_split('#(?<!phar):#', get_include_path())
+            : explode(PATH_SEPARATOR, get_include_path());
 
         foreach ($paths as $prefix) {
             $ds = substr($prefix, -1) == DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
@@ -763,6 +768,8 @@ class StatementsChecker
                 return $file;
             }
         }
+
+        return null;
     }
 
     /**
@@ -847,6 +854,7 @@ class StatementsChecker
 
     /**
      * The first appearance of the variable in this set of statements being evaluated
+     *
      * @param  string  $var_name
      * @return int|null
      */
@@ -855,6 +863,9 @@ class StatementsChecker
         return isset($this->all_vars[$var_name]) ? $this->all_vars[$var_name] : null;
     }
 
+    /**
+     * @return void
+     */
     public static function clearCache()
     {
         self::$user_constants = [];

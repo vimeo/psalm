@@ -1,19 +1,18 @@
 <?php
-
 namespace Psalm\Tests;
 
-use Psalm\Type;
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Type;
 
 class TypeCombinationTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
     private static function getAtomic($string)
@@ -184,7 +183,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
 
     public function testMultipleValuedArray()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
             class A {}
             class B {}
             $var = [];
@@ -192,7 +191,7 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
             $var[] = new B();
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

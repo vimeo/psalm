@@ -1,31 +1,46 @@
 <?php
-
 namespace Psalm;
 
 class FunctionLikeParameter
 {
-    /** @var string */
+    /**
+     * @var string
+     */
     public $name;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $by_ref;
 
-    /** @var Type\Union */
+    /**
+     * @var Type\Union
+     */
     public $type;
 
-    /** @var Type\Union */
+    /**
+     * @var Type\Union
+     */
     public $signature_type;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $is_optional;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $is_nullable;
 
-    /** @var int */
+    /**
+     * @var int
+     */
     public $line;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $is_variadic;
 
     /**
@@ -36,8 +51,14 @@ class FunctionLikeParameter
      * @param boolean       $is_nullable
      * @param boolean       $is_variadic
      */
-    public function __construct($name, $by_ref, Type\Union $type, $is_optional = true, $is_nullable = false, $is_variadic = false)
-    {
+    public function __construct(
+        $name,
+        $by_ref,
+        Type\Union $type,
+        $is_optional = true,
+        $is_nullable = false,
+        $is_variadic = false
+    ) {
         $this->name = $name;
         $this->by_ref = $by_ref;
         $this->type = $type;
