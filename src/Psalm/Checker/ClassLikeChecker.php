@@ -272,9 +272,9 @@ abstract class ClassLikeChecker implements StatementsSource
 
             foreach ($extra_interfaces as $extra_interface_name) {
                 FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
-            }
 
-            self::$class_implements[$this->absolute_class] = array_merge(self::$class_implements[$this->absolute_class], $extra_interfaces);
+                self::$class_implements[$this->absolute_class][strtolower($extra_interface_name)] = $extra_interface_name;
+            }
         }
 
         $trait_checkers = [];

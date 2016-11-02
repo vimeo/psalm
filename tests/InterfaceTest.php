@@ -30,7 +30,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     public function testExtends()
     {
         $stmts = self::$_parser->parse('<?php
-        interface a
+        interface A
         {
             /**
              * @return string
@@ -38,14 +38,14 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             public function foo();
         }
 
-        interface b
+        interface B
         {
             public function bar() {
 
             }
         }
 
-        interface c extends a, b
+        interface C extends A, B
         {
             /**
              * @return string
@@ -55,7 +55,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             }
         }
 
-        class d implements c
+        class D implements C
         {
             public function foo()
             {
@@ -70,8 +70,13 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             }
         }
 
-        $cee = (new d())->baz();
-        $dee = (new d())->foo();
+        function qux(A $a) {
+
+        }
+
+        $cee = (new D())->baz();
+        $dee = (new D())->foo();
+        qux(new D());
         ?>
         ');
 
