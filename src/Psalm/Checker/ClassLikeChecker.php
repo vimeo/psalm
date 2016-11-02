@@ -246,35 +246,8 @@ abstract class ClassLikeChecker implements StatementsSource
         }
 
         if ($this instanceof ClassChecker) {
-            if ($this->parent_class) {
-                if (self::checkAbsoluteClassOrInterface(
-                    $this->parent_class,
-                    $this->file_name,
-                    $this->class->getLine(),
-                    $this->getSuppressedIssues()
-                ) === false
-                ) {
-                    return false;
-                }
-
-                self::registerClass($this->parent_class);
-
-                $this->registerInheritedMethods($this->parent_class);
-
-                FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $this->parent_class);
-
-                self::$class_implements[$this->absolute_class] += self::$class_implements[$this->parent_class];
-
-                self::$public_class_properties[$this->absolute_class] = self::$public_class_properties[$this->parent_class];
-                self::$protected_class_properties[$this->absolute_class] = self::$protected_class_properties[$this->parent_class];
-
-                self::$public_static_class_properties[$this->absolute_class] = self::$public_static_class_properties[$this->parent_class];
-                self::$protected_static_class_properties[$this->absolute_class] = self::$protected_static_class_properties[$this->parent_class];
-
-                self::$public_class_constants[$this->absolute_class] = array_merge(
-                    self::$public_class_constants[$this->parent_class],
-                    self::$public_class_constants[$this->absolute_class]
-                );
+            if ($this->parent_class && $this->registerParentClassProperties($this->parent_class) === false) {
+                return false;
             }
 
             $extra_interfaces = [];
@@ -306,153 +279,19 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $trait_checkers = [];
 
-
-
         foreach ($this->class->stmts as $stmt) {
-
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_id = $this->absolute_class . '::' . strtolower($stmt->name);
+                $this->visitClassMethod($stmt, $class_context, $method_checkers, self::$this_class && !$check_methods);
 
-                if (!isset(self::$method_checkers[$method_id])) {
-                    $method_checker = new MethodChecker($stmt, $this);
-                    $method_checkers[$stmt->name] = $method_checker;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                $this->visitTraitUse($stmt, $class_context, $trait_checkers);
 
-                    if (self::$this_class && !$check_methods) {
-                        self::$method_checkers[$method_id] = $method_checker;
-                    }
-                }
-                else {
-                    $method_checker = self::$method_checkers[$method_id];
-                }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                $this->visitPropertyDeclaration($stmt, $class_context, $config, $check_methods);
+                $leftover_stmts[] = $stmt;
 
-                if (!$stmt->isAbstract()) {
-                    MethodChecker::setDeclaringMethodId($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
-                    self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
-                }
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                $method_map = [];
-                foreach ($stmt->adaptations as $adaptation) {
-                    if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
-                        if ($adaptation->method && $adaptation->newName) {
-                            $method_map[strtolower($adaptation->method)] = strtolower($adaptation->newName);
-                        }
-                    }
-                }
-
-                foreach ($stmt->traits as $trait) {
-                    $trait_name = self::getAbsoluteClassFromName($trait, $this->namespace, $this->aliased_classes);
-
-                    if (!TraitChecker::traitExists($trait_name)) {
-                        if (IssueBuffer::accepts(
-                            new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->file_name, $trait->getLine()),
-                            $this->suppressed_issues
-                        )) {
-                            return false;
-                        }
-                    }
-                    else {
-                        try {
-                            $reflection_trait = new \ReflectionClass($trait_name);
-                        }
-                        catch (\ReflectionException $e) {
-                            if (IssueBuffer::accepts(
-                                new UndefinedTrait('Trait ' . $trait_name . ' has wrong casing', $this->file_name, $trait->getLine()),
-                                $this->suppressed_issues
-                            )) {
-                                return false;
-                            }
-
-                            continue;
-                        }
-
-                        /** @var TraitChecker */
-                        $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
-
-                        $trait_checker->setMethodMap($method_map);
-
-                        $trait_checker->check(false, $class_context);
-
-                        FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $this->parent_class);
-
-                        $trait_checkers[] = $trait_checker;
-                    }
-                }
-            } else {
-                if ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                    $comment = $stmt->getDocComment();
-                    $type_in_comment = null;
-
-                    if ($comment && $config->use_docblock_types) {
-                        $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
-                    }
-                    elseif (!$comment && $check_methods) {
-                        if (IssueBuffer::accepts(
-                            new MissingPropertyType(
-                                'Property ' . $this->absolute_class . '::$' . $stmt->props[0]->name . ' does not have a declared type',
-                                $this->file_name,
-                                $stmt->getLine()
-                            ),
-                            $this->suppressed_issues
-                        )) {
-                            // fall through
-                        }
-                    }
-
-                    $property_group_type = $type_in_comment ? $type_in_comment : null;
-
-                    foreach ($stmt->props as $property) {
-                        if (!$property_group_type) {
-                            if (!$property->default) {
-                                $property_type = false;
-                            }
-                            else {
-                                $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();
-                            }
-                        }
-                        else {
-                            $property_type = count($stmt->props) === 1 ? $property_group_type : clone $property_group_type;
-                        }
-
-                        if ($stmt->isStatic()) {
-                            if ($stmt->isPublic()) {
-                                self::$public_static_class_properties[$class_context->self][$property->name] = $property_type;
-                            }
-                            elseif ($stmt->isProtected()) {
-                                self::$protected_static_class_properties[$class_context->self][$property->name] = $property_type;
-                            }
-                            elseif ($stmt->isPrivate()) {
-                                self::$private_static_class_properties[$class_context->self][$property->name] = $property_type;
-                            }
-                        }
-                        else {
-                            if ($stmt->isPublic()) {
-                                self::$public_class_properties[$class_context->self][$property->name] = $property_type;
-                            }
-                            elseif ($stmt->isProtected()) {
-                                self::$protected_class_properties[$class_context->self][$property->name] = $property_type;
-                            }
-                            elseif ($stmt->isPrivate()) {
-                                self::$private_class_properties[$class_context->self][$property->name] = $property_type;
-                            }
-                        }
-                    }
-                }
-                elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-                    $comment = $stmt->getDocComment();
-                    $type_in_comment = null;
-
-                    if ($comment && $config->use_docblock_types && count($stmt->consts) === 1) {
-                        $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
-                    }
-
-                    $const_type = $type_in_comment ? $type_in_comment : Type::getMixed();
-
-                    foreach ($stmt->consts as $const) {
-                        self::$public_class_constants[$class_context->self][$const->name] = $const_type;
-                    }
-                }
-
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+                $this->visitClassConstDeclaration($stmt, $class_context, $config);
                 $leftover_stmts[] = $stmt;
             }
         }
@@ -533,6 +372,184 @@ abstract class ClassLikeChecker implements StatementsSource
 
         if (!$this->class->name) {
             $this->class->name = $this->absolute_class;
+        }
+    }
+
+    /**
+     * @param  string  $parent_class
+     * @return false|null
+     */
+    protected function registerParentClassProperties($parent_class)
+    {
+        if (self::checkAbsoluteClassOrInterface(
+            $parent_class,
+            $this->file_name,
+            $this->class->getLine(),
+            $this->getSuppressedIssues()
+        ) === false
+        ) {
+            return false;
+        }
+
+        self::registerClass($parent_class);
+
+        $this->registerInheritedMethods($parent_class);
+
+        FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $parent_class);
+
+        self::$class_implements[$this->absolute_class] += self::$class_implements[$parent_class];
+
+        self::$public_class_properties[$this->absolute_class] = self::$public_class_properties[$parent_class];
+        self::$protected_class_properties[$this->absolute_class] = self::$protected_class_properties[$parent_class];
+
+        self::$public_static_class_properties[$this->absolute_class] = self::$public_static_class_properties[$parent_class];
+        self::$protected_static_class_properties[$this->absolute_class] = self::$protected_static_class_properties[$parent_class];
+
+        self::$public_class_constants[$this->absolute_class] = array_merge(
+            self::$public_class_constants[$parent_class],
+            self::$public_class_constants[$this->absolute_class]
+        );
+    }
+
+    protected function visitClassMethod(PhpParser\Node\Stmt\ClassMethod $stmt, Context $class_context, array &$method_checkers, $cache_method_checker)
+    {
+        $method_id = $this->absolute_class . '::' . strtolower($stmt->name);
+
+        if (!isset(self::$method_checkers[$method_id])) {
+            $method_checker = new MethodChecker($stmt, $this);
+            $method_checkers[$stmt->name] = $method_checker;
+
+            if ($cache_method_checker) {
+                self::$method_checkers[$method_id] = $method_checker;
+            }
+        } else {
+            $method_checker = self::$method_checkers[$method_id];
+        }
+
+        if (!$stmt->isAbstract()) {
+            MethodChecker::setDeclaringMethodId($class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)), $method_id);
+            self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
+        }
+    }
+
+    protected function visitTraitUse(PhpParser\Node\Stmt\TraitUse $stmt, Context $class_context, array &$trait_checkers)
+    {
+        $method_map = [];
+
+        foreach ($stmt->adaptations as $adaptation) {
+            if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
+                if ($adaptation->method && $adaptation->newName) {
+                    $method_map[strtolower($adaptation->method)] = strtolower($adaptation->newName);
+                }
+            }
+        }
+
+        foreach ($stmt->traits as $trait) {
+            $trait_name = self::getAbsoluteClassFromName($trait, $this->namespace, $this->aliased_classes);
+
+            if (!TraitChecker::traitExists($trait_name)) {
+                if (IssueBuffer::accepts(
+                    new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->file_name, $trait->getLine()),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
+
+            } else {
+                try {
+                    $reflection_trait = new \ReflectionClass($trait_name);
+                }
+                catch (\ReflectionException $e) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedTrait('Trait ' . $trait_name . ' has wrong casing', $this->file_name, $trait->getLine()),
+                        $this->suppressed_issues
+                    )) {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                /** @var TraitChecker */
+                $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
+
+                $trait_checker->setMethodMap($method_map);
+
+                $trait_checker->check(false, $class_context);
+
+                FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $this->parent_class);
+
+                $trait_checkers[] = $trait_checker;
+            }
+        }
+    }
+
+    protected function visitPropertyDeclaration(PhpParser\Node\Stmt\Property $stmt, Context $class_context, Config $config, $check_property_types)
+    {
+        $comment = $stmt->getDocComment();
+        $type_in_comment = null;
+
+        if ($comment && $config->use_docblock_types) {
+            $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
+        } elseif (!$comment && $check_property_types) {
+            if (IssueBuffer::accepts(
+                new MissingPropertyType(
+                    'Property ' . $this->absolute_class . '::$' . $stmt->props[0]->name . ' does not have a declared type',
+                    $this->file_name,
+                    $stmt->getLine()
+                ),
+                $this->suppressed_issues
+            )) {
+                // fall through
+            }
+        }
+
+        $property_group_type = $type_in_comment ? $type_in_comment : null;
+
+        foreach ($stmt->props as $property) {
+            if (!$property_group_type) {
+                if (!$property->default) {
+                    $property_type = false;
+                } else {
+                    $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();
+                }
+            } else {
+                $property_type = count($stmt->props) === 1 ? $property_group_type : clone $property_group_type;
+            }
+
+            if ($stmt->isStatic()) {
+                if ($stmt->isPublic()) {
+                    self::$public_static_class_properties[$class_context->self][$property->name] = $property_type;
+                } elseif ($stmt->isProtected()) {
+                    self::$protected_static_class_properties[$class_context->self][$property->name] = $property_type;
+                } elseif ($stmt->isPrivate()) {
+                    self::$private_static_class_properties[$class_context->self][$property->name] = $property_type;
+                }
+            } else {
+                if ($stmt->isPublic()) {
+                    self::$public_class_properties[$class_context->self][$property->name] = $property_type;
+                } elseif ($stmt->isProtected()) {
+                    self::$protected_class_properties[$class_context->self][$property->name] = $property_type;
+                } elseif ($stmt->isPrivate()) {
+                    self::$private_class_properties[$class_context->self][$property->name] = $property_type;
+                }
+            }
+        }
+    }
+
+    protected function visitClassConstDeclaration(PhpParser\Node\Stmt\ClassConst $stmt, Context $class_context, Config $config)
+    {
+        $comment = $stmt->getDocComment();
+        $type_in_comment = null;
+
+        if ($comment && $config->use_docblock_types && count($stmt->consts) === 1) {
+            $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
+        }
+
+        $const_type = $type_in_comment ? $type_in_comment : Type::getMixed();
+
+        foreach ($stmt->consts as $const) {
+            self::$public_class_constants[$class_context->self][$const->name] = $const_type;
         }
     }
 
@@ -816,132 +833,136 @@ abstract class ClassLikeChecker implements StatementsSource
                     self::$public_class_properties[$class_name][$property_name] = Type::parseString($public_mapped_property);
                 }
             }
-        }
-        else {
-            self::$public_class_properties[$class_name] = [];
-            self::$protected_class_properties[$class_name] = [];
-            self::$private_class_properties[$class_name] = [];
-
-            self::$public_static_class_properties[$class_name] = [];
-            self::$protected_static_class_properties[$class_name] = [];
-            self::$private_static_class_properties[$class_name] = [];
-
-            $parent_class = $reflected_class->getParentClass();
-
-            if ($parent_class) {
-                $parent_class_name = $parent_class->getName();
-                self::registerClass($parent_class_name);
-
-                self::$public_class_properties[$class_name] = self::$public_class_properties[$parent_class_name];
-                self::$protected_class_properties[$class_name] = self::$protected_class_properties[$parent_class_name];
-
-                self::$public_static_class_properties[$class_name] = self::$public_static_class_properties[$parent_class_name];
-                self::$protected_static_class_properties[$class_name] = self::$protected_static_class_properties[$parent_class_name];
-            }
-
-            $class_properties = $reflected_class->getProperties();
-
-            /** @var \ReflectionProperty $class_property */
-            foreach ($class_properties as $class_property) {
-                if ($class_property->isStatic()) {
-                    if ($class_property->isPublic()) {
-                        self::$public_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
-                    }
-                    elseif ($class_property->isProtected()) {
-                        self::$protected_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
-                    }
-                    elseif ($class_property->isPrivate()) {
-                        self::$private_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
-                    }
-                }
-                else {
-                    if ($class_property->isPublic()) {
-                        self::$public_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
-                    }
-                    elseif ($class_property->isProtected()) {
-                        self::$protected_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
-                    }
-                    elseif ($class_property->isPrivate()) {
-                        self::$private_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
-                    }
-                }
-            }
-
-            if (self::inPropertyMap($class_name)) {
-                $public_mapped_properties = self::getPropertyMap()[strtolower($class_name)];
-
-                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
-                    self::$public_class_properties[$class_name][$property_name] = Type::parseString($public_mapped_property);
-                }
-            }
-
-            $class_constants = $reflected_class->getConstants();
-
-            self::$public_class_constants[$class_name] = [];
-
-            foreach ($class_constants as $name => $value) {
-                switch (gettype($value)) {
-                    case 'boolean':
-                        $const_type = Type::getBool();
-                        break;
-
-                    case 'integer':
-                        $const_type = Type::getInt();
-                        break;
-
-                    case 'double':
-                        $const_type = Type::getFloat();
-                        break;
-
-                    case 'string':
-                        $const_type = Type::getString();
-                        break;
-
-                    case 'array':
-                        $const_type = Type::getArray();
-                        break;
-
-                    case 'NULL':
-                        $const_type = Type::getNull();
-                        break;
-
-                    default:
-                        $const_type = Type::getMixed();
-                }
-
-                self::$public_class_constants[$class_name][$name] = $const_type;
-            }
-
-            self::$registered_classes[$class_name] = true;
-
-            if (!$reflected_class->isTrait() && !$reflected_class->isInterface()) {
-                ClassChecker::getInterfacesForClass($class_name);
-            }
-
-            $reflection_methods = $reflected_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
-
-            self::$class_methods[$class_name] = [];
-
-            /** @var \ReflectionMethod $reflection_method */
-            foreach ($reflection_methods as $reflection_method) {
-                MethodChecker::extractReflectionMethodInfo($reflection_method);
-
-                if ($reflection_method->class !== $class_name) {
-                    MethodChecker::setDeclaringMethodId(
-                        $class_name . '::' . strtolower((string)$reflection_method->name),
-                        $reflection_method->class . '::' . strtolower((string)$reflection_method->name)
-                    );
-
-                    self::$class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
-                }
-
-                if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $class_name) {
-                    self::$class_methods[$class_name][strtolower((string)$reflection_method->getName())] = true;
-                }
-            }
+        } else {
+            self::registerReflectedClass($class_name, $reflected_class);
         }
 
         return true;
+    }
+
+    /**
+     * @param  string          $class_name
+     * @param  ReflectionClass $reflected_class
+     * @return void
+     */
+    protected static function registerReflectedClass($class_name, ReflectionClass $reflected_class)
+    {
+        self::$public_class_properties[$class_name] = [];
+        self::$protected_class_properties[$class_name] = [];
+        self::$private_class_properties[$class_name] = [];
+
+        self::$public_static_class_properties[$class_name] = [];
+        self::$protected_static_class_properties[$class_name] = [];
+        self::$private_static_class_properties[$class_name] = [];
+
+        $parent_class = $reflected_class->getParentClass();
+
+        if ($parent_class) {
+            $parent_class_name = $parent_class->getName();
+            self::registerClass($parent_class_name);
+
+            self::$public_class_properties[$class_name] = self::$public_class_properties[$parent_class_name];
+            self::$protected_class_properties[$class_name] = self::$protected_class_properties[$parent_class_name];
+
+            self::$public_static_class_properties[$class_name] = self::$public_static_class_properties[$parent_class_name];
+            self::$protected_static_class_properties[$class_name] = self::$protected_static_class_properties[$parent_class_name];
+        }
+
+        $class_properties = $reflected_class->getProperties();
+
+        /** @var \ReflectionProperty $class_property */
+        foreach ($class_properties as $class_property) {
+            if ($class_property->isStatic()) {
+                if ($class_property->isPublic()) {
+                    self::$public_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                } elseif ($class_property->isProtected()) {
+                    self::$protected_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                } elseif ($class_property->isPrivate()) {
+                    self::$private_static_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                }
+            } else {
+                if ($class_property->isPublic()) {
+                    self::$public_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                } elseif ($class_property->isProtected()) {
+                    self::$protected_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                } elseif ($class_property->isPrivate()) {
+                    self::$private_class_properties[$class_name][$class_property->getName()] = Type::getMixed();
+                }
+            }
+        }
+
+        if (self::inPropertyMap($class_name)) {
+            $public_mapped_properties = self::getPropertyMap()[strtolower($class_name)];
+
+            foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                self::$public_class_properties[$class_name][$property_name] = Type::parseString($public_mapped_property);
+            }
+        }
+
+        $class_constants = $reflected_class->getConstants();
+
+        self::$public_class_constants[$class_name] = [];
+
+        foreach ($class_constants as $name => $value) {
+            switch (gettype($value)) {
+                case 'boolean':
+                    $const_type = Type::getBool();
+                    break;
+
+                case 'integer':
+                    $const_type = Type::getInt();
+                    break;
+
+                case 'double':
+                    $const_type = Type::getFloat();
+                    break;
+
+                case 'string':
+                    $const_type = Type::getString();
+                    break;
+
+                case 'array':
+                    $const_type = Type::getArray();
+                    break;
+
+                case 'NULL':
+                    $const_type = Type::getNull();
+                    break;
+
+                default:
+                    $const_type = Type::getMixed();
+            }
+
+            self::$public_class_constants[$class_name][$name] = $const_type;
+        }
+
+        self::$registered_classes[$class_name] = true;
+
+        if (!$reflected_class->isTrait() && !$reflected_class->isInterface()) {
+            ClassChecker::getInterfacesForClass($class_name);
+        }
+
+        $reflection_methods = $reflected_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
+
+        self::$class_methods[$class_name] = [];
+
+        /** @var \ReflectionMethod $reflection_method */
+        foreach ($reflection_methods as $reflection_method) {
+            MethodChecker::extractReflectionMethodInfo($reflection_method);
+
+            if ($reflection_method->class !== $class_name) {
+                MethodChecker::setDeclaringMethodId(
+                    $class_name . '::' . strtolower((string)$reflection_method->name),
+                    $reflection_method->class . '::' . strtolower((string)$reflection_method->name)
+                );
+
+                self::$class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
+            }
+
+            if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $class_name) {
+                self::$class_methods[$class_name][strtolower((string)$reflection_method->getName())] = true;
+            }
+        }
     }
 
     protected function registerInheritedMethods($parent_class)
@@ -975,13 +996,15 @@ abstract class ClassLikeChecker implements StatementsSource
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
             return self::$public_class_properties[$class_name];
         }
-        elseif ($visibility === ReflectionProperty::IS_PROTECTED) {
+
+        if ($visibility === ReflectionProperty::IS_PROTECTED) {
             return array_merge(
                 self::$public_class_properties[$class_name],
                 self::$protected_class_properties[$class_name]
             );
         }
-        elseif ($visibility === ReflectionProperty::IS_PRIVATE) {
+
+        if ($visibility === ReflectionProperty::IS_PRIVATE) {
             return array_merge(
                 self::$public_class_properties[$class_name],
                 self::$protected_class_properties[$class_name],
@@ -1006,13 +1029,15 @@ abstract class ClassLikeChecker implements StatementsSource
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
             return self::$public_static_class_properties[$class_name];
         }
-        elseif ($visibility === ReflectionProperty::IS_PROTECTED) {
+
+        if ($visibility === ReflectionProperty::IS_PROTECTED) {
             return array_merge(
                 self::$public_static_class_properties[$class_name],
                 self::$protected_static_class_properties[$class_name]
             );
         }
-        elseif ($visibility === ReflectionProperty::IS_PRIVATE) {
+
+        if ($visibility === ReflectionProperty::IS_PRIVATE) {
             return array_merge(
                 self::$public_static_class_properties[$class_name],
                 self::$protected_static_class_properties[$class_name],

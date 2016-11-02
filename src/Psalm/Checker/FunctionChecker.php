@@ -285,8 +285,8 @@ class FunctionChecker extends FunctionLikeChecker
         for ($i = 1; $i < 10; $i++) {
             if (isset($call_map[$call_map_key . '\'' . $i])) {
                 $call_map_functions[] = $call_map[$call_map_key . '\'' . $i];
-            }
-            else {
+
+            } else {
                 break;
             }
         }
@@ -395,161 +395,12 @@ class FunctionChecker extends FunctionLikeChecker
                 return Type::getArray();
             }
 
-            $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+            if (substr($call_map_key, 0, 6) === 'array_') {
+                $array_return_type = self::getArrayReturnType($call_map_key, $call_args, $file_name, $line_number, $suppressed_issues);
 
-            $first_arg_array = $first_arg
-                                    && isset($first_arg->inferredType)
-                                    && isset($first_arg->inferredType->types['array'])
-                                    && $first_arg->inferredType->types['array'] instanceof Type\Generic
-                                ? $first_arg->inferredType->types['array']
-                                : null;
-
-            if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
-                $function_index = $call_map_key === 'array_map' ? 0 : 1;
-                if (isset($call_args[$function_index])) {
-                    $function_call_arg = $call_args[$function_index];
-
-                    if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure) {
-                        $closure_yield_types = [];
-                        $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($function_call_arg->value->stmts, $closure_yield_types, true);
-
-                        if (!$closure_return_types) {
-                            IssueBuffer::accepts(
-                                new InvalidReturnType(
-                                    'No return type could be found in the closure passed to ' . $call_map_key,
-                                    $file_name,
-                                    $line_number
-                                ),
-                                $suppressed_issues
-                            );
-
-                            return Type::getArray();
-                        }
-
-                        if ($call_map_key === 'array_map') {
-                            $inner_type = new Type\Union($closure_return_types);
-                            return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
-                        }
-
-                        if ($first_arg_array) {
-                            $inner_type = clone $first_arg_array->type_params[1];
-                            return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
-                        }
-                    }
-                    elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                        $mapped_function_id = strtolower($function_call_arg->value->value);
-
-                        if (isset($call_map[$mapped_function_id][0])) {
-                            if ($call_map[$mapped_function_id][0]) {
-                                $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
-                                return new Type\Union([new Type\Generic('array', [Type::getInt(), $mapped_function_return])]);
-                            }
-                        }
-                        else {
-                            // @todo handle array_map('some_custom_function', $arr)
-                        }
-                    }
+                if ($array_return_type) {
+                    return $array_return_type;
                 }
-
-                // where there's no function passed to array_filter
-                if ($call_map_key === 'array_filter' && $first_arg_array) {
-                    $inner_type = clone $first_arg_array->type_params[1];
-
-                    $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
-
-                    if (!$second_arg) {
-                        $inner_type->removeType('null');
-                        $inner_type->removeType('false');
-                    }
-
-                    return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
-                }
-
-                return Type::getArray();
-            }
-
-            if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
-                if ($first_arg_array) {
-                    $inner_type = clone $first_arg_array->type_params[1];
-                    return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
-                }
-            }
-
-            if ($call_map_key === 'array_keys') {
-                if ($first_arg_array) {
-                    $inner_type = clone $first_arg_array->type_params[0];
-                    return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
-                }
-            }
-
-            if ($call_map_key === 'array_merge') {
-                $inner_value_types = [];
-                $inner_key_types = [];
-
-                foreach ($call_args as $offset => $call_arg) {
-                    if (!isset($call_arg->value->inferredType)) {
-                        return Type::getArray();
-                    }
-
-                    foreach ($call_arg->value->inferredType->types as $type_part) {
-                        if (!$type_part instanceof Type\Generic) {
-                            return Type::getArray();
-                        }
-
-                        if ($type_part->type_params[1]->isEmpty()) {
-                            continue;
-                        }
-
-                        $inner_key_types = array_merge(array_values($type_part->type_params[0]->types), $inner_key_types);
-                        $inner_value_types = array_merge(array_values($type_part->type_params[1]->types), $inner_value_types);
-                    }
-
-                    if ($inner_value_types) {
-                        return new Type\Union([
-                            new Type\Generic(
-                                'array',
-                                [
-                                    Type::combineTypes($inner_key_types),
-                                    Type::combineTypes($inner_value_types)
-                                ]
-                            )
-                        ]);
-                    }
-                }
-
-                return Type::getArray();
-            }
-
-            if ($call_map_key === 'array_diff') {
-                if (!$first_arg_array) {
-                    return Type::getArray();
-                }
-
-                return new Type\Union([
-                    new Type\Generic(
-                        'array',
-                        [
-                            Type::getInt(),
-                            clone $first_arg_array->type_params[1]
-                        ]
-                    )
-                ]);
-            }
-
-            if ($call_map_key === 'array_diff_key') {
-                if (!$first_arg_array) {
-                    return Type::getArray();
-                }
-
-                return clone $first_arg->inferredType;
-            }
-
-            if ($call_map_key === 'array_shift' || $call_map_key === 'array_pop') {
-                if (!$first_arg_array) {
-                    return Type::getMixed();
-                }
-
-                return clone $first_arg_array->type_params[1];
             }
 
             if ($call_map_key === 'explode' || $call_map_key === 'preg_split') {
@@ -562,6 +413,199 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         return Type::parseString($call_map[$call_map_key][0]);
+    }
+
+    /**
+     * @param  string                       $call_map_key
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  string                       $file_name
+     * @param  int                          $line_number
+     * @param  array                        $suppressed_issues
+     * @return Type\Union|null
+     */
+    protected static function getArrayReturnType($call_map_key, $call_args, $file_name, $line_number, array $suppressed_issues)
+    {
+        if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
+            return self::getArrayMapReturnType($call_map_key, $call_args, $file_name, $line_number, $suppressed_issues);
+        }
+
+        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+
+        $first_arg_array = $first_arg
+                                && isset($first_arg->inferredType)
+                                && isset($first_arg->inferredType->types['array'])
+                                && $first_arg->inferredType->types['array'] instanceof Type\Generic
+                            ? $first_arg->inferredType->types['array']
+                            : null;
+
+        if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
+            if ($first_arg_array) {
+                $inner_type = clone $first_arg_array->type_params[1];
+                return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+            }
+        }
+
+        if ($call_map_key === 'array_keys') {
+            if ($first_arg_array) {
+                $inner_type = clone $first_arg_array->type_params[0];
+                return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+            }
+        }
+
+        if ($call_map_key === 'array_merge') {
+            $inner_value_types = [];
+            $inner_key_types = [];
+
+            foreach ($call_args as $offset => $call_arg) {
+                if (!isset($call_arg->value->inferredType)) {
+                    return Type::getArray();
+                }
+
+                foreach ($call_arg->value->inferredType->types as $type_part) {
+                    if (!$type_part instanceof Type\Generic) {
+                        return Type::getArray();
+                    }
+
+                    if ($type_part->type_params[1]->isEmpty()) {
+                        continue;
+                    }
+
+                    $inner_key_types = array_merge(array_values($type_part->type_params[0]->types), $inner_key_types);
+                    $inner_value_types = array_merge(array_values($type_part->type_params[1]->types), $inner_value_types);
+                }
+
+                if ($inner_value_types) {
+                    return new Type\Union([
+                        new Type\Generic(
+                            'array',
+                            [
+                                Type::combineTypes($inner_key_types),
+                                Type::combineTypes($inner_value_types)
+                            ]
+                        )
+                    ]);
+                }
+            }
+
+            return Type::getArray();
+        }
+
+        if ($call_map_key === 'array_diff') {
+            if (!$first_arg_array) {
+                return Type::getArray();
+            }
+
+            return new Type\Union([
+                new Type\Generic(
+                    'array',
+                    [
+                        Type::getInt(),
+                        clone $first_arg_array->type_params[1]
+                    ]
+                )
+            ]);
+        }
+
+        if ($call_map_key === 'array_diff_key') {
+            if (!$first_arg_array) {
+                return Type::getArray();
+            }
+
+            return clone $first_arg->inferredType;
+        }
+
+        if ($call_map_key === 'array_shift' || $call_map_key === 'array_pop') {
+            if (!$first_arg_array) {
+                return Type::getMixed();
+            }
+
+            return clone $first_arg_array->type_params[1];
+        }
+    }
+
+    /**
+     * @param  string                       $call_map_key
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  string                       $file_name
+     * @param  int                          $line_number
+     * @param  array                        $suppressed_issues
+     * @return Type\Union
+     */
+    protected static function getArrayMapReturnType($call_map_key, $call_args, $file_name, $line_number, array $suppressed_issues)
+    {
+        $function_index = $call_map_key === 'array_map' ? 0 : 1;
+        $array_index = $call_map_key === 'array_map' ? 1 : 0;
+
+        $array_arg = isset($call_args[$array_index]->value) ? $call_args[$array_index]->value : null;
+
+        $array_arg_type = $array_arg
+                            && isset($array_arg->inferredType)
+                            && isset($array_arg->inferredType->types['array'])
+                            && $array_arg->inferredType->types['array'] instanceof Type\Generic
+                        ? $array_arg->inferredType->types['array']
+                        : null;
+
+        if (isset($call_args[$function_index])) {
+            $function_call_arg = $call_args[$function_index];
+
+            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure) {
+                $closure_yield_types = [];
+                $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($function_call_arg->value->stmts, $closure_yield_types, true);
+
+                if (!$closure_return_types) {
+                    IssueBuffer::accepts(
+                        new InvalidReturnType(
+                            'No return type could be found in the closure passed to ' . $call_map_key,
+                            $file_name,
+                            $line_number
+                        ),
+                        $suppressed_issues
+                    );
+
+                    return Type::getArray();
+                }
+
+                if ($call_map_key === 'array_map') {
+                    $inner_type = new Type\Union($closure_return_types);
+                    return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                }
+
+                if ($array_arg_type) {
+                    $inner_type = clone $array_arg_type->type_params[1];
+                    return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                }
+            } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                $mapped_function_id = strtolower($function_call_arg->value->value);
+
+                $call_map = self::getCallMap();
+
+                if (isset($call_map[$mapped_function_id][0])) {
+                    if ($call_map[$mapped_function_id][0]) {
+                        $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
+                        return new Type\Union([new Type\Generic('array', [Type::getInt(), $mapped_function_return])]);
+                    }
+
+                } else {
+                    // @todo handle array_map('some_custom_function', $arr)
+                }
+            }
+        }
+
+        // where there's no function passed to array_filter
+        if ($call_map_key === 'array_filter' && $array_arg_type) {
+            $inner_type = clone $array_arg_type->type_params[1];
+
+            $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+
+            if (!$second_arg) {
+                $inner_type->removeType('null');
+                $inner_type->removeType('false');
+            }
+
+            return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+        }
+
+        return Type::getArray();
     }
 
     /**
