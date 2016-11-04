@@ -300,7 +300,8 @@ abstract class ClassLikeChecker implements StatementsSource
             foreach ($extra_interfaces as $extra_interface_name) {
                 FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
 
-                self::$class_implements[$this->absolute_class][strtolower($extra_interface_name)] = $extra_interface_name;
+                self::$class_implements[$this->absolute_class][strtolower($extra_interface_name)] =
+                    $extra_interface_name;
             }
         }
 
@@ -440,17 +441,33 @@ abstract class ClassLikeChecker implements StatementsSource
         self::$public_class_properties[$this->absolute_class] = self::$public_class_properties[$parent_class];
         self::$protected_class_properties[$this->absolute_class] = self::$protected_class_properties[$parent_class];
 
-        self::$public_static_class_properties[$this->absolute_class] = self::$public_static_class_properties[$parent_class];
-        self::$protected_static_class_properties[$this->absolute_class] = self::$protected_static_class_properties[$parent_class];
+        self::$public_static_class_properties[$this->absolute_class] =
+            self::$public_static_class_properties[$parent_class];
+
+        self::$protected_static_class_properties[$this->absolute_class] =
+            self::$protected_static_class_properties[$parent_class];
 
         self::$public_class_constants[$this->absolute_class] = array_merge(
             self::$public_class_constants[$parent_class],
             self::$public_class_constants[$this->absolute_class]
         );
+
+        return null;
     }
 
-    protected function visitClassMethod(PhpParser\Node\Stmt\ClassMethod $stmt, Context $class_context, array &$method_checkers, $cache_method_checker)
-    {
+    /**
+     * @param PhpParser\Node\Stmt\ClassMethod $stmt
+     * @param Context $class_context
+     * @param array $method_checkers
+     * @param $cache_method_checker
+     * @return void
+     */
+    protected function visitClassMethod(
+        PhpParser\Node\Stmt\ClassMethod $stmt,
+        Context $class_context,
+        array &$method_checkers,
+        $cache_method_checker
+    ) {
         $method_id = $this->absolute_class . '::' . strtolower($stmt->name);
 
         if (!isset(self::$method_checkers[$method_id])) {
@@ -469,12 +486,22 @@ abstract class ClassLikeChecker implements StatementsSource
                 $class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)),
                 $method_id
             );
+
             self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
         }
     }
 
-    protected function visitTraitUse(PhpParser\Node\Stmt\TraitUse $stmt, Context $class_context, array &$trait_checkers)
-    {
+    /**
+     * @param   PhpParser\Node\Stmt\TraitUse    $stmt
+     * @param   Context                         $class_context
+     * @param   array                           $trait_checkers
+     * @return  false|null
+     */
+    protected function visitTraitUse(
+        PhpParser\Node\Stmt\TraitUse $stmt,
+        Context $class_context,
+        array &$trait_checkers
+    ) {
         $method_map = [];
 
         foreach ($stmt->adaptations as $adaptation) {
@@ -504,7 +531,11 @@ abstract class ClassLikeChecker implements StatementsSource
                     $reflection_trait = new \ReflectionClass($trait_name);
                 } catch (\ReflectionException $e) {
                     if (IssueBuffer::accepts(
-                        new UndefinedTrait('Trait ' . $trait_name . ' has wrong casing', $this->file_name, $trait->getLine()),
+                        new UndefinedTrait(
+                            'Trait ' . $trait_name . ' has wrong casing',
+                            $this->file_name,
+                            $trait->getLine()
+                        ),
                         $this->suppressed_issues
                     )) {
                         return false;
@@ -520,15 +551,31 @@ abstract class ClassLikeChecker implements StatementsSource
 
                 $trait_checker->check(false, $class_context);
 
-                FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $this->parent_class);
+                FileChecker::addFileInheritanceToClass(
+                    Config::getInstance()->getBaseDir() . $this->file_name,
+                    $this->parent_class
+                );
 
                 $trait_checkers[] = $trait_checker;
             }
         }
+
+        return null;
     }
 
-    protected function visitPropertyDeclaration(PhpParser\Node\Stmt\Property $stmt, Context $class_context, Config $config, $check_property_types)
-    {
+    /**
+     * @param PhpParser\Node\Stmt\Property $stmt
+     * @param Context $class_context
+     * @param Config $config
+     * @param $check_property_types
+     * @return void
+     */
+    protected function visitPropertyDeclaration(
+        PhpParser\Node\Stmt\Property $stmt,
+        Context $class_context,
+        Config $config,
+        $check_property_types
+    ) {
         $comment = $stmt->getDocComment();
         $type_in_comment = null;
 
@@ -537,7 +584,8 @@ abstract class ClassLikeChecker implements StatementsSource
         } elseif (!$comment && $check_property_types) {
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
-                    'Property ' . $this->absolute_class . '::$' . $stmt->props[0]->name . ' does not have a declared type',
+                    'Property ' . $this->absolute_class . '::$' . $stmt->props[0]->name . ' does not have a ' .
+                        'declared type',
                     $this->file_name,
                     $stmt->getLine()
                 ),
@@ -580,8 +628,17 @@ abstract class ClassLikeChecker implements StatementsSource
         }
     }
 
-    protected function visitClassConstDeclaration(PhpParser\Node\Stmt\ClassConst $stmt, Context $class_context, Config $config)
-    {
+    /**
+     * @param   PhpParser\Node\Stmt\ClassConst  $stmt
+     * @param   Context                         $class_context
+     * @param   Config                          $config
+     * @return  void
+     */
+    protected function visitClassConstDeclaration(
+        PhpParser\Node\Stmt\ClassConst $stmt,
+        Context $class_context,
+        Config $config
+    ) {
         $comment = $stmt->getDocComment();
         $type_in_comment = null;
 
@@ -950,8 +1007,11 @@ abstract class ClassLikeChecker implements StatementsSource
             self::$public_class_properties[$class_name] = self::$public_class_properties[$parent_class_name];
             self::$protected_class_properties[$class_name] = self::$protected_class_properties[$parent_class_name];
 
-            self::$public_static_class_properties[$class_name] = self::$public_static_class_properties[$parent_class_name];
-            self::$protected_static_class_properties[$class_name] = self::$protected_static_class_properties[$parent_class_name];
+            self::$public_static_class_properties[$class_name] =
+                self::$public_static_class_properties[$parent_class_name];
+
+            self::$protected_static_class_properties[$class_name] =
+                self::$protected_static_class_properties[$parent_class_name];
         }
 
         $class_properties = $reflected_class->getProperties();
@@ -1036,7 +1096,9 @@ abstract class ClassLikeChecker implements StatementsSource
             ClassChecker::getInterfacesForClass($class_name);
         }
 
-        $reflection_methods = $reflected_class->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
+        $reflection_methods = $reflected_class->getMethods(
+            ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
+        );
 
         self::$class_methods[$class_name] = [];
 
@@ -1053,7 +1115,9 @@ abstract class ClassLikeChecker implements StatementsSource
                 self::$class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
             }
 
-            if (!$reflection_method->isAbstract() && $reflection_method->getDeclaringClass()->getName() === $class_name) {
+            if (!$reflection_method->isAbstract() &&
+                $reflection_method->getDeclaringClass()->getName() === $class_name
+            ) {
                 self::$class_methods[$class_name][strtolower((string)$reflection_method->getName())] = true;
             }
         }

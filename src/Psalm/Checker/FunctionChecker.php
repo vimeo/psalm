@@ -406,7 +406,13 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if (substr($call_map_key, 0, 6) === 'array_') {
-                $array_return_type = self::getArrayReturnType($call_map_key, $call_args, $file_name, $line_number, $suppressed_issues);
+                $array_return_type = self::getArrayReturnType(
+                    $call_map_key,
+                    $call_args,
+                    $file_name,
+                    $line_number,
+                    $suppressed_issues
+                );
 
                 if ($array_return_type) {
                     return $array_return_type;
@@ -433,8 +439,13 @@ class FunctionChecker extends FunctionLikeChecker
      * @param  array                        $suppressed_issues
      * @return Type\Union|null
      */
-    protected static function getArrayReturnType($call_map_key, $call_args, $file_name, $line_number, array $suppressed_issues)
-    {
+    protected static function getArrayReturnType(
+        $call_map_key,
+        $call_args,
+        $file_name,
+        $line_number,
+        array $suppressed_issues
+    ) {
         if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
             return self::getArrayMapReturnType($call_map_key, $call_args, $file_name, $line_number, $suppressed_issues);
         }
@@ -481,7 +492,10 @@ class FunctionChecker extends FunctionLikeChecker
                     }
 
                     $inner_key_types = array_merge(array_values($type_part->type_params[0]->types), $inner_key_types);
-                    $inner_value_types = array_merge(array_values($type_part->type_params[1]->types), $inner_value_types);
+                    $inner_value_types = array_merge(
+                        array_values($type_part->type_params[1]->types),
+                        $inner_value_types
+                    );
                 }
 
                 if ($inner_value_types) {
@@ -531,6 +545,8 @@ class FunctionChecker extends FunctionLikeChecker
 
             return clone $first_arg_array->type_params[1];
         }
+
+        return null;
     }
 
     /**
@@ -541,8 +557,13 @@ class FunctionChecker extends FunctionLikeChecker
      * @param  array                        $suppressed_issues
      * @return Type\Union
      */
-    protected static function getArrayMapReturnType($call_map_key, $call_args, $file_name, $line_number, array $suppressed_issues)
-    {
+    protected static function getArrayMapReturnType(
+        $call_map_key,
+        $call_args,
+        $file_name,
+        $line_number,
+        array $suppressed_issues
+    ) {
         $function_index = $call_map_key === 'array_map' ? 0 : 1;
         $array_index = $call_map_key === 'array_map' ? 1 : 0;
 
@@ -560,7 +581,11 @@ class FunctionChecker extends FunctionLikeChecker
 
             if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure) {
                 $closure_yield_types = [];
-                $closure_return_types = \Psalm\EffectsAnalyser::getReturnTypes($function_call_arg->value->stmts, $closure_yield_types, true);
+                $closure_return_types = EffectsAnalyser::getReturnTypes(
+                    $function_call_arg->value->stmts,
+                    $closure_yield_types,
+                    true
+                );
 
                 if (!$closure_return_types) {
                     IssueBuffer::accepts(

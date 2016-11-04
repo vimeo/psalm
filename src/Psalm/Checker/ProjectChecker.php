@@ -72,7 +72,7 @@ class ProjectChecker
 
             // strip out deleted files
             $file_list = array_diff($file_list, $deleted_files);
-            self::checkDiffFilesWithConfig($file_list, self::$config, $debug);
+            self::checkDiffFilesWithConfig(self::$config, $debug, $file_list);
         }
 
         IssueBuffer::finish(true);
@@ -176,12 +176,12 @@ class ProjectChecker
     }
 
     /**
-     * @param  array<string>    $file_list
      * @param  Config           $config
      * @param  bool             $debug
+     * @param  array<string>    $file_list
      * @return void
      */
-    protected static function checkDiffFilesWithConfig(array $file_list = [], Config $config, $debug)
+    protected static function checkDiffFilesWithConfig(Config $config, $debug, array $file_list = [])
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
