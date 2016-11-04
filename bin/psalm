@@ -16,6 +16,7 @@ error_reporting(-1);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '2048M');
+ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
 $options = getopt('f:m:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff']);
