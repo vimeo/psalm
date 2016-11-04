@@ -1,32 +1,32 @@
 <?php
-
 namespace Psalm\Tests;
 
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
 
 class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
         $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     public function testGenericArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return array<int>
@@ -42,13 +42,13 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testGeneric2DArrayCreation()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return array<array<int>>
@@ -64,13 +64,13 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testGeneric2DArrayCreationAddedInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return array<array<int>>
@@ -97,13 +97,13 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testGenericArrayCreationWithObjectAddedInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return array<B>
@@ -119,13 +119,13 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testGenericArrayCreationWithElementAddedInSwitch()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return array<int>
@@ -146,13 +146,13 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testGenericArrayCreationWithElementsAddedInSwitch()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return array<int|string>
@@ -174,13 +174,13 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testGenericArrayCreationWithElementsAddedInSwitchWithNothing()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class B {
             /**
              * @return array<int|string>
@@ -205,7 +205,7 @@ class ArrayReturnTypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

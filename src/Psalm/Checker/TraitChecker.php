@@ -1,17 +1,22 @@
 <?php
-
 namespace Psalm\Checker;
 
 use PhpParser;
-
 use Psalm\StatementsSource;
 use Psalm\Context;
 
 class TraitChecker extends ClassLikeChecker
 {
-    /** @var array<string, string> */
+    /**
+     * @var array<string, string>
+     */
     protected $method_map = [];
 
+    /**
+     * @param   PhpParser\Node\Stmt\Trait_  $class
+     * @param   StatementsSource            $source
+     * @param   string                      $absolute_class
+     */
     public function __construct(PhpParser\Node\Stmt\Trait_ $class, StatementsSource $source, $absolute_class)
     {
         $this->class = $class;
@@ -27,6 +32,11 @@ class TraitChecker extends ClassLikeChecker
         self::$class_checkers[$absolute_class] = $this;
     }
 
+    /**
+     * @param   bool            $check_methods
+     * @param   Context|null    $class_context
+     * @return void
+     */
     public function check($check_methods = true, Context $class_context = null)
     {
         if (!$class_context) {
@@ -36,6 +46,10 @@ class TraitChecker extends ClassLikeChecker
         parent::check($check_methods, $class_context);
     }
 
+    /**
+     * @param   array $method_map
+     * @return  void
+     */
     public function setMethodMap(array $method_map)
     {
         $this->method_map = $method_map;

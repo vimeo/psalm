@@ -1,12 +1,11 @@
 <?php
-
 namespace Psalm;
 
 use PhpParser;
 
 /**
- * A class for analysing a given method call's effects in relation to
- * $this/self and also looking at return types
+ * A class for analysing a given method call's effects in relation to $this/self and also looking at return types
+ *
  */
 class EffectsAnalyser
 {
@@ -15,6 +14,7 @@ class EffectsAnalyser
      *
      * @param  array<int,PhpParser\Node\Stmt>   $stmts
      * @param  array<int,Type\Atomic>           $yield_types
+     * @param  bool                             $collapse_types
      * @return array<int,Type\Atomic>    a list of return types
      */
     public static function getReturnTypes(array $stmts, array &$yield_types, $collapse_types = false)
@@ -30,33 +30,27 @@ class EffectsAnalyser
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ ||
+                    $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
                     $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr));
-                }
-                else {
+                } else {
                     if (isset($stmt->inferredType)) {
                         $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
-                    }
-                    else {
+                    } else {
                         $return_types[] = new Type\Atomic('mixed');
                     }
                 }
-            }
-            elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+            } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
-            }
-            elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+            } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
                 $key_type = null;
 
                 if (isset($stmt->inferredType)) {
                     $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
-                }
-                else {
+                } else {
                     $return_types[] = new Type\Atomic('mixed');
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
                 foreach ($stmt->elseifs as $elseif) {
@@ -66,9 +60,7 @@ class EffectsAnalyser
                 if ($stmt->else) {
                     $return_types = array_merge($return_types, self::getReturnTypes($stmt->else->stmts, $yield_types));
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 
                 foreach ($stmt->catches as $catch) {
@@ -78,25 +70,15 @@ class EffectsAnalyser
                 if ($stmt->finallyStmts) {
                     $return_types = array_merge($return_types, self::getReturnTypes($stmt->finallyStmts, $yield_types));
                 }
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
-
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 foreach ($stmt->cases as $case) {
                     $return_types = array_merge($return_types, self::getReturnTypes($case->stmts, $yield_types));
                 }
@@ -109,6 +91,7 @@ class EffectsAnalyser
             if ($yield_types) {
                 /** @var Type\Union */
                 $key_type = null;
+
                 /** @var Type\Union */
                 $value_type = null;
 
@@ -119,15 +102,13 @@ class EffectsAnalyser
 
                         if ($value_type === null) {
                             $value_type = clone $last_type_param;
-                        }
-                        else {
+                        } else {
                             $value_type = Type::combineUnionTypes($value_type, $last_type_param);
                         }
 
                         if (!$key_type || !$first_type_param) {
                             $key_type = $first_type_param ? clone $first_type_param : Type::getMixed();
-                        }
-                        else {
+                        } else {
                             $key_type = Type::combineUnionTypes($key_type, $first_type_param);
                         }
                     }
@@ -144,7 +125,10 @@ class EffectsAnalyser
                 ];
             }
 
-            if (!$last_stmt instanceof PhpParser\Node\Stmt\Return_ && !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts) && !$yield_types) {
+            if (!$last_stmt instanceof PhpParser\Node\Stmt\Return_ &&
+                !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts) &&
+                !$yield_types
+            ) {
                 $return_types[] = new Type\Atomic('null');
             }
         }
@@ -152,6 +136,10 @@ class EffectsAnalyser
         return $return_types;
     }
 
+    /**
+     * @param   PhpParser\Node\Expr $stmt
+     * @return  array|null
+     */
     protected static function getYieldTypeFromExpression($stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
@@ -171,21 +159,19 @@ class EffectsAnalyser
                 );
 
                 return [$generator_type];
-            }
-            else {
+            } else {
                 return [new Type\Atomic('mixed')];
             }
-
-        }
-        elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             $key_type = null;
 
             if (isset($stmt->inferredType)) {
                 return [$stmt->inferredType->types];
-            }
-            else {
+            } else {
                 return [new Type\Atomic('mixed')];
             }
         }
+
+        return null;
     }
 }

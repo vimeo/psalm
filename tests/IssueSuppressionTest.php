@@ -1,41 +1,39 @@
 <?php
-
 namespace Psalm\Tests;
 
-use Psalm\Type;
-
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
 
 class IssueSuppressionTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
-    protected static $_file_filter;
+    protected static $parser;
+    protected static $file_filter;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
 
-        $filter = new \Psalm\Config\FileFilter();
+        $filter = new Config\FileFilter();
         $filter->addExcludeFile('somefile.php');
         $filter->makeExclusive();
 
-        self::$_file_filter = $filter;
+        self::$file_filter = $filter;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
-        \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
+        FileChecker::clearCache();
+        Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 
     public function testUndefinedClass()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
 
         class A{
             /**
@@ -48,7 +46,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

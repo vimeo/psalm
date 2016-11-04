@@ -1,19 +1,17 @@
 <?php
-
 namespace Psalm\Tests;
 
-use Psalm\Type;
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Type;
 
 class TypeParseTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
     private static function getAtomic($string)
@@ -50,7 +48,14 @@ class TypeParseTest extends PHPUnit_Framework_TestCase
     public function testObjectLike()
     {
         $this->assertEquals('array{a:int,b:string}', (string) Type::parseString('array{a:int, b:string}'));
-        $this->assertEquals('array{a:int|string,b:string}', (string) Type::parseString('array{a:int|string, b:string}'));
-        $this->assertEquals('array{a:array<int,string|int>,b:string}', (string) Type::parseString('array{a:array<int, string|int>, b:string}'));
+        $this->assertEquals(
+            'array{a:int|string,b:string}',
+            (string) Type::parseString('array{a:int|string, b:string}')
+        );
+
+        $this->assertEquals(
+            'array{a:array<int,string|int>,b:string}',
+            (string) Type::parseString('array{a:array<int, string|int>, b:string}')
+        );
     }
 }

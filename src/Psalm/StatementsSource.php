@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm;
 
 interface StatementsSource
@@ -19,8 +18,14 @@ interface StatementsSource
      */
     public function getAbsoluteClass();
 
+    /**
+     * @return string
+     */
     public function getClassName();
 
+    /**
+     * @return string
+     */
     public function getClassLikeChecker();
 
     /**
@@ -60,6 +65,7 @@ interface StatementsSource
 
     /**
      * Get a list of suppressed issues
+     *
      * @return array<string>
      */
     public function getSuppressedIssues();

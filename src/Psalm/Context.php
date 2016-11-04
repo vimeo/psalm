@@ -1,9 +1,5 @@
 <?php
-
 namespace Psalm;
-
-use PhpParser;
-use Psalm\Checker\StatementsChecker;
 
 class Context
 {
@@ -64,6 +60,7 @@ class Context
 
     /**
      * A list of classes checked with class_exists
+     *
      * @var array<string,bool>
      */
     protected $phantom_classes = [];
@@ -78,6 +75,9 @@ class Context
         $this->self = $self;
     }
 
+    /**
+     * @return void
+     */
     public function __clone()
     {
         foreach ($this->vars_in_scope as $key => &$type) {
@@ -88,18 +88,24 @@ class Context
     }
 
     /**
-     * Updates the parent context, looking at the changes within a block
-     * and then applying those changes, where necessary, to the parent context
+     * Updates the parent context, looking at the changes within a block and then applying those changes, where
+     * necessary, to the parent context
      *
      * @param  Context     $start_context
      * @param  Context     $end_context
-     * @param  bool        $has_leaving_statements   whether or not the parent scope is abandoned between $start_context and $end_context
+     * @param  bool        $has_leaving_statements   whether or not the parent scope is abandoned between
+     *                                               $start_context and $end_context
      * @param  array       $vars_to_update
      * @param  array       $updated_vars
      * @return void
      */
-    public function update(Context $start_context, Context $end_context, $has_leaving_statements, array $vars_to_update, array &$updated_vars)
-    {
+    public function update(
+        Context $start_context,
+        Context $end_context,
+        $has_leaving_statements,
+        array $vars_to_update,
+        array &$updated_vars
+    ) {
         foreach ($this->vars_in_scope as $var => &$context_type) {
             if (isset($start_context->vars_in_scope[$var])) {
                 $old_type = $start_context->vars_in_scope[$var];
@@ -107,7 +113,9 @@ class Context
                 // this is only true if there was some sort of type negation
                 if (in_array($var, $vars_to_update)) {
                     // if we're leaving, we're effectively deleting the possibility of the if types
-                    $new_type = !$has_leaving_statements && isset($end_context->vars_in_scope[$var]) ? $end_context->vars_in_scope[$var] : null;
+                    $new_type = !$has_leaving_statements && isset($end_context->vars_in_scope[$var])
+                        ? $end_context->vars_in_scope[$var]
+                        : null;
 
                     // if the type changed within the block of statements, process the replacement
                     if ((string)$old_type !== (string)$new_type) {
@@ -129,7 +137,9 @@ class Context
         $redefined_vars = [];
 
         foreach ($original_context->vars_in_scope as $var => $context_type) {
-            if (isset($new_context->vars_in_scope[$var]) && (string)$new_context->vars_in_scope[$var] !== (string)$context_type) {
+            if (isset($new_context->vars_in_scope[$var]) &&
+                (string)$new_context->vars_in_scope[$var] !== (string)$context_type
+            ) {
                 $redefined_vars[$var] = $new_context->vars_in_scope[$var];
             }
         }
@@ -171,7 +181,6 @@ class Context
 
             foreach ($this->vars_in_scope as $var_id => $context_type) {
                 if (preg_match('/^' . preg_quote($remove_var_id, '/') . '[\[\-]/', $var_id)) {
-
                     $vars_to_remove[] = $var_id;
                 }
             }
@@ -182,6 +191,10 @@ class Context
         }
     }
 
+    /**
+     * @param   Context $op_context
+     * @return  void
+     */
     public function updateChecks(Context $op_context)
     {
         $this->check_classes = $this->check_classes && $op_context->check_classes;
@@ -191,11 +204,19 @@ class Context
         $this->check_consts = $this->check_consts && $op_context->check_consts;
     }
 
+    /**
+     * @param   string $class_name
+     * @return  bool
+     */
     public function isPhantomClass($class_name)
     {
         return isset($this->phantom_classes[$class_name]);
     }
 
+    /**
+     * @param   string $class_name
+     * @return  void
+     */
     public function addPhantomClass($class_name)
     {
         $this->phantom_classes[$class_name] = true;

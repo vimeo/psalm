@@ -1,39 +1,37 @@
 <?php
-
 namespace Psalm\Tests;
 
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
 use Psalm\Context;
-use Psalm\Checker\TypeChecker;
-use Psalm\Type;
 
 class ListTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
         $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     public function testSimpleVars()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         list($a, $b) = ["a", "b"];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
@@ -42,11 +40,11 @@ class ListTest extends PHPUnit_Framework_TestCase
 
     public function testSimpleVarsWithSeparateTypes()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         list($a, $b) = ["a", 2];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
@@ -55,12 +53,12 @@ class ListTest extends PHPUnit_Framework_TestCase
 
     public function testSimpleVarsWithSeparateTypesInVar()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $bar = ["a", 2];
         list($a, $b) = $bar;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$a']);
@@ -69,7 +67,7 @@ class ListTest extends PHPUnit_Framework_TestCase
 
     public function testThisVar()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
             public $a;
@@ -86,18 +84,18 @@ class ListTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidPropertyAssignment - somefile.php:11
      */
     public function testThisVarWithBadType()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @var int */
             public $a;
@@ -114,7 +112,7 @@ class ListTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }

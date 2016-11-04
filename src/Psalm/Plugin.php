@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm;
 
 use PhpParser;
@@ -7,7 +6,8 @@ use PhpParser;
 abstract class Plugin
 {
     /**
-     * checks an expression
+     * Checks an expression
+     *
      * @param  PhpParser\Node\Expr  $stmt
      * @param  Context              $context
      * @param  string               $file_name
@@ -17,11 +17,12 @@ abstract class Plugin
      */
     public function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $file_name, array $suppressed_issues)
     {
-        return;
+        return null;
     }
 
     /**
-     * checks a statement
+     * Checks a statement
+     *
      * @param  PhpParser\Node       $stmt
      * @param  Context              $context
      * @param  string               $file_name
@@ -31,6 +32,6 @@ abstract class Plugin
      */
     public function checkStatement(PhpParser\Node $stmt, Context $context, $file_name, array $suppressed_issues)
     {
-        return;
+        return null;
     }
 }

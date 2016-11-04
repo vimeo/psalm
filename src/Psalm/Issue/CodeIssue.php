@@ -1,18 +1,23 @@
 <?php
-
 namespace Psalm\Issue;
 
 abstract class CodeIssue
 {
     const CODE_EXCEPTION = 1;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     protected $file_name;
 
-    /** @var int */
+    /**
+     * @var int
+     */
     protected $line_number;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     protected $message;
 
     /**
@@ -27,16 +32,25 @@ abstract class CodeIssue
         $this->message = $message;
     }
 
+    /**
+     * @return int
+     */
     public function getLineNumber()
     {
         return $this->line_number;
     }
 
+    /**
+     * @return string
+     */
     public function getFileName()
     {
         return $this->file_name;
     }
 
+    /**
+     * @return string
+     */
     public function getMessage()
     {
         return $this->file_name . ':' . $this->line_number .' - ' . $this->message;

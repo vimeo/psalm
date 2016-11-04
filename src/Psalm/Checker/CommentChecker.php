@@ -1,8 +1,8 @@
 <?php
-
 namespace Psalm\Checker;
 
 use Psalm\Context;
+use Psalm\Exception\DocblockParseException;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -16,9 +16,14 @@ class CommentChecker
      * @param  StatementsSource $source
      * @param  string           $var_id
      * @return Type\Union|null
+     * @throws DocblockParseException If there was a problem parsing the docblock.
      */
-    public static function getTypeFromComment($comment, Context $context = null, StatementsSource $source, $var_id = null)
-    {
+    public static function getTypeFromComment(
+        $comment,
+        Context $context = null,
+        StatementsSource $source,
+        $var_id = null
+    ) {
         $type_in_comments_var_id = null;
 
         $type_in_comments = null;
@@ -28,8 +33,7 @@ class CommentChecker
         if ($comments && isset($comments['specials']['var'][0]) && trim((string)$comments['specials']['var'][0])) {
             try {
                 $line_parts = self::splitDocLine(trim((string)$comments['specials']['var'][0]));
-            }
-            catch (\Psalm\Exception\DocblockParseException $e) {
+            } catch (DocblockParseException $e) {
                 throw $e;
             }
 
@@ -66,13 +70,26 @@ class CommentChecker
 
     /**
      * @param  string $comment
-     * @psalm-return array{return_type: null|string, params: array<int, array{name:string, type:string}>, deprecated: bool, suppress: array<string>, variadic: boolean}
+     * @return array
+     * @psalm-return array{
+     *  return_type: null|string,
+     *  params: array<int, array{name:string, type:string}>,
+     *  deprecated: bool,
+     *  suppress: array<string>,
+     *  variadic: boolean
+     * }
+     * @throws DocblockParseException If there was a problem parsing the docblock.
      */
     public static function extractDocblockInfo($comment)
     {
         $comments = self::parseDocComment($comment);
 
-        $info = ['return_type' => null, 'params' => [], 'deprecated' => false, 'suppress' => []];
+        $info = [
+            'return_type' => null,
+            'params' => [],
+            'deprecated' => false,
+            'suppress' => []
+        ];
 
         if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
             $return_block = trim(
@@ -83,8 +100,7 @@ class CommentChecker
 
             try {
                 $line_parts = self::splitDocLine($return_block);
-            }
-            catch (\Psalm\Exception\DocblockParseException $e) {
+            } catch (DocblockParseException $e) {
                 throw $e;
             }
 
@@ -100,8 +116,7 @@ class CommentChecker
             foreach ($comments['specials']['param'] as $param) {
                 try {
                     $line_parts = self::splitDocLine((string)$param);
-                }
-                catch (\Psalm\Exception\DocblockParseException $e) {
+                } catch (DocblockParseException $e) {
                     throw $e;
                 }
 
@@ -138,6 +153,7 @@ class CommentChecker
     /**
      * @param  string $return_block
      * @return array<string>
+     * @throws DocblockParseException If an invalid string is found.
      */
     protected static function splitDocLine($return_block)
     {
@@ -150,8 +166,7 @@ class CommentChecker
 
             if ($char === '[' || $char === '{' || $char === '(' || $char === '<') {
                 $brackets .= $char;
-            }
-            elseif ($char === ']' || $char === '}' || $char === ')' || $char === '>') {
+            } elseif ($char === ']' || $char === '}' || $char === ')' || $char === '>') {
                 $last_bracket = substr($brackets, -1);
                 $brackets = substr($brackets, 0, -1);
 
@@ -160,10 +175,9 @@ class CommentChecker
                     || ($char === ')' && $last_bracket !== '(')
                     || ($char === '>' && $last_bracket !== '<')
                 ) {
-                    throw new \Psalm\Exception\DocblockParseException('Invalid string ' . $return_block);
+                    throw new DocblockParseException('Invalid string ' . $return_block);
                 }
-            }
-            elseif ($char === ' ' || $char === "\t") {
+            } elseif ($char === ' ' || $char === "\t") {
                 if ($brackets) {
                     continue;
                 }
@@ -183,11 +197,11 @@ class CommentChecker
         return [$type];
     }
 
-     /**
+    /**
      * Parse a docblock comment into its parts.
      *
-     * Taken from advanced api docmaker
-     * Which was taken from https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
+     * Taken from advanced api docmaker, which was taken from
+     * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
      * @param  string  $docblock
      * @return array Array of the main comment and specials
@@ -213,9 +227,10 @@ class CommentChecker
                 unset($lines[$k]);
             }
         }
+
         $docblock = implode("\n", $lines);
 
-        $special = array();
+        $special = [];
 
         // Parse @specials.
         $matches = [];
@@ -257,6 +272,9 @@ class CommentChecker
         // is one.
         $docblock = preg_replace('/^\s*\n/', '', $docblock);
 
-        return array('description' => $docblock, 'specials' => $special);
+        return [
+            'description' => $docblock,
+            'specials' => $special
+        ];
     }
 }

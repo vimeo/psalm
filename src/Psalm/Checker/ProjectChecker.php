@@ -1,30 +1,31 @@
 <?php
-
 namespace Psalm\Checker;
 
+use Psalm\Config;
+use Psalm\Exception;
+use Psalm\IssueBuffer;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-
-use Psalm\Config;
-use Psalm\IssueBuffer;
-use Psalm\Exception;
 
 class ProjectChecker
 {
     /**
      * Cached config
+     *
      * @var Config|null
      */
     protected static $config;
 
     /**
      * Whether or not to use colors in error output
+     *
      * @var boolean
      */
     public static $use_color = true;
 
     /**
      * Whether or not to show informational messages
+     *
      * @var boolean
      */
     public static $show_info = true;
@@ -62,13 +63,13 @@ class ProjectChecker
             foreach (self::$config->getIncludeDirs() as $dir_name) {
                 self::checkDirWithConfig($dir_name, self::$config, $debug);
             }
-        }
-        else {
+        } else {
             if ($debug) {
                 echo count($diff_files) . ' changed files' . PHP_EOL;
             }
 
             $file_list = self::getReferencedFilesFromDiff($diff_files);
+
             // strip out deleted files
             $file_list = array_diff($file_list, $deleted_files);
             self::checkDiffFilesWithConfig($file_list, self::$config, $debug);
@@ -86,7 +87,9 @@ class ProjectChecker
     {
         if (!self::$config) {
             self::$config = self::getConfigForPath($dir_name);
-            self::$config->hide_external_errors = self::$config->isInProjectDirs(self::$config->shortenFileName($dir_name));
+            self::$config->hide_external_errors = self::$config->isInProjectDirs(
+                self::$config->shortenFileName($dir_name)
+            );
         }
 
         FileChecker::loadReferenceCache();
@@ -126,8 +129,7 @@ class ProjectChecker
                     if (isset($filetype_handlers[$extension])) {
                         /** @var FileChecker */
                         $file_checker = new $filetype_handlers[$extension]($file_name);
-                    }
-                    else {
+                    } else {
                         $file_checker = new FileChecker($file_name);
                     }
 
@@ -184,14 +186,14 @@ class ProjectChecker
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
 
-
-
         foreach ($file_list as $file_name) {
             if (!file_exists($file_name)) {
                 continue;
             }
 
-            if (!$config->isInProjectDirs(preg_replace('/^' . preg_quote($config->getBaseDir(), '/') . '/', '', $file_name))) {
+            if (!$config->isInProjectDirs(
+                preg_replace('/^' . preg_quote($config->getBaseDir(), '/') . '/', '', $file_name)
+            )) {
                 if ($debug) {
                     echo('skipping ' . $file_name . PHP_EOL);
                 }
@@ -208,8 +210,7 @@ class ProjectChecker
             if (isset($filetype_handlers[$extension])) {
                 /** @var FileChecker */
                 $file_checker = new $filetype_handlers[$extension]($file_name);
-            }
-            else {
+            } else {
                 $file_checker = new FileChecker($file_name);
             }
 
@@ -232,7 +233,9 @@ class ProjectChecker
             self::$config = self::getConfigForPath($file_name);
         }
 
-        self::$config->hide_external_errors = self::$config->isInProjectDirs(self::$config->shortenFileName($file_name));
+        self::$config->hide_external_errors = self::$config->isInProjectDirs(
+            self::$config->shortenFileName($file_name)
+        );
 
         $file_name_parts = explode('.', $file_name);
 
@@ -245,8 +248,7 @@ class ProjectChecker
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
             $file_checker = new $filetype_handlers[$extension]($file_name);
-        }
-        else {
+        } else {
             $file_checker = new FileChecker($file_name);
         }
 
@@ -257,10 +259,12 @@ class ProjectChecker
 
     /**
      * Gets a Config object from an XML file.
-     * Searches up a folder hierachy for the most immediate config.
+     *
+     * Searches up a folder hierarchy for the most immediate config.
      *
      * @param  string $path
      * @return Config
+     * @throws Exception\ConfigException If a config path is not found.
      */
     protected static function getConfigForPath($path)
     {
@@ -276,7 +280,7 @@ class ProjectChecker
             $maybe_path = $dir_path . Config::DEFAULT_FILE_NAME;
 
             if (file_exists($maybe_path)) {
-                $config = \Psalm\Config::loadFromXML($maybe_path);
+                $config = Config::loadFromXML($maybe_path);
 
                 if ($config->autoloader) {
                     require_once($dir_path . $config->autoloader);
@@ -286,8 +290,7 @@ class ProjectChecker
             }
 
             $dir_path = preg_replace('/[^\/]+\/$/', '', $dir_path);
-        }
-        while ($dir_path !== '/');
+        } while ($dir_path !== '/');
 
         if (!$config) {
             throw new Exception\ConfigException('Config not found for path ' . $path);
@@ -298,6 +301,8 @@ class ProjectChecker
 
     /**
      * @param string $path_to_config
+     * @return void
+     * @throws Exception\ConfigException If a config file is not found in the given location.
      */
     public static function setConfigXML($path_to_config)
     {
@@ -307,7 +312,7 @@ class ProjectChecker
 
         $dir_path = dirname($path_to_config) . '/';
 
-        self::$config = \Psalm\Config::loadFromXML($path_to_config);
+        self::$config = Config::loadFromXML($path_to_config);
 
         if (self::$config->autoloader) {
             require_once($dir_path . self::$config->autoloader);

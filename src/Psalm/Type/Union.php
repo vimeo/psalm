@@ -1,14 +1,13 @@
 <?php
-
 namespace Psalm\Type;
 
 use Psalm\Type;
-use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\ClassChecker;
 
 class Union extends Type
 {
-    /** @var array<string,Atomic> */
+    /**
+     * @var array<string,Atomic>
+     */
     public $types = [];
 
     /**

@@ -1,16 +1,16 @@
 <?php
-
 namespace Psalm\Type;
-
-use Psalm\Type;
 
 class Generic extends Atomic
 {
-    /** @var array<Type\Union> */
+    /**
+     * @var array<Type\Union>
+     */
     public $type_params;
 
     /**
      * Constructs a new instance of a generic type
+     *
      * @param string            $value
      * @param array<int,Union>  $type_params
      */
@@ -20,6 +20,9 @@ class Generic extends Atomic
         $this->type_params = $type_params;
     }
 
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return $this->value .

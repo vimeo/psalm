@@ -1,12 +1,10 @@
 <?php
-
 namespace Psalm\Checker;
 
 use PhpParser\Node\Stmt\Namespace_;
-use Psalm\StatementsSource;
-use Psalm\Context;
-
 use PhpParser;
+use Psalm\Context;
+use Psalm\StatementsSource;
 
 class NamespaceChecker implements StatementsSource
 {
@@ -45,6 +43,10 @@ class NamespaceChecker implements StatementsSource
      */
     protected $suppressed_issues;
 
+    /**
+     * @param Namespace_        $namespace
+     * @param StatementsSource  $source
+     */
     public function __construct(Namespace_ $namespace, StatementsSource $source)
     {
         $this->namespace = $namespace;
@@ -54,51 +56,50 @@ class NamespaceChecker implements StatementsSource
         $this->suppressed_issues = $source->getSuppressedIssues();
     }
 
+    /**
+     * @param   bool    $check_classes
+     * @param   bool    $check_class_statements
+     * @return  array
+     */
     public function check($check_classes = true, $check_class_statements = true)
     {
         $leftover_stmts = [];
 
         foreach ($this->namespace->stmts as $stmt) {
-
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $absolute_class = ClassLikeChecker::getAbsoluteClassFromString($stmt->name, $this->namespace_name, []);
 
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-
                     $this->declared_classes[$absolute_class] = 1;
 
                     if ($check_classes) {
-                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class) ?: new ClassChecker($stmt, $this, $absolute_class);
+                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class)
+                            ?: new ClassChecker($stmt, $this, $absolute_class);
+
                         $class_checker->check($check_class_statements);
                     }
-
-                }
-                elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
-                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name) ?: new InterfaceChecker($stmt, $this, $absolute_class);
+                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
+                            ?: new InterfaceChecker($stmt, $this, $absolute_class);
                         $this->declared_classes[] = $class_checker->getAbsoluteClass();
                         $class_checker->check(false);
                     }
-
-                }
-                elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
                         // register the trait checker
-                        ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class) ?: new TraitChecker($stmt, $this, $absolute_class);
+                        ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class)
+                            ?: new TraitChecker($stmt, $this, $absolute_class);
                     }
                 }
-            }
-            elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
                 }
-            }
-            else {
+            } else {
                 $leftover_stmts[] = $stmt;
             }
-
         }
-
 
         if ($leftover_stmts) {
             $statments_checker = new StatementsChecker($this);
@@ -106,13 +107,12 @@ class NamespaceChecker implements StatementsSource
             $statments_checker->check($leftover_stmts, $context);
         }
 
-
-
         return $this->aliased_classes;
     }
 
     /**
      * Gets a list of the classes declared
+     *
      * @return array<string>
      */
     public function getDeclaredClasses()
@@ -120,16 +120,26 @@ class NamespaceChecker implements StatementsSource
         return array_keys($this->declared_classes);
     }
 
+    /**
+     * @param   string $class_name
+     * @return  bool
+     */
     public function containsClass($class_name)
     {
         return isset($this->declared_classes[$class_name]);
     }
 
+    /**
+     * @return string
+     */
     public function getNamespace()
     {
         return $this->namespace_name;
     }
 
+    /**
+     * @return array
+     */
     public function getAliasedClasses()
     {
         return $this->aliased_classes;
@@ -167,11 +177,17 @@ class NamespaceChecker implements StatementsSource
         return null;
     }
 
+    /**
+     * @return string
+     */
     public function getFileName()
     {
         return $this->file_name;
     }
 
+    /**
+     * @return null|string
+     */
     public function getIncludeFileName()
     {
         return $this->include_file_name;
@@ -179,12 +195,16 @@ class NamespaceChecker implements StatementsSource
 
     /**
      * @param string|null $file_name
+     * @return void
      */
     public function setIncludeFileName($file_name)
     {
         $this->include_file_name = $file_name;
     }
 
+    /**
+     * @return string
+     */
     public function getCheckedFileName()
     {
         return $this->include_file_name ?: $this->file_name;
@@ -198,6 +218,9 @@ class NamespaceChecker implements StatementsSource
         return false;
     }
 
+    /**
+     * @return null
+     */
     public function getSource()
     {
         return null;
@@ -205,6 +228,7 @@ class NamespaceChecker implements StatementsSource
 
     /**
      * Get a list of suppressed issues
+     *
      * @return array<string>
      */
     public function getSuppressedIssues()

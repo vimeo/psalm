@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset name="PHP_CodeSniffer">
+    <rule ref="PSR2" />
+
+    <file>bin/</file>
+    <file>examples/</file>
+    <file>src/</file>
+    <file>tests/</file>
+
+    <!-- This is a vendor file that we don't want to bother linting. -->
+    <exclude-pattern>src/Psalm/CallMap.php</exclude-pattern>
+</ruleset>

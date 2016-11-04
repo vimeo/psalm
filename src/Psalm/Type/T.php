@@ -1,8 +1,5 @@
 <?php
-
 namespace Psalm\Type;
-
-use Psalm\Type;
 
 class T extends Atomic
 {

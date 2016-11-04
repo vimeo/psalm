@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Type;
 
 use Psalm\Type;
@@ -8,11 +7,14 @@ use Psalm\Checker\ClassLikeChecker;
 
 class Atomic extends Type
 {
-    /** @var string */
+    /**
+     * @var string
+     */
     public $value;
 
     /**
      * Constructs an Atomic instance
+     *
      * @param string    $value
      */
     public function __construct($value)
@@ -20,11 +22,18 @@ class Atomic extends Type
         $this->value = $value;
     }
 
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return $this->value;
     }
 
+    /**
+     * @param   Union   $parent
+     * @return  bool
+     */
     public function isIn(Union $parent)
     {
         if ($parent->isMixed()) {
@@ -71,31 +80,49 @@ class Atomic extends Type
         return false;
     }
 
+    /**
+     * @return bool
+     */
     public function isArray()
     {
         return $this->value === 'array';
     }
 
+    /**
+     * @return bool
+     */
     public function isGenericArray()
     {
         return $this->value === 'array' && $this instanceof Generic;
     }
 
+    /**
+     * @return bool
+     */
     public function isObjectLike()
     {
         return $this instanceof ObjectLike;
     }
 
+    /**
+     * @return bool
+     */
     public function isObject()
     {
         return $this->value === 'object';
     }
 
+    /**
+     * @return bool
+     */
     public function isNumericType()
     {
         return $this->value === 'int' || $this->value === 'float';
     }
 
+    /**
+     * @return bool
+     */
     public function isScalarType()
     {
         return $this->value === 'int' ||
@@ -106,6 +133,9 @@ class Atomic extends Type
                 $this->value === 'numeric';
     }
 
+    /**
+     * @return bool
+     */
     public function isObjectType()
     {
         return $this->isObject()
@@ -119,55 +149,81 @@ class Atomic extends Type
                 );
     }
 
+    /**
+     * @return bool
+     */
     public function isString()
     {
         return $this->value === 'string';
     }
 
+    /**
+     * @return bool
+     */
     public function isNumeric()
     {
         return $this->value === 'numeric';
     }
 
+    /**
+     * @return bool
+     */
     public function isScalar()
     {
         return $this->value === 'scalar';
     }
 
+    /**
+     * @return bool
+     */
     public function isResource()
     {
         return $this->value === 'resource';
     }
 
+    /**
+     * @return bool
+     */
     public function isCallable()
     {
         return $this->value === 'callable';
     }
 
+    /**
+     * @return bool
+     */
     public function isGenerator()
     {
         return $this->value === 'Generator';
     }
 
-    /** @return bool */
+    /**
+     * @return bool
+     */
     public function isMixed()
     {
         return $this->value === 'mixed';
     }
 
-    /** @return bool */
+    /**
+     * @return bool
+     */
     public function isNull()
     {
         return $this->value === 'null';
     }
 
-    /** @return bool */
+    /**
+     * @return bool
+     */
     public function isVoid()
     {
         return $this->value === 'void';
     }
 
-    /** @return bool */
+    /**
+     * @return bool
+     */
     public function isEmpty()
     {
         return $this->value === 'empty';

@@ -1,20 +1,24 @@
 <?php
-
 namespace Psalm\Checker;
 
-use Psalm\Issue\UndefinedMethod;
-use Psalm\Issue\InaccessibleMethod;
+use PhpParser;
+use Psalm\Config;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\DeprecatedMethod;
+use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidStaticInvocation;
-use Psalm\StatementsSource;
-use Psalm\Config;
-use Psalm\Type;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
-use PhpParser;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class MethodChecker extends FunctionLikeChecker
 {
+    const VISIBILITY_PUBLIC = 1;
+    const VISIBILITY_PROTECTED = 2;
+    const VISIBILITY_PRIVATE = 3;
+
     /**
      * @var array<string,string>
      */
@@ -30,13 +34,19 @@ class MethodChecker extends FunctionLikeChecker
      */
     protected static $method_namespaces = [];
 
-    /** @var array<string,Type\Union> */
+    /**
+     * @var array<string,Type\Union>
+     */
     protected static $method_return_types = [];
 
-    /** @var array<string, string> */
+    /**
+     * @var array<string, string>
+     */
     protected static $cased_method_ids = [];
 
-    /** @var array<string, bool> */
+    /**
+     * @var array<string, bool>
+     */
     protected static $static_methods = [];
 
     /**
@@ -49,30 +59,37 @@ class MethodChecker extends FunctionLikeChecker
      */
     protected static $overridden_methods = [];
 
-    /** @var array<string, bool> */
+    /**
+     * @var array<string, bool>
+     */
     protected static $have_reflected = [];
 
-    /** @var array<string, bool> */
+    /**
+     * @var array<string, bool>
+     */
     protected static $have_registered = [];
 
-    /** @var array<string, string> */
+    /**
+     * @var array<string, string>
+     */
     protected static $method_visibility = [];
 
-    /** @var array<string, array<int, string>> */
+    /**
+     * @var array<string, array<int, string>>
+     */
     protected static $method_suppress = [];
 
-    /** @var array<string, bool> */
+    /**
+     * @var array<string, bool>
+     */
     protected static $deprecated_methods = [];
 
     /**
      * A dictionary of variadic methods
+     *
      * @var array<string, bool>
      */
     protected static $variadic_methods = [];
-
-    const VISIBILITY_PUBLIC = 1;
-    const VISIBILITY_PROTECTED = 2;
-    const VISIBILITY_PRIVATE = 3;
 
     /**
      * @param PhpParser\Node\FunctionLike $function
@@ -149,7 +166,8 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
-     * @return void
+     * @param \ReflectionMethod $method
+     * @return null
      */
     public static function extractReflectionMethodInfo(\ReflectionMethod $method)
     {
@@ -157,7 +175,7 @@ class MethodChecker extends FunctionLikeChecker
         self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
 
         if (isset(self::$have_reflected[$method_id])) {
-            return;
+            return null;
         }
 
         /** @var \ReflectionClass */
@@ -169,10 +187,9 @@ class MethodChecker extends FunctionLikeChecker
         self::$method_files[$method_id] = $method->getFileName();
         self::$method_namespaces[$method_id] = $declaring_class->getNamespaceName();
         self::$declaring_methods[$method_id] = $declaring_class->name . '::' . strtolower((string)$method->getName());
-        self::$method_visibility[$method_id] = $method->isPrivate() ?
-                                                    self::VISIBILITY_PRIVATE :
-                                                    ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
-
+        self::$method_visibility[$method_id] = $method->isPrivate()
+            ? self::VISIBILITY_PRIVATE
+            : ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
 
         $params = $method->getParameters();
 
@@ -196,14 +213,17 @@ class MethodChecker extends FunctionLikeChecker
         $return_type = null;
 
         self::$method_return_types[$method_id] = $return_type;
+        return null;
     }
 
     /**
      * Determines whether a given method is static or not
+     *
      * @param  string               $method_id
      * @param  string               $file_name
      * @param  int                  $line_number
      * @param  array<int, string>   $suppressed_issues
+     * @return bool
      */
     public static function checkMethodStatic($method_id, $file_name, $line_number, array $suppressed_issues)
     {
@@ -223,8 +243,14 @@ class MethodChecker extends FunctionLikeChecker
                 return false;
             }
         }
+
+        return true;
     }
 
+    /**
+     * @param PhpParser\Node\Stmt\ClassMethod $method
+     * @return null
+     */
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
         $method_id = $this->absolute_class . '::' . strtolower($method->name);
@@ -233,7 +259,7 @@ class MethodChecker extends FunctionLikeChecker
         if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
             $this->suppressed_issues = self::$method_suppress[$method_id];
 
-            return;
+            return null;
         }
 
         self::$have_registered[$method_id] = true;
@@ -246,11 +272,9 @@ class MethodChecker extends FunctionLikeChecker
 
         if ($method->isPrivate()) {
             self::$method_visibility[$method_id] = self::VISIBILITY_PRIVATE;
-        }
-        elseif ($method->isProtected()) {
+        } elseif ($method->isProtected()) {
             self::$method_visibility[$method_id] = self::VISIBILITY_PROTECTED;
-        }
-        else {
+        } else {
             self::$method_visibility[$method_id] = self::VISIBILITY_PUBLIC;
         }
 
@@ -259,7 +283,13 @@ class MethodChecker extends FunctionLikeChecker
         $method_param_names = [];
 
         foreach ($method->getParams() as $param) {
-            $param_array = $this->getTranslatedParam($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
+            $param_array = $this->getTranslatedParam(
+                $param,
+                $this->absolute_class,
+                $this->namespace,
+                $this->getAliasedClasses()
+            );
+
             self::$method_params[$method_id][] = $param_array;
             $method_param_names[$param->name] = $param_array->type;
         }
@@ -275,7 +305,11 @@ class MethodChecker extends FunctionLikeChecker
             $return_type = Type::parseString(
                 is_string($method->returnType)
                     ? $method->returnType
-                    : ClassLikeChecker::getAbsoluteClassFromName($method->returnType, $this->namespace, $this->getAliasedClasses())
+                    : ClassLikeChecker::getAbsoluteClassFromName(
+                        $method->returnType,
+                        $this->namespace,
+                        $this->getAliasedClasses()
+                    )
             );
         }
 
@@ -284,8 +318,7 @@ class MethodChecker extends FunctionLikeChecker
 
             try {
                 $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment);
-            }
-            catch (\Psalm\Exception\DocblockParseException $e) {
+            } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Invalid type passed in docblock for ' . $this->getMethodId(),
@@ -311,15 +344,14 @@ class MethodChecker extends FunctionLikeChecker
 
                 if ($config->use_docblock_types) {
                     if ($docblock_info['return_type']) {
-                        $return_type =
-                            Type::parseString(
-                                $this->fixUpLocalType(
-                                    (string)$docblock_info['return_type'],
-                                    $this->absolute_class,
-                                    $this->namespace,
-                                    $this->getAliasedClasses()
-                                )
-                            );
+                        $return_type = Type::parseString(
+                            $this->fixUpLocalType(
+                                (string)$docblock_info['return_type'],
+                                $this->absolute_class,
+                                $this->namespace,
+                                $this->getAliasedClasses()
+                            )
+                        );
                     }
 
                     if ($docblock_info['params']) {
@@ -335,6 +367,7 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         self::$method_return_types[$method_id] = $return_type;
+        return null;
     }
 
     /**
@@ -389,10 +422,10 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string $method_id
      * @param  string $file_name
      * @param  int    $line_number
-     * @param  array  $suppresssed_issues
+     * @param  array  $suppressed_issues
      * @return bool|null
      */
-    public static function checkMethodExists($method_id, $file_name, $line_number, array $suppresssed_issues)
+    public static function checkMethodExists($method_id, $file_name, $line_number, array $suppressed_issues)
     {
         if (self::methodExists($method_id)) {
             return true;
@@ -400,14 +433,17 @@ class MethodChecker extends FunctionLikeChecker
 
         if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $line_number),
-            $suppresssed_issues
+            $suppressed_issues
         )) {
             return false;
         }
+
+        return null;
     }
 
     /**
      * Whether or not a given method exists
+     *
      * @param  string $method_id
      * @return bool
      */
@@ -426,7 +462,7 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         if ($method_parts[1] === '__construct') {
-
+            // @todo ?
         }
 
         if (FunctionChecker::inCallMap($method_id)) {
@@ -449,21 +485,27 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string $method_id
      * @param  string $file_name
      * @param  int    $line_number
-     * @param  array  $suppresssed_issues
+     * @param  array  $suppressed_issues
      * @return false|null
      */
-    public static function checkMethodNotDeprecated($method_id, $file_name, $line_number, array $suppresssed_issues)
+    public static function checkMethodNotDeprecated($method_id, $file_name, $line_number, array $suppressed_issues)
     {
         self::registerClassMethod($method_id);
 
         if (isset(self::$deprecated_methods[$method_id])) {
             if (IssueBuffer::accepts(
-                new DeprecatedMethod('The method ' . MethodChecker::getCasedMethodId($method_id) . ' has been marked as deprecated', $file_name, $line_number),
-                $suppresssed_issues
+                new DeprecatedMethod(
+                    'The method ' . MethodChecker::getCasedMethodId($method_id) . ' has been marked as deprecated',
+                    $file_name,
+                    $line_number
+                ),
+                $suppressed_issues
             )) {
                 return false;
             }
         }
+
+        return null;
     }
 
     /**
@@ -471,11 +513,16 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string|null      $calling_context
      * @param  StatementsSource $source
      * @param  int              $line_number
-     * @param  array            $suppresssed_issues
+     * @param  array            $suppressed_issues
      * @return false|null
      */
-    public static function checkMethodVisibility($method_id, $calling_context, StatementsSource $source, $line_number, array $suppresssed_issues)
-    {
+    public static function checkMethodVisibility(
+        $method_id,
+        $calling_context,
+        StatementsSource $source,
+        $line_number,
+        array $suppressed_issues
+    ) {
         self::registerClassMethod($method_id);
 
         $declared_method_id = self::getDeclaringMethodId($method_id);
@@ -486,73 +533,85 @@ class MethodChecker extends FunctionLikeChecker
         if (!isset(self::$method_visibility[$declared_method_id])) {
             if (IssueBuffer::accepts(
                 new InaccessibleMethod('Cannot access method ' . $method_id, $source->getFileName(), $line_number),
-                $suppresssed_issues
+                $suppressed_issues
             )) {
                 return false;
             }
         }
 
         if ($source->getSource() instanceof TraitChecker && $method_class === $source->getAbsoluteClass()) {
-            return;
+            return null;
         }
 
         switch (self::$method_visibility[$declared_method_id]) {
             case self::VISIBILITY_PUBLIC:
-                return;
+                return null;
 
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $method_class !== $calling_context) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
-                            'Cannot access private method ' . MethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
+                            'Cannot access private method ' . MethodChecker::getCasedMethodId($method_id) .
+                                ' from context ' . $calling_context,
                             $source->getFileName(),
                             $line_number
                         ),
-                        $suppresssed_issues
+                        $suppressed_issues
                     )) {
                         return false;
                     }
                 }
-                return;
+
+                return null;
 
             case self::VISIBILITY_PROTECTED:
                 if ($method_class === $calling_context) {
-                    return;
+                    return null;
                 }
 
                 if (!$calling_context) {
                     if (IssueBuffer::accepts(
-                        new InaccessibleMethod('Cannot access protected method ' . $method_id, $source->getFileName(), $line_number),
-                        $suppresssed_issues
+                        new InaccessibleMethod(
+                            'Cannot access protected method ' . $method_id,
+                            $source->getFileName(),
+                            $line_number
+                        ),
+                        $suppressed_issues
                     )) {
                         return false;
                     }
 
-                    return;
+                    return null;
                 }
 
-                if (ClassChecker::classExtends($method_class, $calling_context) && MethodChecker::methodExists($calling_context . '::' . $method_name)) {
-                    return;
+                if (ClassChecker::classExtends($method_class, $calling_context) &&
+                    MethodChecker::methodExists($calling_context . '::' . $method_name)
+                ) {
+                    return null;
                 }
 
                 if (!ClassChecker::classExtends($calling_context, $method_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
-                            'Cannot access protected method ' . MethodChecker::getCasedMethodId($method_id) . ' from context ' . $calling_context,
+                            'Cannot access protected method ' . MethodChecker::getCasedMethodId($method_id) .
+                                ' from context ' . $calling_context,
                             $source->getFileName(),
                             $line_number
                         ),
-                        $suppresssed_issues
+                        $suppressed_issues
                     )) {
                         return false;
                     }
                 }
         }
+
+        return null;
     }
 
     /**
      * @param string $method_id
      * @param string $declaring_method_id
+     * @return void
      */
     public static function setDeclaringMethodId($method_id, $declaring_method_id)
     {
@@ -562,6 +621,7 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param  string $method_id
      * @return string
+     * @return void
      */
     public static function getDeclaringMethodId($method_id)
     {
@@ -571,6 +631,7 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param string  $method_id
      * @param string  $overridden_method_id
+     * @return void
      */
     public static function setOverriddenMethodId($method_id, $overridden_method_id)
     {
@@ -596,6 +657,9 @@ class MethodChecker extends FunctionLikeChecker
         return self::$cased_method_ids[$method_id];
     }
 
+    /**
+     * @return void
+     */
     public static function clearCache()
     {
         self::$method_files = [];

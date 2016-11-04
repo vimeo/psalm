@@ -10,7 +10,6 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
 
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
-use Psalm\IssueBuffer;
 
 // show all errors
 error_reporting(-1);
@@ -66,20 +65,17 @@ $time = microtime(true);
 
 if ($path_to_check === null) {
     ProjectChecker::check($debug, $is_diff);
-}
-elseif ($path_to_check) {
+} elseif ($path_to_check) {
     if (is_dir($path_to_check)) {
         ProjectChecker::checkDir($path_to_check, $debug);
-    }
-    else {
+    } else {
         if ($path_to_check === __FILE__) {
             exit(0);
         }
 
         ProjectChecker::checkFile($path_to_check, $debug);
     }
-}
-else {
+} else {
     die('Cannot locate ' . $options['f'] . PHP_EOL);
 }
 

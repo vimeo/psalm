@@ -1,17 +1,17 @@
 <?php
-
 namespace Psalm;
 
 use Psalm\Type\Atomic;
 use Psalm\Type\Generic;
-use Psalm\Type\Union;
 use Psalm\Type\ObjectLike;
 use Psalm\Type\ParseTree;
+use Psalm\Type\Union;
 
 abstract class Type
 {
     /**
      * Parses a string type representation
+     *
      * @param  string $type_string
      * @return Union
      */
@@ -54,23 +54,37 @@ abstract class Type
     {
         if (in_array(
             strtolower($type_string),
-            ['numeric', 'int', 'float', 'string', 'bool', 'true', 'false', 'null', 'array', 'object', 'mixed', 'resource']
+            [
+                'numeric',
+                'int',
+                'float',
+                'string',
+                'bool',
+                'true',
+                'false',
+                'null',
+                'array',
+                'object',
+                'mixed',
+                'resource'
+            ]
         )) {
             return strtolower($type_string);
-        }
-        elseif ($type_string === 'boolean') {
+        } elseif ($type_string === 'boolean') {
             return 'bool';
-        }
-        elseif ($type_string === 'integer') {
+        } elseif ($type_string === 'integer') {
             return 'int';
-        }
-        elseif ($type_string === 'double' || $type_string === 'real') {
+        } elseif ($type_string === 'double' || $type_string === 'real') {
             return 'float';
         }
 
         return $type_string;
     }
 
+    /**
+     * @param   ParseTree $parse_tree
+     * @return  Atomic|Generic|ObjectLike|Union
+     */
     private static function getTypeFromTree(ParseTree $parse_tree)
     {
         if (!$parse_tree->value) {
@@ -94,7 +108,9 @@ abstract class Type
 
             $generic_type_value = self::fixScalarTerms($generic_type->value);
 
-            if (($generic_type_value === 'array' || $generic_type_value === 'Generator') && count($generic_params) === 1) {
+            if (($generic_type_value === 'array' || $generic_type_value === 'Generator') &&
+                count($generic_params) === 1
+            ) {
                 array_unshift($generic_params, Type::getMixed());
             }
 
@@ -164,17 +180,23 @@ abstract class Type
                 $return_type_tokens[] = '';
             }
 
-            if ($char === '<' || $char === '>' || $char === '|' || $char === '?' || $char === ',' || $char === '{' || $char === '}' || $char === ':') {
+            if ($char === '<' ||
+                $char === '>' ||
+                $char === '|' ||
+                $char === '?' ||
+                $char === ',' ||
+                $char === '{' ||
+                $char === '}' ||
+                $char === ':'
+            ) {
                 if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
                     $return_type_tokens[count($return_type_tokens) - 1] = $char;
-                }
-                else {
+                } else {
                     $return_type_tokens[] = $char;
                 }
 
                 $was_char = true;
-            }
-            else {
+            } else {
                 $return_type_tokens[count($return_type_tokens) - 1] .= $char;
                 $was_char = false;
             }
@@ -206,7 +228,9 @@ abstract class Type
         );
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getInt()
     {
         $type = new Atomic('int');
@@ -214,7 +238,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getString()
     {
         $type = new Atomic('string');
@@ -222,7 +248,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getNull()
     {
         $type = new Atomic('null');
@@ -230,7 +258,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getMixed()
     {
         $type = new Atomic('mixed');
@@ -238,7 +268,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getBool()
     {
         $type = new Atomic('bool');
@@ -246,7 +278,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getFloat()
     {
         $type = new Atomic('float');
@@ -254,7 +288,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getObject()
     {
         $type = new Atomic('object');
@@ -262,7 +298,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getClosure()
     {
         $type = new Atomic('Closure');
@@ -270,7 +308,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getArray()
     {
         $type = new Type\GenericArray(
@@ -284,7 +324,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getEmptyArray()
     {
         return new Type\Union([
@@ -298,7 +340,9 @@ abstract class Type
         ]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getVoid()
     {
         $type = new Atomic('void');
@@ -306,7 +350,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @return Type\Union */
+    /**
+     * @return Type\Union
+     */
     public static function getFalse()
     {
         $type = new Atomic('false');
@@ -333,8 +379,7 @@ abstract class Type
 
                         if ($context_type->type_params[$i]->isEmpty()) {
                             $context_type->type_params[$i] = $redefined_atomic_type->type_params[$i];
-                        }
-                        else {
+                        } else {
                             $context_type->type_params[$i] = Type::combineUnionTypes(
                                 $redefined_atomic_type->type_params[$i],
                                 $context_type->type_params[$i]
@@ -344,8 +389,7 @@ abstract class Type
                         if ($i) {
                             if ($context_type->type_params[0]->isEmpty()) {
                                 $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
-                            }
-                            else {
+                            } else {
                                 $context_type->type_params[0] = Type::combineUnionTypes(
                                     $redefined_atomic_type->type_params[0],
                                     $context_type->type_params[0]
@@ -360,6 +404,7 @@ abstract class Type
 
     /**
      * Combines two union types into one
+     *
      * @param  Union  $type_1
      * @param  Union  $type_2
      * @return Union
@@ -371,12 +416,12 @@ abstract class Type
 
     /**
      * Combines types together
-     * so int + string = int|string
-     * so array<int> + array<string> = array<int|string>
-     * and array<int> + string = array<int>|string
-     * and array<empty> + array<empty> = array<empty>
-     * and array<string> + array<empty> = array<string>
-     * and array + array<string> = array<mixed>
+     *  - so `int + string = int|string`
+     *  - so `array<int> + array<string> = array<int|string>`
+     *  - and `array<int> + string = array<int>|string`
+     *  - and `array<empty> + array<empty> = array<empty>`
+     *  - and `array<string> + array<empty> = array<string>`
+     *  - and `array + array<string> = array<mixed>`
      *
      * @param  array<Atomic>    $types
      * @return Union
@@ -428,8 +473,7 @@ abstract class Type
             // deal with false|bool => bool
             if ($type->value === 'false' && isset($value_types['bool'])) {
                 continue;
-            }
-            elseif ($type->value === 'bool' && isset($value_types['false'])) {
+            } elseif ($type->value === 'bool' && isset($value_types['false'])) {
                 unset($value_types['false']);
             }
 
@@ -439,13 +483,13 @@ abstract class Type
                 }
 
                 $value_type_param_index = count($type->type_params) - 1;
-                $value_types[$type->value][(string) $type->type_params[$value_type_param_index]] = $type->type_params[$value_type_param_index];
+                $value_types[$type->value][(string) $type->type_params[$value_type_param_index]] =
+                    $type->type_params[$value_type_param_index];
 
                 if ($value_type_param_index) {
                     $key_types[$type->value][(string) $type->type_params[0]] = $type->type_params[0];
                 }
-            }
-            elseif ($type instanceof ObjectLike) {
+            } elseif ($type instanceof ObjectLike) {
                 if (!isset($value_types['object-like'])) {
                     /** @var array<string, Union> */
                     $value_types['object-like'] = [];
@@ -454,16 +498,14 @@ abstract class Type
                 foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                     if (!isset($value_types['object-like'][$candidate_property_name])) {
                         $value_types['object-like'][$candidate_property_name] = $candidate_property_type;
-                    }
-                    else {
+                    } else {
                         $value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
                             $value_types['object-like'][$candidate_property_name],
                             $candidate_property_type
                         );
                     }
                 }
-            }
-            else {
+            } else {
                 if (!isset($value_types[$type->value])) {
                     $value_types[$type->value] = [];
                 }
@@ -501,7 +543,6 @@ abstract class Type
                 && count($key_type) === 1
                 && (isset($key_type['empty']) || isset($key_type['string']))
             ) {
-
                 continue;
             }
 
@@ -520,7 +561,9 @@ abstract class Type
                     array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
                 }
 
-                $new_types[] = $value_type_param ? new Generic($generic_type, $generic_type_params) : new Atomic($generic_type);
+                $new_types[] = $value_type_param
+                    ? new Generic($generic_type, $generic_type_params)
+                    : new Atomic($generic_type);
                 continue;
             }
 
@@ -531,9 +574,11 @@ abstract class Type
             foreach ($value_type as $expandable_value_type) {
                 if ($expandable_value_type) {
                     $has_null = $has_null || $expandable_value_type->isNullable();
-                    $expanded_value_types = array_merge($expanded_value_types, array_values($expandable_value_type->types));
-                }
-                else {
+                    $expanded_value_types = array_merge(
+                        $expanded_value_types,
+                        array_values($expandable_value_type->types)
+                    );
+                } else {
                     $expanded_value_types = [Type::getMixed()->types['mixed']];
                 }
             }

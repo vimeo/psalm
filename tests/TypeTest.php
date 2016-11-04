@@ -1,37 +1,35 @@
 <?php
-
 namespace Psalm\Tests;
 
-use Psalm\Type;
-use Psalm\Context;
-
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
+use Psalm\Context;
 
 class TypeTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
+    protected static $parser;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodCall()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -42,13 +40,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithTernaryGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -59,13 +57,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithTernaryIfNullGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -76,13 +74,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithTernaryEmptyGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -93,13 +91,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithTernaryIsNullGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -110,13 +108,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithIfGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -129,16 +127,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodCallWithThis()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -150,13 +148,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithTernaryGuardWithThis()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -171,13 +169,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithTernaryIfNullGuardWithThis()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -192,13 +190,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithIfGuardWithThis()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public function foo() {}
         }
@@ -216,16 +214,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongIfGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -242,13 +240,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithExceptionThrown()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -263,13 +261,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithRedefinitionAndElse()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             /** @var int|null */
             public $two;
@@ -290,16 +288,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -316,13 +314,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithBooleanIfGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -339,13 +337,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithNonNullBooleanIfGuard()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -362,13 +360,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithNonNullBooleanIfGuardAndBooleanAnd()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -385,14 +383,14 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
 
     public function testNullableMethodInConditionWithIfGuardBefore()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             /** @var string */
             public $a;
@@ -416,16 +414,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongIfGuardBefore()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -444,13 +442,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithBooleanIfGuardBefore()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -469,16 +467,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithWrongBooleanIfGuardBefore()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -497,13 +495,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedRedefinition()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -518,13 +516,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedRedefinitionInElse()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -542,16 +540,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testMethodWithMeaninglessCheck()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -566,16 +564,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedNestedIncompleteRedefinition()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -598,13 +596,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinition()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -630,13 +628,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedSwitchRedefinition()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -661,16 +659,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionNoDefault()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -691,16 +689,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionEmptyDefault()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -724,13 +722,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedSwitchRedefinitionDueToException()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -757,13 +755,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedSwitchThatAlwaysReturns()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -786,13 +784,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinitionWithReturn()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -815,13 +813,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinitionWithElseReturn()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -844,16 +842,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testNullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -879,13 +877,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinitionWithElseifReturn()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -911,13 +909,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedSwitchBreak()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -938,13 +936,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullableMethodWithGuardedRedefinitionOnThis()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -964,13 +962,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testArrayUnionTypeAssertion()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
             /** @var array|null */
             $ids = (1 + 1 === 2) ? [] : null;
 
@@ -983,13 +981,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testArrayUnionTypeAssertionWithIsArray()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
             /** @var array|null */
             $ids = (1 + 1 === 2) ? [] : null;
 
@@ -1002,13 +1000,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testVariableReassignment()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1025,13 +1023,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testVariableReassignmentInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1050,16 +1048,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testVariableReassignmentInIfWithOutsideCall()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1080,13 +1078,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testUnionTypeFlow()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1115,13 +1113,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testUnionTypeFlowWithThrow()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1140,13 +1138,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testUnionTypeFlowWithElseif()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1165,16 +1163,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testUnnecessaryInstanceof()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1186,16 +1184,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testUnNegatableInstanceof()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             public function foo() {}
         }
@@ -1210,13 +1208,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testTypeAdjustment()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $var = 0;
 
         if (5 + 3 === 8) {
@@ -1226,7 +1224,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1236,7 +1234,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     public function testTypeMixedAdjustment()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $var = 0;
 
         $arr = ["hello"];
@@ -1248,7 +1246,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1258,7 +1256,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     public function testTypeAdjustmentIfNull()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
         class B {}
 
@@ -1271,7 +1269,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $return_stmt = array_pop($stmts);
@@ -1281,7 +1279,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     public function testWhileTrue()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class One {
             /**
              * @return array|false
@@ -1298,16 +1296,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testWrongParam()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
 
         class B {
@@ -1318,13 +1316,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(5);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testPassingParam()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
 
         class B {
@@ -1335,13 +1333,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(new A);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNullToNullableParam()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
 
         class B {
@@ -1352,16 +1350,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(null);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testIntToNullableObjectParam()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
 
         class B {
@@ -1372,13 +1370,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(5);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testObjectToNullableObjectParam()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
 
         class B {
@@ -1389,16 +1387,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->bar(new A);
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      */
     public function testParamCoercionWithBadArg()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
         class B extends A {
             public function blab() {}
@@ -1413,13 +1411,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testParamCoercion()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
         class B extends A {
             public function bar() {}
@@ -1434,13 +1432,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testParamElseifCoercion()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {}
         class B extends A {
             public function bar() {}
@@ -1461,13 +1459,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testAssignInsideForeach()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $b = false;
 
         foreach ([1, 2, 3, 4] as $a) {
@@ -1477,7 +1475,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
@@ -1486,7 +1484,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     public function testAssignInsideForeachWithBreak()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $b = false;
 
         foreach ([1, 2, 3, 4] as $a) {
@@ -1497,7 +1495,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
@@ -1505,12 +1503,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullReference
      */
     public function testNullCheckInsideForeachWithNoLeaveStatement()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return array<A|null> */
             public static function loadMultiple()
@@ -1532,14 +1530,14 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check();
     }
 
     public function testNullCheckInsideForeachWithContinue()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @return array<A|null> */
             public static function loadMultiple()
@@ -1561,7 +1559,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check();
     }

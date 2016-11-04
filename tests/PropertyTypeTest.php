@@ -1,35 +1,33 @@
 <?php
-
 namespace Psalm\Tests;
 
-use Psalm\Context;
-use Psalm\Type;
-
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
+use Psalm\Context;
 
 class PropertyTypeTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
-    protected static $_file_filter;
+    protected static $parser;
+    protected static $file_filter;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     public function testNewVarInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /**
              * @var mixed
@@ -49,13 +47,13 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSharedPropertyInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @var int */
             public $foo;
@@ -73,7 +71,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
@@ -81,7 +79,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     public function testSharedPropertyInElseIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @var int */
             public $foo;
@@ -102,7 +100,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);

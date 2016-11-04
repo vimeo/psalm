@@ -1,17 +1,25 @@
 <?php
-
 namespace Psalm;
 
 use Psalm\Checker\ProjectChecker;
 
 class IssueBuffer
 {
-    /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     protected static $errors = [];
 
-    /** @var array<string, bool> */
+    /**
+     * @var array<string, bool>
+     */
     protected static $emitted = [];
 
+    /**
+     * @param   Issue\CodeIssue $e
+     * @param   array           $suppressed_issues
+     * @return  bool
+     */
     public static function accepts(Issue\CodeIssue $e, array $suppressed_issues = [])
     {
         $config = Config::getInstance();
@@ -30,6 +38,11 @@ class IssueBuffer
         return self::add($e);
     }
 
+    /**
+     * @param   Issue\CodeIssue $e
+     * @return  bool
+     * @throws  Exception\CodeException
+     */
     public static function add(Issue\CodeIssue $e)
     {
         $config = Config::getInstance();
@@ -57,7 +70,8 @@ class IssueBuffer
         }
 
         if (!self::alreadyEmitted($error_message)) {
-            echo (ProjectChecker::$use_color ? "\033[0;31m" : '') . 'ERROR: ' . (ProjectChecker::$use_color ? "\033[0m" : '') . $error_message . PHP_EOL;
+            echo (ProjectChecker::$use_color ? "\033[0;31m" : '') . 'ERROR: ' .
+                (ProjectChecker::$use_color ? "\033[0m" : '') . $error_message . PHP_EOL;
         }
 
         if ($config->stop_on_first_error) {
@@ -69,6 +83,10 @@ class IssueBuffer
         return true;
     }
 
+    /**
+     * @param bool $is_full
+     * @return void
+     */
     public static function finish($is_full = false)
     {
         Checker\FileChecker::updateReferenceCache();

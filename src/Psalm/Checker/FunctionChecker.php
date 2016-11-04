@@ -1,14 +1,15 @@
 <?php
-
 namespace Psalm\Checker;
 
 use PhpParser;
-use Psalm\StatementsSource;
 use Psalm\Config;
+use Psalm\EffectsAnalyser;
+use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
-use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
+use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Type;
 
 class FunctionChecker extends FunctionLikeChecker
@@ -144,8 +145,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             self::$builtin_functions[$function_id] = true;
-        }
-        catch (\ReflectionException $e) {
+        } catch (\ReflectionException $e) {
             self::$builtin_functions[$function_id] = false;
         }
     }
@@ -178,7 +178,7 @@ class FunctionChecker extends FunctionLikeChecker
         $function_id = strtolower($function->name);
 
         if (isset(self::$have_registered_function[$file_name][$function_id])) {
-            return;
+            return null;
         }
 
         self::$have_registered_function[$file_name][$function_id] = true;
@@ -192,7 +192,13 @@ class FunctionChecker extends FunctionLikeChecker
 
         /** @var PhpParser\Node\Param $param */
         foreach ($function->getParams() as $param) {
-            $param_array = self::getTranslatedParam($param, $this->absolute_class, $this->namespace, $this->getAliasedClasses());
+            $param_array = self::getTranslatedParam(
+                $param,
+                $this->absolute_class,
+                $this->namespace,
+                $this->getAliasedClasses()
+            );
+
             self::$file_function_params[$file_name][$function_id][] = $param_array;
             $function_param_names[$param->name] = $param_array->type;
         }
@@ -206,8 +212,7 @@ class FunctionChecker extends FunctionLikeChecker
 
         try {
             $docblock_info = CommentChecker::extractDocblockInfo((string)$function->getDocComment());
-        }
-        catch (\Psalm\Exception\DocblockParseException $e) {
+        } catch (DocblockParseException $e) {
             if (IssueBuffer::accepts(
                 new InvalidDocblock(
                     'Invalid type passed in docblock for ' . $this->getMethodId(),
@@ -234,7 +239,11 @@ class FunctionChecker extends FunctionLikeChecker
                 $return_type = Type::parseString(
                     is_string($function->returnType)
                         ? $function->returnType
-                        : ClassLikeChecker::getAbsoluteClassFromName($function->returnType, $this->namespace, $this->getAliasedClasses())
+                        : ClassLikeChecker::getAbsoluteClassFromName(
+                            $function->returnType,
+                            $this->namespace,
+                            $this->getAliasedClasses()
+                        )
                 );
             }
 
@@ -263,10 +272,12 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         self::$function_return_types[$file_name][$function_id] = $return_type ?: false;
+        return null;
     }
 
     /**
      * @param  string $function_id
+     * @return array
      * @psalm-return array<array<FunctionLikeParameter>>|null
      */
     public static function getParamsFromCallMap($function_id)
@@ -283,12 +294,11 @@ class FunctionChecker extends FunctionLikeChecker
         $call_map_functions[] = $call_map[$call_map_key];
 
         for ($i = 1; $i < 10; $i++) {
-            if (isset($call_map[$call_map_key . '\'' . $i])) {
-                $call_map_functions[] = $call_map[$call_map_key . '\'' . $i];
-
-            } else {
+            if (!isset($call_map[$call_map_key . '\'' . $i])) {
                 break;
             }
+
+            $call_map_functions[] = $call_map[$call_map_key . '\'' . $i];
         }
 
         $function_type_options = [];
@@ -432,11 +442,11 @@ class FunctionChecker extends FunctionLikeChecker
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
 
         $first_arg_array = $first_arg
-                                && isset($first_arg->inferredType)
-                                && isset($first_arg->inferredType->types['array'])
-                                && $first_arg->inferredType->types['array'] instanceof Type\Generic
-                            ? $first_arg->inferredType->types['array']
-                            : null;
+                && isset($first_arg->inferredType)
+                && isset($first_arg->inferredType->types['array'])
+                && $first_arg->inferredType->types['array'] instanceof Type\Generic
+            ? $first_arg->inferredType->types['array']
+            : null;
 
         if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
             if ($first_arg_array) {
@@ -539,11 +549,11 @@ class FunctionChecker extends FunctionLikeChecker
         $array_arg = isset($call_args[$array_index]->value) ? $call_args[$array_index]->value : null;
 
         $array_arg_type = $array_arg
-                            && isset($array_arg->inferredType)
-                            && isset($array_arg->inferredType->types['array'])
-                            && $array_arg->inferredType->types['array'] instanceof Type\Generic
-                        ? $array_arg->inferredType->types['array']
-                        : null;
+                && isset($array_arg->inferredType)
+                && isset($array_arg->inferredType->types['array'])
+                && $array_arg->inferredType->types['array'] instanceof Type\Generic
+            ? $array_arg->inferredType->types['array']
+            : null;
 
         if (isset($call_args[$function_index])) {
             $function_call_arg = $call_args[$function_index];
@@ -584,7 +594,6 @@ class FunctionChecker extends FunctionLikeChecker
                         $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
                         return new Type\Union([new Type\Generic('array', [Type::getInt(), $mapped_function_return])]);
                     }
-
                 } else {
                     // @todo handle array_map('some_custom_function', $arr)
                 }
@@ -631,11 +640,18 @@ class FunctionChecker extends FunctionLikeChecker
         return self::$call_map;
     }
 
+    /**
+     * @param   string $key
+     * @return  bool
+     */
     public static function inCallMap($key)
     {
         return isset(self::getCallMap()[strtolower($key)]);
     }
 
+    /**
+     * @return void
+     */
     public static function clearCache()
     {
         self::$function_return_types = [];

@@ -1,40 +1,39 @@
 <?php
-
 namespace Psalm\Tests;
 
-use Psalm\Type;
-
-use PhpParser;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
+use Psalm\Config;
 
 class ScopeTest extends PHPUnit_Framework_TestCase
 {
-    protected static $_parser;
-    protected static $_file_filter;
+    protected static $parser;
+    protected static $file_filter;
 
     public static function setUpBeforeClass()
     {
-        self::$_parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->throw_exception = true;
 
-        self::$_file_filter = $filter;
+        self::$file_filter = null;
     }
 
     public function setUp()
     {
-        \Psalm\Checker\FileChecker::clearCache();
+        FileChecker::clearCache();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, first seen on line 3
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, first seen
+     *  on line 3
      */
     public function testPossiblyUndefinedVarInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         if (rand(0,100) === 10) {
             $b = "s";
         }
@@ -42,13 +41,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $b;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNewVarInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         if (rand(0,100) === 10) {
             $badge = "hello";
         }
@@ -59,13 +58,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $badge;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNewVarInIfWithElseReturn()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         if (rand(0,100) === 10) {
             $badge = "hello";
         }
@@ -76,17 +75,18 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $badge;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first
+     *  seen on line 3
      */
     public function testPossiblyUndefinedArrayInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         if (rand(0,100) === 10) {
             $array[] = "hello";
         }
@@ -94,17 +94,18 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first
+     *  seen on line 3
      */
     public function testPossiblyUndefinedArrayInForeach()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         foreach ([1, 2, 3, 4] as $b) {
             $array[] = "hello";
         }
@@ -112,17 +113,18 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable $array, first seen on line 4
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable $array, first
+     *  seen on line 4
      */
     public function testPossiblyUndefinedArrayInWhileAndForeach()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         for ($i = 0; $i < 4; $i++) {
             while (rand(0,10) === 5) {
                 $array[] = "hello";
@@ -132,19 +134,20 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $array;
         ');
 
-        \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
+        Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$file_filter);
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $car, first seen on line 3
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $car, first
+     *  seen on line 3
      */
     public function testPossiblyUndefinedVariableInForeach()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         foreach ([1, 2, 3, 4] as $b) {
             $car = "Volvo";
         }
@@ -152,13 +155,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $car;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSwitchVariableWithContinue()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         foreach ([\'a\', \'b\', \'c\'] as $letter) {
             switch ($letter) {
                 case \'a\':
@@ -175,13 +178,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSwitchVariableWithContinueAndIfs()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         foreach ([\'a\', \'b\', \'c\'] as $letter) {
             switch ($letter) {
                 case \'a\':
@@ -204,13 +207,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSwitchVariableWithFallthrough()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         foreach ([\'a\', \'b\', \'c\'] as $letter) {
             switch ($letter) {
                 case \'a\':
@@ -227,13 +230,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testSwitchVariableWithFallthroughStatement()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         foreach ([\'a\', \'b\', \'c\'] as $letter) {
             switch ($letter) {
                 case \'a\':
@@ -252,13 +255,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testTryCatchVar()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         try {
             $worked = true;
         }
@@ -271,7 +274,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[1]->cond;
@@ -281,7 +284,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function testWhileVar()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
 
         $worked = false;
 
@@ -294,7 +297,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[2]->cond;
@@ -304,7 +307,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function testDoWhileVar()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $worked = false;
 
         do {
@@ -317,7 +320,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
 
         $conditional = $stmts[2]->cond;
@@ -327,7 +330,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function testAssignmentInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             public static function bar() {
                 return true;
@@ -343,55 +346,56 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testPassByRefInIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         if (preg_match("/bad/", "badger", $matches)) {
             echo $matches[0];
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testPassByRefInIfCheckAfter()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         if (!preg_match("/bad/", "badger", $matches)) {
             exit();
         }
         echo $matches[0];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testPassByRefInIfWithBoolean()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         $a = true;
         if ($a && preg_match("/bad/", "badger", $matches)) {
             echo $matches[0];
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, first seen on line 4
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, first
+     *  seen on line 4
      */
     public function testPossiblyUndefinedVariableInForeachAndIf()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         foreach ([1,2,3,4] as $i) {
             if ($i === 1) {
                 $a = true;
@@ -402,27 +406,27 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         echo $a;
         ');
 
-        \Psalm\Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$_file_filter);
+        Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$file_filter);
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testFunctionExists()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         if (true && function_exists("flabble")) {
             flabble();
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 
     public function testNestedPropertyFetchInElseif()
     {
-        $stmts = self::$_parser->parse('<?php
+        $stmts = self::$parser->parse('<?php
         class A {
             /** @var A|null */
             public $foo;
@@ -438,7 +442,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

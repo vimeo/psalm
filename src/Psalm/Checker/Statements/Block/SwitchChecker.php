@@ -2,24 +2,29 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Context;
 use Psalm\Issue\InvalidContinue;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
 class SwitchChecker
 {
     /**
-     * @param  PhpParser\Node\Stmt\Switch_ $stmt
-     * @param  Context                     $context
-     * @param  Context|null                $loop_context
-     * @return false|null
+     * @param   StatementsChecker               $statements_checker
+     * @param   PhpParser\Node\Stmt\Switch_     $stmt
+     * @param   Context                         $context
+     * @param   Context|null                    $loop_context
+     * @return  false|null
      */
-    public static function check(StatementsChecker $statements_checker, PhpParser\Node\Stmt\Switch_ $stmt, Context $context, Context $loop_context = null)
-    {
+    public static function check(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Stmt\Switch_ $stmt,
+        Context $context,
+        Context $loop_context = null
+    ) {
         $type_candidate_var = null;
 
         if (ExpressionChecker::check($statements_checker, $stmt->cond, $context) === false) {
@@ -56,11 +61,9 @@ class SwitchChecker
 
             if (ScopeChecker::doesAlwaysReturnOrThrow($case->stmts)) {
                 $last_case_exit_type = 'return_throw';
-            }
-            elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts, true)) {
+            } elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts, true)) {
                 $last_case_exit_type = 'continue';
-            }
-            elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts)) {
+            } elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts)) {
                 $last_case_exit_type = 'break';
             }
 
@@ -104,8 +107,7 @@ class SwitchChecker
             if (!$case_stmts || (!$has_ending_statements && !$has_leaving_statements)) {
                 $case_stmts = array_merge($case_stmts, $leftover_statements);
                 $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
-            }
-            else {
+            } else {
                 $leftover_statements = [];
             }
 
@@ -115,14 +117,19 @@ class SwitchChecker
             $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
 
             if ($case_exit_type !== 'return_throw') {
-                $vars = array_diff_key($case_context->vars_possibly_in_scope, $original_context->vars_possibly_in_scope);
+                $vars = array_diff_key(
+                    $case_context->vars_possibly_in_scope,
+                    $original_context->vars_possibly_in_scope
+                );
 
                 // if we're leaving this block, add vars to outer for loop scope
                 if ($case_exit_type === 'continue') {
                     if ($loop_context) {
-                        $loop_context->vars_possibly_in_scope = array_merge($vars, $loop_context->vars_possibly_in_scope);
-                    }
-                    else {
+                        $loop_context->vars_possibly_in_scope = array_merge(
+                            $vars,
+                            $loop_context->vars_possibly_in_scope
+                        );
+                    } else {
                         if (IssueBuffer::accepts(
                             new InvalidContinue(
                                 'Continue called when not in loop',
@@ -133,16 +140,14 @@ class SwitchChecker
                             return false;
                         }
                     }
-                }
-                else {
+                } else {
                     $case_redefined_vars = Context::getRedefinedVars($original_context, $case_context);
 
                     Type::redefineGenericUnionTypes($case_redefined_vars, $context);
 
                     if ($redefined_vars === null) {
                         $redefined_vars = $case_redefined_vars;
-                    }
-                    else {
+                    } else {
                         foreach ($redefined_vars as $redefined_var => $type) {
                             if (!isset($case_redefined_vars[$redefined_var])) {
                                 unset($redefined_vars[$redefined_var]);
@@ -152,9 +157,11 @@ class SwitchChecker
 
                     if ($new_vars_in_scope === null) {
                         $new_vars_in_scope = array_diff_key($case_context->vars_in_scope, $context->vars_in_scope);
-                        $new_vars_possibly_in_scope = array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope);
-                    }
-                    else {
+                        $new_vars_possibly_in_scope = array_diff_key(
+                            $case_context->vars_possibly_in_scope,
+                            $context->vars_possibly_in_scope
+                        );
+                    } else {
                         foreach ($new_vars_in_scope as $new_var => $type) {
                             if (!isset($case_context->vars_in_scope[$new_var])) {
                                 unset($new_vars_in_scope[$new_var]);
@@ -194,5 +201,6 @@ class SwitchChecker
         }
 
         $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $new_vars_possibly_in_scope);
+        return null;
     }
 }
