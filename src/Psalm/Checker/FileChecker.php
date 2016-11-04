@@ -53,11 +53,6 @@ class FileChecker implements StatementsSource
     protected $suppressed_issues = [];
 
     /**
-     * @var string|null
-     */
-    protected static $cache_dir = null;
-
-    /**
      * @var array<string, static>
      */
     protected static $file_checkers = [];
@@ -329,10 +324,12 @@ class FileChecker implements StatementsSource
 
         $cache_location = null;
 
-        if (self::$cache_dir) {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
             $key = md5($contents);
 
-            $cache_location = self::$cache_dir . '/' . $key;
+            $cache_location = $cache_directory . '/' . $key;
 
             if (is_readable($cache_location)) {
                 $stmts = unserialize((string) file_get_contents($cache_location));
@@ -346,12 +343,12 @@ class FileChecker implements StatementsSource
             $stmts = $parser->parse($contents);
         }
 
-        if (self::$cache_dir && $cache_location) {
+        if ($cache_directory && $cache_location) {
             if ($from_cache) {
                 touch($cache_location);
             } else {
-                if (!file_exists(self::$cache_dir)) {
-                    mkdir(self::$cache_dir);
+                if (!file_exists($cache_directory)) {
+                    mkdir($cache_directory);
                 }
 
                 file_put_contents($cache_location, serialize($stmts));
@@ -370,8 +367,10 @@ class FileChecker implements StatementsSource
      */
     public static function loadReferenceCache()
     {
-        if (self::$cache_dir) {
-            $cache_location = self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME;
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $cache_location = $cache_directory . '/' . self::REFERENCE_CACHE_NAME;
 
             if (is_readable($cache_location)) {
                 self::$file_references = unserialize((string) file_get_contents($cache_location));
@@ -387,8 +386,10 @@ class FileChecker implements StatementsSource
      */
     public static function updateReferenceCache()
     {
-        if (self::$cache_dir) {
-            $cache_location = self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME;
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $cache_location = $cache_directory . '/' . self::REFERENCE_CACHE_NAME;
 
             foreach (self::$files_checked as $file => $_) {
                 $all_file_references = array_unique(
@@ -413,15 +414,6 @@ class FileChecker implements StatementsSource
 
             file_put_contents($cache_location, serialize(self::$file_references));
         }
-    }
-
-    /**
-     * @param   string  $cache_dir
-     * @return  void
-     */
-    public static function setCacheDir($cache_dir)
-    {
-        self::$cache_dir = $cache_dir;
     }
 
     /**
@@ -676,7 +668,9 @@ class FileChecker implements StatementsSource
      */
     public static function canDiffFiles()
     {
-        return self::$cache_dir && file_exists(self::$cache_dir . '/' . self::GOOD_RUN_NAME);
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        return $cache_directory && file_exists($cache_directory . '/' . self::GOOD_RUN_NAME);
     }
 
     /**
@@ -686,7 +680,9 @@ class FileChecker implements StatementsSource
     public static function hasFileChanged($file)
     {
         if (self::$last_good_run === null) {
-            self::$last_good_run = filemtime(self::$cache_dir . '/' . self::GOOD_RUN_NAME) ?: 0;
+            $cache_directory = Config::getInstance()->getCacheDirectory();
+
+            self::$last_good_run = filemtime($cache_directory . '/' . self::GOOD_RUN_NAME) ?: 0;
         }
 
         return filemtime($file) > self::$last_good_run;
@@ -714,8 +710,10 @@ class FileChecker implements StatementsSource
      */
     public static function goodRun()
     {
-        if (self::$cache_dir) {
-            $run_cache_location = self::$cache_dir . '/' . self::GOOD_RUN_NAME;
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $run_cache_location = $cache_directory . '/' . self::GOOD_RUN_NAME;
 
             touch($run_cache_location);
 
@@ -727,7 +725,7 @@ class FileChecker implements StatementsSource
                 }
 
                 file_put_contents(
-                    self::$cache_dir . '/' . self::REFERENCE_CACHE_NAME,
+                    $cache_directory . '/' . self::REFERENCE_CACHE_NAME,
                     serialize(self::$file_references)
                 );
             }

@@ -49,7 +49,14 @@ class Config
     public $throw_exception = false;
 
     /**
-     * Path to the autoloader
+     * The directory to store PHP Parser (and other) caches
+     *
+     * @var string
+     */
+    public $cache_directory = '/var/tmp/psalm';
+
+    /**
+     * Path to the autoader
      *
      * @var string|null
      */
@@ -147,6 +154,10 @@ class Config
 
         if (isset($config_xml['autoloader'])) {
             $config->autoloader = (string) $config_xml['autoloader'];
+        }
+
+        if (isset($config_xml['cacheDirectory'])) {
+            $config->cacheDirectory = (string) $config_xml['cacheDirectory'];
         }
 
         if (isset($config_xml->inspectFiles)) {
@@ -373,6 +384,14 @@ class Config
     public function getMockClasses()
     {
         return $this->mock_classes;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCacheDirectory()
+    {
+        return $this->cache_directory;
     }
 
     /**
