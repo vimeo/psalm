@@ -27,8 +27,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $check_class_statements = true,
         Context $file_context = null,
         $cache = true
-    )
-    {
+    ) {
         $stmts = $this->getStatements();
 
         if (empty($stmts)) {
@@ -40,7 +39,6 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $this_params = null;
 
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
-
             $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
 
             if (isset($comment_block['specials']['variablesfrom'])) {

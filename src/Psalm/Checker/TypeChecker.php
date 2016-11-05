@@ -370,10 +370,10 @@ class TypeChecker
                 self::processFunctionCall(
                     $conditional->expr,
                     $if_types,
-                    true,
                     $this_class_name,
                     $namespace,
-                    $aliased_classes
+                    $aliased_classes,
+                    true
                 );
             } elseif ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
                 foreach ($conditional->expr->vars as $isset_var) {
@@ -431,10 +431,10 @@ class TypeChecker
                         self::processFunctionCall(
                             $conditional->left,
                             $if_types,
-                            true,
                             $this_class_name,
                             $namespace,
-                            $aliased_classes
+                            $aliased_classes,
+                            true
                         );
                     } else {
                         $var_name = ExpressionChecker::getArrayVarId(
@@ -449,10 +449,10 @@ class TypeChecker
                         self::processFunctionCall(
                             $conditional->right,
                             $if_types,
-                            true,
                             $this_class_name,
                             $namespace,
-                            $aliased_classes
+                            $aliased_classes,
+                            true
                         );
                     } else {
                         $var_name = ExpressionChecker::getArrayVarId(
@@ -609,10 +609,10 @@ class TypeChecker
                         self::processFunctionCall(
                             $conditional->left,
                             $if_types,
-                            true,
                             $this_class_name,
                             $namespace,
-                            $aliased_classes
+                            $aliased_classes,
+                            true
                         );
                     }
                 } elseif ($true_position === self::ASSIGNMENT_TO_LEFT) {
@@ -620,10 +620,10 @@ class TypeChecker
                         self::processFunctionCall(
                             $conditional->right,
                             $if_types,
-                            true,
                             $this_class_name,
                             $namespace,
-                            $aliased_classes
+                            $aliased_classes,
+                            true
                         );
                     }
                 } else {
@@ -631,7 +631,7 @@ class TypeChecker
                 }
             }
         } elseif ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
-            self::processFunctionCall($conditional, $if_types, false, $this_class_name, $namespace, $aliased_classes);
+            self::processFunctionCall($conditional, $if_types, $this_class_name, $namespace, $aliased_classes, false);
         } elseif ($conditional instanceof PhpParser\Node\Expr\Empty_) {
             $var_name = ExpressionChecker::getArrayVarId(
                 $conditional->expr,
@@ -664,19 +664,19 @@ class TypeChecker
     /**
      * @param  PhpParser\Node\Expr\FuncCall $expr
      * @param  array<string>                &$if_types
-     * @param  boolean                      $negate
      * @param  string                       $this_class_name
      * @param  string                       $namespace
-     * @param  array<string>                $aliased_classes]
+     * @param  array<string>                $aliased_classes
+     * @param  boolean                      $negate
      * @return void
      */
     protected static function processFunctionCall(
         PhpParser\Node\Expr\FuncCall $expr,
         array &$if_types,
-        $negate = false,
         $this_class_name,
         $namespace,
-        array $aliased_classes
+        array $aliased_classes,
+        $negate = false
     ) {
         $prefix = $negate ? '!' : '';
 
