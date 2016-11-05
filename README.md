@@ -1,7 +1,6 @@
 <h1><img src="PsalmLogo.png" height="64" alt="logo" /></h1>
 
-Psalm is a static analysis tool for finding errors in PHP scripts.
-
+Psalm is a static analysis tool for finding errors in PHP applications.
 
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -17,6 +16,10 @@ To install Psalm, use [Composer](https://getcomposer.org/).
 
 @todo add detailed composer instructions with public github.com address
 
+### Requirements
+
+Psalm Requires PHP >= 5.4.
+
 ## Configuration
 
 Psalm uses an XML config file. A recommended default Psalm config is located [here](examples/psalm.default.xml).
@@ -28,7 +31,7 @@ Psalm uses an XML config file. A recommended default Psalm config is located [he
 - `useDocblockTypes`<br />
   whether or not to use types as defined in docblocks
 - `autoloader` (optional)
-  if you script that registers a custom autoloader and/or universal constants/functions, register them here
+  if your script that registers a custom autoloader and/or universal constants/functions, register them here
 
 ### Parameters
 
@@ -166,7 +169,7 @@ foreach ([1, 2, 3] as $i) {
 }
 ```
 
-Because Psalm scans a file progressively, it cannot tell that `return $a` produces an integer. Instead it returns knows only that `$a` is not `empty`. We can fix this by adding a type hint docblock:
+Because Psalm scans a file progressively, it cannot tell that `return $a` produces an integer. Instead it knows only that `$a` is not `empty`. We can fix this by adding a type hint docblock:
 
 ```php
 /** @var int|null */
@@ -213,7 +216,7 @@ In PHP, the `array` type is commonly used to represent three different data stru
 
    ```php
    $a = [0 => 'hello', 5 => 'goodbye'];
-   $a = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
+   $b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
    ```
  - makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language))
 
@@ -239,7 +242,7 @@ Psalm uses a syntax [borrowed from Java](https://en.wikipedia.org/wiki/Generics_
 
 Ideally (in the author's opinion), all data would either be encoded as lists, associative arrays, or as well-defined objects. However, PHP arrays are often used as makeshift structs.
 
-Hack (by Facebook) supports this usage by way of the [Shape datastructure](https://docs.hhvm.com/hack/shapes/introduction), but there is no agreed-upon documentation format for such arrays in regular PHP-land.
+[Hack](http://hacklang.org/) (by Facebook) supports this usage by way of the [Shape datastructure](https://docs.hhvm.com/hack/shapes/introduction), but there is no agreed-upon documentation format for such arrays in regular PHP-land.
 
 Psalm solves this by adding another way annotate array types, by using an object-like syntax when describing them.
 
