@@ -39,13 +39,13 @@ Usage:
     psalm [options] [file...]
 
 Options:
-    -h, --help                  Display this help message
-    --debug                     Debug information
-    -c, --config                Path to a psalm.xml configuration file
-    -m, --monochrome            Enable monochrome output
-    --show-info[=BOOLEAN]       Show non-exception parser findings.
-    --diff                      File to check is a diff
-    --self-check                Psalm checks itself
+    -h,  --help                  Display this help message
+         --debug                 Debug information
+    -c,  --config                Path to a psalm.xml configuration file
+    -m,  --monochrome            Enable monochrome output
+         --show-info[=BOOLEAN]   Show non-exception parser findings.
+         --diff                  File to check is a diff
+         --self-check            Psalm checks itself
 
 
 HELP;
