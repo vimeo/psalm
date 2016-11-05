@@ -453,68 +453,10 @@ abstract class Type
         $value_types = [];
 
         foreach ($types as $type) {
-            if ($type instanceof Union) {
-                throw new \InvalidArgumentException('Union type not expected here');
-            }
+            $result = self::scrapeTypeProperties($type, $key_types, $value_types);
 
-            // if we see the magic empty value and there's more than one type, ignore it
-            if ($type->value === 'empty') {
-                continue;
-            }
-
-            if ($type->value === 'mixed') {
-                return Type::getMixed();
-            }
-
-            if ($type->value === 'void') {
-                $type->value = 'null';
-            }
-
-            // deal with false|bool => bool
-            if ($type->value === 'false' && isset($value_types['bool'])) {
-                continue;
-            } elseif ($type->value === 'bool' && isset($value_types['false'])) {
-                unset($value_types['false']);
-            }
-
-            if ($type instanceof Generic) {
-                if (!isset($value_types[$type->value])) {
-                    $value_types[$type->value] = [];
-                }
-
-                $value_type_param_index = count($type->type_params) - 1;
-                $value_types[$type->value][(string) $type->type_params[$value_type_param_index]] =
-                    $type->type_params[$value_type_param_index];
-
-                if ($value_type_param_index) {
-                    $key_types[$type->value][(string) $type->type_params[0]] = $type->type_params[0];
-                }
-            } elseif ($type instanceof ObjectLike) {
-                if (!isset($value_types['object-like'])) {
-                    /** @var array<string, Union> */
-                    $value_types['object-like'] = [];
-                }
-
-                foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
-                    if (!isset($value_types['object-like'][$candidate_property_name])) {
-                        $value_types['object-like'][$candidate_property_name] = $candidate_property_type;
-                    } else {
-                        $value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
-                            $value_types['object-like'][$candidate_property_name],
-                            $candidate_property_type
-                        );
-                    }
-                }
-            } else {
-                if (!isset($value_types[$type->value])) {
-                    $value_types[$type->value] = [];
-                }
-
-                if ($type->value === 'array') {
-                    throw new \InvalidArgumentException('Cannot have a non-generic array');
-                }
-
-                $value_types[$type->value][(string) $type] = null;
+            if ($result) {
+                return $result;
             }
         }
 
@@ -596,5 +538,69 @@ abstract class Type
         $new_types = array_values($new_types);
 
         return new Union($new_types);
+    }
+
+    /**
+     * @param  Atomic                               $type
+     * @param  array<string, array<string, Union>>  &$key_types
+     * @param  array<string, array<string, Union>>  &$value_types
+     * @return null|Union
+     */
+    public static function scrapeTypeProperties(Atomic $type, array &$key_types, array &$value_types)
+    {
+        // if we see the magic empty value and there's more than one type, ignore it
+        if ($type->value === 'empty') {
+            return null;
+        }
+
+        if ($type->value === 'mixed') {
+            return Type::getMixed();
+        }
+
+        if ($type->value === 'void') {
+            $type->value = 'null';
+        }
+
+        // deal with false|bool => bool
+        if ($type->value === 'false' && isset($value_types['bool'])) {
+            return null;
+        } elseif ($type->value === 'bool' && isset($value_types['false'])) {
+            unset($value_types['false']);
+        }
+
+        if ($type instanceof Generic) {
+            if (!isset($value_types[$type->value])) {
+                $value_types[$type->value] = [];
+            }
+
+            $value_type_param_index = count($type->type_params) - 1;
+            $value_types[$type->value][(string) $type->type_params[$value_type_param_index]] =
+                $type->type_params[$value_type_param_index];
+
+            if ($value_type_param_index) {
+                $key_types[$type->value][(string) $type->type_params[0]] = $type->type_params[0];
+            }
+        } elseif ($type instanceof ObjectLike) {
+            foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
+                if (!isset($value_types['object-like'][$candidate_property_name])) {
+                    $value_types['object-like'][$candidate_property_name] = $candidate_property_type;
+                } else {
+                    $value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
+                        $value_types['object-like'][$candidate_property_name],
+                        $candidate_property_type
+                    );
+                }
+            }
+        } else {
+            if (!isset($value_types[$type->value])) {
+                $value_types[$type->value] = [];
+            }
+
+            if ($type->value === 'array') {
+                throw new \InvalidArgumentException('Cannot have a non-generic array');
+            }
+
+            $value_types[$type->value][(string) $type] = null;
+        }
     }
 }
