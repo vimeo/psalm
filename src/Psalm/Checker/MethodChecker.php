@@ -249,7 +249,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param PhpParser\Node\Stmt\ClassMethod $method
-     * @return null
+     * @return null|false
      */
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
