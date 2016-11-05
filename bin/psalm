@@ -21,32 +21,27 @@ ini_set('xdebug.max_nesting_level', 512);
 // get options from command line
 $options = getopt('f:m:hc:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff', 'file:', 'self-check']);
 
-if (isset($options['file'])) {
-    $options['f'] = $options['file'];
-}
-
 if (array_key_exists('help', $options)) {
-    $options['h'] = null;
+    $options['h'] = false;
 }
 
 if (array_key_exists('monochrome', $options)) {
-    $options['m'] = null;
+    $options['m'] = false;
 }
 
 if (isset($options['config'])) {
-    $options['c'] = $options['help'];
+    $options['c'] = $options['config'];
 }
 
 if (array_key_exists('h', $options)) {
     echo <<< HELP
 Usage:
-    psalm [options]
+    psalm [options] [file...]
 
 Options:
     -h, --help                  Display this help message
     --debug                     Debug information
     -c, --config                Path to a psalm.xml configuration file
-    -f, --file [FILE_PATH]      Path to run checks against
     -m, --monochrome            Enable monochrome output
     --show-info[=BOOLEAN]       Show non-exception parser findings.
     --diff                      File to check is a diff
@@ -60,24 +55,53 @@ HELP;
 
 // get vars from options
 $debug = array_key_exists('debug', $options);
-$paths_to_check = null;
 
 if (isset($options['f'])) {
-    $paths_to_check = is_array($options['f']) ? $options['f'] : [$options['f']];
-    foreach ($paths_to_check as $i => $path_to_check) {
+    $input_paths = is_array($options['f']) ? $options['f'] : [$options['f']];
+}
+else {
+    $input_paths = $argv ? $argv : null;
+}
+
+$paths_to_check = null;
+
+if ($input_paths) {
+    $paths_to_check = [];
+
+    foreach ($input_paths as $i => $path_to_check) {
+        if ($path_to_check[0] === '-') {
+            if ($paths_to_check) {
+                die('Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
+            }
+
+            $paths_to_check = [];
+            continue;
+        }
+
         if (!file_exists($path_to_check)) {
             die('Cannot locate ' . $path_to_check . PHP_EOL);
         }
 
-        $paths_to_check[$i] = realpath($path_to_check);
+        if (realpath($path_to_check) === __FILE__) {
+            continue;
+        }
+
+        $paths_to_check[] = realpath($path_to_check);
+    }
+
+    if (!$paths_to_check) {
+        $paths_to_check = null;
     }
 }
 
 $path_to_config = isset($options['config']) ? realpath($options['config']) : null;
+
 $use_color = !array_key_exists('m', $options);
+
 $show_info = isset($options['show-info'])
             ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
             : true;
+
 $is_diff = isset($options['diff']);
 
 // initialise custom config, if passed
@@ -91,7 +115,7 @@ ProjectChecker::$show_info = $show_info;
 $time = microtime(true);
 
 if (array_key_exists('self-check', $options)) {
-    ProjectChecker::checkDir(dirname(__DIR__) . '/src');
+    ProjectChecker::checkDir(dirname(__DIR__) . '/src', $debug);
 } elseif ($paths_to_check === null) {
     ProjectChecker::check($debug, $is_diff);
 } elseif ($paths_to_check) {
@@ -99,10 +123,6 @@ if (array_key_exists('self-check', $options)) {
         if (is_dir($path_to_check)) {
             ProjectChecker::checkDir($path_to_check, $debug);
         } else {
-            if ($path_to_check === __FILE__) {
-                exit(0);
-            }
-
             ProjectChecker::checkFile($path_to_check, $debug);
         }
     }
