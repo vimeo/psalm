@@ -9742,7 +9742,7 @@ return [
 'trader_wclprice' => ['array', 'high'=>'array', 'low'=>'array', 'close'=>'array'],
 'trader_willr' => ['array', 'high'=>'array', 'low'=>'array', 'close'=>'array', 'timePeriod='=>'int'],
 'trader_wma' => ['array', 'real'=>'array', 'timePeriod='=>'int'],
-'trait_exists' => ['bool', 'traitname'=>'string', 'autoload'=>'bool'],
+'trait_exists' => ['bool', 'traitname'=>'string', 'autoload='=>'bool'],
 'transliterator_create_from_rules' => ['Transliterator|null', 'rules'=>'string', 'direction='=>'int'],
 'Transliterator::createFromRules' => ['Transliterator|null', 'rules'=>'string', 'direction='=>'int'],
 'Transliterator::createInverse' => ['Transliterator'],
