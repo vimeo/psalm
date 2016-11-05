@@ -19,7 +19,7 @@ ini_set('memory_limit', '2048M');
 ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
-$options = getopt('f:m:hc:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff', 'file:']);
+$options = getopt('f:m:hc:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff', 'file:', 'self-check']);
 
 if (isset($options['file'])) {
     $options['f'] = $options['file'];
@@ -50,6 +50,7 @@ Options:
     -m, --monochrome            Enable monochrome output
     --show-info[=BOOLEAN]       Show non-exception parser findings.
     --diff                      File to check is a diff
+    --self-check                Psalm checks itself
 
 
 HELP;
@@ -89,7 +90,9 @@ ProjectChecker::$show_info = $show_info;
 
 $time = microtime(true);
 
-if ($paths_to_check === null) {
+if (array_key_exists('self-check', $options)) {
+    ProjectChecker::checkDir(dirname(__DIR__) . '/src');
+} elseif ($paths_to_check === null) {
     ProjectChecker::check($debug, $is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
