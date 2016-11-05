@@ -445,4 +445,34 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    public function testGlobalReturn()
+    {
+        $stmts = self::$parser->parse('<?php
+        $foo = "foo";
+
+        function a() : string {
+            global $foo;
+
+            return $foo;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testStatic()
+    {
+        $stmts = self::$parser->parse('<?php
+        function a() : string {
+            static $foo = "foo";
+
+            return $foo;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }

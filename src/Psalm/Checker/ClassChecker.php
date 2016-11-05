@@ -14,21 +14,21 @@ class ClassChecker extends ClassLikeChecker
     /**
      * A lookup table of existing classes
      *
-     * @var array
+     * @var array<string, bool>
      */
     protected static $existing_classes = [];
 
     /**
      * A lookup table of existing classes, all lowercased
      *
-     * @var array
+     * @var array<string, bool>
      */
     protected static $existing_classes_ci = [];
 
     /**
      * A lookup table used for caching the results of classExtends calls
      *
-     * @var array
+     * @var array<string, array<string, bool>>
      */
     protected static $class_extends = [];
 

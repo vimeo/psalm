@@ -95,10 +95,12 @@ class ExpressionChecker
             if (self::check($statements_checker, $stmt->expr, $context) === false) {
                 return false;
             }
+            $stmt->inferredType = $stmt->expr->inferredType;
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
             if (self::check($statements_checker, $stmt->expr, $context) === false) {
                 return false;
             }
+            $stmt->inferredType = $stmt->expr->inferredType;
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             foreach ($stmt->vars as $isset_var) {
                 if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch &&
@@ -111,6 +113,7 @@ class ExpressionChecker
                     $context->vars_possibly_in_scope[$var_id] = true;
                 }
             }
+            $stmt->inferredType = Type::getBool();
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             if (FetchChecker::checkClassConstFetch($statements_checker, $stmt, $context) === false) {
                 return false;
@@ -1171,6 +1174,7 @@ class ExpressionChecker
         PhpParser\Node\Expr\BooleanNot $stmt,
         Context $context
     ) {
+        $stmt->inferredType = Type::getBool();
         return self::check($statements_checker, $stmt->expr, $context);
     }
 

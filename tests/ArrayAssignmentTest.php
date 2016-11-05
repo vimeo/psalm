@@ -376,4 +376,24 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testArrayKey()
+    {
+        $file_checker = new \Psalm\Checker\FileChecker(
+            'somefile.php',
+            self::$parser->parse('<?php
+            $a = ["foo", "bar"];
+            $b = $a[0];
+
+            $c = ["a" => "foo", "b"=> "bar"];
+            $d = "a";
+            $e = $a[$d];
+            ')
+        );
+
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string', (string)$context->vars_in_scope['$b']);
+        $this->assertEquals('string', (string)$context->vars_in_scope['$e']);
+    }
 }

@@ -645,7 +645,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * Gets the method/function call map
      *
-     * @return array<array<string,string>>
+     * @return array<array<string, string>>
      */
     protected static function getCallMap()
     {
@@ -653,6 +653,7 @@ class FunctionChecker extends FunctionLikeChecker
             return self::$call_map;
         }
 
+        /** @var array<array<string, string>> */
         $call_map = require_once(__DIR__.'/../CallMap.php');
 
         self::$call_map = [];

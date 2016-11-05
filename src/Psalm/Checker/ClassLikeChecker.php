@@ -806,9 +806,9 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * @param  string $class
-     * @param  string $namespace
-     * @param  array  $imported_namespaces
+     * @param  string                   $class
+     * @param  string                   $namespace
+     * @param  array<string, string>    $imported_namespaces
      * @return string
      */
     public static function getAbsoluteClassFromString($class, $namespace, array $imported_namespaces)
@@ -1311,7 +1311,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * Gets the method/function call map
      *
-     * @return array<string,array<string,string>>
+     * @return array<string, array<string, string>>
      */
     protected static function getPropertyMap()
     {
@@ -1319,6 +1319,7 @@ abstract class ClassLikeChecker implements StatementsSource
             return self::$property_map;
         }
 
+        /** @var array<string, array<string, string>> */
         $property_map = require_once(__DIR__.'/../PropertyMap.php');
 
         self::$property_map = [];

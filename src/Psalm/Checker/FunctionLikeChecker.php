@@ -12,6 +12,7 @@ use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MixedInferredReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -106,10 +107,11 @@ abstract class FunctionLikeChecker implements StatementsSource
     }
 
     /**
-     * @param Context $context
+     * @param Context       $context
+     * @param Context|null  $global_context
      * @return false|null
      */
-    public function check(Context $context)
+    public function check(Context $context, Context $global_context = null)
     {
         if ($function_stmts = $this->function->getStmts()) {
             $statements_checker = new StatementsChecker($this);
@@ -242,7 +244,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $statements_checker->registerVariable($function_param->name, $function_param->line);
             }
 
-            $statements_checker->check($function_stmts, $context);
+            $statements_checker->check($function_stmts, $context, null, $global_context);
 
             if (isset($this->return_vars_in_scope[''])) {
                 $context->vars_in_scope = TypeChecker::combineKeyedTypes(
@@ -514,8 +516,24 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $inferred_return_type = $inferred_yield_type;
             }
 
-            if ($inferred_return_type && !$inferred_return_type->isMixed() && !$declared_return_type->isMixed()) {
+            if ($inferred_return_type && !$declared_return_type->isMixed()) {
                 if ($inferred_return_type->isNull() && $declared_return_type->isVoid()) {
+                    return null;
+                }
+
+                if ($inferred_return_type->isMixed()) {
+                    if (IssueBuffer::accepts(
+                        new MixedInferredReturnType(
+                            'Could not verify return type \'' . $declared_return_type . '\' for ' .
+                                MethodChecker::getCasedMethodId($method_id),
+                            $this->getCheckedFileName(),
+                            $this->function->getLine()
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
                     return null;
                 }
 

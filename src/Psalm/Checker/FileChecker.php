@@ -225,7 +225,7 @@ class FileChecker implements StatementsSource
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
                     $function_context = new Context($this->short_file_name, $file_context->self);
-                    $function_checkers[$stmt->name]->check($function_context);
+                    $function_checkers[$stmt->name]->check($function_context, $file_context);
 
                     if (!$config->excludeIssueInFile('InvalidReturnType', $this->short_file_name)) {
                         $function_checkers[$stmt->name]->checkReturnTypes();
@@ -332,13 +332,14 @@ class FileChecker implements StatementsSource
             $cache_location = $cache_directory . '/' . $key;
 
             if (is_readable($cache_location)) {
+                /** @var array<int, \PhpParser\Node> */
                 $stmts = unserialize((string) file_get_contents($cache_location));
                 $from_cache = true;
             }
         }
 
         if (!$stmts && $contents) {
-            $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+            $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
             $stmts = $parser->parse($contents);
         }

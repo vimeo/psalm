@@ -13,6 +13,7 @@ use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
+use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\InvalidNamespace;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -119,9 +120,10 @@ class StatementsChecker
      * @param  array<PhpParser\Node>        $stmts
      * @param  Context                      $context
      * @param  Context|null                 $loop_context
+     * @param  Context|null                 $global_context
      * @return null|false
      */
-    public function check(array $stmts, Context $context, Context $loop_context = null)
+    public function check(array $stmts, Context $context, Context $loop_context = null, Context $global_context = null)
     {
         $has_returned = false;
 
@@ -155,8 +157,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$first_arg'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$first_arg']);
+            if (isset($context->vars_in_scope['$pos'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$pos']);
             }
             */
 
@@ -230,13 +232,32 @@ class StatementsChecker
                     $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
-                foreach ($stmt->vars as $var) {
-                    if ($var instanceof PhpParser\Node\Expr\Variable) {
-                        if (is_string($var->name)) {
-                            $context->vars_in_scope['$' . $var->name] = Type::getMixed();
-                            $context->vars_possibly_in_scope['$' . $var->name] = true;
-                        } else {
-                            ExpressionChecker::check($this, $var, $context);
+                if (!$global_context) {
+                    if (IssueBuffer::accepts(
+                        new InvalidGlobal(
+                            'Cannot use global scope here',
+                            $this->checked_file_name,
+                            $stmt->getLine()
+                        ),
+                        $this->suppressed_issues
+                    )) {
+                        return false;
+                    }
+                }
+                else {
+                    foreach ($stmt->vars as $var) {
+                        if ($var instanceof PhpParser\Node\Expr\Variable) {
+                            if (is_string($var->name)) {
+                                $var_id = '$' . $var->name;
+
+                                $context->vars_in_scope[$var_id] = isset($global_context->vars_in_scope[$var_id])
+                                    ? clone $global_context->vars_in_scope[$var_id]
+                                    : Type::getMixed();
+
+                                $context->vars_possibly_in_scope[$var_id] = true;
+                            } else {
+                                ExpressionChecker::check($this, $var, $context);
+                            }
                         }
                     }
                 }
@@ -729,7 +750,11 @@ class StatementsChecker
             $const_name = implode('', $stmt->name->parts);
 
             if (defined($const_name)) {
-                return constant($const_name);
+                $constant_value = constant($const_name);
+
+                if (is_string($constant_value)) {
+                    return $constant_value;
+                }
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
             return dirname($file_name);

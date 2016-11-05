@@ -391,4 +391,21 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('array<int,B>', (string) $context->vars_in_scope['$bees']);
     }
+
+    public function testIssetReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param  mixed $foo
+         * @return bool
+         */
+        function a($foo = null) {
+            return isset($foo);
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

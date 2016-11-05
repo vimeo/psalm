@@ -13,6 +13,7 @@
         <MixedMethodCall errorLevel="suppress" />
         <MixedPropertyFetch errorLevel="suppress" />
         <MixedPropertyAssignment errorLevel="suppress" />
+        <MixedInferredReturnType errorLevel="suppress" />
 
         <InvalidDocblock errorLevel="info" />
         <DeprecatedMethod errorLevel="info" />
