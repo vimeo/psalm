@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<codeinspector
+<psalm
     name="Example Psalm config with recommended defaults"
     stopOnFirstError="false"
     useDocblockTypes="true"
@@ -19,4 +19,4 @@
         <PossiblyUndefinedVariable errorLevel="info">
     </issueHandler>
 
-</codeinspector>
+</psalm>

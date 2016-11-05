@@ -51,9 +51,6 @@ $show_info = isset($options['show-info'])
             : true;
 $is_diff = isset($options['diff']);
 
-// set the cache directory for the file checker
-FileChecker::setCacheDir('/var/tmp/php-parser');
-
 // initialise custom config, if passed
 if ($path_to_config) {
     ProjectChecker::setConfigXML($path_to_config);

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<codeinspector
+<psalm
     name="Psalm for Psalm"
     stopOnFirstError="false"
     useDocblockTypes="true"
@@ -16,4 +16,4 @@
         </ForbiddenCode>
     </issueHandler>
 
-</codeinspector>
+</psalm>
