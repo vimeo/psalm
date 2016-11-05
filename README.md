@@ -52,6 +52,13 @@ Once you've set up your config file, you can run Psalm from your project's root 
 ./vendor/bin/psalm
 ```
 
+and Psalm will scan all files in the project referenced by `<inspectFiles>`.
+
+If you want to run on specific files, use
+```bash
+./vendor/bin/psalm file1.php [file2.php...]
+```
+
 ### Command-line options
 
 - `--help`<br />
@@ -60,14 +67,14 @@ Once you've set up your config file, you can run Psalm from your project's root 
   With this flag, Psalm will list the files it's scanning, and provide a summary of memory usage
 - `--config`<br />
   Path to a configuration file, if not ./psalm.xml
-- `-f [FILE_PATH]`<br />
-  Path to run checks against (if ommitted, Psalm will scan all files in the project referenced by `<inspectFiles>`
 - `--monochrome`<br />
   Disables colored output
 - `--show-info=[BOOLEAN]`<br />
   Show non-error parser findings.
 - `--diff`<br />
   Only check files that have changed (and their dependents) since the last successful run
+- `--self-check`<br />
+  Make Psalm check itself (useful when making updates to Psalm)
 
 ## Dealing with code issues
 
