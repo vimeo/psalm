@@ -672,5 +672,6 @@ class MethodChecker extends FunctionLikeChecker
         self::$have_reflected = [];
         self::$have_registered = [];
         self::$method_visibility = [];
+        self::$overridden_methods = [];
     }
 }

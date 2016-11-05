@@ -142,6 +142,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 if ($implemented_method_ids) {
                     $have_emitted = false;
+
                     foreach ($implemented_method_ids as $implemented_method_id) {
                         if ($have_emitted) {
                             break;
