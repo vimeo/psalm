@@ -646,6 +646,7 @@ class FunctionChecker extends FunctionLikeChecker
      * Gets the method/function call map
      *
      * @return array<array<string, string>>
+     * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      */
     protected static function getCallMap()
     {

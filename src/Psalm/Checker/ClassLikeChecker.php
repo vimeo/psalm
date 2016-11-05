@@ -1312,6 +1312,7 @@ abstract class ClassLikeChecker implements StatementsSource
      * Gets the method/function call map
      *
      * @return array<string, array<string, string>>
+     * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      */
     protected static function getPropertyMap()
     {
@@ -1319,7 +1320,6 @@ abstract class ClassLikeChecker implements StatementsSource
             return self::$property_map;
         }
 
-        /** @var array<string, array<string, string>> */
         $property_map = require_once(__DIR__.'/../PropertyMap.php');
 
         self::$property_map = [];
