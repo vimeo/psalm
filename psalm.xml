@@ -7,13 +7,4 @@
     <inspectFiles>
         <directory name="src" />
     </inspectFiles>
-
-    <issueHandler>
-        <ForbiddenCode>
-            <excludeFiles>
-                <file name="src/Psalm/Checker/StatementsChecker.php" />
-            </excludeFiles>
-        </ForbiddenCode>
-    </issueHandler>
-
 </psalm>
