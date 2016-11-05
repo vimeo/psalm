@@ -4,7 +4,7 @@ namespace Psalm\Type;
 class Generic extends Atomic
 {
     /**
-     * @var array<Type\Union>
+     * @var array<Union>
      */
     public $type_params;
 
