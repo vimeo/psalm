@@ -456,11 +456,11 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * @param PhpParser\Node\Stmt\ClassMethod $stmt
-     * @param Context $class_context
-     * @param array $method_checkers
-     * @param $cache_method_checker
-     * @return void
+     * @param   PhpParser\Node\Stmt\ClassMethod $stmt
+     * @param   Context                         $class_context
+     * @param   array                           $method_checkers
+     * @param   bool                            $cache_method_checker
+     * @return  void
      */
     protected function visitClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
@@ -494,7 +494,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @param   PhpParser\Node\Stmt\TraitUse    $stmt
      * @param   Context                         $class_context
-     * @param   array                           $trait_checkers
+     * @param   array<TraitChecker>             $trait_checkers
      * @return  false|null
      */
     protected function visitTraitUse(
@@ -564,11 +564,11 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * @param PhpParser\Node\Stmt\Property $stmt
-     * @param Context $class_context
-     * @param Config $config
-     * @param $check_property_types
-     * @return void
+     * @param   PhpParser\Node\Stmt\Property    $stmt
+     * @param   Context                         $class_context
+     * @param   Config                          $config
+     * @param   bool                            $check_property_types
+     * @return  void
      */
     protected function visitPropertyDeclaration(
         PhpParser\Node\Stmt\Property $stmt,
@@ -728,10 +728,10 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * @param  string $absolute_class
-     * @param  string $file_name
-     * @param  int $line_number
-     * @param  array<string>  $suppressed_issues
+     * @param  string           $absolute_class
+     * @param  string           $file_name
+     * @param  int              $line_number
+     * @param  array<string>    $suppressed_issues
      * @return bool|null
      */
     public static function checkAbsoluteClassOrInterface(
