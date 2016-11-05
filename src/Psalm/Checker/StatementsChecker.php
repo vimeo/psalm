@@ -479,7 +479,7 @@ class StatementsChecker
 
     /**
      * @param   string  $const_name
-     * @return  null
+     * @return  Type\Union|null
      */
     public function getConstType($const_name)
     {

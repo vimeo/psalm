@@ -65,7 +65,7 @@ class FunctionChecker extends FunctionLikeChecker
     protected static $call_map = null;
 
     /**
-     * @param PhpParser\Node\Stmt\Function_ $function
+     * @param mixed                         $function
      * @param StatementsSource              $source
      * @param string                        $base_file_name
      */

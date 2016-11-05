@@ -13,12 +13,16 @@ class TraitChecker extends ClassLikeChecker
     protected $method_map = [];
 
     /**
-     * @param   PhpParser\Node\Stmt\Trait_  $class
-     * @param   StatementsSource            $source
-     * @param   string                      $absolute_class
+     * @param   PhpParser\Node\Stmt\ClassLike   $class
+     * @param   StatementsSource                $source
+     * @param   string                          $absolute_class
      */
-    public function __construct(PhpParser\Node\Stmt\Trait_ $class, StatementsSource $source, $absolute_class)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
     {
+        if (!$class instanceof PhpParser\Node\Stmt\Trait_) {
+            throw new \InvalidArgumentException('Trait checker must be passed a trait');
+        }
+
         $this->class = $class;
         $this->namespace = $source->getNamespace();
         $this->aliased_classes = $source->getAliasedClasses();

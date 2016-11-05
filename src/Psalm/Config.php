@@ -121,6 +121,9 @@ class Config
      *
      * @param  string $file_name
      * @return self
+     * @psalm-suppress MixedArgument
+     * @psalm-suppress MixedPropertyFetch
+     * @psalm-suppress MixedMethodCall
      */
     public static function loadFromXML($file_name)
     {
@@ -157,7 +160,7 @@ class Config
         }
 
         if (isset($config_xml['cacheDirectory'])) {
-            $config->cacheDirectory = (string) $config_xml['cacheDirectory'];
+            $config->cache_directory = (string) $config_xml['cacheDirectory'];
         }
 
         if (isset($config_xml->inspectFiles)) {
@@ -247,7 +250,7 @@ class Config
     protected function loadFileExtensions($extensions)
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', $extension['name']);
+            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name']);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['filetypeHandler'])) {
@@ -387,7 +390,7 @@ class Config
     }
 
     /**
-     * @return string|null
+     * @return string
      */
     public function getCacheDirectory()
     {

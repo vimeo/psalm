@@ -539,7 +539,9 @@ class CallChecker
 
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($stmt->class->parts[0] === 'parent') {
-                    if ($statements_checker->getParentClass() === null) {
+                    $absolute_class = $statements_checker->getParentClass();
+
+                    if ($absolute_class === null) {
                         if (IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot call method on parent as this class does not extend another',
@@ -550,13 +552,15 @@ class CallChecker
                         )) {
                             return false;
                         }
-                    }
 
-                    $absolute_class = $statements_checker->getParentClass();
+                        return;
+                    }
                 } else {
-                    $absolute_class = ($statements_checker->getNamespace()
+                    $namespace = $statements_checker->getNamespace()
                         ? $statements_checker->getNamespace() . '\\'
-                        : '') . $statements_checker->getClassName();
+                        : '';
+
+                    $absolute_class = $namespace . $statements_checker->getClassName();
                 }
 
                 if ($context->isPhantomClass($absolute_class)) {
@@ -728,7 +732,7 @@ class CallChecker
 
         $absolute_class = null;
 
-        $in_call_map = FunctionChecker::inCallMap($method_id);
+        $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
 
         if ($method_id) {
             $function_params = FunctionLikeChecker::getParamsById(

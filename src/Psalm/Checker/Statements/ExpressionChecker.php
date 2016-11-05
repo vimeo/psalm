@@ -48,7 +48,7 @@ class ExpressionChecker
         $assignment_key_value = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            if (self::checkVariable($statements_checker, $stmt, $context, null, null, $array_assignment) === false) {
+            if (self::checkVariable($statements_checker, $stmt, $context, false, null, $array_assignment) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {

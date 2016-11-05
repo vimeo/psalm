@@ -20,6 +20,7 @@ use Psalm\Issue\MixedPropertyFetch;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
+use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedPropertyFetch;
@@ -34,7 +35,7 @@ class FetchChecker
      * @param   PhpParser\Node\Expr\PropertyFetch   $stmt
      * @param   Context                             $context
      * @param   bool                                $array_assignment
-     * @return  bool|null
+     * @return  false|null
      */
     public static function checkPropertyFetch(
         StatementsChecker $statements_checker,
@@ -313,7 +314,7 @@ class FetchChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\ConstFetch  $stmt
      * @param   Context                         $context
-     * @return  bool
+     * @return  false|null
      */
     public static function checkConstFetch(
         StatementsChecker $statements_checker,
@@ -450,6 +451,21 @@ class FetchChecker
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($stmt->class->parts[0] === 'parent') {
                     $absolute_class = $statements_checker->getParentClass();
+
+                    if ($absolute_class === null) {
+                        if (IssueBuffer::accepts(
+                            new ParentNotFound(
+                                'Cannot check property fetch on parent as this class does not extend another',
+                                $statements_checker->getCheckedFileName(),
+                                $stmt->getLine()
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
+                        return;
+                    }
                 } else {
                     $absolute_class = ($statements_checker->getNamespace()
                         ? $statements_checker->getNamespace() . '\\'
@@ -570,7 +586,7 @@ class FetchChecker
      * @param   Type\Union|null                     $assignment_key_type
      * @param   Type\Union|null                     $assignment_value_type
      * @param   string|null                         $assignment_key_value
-     * @return  bool|null
+     * @return  false|null
      */
     public static function checkArrayAccess(
         StatementsChecker $statements_checker,
@@ -937,8 +953,8 @@ class FetchChecker
      * @param   Type\Atomic             $type
      * @param   Type\Union              $assignment_key_type
      * @param   Type\Union              $assignment_value_type
-     * @param   string                  $var_id
-     * @param   string                  $line_number
+     * @param   string|null             $var_id
+     * @param   int                     $line_number
      * @return  Type\Atomic|null|false
      */
     protected static function refineArrayType(
@@ -952,7 +968,7 @@ class FetchChecker
         if ($type->value === 'null') {
             if (IssueBuffer::accepts(
                 new NullReference(
-                    'Cannot assign value on possibly null array ' . $var_id,
+                    'Cannot assign value on possibly null array' . ($var_id ? ' ' . $var_id : ''),
                     $statements_checker->getCheckedFileName(),
                     $line_number
                 ),
@@ -971,7 +987,7 @@ class FetchChecker
         if (!$type->isArray() && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
-                    'Cannot assign value on variable ' . $var_id . ' of type ' . $type->value . ' that does not ' .
+                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type->value . ' that does not ' .
                         'implement ArrayAccess',
                     $statements_checker->getCheckedFileName(),
                     $line_number

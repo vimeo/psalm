@@ -22,12 +22,16 @@ class InterfaceChecker extends ClassLikeChecker
     protected static $existing_interfaces_ci = [];
 
     /**
-     * @param PhpParser\Node\Stmt\Interface_ $interface
+     * @param PhpParser\Node\Stmt\ClassLike  $interface
      * @param StatementsSource               $source
      * @param string                         $interface_name
      */
-    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source, $interface_name)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $interface, StatementsSource $source, $interface_name)
     {
+        if (!$interface instanceof PhpParser\Node\Stmt\Interface_) {
+            throw new \InvalidArgumentException('Expecting an interface');
+        }
+
         parent::__construct($interface, $source, $interface_name);
 
         self::$existing_interfaces[$interface_name] = true;
