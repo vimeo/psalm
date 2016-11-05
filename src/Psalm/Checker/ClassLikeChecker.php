@@ -239,6 +239,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $leftover_stmts = [];
 
+        /** @var array<MethodChecker> */
         $method_checkers = [];
 
         $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
@@ -458,7 +459,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @param   PhpParser\Node\Stmt\ClassMethod $stmt
      * @param   Context                         $class_context
-     * @param   array                           $method_checkers
+     * @param   array<MethodChecker>            $method_checkers
      * @param   bool                            $cache_method_checker
      * @return  void
      */
@@ -553,7 +554,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
                 FileChecker::addFileInheritanceToClass(
                     Config::getInstance()->getBaseDir() . $this->file_name,
-                    $this->parent_class
+                    $trait_name
                 );
 
                 $trait_checkers[] = $trait_checker;
