@@ -315,6 +315,8 @@ class ExpressionChecker
                     }
                 }
             }
+
+            $stmt->inferredType = Type::getBool();
         } elseif ($stmt instanceof PhpParser\Node\Expr\Exit_) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
