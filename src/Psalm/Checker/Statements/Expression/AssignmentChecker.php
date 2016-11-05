@@ -435,7 +435,7 @@ class AssignmentChecker
 
                     $class_property_type = Type::getMixed();
                 } else {
-                    $class_property_type = clone $class_property_type;
+                    $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $lhs_type_part->value);
                 }
 
                 $class_property_types[] = $class_property_type;
@@ -622,6 +622,8 @@ class AssignmentChecker
         if ($class_property_type->isMixed()) {
             return null;
         }
+
+        $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $absolute_class);
 
         if (!$assignment_type->isIn($class_property_type)) {
             if (IssueBuffer::accepts(

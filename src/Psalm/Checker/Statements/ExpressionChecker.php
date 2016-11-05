@@ -401,17 +401,25 @@ class ExpressionChecker
         Type\Union $by_ref_type = null,
         $array_assignment = false
     ) {
-        if ($statements_checker->isStatic() && $stmt->name === 'this') {
-            if (IssueBuffer::accepts(
-                new InvalidStaticVariable(
-                    'Invalid reference to $this in a static context',
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
+        if ($stmt->name === 'this') {
+            if ($statements_checker->isStatic()) {
+                if (IssueBuffer::accepts(
+                    new InvalidStaticVariable(
+                        'Invalid reference to $this in a static context',
+                        $statements_checker->getCheckedFileName(),
+                        $stmt->getLine()
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                return null;
             }
+
+            $stmt->inferredType = clone $context->vars_in_scope['$this'];
+
+            return null;
         }
 
         if (!$context->check_variables) {
@@ -426,17 +434,13 @@ class ExpressionChecker
         }
 
         if (in_array($stmt->name, [
-            '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv'
+            '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv', 'argc'
         ])) {
             return null;
         }
 
         if (!is_string($stmt->name)) {
             return self::check($statements_checker, $stmt->name, $context);
-        }
-
-        if ($stmt->name === 'this') {
-            return null;
         }
 
         if ($passed_by_reference && $by_ref_type) {
@@ -855,7 +859,7 @@ class ExpressionChecker
      * @param  string|null                  $method_id
      * @return Type\Union
      */
-    public static function fleshOutTypes(Type\Union $return_type, array $args, $calling_class, $method_id)
+    public static function fleshOutTypes(Type\Union $return_type, array $args, $calling_class = null, $method_id = null)
     {
         $return_type = clone $return_type;
 

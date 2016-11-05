@@ -157,8 +157,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$pos'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$pos']);
+            if (isset($context->vars_in_scope['$this'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$this']);
             }
             */
 

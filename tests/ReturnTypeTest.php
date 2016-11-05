@@ -408,4 +408,20 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testThisReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return $this */
+            public function getThis() {
+                return $this;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
