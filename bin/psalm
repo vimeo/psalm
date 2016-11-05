@@ -19,21 +19,37 @@ ini_set('memory_limit', '2048M');
 ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
-$options = getopt('f:m:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff']);
+$options = getopt('f:m:hc:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff', 'file:']);
 
-if (isset($options['help'])) {
+if (isset($options['file'])) {
+    $options['f'] = $options['file'];
+}
+
+if (array_key_exists('help', $options)) {
+    $options['h'] = null;
+}
+
+if (array_key_exists('monochrome', $options)) {
+    $options['m'] = null;
+}
+
+if (isset($options['config'])) {
+    $options['c'] = $options['help'];
+}
+
+if (array_key_exists('h', $options)) {
     echo <<< HELP
 Usage:
     psalm [options]
 
 Options:
-    --help                  Display this help message
-    --debug                 Debug information
-    --config                Path to a psalm.xml configuration file
-    -f [FILE_PATH]          Path to run checks against
-    --monochrome            Enable monochrome output
-    --show-info[=BOOLEAN]   Show non-exception parser findings.
-    --diff                  File to check is a diff
+    -h, --help                  Display this help message
+    --debug                     Debug information
+    -c, --config                Path to a psalm.xml configuration file
+    -f, --file [FILE_PATH]      Path to run checks against
+    -m, --monochrome            Enable monochrome output
+    --show-info[=BOOLEAN]       Show non-exception parser findings.
+    --diff                      File to check is a diff
 
 
 HELP;
@@ -43,9 +59,21 @@ HELP;
 
 // get vars from options
 $debug = array_key_exists('debug', $options);
-$path_to_check = isset($options['f']) ? realpath($options['f']) : null;
+$paths_to_check = null;
+
+if (isset($options['f'])) {
+    $paths_to_check = is_array($options['f']) ? $options['f'] : [$options['f']];
+    foreach ($paths_to_check as $i => $path_to_check) {
+        if (!file_exists($path_to_check)) {
+            die('Cannot locate ' . $path_to_check . PHP_EOL);
+        }
+
+        $paths_to_check[$i] = realpath($path_to_check);
+    }
+}
+
 $path_to_config = isset($options['config']) ? realpath($options['config']) : null;
-$use_color = !array_key_exists('monochrome', $options);
+$use_color = !array_key_exists('m', $options);
 $show_info = isset($options['show-info'])
             ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
             : true;
@@ -61,20 +89,20 @@ ProjectChecker::$show_info = $show_info;
 
 $time = microtime(true);
 
-if ($path_to_check === null) {
+if ($paths_to_check === null) {
     ProjectChecker::check($debug, $is_diff);
-} elseif ($path_to_check) {
-    if (is_dir($path_to_check)) {
-        ProjectChecker::checkDir($path_to_check, $debug);
-    } else {
-        if ($path_to_check === __FILE__) {
-            exit(0);
-        }
+} elseif ($paths_to_check) {
+    foreach ($paths_to_check as $path_to_check) {
+        if (is_dir($path_to_check)) {
+            ProjectChecker::checkDir($path_to_check, $debug);
+        } else {
+            if ($path_to_check === __FILE__) {
+                exit(0);
+            }
 
-        ProjectChecker::checkFile($path_to_check, $debug);
+            ProjectChecker::checkFile($path_to_check, $debug);
+        }
     }
-} else {
-    die('Cannot locate ' . $options['f'] . PHP_EOL);
 }
 
 if ($debug) {
