@@ -66,24 +66,32 @@ else {
 $paths_to_check = null;
 
 if ($input_paths) {
+    $filtered_input_paths = [];
+
+    foreach ($input_paths as $i => $input_path) {
+        if (($input_path[0] === '-' && strlen($input_path) > 1) || realpath($input_path) === __FILE__) {
+            continue;
+        }
+
+        $filtered_input_paths = array_slice($input_paths, $i);
+        break;
+    }
+
+    stream_set_blocking(STDIN, 0);
+
+    if ($filtered_input_paths === ['-'] && $stdin = fgets(STDIN)) {
+        $filtered_input_paths = preg_split('/\s+/', trim($stdin));
+    }
+
     $paths_to_check = [];
 
-    foreach ($input_paths as $i => $path_to_check) {
+    foreach ($filtered_input_paths as $i => $path_to_check) {
         if ($path_to_check[0] === '-') {
-            if ($paths_to_check) {
-                die('Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
-            }
-
-            $paths_to_check = [];
-            continue;
+            die('Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
         }
 
         if (!file_exists($path_to_check)) {
             die('Cannot locate ' . $path_to_check . PHP_EOL);
-        }
-
-        if (realpath($path_to_check) === __FILE__) {
-            continue;
         }
 
         $paths_to_check[] = realpath($path_to_check);
