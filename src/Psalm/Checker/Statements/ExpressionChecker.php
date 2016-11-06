@@ -18,6 +18,7 @@ use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidStaticVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
+use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -366,8 +367,16 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             self::checkYieldFrom($statements_checker, $stmt, $context);
         } else {
-            var_dump('Unrecognised expression in ' . $statements_checker->getCheckedFileName());
-            var_dump($stmt);
+            if (IssueBuffer::accepts(
+                new UnrecognizedExpression(
+                    'Psalm does not understand ' . get_class($stmt),
+                    $statements_checker->getCheckedFileName(),
+                    $stmt->getLine()
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                return false;
+            }
         }
 
         foreach (Config::getInstance()->getPlugins() as $plugin) {

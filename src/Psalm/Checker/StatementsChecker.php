@@ -15,6 +15,7 @@ use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\InvalidNamespace;
+use Psalm\Issue\UnrecognizedStatement;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -318,8 +319,16 @@ class StatementsChecker
                 $namespace_checker = new NamespaceChecker($stmt, $this->source);
                 $namespace_checker->check(true);
             } else {
-                var_dump('Unrecognised statement in ' . $this->checked_file_name);
-                var_dump($stmt);
+                if (IssueBuffer::accepts(
+                    new UnrecognizedStatement(
+                        'Psalm does not understand ' . get_class($stmt),
+                        $this->getCheckedFileName(),
+                        $stmt->getLine()
+                    ),
+                    $this->getSuppressedIssues()
+                )) {
+                    return false;
+                }
             }
         }
 
