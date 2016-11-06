@@ -157,8 +157,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$this'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$this']);
+            if (isset($context->vars_in_scope['$columns'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$columns']);
             }
             */
 
@@ -222,7 +222,7 @@ class StatementsChecker
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($this->file_name, $context->self);
-                $function_checkers[$stmt->name]->check($function_context);
+                $function_checkers[$stmt->name]->check($function_context, $context);
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 ExpressionChecker::check($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {

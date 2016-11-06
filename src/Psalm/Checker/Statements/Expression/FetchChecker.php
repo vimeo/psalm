@@ -848,6 +848,10 @@ class FetchChecker
                                         $array_type = $atomic_array->type_params[1];
                                     } else {
                                         $atomic_array->type_params[0] = $key_type;
+
+                                        if ($nesting === 0 && $keyed_assignment_type) {
+                                            $atomic_array->type_params[1] = $keyed_assignment_type;
+                                        }
                                     }
                                 }
                             }

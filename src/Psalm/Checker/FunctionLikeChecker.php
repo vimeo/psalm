@@ -449,6 +449,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         }
 
         $method_id = (string)$this->getMethodId();
+        $cased_method_id = $this instanceof MethodChecker ? MethodChecker::getCasedMethodId($method_id) : $method_id;
 
         if ($this instanceof MethodChecker) {
             $method_return_types = MethodChecker::getMethodReturnTypes($method_id);
@@ -493,7 +494,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
-                        'No return type was found for method ' . MethodChecker::getCasedMethodId($method_id) .
+                        'No return type was found for method ' . $cased_method_id .
                             ' but return type \'' . $declared_return_type . '\' was expected',
                         $this->getCheckedFileName(),
                         $this->function->getLine()
@@ -525,7 +526,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     if (IssueBuffer::accepts(
                         new MixedInferredReturnType(
                             'Could not verify return type \'' . $declared_return_type . '\' for ' .
-                                MethodChecker::getCasedMethodId($method_id),
+                                $cased_method_id,
                             $this->getCheckedFileName(),
                             $this->function->getLine()
                         ),
@@ -544,9 +545,8 @@ abstract class FunctionLikeChecker implements StatementsSource
                 )) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
-                            'The given return type \'' . $declared_return_type . '\' for ' .
-                                MethodChecker::getCasedMethodId($method_id) . ' is incorrect, got \'' .
-                                $inferred_return_type . '\'',
+                            'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                                ' is incorrect, got \'' . $inferred_return_type . '\'',
                             $this->getCheckedFileName(),
                             $this->function->getLine()
                         ),

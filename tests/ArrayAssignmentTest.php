@@ -396,4 +396,22 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string)$context->vars_in_scope['$b']);
         $this->assertEquals('string', (string)$context->vars_in_scope['$e']);
     }
+
+    public function testVariableKeyArrayCreate()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = [];
+        $b = "boop";
+        $a[$b][] = "bam";
+
+        $c = [];
+        $c[$b][$b][] = "bam";
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<string,array<int,string>>', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('array<string,array<string,array<int,string>>>', (string) $context->vars_in_scope['$c']);
+    }
 }

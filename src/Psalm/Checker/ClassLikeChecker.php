@@ -1262,7 +1262,7 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * @param   string $this_class
+     * @param   string|null $this_class
      * @return  void
      */
     public static function setThisClass($this_class)
