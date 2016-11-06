@@ -9,6 +9,7 @@ use Psalm\StatementsSource;
 
 class FileChecker implements StatementsSource
 {
+    const PARSER_CACHE_DIRECTORY = 'php-parser';
     const REFERENCE_CACHE_NAME = 'references';
     const GOOD_RUN_NAME = 'good_run';
 
@@ -316,8 +317,6 @@ class FileChecker implements StatementsSource
      */
     public static function getStatementsForFile($file_name)
     {
-        $contents = (string) file_get_contents($file_name);
-
         $stmts = [];
 
         $from_cache = false;
@@ -327,29 +326,29 @@ class FileChecker implements StatementsSource
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
-            $key = md5($contents);
+            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
 
-            $cache_location = $cache_directory . '/' . $key;
+            $cache_location = $cache_directory . '/' . self::getParserCacheKey($file_name);
 
-            if (is_readable($cache_location)) {
+            if (is_readable($cache_location) && filemtime($cache_location) >= filemtime($file_name)) {
                 /** @var array<int, \PhpParser\Node> */
-                $stmts = unserialize((string) file_get_contents($cache_location));
+                $stmts = unserialize((string)file_get_contents($cache_location));
                 $from_cache = true;
             }
         }
 
-        if (!$stmts && $contents) {
+        if (!$stmts) {
             $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
-            $stmts = $parser->parse($contents);
+            $stmts = $parser->parse((string)file_get_contents($file_name));
         }
 
         if ($cache_directory && $cache_location) {
             if ($from_cache) {
                 touch($cache_location);
             } else {
-                if (!file_exists($cache_directory)) {
-                    mkdir($cache_directory);
+                if (!is_dir($cache_directory)) {
+                    mkdir($cache_directory, 0777, true);
                 }
 
                 file_put_contents($cache_location, serialize($stmts));
@@ -675,10 +674,9 @@ class FileChecker implements StatementsSource
     }
 
     /**
-     * @param  string  $file
-     * @return boolean
+     * @return int
      */
-    public static function hasFileChanged($file)
+    public static function getLastGoodRun()
     {
         if (self::$last_good_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();
@@ -686,7 +684,16 @@ class FileChecker implements StatementsSource
             self::$last_good_run = filemtime($cache_directory . '/' . self::GOOD_RUN_NAME) ?: 0;
         }
 
-        return filemtime($file) > self::$last_good_run;
+        return self::$last_good_run;
+    }
+
+    /**
+     * @param  string  $file
+     * @return boolean
+     */
+    public static function hasFileChanged($file)
+    {
+        return filemtime($file) > self::getLastGoodRun();
     }
 
     /**
@@ -707,16 +714,17 @@ class FileChecker implements StatementsSource
     }
 
     /**
+     * @param int $start_time
      * @return void
      */
-    public static function goodRun()
+    public static function goodRun($start_time)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
             $run_cache_location = $cache_directory . '/' . self::GOOD_RUN_NAME;
 
-            touch($run_cache_location);
+            touch($run_cache_location, $start_time);
 
             $deleted_files = self::getDeletedReferencedFiles();
 
@@ -729,6 +737,22 @@ class FileChecker implements StatementsSource
                     $cache_directory . '/' . self::REFERENCE_CACHE_NAME,
                     serialize(self::$file_references)
                 );
+            }
+
+            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
+
+            if (is_dir($cache_directory)) {
+                $directory_files = scandir($cache_directory);
+
+                foreach ($directory_files as $directory_file) {
+                    $full_path = $cache_directory . '/' . $directory_file;
+
+                    if ($directory_file[0] === '.') {
+                        continue;
+                    }
+
+                    touch($full_path);
+                }
             }
         }
     }
@@ -747,5 +771,77 @@ class FileChecker implements StatementsSource
         ClassLikeChecker::clearCache();
         FunctionChecker::clearCache();
         StatementsChecker::clearCache();
+    }
+
+    /**
+     * @param  float $time_before
+     * @return int
+     */
+    public static function deleteOldParserCaches($time_before)
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        $removed_count = 0;
+
+        if ($cache_directory) {
+            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
+
+            if (is_dir($cache_directory)) {
+                $directory_files = scandir($cache_directory);
+
+                foreach ($directory_files as $directory_file) {
+                    $full_path = $cache_directory . '/' . $directory_file;
+
+                    if ($directory_file[0] === '.') {
+                        continue;
+                    }
+
+                    if (filemtime($full_path) < $time_before && is_writable($full_path)) {
+                        unlink($full_path);
+                        $removed_count++;
+                    }
+                }
+            }
+        }
+
+        return $removed_count;
+    }
+
+    /**
+     * @param  array<string>    $file_names
+     * @param  int              $min_time
+     * @return void
+     */
+    public static function touchParserCaches(array $file_names, $min_time)
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
+
+            if (is_dir($cache_directory)) {
+                foreach ($file_names as $file_name) {
+                    $hash_file_name = $cache_directory . '/' . self::getParserCacheKey($file_name);
+
+                    if (file_exists($hash_file_name)) {
+                        if (filemtime($hash_file_name) < $min_time) {
+                            touch($hash_file_name, $min_time);
+                        }
+                    }
+                    else {
+                        throw new \InvalidArgumentException('Cannot touch file ' . $hash_file_name);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  string $file_name
+     * @return string
+     */
+    protected static function getParserCacheKey($file_name)
+    {
+        return md5($file_name);
     }
 }

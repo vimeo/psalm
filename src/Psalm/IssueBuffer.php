@@ -84,10 +84,11 @@ class IssueBuffer
     }
 
     /**
-     * @param bool $is_full
+     * @param  bool     $is_full
+     * @param  int|null $start_time
      * @return void
      */
-    public static function finish($is_full = false)
+    public static function finish($is_full = false, $start_time = null)
     {
         Checker\FileChecker::updateReferenceCache();
 
@@ -95,8 +96,8 @@ class IssueBuffer
             exit(1);
         }
 
-        if ($is_full) {
-            Checker\FileChecker::goodRun();
+        if ($is_full && $start_time) {
+            Checker\FileChecker::goodRun($start_time);
         }
     }
 

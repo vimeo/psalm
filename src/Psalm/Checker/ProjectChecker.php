@@ -39,6 +39,8 @@ class ProjectChecker
     {
         $cwd = getcwd();
 
+        $start_checks = (int)microtime(true);
+
         if (!$cwd) {
             throw new \InvalidArgumentException('Cannot work with empty cwd');
         }
@@ -59,6 +61,8 @@ class ProjectChecker
             }
         }
 
+        $files_checked = [];
+
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
             foreach (self::$config->getIncludeDirs() as $dir_name) {
                 self::checkDirWithConfig($dir_name, self::$config, $debug);
@@ -75,7 +79,19 @@ class ProjectChecker
             self::checkDiffFilesWithConfig(self::$config, $debug, $file_list);
         }
 
-        IssueBuffer::finish(true);
+        $removed_parser_files = FileChecker::deleteOldParserCaches(
+            $is_diff ? FileChecker::getLastGoodRun() : $start_checks
+        );
+
+        if ($debug && $removed_parser_files) {
+            echo 'Removed ' . $removed_parser_files . ' old parser caches' . PHP_EOL;
+        }
+
+        if ($is_diff) {
+            FileChecker::touchParserCaches(self::getAllFiles(self::$config), $start_checks);
+        }
+
+        IssueBuffer::finish(true, (int)$start_checks);
     }
 
     /**
@@ -114,8 +130,6 @@ class ProjectChecker
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
         $iterator->rewind();
 
-        $files = [];
-
         while ($iterator->valid()) {
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
@@ -139,6 +153,31 @@ class ProjectChecker
 
             $iterator->next();
         }
+    }
+
+    protected static function getAllFiles(Config $config)
+    {
+        $file_extensions = $config->getFileExtensions();
+        $file_names = [];
+
+        foreach ($config->getIncludeDirs() as $dir_name) {
+            /** @var RecursiveDirectoryIterator */
+            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
+            $iterator->rewind();
+
+            while ($iterator->valid()) {
+                if (!$iterator->isDot()) {
+                    $extension = $iterator->getExtension();
+                    if (in_array($extension, $file_extensions)) {
+                        $file_names[] = (string)$iterator->getRealPath();
+                    }
+                }
+
+                $iterator->next();
+            }
+        }
+
+        return $file_names;
     }
 
     /**
