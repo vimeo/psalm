@@ -28,9 +28,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public function testReturnTypeAfterUselessNullcheck()
     {
         $stmts = self::$parser->parse('<?php
-        class One {
-            public function foo() {}
-        }
+        class One {}
 
         class B {
             /**
@@ -423,5 +421,80 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
+    }
+
+    public function testOverrideReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return string|null */
+            public function blah() {
+                return rand(0, 10) === 4 ? "blah" : null;
+            }
+        }
+
+        class B extends A {
+            /** @return string */
+            public function blah() {
+                return "blah";
+            }
+        }
+
+        $blah = (new B())->blah();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string', (string) $context->vars_in_scope['$blah']);
+    }
+
+    public function testInterfaceReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A {
+            /** @return string|null */
+            public function blah();
+        }
+
+        class B implements A {
+            public function blah() {
+                return rand(0, 10) === 4 ? "blah" : null;
+            }
+        }
+
+        $blah = (new B())->blah();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string|null', (string) $context->vars_in_scope['$blah']);
+    }
+
+    public function testOverrideReturnTypeInGrandparent()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return string|null */
+            public function blah();
+        }
+
+        class B extends A {
+        }
+
+        class C extends B {
+            public function blah() {
+                return rand(0, 10) === 4 ? "blahblah" : null;
+            }
+        }
+
+        $blah = (new C())->blah();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string|null', (string) $context->vars_in_scope['$blah']);
     }
 }
