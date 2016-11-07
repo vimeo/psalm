@@ -828,9 +828,6 @@ class FileChecker implements StatementsSource
                             touch($hash_file_name, $min_time);
                         }
                     }
-                    else {
-                        throw new \InvalidArgumentException('Cannot touch file ' . $hash_file_name);
-                    }
                 }
             }
         }
