@@ -101,7 +101,8 @@ class ExpressionChecker
             if (self::check($statements_checker, $stmt->expr, $context) === false) {
                 return false;
             }
-            $stmt->inferredType = $stmt->expr->inferredType;
+
+            $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             foreach ($stmt->vars as $isset_var) {
                 if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch &&
