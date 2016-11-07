@@ -48,7 +48,7 @@ abstract class FunctionLikeChecker implements StatementsSource
     /**
      * @var string
      */
-    protected $absolute_class;
+    protected $fq_class_name;
 
     /**
      * @var StatementsChecker|null
@@ -102,7 +102,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         $this->class_extends = $source->getParentClass();
         $this->file_name = $source->getFileName();
         $this->include_file_name = $source->getIncludeFileName();
-        $this->absolute_class = $source->getAbsoluteClass();
+        $this->fq_class_name = $source->getFullQualifiedClass();
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
     }
@@ -218,7 +218,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 foreach ($this->function->getParams() as $param) {
                     $function_params[] = self::getTranslatedParam(
                         $param,
-                        $this->absolute_class,
+                        $this->fq_class_name,
                         $this->namespace,
                         $this->getAliasedClasses()
                     );
@@ -237,7 +237,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     if ($atomic_type->isObjectType()
                         && !$atomic_type->isObject()
                         && $this->function instanceof PhpParser\Node
-                        && ClassLikeChecker::checkAbsoluteClassOrInterface(
+                        && ClassLikeChecker::checkFullQualifiedClassOrInterface(
                             $atomic_type->value,
                             $this->file_name,
                             $this->function->getLine(),
@@ -327,7 +327,7 @@ abstract class FunctionLikeChecker implements StatementsSource
     {
         if ($this->function instanceof Function_ || $this->function instanceof ClassMethod) {
             return ($this instanceof MethodChecker
-                ? $this->absolute_class . '::'
+                ? $this->fq_class_name . '::'
                 : '') . strtolower($this->function->name);
         }
 
@@ -353,9 +353,9 @@ abstract class FunctionLikeChecker implements StatementsSource
     /**
      * @return string
      */
-    public function getAbsoluteClass()
+    public function getFullQualifiedClass()
     {
-        return $this->absolute_class;
+        return $this->fq_class_name;
     }
 
     /**
@@ -488,7 +488,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         $declared_return_type = ExpressionChecker::fleshOutTypes(
             $method_return_types,
             [],
-            $this->absolute_class,
+            $this->fq_class_name,
             $method_id
         );
 
@@ -560,7 +560,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 if (!TypeChecker::hasIdenticalTypes(
                     $declared_return_type,
                     $inferred_return_type,
-                    $this->absolute_class
+                    $this->fq_class_name
                 )) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
@@ -659,14 +659,14 @@ abstract class FunctionLikeChecker implements StatementsSource
 
     /**
      * @param  PhpParser\Node\Param $param
-     * @param  string               $absolute_class
+     * @param  string               $fq_class_name
      * @param  string               $namespace
      * @param  array<string>        $aliased_classes
      * @return FunctionLikeParameter
      */
     public static function getTranslatedParam(
         PhpParser\Node\Param $param,
-        $absolute_class,
+        $fq_class_name,
         $namespace,
         array $aliased_classes
     ) {
@@ -683,9 +683,9 @@ abstract class FunctionLikeChecker implements StatementsSource
             } elseif ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
                 $param_type_string = implode('\\', $param->type->parts);
             } elseif ($param->type->parts === ['self']) {
-                $param_type_string = $absolute_class;
+                $param_type_string = $fq_class_name;
             } else {
-                $param_type_string = ClassLikeChecker::getAbsoluteClassFromString(
+                $param_type_string = ClassLikeChecker::getFullQualifiedClassFromString(
                     implode('\\', $param->type->parts),
                     $namespace,
                     $aliased_classes
@@ -778,12 +778,12 @@ abstract class FunctionLikeChecker implements StatementsSource
 
     /**
      * @param  string       $return_type
-     * @param  string|null  $absolute_class
+     * @param  string|null  $fq_class_name
      * @param  string       $namespace
      * @param  array        $aliased_classes
      * @return string
      */
-    public static function fixUpLocalType($return_type, $absolute_class, $namespace, array $aliased_classes)
+    public static function fixUpLocalType($return_type, $fq_class_name, $namespace, array $aliased_classes)
     {
         if (strpos($return_type, '[') !== false) {
             $return_type = Type::convertSquareBrackets($return_type);
@@ -816,7 +816,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     continue;
                 }
 
-                $return_type_token = ClassLikeChecker::getAbsoluteClassFromString(
+                $return_type_token = ClassLikeChecker::getFullQualifiedClassFromString(
                     $return_type_token,
                     $namespace,
                     $aliased_classes
@@ -947,15 +947,15 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public static function getParamsById($method_id, array $args, $file_name)
     {
-        $absolute_class = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
+        $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
-        if ($absolute_class && ClassLikeChecker::isUserDefined($absolute_class)) {
+        if ($fq_class_name && ClassLikeChecker::isUserDefined($fq_class_name)) {
             /** @var array<\Psalm\FunctionLikeParameter> */
             return MethodChecker::getMethodParams($method_id);
-        } elseif (!$absolute_class && FunctionChecker::inCallMap($method_id)) {
+        } elseif (!$fq_class_name && FunctionChecker::inCallMap($method_id)) {
             /** @var array<array<FunctionLikeParameter>> */
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
-        } elseif ($absolute_class) {
+        } elseif ($fq_class_name) {
             if ($method_params = MethodChecker::getMethodParams($method_id)) {
                 // fall back to using reflected params anyway
                 return $method_params;

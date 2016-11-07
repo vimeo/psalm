@@ -98,7 +98,7 @@ class CallChecker
             $method_id = implode('', $stmt->name->parts);
 
             if ($context->self) {
-                //$method_id = $statements_checker->getAbsoluteClass() . '::' . $method_id;
+                //$method_id = $statements_checker->getFullQualifiedClass() . '::' . $method_id;
             }
 
             $in_call_map = FunctionChecker::inCallMap($method_id);
@@ -162,23 +162,23 @@ class CallChecker
         PhpParser\Node\Expr\New_ $stmt,
         Context $context
     ) {
-        $absolute_class = null;
+        $fq_class_name = null;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($context->check_classes) {
-                    $absolute_class = ClassLikeChecker::getAbsoluteClassFromName(
+                    $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromName(
                         $stmt->class,
                         $statements_checker->getNamespace(),
                         $statements_checker->getAliasedClasses()
                     );
 
-                    if ($context->isPhantomClass($absolute_class)) {
+                    if ($context->isPhantomClass($fq_class_name)) {
                         return null;
                     }
 
-                    if (ClassLikeChecker::checkAbsoluteClassOrInterface(
-                        $absolute_class,
+                    if (ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                        $fq_class_name,
                         $statements_checker->getCheckedFileName(),
                         $stmt->getLine(),
                         $statements_checker->getSuppressedIssues()
@@ -189,31 +189,31 @@ class CallChecker
             } else {
                 switch ($stmt->class->parts[0]) {
                     case 'self':
-                        $absolute_class = $context->self;
+                        $fq_class_name = $context->self;
                         break;
 
                     case 'parent':
-                        $absolute_class = $context->parent;
+                        $fq_class_name = $context->parent;
                         break;
 
                     case 'static':
                         // @todo maybe we can do better here
-                        $absolute_class = $context->self;
+                        $fq_class_name = $context->self;
                         break;
                 }
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
             $statements_checker->check([$stmt->class], $context);
-            $absolute_class = $stmt->class->name;
+            $fq_class_name = $stmt->class->name;
         } else {
             ExpressionChecker::check($statements_checker, $stmt->class, $context);
         }
 
-        if ($absolute_class) {
-            $stmt->inferredType = new Type\Union([new Type\Atomic($absolute_class)]);
+        if ($fq_class_name) {
+            $stmt->inferredType = new Type\Union([new Type\Atomic($fq_class_name)]);
 
-            if (MethodChecker::methodExists($absolute_class . '::__construct')) {
-                $method_id = $absolute_class . '::__construct';
+            if (MethodChecker::methodExists($fq_class_name . '::__construct')) {
+                $method_id = $fq_class_name . '::__construct';
 
                 if (self::checkFunctionArguments(
                     $statements_checker,
@@ -225,7 +225,7 @@ class CallChecker
                     return false;
                 }
 
-                if ($absolute_class === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
+                if ($fq_class_name === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
                     /** @var Type\Union */
                     $first_arg_type = $stmt->args[0]->value->inferredType;
 
@@ -257,7 +257,7 @@ class CallChecker
 
                         $stmt->inferredType = new Type\Union([
                             new Type\Generic(
-                                $absolute_class,
+                                $fq_class_name,
                                 [
                                     $key_type,
                                     $value_type
@@ -311,7 +311,7 @@ class CallChecker
 
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -336,12 +336,12 @@ class CallChecker
 
             if (($this_class = ClassLikeChecker::getThisClass()) &&
                 (
-                    $this_class === $statements_checker->getAbsoluteClass() ||
-                    ClassChecker::classExtends($this_class, $statements_checker->getAbsoluteClass()) ||
-                    TraitChecker::traitExists($statements_checker->getAbsoluteClass())
+                    $this_class === $statements_checker->getFullQualifiedClass() ||
+                    ClassChecker::classExtends($this_class, $statements_checker->getFullQualifiedClass()) ||
+                    TraitChecker::traitExists($statements_checker->getFullQualifiedClass())
                 )
             ) {
-                $method_id = $statements_checker->getAbsoluteClass() . '::' . strtolower($stmt->name);
+                $method_id = $statements_checker->getFullQualifiedClass() . '::' . strtolower($stmt->name);
 
                 if ($statements_checker->checkInsideMethod($method_id, $context) === false) {
                     return false;
@@ -360,13 +360,13 @@ class CallChecker
             $return_type = null;
 
             foreach ($class_type->types as $type) {
-                $absolute_class = $type->value;
+                $fq_class_name = $type->value;
 
-                $is_mock = ExpressionChecker::isMock($absolute_class);
+                $is_mock = ExpressionChecker::isMock($fq_class_name);
 
                 $has_mock = $has_mock || $is_mock;
 
-                switch ($absolute_class) {
+                switch ($fq_class_name) {
                     case 'null':
                         if (IssueBuffer::accepts(
                             new NullReference(
@@ -412,20 +412,20 @@ class CallChecker
                         break;
 
                     case 'static':
-                        $absolute_class = (string) $context->self;
+                        $fq_class_name = (string) $context->self;
                         // fall through to default
 
                     default:
-                        if (MethodChecker::methodExists($absolute_class . '::__call') ||
+                        if (MethodChecker::methodExists($fq_class_name . '::__call') ||
                             $is_mock ||
-                            $context->isPhantomClass($absolute_class)
+                            $context->isPhantomClass($fq_class_name)
                         ) {
                             $return_type = Type::getMixed();
                             continue;
                         }
 
-                        $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
-                            $absolute_class,
+                        $does_class_exist = ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                            $fq_class_name,
                             $statements_checker->getCheckedFileName(),
                             $stmt->getLine(),
                             $statements_checker->getSuppressedIssues()
@@ -435,8 +435,8 @@ class CallChecker
                             return $does_class_exist;
                         }
 
-                        $method_id = $absolute_class . '::' . strtolower($stmt->name);
-                        $cased_method_id = $absolute_class . '::' . $stmt->name;
+                        $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+                        $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
                         $does_method_exist = MethodChecker::checkMethodExists(
                             $cased_method_id,
@@ -478,7 +478,7 @@ class CallChecker
                             $return_type_candidate = ExpressionChecker::fleshOutTypes(
                                 $return_type_candidate,
                                 $stmt->args,
-                                $absolute_class,
+                                $fq_class_name,
                                 $method_id
                             );
 
@@ -530,18 +530,18 @@ class CallChecker
         }
 
         $method_id = null;
-        $absolute_class = null;
+        $fq_class_name = null;
 
         $lhs_type = null;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            $absolute_class = null;
+            $fq_class_name = null;
 
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($stmt->class->parts[0] === 'parent') {
-                    $absolute_class = $statements_checker->getParentClass();
+                    $fq_class_name = $statements_checker->getParentClass();
 
-                    if ($absolute_class === null) {
+                    if ($fq_class_name === null) {
                         if (IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot call method on parent as this class does not extend another',
@@ -560,25 +560,25 @@ class CallChecker
                         ? $statements_checker->getNamespace() . '\\'
                         : '';
 
-                    $absolute_class = $namespace . $statements_checker->getClassName();
+                    $fq_class_name = $namespace . $statements_checker->getClassName();
                 }
 
-                if ($context->isPhantomClass($absolute_class)) {
+                if ($context->isPhantomClass($fq_class_name)) {
                     return null;
                 }
             } elseif ($context->check_classes) {
-                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName(
+                $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromName(
                     $stmt->class,
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
 
-                if ($context->isPhantomClass($absolute_class)) {
+                if ($context->isPhantomClass($fq_class_name)) {
                     return null;
                 }
 
-                $does_class_exist = ClassLikeChecker::checkAbsoluteClassOrInterface(
-                    $absolute_class,
+                $does_class_exist = ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                    $fq_class_name,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine(),
                     $statements_checker->getSuppressedIssues()
@@ -591,7 +591,7 @@ class CallChecker
 
             if ($stmt->class->parts === ['parent'] && is_string($stmt->name)) {
                 if (ClassLikeChecker::getThisClass()) {
-                    $method_id = $absolute_class . '::' . strtolower($stmt->name);
+                    $method_id = $fq_class_name . '::' . strtolower($stmt->name);
 
                     if ($statements_checker->checkInsideMethod($method_id, $context) === false) {
                         return false;
@@ -599,8 +599,8 @@ class CallChecker
                 }
             }
 
-            if ($absolute_class) {
-                $lhs_type = new Type\Union([new Type\Atomic($absolute_class)]);
+            if ($fq_class_name) {
+                $lhs_type = new Type\Union([new Type\Atomic($fq_class_name)]);
             }
         } else {
             ExpressionChecker::check($statements_checker, $stmt->class, $context);
@@ -616,18 +616,18 @@ class CallChecker
         $has_mock = false;
 
         foreach ($lhs_type->types as $lhs_type_part) {
-            $absolute_class = $lhs_type_part->value;
+            $fq_class_name = $lhs_type_part->value;
 
-            $is_mock = ExpressionChecker::isMock($absolute_class);
+            $is_mock = ExpressionChecker::isMock($fq_class_name);
 
             $has_mock = $has_mock || $is_mock;
 
             if (is_string($stmt->name) &&
-                !MethodChecker::methodExists($absolute_class . '::__callStatic') &&
+                !MethodChecker::methodExists($fq_class_name . '::__callStatic') &&
                 !$is_mock
             ) {
-                $method_id = $absolute_class . '::' . strtolower($stmt->name);
-                $cased_method_id = $absolute_class . '::' . $stmt->name;
+                $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+                $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
                 $does_method_exist = MethodChecker::checkMethodExists(
                     $cased_method_id,
@@ -653,7 +653,7 @@ class CallChecker
                 if ($stmt->class instanceof PhpParser\Node\Name
                     && $stmt->class->parts[0] !== 'parent'
                     && $context->self
-                    && ($statements_checker->isStatic() || !ClassChecker::classExtends($context->self, $absolute_class))
+                    && ($statements_checker->isStatic() || !ClassChecker::classExtends($context->self, $fq_class_name))
                 ) {
                     if (MethodChecker::checkMethodStatic(
                         $method_id,
@@ -681,8 +681,8 @@ class CallChecker
                         $return_types,
                         $stmt->args,
                         $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
-                            ? $statements_checker->getAbsoluteClass()
-                            : $absolute_class,
+                            ? $statements_checker->getFullQualifiedClass()
+                            : $fq_class_name,
                         $method_id
                     );
 
@@ -730,7 +730,7 @@ class CallChecker
 
         $is_variadic = false;
 
-        $absolute_class = null;
+        $fq_class_name = null;
 
         $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
 
@@ -744,7 +744,7 @@ class CallChecker
             if ($in_call_map || !strpos($method_id, '::')) {
                 $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFileName());
             } else {
-                $absolute_class = explode('::', $method_id)[0];
+                $fq_class_name = explode('::', $method_id)[0];
                 $is_variadic = $is_mock || MethodChecker::isVariadic($method_id);
             }
         }
@@ -774,7 +774,7 @@ class CallChecker
                 } else {
                     $var_id = ExpressionChecker::getVarId(
                         $arg->value,
-                        $statements_checker->getAbsoluteClass(),
+                        $statements_checker->getFullQualifiedClass(),
                         $statements_checker->getNamespace(),
                         $statements_checker->getAliasedClasses()
                     );
@@ -868,7 +868,7 @@ class CallChecker
                         ExpressionChecker::fleshOutTypes(
                             clone $param_type,
                             [],
-                            $absolute_class,
+                            $fq_class_name,
                             $method_id
                         ),
                         $cased_method_id,
@@ -948,7 +948,7 @@ class CallChecker
 
                     $translated_param = FunctionLikeChecker::getTranslatedParam(
                         $closure_param,
-                        $statements_checker->getAbsoluteClass(),
+                        $statements_checker->getFullQualifiedClass(),
                         $statements_checker->getNamespace(),
                         $statements_checker->getAliasedClasses()
                     );

@@ -194,7 +194,7 @@ class FunctionChecker extends FunctionLikeChecker
         foreach ($function->getParams() as $param) {
             $param_array = self::getTranslatedParam(
                 $param,
-                $this->absolute_class,
+                $this->fq_class_name,
                 $this->namespace,
                 $this->getAliasedClasses()
             );
@@ -239,7 +239,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $return_type = Type::parseString(
                     is_string($function->returnType)
                         ? $function->returnType
-                        : ClassLikeChecker::getAbsoluteClassFromName(
+                        : ClassLikeChecker::getFullQualifiedClassFromName(
                             $function->returnType,
                             $this->namespace,
                             $this->getAliasedClasses()

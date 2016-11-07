@@ -57,14 +57,14 @@ class FetchChecker
 
         $stmt_var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
 
         $var_id = ExpressionChecker::getVarId(
             $stmt,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -162,7 +162,7 @@ class FetchChecker
             if (!$lhs_type_part->isObjectType()) {
                 $stmt_var_id = ExpressionChecker::getVarId(
                     $stmt->var,
-                    $statements_checker->getAbsoluteClass(),
+                    $statements_checker->getFullQualifiedClass(),
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
@@ -230,7 +230,7 @@ class FetchChecker
                 || $lhs_type_part->value === $context->self
                 || (
                     $statements_checker->getSource()->getSource() instanceof TraitChecker &&
-                    $lhs_type_part->value === $statements_checker->getSource()->getAbsoluteClass()
+                    $lhs_type_part->value === $statements_checker->getSource()->getFullQualifiedClass()
                 )
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
@@ -372,16 +372,16 @@ class FetchChecker
             $stmt->class->parts !== ['static']
         ) {
             if ($stmt->class->parts === ['self']) {
-                $absolute_class = (string)$context->self;
+                $fq_class_name = (string)$context->self;
             } else {
-                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName(
+                $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromName(
                     $stmt->class,
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
 
-                if (ClassLikeChecker::checkAbsoluteClassOrInterface(
-                    $absolute_class,
+                if (ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                    $fq_class_name,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine(),
                     $statements_checker->getSuppressedIssues()
@@ -390,14 +390,14 @@ class FetchChecker
                 }
             }
 
-            $const_id = $absolute_class . '::' . $stmt->name;
+            $const_id = $fq_class_name . '::' . $stmt->name;
 
             if ($stmt->name === 'class') {
                 $stmt->inferredType = Type::getString();
                 return null;
             }
 
-            $class_constants = ClassLikeChecker::getConstantsForClass($absolute_class, \ReflectionProperty::IS_PUBLIC);
+            $class_constants = ClassLikeChecker::getConstantsForClass($fq_class_name, \ReflectionProperty::IS_PUBLIC);
 
             if (!isset($class_constants[$stmt->name])) {
                 if (IssueBuffer::accepts(
@@ -445,14 +445,14 @@ class FetchChecker
         }
 
         $method_id = null;
-        $absolute_class = null;
+        $fq_class_name = null;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($stmt->class->parts[0] === 'parent') {
-                    $absolute_class = $statements_checker->getParentClass();
+                    $fq_class_name = $statements_checker->getParentClass();
 
-                    if ($absolute_class === null) {
+                    if ($fq_class_name === null) {
                         if (IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot check property fetch on parent as this class does not extend another',
@@ -467,27 +467,27 @@ class FetchChecker
                         return;
                     }
                 } else {
-                    $absolute_class = ($statements_checker->getNamespace()
+                    $fq_class_name = ($statements_checker->getNamespace()
                         ? $statements_checker->getNamespace() . '\\'
                         : '') . $statements_checker->getClassName();
                 }
 
-                if ($context->isPhantomClass($absolute_class)) {
+                if ($context->isPhantomClass($fq_class_name)) {
                     return null;
                 }
             } elseif ($context->check_classes) {
-                $absolute_class = ClassLikeChecker::getAbsoluteClassFromName(
+                $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromName(
                     $stmt->class,
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
 
-                if ($context->isPhantomClass($absolute_class)) {
+                if ($context->isPhantomClass($fq_class_name)) {
                     return null;
                 }
 
-                if (ClassLikeChecker::checkAbsoluteClassOrInterface(
-                    $absolute_class,
+                if (ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                    $fq_class_name,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine(),
                     $statements_checker->getSuppressedIssues()
@@ -496,17 +496,17 @@ class FetchChecker
                 }
             }
 
-            $stmt->class->inferredType = $absolute_class ? new Type\Union([new Type\Atomic($absolute_class)]) : null;
+            $stmt->class->inferredType = $fq_class_name ? new Type\Union([new Type\Atomic($fq_class_name)]) : null;
         }
 
-        if ($absolute_class &&
+        if ($fq_class_name &&
             $context->check_variables &&
             is_string($stmt->name) &&
-            !ExpressionChecker::isMock($absolute_class)
+            !ExpressionChecker::isMock($fq_class_name)
         ) {
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
-                $statements_checker->getAbsoluteClass(),
+                $statements_checker->getFullQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
@@ -517,30 +517,30 @@ class FetchChecker
                 return null;
             }
 
-            if ($absolute_class === $context->self
+            if ($fq_class_name === $context->self
                 || (
                     $statements_checker->getSource()->getSource() instanceof TraitChecker &&
-                    $absolute_class === $statements_checker->getSource()->getAbsoluteClass()
+                    $fq_class_name === $statements_checker->getSource()->getFullQualifiedClass()
                 )
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
-            } elseif ($context->self && ClassChecker::classExtends($context->self, $absolute_class)) {
+            } elseif ($context->self && ClassChecker::classExtends($context->self, $fq_class_name)) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {
                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
             }
 
             $visible_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-                $absolute_class,
+                $fq_class_name,
                 $class_visibility
             );
 
             if (!isset($visible_class_properties[$stmt->name])) {
                 $all_class_properties = [];
 
-                if ($absolute_class !== $context->self) {
+                if ($fq_class_name !== $context->self) {
                     $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-                        $absolute_class,
+                        $fq_class_name,
                         \ReflectionProperty::IS_PRIVATE
                     );
                 }
@@ -604,7 +604,7 @@ class FetchChecker
         $nesting = 0;
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses(),
             $nesting
@@ -617,7 +617,7 @@ class FetchChecker
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );

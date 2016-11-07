@@ -194,7 +194,7 @@ class FileChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new ClassChecker($stmt, $this, $stmt->name);
 
-                        $this->declared_classes[] = $class_checker->getAbsoluteClass();
+                        $this->declared_classes[] = $class_checker->getFullQualifiedClass();
                         $class_checker->check($check_functions);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
@@ -202,7 +202,7 @@ class FileChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new InterfaceChecker($stmt, $this, $stmt->name);
 
-                        $this->declared_classes[] = $class_checker->getAbsoluteClass();
+                        $this->declared_classes[] = $class_checker->getFullQualifiedClass();
                         $class_checker->check(false);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
@@ -260,7 +260,7 @@ class FileChecker implements StatementsSource
      * @param  string $file_name
      * @return string
      */
-    public static function getAbsoluteClassFromNameInFile($class, $namespace, $file_name)
+    public static function getFullQualifiedClassFromNameInFile($class, $namespace, $file_name)
     {
         if (isset(self::$file_checkers[$file_name])) {
             $aliased_classes = self::$file_checkers[$file_name]->getAliasedClasses($namespace);
@@ -270,7 +270,7 @@ class FileChecker implements StatementsSource
             $aliased_classes = $file_checker->getAliasedClasses($namespace);
         }
 
-        return ClassLikeChecker::getAbsoluteClassFromString($class, $namespace, $aliased_classes);
+        return ClassLikeChecker::getFullQualifiedClassFromString($class, $namespace, $aliased_classes);
     }
 
     /**
@@ -440,7 +440,7 @@ class FileChecker implements StatementsSource
     /**
      * @return null
      */
-    public function getAbsoluteClass()
+    public function getFullQualifiedClass()
     {
         return null;
     }
@@ -583,23 +583,23 @@ class FileChecker implements StatementsSource
 
     /**
      * @param string $source_file
-     * @param string $absolute_class
+     * @param string $fq_class_name
      * @return void
      */
-    public static function addFileReferenceToClass($source_file, $absolute_class)
+    public static function addFileReferenceToClass($source_file, $fq_class_name)
     {
         self::$referencing_files[$source_file] = true;
-        self::$file_references_to_class[$absolute_class][$source_file] = true;
+        self::$file_references_to_class[$fq_class_name][$source_file] = true;
     }
 
     /**
      * @param string $source_file
-     * @param string $absolute_class
+     * @param string $fq_class_name
      * @return void
      */
-    public static function addFileInheritanceToClass($source_file, $absolute_class)
+    public static function addFileInheritanceToClass($source_file, $fq_class_name)
     {
-        self::$files_inheriting_classes[$absolute_class][$source_file] = true;
+        self::$files_inheriting_classes[$fq_class_name][$source_file] = true;
     }
 
     /**

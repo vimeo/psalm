@@ -67,29 +67,29 @@ class NamespaceChecker implements StatementsSource
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
-                $absolute_class = ClassLikeChecker::getAbsoluteClassFromString($stmt->name, $this->namespace_name, []);
+                $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromString($stmt->name, $this->namespace_name, []);
 
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                    $this->declared_classes[$absolute_class] = 1;
+                    $this->declared_classes[$fq_class_name] = 1;
 
                     if ($check_classes) {
-                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class)
-                            ?: new ClassChecker($stmt, $this, $absolute_class);
+                        $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($fq_class_name)
+                            ?: new ClassChecker($stmt, $this, $fq_class_name);
 
                         $class_checker->check($check_class_statements);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
-                            ?: new InterfaceChecker($stmt, $this, $absolute_class);
-                        $this->declared_classes[] = $class_checker->getAbsoluteClass();
+                            ?: new InterfaceChecker($stmt, $this, $fq_class_name);
+                        $this->declared_classes[] = $class_checker->getFullQualifiedClass();
                         $class_checker->check(false);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
                         // register the trait checker
-                        ClassLikeChecker::getClassLikeCheckerFromClass($absolute_class)
-                            ?: new TraitChecker($stmt, $this, $absolute_class);
+                        ClassLikeChecker::getClassLikeCheckerFromClass($fq_class_name)
+                            ?: new TraitChecker($stmt, $this, $fq_class_name);
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
@@ -148,7 +148,7 @@ class NamespaceChecker implements StatementsSource
     /**
      * @return null
      */
-    public function getAbsoluteClass()
+    public function getFullQualifiedClass()
     {
         return null;
     }

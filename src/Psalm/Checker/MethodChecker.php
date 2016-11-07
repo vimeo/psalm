@@ -255,8 +255,8 @@ class MethodChecker extends FunctionLikeChecker
      */
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
-        $method_id = $this->absolute_class . '::' . strtolower($method->name);
-        $cased_method_id = self::$cased_method_ids[$method_id] = $this->absolute_class . '::' . $method->name;
+        $method_id = $this->fq_class_name . '::' . strtolower($method->name);
+        $cased_method_id = self::$cased_method_ids[$method_id] = $this->fq_class_name . '::' . $method->name;
 
         if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
             $this->suppressed_issues = self::$method_suppress[$method_id];
@@ -287,7 +287,7 @@ class MethodChecker extends FunctionLikeChecker
         foreach ($method->getParams() as $param) {
             $param_array = $this->getTranslatedParam(
                 $param,
-                $this->absolute_class,
+                $this->fq_class_name,
                 $this->namespace,
                 $this->getAliasedClasses()
             );
@@ -307,7 +307,7 @@ class MethodChecker extends FunctionLikeChecker
             $return_type = Type::parseString(
                 is_string($method->returnType)
                     ? $method->returnType
-                    : ClassLikeChecker::getAbsoluteClassFromName(
+                    : ClassLikeChecker::getFullQualifiedClassFromName(
                         $method->returnType,
                         $this->namespace,
                         $this->getAliasedClasses()
@@ -349,7 +349,7 @@ class MethodChecker extends FunctionLikeChecker
                         $return_type = Type::parseString(
                             $this->fixUpLocalType(
                                 (string)$docblock_info['return_type'],
-                                $this->absolute_class,
+                                $this->fq_class_name,
                                 $this->namespace,
                                 $this->getAliasedClasses()
                             )
@@ -402,14 +402,14 @@ class MethodChecker extends FunctionLikeChecker
             $return_type_token = Type::fixScalarTerms($return_type_token);
 
             if ($return_type_token[0] === strtoupper($return_type_token[0])) {
-                $absolute_class = explode('::', $method_id)[0];
+                $fq_class_name = explode('::', $method_id)[0];
 
                 if ($return_type_token === '$this') {
-                    $return_type_token = $absolute_class;
+                    $return_type_token = $fq_class_name;
                     continue;
                 }
 
-                $return_type_token = FileChecker::getAbsoluteClassFromNameInFile(
+                $return_type_token = FileChecker::getFullQualifiedClassFromNameInFile(
                     $return_type_token,
                     self::$method_namespaces[$method_id],
                     self::$method_files[$method_id]
@@ -541,7 +541,7 @@ class MethodChecker extends FunctionLikeChecker
             }
         }
 
-        if ($source->getSource() instanceof TraitChecker && $method_class === $source->getAbsoluteClass()) {
+        if ($source->getSource() instanceof TraitChecker && $method_class === $source->getFullQualifiedClass()) {
             return null;
         }
 

@@ -15,9 +15,9 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @param   PhpParser\Node\Stmt\ClassLike   $class
      * @param   StatementsSource                $source
-     * @param   string                          $absolute_class
+     * @param   string                          $fq_class_name
      */
-    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $fq_class_name)
     {
         if (!$class instanceof PhpParser\Node\Stmt\Trait_) {
             throw new \InvalidArgumentException('Trait checker must be passed a trait');
@@ -27,13 +27,13 @@ class TraitChecker extends ClassLikeChecker
         $this->namespace = $source->getNamespace();
         $this->aliased_classes = $source->getAliasedClasses();
         $this->file_name = $source->getFileName();
-        $this->absolute_class = $absolute_class;
+        $this->fq_class_name = $fq_class_name;
 
         $this->parent_class = null;
 
         $this->suppressed_issues = $source->getSuppressedIssues();
 
-        self::$class_checkers[$absolute_class] = $this;
+        self::$class_checkers[$fq_class_name] = $this;
     }
 
     /**

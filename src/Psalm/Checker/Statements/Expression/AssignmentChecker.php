@@ -46,14 +46,14 @@ class AssignmentChecker
     ) {
         $var_id = ExpressionChecker::getVarId(
             $assign_var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $assign_var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -113,7 +113,7 @@ class AssignmentChecker
 
                 $list_var_id = ExpressionChecker::getVarId(
                     $var,
-                    $statements_checker->getAbsoluteClass(),
+                    $statements_checker->getFullQualifiedClass(),
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
@@ -248,7 +248,7 @@ class AssignmentChecker
 
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
-                $statements_checker->getAbsoluteClass(),
+                $statements_checker->getFullQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
@@ -515,30 +515,30 @@ class AssignmentChecker
 
         $var_id = ExpressionChecker::getVarId(
             $stmt,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
 
-        $absolute_class = (string)$stmt->class->inferredType;
+        $fq_class_name = (string)$stmt->class->inferredType;
 
         if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') ||
-            $absolute_class === $context->self
+            $fq_class_name === $context->self
         ) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
-        } elseif ($context->self && ClassChecker::classExtends($absolute_class, $context->self)) {
+        } elseif ($context->self && ClassChecker::classExtends($fq_class_name, $context->self)) {
             $class_visibility = \ReflectionProperty::IS_PROTECTED;
         } else {
             $class_visibility = \ReflectionProperty::IS_PUBLIC;
         }
 
         $class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-            $absolute_class,
+            $fq_class_name,
             $class_visibility
         );
 
         $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-            $absolute_class,
+            $fq_class_name,
             $class_visibility
         );
 
@@ -549,7 +549,7 @@ class AssignmentChecker
 
             if ($class_visibility !== \ReflectionProperty::IS_PRIVATE) {
                 $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-                    $absolute_class,
+                    $fq_class_name,
                     \ReflectionProperty::IS_PRIVATE
                 );
             }
@@ -601,7 +601,7 @@ class AssignmentChecker
         if ($class_property_type === false) {
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
-                    'Property ' . $absolute_class . '::$' . $prop_name . ' does not have a declared type',
+                    'Property ' . $fq_class_name . '::$' . $prop_name . ' does not have a declared type',
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine()
                 ),
@@ -623,7 +623,7 @@ class AssignmentChecker
             return null;
         }
 
-        $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $absolute_class);
+        $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $fq_class_name);
 
         if (!$assignment_type->isIn($class_property_type)) {
             if (IssueBuffer::accepts(
@@ -682,7 +682,7 @@ class AssignmentChecker
         $nesting = 0;
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses(),
             $nesting
@@ -711,7 +711,7 @@ class AssignmentChecker
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
-            $statements_checker->getAbsoluteClass(),
+            $statements_checker->getFullQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );

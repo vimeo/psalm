@@ -75,7 +75,7 @@ class StatementsChecker
     /**
      * @var string
      */
-    protected $absolute_class;
+    protected $fq_class_name;
 
     /**
      * @var TypeChecker
@@ -105,7 +105,7 @@ class StatementsChecker
         $this->aliased_classes = $this->source->getAliasedClasses();
         $this->namespace = $this->source->getNamespace();
         $this->is_static = $this->source->isStatic();
-        $this->absolute_class = $this->source->getAbsoluteClass();
+        $this->fq_class_name = $this->source->getFullQualifiedClass();
         $this->class_name = $this->source->getClassName();
         $this->parent_class = $this->source->getParentClass();
         $this->suppressed_issues = $this->source->getSuppressedIssues();
@@ -181,7 +181,7 @@ class StatementsChecker
                 foreach ($stmt->vars as $var) {
                     $var_id = ExpressionChecker::getArrayVarId(
                         $var,
-                        $this->absolute_class,
+                        $this->fq_class_name,
                         $this->namespace,
                         $this->aliased_classes
                     );
@@ -288,7 +288,7 @@ class StatementsChecker
 
                     if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
                         ClassLikeChecker::setConstantType(
-                            $this->absolute_class,
+                            $this->fq_class_name,
                             $const->name,
                             $const->value->inferredType
                         );
@@ -463,11 +463,11 @@ class StatementsChecker
      */
     protected static function getMethodFromCallBlock($call, array $args, $method_id)
     {
-        $absolute_class = explode('::', $method_id)[0];
+        $fq_class_name = explode('::', $method_id)[0];
 
         $original_call = $call;
 
-        $call = preg_replace('/^\$this(->|::)/', $absolute_class . '::', $call);
+        $call = preg_replace('/^\$this(->|::)/', $fq_class_name . '::', $call);
 
         $call = preg_replace('/\(\)$/', '', $call);
 
@@ -857,9 +857,9 @@ class StatementsChecker
     /**
      * @return string
      */
-    public function getAbsoluteClass()
+    public function getFullQualifiedClass()
     {
-        return $this->absolute_class;
+        return $this->fq_class_name;
     }
 
     /**

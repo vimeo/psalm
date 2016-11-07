@@ -40,27 +40,27 @@ class ClassChecker extends ClassLikeChecker
     /**
      * @param PhpParser\Node\Stmt\ClassLike $class
      * @param StatementsSource              $source
-     * @param string|null                   $absolute_class
+     * @param string|null                   $fq_class_name
      */
-    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $absolute_class)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $fq_class_name)
     {
         if (!$class instanceof PhpParser\Node\Stmt\Class_) {
             throw new \InvalidArgumentException('Bad');
         }
 
-        if ($absolute_class === null) {
-            $absolute_class = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
+        if ($fq_class_name === null) {
+            $fq_class_name = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
         }
 
-        parent::__construct($class, $source, $absolute_class);
+        parent::__construct($class, $source, $fq_class_name);
 
-        self::$existing_classes[$absolute_class] = true;
-        self::$existing_classes_ci[strtolower($absolute_class)] = true;
+        self::$existing_classes[$fq_class_name] = true;
+        self::$existing_classes_ci[strtolower($fq_class_name)] = true;
 
-        self::$class_implements[$absolute_class] = [];
+        self::$class_implements[$fq_class_name] = [];
 
         if ($this->class->extends) {
-            $this->parent_class = self::getAbsoluteClassFromName(
+            $this->parent_class = self::getFullQualifiedClassFromName(
                 $this->class->extends,
                 $this->namespace,
                 $this->aliased_classes
@@ -68,51 +68,51 @@ class ClassChecker extends ClassLikeChecker
         }
 
         foreach ($class->implements as $interface_name) {
-            $absolute_interface_name = self::getAbsoluteClassFromName(
+            $fq_interface_name = self::getFullQualifiedClassFromName(
                 $interface_name,
                 $this->namespace,
                 $this->aliased_classes
             );
 
-            self::$class_implements[$absolute_class][strtolower($absolute_interface_name)] = $absolute_interface_name;
+            self::$class_implements[$fq_class_name][strtolower($fq_interface_name)] = $fq_interface_name;
         }
     }
 
     /**
      * Determine whether or not a given class exists
      *
-     * @param  string $absolute_class
+     * @param  string $fq_class_name
      * @return bool
      */
-    public static function classExists($absolute_class)
+    public static function classExists($fq_class_name)
     {
-        if (isset(self::$existing_classes_ci[strtolower($absolute_class)])) {
-            return self::$existing_classes_ci[strtolower($absolute_class)];
+        if (isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
+            return self::$existing_classes_ci[strtolower($fq_class_name)];
         }
 
-        if (in_array($absolute_class, self::$SPECIAL_TYPES)) {
+        if (in_array($fq_class_name, self::$SPECIAL_TYPES)) {
             return false;
         }
 
         $old_level = error_reporting();
         error_reporting(0);
-        $class_exists = class_exists($absolute_class);
+        $class_exists = class_exists($fq_class_name);
         error_reporting($old_level);
 
         if ($class_exists) {
             $old_level = error_reporting();
             error_reporting(0);
-            $reflected_class = new \ReflectionClass($absolute_class);
+            $reflected_class = new \ReflectionClass($fq_class_name);
             error_reporting($old_level);
 
-            self::$existing_classes_ci[strtolower($absolute_class)] = true;
+            self::$existing_classes_ci[strtolower($fq_class_name)] = true;
             self::$existing_classes[$reflected_class->getName()] = true;
 
             return true;
         }
 
         // we can only be sure that the case-sensitive version does not exist
-        self::$existing_classes[$absolute_class] = false;
+        self::$existing_classes[$fq_class_name] = false;
 
         return false;
     }
@@ -120,90 +120,90 @@ class ClassChecker extends ClassLikeChecker
     /**
      * Determine whether or not a class has the correct casing
      *
-     * @param  string  $absolute_class
+     * @param  string  $fq_class_name
      * @return bool
      */
-    public static function hasCorrectCasing($absolute_class)
+    public static function hasCorrectCasing($fq_class_name)
     {
-        if (!self::classExists($absolute_class)) {
-            throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $absolute_class);
+        if (!self::classExists($fq_class_name)) {
+            throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $fq_class_name);
         }
 
-        return isset(self::$existing_classes[$absolute_class]);
+        return isset(self::$existing_classes[$fq_class_name]);
     }
 
     /**
      * Determine whether or not a class extends a parent
      *
-     * @param  string $absolute_class
+     * @param  string $fq_class_name
      * @param  string $possible_parent
      * @return bool
      */
-    public static function classExtends($absolute_class, $possible_parent)
+    public static function classExtends($fq_class_name, $possible_parent)
     {
-        if (isset(self::$class_extends[$absolute_class][$possible_parent])) {
-            return self::$class_extends[$absolute_class][$possible_parent];
+        if (isset(self::$class_extends[$fq_class_name][$possible_parent])) {
+            return self::$class_extends[$fq_class_name][$possible_parent];
         }
 
-        if (!self::classExists($absolute_class) || !self::classExists($possible_parent)) {
+        if (!self::classExists($fq_class_name) || !self::classExists($possible_parent)) {
             return false;
         }
 
-        if (!isset(self::$class_extends[$absolute_class])) {
-            self::$class_extends[$absolute_class] = [];
+        if (!isset(self::$class_extends[$fq_class_name])) {
+            self::$class_extends[$fq_class_name] = [];
         }
 
-        self::$class_extends[$absolute_class][$possible_parent] = is_subclass_of($absolute_class, $possible_parent);
+        self::$class_extends[$fq_class_name][$possible_parent] = is_subclass_of($fq_class_name, $possible_parent);
 
-        return self::$class_extends[$absolute_class][$possible_parent];
+        return self::$class_extends[$fq_class_name][$possible_parent];
     }
 
     /**
      * Get all the interfaces a given class implements
      *
-     * @param  string $absolute_class
+     * @param  string $fq_class_name
      * @return array<string>
      */
-    public static function getInterfacesForClass($absolute_class)
+    public static function getInterfacesForClass($fq_class_name)
     {
-        if (!isset(self::$class_implements[$absolute_class])) {
+        if (!isset(self::$class_implements[$fq_class_name])) {
             /** @var string[] */
-            $class_implements = class_implements($absolute_class);
+            $class_implements = class_implements($fq_class_name);
 
-            self::$class_implements[$absolute_class] = [];
+            self::$class_implements[$fq_class_name] = [];
 
             foreach ($class_implements as $interface) {
-                 self::$class_implements[$absolute_class][strtolower($interface)] = $interface;
+                 self::$class_implements[$fq_class_name][strtolower($interface)] = $interface;
             }
         }
 
-        return self::$class_implements[$absolute_class];
+        return self::$class_implements[$fq_class_name];
     }
 
     /**
      * Check whether a class implements an interface
      *
-     * @param  string $absolute_class
+     * @param  string $fq_class_name
      * @param  string $interface
      * @return bool
      */
-    public static function classImplements($absolute_class, $interface)
+    public static function classImplements($fq_class_name, $interface)
     {
         $interface_id = strtolower($interface);
 
-        if ($interface_id === 'callable' && $absolute_class === 'Closure') {
+        if ($interface_id === 'callable' && $fq_class_name === 'Closure') {
             return true;
         }
 
-        if (isset(self::$class_implements[$absolute_class][$interface_id])) {
+        if (isset(self::$class_implements[$fq_class_name][$interface_id])) {
             return true;
         }
 
-        if (isset(self::$class_implements[$absolute_class])) {
+        if (isset(self::$class_implements[$fq_class_name])) {
             return false;
         }
 
-        if (!ClassChecker::classExists($absolute_class)) {
+        if (!ClassChecker::classExists($fq_class_name)) {
             return false;
         }
 
@@ -211,7 +211,7 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        $class_implementations = self::getInterfacesForClass($absolute_class);
+        $class_implementations = self::getInterfacesForClass($fq_class_name);
 
         return isset($class_implementations[$interface_id]);
     }

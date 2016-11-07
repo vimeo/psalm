@@ -832,7 +832,7 @@ class TypeChecker
     ) {
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
-                $instanceof_class = ClassLikeChecker::getAbsoluteClassFromName(
+                $instanceof_class = ClassLikeChecker::getFullQualifiedClassFromName(
                     $stmt->class,
                     $namespace,
                     $aliased_classes
@@ -1565,10 +1565,10 @@ class TypeChecker
     /**
      * @param  Type\Union $declared_type
      * @param  Type\Union $inferred_type
-     * @param  string     $absolute_class
+     * @param  string     $fq_class_name
      * @return boolean
      */
-    public static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type, $absolute_class)
+    public static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type, $fq_class_name)
     {
         if ($declared_type->isMixed() || $inferred_type->isEmpty()) {
             return true;
@@ -1578,7 +1578,7 @@ class TypeChecker
             return false;
         }
 
-        $inferred_type = ExpressionChecker::fleshOutTypes($inferred_type, [], $absolute_class, '');
+        $inferred_type = ExpressionChecker::fleshOutTypes($inferred_type, [], $fq_class_name, '');
 
         $simple_declared_types = array_filter(
             array_keys($declared_type->types),
@@ -1651,7 +1651,7 @@ class TypeChecker
                 if (!self::hasIdenticalTypes(
                     $declared_atomic_type->type_params[$offset],
                     $inferred_atomic_type->type_params[$offset],
-                    $absolute_class
+                    $fq_class_name
                 )) {
                     return false;
                 }
@@ -1682,7 +1682,7 @@ class TypeChecker
                 if (!self::hasIdenticalTypes(
                     $type_param,
                     $inferred_atomic_type->properties[$property_name],
-                    $absolute_class
+                    $fq_class_name
                 )) {
                     return false;
                 }
