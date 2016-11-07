@@ -495,6 +495,7 @@ class FileChecker implements StatementsSource
 
     /**
      * @param string|null $file_name
+     * @return  void
      */
     public function setIncludeFileName($file_name)
     {

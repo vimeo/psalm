@@ -155,6 +155,10 @@ class ProjectChecker
         }
     }
 
+    /**
+     * @param  Config $config
+     * @return array<int, string>
+     */
     protected static function getAllFiles(Config $config)
     {
         $file_extensions = $config->getFileExtensions();

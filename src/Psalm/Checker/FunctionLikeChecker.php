@@ -12,6 +12,7 @@ use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -399,6 +400,7 @@ abstract class FunctionLikeChecker implements StatementsSource
 
     /**
      * @param string|null $file_name
+     * @return  void
      */
     public function setIncludeFileName($file_name)
     {
@@ -449,11 +451,9 @@ abstract class FunctionLikeChecker implements StatementsSource
             return null;
         }
 
-        if ($this->function instanceof ClassMethod || $this->function instanceof Function_) {
-            if ($this->function->name === '__construct') {
-                // we know that constructors always return this
-                return null;
-            }
+        if ($this->function instanceof ClassMethod && substr($this->function->name, 0, 2) === '__') {
+            // do not check __construct, __set, __get, __call etc.
+            return null;
         }
 
         $method_id = (string)$this->getMethodId();
@@ -470,6 +470,17 @@ abstract class FunctionLikeChecker implements StatementsSource
         }
 
         if (!$method_return_types) {
+            if (IssueBuffer::accepts(
+                new MissingReturnType(
+                    'Method ' . $cased_method_id . ' does not have a return type',
+                    $this->file_name,
+                    $this->function->getLine()
+                ),
+                $this->suppressed_issues
+            )) {
+                // fall through
+            }
+
             return null;
         }
 

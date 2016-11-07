@@ -256,7 +256,7 @@ class MethodChecker extends FunctionLikeChecker
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
         $method_id = $this->absolute_class . '::' . strtolower($method->name);
-        self::$cased_method_ids[$method_id] = $this->absolute_class . '::' . $method->name;
+        $cased_method_id = self::$cased_method_ids[$method_id] = $this->absolute_class . '::' . $method->name;
 
         if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
             $this->suppressed_issues = self::$method_suppress[$method_id];
@@ -323,7 +323,7 @@ class MethodChecker extends FunctionLikeChecker
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Invalid type passed in docblock for ' . $this->getMethodId(),
+                        'Invalid type passed in docblock for ' . $cased_method_id,
                         $this->getCheckedFileName(),
                         $method->getLine()
                     )

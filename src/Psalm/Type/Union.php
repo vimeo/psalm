@@ -41,16 +41,24 @@ class Union extends Type
         );
     }
 
+    /** @return void */
     public function removeType($type_string)
     {
         unset($this->types[$type_string]);
     }
 
+    /**
+     * @param  string  $type_string
+     * @return boolean
+     */
     public function hasType($type_string)
     {
         return isset($this->types[$type_string]);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasGeneric()
     {
         foreach ($this->types as $type) {
@@ -62,21 +70,33 @@ class Union extends Type
         return false;
     }
 
+    /**
+     * @return boolean
+     */
     public function hasArray()
     {
         return isset($this->types['array']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasObject()
     {
         return isset($this->types['object']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasObjectLike()
     {
         return isset($this->types['array']) && $this->types['array'] instanceof ObjectLike;
     }
 
+    /**
+     * @return boolean
+     */
     public function hasObjectType()
     {
         foreach ($this->types as $type) {
@@ -88,80 +108,121 @@ class Union extends Type
         return false;
     }
 
+    /**
+     * @return boolean
+     */
     public function isNullable()
     {
         return isset($this->types['null']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasString()
     {
         return isset($this->types['string']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasInt()
     {
         return isset($this->types['int']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasNumeric()
     {
         return isset($this->types['numeric']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasNumericType()
     {
         return isset($this->types['int']) || isset($this->types['float']) || isset($this->types['numeric']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasScalar()
     {
         return isset($this->types['scalar']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasResource()
     {
         return isset($this->types['resource']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasCallable()
     {
         return isset($this->types['callable']);
     }
 
+    /**
+     * @return boolean
+     */
     public function hasGenerator()
     {
         return isset($this->types['Generator']);
     }
 
+    /**
+     * @return boolean
+     */
     public function isInt()
     {
         return isset($this->types['int']) && count($this->types) === 1;
     }
 
-    /** @return bool */
+    /**
+     * @return boolean
+     */
     public function isMixed()
     {
         return isset($this->types['mixed']);
     }
 
-    /** @return bool */
+    /**
+     * @return boolean
+     */
     public function isNull()
     {
         return count($this->types) === 1 && isset($this->types['null']);
     }
 
-    /** @return bool */
+    /**
+     * @return boolean
+     */
     public function isVoid()
     {
         return isset($this->types['void']);
     }
 
-    /** @return bool */
+    /**
+     * @return boolean
+     */
     public function isEmpty()
     {
         return isset($this->types['empty']);
     }
 
+    /**
+     * @return void
+     */
     public function removeObjects()
     {
         foreach ($this->types as $key => $type) {
@@ -171,6 +232,9 @@ class Union extends Type
         }
     }
 
+    /**
+     * @return void
+     */
     public function substitute(Union $old_type, Union $new_type = null)
     {
         if ($this->isMixed()) {
@@ -188,6 +252,9 @@ class Union extends Type
         }
     }
 
+    /**
+     * @return boolean
+     */
     public function isIn(Union $parent)
     {
         foreach ($this->types as $type) {
@@ -199,6 +266,9 @@ class Union extends Type
         return true;
     }
 
+    /**
+     * @return boolean
+     */
     public function isSingle()
     {
         if (count($this->types) > 1) {
