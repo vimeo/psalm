@@ -140,6 +140,10 @@ abstract class FunctionLikeChecker implements StatementsSource
 
                 $function_params = MethodChecker::getMethodParams((string)$this->getMethodId());
 
+                if ($function_params === null) {
+                    throw new \InvalidArgumentException('Cannot get params for own method');
+                }
+
                 $implemented_method_ids = MethodChecker::getOverriddenMethodIds((string)$this->getMethodId());
 
                 if ($implemented_method_ids) {
@@ -155,6 +159,10 @@ abstract class FunctionLikeChecker implements StatementsSource
                         }
 
                         $implemented_params = MethodChecker::getMethodParams($implemented_method_id);
+
+                        if ($implemented_params === null) {
+                            continue;
+                        }
 
                         foreach ($implemented_params as $i => $implemented_param) {
                             if (!isset($function_params[$i])) {
@@ -931,13 +939,27 @@ abstract class FunctionLikeChecker implements StatementsSource
         $absolute_class = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
         if ($absolute_class && ClassLikeChecker::isUserDefined($absolute_class)) {
+            /** @var array<\Psalm\FunctionLikeParameter> */
             return MethodChecker::getMethodParams($method_id);
         } elseif (!$absolute_class && FunctionChecker::inCallMap($method_id)) {
             /** @var array<array<FunctionLikeParameter>> */
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
         } elseif ($absolute_class) {
-            // fall back to using reflected params anyway
-            return MethodChecker::getMethodParams($method_id);
+            if ($method_params = MethodChecker::getMethodParams($method_id)) {
+                // fall back to using reflected params anyway
+                return $method_params;
+            }
+
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+
+            $method_id = $declaring_method_id ?: $method_id;
+
+            if (!FunctionChecker::inCallMap($method_id)) {
+                throw new \InvalidArgumentException('Cannot get params for ' . $method_id);
+            }
+
+            /** @var array<array<FunctionLikeParameter>> */
+            $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
         } else {
             return FunctionChecker::getParams(strtolower($method_id), $file_name);
         }

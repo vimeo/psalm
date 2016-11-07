@@ -110,15 +110,15 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
-     * @return array<\Psalm\FunctionLikeParameter>
+     * @return array<\Psalm\FunctionLikeParameter>|null
      */
     public static function getMethodParams($method_id)
     {
         self::registerClassMethod($method_id);
 
-        $method_id = self::getDeclaringMethodId($method_id);
-
-        return self::$method_params[$method_id];
+        if ($method_id = self::getDeclaringMethodId($method_id)) {
+            return self::$method_params[$method_id];
+        }
     }
 
     /**
@@ -142,6 +142,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         self::registerClassMethod($method_id);
 
+        /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
 
         if (self::$method_return_types[$method_id]) {
@@ -229,6 +230,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         self::registerClassMethod($method_id);
 
+        /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
 
         if (!self::$static_methods[$method_id]) {
@@ -620,12 +622,15 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
-     * @return string
-     * @return void
+     * @return string|null
      */
     public static function getDeclaringMethodId($method_id)
     {
-        return self::$declaring_methods[$method_id];
+        if (isset(self::$declaring_methods[$method_id])) {
+            return self::$declaring_methods[$method_id];
+        }
+
+        return null;
     }
 
     /**

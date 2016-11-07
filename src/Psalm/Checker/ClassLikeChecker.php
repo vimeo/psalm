@@ -669,6 +669,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
         MethodChecker::registerClassMethod($method_id);
 
+        /** @var string */
         $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
         $declaring_class = explode('::', $declaring_method_id)[0];
 
@@ -1134,6 +1135,7 @@ abstract class ClassLikeChecker implements StatementsSource
 
         foreach ($class_methods as $method_name => $_) {
             $parent_method_id = $parent_class . '::' . $method_name;
+            /** @var string */
             $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
             $implemented_method_id = $this->absolute_class . '::' . $method_name;
 
