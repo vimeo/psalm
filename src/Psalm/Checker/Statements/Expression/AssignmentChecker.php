@@ -46,14 +46,14 @@ class AssignmentChecker
     ) {
         $var_id = ExpressionChecker::getVarId(
             $assign_var,
-            $statements_checker->getFullQualifiedClass(),
+            $statements_checker->getFullyQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $assign_var,
-            $statements_checker->getFullQualifiedClass(),
+            $statements_checker->getFullyQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -113,7 +113,7 @@ class AssignmentChecker
 
                 $list_var_id = ExpressionChecker::getVarId(
                     $var,
-                    $statements_checker->getFullQualifiedClass(),
+                    $statements_checker->getFullyQualifiedClass(),
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
@@ -248,7 +248,7 @@ class AssignmentChecker
 
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
@@ -515,7 +515,7 @@ class AssignmentChecker
 
         $var_id = ExpressionChecker::getVarId(
             $stmt,
-            $statements_checker->getFullQualifiedClass(),
+            $statements_checker->getFullyQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -682,7 +682,7 @@ class AssignmentChecker
         $nesting = 0;
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getFullQualifiedClass(),
+            $statements_checker->getFullyQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses(),
             $nesting
@@ -711,7 +711,7 @@ class AssignmentChecker
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
-            $statements_checker->getFullQualifiedClass(),
+            $statements_checker->getFullyQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );

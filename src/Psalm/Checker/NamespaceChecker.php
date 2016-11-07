@@ -67,7 +67,7 @@ class NamespaceChecker implements StatementsSource
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
-                $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromString($stmt->name, $this->namespace_name, []);
+                $fq_class_name = ClassLikeChecker::getFullyQualifiedClassFromString($stmt->name, $this->namespace_name, []);
 
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                     $this->declared_classes[$fq_class_name] = 1;
@@ -82,7 +82,7 @@ class NamespaceChecker implements StatementsSource
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new InterfaceChecker($stmt, $this, $fq_class_name);
-                        $this->declared_classes[] = $class_checker->getFullQualifiedClass();
+                        $this->declared_classes[] = $class_checker->getFullyQualifiedClass();
                         $class_checker->check(false);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
@@ -148,7 +148,7 @@ class NamespaceChecker implements StatementsSource
     /**
      * @return null
      */
-    public function getFullQualifiedClass()
+    public function getFullyQualifiedClass()
     {
         return null;
     }

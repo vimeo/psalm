@@ -832,7 +832,7 @@ class TypeChecker
     ) {
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
-                $instanceof_class = ClassLikeChecker::getFullQualifiedClassFromName(
+                $instanceof_class = ClassLikeChecker::getFullyQualifiedClassFromName(
                     $stmt->class,
                     $namespace,
                     $aliased_classes

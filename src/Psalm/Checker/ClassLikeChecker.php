@@ -279,7 +279,7 @@ abstract class ClassLikeChecker implements StatementsSource
             $extra_interfaces = [];
 
             foreach (self::$class_implements[$this->fq_class_name] as $interface_id => $interface_name) {
-                if (self::checkFullQualifiedClassOrInterface(
+                if (self::checkFullyQualifiedClassOrInterface(
                     $interface_name,
                     $this->file_name,
                     $this->class->getLine(),
@@ -421,7 +421,7 @@ abstract class ClassLikeChecker implements StatementsSource
      */
     protected function registerParentClassProperties($parent_class)
     {
-        if (self::checkFullQualifiedClassOrInterface(
+        if (self::checkFullyQualifiedClassOrInterface(
             $parent_class,
             $this->file_name,
             $this->class->getLine(),
@@ -514,7 +514,7 @@ abstract class ClassLikeChecker implements StatementsSource
         }
 
         foreach ($stmt->traits as $trait) {
-            $trait_name = self::getFullQualifiedClassFromName(
+            $trait_name = self::getFullyQualifiedClassFromName(
                 $trait,
                 $this->namespace,
                 $this->aliased_classes
@@ -736,7 +736,7 @@ abstract class ClassLikeChecker implements StatementsSource
      * @param  array<string>    $suppressed_issues
      * @return bool|null
      */
-    public static function checkFullQualifiedClassOrInterface(
+    public static function checkFullyQualifiedClassOrInterface(
         $fq_class_name,
         $file_name,
         $line_number,
@@ -794,7 +794,7 @@ abstract class ClassLikeChecker implements StatementsSource
      * @param  array<int,string>   $aliased_classes
      * @return string
      */
-    public static function getFullQualifiedClassFromName(
+    public static function getFullyQualifiedClassFromName(
         PhpParser\Node\Name $class_name,
         $namespace,
         array $aliased_classes
@@ -803,7 +803,7 @@ abstract class ClassLikeChecker implements StatementsSource
             return implode('\\', $class_name->parts);
         }
 
-        return self::getFullQualifiedClassFromString(implode('\\', $class_name->parts), $namespace, $aliased_classes);
+        return self::getFullyQualifiedClassFromString(implode('\\', $class_name->parts), $namespace, $aliased_classes);
     }
 
     /**
@@ -812,7 +812,7 @@ abstract class ClassLikeChecker implements StatementsSource
      * @param  array<string, string>    $imported_namespaces
      * @return string
      */
-    public static function getFullQualifiedClassFromString($class, $namespace, array $imported_namespaces)
+    public static function getFullyQualifiedClassFromString($class, $namespace, array $imported_namespaces)
     {
         if (empty($class)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -855,7 +855,7 @@ abstract class ClassLikeChecker implements StatementsSource
     /**
      * @return string
      */
-    public function getFullQualifiedClass()
+    public function getFullyQualifiedClass()
     {
         return $this->fq_class_name;
     }

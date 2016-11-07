@@ -75,21 +75,21 @@ class IfChecker
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) {
             $reconcilable_if_types = TypeChecker::getReconcilableTypeAssertions(
                 $stmt->cond,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
 
             $negatable_if_types = TypeChecker::getNegatableTypeAssertions(
                 $stmt->cond,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
         } else {
             $reconcilable_if_types = $negatable_if_types = TypeChecker::getTypeAssertions(
                 $stmt->cond,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
@@ -258,21 +258,21 @@ class IfChecker
             if ($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp) {
                 $reconcilable_elseif_types = TypeChecker::getReconcilableTypeAssertions(
                     $elseif->cond,
-                    $statements_checker->getFullQualifiedClass(),
+                    $statements_checker->getFullyQualifiedClass(),
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
 
                 $negatable_elseif_types = TypeChecker::getNegatableTypeAssertions(
                     $elseif->cond,
-                    $statements_checker->getFullQualifiedClass(),
+                    $statements_checker->getFullyQualifiedClass(),
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
             } else {
                 $reconcilable_elseif_types = $negatable_elseif_types = TypeChecker::getTypeAssertions(
                     $elseif->cond,
-                    $statements_checker->getFullQualifiedClass(),
+                    $statements_checker->getFullyQualifiedClass(),
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );

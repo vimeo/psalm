@@ -42,7 +42,7 @@ class ForeachChecker
 
         $var_id = ExpressionChecker::getVarId(
             $stmt->expr,
-            $statements_checker->getFullQualifiedClass(),
+            $statements_checker->getFullyQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -157,7 +157,7 @@ class ForeachChecker
                         if ($return_type->value !== 'Traversable' &&
                             $return_type->value !== $statements_checker->getClassName()
                         ) {
-                            if (ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                            if (ClassLikeChecker::checkFullyQualifiedClassOrInterface(
                                 $return_type->value,
                                 $statements_checker->getCheckedFileName(),
                                 $stmt->getLine(),

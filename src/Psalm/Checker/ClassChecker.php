@@ -60,7 +60,7 @@ class ClassChecker extends ClassLikeChecker
         self::$class_implements[$fq_class_name] = [];
 
         if ($this->class->extends) {
-            $this->parent_class = self::getFullQualifiedClassFromName(
+            $this->parent_class = self::getFullyQualifiedClassFromName(
                 $this->class->extends,
                 $this->namespace,
                 $this->aliased_classes
@@ -68,7 +68,7 @@ class ClassChecker extends ClassLikeChecker
         }
 
         foreach ($class->implements as $interface_name) {
-            $fq_interface_name = self::getFullQualifiedClassFromName(
+            $fq_interface_name = self::getFullyQualifiedClassFromName(
                 $interface_name,
                 $this->namespace,
                 $this->aliased_classes

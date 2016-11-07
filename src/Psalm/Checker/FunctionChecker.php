@@ -239,7 +239,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $return_type = Type::parseString(
                     is_string($function->returnType)
                         ? $function->returnType
-                        : ClassLikeChecker::getFullQualifiedClassFromName(
+                        : ClassLikeChecker::getFullyQualifiedClassFromName(
                             $function->returnType,
                             $this->namespace,
                             $this->getAliasedClasses()

@@ -16,7 +16,7 @@ interface StatementsSource
     /**
      * @return string
      */
-    public function getFullQualifiedClass();
+    public function getFullyQualifiedClass();
 
     /**
      * @return string

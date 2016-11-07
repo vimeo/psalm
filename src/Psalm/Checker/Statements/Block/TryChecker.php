@@ -32,7 +32,7 @@ class TryChecker
         foreach ($stmt->catches as $catch) {
             $catch_context = clone $original_context;
 
-            $catch_class = ClassLikeChecker::getFullQualifiedClassFromName(
+            $catch_class = ClassLikeChecker::getFullyQualifiedClassFromName(
                 $catch->type,
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
@@ -41,7 +41,7 @@ class TryChecker
             if ($context->check_classes) {
                 $fq_class_name = $catch_class;
 
-                if (ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                if (ClassLikeChecker::checkFullyQualifiedClassOrInterface(
                     $fq_class_name,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine(),

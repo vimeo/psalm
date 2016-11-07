@@ -192,7 +192,7 @@ class ExpressionChecker
             if (!$statements_checker->isStatic()) {
                 $this_class = ClassLikeChecker::getThisClass();
                 $this_class = $this_class &&
-                    ClassChecker::classExtends($this_class, $statements_checker->getFullQualifiedClass())
+                    ClassChecker::classExtends($this_class, $statements_checker->getFullyQualifiedClass())
                     ? $this_class
                     : $context->self;
 
@@ -301,13 +301,13 @@ class ExpressionChecker
                 !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])
             ) {
                 if ($context->check_classes) {
-                    $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromName(
+                    $fq_class_name = ClassLikeChecker::getFullyQualifiedClassFromName(
                         $stmt->class,
                         $statements_checker->getNamespace(),
                         $statements_checker->getAliasedClasses()
                     );
 
-                    if (ClassLikeChecker::checkFullQualifiedClassOrInterface(
+                    if (ClassLikeChecker::checkFullyQualifiedClassOrInterface(
                         $fq_class_name,
                         $statements_checker->getCheckedFileName(),
                         $stmt->getLine(),
@@ -519,7 +519,7 @@ class ExpressionChecker
     ) {
         $var_id = self::getVarId(
             $stmt,
-            $statements_checker->getFullQualifiedClass(),
+            $statements_checker->getFullyQualifiedClass(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -633,7 +633,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
             $left_type_assertions = TypeChecker::getReconcilableTypeAssertions(
                 $stmt->left,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
@@ -679,7 +679,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             $left_type_assertions = TypeChecker::getNegatableTypeAssertions(
                 $stmt->left,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
@@ -811,7 +811,7 @@ class ExpressionChecker
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 $fq_class_name = $this_class_name;
             } else {
-                $fq_class_name = ClassLikeChecker::getFullQualifiedClassFromName(
+                $fq_class_name = ClassLikeChecker::getFullyQualifiedClassFromName(
                     $stmt->class,
                     $namespace,
                     $aliased_classes
@@ -1079,21 +1079,21 @@ class ExpressionChecker
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) {
             $reconcilable_if_types = TypeChecker::getReconcilableTypeAssertions(
                 $stmt->cond,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
 
             $negatable_if_types = TypeChecker::getNegatableTypeAssertions(
                 $stmt->cond,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
         } else {
             $reconcilable_if_types = $negatable_if_types = TypeChecker::getTypeAssertions(
                 $stmt->cond,
-                $statements_checker->getFullQualifiedClass(),
+                $statements_checker->getFullyQualifiedClass(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );

@@ -307,7 +307,7 @@ class MethodChecker extends FunctionLikeChecker
             $return_type = Type::parseString(
                 is_string($method->returnType)
                     ? $method->returnType
-                    : ClassLikeChecker::getFullQualifiedClassFromName(
+                    : ClassLikeChecker::getFullyQualifiedClassFromName(
                         $method->returnType,
                         $this->namespace,
                         $this->getAliasedClasses()
@@ -409,7 +409,7 @@ class MethodChecker extends FunctionLikeChecker
                     continue;
                 }
 
-                $return_type_token = FileChecker::getFullQualifiedClassFromNameInFile(
+                $return_type_token = FileChecker::getFullyQualifiedClassFromNameInFile(
                     $return_type_token,
                     self::$method_namespaces[$method_id],
                     self::$method_files[$method_id]
@@ -541,7 +541,7 @@ class MethodChecker extends FunctionLikeChecker
             }
         }
 
-        if ($source->getSource() instanceof TraitChecker && $method_class === $source->getFullQualifiedClass()) {
+        if ($source->getSource() instanceof TraitChecker && $method_class === $source->getFullyQualifiedClass()) {
             return null;
         }
 
