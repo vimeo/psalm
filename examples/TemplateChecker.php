@@ -80,7 +80,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
     {
         $class = explode('::', $method_id)[0];
 
-        if (ClassLikeChecker::checkFullyQualifiedClassOrInterface($class, $this->short_file_name, 1, []) === false) {
+        if (ClassLikeChecker::checkFullyQualifiedClassLikeName($class, $this->short_file_name, 1, []) === false) {
             return false;
         }
 

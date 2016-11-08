@@ -41,7 +41,7 @@ class InterfaceChecker extends ClassLikeChecker
             self::$parent_interfaces[$interface_name] = [];
 
             foreach ($interface->extends as $extended_interface) {
-                $extended_interface_name = self::getFullyQualifiedClassFromName(
+                $extended_interface_name = self::getFQCLNFromNameObject(
                     $extended_interface,
                     $this->namespace,
                     $this->aliased_classes

@@ -105,7 +105,7 @@ class StatementsChecker
         $this->aliased_classes = $this->source->getAliasedClasses();
         $this->namespace = $this->source->getNamespace();
         $this->is_static = $this->source->isStatic();
-        $this->fq_class_name = $this->source->getFullyQualifiedClass();
+        $this->fq_class_name = $this->source->getFQCLN();
         $this->class_name = $this->source->getClassName();
         $this->parent_class = $this->source->getParentClass();
         $this->suppressed_issues = $this->source->getSuppressedIssues();
@@ -857,7 +857,7 @@ class StatementsChecker
     /**
      * @return string
      */
-    public function getFullyQualifiedClass()
+    public function getFQCLN()
     {
         return $this->fq_class_name;
     }

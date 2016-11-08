@@ -98,7 +98,7 @@ class CallChecker
             $method_id = implode('', $stmt->name->parts);
 
             if ($context->self) {
-                //$method_id = $statements_checker->getFullyQualifiedClass() . '::' . $method_id;
+                //$method_id = $statements_checker->getFQCLN() . '::' . $method_id;
             }
 
             $in_call_map = FunctionChecker::inCallMap($method_id);
@@ -167,7 +167,7 @@ class CallChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($context->check_classes) {
-                    $fq_class_name = ClassLikeChecker::getFullyQualifiedClassFromName(
+                    $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                         $stmt->class,
                         $statements_checker->getNamespace(),
                         $statements_checker->getAliasedClasses()
@@ -177,7 +177,7 @@ class CallChecker
                         return null;
                     }
 
-                    if (ClassLikeChecker::checkFullyQualifiedClassOrInterface(
+                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
                         $statements_checker->getCheckedFileName(),
                         $stmt->getLine(),
@@ -311,7 +311,7 @@ class CallChecker
 
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getFullyQualifiedClass(),
+            $statements_checker->getFQCLN(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -336,12 +336,12 @@ class CallChecker
 
             if (($this_class = ClassLikeChecker::getThisClass()) &&
                 (
-                    $this_class === $statements_checker->getFullyQualifiedClass() ||
-                    ClassChecker::classExtends($this_class, $statements_checker->getFullyQualifiedClass()) ||
-                    TraitChecker::traitExists($statements_checker->getFullyQualifiedClass())
+                    $this_class === $statements_checker->getFQCLN() ||
+                    ClassChecker::classExtends($this_class, $statements_checker->getFQCLN()) ||
+                    TraitChecker::traitExists($statements_checker->getFQCLN())
                 )
             ) {
-                $method_id = $statements_checker->getFullyQualifiedClass() . '::' . strtolower($stmt->name);
+                $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
 
                 if ($statements_checker->checkInsideMethod($method_id, $context) === false) {
                     return false;
@@ -424,7 +424,7 @@ class CallChecker
                             continue;
                         }
 
-                        $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassOrInterface(
+                        $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                             $fq_class_name,
                             $statements_checker->getCheckedFileName(),
                             $stmt->getLine(),
@@ -567,7 +567,7 @@ class CallChecker
                     return null;
                 }
             } elseif ($context->check_classes) {
-                $fq_class_name = ClassLikeChecker::getFullyQualifiedClassFromName(
+                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
@@ -577,7 +577,7 @@ class CallChecker
                     return null;
                 }
 
-                $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassOrInterface(
+                $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine(),
@@ -681,7 +681,7 @@ class CallChecker
                         $return_types,
                         $stmt->args,
                         $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
-                            ? $statements_checker->getFullyQualifiedClass()
+                            ? $statements_checker->getFQCLN()
                             : $fq_class_name,
                         $method_id
                     );
@@ -774,7 +774,7 @@ class CallChecker
                 } else {
                     $var_id = ExpressionChecker::getVarId(
                         $arg->value,
-                        $statements_checker->getFullyQualifiedClass(),
+                        $statements_checker->getFQCLN(),
                         $statements_checker->getNamespace(),
                         $statements_checker->getAliasedClasses()
                     );
@@ -948,7 +948,7 @@ class CallChecker
 
                     $translated_param = FunctionLikeChecker::getTranslatedParam(
                         $closure_param,
-                        $statements_checker->getFullyQualifiedClass(),
+                        $statements_checker->getFQCLN(),
                         $statements_checker->getNamespace(),
                         $statements_checker->getAliasedClasses()
                     );

@@ -57,14 +57,14 @@ class FetchChecker
 
         $stmt_var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getFullyQualifiedClass(),
+            $statements_checker->getFQCLN(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
 
         $var_id = ExpressionChecker::getVarId(
             $stmt,
-            $statements_checker->getFullyQualifiedClass(),
+            $statements_checker->getFQCLN(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
@@ -162,7 +162,7 @@ class FetchChecker
             if (!$lhs_type_part->isObjectType()) {
                 $stmt_var_id = ExpressionChecker::getVarId(
                     $stmt->var,
-                    $statements_checker->getFullyQualifiedClass(),
+                    $statements_checker->getFQCLN(),
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
@@ -230,7 +230,7 @@ class FetchChecker
                 || $lhs_type_part->value === $context->self
                 || (
                     $statements_checker->getSource()->getSource() instanceof TraitChecker &&
-                    $lhs_type_part->value === $statements_checker->getSource()->getFullyQualifiedClass()
+                    $lhs_type_part->value === $statements_checker->getSource()->getFQCLN()
                 )
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
@@ -374,13 +374,13 @@ class FetchChecker
             if ($stmt->class->parts === ['self']) {
                 $fq_class_name = (string)$context->self;
             } else {
-                $fq_class_name = ClassLikeChecker::getFullyQualifiedClassFromName(
+                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
 
-                if (ClassLikeChecker::checkFullyQualifiedClassOrInterface(
+                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine(),
@@ -476,7 +476,7 @@ class FetchChecker
                     return null;
                 }
             } elseif ($context->check_classes) {
-                $fq_class_name = ClassLikeChecker::getFullyQualifiedClassFromName(
+                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
@@ -486,7 +486,7 @@ class FetchChecker
                     return null;
                 }
 
-                if (ClassLikeChecker::checkFullyQualifiedClassOrInterface(
+                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine(),
@@ -506,7 +506,7 @@ class FetchChecker
         ) {
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
-                $statements_checker->getFullyQualifiedClass(),
+                $statements_checker->getFQCLN(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
@@ -520,7 +520,7 @@ class FetchChecker
             if ($fq_class_name === $context->self
                 || (
                     $statements_checker->getSource()->getSource() instanceof TraitChecker &&
-                    $fq_class_name === $statements_checker->getSource()->getFullyQualifiedClass()
+                    $fq_class_name === $statements_checker->getSource()->getFQCLN()
                 )
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
@@ -604,7 +604,7 @@ class FetchChecker
         $nesting = 0;
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
-            $statements_checker->getFullyQualifiedClass(),
+            $statements_checker->getFQCLN(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses(),
             $nesting
@@ -617,7 +617,7 @@ class FetchChecker
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
-            $statements_checker->getFullyQualifiedClass(),
+            $statements_checker->getFQCLN(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );

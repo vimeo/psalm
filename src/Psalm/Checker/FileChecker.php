@@ -194,7 +194,7 @@ class FileChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new ClassChecker($stmt, $this, $stmt->name);
 
-                        $this->declared_classes[] = $class_checker->getFullyQualifiedClass();
+                        $this->declared_classes[] = $class_checker->getFQCLN();
                         $class_checker->check($check_functions);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
@@ -202,7 +202,7 @@ class FileChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new InterfaceChecker($stmt, $this, $stmt->name);
 
-                        $this->declared_classes[] = $class_checker->getFullyQualifiedClass();
+                        $this->declared_classes[] = $class_checker->getFQCLN();
                         $class_checker->check(false);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
@@ -260,7 +260,7 @@ class FileChecker implements StatementsSource
      * @param  string $file_name
      * @return string
      */
-    public static function getFullyQualifiedClassFromNameInFile($class, $namespace, $file_name)
+    public static function getFQCLNFromNameInFile($class, $namespace, $file_name)
     {
         if (isset(self::$file_checkers[$file_name])) {
             $aliased_classes = self::$file_checkers[$file_name]->getAliasedClasses($namespace);
@@ -270,7 +270,7 @@ class FileChecker implements StatementsSource
             $aliased_classes = $file_checker->getAliasedClasses($namespace);
         }
 
-        return ClassLikeChecker::getFullyQualifiedClassFromString($class, $namespace, $aliased_classes);
+        return ClassLikeChecker::getFQCLNFromString($class, $namespace, $aliased_classes);
     }
 
     /**
@@ -440,7 +440,7 @@ class FileChecker implements StatementsSource
     /**
      * @return null
      */
-    public function getFullyQualifiedClass()
+    public function getFQCLN()
     {
         return null;
     }

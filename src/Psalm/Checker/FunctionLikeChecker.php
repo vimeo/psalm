@@ -102,7 +102,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         $this->class_extends = $source->getParentClass();
         $this->file_name = $source->getFileName();
         $this->include_file_name = $source->getIncludeFileName();
-        $this->fq_class_name = $source->getFullyQualifiedClass();
+        $this->fq_class_name = $source->getFQCLN();
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
     }
@@ -237,7 +237,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     if ($atomic_type->isObjectType()
                         && !$atomic_type->isObject()
                         && $this->function instanceof PhpParser\Node
-                        && ClassLikeChecker::checkFullyQualifiedClassOrInterface(
+                        && ClassLikeChecker::checkFullyQualifiedClassLikeName(
                             $atomic_type->value,
                             $this->file_name,
                             $this->function->getLine(),
@@ -353,7 +353,7 @@ abstract class FunctionLikeChecker implements StatementsSource
     /**
      * @return string
      */
-    public function getFullyQualifiedClass()
+    public function getFQCLN()
     {
         return $this->fq_class_name;
     }
@@ -685,7 +685,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             } elseif ($param->type->parts === ['self']) {
                 $param_type_string = $fq_class_name;
             } else {
-                $param_type_string = ClassLikeChecker::getFullyQualifiedClassFromString(
+                $param_type_string = ClassLikeChecker::getFQCLNFromString(
                     implode('\\', $param->type->parts),
                     $namespace,
                     $aliased_classes
@@ -816,7 +816,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     continue;
                 }
 
-                $return_type_token = ClassLikeChecker::getFullyQualifiedClassFromString(
+                $return_type_token = ClassLikeChecker::getFQCLNFromString(
                     $return_type_token,
                     $namespace,
                     $aliased_classes

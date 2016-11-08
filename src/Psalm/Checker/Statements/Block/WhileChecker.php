@@ -29,7 +29,7 @@ class WhileChecker
 
         $while_types = TypeChecker::getTypeAssertions(
             $stmt->cond,
-            $statements_checker->getFullyQualifiedClass(),
+            $statements_checker->getFQCLN(),
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
