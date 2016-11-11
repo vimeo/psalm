@@ -332,10 +332,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return bool */
             public static function bar() {
                 return true;
             }
 
+            /** @return void */
             public function baz() {
                 if (!($a = A::bar())) {
                     return;

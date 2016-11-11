@@ -48,10 +48,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {
                 $b = $a ? $a->foo() : null;
             }
@@ -65,10 +67,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {
                 $b = $a === null ? null : $a->foo();
             }
@@ -82,10 +86,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {
                 $b = empty($a) ? null : $a->foo();
             }
@@ -99,10 +105,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {
                 $b = is_null($a) ? null : $a->foo();
             }
@@ -116,10 +124,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {
                 if ($a) {
                     $a->foo();
@@ -138,10 +148,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {
                 $this->a = $a;
                 $this->a->foo();
@@ -156,6 +168,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
@@ -163,6 +176,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             /** @var A|null */
             public $a;
 
+            /** @return void */
             public function bar(A $a = null) {
                 $this->a = $a;
                 $b = $this->a ? $this->a->foo() : null;
@@ -177,6 +191,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
@@ -184,6 +199,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             /** @var A|null */
             public $a;
 
+            /** @return void */
             public function bar(A $a = null) {
                 $this->a = $a;
                 $b = $this->a === null ? null : $this->a->foo();
@@ -198,6 +214,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {}
         }
 
@@ -205,6 +222,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             /** @var A|null */
             public $a;
 
+            /** @return void */
             public function bar(A $a = null) {
                 $this->a = $a;
 
@@ -225,14 +243,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one) {
                     $two->foo();
@@ -248,10 +269,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 if (!$one) {
                     throw new Exception();
@@ -272,10 +295,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             /** @var int|null */
             public $two;
 
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 if (!$one) {
                     $one = new One();
@@ -299,14 +324,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one || $two) {
                     $two->foo();
@@ -322,14 +350,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one && $two) {
                     $two->foo();
@@ -345,14 +376,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one !== null && $two) {
                     $one->foo();
@@ -368,14 +402,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one !== null && ($two || 1 + 1 === 3)) {
                     $one->foo();
@@ -395,14 +432,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
             /** @var string */
             public $a;
 
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one === null) {
                     return;
@@ -425,14 +465,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($two === null) {
                     return;
@@ -450,14 +493,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one === null || $two === null) {
                     return;
@@ -478,14 +524,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 if ($one === null && $two === null) {
                     return;
@@ -503,10 +552,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 if ($one === null) {
                     $one = new One();
@@ -524,10 +575,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 if ($one) {
                     // do nothing
@@ -551,10 +604,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one) {
                 if (!$one) {
                     // do nothing
@@ -575,14 +630,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null, Two $two = null) {
                 $a = 4;
 
@@ -604,14 +662,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -636,10 +697,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -670,10 +733,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -700,10 +765,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -730,12 +797,13 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
             /**
-             * @psalm-suppress TooManyArguments
+             * @return void
              */
             public function bar(One $one = null) {
                 $a = 4;
@@ -763,10 +831,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -792,10 +862,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -821,10 +893,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -853,10 +927,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -885,10 +961,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -917,10 +995,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class B {
+            /** @return void */
             public function bar(One $one = null) {
                 $a = 4;
 
@@ -944,6 +1024,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
@@ -951,6 +1032,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
             /** @var One|null */
             public $one;
 
+            /** @return void */
             public function bar(One $one = null) {
                 $this->one = $one;
 
@@ -1008,10 +1090,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function bar() {}
         }
 
@@ -1031,10 +1115,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function bar() {}
         }
 
@@ -1059,10 +1145,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function bar() {}
         }
 
@@ -1086,14 +1174,17 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
         class Two {
+            /** @return void */
             public function bar() {}
         }
 
         class Three {
+            /** @return void */
             public function baz() {}
         }
 
@@ -1121,12 +1212,11 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
-        /**
-         * @psalm-suppress TooManyArguments
-         */
+        /** @return void */
         function a(One $var = null) {
             if (!$var) {
                 throw new \Exception("some exception");
@@ -1195,6 +1285,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 
@@ -1288,6 +1379,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
                 return rand(0,100) ? ["hello"] : false;
             }
 
+            /** @return void */
             public function bar(){
                 while ($row = $this->foo()) {
                     $row[0] = "bad";
@@ -1309,6 +1401,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         class A {}
 
         class B {
+            /** @return void */
             public function bar(A $a) {}
         }
 
@@ -1326,6 +1419,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         class A {}
 
         class B {
+            /** @return void */
             public function bar(A $a) {}
         }
 
@@ -1343,6 +1437,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         class A {}
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {}
         }
 
@@ -1363,6 +1458,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         class A {}
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {}
         }
 
@@ -1380,6 +1476,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         class A {}
 
         class B {
+            /** @return void */
             public function bar(A $a = null) {}
         }
 
@@ -1399,10 +1496,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {}
         class B extends A {
+            /** @return void */
             public function blab() {}
         }
 
         class C {
+            /** @return void */
             function foo(A $a) {
                 if ($a instanceof B) {
                     $a->bar();
@@ -1420,10 +1519,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {}
         class B extends A {
+            /** @return void */
             public function bar() {}
         }
 
         class C {
+            /** @return void */
             function foo(A $a) {
                 if ($a instanceof B) {
                     $a->bar();
@@ -1441,13 +1542,16 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {}
         class B extends A {
+            /** @return void */
             public function bar() {}
         }
         class C extends A {
+            /** @return void */
             public function baz() {}
         }
 
         class D {
+            /** @return void */
             function foo(A $a) {
                 if ($a instanceof B) {
                     $a->bar();
@@ -1516,6 +1620,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
                 return [new A, null];
             }
 
+            /** @return void */
             public function bar() {
 
             }
@@ -1545,6 +1650,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
                 return [new A, null];
             }
 
+            /** @return void */
             public function bar() {
 
             }

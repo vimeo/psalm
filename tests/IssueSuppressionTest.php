@@ -39,6 +39,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
             /**
              * @psalm-suppress UndefinedClass
              * @psalm-suppress MixedMethodCall
+             * @psalm-suppress MissingReturnType
              */
             public function a() {
                 B::foo()->bar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();

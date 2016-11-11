@@ -119,6 +119,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface Logger {
+            /** @return void */
             public function log(string $msg);
         }
 
@@ -126,6 +127,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
             /** @var Logger|null */
             private $logger;
 
+            /** @return void */
             public function setLogger(Logger $logger) {
                  $this->logger = $logger;
             }

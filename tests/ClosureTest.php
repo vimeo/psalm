@@ -28,12 +28,14 @@ class ClosureTest extends PHPUnit_Framework_TestCase
     public function testByRefUseVar()
     {
         $stmts = self::$parser->parse('<?php
+        /** @return void */
         function run_function(\Closure $fnc) {
             $fnc();
         }
 
         // here we have to make sure $data exists as a side-effect of calling `run_function`
         // because it could exist depending on how run_function is implemented
+        /** @return void */
         function fn() {
             run_function(
                 function() use(&$data) {

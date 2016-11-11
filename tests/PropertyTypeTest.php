@@ -34,6 +34,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
              */
             public $foo;
 
+            /** @return void */
             public function bar()
             {
                 if (rand(0,10) === 5) {

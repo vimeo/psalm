@@ -94,6 +94,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
     public function testVariadicArray()
     {
         $stmts = self::$parser->parse('<?php
+        /** @return array<int> */
         function f(int ...$a_list) {
             return array_map(function (int $a) {
                 return $a + 1;
@@ -113,6 +114,12 @@ class Php56Test extends PHPUnit_Framework_TestCase
     public function testArgumentUnpacking()
     {
         $stmts = self::$parser->parse('<?php
+        /**
+         * @return int
+         * @param int $a
+         * @param int $b
+         * @param int $c
+         */
         function add($a, $b, $c) {
             return $a + $b + $c;
         }
