@@ -183,7 +183,25 @@ Psalm is able to interpret all PHPDoc type annotations, and use them to further 
 
 ### Union Types
 
-@todo describe how Union types work
+PHP and other dynamically-typed languages allow expressions to resolved to conflicting types – for example, after this statement
+```php
+$rabbit = rand(0, 10) === 4 ? 'rabbit' : ['rabbit'];
+```
+`$rabbit` will be either a `string` or an `array`. We can represent that idea with Union Types – so `$rabbit` is typed as `string|array`. Union types represent *all* the possible types a given variable can have.
+
+#### Use of `false` in Union Types
+
+This also extends to builtin PHP methods, many of which can return `false` to denote some sort of failure. For example, `strpos` has the return type `int|false`. This is a more specific version of `int|bool`, and allows us to evaluate logic like
+```php
+function str_index_of(string $haystack, string $needle) : int {
+  $pos = strpos($haystack, $needle);
+  if ($pos === false) {
+    return -1;
+  }
+  return $pos;
+}
+```
+and verify that `str_index_of` *always* returns an integer. If we instead typed the return of `strpos` as `int|bool`, then according to Psalm the last statement `return $pos` could return either an integer or `true` (the solution would be to turn `if ($pos === false)` into `if (is_bool($pos))`.
 
 ### Property declaration types vs Assignment typehints
 
