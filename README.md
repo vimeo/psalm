@@ -1,7 +1,6 @@
 <h1><img src="PsalmLogo.png" height="64" alt="logo" /></h1>
 
-Psalm is a static analysis tool for finding errors in PHP applications.
-
+- [Introduction](#introduction)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Running Psalm](#running-psalm)
@@ -10,15 +9,68 @@ Psalm is a static analysis tool for finding errors in PHP applications.
 - [Plugins](#plugins)
 - [Checking non-PHP files](#checking-non-php-files)
 
+## Introduction
+
+Psalm is a static analysis tool for finding errors in PHP applications, and runs in PHP 5.4+ and PHP 7.0.
+
+While some tools (like [PHP Codesniffer](https://github.com/squizlabs/PHP_CodeSniffer) and [PHP Mess Detector](https://phpmd.org/)) are designed to make your code adhere to style guides and make code easier to maintain, Psalm is designed to find errors that may prevent your application from running properly.
+
+It can discover over 50 different types of issues that could break your application in both obvious and subtle ways. For example, here's what happens when we run Psalm on a small code snippet with a simple bug:
+
+```php
+// somefile.php
+<?php
+$a = ['foo', 'bar'];
+echo implode($a, ' ');
+```
+
+```bash
+> ./vendor/bin/psalm somefile.php
+ERROR: InvalidArgument - somefile.php:3 - Argument 1 of implode expects `string`, `array` provided
+```
+
+### Why Psalm?
+
+There are two main inspirations for Psalm:
+ - Etsy's [Phan](https://github.com/etsy/phan), which uses nikic's [`php-ast`](https://github.com/nikic/php-ast) extension to create an abstract syntax tree
+ - Facebook's [Hack](http://hacklang.org/), a PHP-like language that supports many advanced typing features natively, so docblocks aren't necessary.
+
+Psalm's built-in function argument map is stolen wholesale from Phan, and its treatment of object-like arrays borrows heavily from Hack's.
+
+So why should you use Psalm, and not those other tools? It comes down to coding style, and also your environment. If you have complete control over your stack, then you may well benefit from Hack's comprehensive typing support. If you're running on PHP7 and able to install custom extensions, Phan may be good for you.
+
+Phan has one key drawback, as the `php-ast` extension's generated tree is designed only to provide information that PHP uses at runtime. It therefore omits some docblock comments that provide useful hints to the developer, and also to Psalm.
+
+Nikic's [`php-parser`](https://github.com/nikic/php-parser) AST generator, however, creates a more complete picture of your code, and Psalm uses that (PHP-native) package in its representation of your code.
+
+That means you can use typehints like
+
+```php
+/** @var string **/
+$a = some_function();
+```
+
+and Psalm will treat `$a` as a string.
+
 ## Installation
 
-To install Psalm, use [Composer](https://getcomposer.org/).
+If using [Composer](https://getcomposer.org/), simply run
 
-@todo add detailed composer instructions with public github.com address
+```bash
+> composer require --dev "vimeo/psalm:dev-master"
+> composer install
+```
+
+### From source
+
+```bash
+> git clone https://github.com/etsy/phan.git
+> composer install
+```
 
 ### Requirements
 
-Psalm Requires PHP >= 5.4.
+Psalm Requires PHP >= 5.4 and composer.
 
 ## Configuration
 
@@ -242,7 +294,7 @@ Psalm uses a syntax [borrowed from Java](https://en.wikipedia.org/wiki/Generics_
 
 Ideally (in the author's opinion), all data would either be encoded as lists, associative arrays, or as well-defined objects. However, PHP arrays are often used as makeshift structs.
 
-[Hack](http://hacklang.org/) (by Facebook) supports this usage by way of the [Shape datastructure](https://docs.hhvm.com/hack/shapes/introduction), but there is no agreed-upon documentation format for such arrays in regular PHP-land.
+[Hack](http://hacklang.org/) supports this usage by way of the [Shape datastructure](https://docs.hhvm.com/hack/shapes/introduction), but there is no agreed-upon documentation format for such arrays in regular PHP-land.
 
 Psalm solves this by adding another way annotate array types, by using an object-like syntax when describing them.
 
