@@ -54,27 +54,25 @@ and Psalm will treat `$a` as a string.
 
 ## Installation
 
-If using [Composer](https://getcomposer.org/), simply run
+Psalm Requires PHP >= 5.4 and [Composer](https://getcomposer.org/).
 
 ```bash
 > composer require --dev "vimeo/psalm:dev-master"
 > composer install
 ```
 
-### From source
-
-```bash
-> git clone https://github.com/etsy/phan.git
-> composer install
-```
-
-### Requirements
-
-Psalm Requires PHP >= 5.4 and composer.
-
 ## Configuration
 
-Psalm uses an XML config file. A recommended default Psalm config is located [here](examples/psalm.default.xml).
+Psalm uses an XML config file. A barebones example looks like this:
+```xml
+<?xml version="1.0"?>
+<psalm name="Barebones config" stopOnFirstError="false" useDocblockTypes="true">
+    <inspectFiles>
+        <directory name="src" />
+    </inspectFiles>
+</psalm>
+```
+and a more complete example (with recommended default values) can be found [here](examples/psalm.default.xml).
 
 ### Options
 
