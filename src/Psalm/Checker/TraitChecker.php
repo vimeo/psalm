@@ -41,7 +41,7 @@ class TraitChecker extends ClassLikeChecker
      * @param   Context|null    $class_context
      * @return void
      */
-    public function check($check_methods = true, Context $class_context = null)
+    public function check($check_methods = true, Context $class_context = null, $update_docblocks = false)
     {
         if (!$class_context) {
             throw new \InvalidArgumentException('TraitChecker::check must be called with a $class_context');

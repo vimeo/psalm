@@ -202,6 +202,7 @@ abstract class ClassLikeChecker implements StatementsSource
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $fq_class_name)
     {
         $this->class = $class;
+        $this->source = $source;
         $this->namespace = $source->getNamespace();
         $this->aliased_classes = $source->getAliasedClasses();
         $this->file_name = $source->getFileName();
@@ -223,7 +224,7 @@ abstract class ClassLikeChecker implements StatementsSource
      * @param Context|null $class_context
      * @return false|null
      */
-    public function check($check_methods = true, Context $class_context = null)
+    public function check($check_methods = true, Context $class_context = null, $update_docblocks = false)
     {
         if (!$check_methods &&
             !($this instanceof TraitChecker) &&
@@ -403,7 +404,7 @@ abstract class ClassLikeChecker implements StatementsSource
                 $method_checker->check(clone $class_context);
 
                 if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                    $method_checker->checkReturnTypes();
+                    $method_checker->checkReturnTypes($update_docblocks);
                 }
             }
         }
@@ -850,6 +851,14 @@ abstract class ClassLikeChecker implements StatementsSource
     public function getAliasedClasses()
     {
         return $this->aliased_classes;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlipped()
+    {
+        return $this->source->getAliasedClassesFlipped();
     }
 
     /**

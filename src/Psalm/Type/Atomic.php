@@ -30,6 +30,23 @@ class Atomic extends Type
         return $this->value;
     }
 
+    public function toNamespacedString(array $aliased_classes, $this_class)
+    {
+        if ($this->value === $this_class) {
+            return $this_class;
+        }
+
+        if (isset($aliased_classes[$this->value])) {
+            return $aliased_classes[$this->value];
+        }
+
+        if ($this->isObjectType()) {
+            return '\\' . $this->value;
+        }
+
+        return $this->value;
+    }
+
     /**
      * @param   Union   $parent
      * @return  bool

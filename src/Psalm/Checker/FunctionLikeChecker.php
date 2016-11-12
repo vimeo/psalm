@@ -343,11 +343,19 @@ abstract class FunctionLikeChecker implements StatementsSource
     }
 
     /**
-     * @return array<string>
+     * @return array<string, string>
      */
     public function getAliasedClasses()
     {
         return $this->source->getAliasedClasses();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlipped()
+    {
+        return $this->source->getAliasedClassesFlipped();
     }
 
     /**
@@ -442,10 +450,10 @@ abstract class FunctionLikeChecker implements StatementsSource
     }
 
     /**
-     * @param   bool $update_doc_comment
+     * @param   bool $update_docblock
      * @return  false|null
      */
-    public function checkReturnTypes($update_doc_comment = false)
+    public function checkReturnTypes($update_docblock = false)
     {
         if (!$this->function->getStmts()) {
             return null;
@@ -469,7 +477,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             }
         }
 
-        if (!$method_return_types) {
+        if (!$method_return_types && !$update_docblock) {
             if (IssueBuffer::accepts(
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type',
@@ -484,6 +492,35 @@ abstract class FunctionLikeChecker implements StatementsSource
             return null;
         }
 
+        $inferred_yield_types = [];
+        $inferred_return_types = EffectsAnalyser::getReturnTypes(
+            $this->function->getStmts(),
+            $inferred_yield_types,
+            true
+        );
+
+        $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : null;
+        $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
+
+        $inferred_generator_return_type = null;
+
+        if ($inferred_yield_type) {
+            $inferred_generator_return_type = $inferred_return_type;
+            $inferred_return_type = $inferred_yield_type;
+        }
+
+        if (!$method_return_types && $update_docblock) {
+            if ($inferred_return_type) {
+                FileChecker::addDocblockReturnType(
+                    $this->file_name,
+                    $this->function->getLine(),
+                    $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
+                );
+            }
+
+            return null;
+        }
+
         // passing it through fleshOutTypes eradicates errant $ vars
         $declared_return_type = ExpressionChecker::fleshOutTypes(
             $method_return_types,
@@ -492,32 +529,45 @@ abstract class FunctionLikeChecker implements StatementsSource
             $method_id
         );
 
-        if ($declared_return_type) {
-            $inferred_yield_types = [];
-            $inferred_return_types = EffectsAnalyser::getReturnTypes(
-                $this->function->getStmts(),
-                $inferred_yield_types,
-                true
-            );
+        if (!$inferred_return_type && !$inferred_yield_types) {
+            if ($declared_return_type->isVoid()) {
+                return null;
+            }
 
-            if (!$inferred_return_types && !$inferred_yield_types) {
-                if ($declared_return_type->isVoid()) {
-                    return null;
-                }
+            if (ScopeChecker::onlyThrows($this->function->getStmts())) {
+                // if there's a single throw statement, it's presumably an exception saying this method is not to be
+                // used
+                return null;
+            }
 
-                if (ScopeChecker::onlyThrows($this->function->getStmts())) {
-                    // if there's a single throw statement, it's presumably an exception saying this method is not to be
-                    // used
-                    return null;
-                }
+            if (IssueBuffer::accepts(
+                new InvalidReturnType(
+                    'No return type was found for method ' . $cased_method_id .
+                        ' but return type \'' . $declared_return_type . '\' was expected',
+                    $this->getCheckedFileName(),
+                    $this->function->getLine()
+                )
+            )) {
+                return false;
+            }
 
+            return null;
+        }
+
+        if ($inferred_return_type && !$declared_return_type->isMixed()) {
+            if ($inferred_return_type->isNull() && $declared_return_type->isVoid()) {
+                return null;
+            }
+
+            if ($inferred_return_type->isMixed()) {
                 if (IssueBuffer::accepts(
-                    new InvalidReturnType(
-                        'No return type was found for method ' . $cased_method_id .
-                            ' but return type \'' . $declared_return_type . '\' was expected',
+                    new MixedInferredReturnType(
+                        'Could not verify return type \'' . $declared_return_type . '\' for ' .
+                            $cased_method_id,
                         $this->getCheckedFileName(),
                         $this->function->getLine()
-                    )
+                    ),
+                    $this->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -525,58 +575,35 @@ abstract class FunctionLikeChecker implements StatementsSource
                 return null;
             }
 
-            $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : null;
+            if ($update_docblock) {
+                if ((string)$inferred_return_type !== (string)$declared_return_type) {
+                    FileChecker::addDocblockReturnType(
+                        $this->file_name,
+                        $this->function->getLine(),
+                        $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
+                    );
+                }
 
-            $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
-
-            $inferred_generator_return_type = null;
-
-            if ($inferred_yield_type) {
-                $inferred_generator_return_type = $inferred_return_type;
-                $inferred_return_type = $inferred_yield_type;
+                return null;
             }
 
-            if ($inferred_return_type && !$declared_return_type->isMixed()) {
-                if ($inferred_return_type->isNull() && $declared_return_type->isVoid()) {
-                    return null;
-                }
-
-                if ($inferred_return_type->isMixed()) {
-                    if (IssueBuffer::accepts(
-                        new MixedInferredReturnType(
-                            'Could not verify return type \'' . $declared_return_type . '\' for ' .
-                                $cased_method_id,
-                            $this->getCheckedFileName(),
-                            $this->function->getLine()
-                        ),
-                        $this->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return null;
-                }
-
-                if (!TypeChecker::hasIdenticalTypes(
-                    $declared_return_type,
-                    $inferred_return_type,
-                    $this->fq_class_name
+            if (!TypeChecker::hasIdenticalTypes(
+                $declared_return_type,
+                $inferred_return_type,
+                $this->fq_class_name
+            )) {
+                if (IssueBuffer::accepts(
+                    new InvalidReturnType(
+                        'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            ' is incorrect, got \'' . $inferred_return_type . '\'',
+                        $this->getCheckedFileName(),
+                        $this->function->getLine()
+                    ),
+                    $this->getSuppressedIssues()
                 )) {
-                    if (IssueBuffer::accepts(
-                        new InvalidReturnType(
-                            'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                                ' is incorrect, got \'' . $inferred_return_type . '\'',
-                            $this->getCheckedFileName(),
-                            $this->function->getLine()
-                        ),
-                        $this->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
+                    return false;
                 }
             }
-
-            return null;
         }
 
         return null;

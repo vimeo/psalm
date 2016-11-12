@@ -32,10 +32,30 @@ class ObjectLike extends Atomic
         return $this->value .
                 '{' .
                 implode(
-                    ',',
+                    ', ',
                     array_map(
                         function ($name, $type) {
                             return $name . ':' . $type;
+                        },
+                        array_keys($this->properties),
+                        $this->properties
+                    )
+                ) .
+                '}';
+    }
+
+    /**
+     * @return string
+     */
+    public function toNamespacedString(array $aliased_classes, $this_class)
+    {
+        return $this->value .
+                '{' .
+                implode(
+                    ', ',
+                    array_map(
+                        function ($name, $type) use ($aliased_classes, $this_class) {
+                            return $name . ':' . $type->toNamespacedString($aliased_classes, $this_class);
                         },
                         array_keys($this->properties),
                         $this->properties

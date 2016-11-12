@@ -24,9 +24,14 @@ class NamespaceChecker implements StatementsSource
     protected $declared_classes = [];
 
     /**
-     * @var array
+     * @var array<string, string>
      */
     protected $aliased_classes = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $aliased_classes_flipped = [];
 
     /**
      * @var string
@@ -59,9 +64,9 @@ class NamespaceChecker implements StatementsSource
     /**
      * @param   bool    $check_classes
      * @param   bool    $check_class_statements
-     * @return  array
+     * @return  void
      */
-    public function check($check_classes = true, $check_class_statements = true)
+    public function check($check_classes = true, $check_class_statements = true, $update_docblocks = false)
     {
         $leftover_stmts = [];
 
@@ -76,7 +81,7 @@ class NamespaceChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($fq_class_name)
                             ?: new ClassChecker($stmt, $this, $fq_class_name);
 
-                        $class_checker->check($check_class_statements);
+                        $class_checker->check($check_class_statements, null, $update_docblocks);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
@@ -95,6 +100,7 @@ class NamespaceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                    $this->aliased_classes_flipped[implode('\\', $use->name->parts)] = strtolower($use->alias);
                 }
             } else {
                 $leftover_stmts[] = $stmt;
@@ -106,8 +112,6 @@ class NamespaceChecker implements StatementsSource
             $context = new Context($this->file_name);
             $statments_checker->check($leftover_stmts, $context);
         }
-
-        return $this->aliased_classes;
     }
 
     /**
@@ -143,6 +147,14 @@ class NamespaceChecker implements StatementsSource
     public function getAliasedClasses()
     {
         return $this->aliased_classes;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAliasedClassesFlipped()
+    {
+        return $this->aliased_classes_flipped;
     }
 
     /**

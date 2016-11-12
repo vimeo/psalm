@@ -35,7 +35,7 @@ class ProjectChecker
      * @param  boolean $is_diff
      * @return void
      */
-    public static function check($debug = false, $is_diff = false)
+    public static function check($debug = false, $is_diff = false, $update_docblocks = false)
     {
         $cwd = getcwd();
 
@@ -65,7 +65,7 @@ class ProjectChecker
 
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
             foreach (self::$config->getIncludeDirs() as $dir_name) {
-                self::checkDirWithConfig($dir_name, self::$config, $debug);
+                self::checkDirWithConfig($dir_name, self::$config, $debug, $update_docblocks);
             }
         } else {
             if ($debug) {
@@ -121,7 +121,7 @@ class ProjectChecker
      * @param  bool   $debug
      * @return void
      */
-    protected static function checkDirWithConfig($dir_name, Config $config, $debug)
+    protected static function checkDirWithConfig($dir_name, Config $config, $debug, $update_docblocks)
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
@@ -147,7 +147,7 @@ class ProjectChecker
                         $file_checker = new FileChecker($file_name);
                     }
 
-                    $file_checker->check(true);
+                    $file_checker->check(true, true, null, true, $update_docblocks);
                 }
             }
 
@@ -266,7 +266,7 @@ class ProjectChecker
      * @param  boolean $debug
      * @return void
      */
-    public static function checkFile($file_name, $debug = false)
+    public static function checkFile($file_name, $debug = false, $update_docblocks = false)
     {
         if ($debug) {
             echo 'Checking ' . $file_name . PHP_EOL;
@@ -295,7 +295,7 @@ class ProjectChecker
             $file_checker = new FileChecker($file_name);
         }
 
-        $file_checker->check(true);
+        $file_checker->check(true, true, null, true, $update_docblocks);
 
         IssueBuffer::finish();
     }

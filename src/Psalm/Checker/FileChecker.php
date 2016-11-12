@@ -29,14 +29,24 @@ class FileChecker implements StatementsSource
     protected $include_file_name;
 
     /**
-     * @var array
+     * @var array<string, string>
      */
     protected $aliased_classes = [];
 
     /**
-     * @var array<string, array<int, string>>
+     * @var array<string, string>
+     */
+    protected $aliased_classes_flipped = [];
+
+    /**
+     * @var array<string, array<string, string>>
      */
     protected $namespace_aliased_classes = [];
+
+    /**
+     * @var array<string, array<string, string>>
+     */
+    protected $namespace_aliased_classes_flipped = [];
 
     /**
      * @var array<int, \PhpParser\Node>
@@ -117,6 +127,13 @@ class FileChecker implements StatementsSource
     protected static $deleted_files = null;
 
     /**
+     * A list of return types, keyed by file
+     *
+     * @var array<string, array<int, string>>
+     */
+    protected static $docblock_return_types = [];
+
+    /**
      * @param string $file_name
      * @param array  $preloaded_statements
      */
@@ -140,8 +157,13 @@ class FileChecker implements StatementsSource
      * @param   bool            $cache
      * @return  array|null
      */
-    public function check($check_classes = true, $check_functions = true, Context $file_context = null, $cache = true)
-    {
+    public function check(
+        $check_classes = true,
+        $check_functions = true,
+        Context $file_context = null,
+        $cache = true,
+        $update_docblocks = false
+    ) {
         if ($cache && isset(self::$functions_checked[$this->short_file_name])) {
             return null;
         }
@@ -195,7 +217,7 @@ class FileChecker implements StatementsSource
                             ?: new ClassChecker($stmt, $this, $stmt->name);
 
                         $this->declared_classes[] = $class_checker->getFQCLN();
-                        $class_checker->check($check_functions);
+                        $class_checker->check($check_functions, null, $update_docblocks);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
@@ -218,10 +240,15 @@ class FileChecker implements StatementsSource
                     $namespace_name = implode('\\', $stmt->name->parts);
 
                     $namespace_checker = new NamespaceChecker($stmt, $this);
-                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->check(
+
+                    $namespace_checker->check(
                         $check_classes,
-                        $check_functions
+                        $check_functions,
+                        $update_docblocks
                     );
+
+                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliasedClasses();
+                    $this->namespace_aliased_classes_flipped[$namespace_name] = $namespace_checker->getAliasedClassesFlipped();
 
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
@@ -426,7 +453,7 @@ class FileChecker implements StatementsSource
 
     /**
      * @param  string|null $namespace_name
-     * @return array<string>
+     * @return array<string, string>
      */
     public function getAliasedClasses($namespace_name = null)
     {
@@ -435,6 +462,19 @@ class FileChecker implements StatementsSource
         }
 
         return $this->aliased_classes;
+    }
+
+    /**
+     * @param  string|null $namespace_name
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlipped($namespace_name = null)
+    {
+        if ($namespace_name && isset($this->namespace_aliased_classes_flipped[$namespace_name])) {
+            return $this->namespace_aliased_classes_flipped[$namespace_name];
+        }
+
+        return $this->aliased_classes_flipped;
     }
 
     /**
@@ -576,6 +616,7 @@ class FileChecker implements StatementsSource
             if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 foreach ($stmt->uses as $use) {
                     $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                    $this->aliased_classes_flipped[implode('\\', $use->name->parts)] = $use->alias;
                 }
             }
         }
@@ -841,5 +882,23 @@ class FileChecker implements StatementsSource
     protected static function getParserCacheKey($file_name)
     {
         return md5($file_name);
+    }
+
+    /**
+     * Adds a docblock to the given file
+     * @param string $file_name
+     * @param int    $line_number
+     * @param string $new_type
+     */
+    public static function addDocblockReturnType($file_name, $line_number, $new_type)
+    {
+        if ($new_type === 'null') {
+            $new_type = 'void';
+        }
+
+        $new_type = str_replace('<mixed, mixed>', '', $new_type);
+
+        var_dump($file_name . ':' . $line_number . ' - ' . $new_type);
+        self::$docblock_return_types[$file_name][$line_number] = $new_type;
     }
 }

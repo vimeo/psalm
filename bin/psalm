@@ -19,7 +19,7 @@ ini_set('memory_limit', '2048M');
 ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
-$options = getopt('f:m:hc:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff', 'file:', 'self-check']);
+$options = getopt('f:m:hc:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff', 'file:', 'self-check', 'update-docblocks']);
 
 if (array_key_exists('help', $options)) {
     $options['h'] = false;
@@ -112,6 +112,8 @@ $show_info = isset($options['show-info'])
 
 $is_diff = isset($options['diff']);
 
+$update_docblocks = isset($options['update-docblocks']);
+
 // initialise custom config, if passed
 if ($path_to_config) {
     ProjectChecker::setConfigXML($path_to_config);
@@ -129,9 +131,9 @@ if (array_key_exists('self-check', $options)) {
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            ProjectChecker::checkDir($path_to_check, $debug);
+            ProjectChecker::checkDir($path_to_check, $debug, $update_docblocks);
         } else {
-            ProjectChecker::checkFile($path_to_check, $debug);
+            ProjectChecker::checkFile($path_to_check, $debug, $update_docblocks);
         }
     }
 }

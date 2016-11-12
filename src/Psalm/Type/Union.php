@@ -34,7 +34,20 @@ class Union extends Type
             '|',
             array_map(
                 function ($type) {
-                    return (string) $type;
+                    return (string)$type;
+                },
+                $this->types
+            )
+        );
+    }
+
+    public function toNamespacedString(array $aliased_classes, $this_class)
+    {
+        return implode(
+            '|',
+            array_map(
+                function ($type) use ($aliased_classes, $this_class) {
+                    return $type->toNamespacedString($aliased_classes, $this_class);
                 },
                 $this->types
             )

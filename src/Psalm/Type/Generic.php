@@ -28,10 +28,29 @@ class Generic extends Atomic
         return $this->value .
                 '<' .
                 implode(
-                    ',',
+                    ', ',
                     array_map(
                         function ($type_param) {
                             return (string) $type_param;
+                        },
+                        $this->type_params
+                    )
+                ) .
+                '>';
+    }
+
+    /**
+     * @return string
+     */
+    public function toNamespacedString(array $aliased_classes, $this_class)
+    {
+        return $this->value .
+                '<' .
+                implode(
+                    ', ',
+                    array_map(
+                        function ($type_param) use ($aliased_classes, $this_class) {
+                            return $type_param->toNamespacedString($aliased_classes, $this_class);
                         },
                         $this->type_params
                     )
