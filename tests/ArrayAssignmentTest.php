@@ -414,4 +414,18 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<string, array<int, string>>', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('array<string, array<string, array<int, string>>>', (string) $context->vars_in_scope['$c']);
     }
+
+    public function testAssignExplicitValueToGeneric()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @var array<string, array<string, string>> */
+        $a = [];
+        $a["foo"] = ["bar" => "baz"];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<string, array<string, string>>', (string) $context->vars_in_scope['$a']);
+    }
 }

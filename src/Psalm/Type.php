@@ -477,7 +477,10 @@ abstract class Type
         foreach ($value_types as $generic_type => $value_type) {
             // special case for ObjectLike where $value_type is actually an array of properties
             if ($generic_type === 'object-like') {
-                $new_types[] = new ObjectLike('array', $value_type);
+                if (!isset($value_types['array']) || isset($value_types['array']['empty'])) {
+                    $new_types[] = new ObjectLike('array', $value_type);
+                }
+
                 continue;
             }
 
@@ -584,11 +587,15 @@ abstract class Type
             }
         } elseif ($type instanceof ObjectLike) {
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
-                if (!isset($value_types['object-like'][$candidate_property_name])) {
+                $value_type = isset($value_types['object-like'][$candidate_property_name])
+                    ? $value_types['object-like'][$candidate_property_name]
+                    : null;
+
+                if (!$value_type) {
                     $value_types['object-like'][$candidate_property_name] = $candidate_property_type;
                 } else {
                     $value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
-                        $value_types['object-like'][$candidate_property_name],
+                        $value_type,
                         $candidate_property_type
                     );
                 }
