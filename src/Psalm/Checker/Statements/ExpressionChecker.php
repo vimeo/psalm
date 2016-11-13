@@ -745,9 +745,21 @@ class ExpressionChecker
 
         // let's do some fun type assignment
         if (isset($stmt->left->inferredType) && isset($stmt->right->inferredType)) {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+                self::checkPlusOp(
+                    $statements_checker,
+                    $stmt->getLine(),
+                    $stmt->left->inferredType,
+                    $stmt->right->inferredType,
+                    $result_type
+                );
+
+                if ($result_type) {
+                    $stmt->inferredType = $result_type;
+                }
+
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
             ) {
                 if ($stmt->left->inferredType->isInt() && $stmt->right->inferredType->isInt()) {
                     $stmt->inferredType = Type::getInt();
@@ -783,6 +795,45 @@ class ExpressionChecker
         }
 
         return null;
+    }
+
+    public static function checkPlusOp(
+        StatementsChecker $statements_checker,
+        $line_number,
+        Type\Union $left_type,
+        Type\Union $right_type,
+        Type\Union &$result_type = null
+    ) {
+        if ($left_type && !$left_type->isMixed()) {
+            if ($left_type->hasNumericType()) {
+                if ($left_type->isInt() && $right_type->isInt()) {
+                    $result_type = Type::getInt();
+                    return;
+                }
+
+                if ($left_type->hasNumericType() && $right_type->hasNumericType()) {
+                    $result_type = Type::getFloat();
+                    return;
+                }
+            } elseif ($left_type->hasArray()) {
+                if (!$right_type || $right_type->isMixed()) {
+                    // @todo emit issue
+                    $result_type = Type::getMixed();
+                    return;
+                }
+
+                if (!$right_type->hasArray()) {
+                    // @todo emit issue
+
+                    return;
+                }
+
+                $var_array_type = $left_type->types['array'];
+                $expr_array_type = $right_type->types['array'];
+
+                $result_type = Type::combineTypes([$var_array_type, $expr_array_type]);
+            }
+        }
     }
 
     /**

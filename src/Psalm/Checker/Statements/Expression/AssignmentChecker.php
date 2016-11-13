@@ -185,7 +185,29 @@ class AssignmentChecker
             return false;
         }
 
-        return ExpressionChecker::check($statements_checker, $stmt->expr, $context);
+        if (ExpressionChecker::check($statements_checker, $stmt->expr, $context) === false) {
+            return false;
+        }
+
+        $var_id = ExpressionChecker::getVarId(
+            $stmt->var,
+            $statements_checker->getFQCLN(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
+
+        $var_type = isset($stmt->var->inferredType) ? clone $stmt->var->inferredType : null;
+        $expr_type = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
+
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus) {
+            ExpressionChecker::checkPlusOp($statements_checker, $stmt->getLine(), $var_type, $expr_type, $result_type);
+
+            if ($result_type && $var_id) {
+                $context->vars_in_scope[$var_id] = $result_type;
+            }
+        }
+
+        return null;
     }
 
     /**
