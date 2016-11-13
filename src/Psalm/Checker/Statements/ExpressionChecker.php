@@ -800,8 +800,8 @@ class ExpressionChecker
     public static function checkPlusOp(
         StatementsChecker $statements_checker,
         $line_number,
-        Type\Union $left_type,
-        Type\Union $right_type,
+        Type\Union $left_type = null,
+        Type\Union $right_type = null,
         Type\Union &$result_type = null
     ) {
         if ($left_type && !$left_type->isMixed()) {
