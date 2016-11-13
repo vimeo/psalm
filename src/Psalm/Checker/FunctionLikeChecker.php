@@ -355,7 +355,11 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public function getAliasedClassesFlipped()
     {
-        return $this->source->getAliasedClassesFlipped();
+        if ($this->source instanceof NamespaceChecker || $this->source instanceof FileChecker || $this->source instanceof ClassLikeChecker) {
+            return $this->source->getAliasedClassesFlipped();
+        }
+
+        return [];
     }
 
     /**
@@ -509,7 +513,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $inferred_return_type = $inferred_yield_type;
         }
 
-        if (!$method_return_types && $update_docblock) {
+        if (!$method_return_types) {
             if ($inferred_return_type && !$inferred_return_type->isMixed()) {
                 FileChecker::addDocblockReturnType(
                     $this->file_name,

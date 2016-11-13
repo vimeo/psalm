@@ -33,6 +33,7 @@ class ProjectChecker
     /**
      * @param  boolean $debug
      * @param  boolean $is_diff
+     * @param  boolean $update_docblocks
      * @return void
      */
     public static function check($debug = false, $is_diff = false, $update_docblocks = false)
@@ -97,6 +98,7 @@ class ProjectChecker
     /**
      * @param  string  $dir_name
      * @param  boolean $debug
+     * @param  boolean $update_docblocks
      * @return void
      */
     public static function checkDir($dir_name, $debug = false, $update_docblocks = false)
@@ -119,6 +121,7 @@ class ProjectChecker
      * @param  string $dir_name
      * @param  Config $config
      * @param  bool   $debug
+     * @param  bool   $update_docblocks
      * @return void
      */
     protected static function checkDirWithConfig($dir_name, Config $config, $debug, $update_docblocks)
@@ -263,7 +266,8 @@ class ProjectChecker
 
     /**
      * @param  string  $file_name
-     * @param  boolean $debug
+     * @param  bool    $debug
+     * @param  bool    $update_docblocks
      * @return void
      */
     public static function checkFile($file_name, $debug = false, $update_docblocks = false)

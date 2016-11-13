@@ -446,7 +446,7 @@ abstract class Type
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
-        /** @var array<string, array<string, Union|null>> */
+        /** @var array<string, array<string, Union>> */
         $key_types = [];
 
         /** @var array<string, array<string, Union|null>> */
@@ -548,7 +548,7 @@ abstract class Type
 
     /**
      * @param  Atomic                                   $type
-     * @param  array<string, array<string, Union|null>> &$key_types
+     * @param  array<string, array<string, Union>>      &$key_types
      * @param  array<string, array<string, Union|null>> &$value_types
      * @return null|Union
      */

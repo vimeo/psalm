@@ -157,11 +157,11 @@ class StatementsChecker
                 break;
             }
 
-            /*
-            if (isset($context->vars_in_scope['$columns'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$columns']);
+            ///*
+            if (isset($context->vars_in_scope['$value_types'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$value_types']);
             }
-            */
+            //*/
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 IfChecker::check($this, $stmt, $context, $loop_context);

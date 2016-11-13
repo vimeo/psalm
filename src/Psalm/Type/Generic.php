@@ -30,8 +30,8 @@ class Generic extends Atomic
                 implode(
                     ', ',
                     array_map(
-                        function ($type_param) {
-                            return (string) $type_param;
+                        function (Union $type_param) {
+                            return (string)$type_param;
                         },
                         $this->type_params
                     )
@@ -40,6 +40,8 @@ class Generic extends Atomic
     }
 
     /**
+     * @param  array<string> $aliased_classes
+     * @param  string        $this_class
      * @return string
      */
     public function toNamespacedString(array $aliased_classes, $this_class)
@@ -49,7 +51,7 @@ class Generic extends Atomic
                 implode(
                     ', ',
                     array_map(
-                        function ($type_param) use ($aliased_classes, $this_class) {
+                        function (Union $type_param) use ($aliased_classes, $this_class) {
                             return $type_param->toNamespacedString($aliased_classes, $this_class);
                         },
                         $this->type_params

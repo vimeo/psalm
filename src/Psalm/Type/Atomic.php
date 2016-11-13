@@ -30,6 +30,11 @@ class Atomic extends Type
         return $this->value;
     }
 
+    /**
+     * @param  array<string> $aliased_classes
+     * @param  string        $this_class
+     * @return string
+     */
     public function toNamespacedString(array $aliased_classes, $this_class)
     {
         if ($this->value === $this_class) {

@@ -220,8 +220,9 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * @param bool $check_methods
-     * @param Context|null $class_context
+     * @param bool          $check_methods
+     * @param Context|null  $class_context
+     * @param bool          $update_docblocks
      * @return false|null
      */
     public function check($check_methods = true, Context $class_context = null, $update_docblocks = false)
@@ -858,7 +859,11 @@ abstract class ClassLikeChecker implements StatementsSource
      */
     public function getAliasedClassesFlipped()
     {
-        return $this->source->getAliasedClassesFlipped();
+        if ($this->source instanceof NamespaceChecker || $this->source instanceof FileChecker) {
+            return $this->source->getAliasedClassesFlipped();
+        }
+
+        return [];
     }
 
     /**

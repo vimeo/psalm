@@ -64,6 +64,7 @@ class NamespaceChecker implements StatementsSource
     /**
      * @param   bool    $check_classes
      * @param   bool    $check_class_statements
+     * @param   bool    $update_docblocks
      * @return  void
      */
     public function check($check_classes = true, $check_class_statements = true, $update_docblocks = false)

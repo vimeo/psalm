@@ -45,6 +45,8 @@ class ObjectLike extends Atomic
     }
 
     /**
+     * @param  array<string> $aliased_classes
+     * @param  string        $this_class
      * @return string
      */
     public function toNamespacedString(array $aliased_classes, $this_class)
@@ -54,7 +56,7 @@ class ObjectLike extends Atomic
                 implode(
                     ', ',
                     array_map(
-                        function ($name, $type) use ($aliased_classes, $this_class) {
+                        function ($name, Union $type) use ($aliased_classes, $this_class) {
                             return $name . ':' . $type->toNamespacedString($aliased_classes, $this_class);
                         },
                         array_keys($this->properties),

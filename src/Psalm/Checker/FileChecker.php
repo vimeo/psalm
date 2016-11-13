@@ -155,6 +155,7 @@ class FileChecker implements StatementsSource
      * @param   bool            $check_functions
      * @param   Context|null    $file_context
      * @param   bool            $cache
+     * @param   bool            $update_docblocks
      * @return  array|null
      */
     public function check(
@@ -281,7 +282,7 @@ class FileChecker implements StatementsSource
         if ($update_docblocks && isset(self::$docblock_return_types[$this->short_file_name])) {
             $line_upset = 0;
 
-            $file_lines = explode(PHP_EOL, file_get_contents($this->real_file_name));
+            $file_lines = explode(PHP_EOL, (string)file_get_contents($this->real_file_name));
 
             $file_docblock_updates = self::$docblock_return_types[$this->short_file_name];
 
@@ -902,9 +903,10 @@ class FileChecker implements StatementsSource
 
     /**
      * Adds a docblock to the given file
-     * @param string $file_name
-     * @param int    $line_number
-     * @param string $new_type
+     * @param   string $file_name
+     * @param   int    $line_number
+     * @param   string $new_type
+     * @return  void
      */
     public static function addDocblockReturnType($file_name, $line_number, $docblock, $new_type)
     {
@@ -917,6 +919,7 @@ class FileChecker implements StatementsSource
      * @param  array<int, string>   $file_lines
      * @param  int                  $line_number
      * @param  int                  $line_upset
+     * @param  string               $existing_docblock
      * @param  string               $type
      * @return void
      */
