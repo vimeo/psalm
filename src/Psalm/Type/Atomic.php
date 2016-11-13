@@ -38,7 +38,8 @@ class Atomic extends Type
     public function toNamespacedString(array $aliased_classes, $this_class)
     {
         if ($this->value === $this_class) {
-            return $this_class;
+            $class_parts = explode('\\', $this_class);
+            return array_pop($class_parts);
         }
 
         if (isset($aliased_classes[$this->value])) {

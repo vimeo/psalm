@@ -806,14 +806,16 @@ class ExpressionChecker
     ) {
         if ($left_type && !$left_type->isMixed()) {
             if ($left_type->hasNumericType()) {
-                if ($left_type->isInt() && $right_type->isInt()) {
-                    $result_type = Type::getInt();
-                    return;
-                }
+                if ($right_type) {
+                    if ($left_type->isInt() && $right_type->isInt()) {
+                        $result_type = Type::getInt();
+                        return;
+                    }
 
-                if ($left_type->hasNumericType() && $right_type->hasNumericType()) {
-                    $result_type = Type::getFloat();
-                    return;
+                    if ($left_type->hasNumericType() && $right_type->hasNumericType()) {
+                        $result_type = Type::getFloat();
+                        return;
+                    }
                 }
             } elseif ($left_type->hasArray()) {
                 if (!$right_type || $right_type->isMixed()) {
