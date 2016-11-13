@@ -225,15 +225,15 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($docblock_info) {
-            if ($docblock_info['deprecated']) {
+            if ($docblock_info->deprecated) {
                 self::$deprecated_functions[$file_name][$function_id] = true;
             }
 
-            if ($docblock_info['variadic']) {
+            if ($docblock_info->variadic) {
                 self::$variadic_functions[$file_name][$function_id] = true;
             }
 
-            $this->suppressed_issues = $docblock_info['suppress'];
+            $this->suppressed_issues = $docblock_info->suppress;
 
             if ($function->returnType) {
                 $return_type = Type::parseString(
@@ -248,11 +248,11 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($config->use_docblock_types) {
-                if ($docblock_info['return_type']) {
+                if ($docblock_info->return_type) {
                     $return_type =
                         Type::parseString(
                             self::fixUpLocalType(
-                                (string)$docblock_info['return_type'],
+                                (string)$docblock_info->return_type,
                                 null,
                                 $this->namespace,
                                 $this->getAliasedClasses()
@@ -260,9 +260,9 @@ class FunctionChecker extends FunctionLikeChecker
                         );
                 }
 
-                if ($docblock_info['params']) {
+                if ($docblock_info->params) {
                     $this->improveParamsFromDocblock(
-                        $docblock_info['params'],
+                        $docblock_info->params,
                         $function_param_names,
                         self::$file_function_params[$file_name][$function_id],
                         $function->getLine()

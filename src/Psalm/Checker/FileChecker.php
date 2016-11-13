@@ -129,7 +129,7 @@ class FileChecker implements StatementsSource
     /**
      * A list of return types, keyed by file
      *
-     * @var array<string, array<int, string>>
+     * @var array<string, array<int, array<string>>>
      */
     protected static $docblock_return_types = [];
 
@@ -277,6 +277,22 @@ class FileChecker implements StatementsSource
         }
 
         self::$files_checked[$this->real_file_name] = true;
+
+        if ($update_docblocks && isset(self::$docblock_return_types[$this->short_file_name])) {
+            $line_upset = 0;
+
+            $file_lines = explode(PHP_EOL, file_get_contents($this->real_file_name));
+
+            $file_docblock_updates = self::$docblock_return_types[$this->short_file_name];
+
+            foreach ($file_docblock_updates as $line_number => $type) {
+                self::updateDocblock($file_lines, $line_number, $line_upset, $type[0], $type[1]);
+            }
+
+            file_put_contents($this->real_file_name, implode(PHP_EOL, $file_lines));
+
+            echo 'Added/updated ' . count($file_docblock_updates) . ' docblocks in ' . $this->short_file_name . PHP_EOL;
+        }
 
         return $stmts;
     }
@@ -890,15 +906,43 @@ class FileChecker implements StatementsSource
      * @param int    $line_number
      * @param string $new_type
      */
-    public static function addDocblockReturnType($file_name, $line_number, $new_type)
+    public static function addDocblockReturnType($file_name, $line_number, $docblock, $new_type)
     {
-        if ($new_type === 'null') {
-            $new_type = 'void';
-        }
-
         $new_type = str_replace('<mixed, mixed>', '', $new_type);
 
-        var_dump($file_name . ':' . $line_number . ' - ' . $new_type);
-        self::$docblock_return_types[$file_name][$line_number] = $new_type;
+        self::$docblock_return_types[$file_name][$line_number] = [$docblock, $new_type];
+    }
+
+    /**
+     * @param  array<int, string>   $file_lines
+     * @param  int                  $line_number
+     * @param  int                  $line_upset
+     * @param  string               $type
+     * @return void
+     */
+    public static function updateDocblock(array &$file_lines, $line_number, &$line_upset, $existing_docblock, $type)
+    {
+        $line_number += $line_upset;
+        $function_line = $file_lines[$line_number - 1];
+        $left_padding = str_replace(ltrim($function_line), '', $function_line);
+
+        $line_before = $file_lines[$line_number - 2];
+
+        $parsed_docblock = [];
+        $existing_line_count = $existing_docblock ? substr_count($existing_docblock, PHP_EOL) + 1 : 0;
+
+        if ($existing_docblock) {
+            $parsed_docblock = CommentChecker::parseDocComment($existing_docblock);
+        }
+        else {
+            $parsed_docblock['description'] = '';
+        }
+
+        $parsed_docblock['specials']['return'] = [$type];
+        $new_docblock_lines = CommentChecker::renderDocComment($parsed_docblock, $left_padding);
+
+        $line_upset += count($new_docblock_lines) - $existing_line_count;
+
+        array_splice($file_lines, $line_number - $existing_line_count - 1, $existing_line_count, $new_docblock_lines);
     }
 }

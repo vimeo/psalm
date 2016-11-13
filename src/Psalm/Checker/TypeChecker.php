@@ -1624,11 +1624,9 @@ class TypeChecker
                 }
 
                 if (!$is_match) {
-                    $truly_different = true;
+                    return true;
                 }
             }
-
-            return !$truly_different;
         }
 
         foreach ($declared_type->types as $key => $declared_atomic_type) {

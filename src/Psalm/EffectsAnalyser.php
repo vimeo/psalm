@@ -127,9 +127,16 @@ class EffectsAnalyser
 
             if (!$last_stmt instanceof PhpParser\Node\Stmt\Return_ &&
                 !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts) &&
-                !$yield_types
+                !$yield_types &&
+                count($return_types)
             ) {
-                $return_types[] = new Type\Atomic('null');
+                // only add null if we have a return statement elsewhere and it wasn't void
+                foreach ($return_types as $return_type) {
+                    if (!$return_type->isVoid()) {
+                        $return_types[] = new Type\Atomic('null');
+                        break;
+                    }
+                }
             }
         }
 

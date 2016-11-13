@@ -670,47 +670,6 @@ class StatementsChecker
     }
 
     /**
-     * @param  array{description:string,specials:array<string,array<string>>} $parsed_doc_comment
-     * @return string
-     */
-    public static function renderDocComment(array $parsed_doc_comment)
-    {
-        $doc_comment_text = '/**' . PHP_EOL;
-
-        $description_lines = null;
-
-        $trimmed_description = trim($parsed_doc_comment['description']);
-
-        if (!empty($trimmed_description)) {
-            $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
-
-            foreach ($description_lines as $line) {
-                $doc_comment_text .= ' * ' . $line . PHP_EOL;
-            }
-        }
-
-        if ($description_lines && $parsed_doc_comment['specials']) {
-            $doc_comment_text .= ' *' . PHP_EOL;
-        }
-
-        if ($parsed_doc_comment['specials']) {
-            $type_lengths = array_map('strlen', array_keys($parsed_doc_comment['specials']));
-            /** @var int */
-            $type_width = max($type_lengths) + 1;
-
-            foreach ($parsed_doc_comment['specials'] as $type => $lines) {
-                foreach ($lines as $line) {
-                    $doc_comment_text .= ' * @' . str_pad($type, $type_width) . $line . PHP_EOL;
-                }
-            }
-        }
-
-        $doc_comment_text .= ' */';
-
-        return $doc_comment_text;
-    }
-
-    /**
      * @param  string  $method_id
      * @param  int     $argument_offset
      * @return boolean

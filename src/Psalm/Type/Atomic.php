@@ -162,6 +162,7 @@ class Atomic extends Type
                     && !$this->isArray()
                     && !$this->isMixed()
                     && !$this->isNull()
+                    && !$this->isVoid()
                     && !$this->isResource()
                 );
     }

@@ -3,6 +3,7 @@ namespace Psalm\Checker;
 
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\FunctionDocblockComment;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -71,26 +72,14 @@ class CommentChecker
 
     /**
      * @param  string $comment
-     * @return array
-     * @psalm-return array{
-     *  return_type: null|string,
-     *  params: array<int, array{name:string, type:string}>,
-     *  deprecated: bool,
-     *  suppress: array<string>,
-     *  variadic: boolean
-     * }
+     * @return FunctionDocblockComment
      * @throws DocblockParseException If there was a problem parsing the docblock.
      */
     public static function extractDocblockInfo($comment)
     {
         $comments = self::parseDocComment($comment);
 
-        $info = [
-            'return_type' => null,
-            'params' => [],
-            'deprecated' => false,
-            'suppress' => []
-        ];
+        $info = new FunctionDocblockComment();
 
         if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
             $return_block = trim(
@@ -109,7 +98,7 @@ class CommentChecker
                 && !preg_match('/\[[^\]]+\]/', $line_parts[0])
                 && !strpos($line_parts[0], '::')
             ) {
-                $info['return_type'] = $line_parts[0];
+                $info->return_type = $line_parts[0];
             }
         }
 
@@ -131,22 +120,22 @@ class CommentChecker
                         $line_parts[1] = substr($line_parts[1], 1);
                     }
 
-                    $info['params'][] = ['name' => substr($line_parts[1], 1), 'type' => $line_parts[0]];
+                    $info->params[] = ['name' => substr($line_parts[1], 1), 'type' => $line_parts[0]];
                 }
             }
         }
 
         if (isset($comments['specials']['deprecated'])) {
-            $info['deprecated'] = true;
+            $info->deprecated = true;
         }
 
         if (isset($comments['specials']['psalm-suppress'])) {
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
-                $info['suppress'][] = preg_split('/[\s]+/', (string)$suppress_entry)[0];
+                $info->suppress[] = preg_split('/[\s]+/', (string)$suppress_entry)[0];
             }
         }
 
-        $info['variadic'] = isset($comments['specials']['psalm-variadic']);
+        $info->variadic = isset($comments['specials']['psalm-variadic']);
 
         return $info;
     }
@@ -277,5 +266,46 @@ class CommentChecker
             'description' => $docblock,
             'specials' => $special
         ];
+    }
+
+    /**
+     * @param  array{description:string,specials:array<string,array<string>>} $parsed_doc_comment
+     * @return array<int, string>
+     */
+    public static function renderDocComment(array $parsed_doc_comment, $left_padding)
+    {
+        $doc_comment_text = [$left_padding . '/**'];
+
+        $description_lines = null;
+
+        $trimmed_description = trim($parsed_doc_comment['description']);
+
+        if (!empty($trimmed_description)) {
+            $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
+
+            foreach ($description_lines as $line) {
+                $doc_comment_text[] = $left_padding . ' * ' . $line;
+            }
+        }
+
+        if ($description_lines && $parsed_doc_comment['specials']) {
+            $doc_comment_text[] = $left_padding . ' *';
+        }
+
+        if ($parsed_doc_comment['specials']) {
+            $special_type_lengths = array_map('strlen', array_keys($parsed_doc_comment['specials']));
+            /** @var int */
+            $special_type_width = max($special_type_lengths) + 1;
+
+            foreach ($parsed_doc_comment['specials'] as $type => $lines) {
+                foreach ($lines as $line) {
+                    $doc_comment_text[] = $left_padding . ' * @' . str_pad($type, $special_type_width) . $line;
+                }
+            }
+        }
+
+        $doc_comment_text[] = $left_padding . ' */';
+
+        return $doc_comment_text;
     }
 }

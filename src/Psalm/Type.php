@@ -446,10 +446,10 @@ abstract class Type
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
-        /** @var array<string, array<string, Union>> */
+        /** @var array<string, array<string, Union|null>> */
         $key_types = [];
 
-        /** @var array<string, array<string, Union>> */
+        /** @var array<string, array<string, Union|null>> */
         $value_types = [];
 
         foreach ($types as $type) {
@@ -463,6 +463,12 @@ abstract class Type
         if (count($value_types) === 1) {
             if (isset($value_types['false'])) {
                 return self::getBool();
+            }
+        } elseif (isset($value_types['void'])) {
+            unset($value_types['void']);
+
+            if (!isset($value_types['null'])) {
+                $value_types['null'] = ['null' => null];
             }
         }
 
@@ -541,9 +547,9 @@ abstract class Type
     }
 
     /**
-     * @param  Atomic                               $type
-     * @param  array<string, array<string, Union>>  &$key_types
-     * @param  array<string, array<string, Union>>  &$value_types
+     * @param  Atomic                                   $type
+     * @param  array<string, array<string, Union|null>> &$key_types
+     * @param  array<string, array<string, Union|null>> &$value_types
      * @return null|Union
      */
     public static function scrapeTypeProperties(Atomic $type, array &$key_types, array &$value_types)
@@ -555,10 +561,6 @@ abstract class Type
 
         if ($type->value === 'mixed') {
             return Type::getMixed();
-        }
-
-        if ($type->value === 'void') {
-            $type->value = 'null';
         }
 
         // deal with false|bool => bool

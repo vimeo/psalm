@@ -333,22 +333,22 @@ class MethodChecker extends FunctionLikeChecker
             }
 
             if ($docblock_info) {
-                if ($docblock_info['deprecated']) {
+                if ($docblock_info->deprecated) {
                     self::$deprecated_methods[$method_id] = true;
                 }
 
-                if ($docblock_info['variadic']) {
+                if ($docblock_info->variadic) {
                     self::$variadic_methods[$method_id] = true;
                 }
 
-                $this->suppressed_issues = $docblock_info['suppress'];
+                $this->suppressed_issues = $docblock_info->suppress;
                 self::$method_suppress[$method_id] = $this->suppressed_issues;
 
                 if ($config->use_docblock_types) {
-                    if ($docblock_info['return_type']) {
+                    if ($docblock_info->return_type) {
                         $return_type = Type::parseString(
                             $this->fixUpLocalType(
-                                (string)$docblock_info['return_type'],
+                                (string)$docblock_info->return_type,
                                 $this->fq_class_name,
                                 $this->namespace,
                                 $this->getAliasedClasses()
@@ -356,9 +356,9 @@ class MethodChecker extends FunctionLikeChecker
                         );
                     }
 
-                    if ($docblock_info['params']) {
+                    if ($docblock_info->params) {
                         $this->improveParamsFromDocblock(
-                            $docblock_info['params'],
+                            $docblock_info->params,
                             $method_param_names,
                             self::$method_params[$method_id],
                             $method->getLine()

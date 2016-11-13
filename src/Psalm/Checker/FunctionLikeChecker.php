@@ -499,7 +499,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             true
         );
 
-        $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : null;
+        $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : Type::getVoid();
         $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
 
         $inferred_generator_return_type = null;
@@ -510,10 +510,11 @@ abstract class FunctionLikeChecker implements StatementsSource
         }
 
         if (!$method_return_types && $update_docblock) {
-            if ($inferred_return_type) {
+            if ($inferred_return_type && !$inferred_return_type->isMixed()) {
                 FileChecker::addDocblockReturnType(
                     $this->file_name,
                     $this->function->getLine(),
+                    (string)$this->function->getDocComment(),
                     $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
                 );
             }
@@ -529,7 +530,7 @@ abstract class FunctionLikeChecker implements StatementsSource
             $method_id
         );
 
-        if (!$inferred_return_type && !$inferred_yield_types) {
+        if (!$inferred_return_types && !$inferred_yield_types) {
             if ($declared_return_type->isVoid()) {
                 return null;
             }
@@ -555,7 +556,7 @@ abstract class FunctionLikeChecker implements StatementsSource
         }
 
         if ($inferred_return_type && !$declared_return_type->isMixed()) {
-            if ($inferred_return_type->isNull() && $declared_return_type->isVoid()) {
+            if ($inferred_return_type->isVoid() && $declared_return_type->isVoid()) {
                 return null;
             }
 
@@ -575,23 +576,22 @@ abstract class FunctionLikeChecker implements StatementsSource
                 return null;
             }
 
-            if ($update_docblock) {
-                if ((string)$inferred_return_type !== (string)$declared_return_type) {
-                    FileChecker::addDocblockReturnType(
-                        $this->file_name,
-                        $this->function->getLine(),
-                        $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
-                    );
-                }
-
-                return null;
-            }
-
             if (!TypeChecker::hasIdenticalTypes(
                 $declared_return_type,
                 $inferred_return_type,
                 $this->fq_class_name
             )) {
+                if ($update_docblock) {
+                    FileChecker::addDocblockReturnType(
+                        $this->file_name,
+                        $this->function->getLine(),
+                        (string)$this->function->getDocComment(),
+                        $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
+                    );
+
+                    return null;
+                }
+
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
