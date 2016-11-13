@@ -582,12 +582,14 @@ abstract class FunctionLikeChecker implements StatementsSource
                 $this->fq_class_name
             )) {
                 if ($update_docblock) {
-                    FileChecker::addDocblockReturnType(
-                        $this->file_name,
-                        $this->function->getLine(),
-                        (string)$this->function->getDocComment(),
-                        $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
-                    );
+                    if (!in_array('InvalidReturnType', $this->getSuppressedIssues())) {
+                        FileChecker::addDocblockReturnType(
+                            $this->file_name,
+                            $this->function->getLine(),
+                            (string)$this->function->getDocComment(),
+                            $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
+                        );
+                    }
 
                     return null;
                 }
@@ -828,7 +830,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                 continue;
             }
 
-            if (isset($return_type_token[$i + 1]) && $return_type_token[$i + 1] === ':') {
+            if (isset($return_type_tokens[$i + 1]) && $return_type_tokens[$i + 1] === ':') {
                 continue;
             }
 

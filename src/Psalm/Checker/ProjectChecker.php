@@ -99,7 +99,7 @@ class ProjectChecker
      * @param  boolean $debug
      * @return void
      */
-    public static function checkDir($dir_name, $debug = false)
+    public static function checkDir($dir_name, $debug = false, $update_docblocks = false)
     {
         if (!self::$config) {
             self::$config = self::getConfigForPath($dir_name);
@@ -110,7 +110,7 @@ class ProjectChecker
 
         FileChecker::loadReferenceCache();
 
-        self::checkDirWithConfig($dir_name, self::$config, $debug);
+        self::checkDirWithConfig($dir_name, self::$config, $debug, $update_docblocks);
 
         IssueBuffer::finish();
     }

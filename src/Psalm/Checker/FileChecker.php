@@ -373,7 +373,7 @@ class FileChecker implements StatementsSource
 
             $cache_location = $cache_directory . '/' . self::getParserCacheKey($file_name);
 
-            if (is_readable($cache_location) && filemtime($cache_location) >= filemtime($file_name)) {
+            if (is_readable($cache_location) && filemtime($cache_location) > filemtime($file_name)) {
                 /** @var array<int, \PhpParser\Node> */
                 $stmts = unserialize((string)file_get_contents($cache_location));
                 $from_cache = true;

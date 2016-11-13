@@ -59,7 +59,7 @@ class ForeachChecker
         if ($iterator_type) {
             foreach ($iterator_type->types as $return_type) {
                 // if it's an empty array, we cannot iterate over it
-                if ((string) $return_type === 'array<empty,empty>') {
+                if ((string) $return_type === 'array<empty, empty>') {
                     continue;
                 }
 
