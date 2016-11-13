@@ -428,4 +428,36 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
         $this->assertEquals('array<string, array<string, string>>', (string) $context->vars_in_scope['$a']);
     }
+
+    public function testAdditionWithEmpty()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = [];
+        $a += ["bar"];
+
+        $b = [] + ["bar"];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$b']);
+    }
+
+    public function testAdditionDifferentType()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = ["bar"];
+        $a += [1];
+
+        $b = ["bar"] + [1];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, string|int>', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('array<int, string|int>', (string) $context->vars_in_scope['$b']);
+    }
 }
