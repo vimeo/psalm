@@ -855,13 +855,13 @@ class TypeChecker
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            $conditional->right->name->parts === ['null']) {
+            strtolower($conditional->right->name->parts[0]) === 'null') {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            $conditional->left->name->parts === ['null']) {
+            strtolower($conditional->left->name->parts[1]) === 'null') {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -876,13 +876,13 @@ class TypeChecker
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            $conditional->right->name->parts === ['false']) {
+            strtolower($conditional->right->name->parts[0]) === 'false') {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            $conditional->left->name->parts === ['false']) {
+            strtolower($conditional->left->name->parts[0]) === 'false') {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -897,13 +897,13 @@ class TypeChecker
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            $conditional->right->name->parts === ['true']) {
+            strtolower($conditional->right->name->parts[0]) === 'true') {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            $conditional->left->name->parts === ['true']) {
+            strtolower($conditional->left->name->parts[0]) === 'true') {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -918,14 +918,14 @@ class TypeChecker
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            $conditional->right->name->parts === ['gettype'] &&
+            strtolower($conditional->right->name->parts[0]) === 'gettype' &&
             $conditional->left instanceof PhpParser\Node\Scalar\String_) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            $conditional->left->name->parts === ['gettype'] &&
+            strtolower($conditional->left->name->parts[0]) === 'gettype' &&
             $conditional->right instanceof PhpParser\Node\Scalar\String_) {
             return self::ASSIGNMENT_TO_LEFT;
         }
@@ -960,7 +960,7 @@ class TypeChecker
      */
     protected static function hasNullCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_null']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_null') {
             return true;
         }
 
@@ -973,7 +973,7 @@ class TypeChecker
      */
     protected static function hasIsACheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_a'] &&
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_a' &&
             $stmt->args[1]->value instanceof PhpParser\Node\Scalar\String_) {
             return true;
         }
@@ -987,7 +987,7 @@ class TypeChecker
      */
     protected static function hasArrayCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_array']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_array') {
             return true;
         }
 
@@ -1000,7 +1000,7 @@ class TypeChecker
      */
     protected static function hasStringCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_string']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_string') {
             return true;
         }
 
@@ -1013,7 +1013,7 @@ class TypeChecker
      */
     protected static function hasBoolCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_bool']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_bool') {
             return true;
         }
 
