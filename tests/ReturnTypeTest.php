@@ -387,7 +387,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
 
-        $this->assertEquals('array<int,B>', (string) $context->vars_in_scope['$bees']);
+        $this->assertEquals('array<int, B>', (string) $context->vars_in_scope['$bees']);
     }
 
     public function testIssetReturnType()

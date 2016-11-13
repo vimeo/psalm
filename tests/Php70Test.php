@@ -217,7 +217,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('Generator<int,int>', (string) $context->vars_in_scope['$gen']);
+        $this->assertEquals('Generator<int, int>', (string) $context->vars_in_scope['$gen']);
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$gen2']);
     }
 }
