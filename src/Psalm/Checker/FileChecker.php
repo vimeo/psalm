@@ -910,7 +910,7 @@ class FileChecker implements StatementsSource
      */
     public static function addDocblockReturnType($file_name, $line_number, $docblock, $new_type)
     {
-        $new_type = str_replace('<mixed, mixed>', '', $new_type);
+        $new_type = str_replace(['<mixed, mixed>', '<empty, empty>'], '', $new_type);
 
         self::$docblock_return_types[$file_name][$line_number] = [$docblock, $new_type];
     }
