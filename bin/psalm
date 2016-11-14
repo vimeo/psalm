@@ -46,6 +46,7 @@ Options:
          --show-info[=BOOLEAN]   Show non-exception parser findings.
          --diff                  File to check is a diff
          --self-check            Psalm checks itself
+         --update-docblocks      Adds correct return types to the given file(s)
 
 
 HELP;
