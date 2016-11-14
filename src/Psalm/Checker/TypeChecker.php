@@ -861,7 +861,7 @@ class TypeChecker
 
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[1]) === 'null') {
+            strtolower($conditional->left->name->parts[0]) === 'null') {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
