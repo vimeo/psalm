@@ -287,7 +287,7 @@ class FileChecker implements StatementsSource
             $file_docblock_updates = self::$docblock_return_types[$this->short_file_name];
 
             foreach ($file_docblock_updates as $line_number => $type) {
-                self::updateDocblock($file_lines, $line_number, $line_upset, $type[0], $type[1]);
+                self::updateDocblock($file_lines, $line_number, $line_upset, $type[0], $type[1], $type[2]);
             }
 
             file_put_contents($this->real_file_name, implode(PHP_EOL, $file_lines));
@@ -908,11 +908,11 @@ class FileChecker implements StatementsSource
      * @param   string $new_type
      * @return  void
      */
-    public static function addDocblockReturnType($file_name, $line_number, $docblock, $new_type)
+    public static function addDocblockReturnType($file_name, $line_number, $docblock, $new_type, $phpdoc_type)
     {
         $new_type = str_replace(['<mixed, mixed>', '<empty, empty>'], '', $new_type);
 
-        self::$docblock_return_types[$file_name][$line_number] = [$docblock, $new_type];
+        self::$docblock_return_types[$file_name][$line_number] = [$docblock, $new_type, $phpdoc_type];
     }
 
     /**
@@ -923,7 +923,7 @@ class FileChecker implements StatementsSource
      * @param  string               $type
      * @return void
      */
-    public static function updateDocblock(array &$file_lines, $line_number, &$line_upset, $existing_docblock, $type)
+    public static function updateDocblock(array &$file_lines, $line_number, &$line_upset, $existing_docblock, $type, $phpdoc_type)
     {
         $line_number += $line_upset;
         $function_line = $file_lines[$line_number - 1];
@@ -941,7 +941,12 @@ class FileChecker implements StatementsSource
             $parsed_docblock['description'] = '';
         }
 
-        $parsed_docblock['specials']['return'] = [$type];
+        $parsed_docblock['specials']['return'] = [$phpdoc_type];
+
+        if ($type !== $phpdoc_type) {
+            $parsed_docblock['specials']['psalm-return'] = [$type];
+        }
+
         $new_docblock_lines = CommentChecker::renderDocComment($parsed_docblock, $left_padding);
 
         $line_upset += count($new_docblock_lines) - $existing_line_count;

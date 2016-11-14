@@ -44,15 +44,16 @@ class Union extends Type
     /**
      * @param  array<string> $aliased_classes
      * @param  string        $this_class
+     * @param  bool          $use_phpdoc_format
      * @return string
      */
-    public function toNamespacedString(array $aliased_classes, $this_class)
+    public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         return implode(
             '|',
             array_map(
-                function (Atomic $type) use ($aliased_classes, $this_class) {
-                    return $type->toNamespacedString($aliased_classes, $this_class);
+                function (Atomic $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {
+                    return $type->toNamespacedString($aliased_classes, $this_class, $use_phpdoc_format);
                 },
                 $this->types
             )

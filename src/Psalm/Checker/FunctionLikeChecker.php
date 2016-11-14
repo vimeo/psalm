@@ -519,7 +519,8 @@ abstract class FunctionLikeChecker implements StatementsSource
                     $this->file_name,
                     $this->function->getLine(),
                     (string)$this->function->getDocComment(),
-                    $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
+                    $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN(), false),
+                    $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN(), true)
                 );
             }
 
@@ -591,7 +592,8 @@ abstract class FunctionLikeChecker implements StatementsSource
                             $this->file_name,
                             $this->function->getLine(),
                             (string)$this->function->getDocComment(),
-                            $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN())
+                            $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN(), false),
+                            $inferred_return_type->toNamespacedString($this->getAliasedClassesFlipped(), $this->getFQCLN(), true)
                         );
                     }
 
