@@ -797,6 +797,14 @@ class ExpressionChecker
         return null;
     }
 
+    /**
+     * @param  StatementsChecker $statements_checker
+     * @param  int               $line_number
+     * @param  Type\Union|null   $left_type
+     * @param  Type\Union|null   $right_type
+     * @param  Type\Union|null   &$result_type
+     * @return void
+     */
     public static function checkPlusOp(
         StatementsChecker $statements_checker,
         $line_number,

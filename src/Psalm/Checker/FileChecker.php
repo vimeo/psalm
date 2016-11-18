@@ -10,6 +10,7 @@ use Psalm\StatementsSource;
 class FileChecker implements StatementsSource
 {
     const PARSER_CACHE_DIRECTORY = 'php-parser';
+    const FILE_HASHES = 'file_hashes';
     const REFERENCE_CACHE_NAME = 'references';
     const GOOD_RUN_NAME = 'good_run';
 
@@ -96,14 +97,14 @@ class FileChecker implements StatementsSource
     /**
      * A lookup table used for getting all the files that reference a class
      *
-     * @var array<string,array<string,bool>>
+     * @var array<string, array<string,bool>>
      */
     protected static $file_references_to_class = [];
 
     /**
      * A lookup table used for getting all the files referenced by a file
      *
-     * @var array<string,array{a:array<int,string>,i:array<int,string>}>
+     * @var array<string, array{a:array<int, string>, i:array<int, string>}>
      */
     protected static $file_references = [];
 
@@ -115,14 +116,14 @@ class FileChecker implements StatementsSource
     protected static $referencing_files = [];
 
     /**
-     * @var array<string,array<int,string>>
+     * @var array<string, array<int,string>>
      */
     protected static $files_inheriting_classes = [];
 
     /**
      * A list of all files deleted since the last successful run
      *
-     * @var array<int,string>|null
+     * @var array<int, string>|null
      */
     protected static $deleted_files = null;
 
@@ -132,6 +133,13 @@ class FileChecker implements StatementsSource
      * @var array<string, array<int, array<string>>>
      */
     protected static $docblock_return_types = [];
+
+    /**
+     * A map of filename hashes to contents hashes
+     *
+     * @var array<string, string>|null
+     */
+    protected static $file_content_hashes = null;
 
     /**
      * @param string $file_name
@@ -363,18 +371,32 @@ class FileChecker implements StatementsSource
     {
         $stmts = [];
 
+        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+        $parser_cache_directory = $root_cache_directory ? $root_cache_directory . '/' . self::PARSER_CACHE_DIRECTORY : null;
         $from_cache = false;
 
         $cache_location = null;
+        $name_cache_key = null;
 
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $file_contents = (string)file_get_contents($file_name);
+        $file_content_hash = md5($file_contents);
+        $name_cache_key = self::getParserCacheKey($file_name);
 
-        if ($cache_directory) {
-            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
+        if (self::$file_content_hashes === null) {
+            /** @var array<string, string> */
+            self::$file_content_hashes = $root_cache_directory && is_readable($root_cache_directory . '/' . self::FILE_HASHES)
+                ? unserialize((string)file_get_contents($root_cache_directory . '/' . self::FILE_HASHES))
+                : [];
+        }
 
-            $cache_location = $cache_directory . '/' . self::getParserCacheKey($file_name);
+        if ($parser_cache_directory) {
+            $cache_location = $parser_cache_directory . '/' . $name_cache_key;
 
-            if (is_readable($cache_location) && filemtime($cache_location) > filemtime($file_name)) {
+            if (isset(self::$file_content_hashes[$name_cache_key]) &&
+                $file_content_hash === self::$file_content_hashes[$name_cache_key] &&
+                is_readable($cache_location) &&
+                filemtime($cache_location) > filemtime($file_name)
+            ) {
                 /** @var array<int, \PhpParser\Node> */
                 $stmts = unserialize((string)file_get_contents($cache_location));
                 $from_cache = true;
@@ -384,18 +406,22 @@ class FileChecker implements StatementsSource
         if (!$stmts) {
             $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
-            $stmts = $parser->parse((string)file_get_contents($file_name));
+            $stmts = $parser->parse($file_contents);
         }
 
-        if ($cache_directory && $cache_location) {
+        if ($parser_cache_directory && $cache_location) {
             if ($from_cache) {
                 touch($cache_location);
             } else {
-                if (!is_dir($cache_directory)) {
-                    mkdir($cache_directory, 0777, true);
+                if (!is_dir($parser_cache_directory)) {
+                    mkdir($parser_cache_directory, 0777, true);
                 }
 
                 file_put_contents($cache_location, serialize($stmts));
+
+                self::$file_content_hashes[$name_cache_key] = $file_content_hash;
+
+                file_put_contents($root_cache_directory . '/' . self::FILE_HASHES, serialize(self::$file_content_hashes));
             }
         }
 
