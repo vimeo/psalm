@@ -133,7 +133,7 @@ abstract class Type
                 $parse_tree->children
             );
 
-            return new Union($union_types);
+            return self::combineTypes($union_types);
         }
 
         if ($parse_tree->value === ParseTree::OBJECT_LIKE) {
@@ -211,15 +211,16 @@ abstract class Type
      */
     public static function convertSquareBrackets($type)
     {
+        $class_chars = '[a-zA-Z\<\>\\\\_]+';
         return preg_replace_callback(
-            '/([a-zA-Z\<\>\\\\_\(\)|]+)((\[\])+)/',
+            '/(' . $class_chars . '|' . '\((' . $class_chars . '(\|' . $class_chars . ')*' . ')\))((\[\])+)/',
             function ($matches) {
                 $inner_type = str_replace(['(', ')'], '', (string)$matches[1]);
 
-                $dimensionality = strlen((string)$matches[2]) / 2;
+                $dimensionality = strlen((string)$matches[4]) / 2;
 
                 for ($i = 0; $i < $dimensionality; $i++) {
-                    $inner_type = 'array<mixed, ' . $inner_type . '>';
+                    $inner_type = 'array<mixed,' . $inner_type . '>';
                 }
 
                 return $inner_type;

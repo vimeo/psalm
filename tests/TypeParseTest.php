@@ -43,6 +43,8 @@ class TypeParseTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<mixed, A|B>', (string) Type::parseString('(A|B)[]'));
         $this->assertEquals('array<mixed, array<mixed, A>>', (string) Type::parseString('A[][]'));
         $this->assertEquals('array<mixed, array<mixed, A|B>>', (string) Type::parseString('(A|B)[][]'));
+        $this->assertEquals('array<mixed, A|B>', (string) Type::parseString('A[]|B[]'));
+        $this->assertEquals('array<mixed, A|B>|C', (string) Type::parseString('A[]|B[]|C'));
     }
 
     public function testObjectLike()

@@ -318,6 +318,8 @@ class StatementsChecker
 
                 $namespace_checker = new NamespaceChecker($stmt, $this->source);
                 $namespace_checker->check(true);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
+                // do nothing
             } else {
                 if (IssueBuffer::accepts(
                     new UnrecognizedStatement(
