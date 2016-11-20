@@ -212,7 +212,8 @@ class FileChecker implements StatementsSource
             if ($stmt instanceof PhpParser\Node\Stmt\Class_
                 || $stmt instanceof PhpParser\Node\Stmt\Interface_
                 || $stmt instanceof PhpParser\Node\Stmt\Trait_
-                || $stmt instanceof PhpParser\Node\Stmt\Namespace_
+                || ($stmt instanceof PhpParser\Node\Stmt\Namespace_ &&
+                    $stmt->name instanceof PhpParser\Node\Name)
                 || $stmt instanceof PhpParser\Node\Stmt\Function_
             ) {
                 if ($leftover_stmts) {
