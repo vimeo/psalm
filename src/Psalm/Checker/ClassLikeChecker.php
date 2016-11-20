@@ -180,6 +180,13 @@ abstract class ClassLikeChecker implements StatementsSource
     protected static $class_implements = [];
 
     /**
+     * A lookup table for interface parents
+     *
+     * @var array<string, array<string>>
+     */
+    protected static $parent_interfaces = [];
+
+    /**
      * @var array<string,string>
      */
     protected static $class_files = [];
@@ -277,10 +284,20 @@ abstract class ClassLikeChecker implements StatementsSource
             if ($this->parent_class && $this->registerParentClassProperties($this->parent_class) === false) {
                 return false;
             }
+        }
 
+        if ($this instanceof InterfaceChecker || $this instanceof ClassChecker) {
             $extra_interfaces = [];
 
-            foreach (self::$class_implements[$this->fq_class_name] as $interface_id => $interface_name) {
+            if ($this instanceof InterfaceChecker) {
+                $parent_interfaces = InterfaceChecker::getParentInterfaces($this->fq_class_name);
+                $extra_interfaces = $parent_interfaces;
+            }
+            else {
+                $parent_interfaces = self::$class_implements[$this->fq_class_name];
+            }
+
+            foreach ($parent_interfaces as $interface_name) {
                 if (self::checkFullyQualifiedClassLikeName(
                     $interface_name,
                     $this->file_name,
@@ -303,8 +320,13 @@ abstract class ClassLikeChecker implements StatementsSource
             foreach ($extra_interfaces as $extra_interface_name) {
                 FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
 
-                self::$class_implements[$this->fq_class_name][strtolower($extra_interface_name)] =
-                    $extra_interface_name;
+                if ($this instanceof ClassChecker) {
+                    self::$class_implements[$this->fq_class_name][strtolower($extra_interface_name)] =
+                        $extra_interface_name;
+                }
+                else {
+                    $this->registerInheritedMethods($extra_interface_name);
+                }
             }
         }
 
@@ -1072,6 +1094,10 @@ abstract class ClassLikeChecker implements StatementsSource
 
         $class_constants = $reflected_class->getConstants();
 
+        if ($reflected_class->isInterface()) {
+            self::$parent_interfaces[$class_name] = [];
+        }
+
         self::$public_class_constants[$class_name] = [];
 
         foreach ($class_constants as $name => $value) {
@@ -1119,7 +1145,6 @@ abstract class ClassLikeChecker implements StatementsSource
 
         self::$class_methods[$class_name] = [];
 
-        /** @var \ReflectionMethod $reflection_method */
         foreach ($reflection_methods as $reflection_method) {
             MethodChecker::extractReflectionMethodInfo($reflection_method);
 

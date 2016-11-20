@@ -7,11 +7,6 @@ use Psalm\StatementsSource;
 class InterfaceChecker extends ClassLikeChecker
 {
     /**
-     * @var array<string, array<string>>
-     */
-    protected static $parent_interfaces = [];
-
-    /**
      * @var array<string, bool>
      */
     protected static $existing_interfaces = [];
@@ -37,9 +32,9 @@ class InterfaceChecker extends ClassLikeChecker
         self::$existing_interfaces[$interface_name] = true;
         self::$existing_interfaces_ci[strtolower($interface_name)] = true;
 
-        if ($interface->extends) {
-            self::$parent_interfaces[$interface_name] = [];
+        self::$parent_interfaces[$interface_name] = [];
 
+        if ($interface->extends) {
             foreach ($interface->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
                     $extended_interface,
@@ -112,10 +107,6 @@ class InterfaceChecker extends ClassLikeChecker
         self::registerClass($interface_name);
 
         $extended_interfaces = [];
-
-        if (!isset(self::$parent_interfaces[$interface_name])) {
-            return [];
-        }
 
         foreach (self::$parent_interfaces[$interface_name] as $extended_interface_name) {
             $extended_interfaces[] = $extended_interface_name;

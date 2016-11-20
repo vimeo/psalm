@@ -25,7 +25,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         FileChecker::clearCache();
     }
 
-    public function testExtends()
+    public function testExtendsAndImplements()
     {
         $stmts = self::$parser->parse('<?php
         interface A
@@ -38,9 +38,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         interface B
         {
-            public function bar() {
-
-            }
+            public function bar();
         }
 
         interface C extends A, B
@@ -48,9 +46,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             /**
              * @return string
              */
-            public function baz() {
-
-            }
+            public function baz();
         }
 
         class D implements C
@@ -68,13 +64,8 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             }
         }
 
-        function qux(A $a) {
-
-        }
-
         $cee = (new D())->baz();
         $dee = (new D())->foo();
-        qux(new D());
         ?>
         ');
 
@@ -83,5 +74,75 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$cee']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$dee']);
+    }
+
+    public function testIsExtendedInterface()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A
+        {
+            /**
+             * @return string
+             */
+            public function foo();
+        }
+
+        interface B extends A
+        {
+            /**
+             * @return string
+             */
+            public function baz();
+        }
+
+        class C implements B
+        {
+            public function foo()
+            {
+            }
+
+            public function baz()
+            {
+            }
+        }
+
+        function qux(A $a) {
+        }
+
+        qux(new C());
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testExtendsWithMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A
+        {
+            /**
+             * @return string
+             */
+            public function foo();
+        }
+
+        interface B extends A
+        {
+            public function bar();
+        }
+
+        /** @return void */
+        function mux(B $b) {
+            $b->foo();
+        }
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
     }
 }

@@ -152,7 +152,7 @@ class MethodChecker extends FunctionLikeChecker
         $overridden_method_ids = self::getOverriddenMethodIds($method_id);
 
         foreach ($overridden_method_ids as $overridden_method_id) {
-            if (self::$method_return_types[$overridden_method_id]) {
+            if (isset(self::$method_return_types[$overridden_method_id])) {
                 $implementary_return_type = self::$method_return_types[$overridden_method_id];
 
                 if ($implementary_return_type->isNull()) {
