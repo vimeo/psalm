@@ -4,6 +4,10 @@ namespace Psalm\Example\Plugin;
 use PhpParser;
 use Psalm\Checker;
 
+/**
+ * Checks all strings to see if they contain references to classes
+ * and, if so, checks that those classes exist
+ */
 class StringChecker extends \Psalm\Plugin
 {
     /**
