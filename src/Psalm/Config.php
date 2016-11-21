@@ -111,6 +111,9 @@ class Config
      */
     protected $plugins = [];
 
+    /** @var array<string, mixed> */
+    protected $predefined_constants;
+
     private function __construct()
     {
         self::$config = $this;
@@ -260,7 +263,7 @@ class Config
                     throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
-                $declared_classes = FileChecker::getDeclaredClassesInFile($path);
+                $declared_classes = array_keys(FileChecker::getDeclaredClassesInFile($path));
 
                 if (count($declared_classes) !== 1) {
                     throw new \InvalidArgumentException(
@@ -413,5 +416,15 @@ class Config
     public function setIssueHandler($issue_name, FileFilter $filter = null)
     {
         $this->issue_handlers[$issue_name] = $filter;
+    }
+
+    public function getPredefinedConstants()
+    {
+        return $this->predefined_constants;
+    }
+
+    public function collectPredefinedConstants()
+    {
+        $this->predefined_constants = get_defined_constants();
     }
 }

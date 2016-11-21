@@ -16,7 +16,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 
-abstract class ClassLikeChecker implements StatementsSource
+abstract class ClassLikeChecker extends SourceChecker implements StatementsSource
 {
     /**
      * @var array
@@ -34,16 +34,6 @@ abstract class ClassLikeChecker implements StatementsSource
     ];
 
     /**
-     * @var string
-     */
-    protected $file_name;
-
-    /**
-     * @var string|null
-     */
-    protected $include_file_name;
-
-    /**
      * @var PhpParser\Node\Stmt\ClassLike
      */
     protected $class;
@@ -54,11 +44,6 @@ abstract class ClassLikeChecker implements StatementsSource
     protected $namespace;
 
     /**
-     * @var array<string>
-     */
-    protected $aliased_classes;
-
-    /**
      * @var string
      */
     protected $fq_class_name;
@@ -67,11 +52,6 @@ abstract class ClassLikeChecker implements StatementsSource
      * @var bool
      */
     protected $has_custom_get = false;
-
-    /**
-     * @var StatementsSource
-     */
-    protected $source;
 
     /**
      * The parent class
@@ -212,6 +192,8 @@ abstract class ClassLikeChecker implements StatementsSource
         $this->source = $source;
         $this->namespace = $source->getNamespace();
         $this->aliased_classes = $source->getAliasedClasses();
+        $this->aliased_constants = $source->getAliasedConstants();
+        $this->aliased_functions = $source->getAliasedFunctions();
         $this->file_name = $source->getFileName();
         $this->include_file_name = $source->getIncludeFileName();
         $this->fq_class_name = $fq_class_name;
@@ -869,14 +851,6 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
-     * @return array
-     */
-    public function getAliasedClasses()
-    {
-        return $this->aliased_classes;
-    }
-
-    /**
      * @return array<string, string>
      */
     public function getAliasedClassesFlipped()
@@ -910,39 +884,6 @@ abstract class ClassLikeChecker implements StatementsSource
     public function getParentClass()
     {
         return $this->parent_class;
-    }
-
-    /**
-     * @return string
-     */
-    public function getFileName()
-    {
-        return $this->file_name;
-    }
-
-    /**
-     * @return null|string
-     */
-    public function getIncludeFileName()
-    {
-        return $this->include_file_name;
-    }
-
-    /**
-     * @param string|null $file_name
-     * @return  void
-     */
-    public function setIncludeFileName($file_name)
-    {
-        $this->include_file_name = $file_name;
-    }
-
-    /**
-     * @return string
-     */
-    public function getCheckedFileName()
-    {
-        return $this->include_file_name ?: $this->file_name;
     }
 
     /**
@@ -1101,36 +1042,7 @@ abstract class ClassLikeChecker implements StatementsSource
         self::$public_class_constants[$class_name] = [];
 
         foreach ($class_constants as $name => $value) {
-            switch (gettype($value)) {
-                case 'boolean':
-                    $const_type = Type::getBool();
-                    break;
-
-                case 'integer':
-                    $const_type = Type::getInt();
-                    break;
-
-                case 'double':
-                    $const_type = Type::getFloat();
-                    break;
-
-                case 'string':
-                    $const_type = Type::getString();
-                    break;
-
-                case 'array':
-                    $const_type = Type::getArray();
-                    break;
-
-                case 'NULL':
-                    $const_type = Type::getNull();
-                    break;
-
-                default:
-                    $const_type = Type::getMixed();
-            }
-
-            self::$public_class_constants[$class_name][$name] = $const_type;
+            self::$public_class_constants[$class_name][$name] = self::getTypeFromValue($value);
         }
 
         self::$registered_classes[$class_name] = true;
@@ -1254,6 +1166,38 @@ abstract class ClassLikeChecker implements StatementsSource
     }
 
     /**
+     * Gets the Psalm type from a particular value
+     *
+     * @param  mixed $value
+     * @return Type\Union
+     */
+    public static function getTypeFromValue($value)
+    {
+        switch (gettype($value)) {
+            case 'boolean':
+                return Type::getBool();
+
+            case 'integer':
+                return Type::getInt();
+
+            case 'double':
+                return Type::getFloat();
+
+            case 'string':
+                return Type::getString();
+
+            case 'array':
+                return Type::getArray();
+
+            case 'NULL':
+                return Type::getNull();
+
+            default:
+                return Type::getMixed();
+        }
+    }
+
+    /**
      * @param  string $class_name
      * @param  mixed  $visibility
      * @return array<string,Type\Union>
@@ -1283,24 +1227,6 @@ abstract class ClassLikeChecker implements StatementsSource
     public static function setConstantType($class_name, $const_name, Type\Union $type)
     {
         self::$public_class_constants[$class_name][$const_name] = $type;
-    }
-
-    /**
-     * @return null
-     */
-    public function getSource()
-    {
-        return null;
-    }
-
-    /**
-     * Get a list of suppressed issues
-     *
-     * @return array<string>
-     */
-    public function getSuppressedIssues()
-    {
-        return $this->suppressed_issues;
     }
 
     /**

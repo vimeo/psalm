@@ -321,7 +321,7 @@ class FetchChecker
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
     ) {
-        $const_name = implode('', $stmt->name->parts);
+        $const_name = implode('\\', $stmt->name->parts);
         switch (strtolower($const_name)) {
             case 'null':
                 $stmt->inferredType = Type::getNull();
@@ -337,9 +337,14 @@ class FetchChecker
                 break;
 
             default:
-                if ($const_type = $statements_checker->getConstType($const_name)) {
+                $const_type = $statements_checker->getConstType(
+                    $const_name,
+                    $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                );
+
+                if ($const_type) {
                     $stmt->inferredType = clone $const_type;
-                } elseif ($context->check_consts && !defined($const_name)) {
+                } elseif ($context->check_consts) {
                     if (IssueBuffer::accepts(
                         new UndefinedConstant(
                             'Const ' . $const_name . ' is not defined',

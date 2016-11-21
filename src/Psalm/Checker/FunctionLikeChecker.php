@@ -18,7 +18,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
-abstract class FunctionLikeChecker implements StatementsSource
+abstract class FunctionLikeChecker extends SourceChecker implements StatementsSource
 {
     /**
      * @var Closure|Function_|ClassMethod
@@ -29,16 +29,6 @@ abstract class FunctionLikeChecker implements StatementsSource
      * @var string
      */
     protected $namespace;
-
-    /**
-     * @var string
-     */
-    protected $file_name;
-
-    /**
-     * @var string|null
-     */
-    protected $include_file_name;
 
     /**
      * @var bool
@@ -81,11 +71,6 @@ abstract class FunctionLikeChecker implements StatementsSource
     protected $class_extends;
 
     /**
-     * @var array
-     */
-    protected $suppressed_issues;
-
-    /**
      * @var array<string, array>
      */
     protected static $no_effects_hashes = [];
@@ -105,6 +90,9 @@ abstract class FunctionLikeChecker implements StatementsSource
         $this->fq_class_name = $source->getFQCLN();
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
+        $this->aliased_classes = $source->getAliasedClasses();
+        $this->aliased_constants = $source->getAliasedConstants();
+        $this->aliased_functions = $source->getAliasedFunctions();
     }
 
     /**
@@ -211,7 +199,7 @@ abstract class FunctionLikeChecker implements StatementsSource
                     }
                 }
             } elseif ($this instanceof FunctionChecker) {
-                $function_params = FunctionChecker::getParams((string)$this->getMethodId(), $this->file_name);
+                $function_params = FunctionChecker::getParams(strtolower((string)$this->getMethodId()), $this->file_name);
             } else { // Closure
                 $function_params = [];
 
@@ -325,10 +313,12 @@ abstract class FunctionLikeChecker implements StatementsSource
      */
     public function getMethodId()
     {
-        if ($this->function instanceof Function_ || $this->function instanceof ClassMethod) {
-            return ($this instanceof MethodChecker
-                ? $this->fq_class_name . '::'
-                : '') . strtolower($this->function->name);
+        if ($this->function instanceof ClassMethod) {
+            return $this->fq_class_name . '::' . strtolower($this->function->name);
+        }
+
+        if ($this->function instanceof Function_) {
+            return ($this->namespace ? $this->namespace . '\\' : '') . strtolower($this->function->name);
         }
 
         return null;
@@ -340,14 +330,6 @@ abstract class FunctionLikeChecker implements StatementsSource
     public function getNamespace()
     {
         return $this->namespace;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function getAliasedClasses()
-    {
-        return $this->source->getAliasedClasses();
     }
 
     /**
@@ -395,39 +377,6 @@ abstract class FunctionLikeChecker implements StatementsSource
     }
 
     /**
-     * @return string
-     */
-    public function getFileName()
-    {
-        return $this->file_name;
-    }
-
-    /**
-     * @return null|string
-     */
-    public function getIncludeFileName()
-    {
-        return $this->include_file_name;
-    }
-
-    /**
-     * @param string|null $file_name
-     * @return  void
-     */
-    public function setIncludeFileName($file_name)
-    {
-        $this->include_file_name = $file_name;
-    }
-
-    /**
-     * @return string
-     */
-    public function getCheckedFileName()
-    {
-        return $this->include_file_name ?: $this->file_name;
-    }
-
-    /**
      * @return bool
      */
     public function isStatic()
@@ -441,16 +390,6 @@ abstract class FunctionLikeChecker implements StatementsSource
     public function getSource()
     {
         return $this->source;
-    }
-
-    /**
-     * Get a list of suppressed issues
-     *
-     * @return array<string>
-     */
-    public function getSuppressedIssues()
-    {
-        return $this->suppressed_issues;
     }
 
     /**

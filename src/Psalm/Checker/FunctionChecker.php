@@ -175,7 +175,7 @@ class FunctionChecker extends FunctionLikeChecker
      */
     protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
     {
-        $function_id = strtolower($function->name);
+        $function_id = ($this->namespace ? strtolower($this->namespace) . '\\' : '') . strtolower($function->name);
 
         if (isset(self::$have_registered_function[$file_name][$function_id])) {
             return null;

@@ -7,7 +7,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class FileChecker implements StatementsSource
+class FileChecker extends SourceChecker implements StatementsSource
 {
     const PARSER_CACHE_DIRECTORY = 'php-parser';
     const FILE_HASHES = 'file_hashes';
@@ -18,26 +18,6 @@ class FileChecker implements StatementsSource
      * @var string
      */
     protected $real_file_name;
-
-    /**
-     * @var string
-     */
-    protected $short_file_name;
-
-    /**
-     * @var string|null
-     */
-    protected $include_file_name;
-
-    /**
-     * @var array<string, string>
-     */
-    protected $aliased_classes = [];
-
-    /**
-     * @var array<string, string>
-     */
-    protected $aliased_classes_flipped = [];
 
     /**
      * @var array<string, array<string, string>>
@@ -53,16 +33,6 @@ class FileChecker implements StatementsSource
      * @var array<int, \PhpParser\Node>
      */
     protected $preloaded_statements = [];
-
-    /**
-     * @var array<int, string>
-     */
-    protected $declared_classes = [];
-
-    /**
-     * @var array<int, string>
-     */
-    protected $suppressed_issues = [];
 
     /**
      * @var array<string, static>
@@ -148,9 +118,9 @@ class FileChecker implements StatementsSource
     public function __construct($file_name, array $preloaded_statements = [])
     {
         $this->real_file_name = $file_name;
-        $this->short_file_name = Config::getInstance()->shortenFileName($file_name);
+        $this->file_name = Config::getInstance()->shortenFileName($file_name);
 
-        self::$file_checkers[$this->short_file_name] = $this;
+        self::$file_checkers[$this->file_name] = $this;
         self::$file_checkers[$file_name] = $this;
 
         if ($preloaded_statements) {
@@ -173,7 +143,7 @@ class FileChecker implements StatementsSource
         $cache = true,
         $update_docblocks = false
     ) {
-        if ($cache && isset(self::$functions_checked[$this->short_file_name])) {
+        if ($cache && isset(self::$functions_checked[$this->file_name])) {
             return null;
         }
 
@@ -186,7 +156,7 @@ class FileChecker implements StatementsSource
         }
 
         if (!$file_context) {
-            $file_context = new Context($this->short_file_name);
+            $file_context = new Context($this->file_name);
         }
 
         $config = Config::getInstance();
@@ -262,10 +232,10 @@ class FileChecker implements StatementsSource
 
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
-                    $function_context = new Context($this->short_file_name, $file_context->self);
+                    $function_context = new Context($this->file_name, $file_context->self);
                     $function_checkers[$stmt->name]->check($function_context, $file_context);
 
-                    if (!$config->excludeIssueInFile('InvalidReturnType', $this->short_file_name)) {
+                    if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
                         $function_checkers[$stmt->name]->checkReturnTypes();
                     }
                 }
@@ -288,12 +258,12 @@ class FileChecker implements StatementsSource
 
         self::$files_checked[$this->real_file_name] = true;
 
-        if ($update_docblocks && isset(self::$docblock_return_types[$this->short_file_name])) {
+        if ($update_docblocks && isset(self::$docblock_return_types[$this->file_name])) {
             $line_upset = 0;
 
             $file_lines = explode(PHP_EOL, (string)file_get_contents($this->real_file_name));
 
-            $file_docblock_updates = self::$docblock_return_types[$this->short_file_name];
+            $file_docblock_updates = self::$docblock_return_types[$this->file_name];
 
             foreach ($file_docblock_updates as $line_number => $type) {
                 self::updateDocblock($file_lines, $line_number, $line_upset, $type[0], $type[1], $type[2]);
@@ -301,7 +271,7 @@ class FileChecker implements StatementsSource
 
             file_put_contents($this->real_file_name, implode(PHP_EOL, $file_lines));
 
-            echo 'Added/updated ' . count($file_docblock_updates) . ' docblocks in ' . $this->short_file_name . PHP_EOL;
+            echo 'Added/updated ' . count($file_docblock_updates) . ' docblocks in ' . $this->file_name . PHP_EOL;
         }
 
         return $stmts;
@@ -324,16 +294,6 @@ class FileChecker implements StatementsSource
         }
 
         return ClassLikeChecker::getFQCLNFromString($class, $namespace, $aliased_classes);
-    }
-
-    /**
-     * Gets a list of the classes declared
-     *
-     * @return array<int, string>
-     */
-    public function getDeclaredClasses()
-    {
-        return $this->declared_classes;
     }
 
     /**
@@ -522,102 +482,11 @@ class FileChecker implements StatementsSource
     }
 
     /**
-     * @return null
-     */
-    public function getFQCLN()
-    {
-        return null;
-    }
-
-    /**
-     * @return null
-     */
-    public function getClassName()
-    {
-        return null;
-    }
-
-    /**
-     * @return null
-     */
-    public function getClassLikeChecker()
-    {
-        return null;
-    }
-
-    /**
-     * @return null
-     */
-    public function getParentClass()
-    {
-        return null;
-    }
-
-    /**
-     * @return string
-     */
-    public function getFileName()
-    {
-        return $this->short_file_name;
-    }
-
-    /**
      * @return string
      */
     public function getRealFileName()
     {
         return $this->real_file_name;
-    }
-
-    /**
-     * @return null|string
-     */
-    public function getIncludeFileName()
-    {
-        return $this->include_file_name;
-    }
-
-    /**
-     * @param string|null $file_name
-     * @return  void
-     */
-    public function setIncludeFileName($file_name)
-    {
-        $this->include_file_name = $file_name;
-    }
-
-    /**
-     * @return string
-     */
-    public function getCheckedFileName()
-    {
-        return $this->include_file_name ?: $this->short_file_name;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isStatic()
-    {
-        return false;
-    }
-
-    /**
-     * @return null
-     */
-    public function getSource()
-    {
-        return null;
-    }
-
-    /**
-     * Get a list of suppressed issues
-     *
-     * @return array<string>
-     */
-    public function getSuppressedIssues()
-    {
-        return $this->suppressed_issues;
     }
 
     /**
@@ -658,10 +527,7 @@ class FileChecker implements StatementsSource
     {
         foreach ($this->getStatements() as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                foreach ($stmt->uses as $use) {
-                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
-                    $this->aliased_classes_flipped[implode('\\', $use->name->parts)] = $use->alias;
-                }
+                $this->visitUse($stmt);
             }
         }
     }

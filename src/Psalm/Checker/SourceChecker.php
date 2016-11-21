@@ -1,0 +1,221 @@
+<?php
+namespace Psalm\Checker;
+
+use PhpParser\Node\Stmt\Namespace_;
+use PhpParser;
+use Psalm\Context;
+use Psalm\StatementsSource;
+use Psalm\Type;
+
+abstract class SourceChecker implements StatementsSource
+{
+    /**
+     * @var array<string, string>
+     */
+    protected $aliased_classes = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $aliased_classes_flipped = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $aliased_functions = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $aliased_constants = [];
+
+    /**
+     * @var string
+     */
+    protected $file_name;
+
+    /**
+     * @var string|null
+     */
+    protected $include_file_name;
+
+    /**
+     * @var array
+     */
+    protected $suppressed_issues = [];
+
+    /**
+     * @var array
+     */
+    protected $declared_classes = [];
+
+    public function visitUse(PhpParser\Node\Stmt\Use_ $stmt)
+    {
+        switch ($stmt->type) {
+            case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
+                foreach ($stmt->uses as $use) {
+                    $this->aliased_functions[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                }
+                break;
+
+            case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
+                foreach ($stmt->uses as $use) {
+                    $this->aliased_constants[$use->alias] = implode('\\', $use->name->parts);
+                }
+                break;
+
+            case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
+                foreach ($stmt->uses as $use) {
+                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                    $this->aliased_classes_flipped[implode('\\', $use->name->parts)] = strtolower($use->alias);
+                }
+                break;
+        }
+    }
+
+    /**
+     * @param   string $class_name
+     * @return  bool
+     */
+    public function containsClass($class_name)
+    {
+        return isset($this->declared_classes[$class_name]);
+    }
+
+    /**
+     * @return array
+     */
+    public function getAliasedClasses()
+    {
+        return $this->aliased_classes;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAliasedClassesFlipped()
+    {
+        return $this->aliased_classes_flipped;
+    }
+
+    /**
+     * Gets a list of all aliased constants
+     *
+     * @return array
+     */
+    public function getAliasedConstants()
+    {
+        return $this->aliased_constants;
+    }
+
+    /**
+     * Gets a list of all aliased functions
+     *
+     * @return array
+     */
+    public function getAliasedFunctions()
+    {
+        return $this->aliased_functions;
+    }
+
+    /**
+     * Gets a list of the classes declared
+     *
+     * @return array<int, string>
+     */
+    public function getDeclaredClasses()
+    {
+        return $this->declared_classes;
+    }
+
+    /**
+     * @return null
+     */
+    public function getFQCLN()
+    {
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function getClassName()
+    {
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function getClassLikeChecker()
+    {
+        return null;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getParentClass()
+    {
+        return null;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFileName()
+    {
+        return $this->file_name;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getIncludeFileName()
+    {
+        return $this->include_file_name;
+    }
+
+    /**
+     * @param string|null $file_name
+     * @return void
+     */
+    public function setIncludeFileName($file_name)
+    {
+        $this->include_file_name = $file_name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCheckedFileName()
+    {
+        return $this->include_file_name ?: $this->file_name;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isStatic()
+    {
+        return false;
+    }
+
+    /**
+     * @return null
+     */
+    public function getSource()
+    {
+        return null;
+    }
+
+    /**
+     * Get a list of suppressed issues
+     *
+     * @return array<string>
+     */
+    public function getSuppressedIssues()
+    {
+        return $this->suppressed_issues;
+    }
+}

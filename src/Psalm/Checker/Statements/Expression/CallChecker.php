@@ -95,7 +95,13 @@ class CallChecker
                 return null;
             }
 
-            $method_id = implode('', $stmt->name->parts);
+            $method_id = implode('\\', $stmt->name->parts);
+
+            $aliased_functions = $statements_checker->getAliasedFunctions();
+
+            if (isset($aliased_functions[strtolower($method_id)])) {
+                $method_id = $aliased_functions[strtolower($method_id)];
+            }
 
             if ($context->self) {
                 //$method_id = $statements_checker->getFQCLN() . '::' . $method_id;

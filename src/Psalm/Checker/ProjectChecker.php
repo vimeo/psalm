@@ -333,6 +333,8 @@ class ProjectChecker
                     require_once($dir_path . $config->autoloader);
                 }
 
+                $config->collectPredefinedConstants();
+
                 break;
             }
 
@@ -364,6 +366,8 @@ class ProjectChecker
         if (self::$config->autoloader) {
             require_once($dir_path . self::$config->autoloader);
         }
+
+        $config->collectPredefinedConstants();
     }
 
     /**

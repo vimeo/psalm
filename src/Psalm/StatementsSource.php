@@ -14,6 +14,20 @@ interface StatementsSource
     public function getAliasedClasses();
 
     /**
+     * Gets a list of all aliased constants
+     *
+     * @return array
+     */
+    public function getAliasedConstants();
+
+    /**
+     * Gets a list of all aliased functions
+     *
+     * @return array
+     */
+    public function getAliasedFunctions();
+
+    /**
      * @return string
      */
     public function getFQCLN();

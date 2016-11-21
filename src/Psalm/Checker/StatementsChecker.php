@@ -50,7 +50,7 @@ class StatementsChecker
     /**
      * @var array<string,string>
      */
-    protected $aliased_classes;
+    protected $aliased_classes = [];
 
     /**
      * @var string
@@ -102,12 +102,14 @@ class StatementsChecker
         $this->source = $source;
         $this->file_name = $this->source->getFileName();
         $this->checked_file_name = $this->source->getCheckedFileName();
-        $this->aliased_classes = $this->source->getAliasedClasses();
         $this->namespace = $this->source->getNamespace();
         $this->is_static = $this->source->isStatic();
         $this->fq_class_name = $this->source->getFQCLN();
         $this->class_name = $this->source->getClassName();
         $this->parent_class = $this->source->getParentClass();
+        $this->aliased_classes = $this->source->getAliasedClasses();
+        $this->aliased_constants = $this->source->getAliasedConstants();
+        $this->aliased_functions = $this->source->getAliasedFunctions();
         $this->suppressed_issues = $this->source->getSuppressedIssues();
 
         $config = Config::getInstance();
@@ -229,8 +231,25 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                foreach ($stmt->uses as $use) {
-                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                switch ($stmt->type) {
+                    case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
+                        foreach ($stmt->uses as $use) {
+                            $this->aliased_functions[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                        }
+                        break;
+
+                    case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
+                        foreach ($stmt->uses as $use) {
+                            $this->aliased_constants[$use->alias] = implode('\\', $use->name->parts);
+                        }
+                        break;
+
+                    case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
+                        foreach ($stmt->uses as $use) {
+                            $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
+                            $this->aliased_classes_flipped[implode('\\', $use->name->parts)] = strtolower($use->alias);
+                        }
+                        break;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
                 if (!$global_context) {
@@ -511,13 +530,45 @@ class StatementsChecker
 
     /**
      * @param   string  $const_name
+     * @param   bool    $is_fully_qualified
      * @return  Type\Union|null
      */
-    public function getConstType($const_name)
+    public function getConstType($const_name, $is_fully_qualified)
     {
-        return isset(self::$user_constants[$this->file_name][$const_name])
-            ? self::$user_constants[$this->file_name][$const_name]
-            : null;
+        $fq_const_name = null;
+
+        if (isset($this->aliased_constants[$const_name])) {
+            $fq_const_name = $this->aliased_constants[$const_name];
+        }
+        elseif ($is_fully_qualified) {
+            $fq_const_name = $const_name;
+        }
+        elseif (strpos($const_name, '\\')) {
+            $fq_const_name = ClassLikeChecker::getFQCLNFromString($const_name, $this->namespace, $this->aliased_classes);
+        }
+
+        if ($fq_const_name) {
+            $const_name_parts = explode('\\', $fq_const_name);
+            $const_name = array_pop($const_name_parts);
+            $namespace_name = implode('\\', $const_name_parts);
+            $namespace_constants = NamespaceChecker::getConstantsForNamespace($namespace_name, \ReflectionProperty::IS_PUBLIC);
+
+            if (isset($namespace_constants[$const_name])) {
+                return $namespace_constants[$const_name];
+            }
+        }
+
+        if (isset(self::$user_constants[$this->file_name][$const_name])) {
+            return self::$user_constants[$this->file_name][$const_name];
+        }
+
+        $predefined_constants = Config::getInstance()->getPredefinedConstants();
+
+        if (isset($predefined_constants[$const_name])) {
+            return ClassLikeChecker::getTypeFromValue($predefined_constants[$const_name]);
+        }
+
+        return null;
     }
 
     /**
@@ -527,7 +578,13 @@ class StatementsChecker
      */
     public function setConstType($const_name, Type\Union $const_type)
     {
-        self::$user_constants[$this->file_name][$const_name] = $const_type;
+        if ($this->source instanceof NamespaceChecker) {
+            $this->source->setConstType($const_name, $const_type);
+        }
+        else {
+            self::$user_constants[$this->file_name][$const_name] = $const_type;
+        }
+
     }
 
     /**
@@ -773,6 +830,22 @@ class StatementsChecker
     public function getAliasedClasses()
     {
         return $this->aliased_classes;
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getAliasedConstants()
+    {
+        return $this->aliased_constants;
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getAliasedFunctions()
+    {
+        return $this->aliased_functions;
     }
 
     /**
