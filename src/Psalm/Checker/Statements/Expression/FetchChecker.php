@@ -905,7 +905,7 @@ class FetchChecker
                     $stmt->inferredType = Type::getString();
                 } elseif ($type->isNull()) {
                     // @todo emit NullArrayAccess issue
-                } elseif ($type->isMixed()) {
+                } elseif ($type->isMixed() || $type->isEmpty()) {
                     // @todo emit MixedArrayAccess issue
                 } elseif ($type->value && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
                     if (IssueBuffer::accepts(
