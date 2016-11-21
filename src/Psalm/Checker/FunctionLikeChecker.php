@@ -314,7 +314,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public function getMethodId()
     {
         if ($this->function instanceof ClassMethod) {
-            return $this->fq_class_name . '::' . strtolower($this->function->name);
+            $function_name = $this->function->name;
+
+            if (strtolower($function_name) === strtolower($this->class_name)) {
+                $function_name = '__construct';
+            }
+
+            return $this->fq_class_name . '::' . strtolower($function_name);
         }
 
         if ($this->function instanceof Function_) {

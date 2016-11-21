@@ -172,8 +172,14 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function extractReflectionMethodInfo(\ReflectionMethod $method)
     {
-        $method_id = $method->class . '::' . strtolower((string)$method->name);
-        self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
+        if (strtolower($method->name) === strtolower((string)$method->class)) {
+            $method_id = $method->class . '::__construct';
+            self::$cased_method_ids[$method_id] = $method->class . '::__construct';
+        }
+        else {
+            $method_id = $method->class . '::' . strtolower($method->name);
+            self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
+        }
 
         if (isset(self::$have_reflected[$method_id])) {
             return null;
@@ -255,7 +261,13 @@ class MethodChecker extends FunctionLikeChecker
      */
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
-        $method_id = $this->fq_class_name . '::' . strtolower($method->name);
+        if (strtolower($method->name) === strtolower((string)$this->class_name)) {
+            $method_id = $this->fq_class_name . '::__construct';
+        }
+        else {
+            $method_id = $this->fq_class_name . '::' . strtolower($method->name);
+        }
+
         $cased_method_id = self::$cased_method_ids[$method_id] = $this->fq_class_name . '::' . $method->name;
 
         if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
@@ -459,15 +471,19 @@ class MethodChecker extends FunctionLikeChecker
 
         self::registerClassMethod($method_id);
 
+        $old_method_id = null;
+
         if (isset(self::$declaring_methods[$method_id])) {
             return true;
         }
 
+        // support checking oldstyle constructors
         if ($method_parts[1] === '__construct') {
-            // @todo ?
+            $old_constructor_name = array_pop(explode('\\', $method_parts[0]));
+            $old_method_id = $method_parts[0] . '::' . $old_constructor_name;
         }
 
-        if (FunctionChecker::inCallMap($method_id)) {
+        if (FunctionChecker::inCallMap($method_id) || ($old_method_id && FunctionChecker::inCallMap($method_id))) {
             return true;
         }
 
