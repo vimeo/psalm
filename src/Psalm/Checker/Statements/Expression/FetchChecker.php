@@ -916,7 +916,7 @@ class FetchChecker
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        return false;
+                        $stmt->inferredType = Type::getMixed();
                     }
                 }
             }
