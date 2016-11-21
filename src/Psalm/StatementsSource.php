@@ -14,6 +14,11 @@ interface StatementsSource
     public function getAliasedClasses();
 
     /**
+     * @return array<string>
+     */
+    public function getAliasedClassesFlipped();
+
+    /**
      * Gets a list of all aliased constants
      *
      * @return array

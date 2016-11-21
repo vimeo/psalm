@@ -44,6 +44,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected $namespace;
 
     /**
+     * @var StatementsSource
+     */
+    protected $source;
+
+    /**
      * @var string
      */
     protected $fq_class_name;

@@ -53,6 +53,21 @@ class StatementsChecker
     protected $aliased_classes = [];
 
     /**
+     * @var array<string,string>
+     */
+    protected $aliased_classes_flipped = [];
+
+    /**
+     * @var array<string,string>
+     */
+    protected $aliased_constants = [];
+
+    /**
+     * @var array<string,string>
+     */
+    protected $aliased_functions = [];
+
+    /**
      * @var string
      */
     protected $file_name;
@@ -108,6 +123,7 @@ class StatementsChecker
         $this->class_name = $this->source->getClassName();
         $this->parent_class = $this->source->getParentClass();
         $this->aliased_classes = $this->source->getAliasedClasses();
+        $this->aliased_classes_flipped = $this->source->getAliasedClassesFlipped();
         $this->aliased_constants = $this->source->getAliasedConstants();
         $this->aliased_functions = $this->source->getAliasedFunctions();
         $this->suppressed_issues = $this->source->getSuppressedIssues();

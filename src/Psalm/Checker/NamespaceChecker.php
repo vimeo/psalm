@@ -74,6 +74,13 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         }
     }
 
+    /**
+     * @param  PhpParser\Node\Stmt\ClassLike $stmt
+     * @param  bool                          $check_classes
+     * @param  bool                          $check_class_statements
+     * @param  bool                          $update_docblocks
+     * @return void
+     */
     public function visitClassLike(PhpParser\Node\Stmt\ClassLike $stmt, $check_classes, $check_class_statements, $update_docblocks)
     {
         $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this->namespace_name, []);

@@ -367,7 +367,7 @@ class ProjectChecker
             require_once($dir_path . self::$config->autoloader);
         }
 
-        $config->collectPredefinedConstants();
+        self::$config->collectPredefinedConstants();
     }
 
     /**
