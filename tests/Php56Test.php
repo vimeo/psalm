@@ -145,22 +145,88 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
     }
 
-    public function testUse()
+    public function testConstantAliasInNamespace()
     {
-        $this->markTestIncomplete('This passes, but I think there‘s cheating afoot');
-
         $stmts = self::$parser->parse('<?php
         namespace Name\Space {
             const FOO = 42;
+        }
+
+        namespace Noom\Spice {
+            use const Name\Space\FOO;
+
+            echo FOO . "\n";
+            echo \Name\Space\FOO;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testConstantAliasInClass()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Name\Space {
+            const FOO = 42;
+        }
+
+        namespace Noom\Spice {
+            use const Name\Space\FOO;
+
+            class A {
+                /** @return void */
+                public function foo() {
+                    echo FOO . "\n";
+                    echo \Name\Space\FOO;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testFunctionAliasInNamespace()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Name\Space {
             function f() { echo __FUNCTION__."\n"; }
         }
 
-        namespace {
-            use const Name\Space\FOO;
+        namespace Noom\Spice {
             use function Name\Space\f;
 
-            echo FOO . "\n";
             f();
+            \Name\Space\f();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testFunctionAliasInClass()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Name\Space {
+            function f() { echo __FUNCTION__."\n"; }
+        }
+
+        namespace Noom\Spice {
+            use function Name\Space\f;
+
+            class A {
+                /** @return void */
+                public function foo() {
+                    f();
+                    \Name\Space\f();
+                }
+            }
         }
         ');
 
