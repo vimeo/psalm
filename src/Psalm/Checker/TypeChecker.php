@@ -1337,7 +1337,6 @@ class TypeChecker
             $new_base_key = $base_key . '->' . $key_parts[$i];
 
             if (!isset($existing_keys[$new_base_key])) {
-                /** @var Type\Union|null */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
@@ -1358,10 +1357,10 @@ class TypeChecker
                         $class_property_type = $class_property_type ? clone $class_property_type : Type::getMixed();
                     }
 
-                    if (!$new_base_type) {
-                        $new_base_type = $class_property_type;
-                    } else {
+                    if ($new_base_type instanceof Type\Union) {
                         $new_base_type = Type::combineUnionTypes($new_base_type, $class_property_type);
+                    } else {
+                        $new_base_type = $class_property_type;
                     }
 
                     $existing_keys[$new_base_key] = $new_base_type;
