@@ -680,139 +680,64 @@ class TypeChecker
     ) {
         $prefix = $negate ? '!' : '';
 
-        if (self::hasNullCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
+        $first_var_name = isset($expr->args[0]->value)
+            ? ExpressionChecker::getArrayVarId(
                 $expr->args[0]->value,
                 $this_class_name,
                 $namespace,
                 $aliased_classes
-            );
+            )
+            : null;
 
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'null';
+        if (self::hasNullCheck($expr)) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'null';
             }
         } elseif (self::hasIsACheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
+            if ($first_var_name) {
                 /** @var PhpParser\Node\Scalar\String_ */
                 $is_a_type = $expr->args[1]->value;
-                $if_types[$var_name] = $prefix . $is_a_type->value;
+                $if_types[$first_var_name] = $prefix . $is_a_type->value;
             }
         } elseif (self::hasArrayCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'array';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'array';
             }
         } elseif (self::hasBoolCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'bool';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'bool';
             }
         } elseif (self::hasStringCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'string';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'string';
             }
         } elseif (self::hasObjectCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'object';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'object';
             }
         } elseif (self::hasNumericCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'numeric';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'numeric';
             }
         } elseif (self::hasIntCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'int';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'int';
             }
         } elseif (self::hasFloatCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'float';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'float';
             }
         } elseif (self::hasResourceCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'resource';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'resource';
             }
         } elseif (self::hasScalarCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'scalar';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'scalar';
             }
         } elseif (self::hasCallableCheck($expr)) {
-            $var_name = ExpressionChecker::getArrayVarId(
-                $expr->args[0]->value,
-                $this_class_name,
-                $namespace,
-                $aliased_classes
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = $prefix . 'callable';
+            if ($first_var_name) {
+                $if_types[$first_var_name] = $prefix . 'callable';
             }
         }
     }
