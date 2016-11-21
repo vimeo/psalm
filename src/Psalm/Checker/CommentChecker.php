@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use Psalm\Context;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionDocblockComment;
 use Psalm\StatementsSource;
@@ -59,7 +60,12 @@ class CommentChecker
             return null;
         }
 
-        $defined_type = Type::parseString($type_in_comments);
+        try {
+            $defined_type = Type::parseString($type_in_comments);
+        }
+        catch (TypeParseTreeException $e) {
+            throw new DocblockParseException($type_in_comments . ' is not a valid type');
+        }
 
         if ($context && $type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
             $context->vars_in_scope[$type_in_comments_var_id] = $defined_type;

@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\Exception\TypeParseTreeException;
+
 class ParseTree
 {
     const GENERIC = '<>';
@@ -74,7 +76,7 @@ class ParseTree
                 case '>':
                     do {
                         if ($current_leaf->parent === null) {
-                            throw new \InvalidArgumentException('Cannot parse generic type');
+                            throw new TypeParseTreeException('Cannot parse generic type');
                         }
 
                         $current_leaf = $current_leaf->parent;
@@ -85,7 +87,7 @@ class ParseTree
                 case '}':
                     do {
                         if ($current_leaf->parent === null) {
-                            throw new \InvalidArgumentException('Cannot parse array type');
+                            throw new TypeParseTreeException('Cannot parse array type');
                         }
 
                         $current_leaf = $current_leaf->parent;
@@ -106,16 +108,16 @@ class ParseTree
                     }
 
                     if (!$context_node) {
-                        throw new \InvalidArgumentException('Cannot parse comma in non-generic/array type');
+                        throw new TypeParseTreeException('Cannot parse comma in non-generic/array type');
                     }
 
                     if (!$current_parent) {
-                        throw new \InvalidArgumentException('Cannot parse comma in with no parent node');
+                        throw new TypeParseTreeException('Cannot parse comma in with no parent node');
                     }
 
                     if ($context_node->value === self::GENERIC && $current_parent->value !== self::GENERIC) {
                         if (!isset($current_parent->parent) || !$current_parent->parent->value) {
-                            throw new \InvalidArgumentException('Cannot parse comma in non-generic/array type');
+                            throw new TypeParseTreeException('Cannot parse comma in non-generic/array type');
                         }
 
                         $current_leaf = $current_leaf->parent;
@@ -137,7 +139,7 @@ class ParseTree
                     }
 
                     if (!$current_parent) {
-                        throw new \InvalidArgumentException('Cannot process colon without parent');
+                        throw new TypeParseTreeException('Cannot process colon without parent');
                     }
 
                     $new_parent_leaf = new self(self::OBJECT_PROPERTY, $current_parent);
@@ -178,7 +180,7 @@ class ParseTree
                     $new_leaf = new self($type_token, $current_leaf->parent);
 
                     if (!isset($current_leaf->parent)) {
-                        throw new \InvalidArgumentException('Current leaf must have a parent');
+                        throw new TypeParseTreeException('Current leaf must have a parent');
                     }
 
                     $current_leaf->parent->children[] = $new_leaf;

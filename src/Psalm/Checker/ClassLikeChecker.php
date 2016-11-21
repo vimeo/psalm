@@ -4,7 +4,9 @@ namespace Psalm\Checker;
 use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\InvalidClass;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedTrait;
@@ -592,7 +594,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $type_in_comment = null;
 
         if ($comment && $config->use_docblock_types) {
-            $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
+            try {
+                $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
+            }
+            catch (DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $e->getMessage(),
+                        $this->getCheckedFileName(),
+                        $stmt->getLine()
+                    )
+                )) {
+                    return false;
+                }
+            }
         } elseif (!$comment && $check_property_types) {
             if (IssueBuffer::accepts(
                 new MissingPropertyType(

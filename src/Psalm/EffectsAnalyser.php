@@ -118,8 +118,8 @@ class EffectsAnalyser
                     new Type\Generic(
                         'Generator',
                         [
-                            $key_type,
-                            $value_type
+                            $key_type ?: Type::getMixed(),
+                            $value_type ?: Type::getMixed()
                         ]
                     )
                 ];

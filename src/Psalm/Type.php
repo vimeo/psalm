@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Type\Atomic;
 use Psalm\Type\Generic;
 use Psalm\Type\ObjectLike;
@@ -17,6 +18,9 @@ abstract class Type
      */
     public static function parseString($type_string)
     {
+        // remove all unacceptable characters
+        $type_string = preg_replace('/[^A-Za-z_\\\\|\? \<\>\{\}:,\]\[\(\)]/', '', trim($type_string));
+
         if (strpos($type_string, '[') !== false) {
             $type_string = self::convertSquareBrackets($type_string);
         }
@@ -35,7 +39,12 @@ abstract class Type
             return new Union([new Atomic($type_tokens[0])]);
         }
 
-        $parse_tree = ParseTree::createFromTokens($type_tokens);
+        try {
+            $parse_tree = ParseTree::createFromTokens($type_tokens);
+        }
+        catch (TypeParseTreeException $e) {
+            throw $e;
+        }
 
         $parsed_type = self::getTypeFromTree($parse_tree);
 
