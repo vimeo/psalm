@@ -582,7 +582,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   Context                         $class_context
      * @param   Config                          $config
      * @param   bool                            $check_property_types
-     * @return  void
+     * @return  false|null
      */
     protected function visitPropertyDeclaration(
         PhpParser\Node\Stmt\Property $stmt,
@@ -600,7 +600,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        $e->getMessage(),
+                        (string)$e->getMessage(),
                         $this->getCheckedFileName(),
                         $stmt->getLine()
                     )

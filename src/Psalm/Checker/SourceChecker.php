@@ -49,6 +49,10 @@ abstract class SourceChecker implements StatementsSource
      */
     protected $declared_classes = [];
 
+    /**
+     * @param  PhpParser\Node\Stmt\Use_ $stmt
+     * @return void
+     */
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt)
     {
         foreach ($stmt->uses as $use) {
@@ -71,6 +75,10 @@ abstract class SourceChecker implements StatementsSource
         }
     }
 
+    /**
+     * @param  PhpParser\Node\Stmt\GroupUse $stmt
+     * @return void
+     */
     public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt)
     {
         $use_prefix = implode('\\', $stmt->prefix->parts);

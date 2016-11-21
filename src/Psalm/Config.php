@@ -418,11 +418,17 @@ class Config
         $this->issue_handlers[$issue_name] = $filter;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getPredefinedConstants()
     {
         return $this->predefined_constants;
     }
 
+    /**
+     * @return void
+     */
     public function collectPredefinedConstants()
     {
         $this->predefined_constants = get_defined_constants();
