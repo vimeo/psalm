@@ -1,9 +1,9 @@
 {
-    "name": "mattb/psalm",
-    "description": "A PHP code inspection utility written in PHP",
+    "name": "vimeo/psalm",
+    "description": "A static analysis tool for finding errors in PHP applications",
     "keywords": ["php", "code", "inspection"],
     "type": "library",
-    "license": "BSD-3-Clause",
+    "license": "MIT",
     "authors": [
         {
             "name": "Matthew Brown"
