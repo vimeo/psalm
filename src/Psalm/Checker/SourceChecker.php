@@ -51,25 +51,47 @@ abstract class SourceChecker implements StatementsSource
 
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt)
     {
-        switch ($stmt->type) {
-            case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                foreach ($stmt->uses as $use) {
-                    $this->aliased_functions[strtolower($use->alias)] = implode('\\', $use->name->parts);
-                }
-                break;
+        foreach ($stmt->uses as $use) {
+            $use_path = implode('\\', $use->name->parts);
 
-            case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                foreach ($stmt->uses as $use) {
-                    $this->aliased_constants[$use->alias] = implode('\\', $use->name->parts);
-                }
-                break;
+            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
+                case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
+                    $this->aliased_functions[strtolower($use->alias)] = $use_path;
+                    break;
 
-            case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                foreach ($stmt->uses as $use) {
-                    $this->aliased_classes[strtolower($use->alias)] = implode('\\', $use->name->parts);
-                    $this->aliased_classes_flipped[implode('\\', $use->name->parts)] = strtolower($use->alias);
-                }
-                break;
+                case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
+                    $this->aliased_constants[$use->alias] = $use_path;
+                    break;
+
+                case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
+                    $this->aliased_classes[strtolower($use->alias)] = $use_path;
+                    $this->aliased_classes_flipped[$use_path] = strtolower($use->alias);
+                    break;
+            }
+        }
+    }
+
+    public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt)
+    {
+        $use_prefix = implode('\\', $stmt->prefix->parts);
+
+        foreach ($stmt->uses as $use) {
+            $use_path = $use_prefix . '\\' . implode('\\', $use->name->parts);
+
+            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
+                case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
+                    $this->aliased_functions[strtolower($use->alias)] = $use_path;
+                    break;
+
+                case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
+                    $this->aliased_constants[$use->alias] = $use_path;
+                    break;
+
+                case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
+                    $this->aliased_classes[strtolower($use->alias)] = $use_path;
+                    $this->aliased_classes_flipped[$use_path] = strtolower($use->alias);
+                    break;
+            }
         }
     }
 

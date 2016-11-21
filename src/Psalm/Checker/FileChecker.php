@@ -529,6 +529,10 @@ class FileChecker extends SourceChecker implements StatementsSource
             if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
             }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                $this->visitGroupUse($stmt);
+            }
         }
     }
 

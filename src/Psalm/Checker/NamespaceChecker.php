@@ -56,7 +56,8 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
                 $this->visitClassLike($stmt, $check_classes, $check_class_statements, $update_docblocks);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
-
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                $this->visitGroupUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
                     self::$public_namespace_constants[$this->namespace_name][$const->name] = Type::getMixed();
@@ -149,6 +150,9 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         $visibility = \ReflectionProperty::IS_PUBLIC;
 
         // @todo this does not allow for loading in namespace constants not already defined in the current sweep
+        if (!isset(self::$public_namespace_constants[$namespace_name])) {
+            self::$public_namespace_constants[$namespace_name] = [];
+        }
 
         if ($visibility === \ReflectionProperty::IS_PUBLIC) {
             return self::$public_namespace_constants[$namespace_name];

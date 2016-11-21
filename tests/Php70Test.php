@@ -220,4 +220,33 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('Generator<int, int>', (string) $context->vars_in_scope['$gen']);
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$gen2']);
     }
+
+    public function testMultipleUse()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Name\Space {
+            class A {
+
+            }
+
+            class B {
+
+            }
+        }
+
+        namespace Noom\Spice {
+            use Name\Space\{
+                A,
+                B
+            };
+
+            new A();
+            new B();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
