@@ -1669,4 +1669,18 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check();
     }
+
+    public function testIfNotEqualFalse()
+    {
+        $this->markTestIncomplete('This currently fails');
+        $stmts = self::$parser->parse('<?php
+        if (($row = rand(0,10) ? [] : false) !== false) {
+           $row[0] = "good";
+           echo $row[0];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }
