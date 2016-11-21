@@ -277,7 +277,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
-     * @return array
+     * @return array|null
      * @psalm-return array<array<FunctionLikeParameter>>|null
      */
     public static function getParamsFromCallMap($function_id)
