@@ -765,6 +765,7 @@ class StatementsChecker
 
     /**
      * @param  string  $method_id
+     * @param  array   $args
      * @param  int     $argument_offset
      * @return boolean
      */

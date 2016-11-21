@@ -800,9 +800,12 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * Adds a docblock to the given file
-     * @param   string $file_name
-     * @param   int    $line_number
-     * @param   string $new_type
+     *
+     * @param   string      $file_name
+     * @param   int         $line_number
+     * @param   string      $docblock
+     * @param   string      $new_type
+     * @param   string      $phpdoc_type
      * @return  void
      */
     public static function addDocblockReturnType($file_name, $line_number, $docblock, $new_type, $phpdoc_type)
@@ -818,6 +821,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @param  int                  $line_upset
      * @param  string               $existing_docblock
      * @param  string               $type
+     * @param  string               $phpdoc_type
      * @return void
      */
     public static function updateDocblock(array &$file_lines, $line_number, &$line_upset, $existing_docblock, $type, $phpdoc_type)

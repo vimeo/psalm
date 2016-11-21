@@ -39,6 +39,7 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @param   bool            $check_methods
      * @param   Context|null    $class_context
+     * @param   bool            $update_docblocks
      * @return void
      */
     public function check($check_methods = true, Context $class_context = null, $update_docblocks = false)

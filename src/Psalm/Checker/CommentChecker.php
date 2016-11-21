@@ -276,6 +276,7 @@ class CommentChecker
 
     /**
      * @param  array{description:string,specials:array<string,array<string>>} $parsed_doc_comment
+     * @param  string                                                         $left_padding
      * @return array<int, string>
      */
     public static function renderDocComment(array $parsed_doc_comment, $left_padding)
