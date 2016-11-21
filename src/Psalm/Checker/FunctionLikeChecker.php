@@ -569,6 +569,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         array &$function_signature,
         $method_line_number
     ) {
+        $docblock_param_vars = [];
+
         foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
 
@@ -586,6 +588,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 continue;
             }
+
+            $docblock_param_vars[$param_name] = true;
 
             $new_param_type = Type::parseString(
                 self::fixUpLocalType(
@@ -625,6 +629,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $function_signature_param->type = $new_param_type;
                     break;
                 }
+            }
+        }
+
+        foreach ($function_param_names as $param_name => $_) {
+            if (!isset($docblock_param_vars[$param_name])) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Parameter $' . $param_name .' does not appear in the docbock for ' .
+                            $this->getMethodId(),
+                        $this->getCheckedFileName(),
+                        $method_line_number
+                    )
+                )) {
+                    return false;
+                }
+
+                continue;
             }
         }
 
