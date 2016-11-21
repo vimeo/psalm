@@ -172,12 +172,12 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function extractReflectionMethodInfo(\ReflectionMethod $method)
     {
-        if (strtolower($method->name) === strtolower((string)$method->class)) {
+        if (strtolower((string)$method->name) === strtolower((string)$method->class)) {
             $method_id = $method->class . '::__construct';
             self::$cased_method_ids[$method_id] = $method->class . '::__construct';
         }
         else {
-            $method_id = $method->class . '::' . strtolower($method->name);
+            $method_id = $method->class . '::' . strtolower((string)$method->name);
             self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
         }
 

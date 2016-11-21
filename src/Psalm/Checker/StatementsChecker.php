@@ -512,41 +512,6 @@ class StatementsChecker
     }
 
     /**
-     * @param  string                 $call
-     * @param  PhpParser\Node\Arg[]   $args
-     * @param  string                 $method_id
-     * @return string|null
-     */
-    protected static function getMethodFromCallBlock($call, array $args, $method_id)
-    {
-        $fq_class_name = explode('::', $method_id)[0];
-
-        $original_call = $call;
-
-        $call = preg_replace('/^\$this(->|::)/', $fq_class_name . '::', $call);
-
-        $call = preg_replace('/\(\)$/', '', $call);
-
-        if (strpos($call, '$') !== false) {
-            $method_params = MethodChecker::getMethodParams($method_id);
-
-            foreach ($args as $i => $arg) {
-                $method_param = $method_params[$i];
-                $preg_var_name = preg_quote('$' . $method_param['name']);
-
-                if (preg_match('/::' . $preg_var_name . '$/', $call)) {
-                    if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
-                        $call = preg_replace('/' . $preg_var_name . '$/', $arg->value->value, $call);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return $original_call === $call || strpos($call, '$') !== false ? null : $call;
-    }
-
-    /**
      * @param   PhpParser\Node\Stmt\Const_  $stmt
      * @param   Context                     $context
      * @return  void

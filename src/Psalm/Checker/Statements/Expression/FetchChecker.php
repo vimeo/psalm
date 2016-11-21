@@ -903,6 +903,21 @@ class FetchChecker
                     }
 
                     $stmt->inferredType = Type::getString();
+                } elseif ($type->isNull()) {
+                    // @todo emit NullArrayAccess issue
+                } elseif ($type->isMixed()) {
+                    // @todo emit MixedArrayAccess issue
+                } elseif ($type->value && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayAccess(
+                            'Cannot access value on non-array variable ' . $var_id . ' of type ' . $var_type,
+                            $statements_checker->getCheckedFileName(),
+                            $stmt->getLine()
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
                 }
             }
         }
