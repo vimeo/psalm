@@ -20,13 +20,15 @@ class TemplateChecker extends Psalm\Checker\FileChecker
      * @param   bool            $check_class_statements
      * @param   Context|null    $file_context
      * @param   bool            $cache
+     * @param   bool            $update_docblocks
      * @return  false|null
      */
     public function check(
         $check_classes = true,
         $check_class_statements = true,
         Context $file_context = null,
-        $cache = true
+        $cache = true,
+        $update_docblocks = false
     ) {
         $stmts = $this->getStatements();
 
@@ -42,7 +44,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
             $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
 
             if (isset($comment_block['specials']['variablesfrom'])) {
-                $variables_from = trim($comment_block['specials']['variablesfrom'][0]);
+                $variables_from = trim((string)$comment_block['specials']['variablesfrom'][0]);
 
                 $first_line_regex = '/([A-Za-z\\\0-9]+::[a-z_A-Z]+)?/';
 
@@ -52,7 +54,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
                     throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                $this_params = $this->checkMethod($matches[1]);
+                $this_params = $this->checkMethod((string)$matches[1]);
 
                 if ($this_params === false) {
                     return false;
@@ -63,7 +65,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         }
 
         if (!$this_params) {
-            $this_params = new Context($this->short_file_name);
+            $this_params = new Context($this->file_name);
             $this_params->check_variables = false;
             $this_params->self = self::THIS_CLASS;
         }
@@ -74,17 +76,17 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 
     /**
      * @param   string $method_id
-     * @return  bool|Context
+     * @return  false|Context
      */
     private function checkMethod($method_id)
     {
         $class = explode('::', $method_id)[0];
 
-        if (ClassLikeChecker::checkFullyQualifiedClassLikeName($class, $this->short_file_name, 1, []) === false) {
+        if (ClassLikeChecker::checkFullyQualifiedClassLikeName($class, $this->file_name, 1, []) === false) {
             return false;
         }
 
-        $this_context = new Context($this->short_file_name);
+        $this_context = new Context($this->file_name);
         $this_context->self = $class;
         $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($class)]);
 
@@ -110,7 +112,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
             return false;
         }
 
-        $view_context = new Context($this->short_file_name);
+        $view_context = new Context($this->file_name);
         $view_context->self = self::THIS_CLASS;
 
         // add all $this-> vars to scope
@@ -135,8 +137,14 @@ class TemplateChecker extends Psalm\Checker\FileChecker
     {
         $class_name = self::THIS_CLASS;
 
+        $class_like_checker = FileChecker::getClassLikeCheckerFromClass($class_name);
+
+        if (!$class_like_checker) {
+            return;
+        }
+
         // check that class first
-        FileChecker::getClassLikeCheckerFromClass($class_name)->check(true);
+        $class_like_checker->check(true);
 
         $stmts = $this->getStatements();
 

@@ -3,6 +3,7 @@ namespace Psalm\Example\Plugin;
 
 use PhpParser;
 use Psalm\Checker;
+use Psalm\Context;
 
 /**
  * Checks all strings to see if they contain references to classes
@@ -13,9 +14,9 @@ class StringChecker extends \Psalm\Plugin
     /**
      * checks an expression
      * @param  PhpParser\Node\Expr  $stmt
-     * @param  array<Type\Union>    &$vars_in_scope
-     * @param  array                &$vars_possibly_in_scope
-     * @param  array                $suppressed_issues
+     * @param  Context              $context
+     * @param  string               $file_name
+     * @param  array<string>        $suppressed_issues
      * @return null|false
      */
     public function checkExpression(PhpParser\Node\Expr $stmt, \Psalm\Context $context, $file_name, array $suppressed_issues)

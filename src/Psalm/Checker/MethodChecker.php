@@ -479,7 +479,8 @@ class MethodChecker extends FunctionLikeChecker
 
         // support checking oldstyle constructors
         if ($method_parts[1] === '__construct') {
-            $old_constructor_name = array_pop(explode('\\', $method_parts[0]));
+            $method_part_parts = explode('\\', $method_parts[0]);
+            $old_constructor_name = array_pop($method_part_parts);
             $old_method_id = $method_parts[0] . '::' . $old_constructor_name;
         }
 
