@@ -20,6 +20,7 @@ class CommentChecker
      * @param  string           $var_id
      * @return Type\Union|null
      * @throws DocblockParseException If there was a problem parsing the docblock.
+     * @psalm-suppress MixedArrayAccess
      */
     public static function getTypeFromComment(
         $comment,
@@ -80,6 +81,7 @@ class CommentChecker
      * @param  string $comment
      * @return FunctionDocblockComment
      * @throws DocblockParseException If there was a problem parsing the docblock.
+     * @psalm-suppress MixedArrayAccess
      */
     public static function extractDocblockInfo($comment)
     {

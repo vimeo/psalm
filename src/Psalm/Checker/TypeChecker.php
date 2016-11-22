@@ -115,8 +115,8 @@ class TypeChecker
     }
 
     /**
-     * @param   array   $left_assertions
-     * @param   array   $right_assertions
+     * @param   array<string, string>   $left_assertions
+     * @param   array<string, string>   $right_assertions
      * @return  array
      */
     private static function combineTypeAssertions(array $left_assertions, array $right_assertions)

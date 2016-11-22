@@ -177,6 +177,7 @@ class Config
         }
 
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
+            /** @var \SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = $mock_class['name'];
             }
@@ -184,6 +185,7 @@ class Config
 
         // this plugin loading system borrows heavily from etsy/phan
         if (isset($config_xml->plugins) && isset($config_xml->plugins->plugin)) {
+            /** @var \SimpleXMLElement $plugin */
             foreach ($config_xml->plugins->plugin as $plugin) {
                 $plugin_file_name = $plugin['filename'];
 
@@ -213,6 +215,7 @@ class Config
         }
 
         if (isset($config_xml->issueHandler)) {
+            /** @var \SimpleXMLElement $issue_handler */
             foreach ($config_xml->issueHandler->children() as $key => $issue_handler) {
                 if (isset($issue_handler['errorLevel'])) {
                     $error_level = (string) $issue_handler['errorLevel'];
@@ -249,6 +252,7 @@ class Config
      * @param  array<\SimpleXMLElement> $extensions
      * @return void
      * @throws ConfigException If a Config file could not be found.
+     * @psalm-suppress MixedArrayAccess
      */
     protected function loadFileExtensions($extensions)
     {

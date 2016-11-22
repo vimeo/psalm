@@ -698,6 +698,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
 
             if (is_dir($cache_directory)) {
+                /** @var array<string> */
                 $directory_files = scandir($cache_directory);
 
                 foreach ($directory_files as $directory_file) {
@@ -743,6 +744,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
 
             if (is_dir($cache_directory)) {
+                /** @var array<string> */
                 $directory_files = scandir($cache_directory);
 
                 foreach ($directory_files as $directory_file) {

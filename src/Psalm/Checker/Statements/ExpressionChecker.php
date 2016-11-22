@@ -964,6 +964,13 @@ class ExpressionChecker
         } elseif ($return_type->value[0] === '$' && $method_id) {
             $method_params = MethodChecker::getMethodParams($method_id);
 
+            if (!$method_params) {
+                throw new \InvalidArgumentException(
+                    'Cannot get method params of ' . $method_id,
+                    null
+                );
+            }
+
             foreach ($args as $i => $arg) {
                 $method_param = $method_params[$i];
 

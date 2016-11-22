@@ -63,12 +63,14 @@ class FileFilter
             $filter->inclusive = true;
 
             if ($e->directory) {
+                /** @var \SimpleXMLElement $directory */
                 foreach ($e->directory as $directory) {
                     $filter->include_dirs[] = self::slashify((string)$directory['name']);
                 }
             }
 
             if ($e->file) {
+                /** @var \SimpleXMLElement $file */
                 foreach ($e->file as $file) {
                     $filter->include_files[] = $file['name'];
                     $filter->include_files_lowercase[] = strtolower((string)$file['name']);
@@ -76,12 +78,14 @@ class FileFilter
             }
         } else {
             if ($e->directory) {
+                /** @var \SimpleXMLElement $directory */
                 foreach ($e->directory as $directory) {
                     $filter->exclude_dirs[] = self::slashify((string)$directory['name']);
                 }
             }
 
             if ($e->file) {
+                /** @var \SimpleXMLElement $file */
                 foreach ($e->file as $file) {
                     $filter->exclude_files[] = (string)$file['name'];
                     $filter->exclude_files_lowercase[] = strtolower((string)$file['name']);

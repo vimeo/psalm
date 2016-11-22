@@ -223,7 +223,7 @@ abstract class Type
         $class_chars = '[a-zA-Z\<\>\\\\_]+';
         return preg_replace_callback(
             '/(' . $class_chars . '|' . '\((' . $class_chars . '(\|' . $class_chars . ')*' . ')\))((\[\])+)/',
-            function ($matches) {
+            function (array $matches) {
                 $inner_type = str_replace(['(', ')'], '', (string)$matches[1]);
 
                 $dimensionality = strlen((string)$matches[4]) / 2;

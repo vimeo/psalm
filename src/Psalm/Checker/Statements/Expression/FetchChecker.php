@@ -15,6 +15,7 @@ use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\InvisibleProperty;
 use Psalm\Issue\MissingPropertyType;
+use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\MixedPropertyFetch;
 use Psalm\Issue\NoInterfaceProperties;
@@ -904,19 +905,42 @@ class FetchChecker
 
                     $stmt->inferredType = Type::getString();
                 } elseif ($type->isNull()) {
-                    // @todo emit NullArrayAccess issue
-                } elseif ($type->isMixed() || $type->isEmpty()) {
-                    // @todo emit MixedArrayAccess issue
-                } elseif ($type->value && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
                     if (IssueBuffer::accepts(
-                        new InvalidArrayAccess(
-                            'Cannot access value on non-array variable ' . $var_id . ' of type ' . $var_type,
+                        new NullReference(
+                            'Cannot access array value on possibly null variable ' . $array_var_id . ' of type ' . $var_type,
                             $statements_checker->getCheckedFileName(),
                             $stmt->getLine()
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
                         $stmt->inferredType = Type::getMixed();
+                        break;
+                    }
+                } elseif ($type->isMixed() || $type->isEmpty()) {
+                    if (IssueBuffer::accepts(
+                        new MixedArrayAccess(
+                            'Cannot access array value on mixed variable ' . $array_var_id,
+                            $statements_checker->getCheckedFileName(),
+                            $stmt->getLine()
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        $stmt->inferredType = Type::getMixed();
+                        break;
+                    }
+                } elseif (strtolower($type->value) !== 'simplexmlelement' &&
+                    !ClassChecker::classImplements($type->value, 'ArrayAccess')
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayAccess(
+                            'Cannot access array value on non-array variable ' . $array_var_id . ' of type ' . $var_type,
+                            $statements_checker->getCheckedFileName(),
+                            $stmt->getLine()
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        $stmt->inferredType = Type::getMixed();
+                        break;
                     }
                 }
             }
