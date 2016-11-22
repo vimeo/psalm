@@ -9,6 +9,9 @@
     </inspectFiles>
 
     <issueHandler>
+        <MixedArrayAccess errorLevel="suppress" />
+        <MixedArrayOffset errorLevel="suppress" />
+        <MixedAssignment errorLevel="suppress" />
         <MixedArgument errorLevel="suppress" />
         <MixedMethodCall errorLevel="suppress" />
         <MixedPropertyFetch errorLevel="suppress" />
