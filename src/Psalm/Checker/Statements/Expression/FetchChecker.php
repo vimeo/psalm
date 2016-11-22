@@ -19,6 +19,7 @@ use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\MixedPropertyFetch;
 use Psalm\Issue\NoInterfaceProperties;
+use Psalm\Issue\NullArrayAccess;
 use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
@@ -93,7 +94,7 @@ class FetchChecker
 
         if ($stmt_var_type->isNull()) {
             if (IssueBuffer::accepts(
-                new NullReference(
+                new NullPropertyFetch(
                     'Cannot get property on null variable ' . $stmt_var_id,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine()
@@ -108,7 +109,7 @@ class FetchChecker
 
         if ($stmt_var_type->isEmpty()) {
             if (IssueBuffer::accepts(
-                new NullReference(
+                new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
                     $statements_checker->getCheckedFileName(),
                     $stmt->getLine()
@@ -906,15 +907,20 @@ class FetchChecker
                     $stmt->inferredType = Type::getString();
                 } elseif ($type->isNull()) {
                     if (IssueBuffer::accepts(
-                        new NullReference(
+                        new NullArrayAccess(
                             'Cannot access array value on possibly null variable ' . $array_var_id . ' of type ' . $var_type,
                             $statements_checker->getCheckedFileName(),
                             $stmt->getLine()
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        $stmt->inferredType = Type::getMixed();
-                        break;
+                        if (isset($stmt->inferredType)) {
+                            $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
+                        }
+                        else {
+                            $stmt->inferredType = Type::getNull();
+                        }
+                        continue;
                     }
                 } elseif ($type->isMixed() || $type->isEmpty()) {
                     if (IssueBuffer::accepts(
