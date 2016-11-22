@@ -19,8 +19,8 @@
         <MixedInferredReturnType errorLevel="suppress" />
 
         <InvalidDocblock errorLevel="info" />
+        <MissingReturnType errorLevel="info" />
         <DeprecatedMethod errorLevel="info" />
-        <PossiblyUndefinedVariable errorLevel="info">
+        <PossiblyUndefinedVariable errorLevel="info" />
     </issueHandler>
-
 </psalm>
