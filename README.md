@@ -9,7 +9,6 @@ Check out the [wiki](https://github.com/vimeo/psalm/wiki)!
 Install via [Composer](https://getcomposer.org/):
 
 ```bash
-composer config repositories.psalm vcs https://github.com/vimeo/psalm
 composer require --dev "vimeo/psalm:dev-master"
 composer install
 ```
