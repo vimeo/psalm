@@ -676,7 +676,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $is_nullable = $param->default !== null &&
             $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
             $param->default->name instanceof PhpParser\Node\Name &&
-            $param->default->name->parts === ['null'];
+            strtolower($param->default->name->parts[0]) === 'null';
 
         if ($param->type) {
             if (is_string($param->type)) {
