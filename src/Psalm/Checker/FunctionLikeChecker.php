@@ -3,6 +3,7 @@ namespace Psalm\Checker;
 
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
+use Psalm\CodeLocation;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
@@ -86,7 +87,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $this->class_name = $source->getClassName();
         $this->class_extends = $source->getParentClass();
         $this->file_name = $source->getFileName();
+        $this->file_path = $source->getFilePath();
         $this->include_file_name = $source->getIncludeFileName();
+        $this->include_file_path = $source->getIncludeFilePath();
         $this->fq_class_name = $source->getFQCLN();
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
@@ -162,8 +165,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                     new MethodSignatureMismatch(
                                         'Method ' . $cased_method_id .' has fewer arguments than parent method ' .
                                             $parent_method_id,
-                                        $this->getCheckedFileName(),
-                                        $this->function->getLine()
+                                        new CodeLocation($this, $this->function)
                                     )
                                 )) {
                                     return false;
@@ -185,8 +187,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                             $function_params[$i]->signature_type . '\', expecting \'' .
                                             $implemented_param->signature_type . '\' as defined by ' .
                                             $parent_method_id,
-                                        $this->getCheckedFileName(),
-                                        $this->function->getLine()
+                                        new CodeLocation($this, $this->function)
                                     )
                                 )) {
                                     return false;
@@ -206,9 +207,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 foreach ($this->function->getParams() as $param) {
                     $function_params[] = self::getTranslatedParam(
                         $param,
-                        $this->fq_class_name,
-                        $this->namespace,
-                        $this->getAliasedClasses()
+                        $this
                     );
                 }
             }
@@ -221,14 +220,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $this->getMethodId()
                 );
 
+                if (!$function_param->code_location) {
+                    throw new \UnexpectedValueException('We should know where this code is');
+                }
+
                 foreach ($param_type->types as $atomic_type) {
                     if ($atomic_type->isObjectType()
                         && !$atomic_type->isObject()
                         && $this->function instanceof PhpParser\Node
                         && ClassLikeChecker::checkFullyQualifiedClassLikeName(
                             $atomic_type->value,
-                            $this->file_name,
-                            $this->function->getLine(),
+                            $function_param->code_location,
                             $this->suppressed_issues
                         ) === false
                     ) {
@@ -238,7 +240,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 $context->vars_in_scope['$' . $function_param->name] = $param_type;
 
-                $statements_checker->registerVariable($function_param->name, $function_param->line);
+                $statements_checker->registerVariable($function_param->name, $function_param->code_location->line_number);
             }
 
             $statements_checker->check($function_stmts, $context, null, $global_context);
@@ -430,8 +432,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if (IssueBuffer::accepts(
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type',
-                    $this->file_name,
-                    $this->function->getLine()
+                    new CodeLocation($this, $this->function, true)
                 ),
                 $this->suppressed_issues
             )) {
@@ -495,8 +496,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 new InvalidReturnType(
                     'No return type was found for method ' . $cased_method_id .
                         ' but return type \'' . $declared_return_type . '\' was expected',
-                    $this->getCheckedFileName(),
-                    $this->function->getLine()
+                    new CodeLocation($this, $this->function, true)
                 )
             )) {
                 return false;
@@ -515,8 +515,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     new MixedInferredReturnType(
                         'Could not verify return type \'' . $declared_return_type . '\' for ' .
                             $cased_method_id,
-                        $this->getCheckedFileName(),
-                        $this->function->getLine()
+                        new CodeLocation($this, $this->function, true)
                     ),
                     $this->getSuppressedIssues()
                 )) {
@@ -549,8 +548,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     new InvalidReturnType(
                         'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' is incorrect, got \'' . $inferred_return_type . '\'',
-                        $this->getCheckedFileName(),
-                        $this->function->getLine()
+                        new CodeLocation($this, $this->function, true)
                     ),
                     $this->getSuppressedIssues()
                 )) {
@@ -563,30 +561,31 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @param  array<array{type:string,name:string}>  $docblock_params
+     * @param  array<array{type:string,name:string,line_number:int}>  $docblock_params
      * @param  array<string,Type\Union>               $function_param_names
      * @param  array<\Psalm\FunctionLikeParameter>    &$function_signature
-     * @param  int                                    $method_line_number
+     * @param  CodeLocation                           $code_location
      * @return false|null
      */
     protected function improveParamsFromDocblock(
         array $docblock_params,
         array $function_param_names,
         array &$function_signature,
-        $method_line_number
+        CodeLocation $code_location
     ) {
         $docblock_param_vars = [];
 
         foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
+            $line_number = $docblock_param['line_number'];
 
             if (!array_key_exists($param_name, $function_param_names)) {
+                $code_location->setCommentLine($line_number);
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $param_name .' does not appear in the argument list for ' .
                             $this->getMethodId(),
-                        $this->getCheckedFileName(),
-                        $method_line_number
+                        $code_location
                     )
                 )) {
                     return false;
@@ -608,12 +607,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if ($function_param_names[$param_name] && !$function_param_names[$param_name]->isMixed()) {
                 if (!$new_param_type->isIn($function_param_names[$param_name])) {
+                    $code_location->setCommentLine($line_number);
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             'Parameter $' . $param_name .' has wrong type \'' . $new_param_type . '\', should be \'' .
                                 $function_param_names[$param_name] . '\'',
-                            $this->getCheckedFileName(),
-                            $method_line_number
+                            $code_location
                         )
                     )) {
                         return false;
@@ -638,14 +637,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-        foreach ($function_param_names as $param_name => $_) {
-            if (!isset($docblock_param_vars[$param_name])) {
+        foreach ($function_signature as &$function_signature_param) {
+            if (!isset($docblock_param_vars[$function_signature_param->name]) && $function_signature_param->code_location) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Parameter $' . $param_name .' does not appear in the docbock for ' .
+                        'Parameter $' . $function_signature_param->name .' does not appear in the docbock for ' .
                             $this->getMethodId(),
-                        $this->getCheckedFileName(),
-                        $method_line_number
+                        $function_signature_param->code_location
                     )
                 )) {
                     return false;
@@ -660,16 +658,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
     /**
      * @param  PhpParser\Node\Param $param
-     * @param  string               $fq_class_name
-     * @param  string               $namespace
-     * @param  array<string>        $aliased_classes
+     * @param  StatementsSource     $source
      * @return FunctionLikeParameter
      */
     public static function getTranslatedParam(
         PhpParser\Node\Param $param,
-        $fq_class_name,
-        $namespace,
-        array $aliased_classes
+        StatementsSource $source
     ) {
         $param_type = null;
 
@@ -684,12 +678,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             } elseif ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
                 $param_type_string = implode('\\', $param->type->parts);
             } elseif ($param->type->parts === ['self']) {
-                $param_type_string = $fq_class_name;
+                $param_type_string = $source->getFQCLN();
             } else {
                 $param_type_string = ClassLikeChecker::getFQCLNFromString(
                     implode('\\', $param->type->parts),
-                    $namespace,
-                    $aliased_classes
+                    $source->getNamespace(),
+                    $source->getAliasedClasses()
                 );
             }
 
@@ -720,6 +714,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param->name,
             $param->byRef,
             $param_type ?: Type::getMixed(),
+            new CodeLocation($source, $param),
             $is_optional,
             $is_nullable,
             $param->variadic
@@ -772,6 +767,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param_name,
             (bool)$param->isPassedByReference(),
             $param_type,
+            null,
             $is_optional,
             $is_nullable
         );

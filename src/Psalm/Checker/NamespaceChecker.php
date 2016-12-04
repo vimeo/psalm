@@ -35,7 +35,9 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         $this->namespace = $namespace;
         $this->namespace_name = $this->namespace->name ? implode('\\', $this->namespace->name->parts) : '';
         $this->file_name = $source->getFileName();
+        $this->file_path = $source->getFilePath();
         $this->include_file_name = $source->getIncludeFileName();
+        $this->include_file_path = $source->getIncludeFilePath();
         $this->suppressed_issues = $source->getSuppressedIssues();
     }
 

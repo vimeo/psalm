@@ -35,9 +35,19 @@ abstract class SourceChecker implements StatementsSource
     protected $file_name;
 
     /**
+     * @var string
+     */
+    protected $file_path;
+
+    /**
      * @var string|null
      */
     protected $include_file_name;
+
+    /**
+     * @var string|null
+     */
+    protected $include_file_path;
 
     /**
      * @var array
@@ -199,6 +209,14 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
+     * @return string
+     */
+    public function getFilePath()
+    {
+        return $this->file_path;
+    }
+
+    /**
      * @return null|string
      */
     public function getIncludeFileName()
@@ -207,12 +225,22 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
+     * @return null|string
+     */
+    public function getIncludeFilePath()
+    {
+        return $this->include_file_path;
+    }
+
+    /**
      * @param string|null $file_name
+     * @param string|null $file_path
      * @return void
      */
-    public function setIncludeFileName($file_name)
+    public function setIncludeFileName($file_name, $file_path)
     {
         $this->include_file_name = $file_name;
+        $this->include_file_path = $file_path;
     }
 
     /**
@@ -221,6 +249,14 @@ abstract class SourceChecker implements StatementsSource
     public function getCheckedFileName()
     {
         return $this->include_file_name ?: $this->file_name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCheckedFilePath()
+    {
+        return $this->include_file_path ?: $this->file_path;
     }
 
     /**

@@ -10,12 +10,12 @@ abstract class Plugin
      *
      * @param  PhpParser\Node\Expr  $stmt
      * @param  Context              $context
-     * @param  string               $file_name
+     * @param  CodeLocation         $code_location
      * @param  array                $suppressed_issues
      * @return null|false
      * @psalm-suppress InvalidReturnType
      */
-    public function checkExpression(PhpParser\Node\Expr $stmt, Context $context, $file_name, array $suppressed_issues)
+    public function checkExpression(PhpParser\Node\Expr $stmt, Context $context, CodeLocation $code_location, array $suppressed_issues)
     {
         return null;
     }
@@ -25,12 +25,12 @@ abstract class Plugin
      *
      * @param  PhpParser\Node       $stmt
      * @param  Context              $context
-     * @param  string               $file_name
+     * @param  CodeLocation         $code_location
      * @param  array                $suppressed_issues
      * @return null|false
      * @psalm-suppress InvalidReturnType
      */
-    public function checkStatement(PhpParser\Node $stmt, Context $context, $file_name, array $suppressed_issues)
+    public function checkStatement(PhpParser\Node $stmt, Context $context, CodeLocation $code_location, array $suppressed_issues)
     {
         return null;
     }

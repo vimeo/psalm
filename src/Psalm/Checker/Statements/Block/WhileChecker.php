@@ -2,6 +2,7 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
@@ -43,8 +44,7 @@ class WhileChecker
             $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $while_types,
                 $while_context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $stmt->getLine(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
 

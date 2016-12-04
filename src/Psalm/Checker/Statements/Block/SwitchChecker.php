@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidContinue;
 use Psalm\IssueBuffer;
@@ -133,8 +134,7 @@ class SwitchChecker
                         if (IssueBuffer::accepts(
                             new InvalidContinue(
                                 'Continue called when not in loop',
-                                $statements_checker->getCheckedFileName(),
-                                $case->getLine()
+                                new CodeLocation($statements_checker->getSource(), $case)
                             )
                         )) {
                             return false;

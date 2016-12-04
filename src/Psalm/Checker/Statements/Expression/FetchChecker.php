@@ -9,6 +9,7 @@ use Psalm\Checker\MethodChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TraitChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -96,8 +97,7 @@ class FetchChecker
             if (IssueBuffer::accepts(
                 new NullPropertyFetch(
                     'Cannot get property on null variable ' . $stmt_var_id,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -111,8 +111,7 @@ class FetchChecker
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -126,8 +125,7 @@ class FetchChecker
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on mixed var ' . $stmt_var_id,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -141,8 +139,7 @@ class FetchChecker
             if (IssueBuffer::accepts(
                 new NullPropertyFetch(
                     'Cannot get property on possibly null variable ' . $stmt_var_id,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -172,8 +169,7 @@ class FetchChecker
                 if (IssueBuffer::accepts(
                     new InvalidPropertyFetch(
                         'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -203,8 +199,7 @@ class FetchChecker
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -217,8 +212,7 @@ class FetchChecker
                 if (IssueBuffer::accepts(
                     new UndefinedClass(
                         'Cannot get properties of undefined class ' . $lhs_type_part->value,
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -258,8 +252,7 @@ class FetchChecker
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -269,8 +262,7 @@ class FetchChecker
                     if (IssueBuffer::accepts(
                         new UndefinedPropertyFetch(
                             'Instance property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -287,8 +279,7 @@ class FetchChecker
                 if (IssueBuffer::accepts(
                     new MissingPropertyType(
                         'Property ' . $lhs_type_part->value . '::$' . $stmt->name . ' does not have a declared type',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -350,8 +341,7 @@ class FetchChecker
                     if (IssueBuffer::accepts(
                         new UndefinedConstant(
                             'Const ' . $const_name . ' is not defined',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -389,8 +379,7 @@ class FetchChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -410,8 +399,7 @@ class FetchChecker
                 if (IssueBuffer::accepts(
                     new UndefinedConstant(
                         'Const ' . $const_id . ' is not defined',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -463,8 +451,7 @@ class FetchChecker
                         if (IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot check property fetch on parent as this class does not extend another',
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -495,8 +482,7 @@ class FetchChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -556,16 +542,14 @@ class FetchChecker
                     IssueBuffer::add(
                         new InvisibleProperty(
                             'Static property ' . $var_id . ' is not visible in this context',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         )
                     );
                 } else {
                     IssueBuffer::add(
                         new UndefinedPropertyFetch(
                             'Static property ' . $var_id . ' does not exist',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         )
                     );
                 }
@@ -683,8 +667,7 @@ class FetchChecker
                         if (IssueBuffer::accepts(
                             new InvalidArrayAssignment(
                                 'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $type->value,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -701,7 +684,7 @@ class FetchChecker
                             $assignment_key_type,
                             $assignment_value_type,
                             $var_id,
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         );
 
                         if ($refined_type === false) {
@@ -888,8 +871,7 @@ class FetchChecker
                                 new InvalidArrayAccess(
                                     'Cannot access value on array variable ' . $var_id . ' using int offset - ' .
                                         'expecting ' . $expected_keys_string,
-                                    $statements_checker->getCheckedFileName(),
-                                    $stmt->getLine()
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
@@ -909,8 +891,7 @@ class FetchChecker
                     if (IssueBuffer::accepts(
                         new NullArrayAccess(
                             'Cannot access array value on possibly null variable ' . $array_var_id . ' of type ' . $var_type,
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -926,8 +907,7 @@ class FetchChecker
                     if (IssueBuffer::accepts(
                         new MixedArrayAccess(
                             'Cannot access array value on mixed variable ' . $array_var_id,
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -940,8 +920,7 @@ class FetchChecker
                     if (IssueBuffer::accepts(
                         new InvalidArrayAccess(
                             'Cannot access array value on non-array variable ' . $array_var_id . ' of type ' . $var_type,
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -975,8 +954,7 @@ class FetchChecker
                             new MixedArrayOffset(
                                 'Cannot access value on variable ' . $var_id . ' using mixed offset - expecting ' .
                                     $key_type,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -987,8 +965,7 @@ class FetchChecker
                             new InvalidArrayAccess(
                                 'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
                                     'expecting ' . $key_type,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -1008,7 +985,7 @@ class FetchChecker
      * @param   Type\Union              $assignment_key_type
      * @param   Type\Union              $assignment_value_type
      * @param   string|null             $var_id
-     * @param   int                     $line_number
+     * @param   CodeLocation           $code_location
      * @return  Type\Atomic|null|false
      */
     protected static function refineArrayType(
@@ -1017,14 +994,13 @@ class FetchChecker
         Type\Union $assignment_key_type,
         Type\Union $assignment_value_type,
         $var_id,
-        $line_number
+        CodeLocation $code_location
     ) {
         if ($type->value === 'null') {
             if (IssueBuffer::accepts(
                 new NullReference(
                     'Cannot assign value on possibly null array' . ($var_id ? ' ' . $var_id : ''),
-                    $statements_checker->getCheckedFileName(),
-                    $line_number
+                    $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -1043,8 +1019,7 @@ class FetchChecker
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type->value . ' that does not ' .
                         'implement ArrayAccess',
-                    $statements_checker->getCheckedFileName(),
-                    $line_number
+                    $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {

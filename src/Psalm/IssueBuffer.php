@@ -54,15 +54,15 @@ class IssueBuffer
 
         $reporting_level = $config->getReportingLevel($issue_type);
 
-        switch ($reporting_level) {
-            case Config::REPORT_INFO:
-                if (ProjectChecker::$show_info && !self::alreadyEmitted($error_message)) {
-                    echo 'INFO: ' . $error_message . PHP_EOL;
-                }
-                return false;
+        if ($reporting_level === Config::REPORT_SUPPRESS) {
+            return false;
+        }
 
-            case Config::REPORT_SUPPRESS:
-                return false;
+        if ($reporting_level === Config::REPORT_INFO) {
+            if (ProjectChecker::$show_info && !self::alreadyEmitted($error_message)) {
+                echo 'INFO: ' . $error_message . PHP_EOL;
+            }
+            return false;
         }
 
         if ($config->throw_exception) {
@@ -70,8 +70,10 @@ class IssueBuffer
         }
 
         if (!self::alreadyEmitted($error_message)) {
-            echo (ProjectChecker::$use_color ? "\033[0;31m" : '') . 'ERROR: ' .
-                (ProjectChecker::$use_color ? "\033[0m" : '') . $error_message . PHP_EOL;
+            echo (ProjectChecker::$use_color ? "\e[0;31m" : '') . 'ERROR: ' .
+                (ProjectChecker::$use_color ? "\e[0m" : '') . $error_message . PHP_EOL;
+
+            echo $e->getFileSnippet() . PHP_EOL;
         }
 
         if ($config->stop_on_first_error) {

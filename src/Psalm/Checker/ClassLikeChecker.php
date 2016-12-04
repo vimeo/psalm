@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -202,7 +203,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $this->aliased_constants = $source->getAliasedConstants();
         $this->aliased_functions = $source->getAliasedFunctions();
         $this->file_name = $source->getFileName();
+        $this->file_path = $source->getFilePath();
         $this->include_file_name = $source->getIncludeFileName();
+        $this->include_file_path = $source->getIncludeFilePath();
         $this->fq_class_name = $fq_class_name;
 
         $this->suppressed_issues = $source->getSuppressedIssues();
@@ -289,8 +292,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             foreach ($parent_interfaces as $interface_name) {
                 if (self::checkFullyQualifiedClassLikeName(
                     $interface_name,
-                    $this->file_name,
-                    $this->class->getLine(),
+                    new CodeLocation($this, $this->class, true),
                     $this->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -392,8 +394,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         if (IssueBuffer::accepts(
                             new UnimplementedInterfaceMethod(
                                 'Method ' . $method_name . ' is not defined on class ' . $this->fq_class_name,
-                                $this->file_name,
-                                $this->class->getLine()
+                                new CodeLocation($this, $this->class)
                             ),
                             $this->suppressed_issues
                         )) {
@@ -434,10 +435,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected function registerParentClassProperties($parent_class)
     {
+        if (!$this->class instanceof PhpParser\Node\Stmt\Class_) {
+            throw new \UnexpectedValueException('Cannot register parent class where none exists');
+        }
+
+        if (!$this->class->extends) {
+            throw new \UnexpectedValueException('Cannot register parent class where none exists');
+        }
+
         if (self::checkFullyQualifiedClassLikeName(
             $parent_class,
-            $this->file_name,
-            $this->class->getLine(),
+            new CodeLocation($this, $this->class->extends, true),
             $this->getSuppressedIssues()
         ) === false
         ) {
@@ -535,7 +543,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             if (!TraitChecker::traitExists($trait_name)) {
                 if (IssueBuffer::accepts(
-                    new UndefinedTrait('Trait ' . $trait_name . ' does not exist', $this->file_name, $trait->getLine()),
+                    new UndefinedTrait(
+                        'Trait ' . $trait_name . ' does not exist',
+                        new CodeLocation($this, $trait)
+                    ),
                     $this->suppressed_issues
                 )) {
                     return false;
@@ -547,8 +558,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     if (IssueBuffer::accepts(
                         new UndefinedTrait(
                             'Trait ' . $trait_name . ' has wrong casing',
-                            $this->file_name,
-                            $trait->getLine()
+                            new CodeLocation($this, $trait)
                         ),
                         $this->suppressed_issues
                     )) {
@@ -596,13 +606,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if ($comment && $config->use_docblock_types) {
             try {
                 $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
-            }
-            catch (DocblockParseException $e) {
+            } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         (string)$e->getMessage(),
-                        $this->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($this, $this->class, true)
                     )
                 )) {
                     return false;
@@ -613,8 +621,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 new MissingPropertyType(
                     'Property ' . $this->fq_class_name . '::$' . $stmt->props[0]->name . ' does not have a ' .
                         'declared type',
-                    $this->file_name,
-                    $stmt->getLine()
+                    new CodeLocation($this, $stmt)
                 ),
                 $this->suppressed_issues
             )) {
@@ -757,15 +764,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param  string           $fq_class_name
-     * @param  string           $file_name
-     * @param  int              $line_number
+     * @param  CodeLocation    $code_location
      * @param  array<string>    $suppressed_issues
      * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
         $fq_class_name,
-        $file_name,
-        $line_number,
+        CodeLocation $code_location,
         array $suppressed_issues
     ) {
         if (empty($fq_class_name)) {
@@ -781,8 +786,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if (IssueBuffer::accepts(
                 new UndefinedClass(
                     'Class or interface ' . $fq_class_name . ' does not exist',
-                    $file_name,
-                    $line_number
+                    $code_location
                 ),
                 $suppressed_issues
             )) {
@@ -798,8 +802,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if (IssueBuffer::accepts(
                 new InvalidClass(
                     'Class or interface ' . $fq_class_name . ' has wrong casing',
-                    $file_name,
-                    $line_number
+                    $code_location
                 ),
                 $suppressed_issues
             )) {
@@ -807,7 +810,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        FileChecker::addFileReferenceToClass(Config::getInstance()->getBaseDir() . $file_name, $fq_class_name);
+        FileChecker::addFileReferenceToClass(Config::getInstance()->getBaseDir() . $code_location->file_name, $fq_class_name);
 
         return true;
     }

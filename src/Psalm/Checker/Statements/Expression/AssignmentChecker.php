@@ -9,6 +9,7 @@ use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -158,8 +159,7 @@ class AssignmentChecker
             if (IssueBuffer::accepts(
                 new FailedTypeResolution(
                     'Cannot assign ' . $var_id . ' to type void',
-                    $statements_checker->getCheckedFileName(),
-                    $assign_var->getLine()
+                    new CodeLocation($statements_checker->getSource(), $assign_var)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -200,7 +200,7 @@ class AssignmentChecker
         $expr_type = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus) {
-            ExpressionChecker::checkPlusOp($statements_checker, $stmt->getLine(), $var_type, $expr_type, $result_type);
+            ExpressionChecker::checkPlusOp($var_type, $expr_type, $result_type);
 
             if ($result_type && $var_id) {
                 $context->vars_in_scope[$var_id] = $result_type;
@@ -259,8 +259,7 @@ class AssignmentChecker
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Cannot use $this when not inside class',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -279,8 +278,7 @@ class AssignmentChecker
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
                         $var_id . ' with mixed type cannot be assigned to',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -294,8 +292,7 @@ class AssignmentChecker
                 if (IssueBuffer::accepts(
                     new NullPropertyAssignment(
                         $var_id . ' with null type cannot be assigned to',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -309,8 +306,7 @@ class AssignmentChecker
                 if (IssueBuffer::accepts(
                     new NullPropertyAssignment(
                         $var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -336,8 +332,7 @@ class AssignmentChecker
                     if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
                             $var_id . ' with possible non-object type \'' . $lhs_type_part . '\' cannot be assigned to',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -382,8 +377,7 @@ class AssignmentChecker
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -396,8 +390,7 @@ class AssignmentChecker
                     if (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -417,8 +410,7 @@ class AssignmentChecker
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
                                 'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -428,8 +420,7 @@ class AssignmentChecker
                         if (IssueBuffer::accepts(
                             new UndefinedPropertyAssignment(
                                 'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -447,8 +438,7 @@ class AssignmentChecker
                         new MissingPropertyType(
                             'Property ' . $lhs_type_part->value . '::$' . $stmt->name . ' does not have a declared ' .
                                 'type',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -482,8 +472,7 @@ class AssignmentChecker
             if (IssueBuffer::accepts(
                 new MissingPropertyDeclaration(
                     'Missing property declaration for ' . $var_id,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -507,8 +496,7 @@ class AssignmentChecker
                     new InvalidPropertyAssignment(
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
                             $assignment_type . '\'',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -580,8 +568,7 @@ class AssignmentChecker
                 if (IssueBuffer::accepts(
                     new InvisibleProperty(
                         'Static property ' . $var_id . ' is not visible in this context',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -592,8 +579,7 @@ class AssignmentChecker
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyAssignment(
                             'Static property ' . $var_id . ' is not defined',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -603,8 +589,7 @@ class AssignmentChecker
                     if (IssueBuffer::accepts(
                         new UndefinedPropertyAssignment(
                             'Static property ' . $var_id . ' is not defined',
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -624,8 +609,7 @@ class AssignmentChecker
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     'Property ' . $fq_class_name . '::$' . $prop_name . ' does not have a declared type',
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -652,8 +636,7 @@ class AssignmentChecker
                 new InvalidPropertyAssignment(
                     $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
                         $assignment_type . '\'',
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -754,8 +737,7 @@ class AssignmentChecker
                             if (IssueBuffer::accepts(
                                 new MixedStringOffsetAssignment(
                                     'Cannot assign a mixed variable to a string offset for ' . $var_id,
-                                    $statements_checker->getCheckedFileName(),
-                                    $stmt->getLine()
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
@@ -768,8 +750,7 @@ class AssignmentChecker
                         if (IssueBuffer::accepts(
                             new InvalidArrayAssignment(
                                 'Cannot assign string offset for  ' . $var_id . ' of type ' . $value_type,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {

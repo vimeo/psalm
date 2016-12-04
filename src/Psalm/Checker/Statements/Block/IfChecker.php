@@ -6,6 +6,7 @@ use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IfScope;
 use Psalm\Type;
@@ -111,8 +112,7 @@ class IfChecker
                 TypeChecker::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -139,8 +139,7 @@ class IfChecker
             $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $stmt->getLine(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -284,8 +283,7 @@ class IfChecker
             $outer_context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $outer_context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $stmt->getLine(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -353,8 +351,7 @@ class IfChecker
             $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $elseif->getLine(),
+                new CodeLocation($statements_checker->getSource(), $elseif),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -414,8 +411,7 @@ class IfChecker
             $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $elseif->getLine(),
+                new CodeLocation($statements_checker->getSource(), $elseif),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -569,8 +565,7 @@ class IfChecker
             $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $else_context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $else->getLine(),
+                new CodeLocation($statements_checker->getSource(), $else),
                 $statements_checker->getSuppressedIssues()
             );
 

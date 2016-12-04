@@ -10,6 +10,7 @@ use Psalm\Checker\MethodChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TraitChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidArgument;
@@ -65,8 +66,7 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
                         'Unsafe ' . implode('', $method->parts),
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -109,8 +109,10 @@ class CallChecker
 
             $in_call_map = FunctionChecker::inCallMap($method_id);
 
+            $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
+
             if (!$in_call_map &&
-                self::checkFunctionExists($statements_checker, $method_id, $context, $stmt->getLine()) === false
+                self::checkFunctionExists($statements_checker, $method_id, $context, $code_location) === false
             ) {
                 return false;
             }
@@ -120,7 +122,7 @@ class CallChecker
                 $stmt->args,
                 $method_id,
                 $context,
-                $stmt->getLine()
+                $code_location
             ) === false) {
                 return false;
             }
@@ -129,8 +131,7 @@ class CallChecker
                 $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
                     $method_id,
                     $stmt->args,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    $code_location,
                     $statements_checker->getSuppressedIssues()
                 );
             } else {
@@ -185,8 +186,7 @@ class CallChecker
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine(),
+                        new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
@@ -226,7 +226,7 @@ class CallChecker
                     $stmt->args,
                     $method_id,
                     $context,
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ) === false) {
                     return false;
                 }
@@ -305,8 +305,7 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Use of $this in non-class context',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -377,8 +376,7 @@ class CallChecker
                         if (IssueBuffer::accepts(
                             new NullReference(
                                 'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $var_id,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -394,8 +392,7 @@ class CallChecker
                         if (IssueBuffer::accepts(
                             new InvalidArgument(
                                 'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable ' . $var_id,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -408,8 +405,7 @@ class CallChecker
                         if (IssueBuffer::accepts(
                             new MixedMethodCall(
                                 'Cannot call method ' . $stmt->name . ' on a mixed variable ' . $var_id,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -432,8 +428,7 @@ class CallChecker
 
                         $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                             $fq_class_name,
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine(),
+                            new CodeLocation($statements_checker->getSource(), $stmt),
                             $statements_checker->getSuppressedIssues()
                         );
 
@@ -446,8 +441,7 @@ class CallChecker
 
                         $does_method_exist = MethodChecker::checkMethodExists(
                             $cased_method_id,
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine(),
+                            new CodeLocation($statements_checker->getSource(), $stmt),
                             $statements_checker->getSuppressedIssues()
                         );
 
@@ -462,7 +456,7 @@ class CallChecker
                                 $method_id,
                                 $context->self,
                                 $statements_checker->getSource(),
-                                $stmt->getLine(),
+                                new CodeLocation($statements_checker->getSource(), $stmt),
                                 $statements_checker->getSuppressedIssues()
                             ) === false) {
                                 return false;
@@ -470,8 +464,7 @@ class CallChecker
 
                             if (MethodChecker::checkMethodNotDeprecated(
                                 $method_id,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine(),
+                                new CodeLocation($statements_checker->getSource(), $stmt),
                                 $statements_checker->getSuppressedIssues()
                             ) === false) {
                                 return false;
@@ -507,7 +500,7 @@ class CallChecker
             $stmt->args,
             $method_id,
             $context,
-            $stmt->getLine(),
+            new CodeLocation($statements_checker->getSource(), $stmt),
             $has_mock
         ) === false) {
             return false;
@@ -551,8 +544,7 @@ class CallChecker
                         if (IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot call method on parent as this class does not extend another',
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -585,8 +577,7 @@ class CallChecker
 
                 $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -637,8 +628,7 @@ class CallChecker
 
                 $does_method_exist = MethodChecker::checkMethodExists(
                     $cased_method_id,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -650,7 +640,7 @@ class CallChecker
                     $method_id,
                     $context->self,
                     $statements_checker->getSource(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -663,8 +653,7 @@ class CallChecker
                 ) {
                     if (MethodChecker::checkMethodStatic(
                         $method_id,
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine(),
+                        new CodeLocation($statements_checker->getSource(), $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
@@ -673,8 +662,7 @@ class CallChecker
 
                 if (MethodChecker::checkMethodNotDeprecated(
                     $method_id,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -705,7 +693,7 @@ class CallChecker
                 $stmt->args,
                 $method_id,
                 $context,
-                $stmt->getLine(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
                 $has_mock
             ) === false) {
                 return false;
@@ -720,7 +708,7 @@ class CallChecker
      * @param   array<int, PhpParser\Node\Arg>  $args
      * @param   string|null                     $method_id
      * @param   Context                         $context
-     * @param   int                             $line_number
+     * @param   CodeLocation                    $code_location
      * @param   boolean                         $is_mock
      * @return  false|null
      */
@@ -729,7 +717,7 @@ class CallChecker
         array $args,
         $method_id,
         Context $context,
-        $line_number,
+        CodeLocation $code_location,
         $is_mock = false
     ) {
         $function_params = null;
@@ -879,7 +867,7 @@ class CallChecker
                         ),
                         $cased_method_id,
                         $argument_offset,
-                        $arg->value->getLine()
+                        new CodeLocation($statements_checker->getSource(), $arg->value)
                     ) === false) {
                         return false;
                     }
@@ -924,8 +912,7 @@ class CallChecker
                     if (IssueBuffer::accepts(
                         new TooManyArguments(
                             'Too many arguments in closure for ' . ($cased_method_id ?: $method_id),
-                            $statements_checker->getCheckedFileName(),
-                            $closure_arg->getLine()
+                            new CodeLocation($statements_checker->getSource(), $closure_arg)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -935,8 +922,7 @@ class CallChecker
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
                             'You must supply a param in the closure for ' . ($cased_method_id ?: $method_id),
-                            $statements_checker->getCheckedFileName(),
-                            $closure_arg->getLine()
+                            new CodeLocation($statements_checker->getSource(), $closure_arg)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -954,9 +940,7 @@ class CallChecker
 
                     $translated_param = FunctionLikeChecker::getTranslatedParam(
                         $closure_param,
-                        $statements_checker->getFQCLN(),
-                        $statements_checker->getNamespace(),
-                        $statements_checker->getAliasedClasses()
+                        $statements_checker->getSource()
                     );
 
                     $param_type = $translated_param->type;
@@ -978,8 +962,7 @@ class CallChecker
                             new TypeCoercion(
                                 'First parameter of closure passed to function ' . $cased_method_id . ' expects ' .
                                     $param_type . ', parent type ' . $input_type . ' provided',
-                                $statements_checker->getCheckedFileName(),
-                                $closure_param->getLine()
+                                new CodeLocation($statements_checker->getSource(), $closure_param)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -993,8 +976,7 @@ class CallChecker
                                 new InvalidScalarArgument(
                                     'First parameter of closure passed to function ' . $cased_method_id . ' expects ' .
                                         $param_type . ', ' . $input_type . ' provided',
-                                    $statements_checker->getCheckedFileName(),
-                                    $closure_param->getLine()
+                                    new CodeLocation($statements_checker->getSource(), $closure_param)
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
@@ -1004,8 +986,7 @@ class CallChecker
                             new InvalidArgument(
                                 'First parameter of closure passed to function ' . $cased_method_id . ' expects ' .
                                     $param_type . ', ' . $input_type . ' provided',
-                                $statements_checker->getCheckedFileName(),
-                                $closure_param->getLine()
+                                new CodeLocation($statements_checker->getSource(), $closure_param)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -1024,8 +1005,7 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new TooManyArguments(
                         'Too many arguments for method ' . ($cased_method_id ?: $method_id),
-                        $statements_checker->getCheckedFileName(),
-                        $line_number
+                        $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -1043,8 +1023,7 @@ class CallChecker
                         if (IssueBuffer::accepts(
                             new TooFewArguments(
                                 'Too few arguments for method ' . $cased_method_id,
-                                $statements_checker->getCheckedFileName(),
-                                $line_number
+                                $code_location
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -1066,7 +1045,7 @@ class CallChecker
      * @param   Type\Union          $param_type
      * @param   string              $cased_method_id
      * @param   int                 $argument_offset
-     * @param   int                 $line_number
+     * @param   CodeLocation        $code_location
      * @return  null|false
      */
     protected static function checkFunctionArgumentType(
@@ -1075,7 +1054,7 @@ class CallChecker
         Type\Union $param_type,
         $cased_method_id,
         $argument_offset,
-        $line_number
+        CodeLocation $code_location
     ) {
         if ($param_type->isMixed()) {
             return null;
@@ -1086,8 +1065,7 @@ class CallChecker
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be mixed, expecting ' .
                         $param_type,
-                    $statements_checker->getCheckedFileName(),
-                    $line_number
+                    $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -1102,8 +1080,7 @@ class CallChecker
                 new NullReference(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be null, possibly ' .
                         'null value provided',
-                    $statements_checker->getCheckedFileName(),
-                    $line_number
+                    $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -1123,8 +1100,7 @@ class CallChecker
                 new TypeCoercion(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
                         ', parent type ' . $input_type . ' provided',
-                    $statements_checker->getCheckedFileName(),
-                    $line_number
+                    $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -1138,8 +1114,7 @@ class CallChecker
                     new InvalidScalarArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
                             ', ' . $input_type . ' provided',
-                        $statements_checker->getCheckedFileName(),
-                        $line_number
+                        $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -1149,8 +1124,7 @@ class CallChecker
                 new InvalidArgument(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
                         ', ' . $input_type . ' provided',
-                    $statements_checker->getCheckedFileName(),
-                    $line_number
+                    $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -1165,14 +1139,14 @@ class CallChecker
      * @param  StatementsChecker    $statements_checker
      * @param  string               $function_id
      * @param  Context              $context
-     * @param  int                  $line_number
+     * @param  CodeLocation         $code_location
      * @return bool
      */
     protected static function checkFunctionExists(
         StatementsChecker $statements_checker,
         $function_id,
         Context $context,
-        $line_number
+        CodeLocation $code_location
     ) {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
@@ -1181,8 +1155,7 @@ class CallChecker
             if (IssueBuffer::accepts(
                 new UndefinedFunction(
                     'Function ' . $cased_function_id . ' does not exist',
-                    $statements_checker->getCheckedFileName(),
-                    $line_number
+                    $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {

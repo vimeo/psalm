@@ -17,7 +17,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @var string
      */
-    protected $real_file_name;
+    protected $file_path;
 
     /**
      * @var array<string, array<string, string>>
@@ -117,7 +117,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function __construct($file_name, array $preloaded_statements = [])
     {
-        $this->real_file_name = $file_name;
+        $this->file_path = $file_name;
         $this->file_name = Config::getInstance()->shortenFileName($file_name);
 
         self::$file_checkers[$this->file_name] = $this;
@@ -147,11 +147,11 @@ class FileChecker extends SourceChecker implements StatementsSource
             return null;
         }
 
-        if ($cache && $check_classes && !$check_functions && isset(self::$classes_checked[$this->real_file_name])) {
+        if ($cache && $check_classes && !$check_functions && isset(self::$classes_checked[$this->file_path])) {
             return null;
         }
 
-        if ($cache && !$check_classes && !$check_functions && isset(self::$files_checked[$this->real_file_name])) {
+        if ($cache && !$check_classes && !$check_functions && isset(self::$files_checked[$this->file_path])) {
             return null;
         }
 
@@ -249,19 +249,19 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         if ($check_functions) {
-            self::$functions_checked[$this->real_file_name] = true;
+            self::$functions_checked[$this->file_path] = true;
         }
 
         if ($check_classes) {
-            self::$classes_checked[$this->real_file_name] = true;
+            self::$classes_checked[$this->file_path] = true;
         }
 
-        self::$files_checked[$this->real_file_name] = true;
+        self::$files_checked[$this->file_path] = true;
 
         if ($update_docblocks && isset(self::$docblock_return_types[$this->file_name])) {
             $line_upset = 0;
 
-            $file_lines = explode(PHP_EOL, (string)file_get_contents($this->real_file_name));
+            $file_lines = explode(PHP_EOL, (string)file_get_contents($this->file_path));
 
             $file_docblock_updates = self::$docblock_return_types[$this->file_name];
 
@@ -269,7 +269,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                 self::updateDocblock($file_lines, $line_number, $line_upset, $type[0], $type[1], $type[2]);
             }
 
-            file_put_contents($this->real_file_name, implode(PHP_EOL, $file_lines));
+            file_put_contents($this->file_path, implode(PHP_EOL, $file_lines));
 
             echo 'Added/updated ' . count($file_docblock_updates) . ' docblocks in ' . $this->file_name . PHP_EOL;
         }
@@ -321,7 +321,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         return $this->preloaded_statements
             ? $this->preloaded_statements
-            : self::getStatementsForFile($this->real_file_name);
+            : self::getStatementsForFile($this->file_path);
     }
 
     /**
@@ -339,8 +339,10 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache_location = null;
         $name_cache_key = null;
 
+        $version = 'parsercache2';
+
         $file_contents = (string)file_get_contents($file_name);
-        $file_content_hash = md5($file_contents);
+        $file_content_hash = md5($version . $file_contents);
         $name_cache_key = self::getParserCacheKey($file_name);
 
         if (self::$file_content_hashes === null) {
@@ -365,7 +367,13 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         if (!$stmts) {
-            $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
+            $lexer = new PhpParser\Lexer([
+                'usedAttributes' => [
+                    'comments', 'startLine', 'startFilePos', 'endFilePos'
+                ]
+            ]);
+
+            $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);
 
             $stmts = $parser->parse($file_contents);
         }
@@ -479,14 +487,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         return $this->aliased_classes_flipped;
-    }
-
-    /**
-     * @return string
-     */
-    public function getRealFileName()
-    {
-        return $this->real_file_name;
     }
 
     /**

@@ -34,9 +34,9 @@ class FunctionLikeParameter
     public $is_nullable;
 
     /**
-     * @var int
+     * @var CodeLocation|null
      */
-    public $line;
+    public $code_location;
 
     /**
      * @var bool
@@ -47,6 +47,7 @@ class FunctionLikeParameter
      * @param string        $name
      * @param boolean       $by_ref
      * @param Type\Union    $type
+     * @param CodeLocation  $code_location
      * @param boolean       $is_optional
      * @param boolean       $is_nullable
      * @param boolean       $is_variadic
@@ -55,6 +56,7 @@ class FunctionLikeParameter
         $name,
         $by_ref,
         Type\Union $type,
+        CodeLocation $code_location = null,
         $is_optional = true,
         $is_nullable = false,
         $is_variadic = false
@@ -66,5 +68,6 @@ class FunctionLikeParameter
         $this->is_optional = $is_optional;
         $this->is_nullable = $is_nullable;
         $this->is_variadic = $is_variadic;
+        $this->code_location = $code_location;
     }
 }

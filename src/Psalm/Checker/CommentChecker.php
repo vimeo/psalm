@@ -78,23 +78,25 @@ class CommentChecker
     }
 
     /**
-     * @param  string $comment
+     * @param  string  $comment
+     * @param  int     $line_number
      * @return FunctionDocblockComment
      * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
      */
-    public static function extractDocblockInfo($comment)
+    public static function extractDocblockInfo($comment, $line_number)
     {
-        $comments = self::parseDocComment($comment);
+        $comments = self::parseDocComment($comment, $line_number);
 
         $info = new FunctionDocblockComment();
 
         if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
-            $return_block = trim(
-                isset($comments['specials']['psalm-return'])
-                    ? (string)$comments['specials']['psalm-return'][0]
-                    : (string)$comments['specials']['return'][0]
-            );
+            /** @var array */
+            $return_specials = isset($comments['specials']['psalm-return'])
+                ? $comments['specials']['psalm-return']
+                : $comments['specials']['return'];
+
+            $return_block = trim((string)reset($return_specials));
 
             try {
                 $line_parts = self::splitDocLine($return_block);
@@ -107,11 +109,12 @@ class CommentChecker
                 && !strpos($line_parts[0], '::')
             ) {
                 $info->return_type = $line_parts[0];
+                $info->return_type_line_number = array_keys($return_specials)[0];
             }
         }
 
         if (isset($comments['specials']['param'])) {
-            foreach ($comments['specials']['param'] as $param) {
+            foreach ($comments['specials']['param'] as $line_number => $param) {
                 try {
                     $line_parts = self::splitDocLine((string)$param);
                 } catch (DocblockParseException $e) {
@@ -128,7 +131,11 @@ class CommentChecker
                         $line_parts[1] = substr($line_parts[1], 1);
                     }
 
-                    $info->params[] = ['name' => substr($line_parts[1], 1), 'type' => $line_parts[0]];
+                    $info->params[] = [
+                        'name' => substr($line_parts[1], 1),
+                        'type' => $line_parts[0],
+                        'line_number' => $line_number
+                    ];
                 }
             }
         }
@@ -202,9 +209,10 @@ class CommentChecker
      * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
      * @param  string  $docblock
+     * @param  int     $line_number
      * @return array Array of the main comment and specials
      */
-    public static function parseDocComment($docblock)
+    public static function parseDocComment($docblock, $line_number = null)
     {
         // Strip off comments.
         $docblock = trim($docblock);
@@ -214,6 +222,13 @@ class CommentChecker
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
+
+        $line_map = [];
+
+        if ($line_number) {
+            $line_number++;
+        }
+
         $last = false;
         foreach ($lines as $k => $line) {
             if (preg_match('/^\s?@\w/i', $line)) {
@@ -223,6 +238,10 @@ class CommentChecker
             } elseif ($last !== false) {
                 $lines[$last] = rtrim($lines[$last]).' '.trim($line);
                 unset($lines[$k]);
+            }
+
+            if ($line_number) {
+                $line_map[$line] = $line_number++;
             }
         }
 
@@ -235,14 +254,14 @@ class CommentChecker
         $have_specials = preg_match_all('/^\s?@([\w\-:]+)\s*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
         if ($have_specials) {
             $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
-            foreach ($matches as $match) {
+            foreach ($matches as $m => $match) {
                 list($_, $type, $data) = $match;
 
                 if (empty($special[$type])) {
-                    $special[$type] = array();
+                    $special[$type] = [];
                 }
 
-                $special[$type][] = $data;
+                $special[$type][$line_map && isset($line_map[$_]) ? $line_map[$_] : $m] = $data;
             }
         }
 

@@ -10,6 +10,7 @@ use Psalm\Checker\Statements\Block\TryChecker;
 use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
+use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
@@ -75,12 +76,27 @@ class StatementsChecker
     /**
      * @var string
      */
+    protected $file_path;
+
+    /**
+     * @var string
+     */
     protected $checked_file_name;
+
+    /**
+     * @var string
+     */
+    protected $checked_file_path;
 
     /**
      * @var string|null
      */
     protected $include_file_name;
+
+    /**
+     * @var string|null
+     */
+    protected $include_file_path;
 
     /**
      * @var bool
@@ -116,7 +132,9 @@ class StatementsChecker
     {
         $this->source = $source;
         $this->file_name = $this->source->getFileName();
+        $this->file_path = $this->source->getFilePath();
         $this->checked_file_name = $this->source->getCheckedFileName();
+        $this->checked_file_path = $this->source->getCheckedFilePath();
         $this->namespace = $this->source->getNamespace();
         $this->is_static = $this->source->isStatic();
         $this->fq_class_name = $this->source->getFQCLN();
@@ -157,16 +175,23 @@ class StatementsChecker
         }
 
         foreach ($stmts as $stmt) {
-            foreach (Config::getInstance()->getPlugins() as $plugin) {
-                if ($plugin->checkStatement(
-                    $stmt,
-                    $context,
-                    $this->checked_file_name,
-                    $this->getSuppressedIssues()
-                ) === false) {
-                    return false;
+            $plugins = Config::getInstance()->getPlugins();
+
+            if ($plugins) {
+                $code_location = new CodeLocation($this->source, $stmt);
+                
+                foreach ($plugins as $plugin) {
+                    if ($plugin->checkStatement(
+                        $stmt,
+                        $context,
+                        $code_location,
+                        $this->getSuppressedIssues()
+                    ) === false) {
+                        return false;
+                    }
                 }
             }
+            
 
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
                 !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)) {
@@ -223,8 +248,7 @@ class StatementsChecker
                     if (IssueBuffer::accepts(
                         new ContinueOutsideLoop(
                             'Continue call outside loop context',
-                            $this->checked_file_name,
-                            $stmt->getLine()
+                            new CodeLocation($this->source, $stmt)
                         ),
                         $this->suppressed_issues
                     )) {
@@ -291,15 +315,13 @@ class StatementsChecker
                     if (IssueBuffer::accepts(
                         new InvalidGlobal(
                             'Cannot use global scope here',
-                            $this->checked_file_name,
-                            $stmt->getLine()
+                            new CodeLocation($this->source, $stmt)
                         ),
                         $this->suppressed_issues
                     )) {
                         return false;
                     }
-                }
-                else {
+                } else {
                     foreach ($stmt->vars as $var) {
                         if ($var instanceof PhpParser\Node\Expr\Variable) {
                             if (is_string($var->name)) {
@@ -361,8 +383,7 @@ class StatementsChecker
                     if (IssueBuffer::accepts(
                         new InvalidNamespace(
                             'Cannot redeclare namespace',
-                            $this->checked_file_name,
-                            $stmt->getLine()
+                            new CodeLocation($this->source, $stmt)
                         ),
                         $this->suppressed_issues
                     )) {
@@ -378,8 +399,7 @@ class StatementsChecker
                 if (IssueBuffer::accepts(
                     new UnrecognizedStatement(
                         'Psalm does not understand ' . get_class($stmt),
-                        $this->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($this->source, $stmt)
                     ),
                     $this->getSuppressedIssues()
                 )) {
@@ -713,11 +733,14 @@ class StatementsChecker
             if (file_exists($path_to_file)) {
                 $include_stmts = FileChecker::getStatementsForFile($path_to_file);
                 $old_include_file_name = $this->include_file_name;
-                $this->include_file_name = Config::getInstance()->shortenFileName($path_to_file);
-                $this->source->setIncludeFileName($this->include_file_name);
+                $old_include_file_path = $this->include_file_path;
+                $this->include_file_path = $path_to_file;
+                $this->include_file_name = Config::getInstance()->shortenFileName($this->include_file_path);
+                $this->source->setIncludeFileName($this->include_file_name, $this->include_file_path);
                 $this->check($include_stmts, $context);
                 $this->include_file_name = $old_include_file_name;
-                $this->source->setIncludeFileName($old_include_file_name);
+                $this->include_file_path = $old_include_file_path;
+                $this->source->setIncludeFileName($old_include_file_name, $old_include_file_path);
                 return null;
             }
         }
@@ -868,9 +891,25 @@ class StatementsChecker
     /**
      * @return string
      */
+    public function getCheckedFilePath()
+    {
+        return $this->checked_file_path;
+    }
+
+    /**
+     * @return string
+     */
     public function getFileName()
     {
         return $this->file_name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFilePath()
+    {
+        return $this->file_path;
     }
 
     /**

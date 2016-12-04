@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\DeprecatedMethod;
@@ -227,12 +228,11 @@ class MethodChecker extends FunctionLikeChecker
      * Determines whether a given method is static or not
      *
      * @param  string               $method_id
-     * @param  string               $file_name
-     * @param  int                  $line_number
+     * @param  CodeLocation         $code_location
      * @param  array<int, string>   $suppressed_issues
      * @return bool
      */
-    public static function checkMethodStatic($method_id, $file_name, $line_number, array $suppressed_issues)
+    public static function checkMethodStatic($method_id, CodeLocation $code_location, array $suppressed_issues)
     {
         self::registerClassMethod($method_id);
 
@@ -243,8 +243,7 @@ class MethodChecker extends FunctionLikeChecker
             if (IssueBuffer::accepts(
                 new InvalidStaticInvocation(
                     'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static',
-                    $file_name,
-                    $line_number
+                    $code_location
                 ),
                 $suppressed_issues
             )) {
@@ -263,8 +262,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         if (strtolower($method->name) === strtolower((string)$this->class_name)) {
             $method_id = $this->fq_class_name . '::__construct';
-        }
-        else {
+        } else {
             $method_id = $this->fq_class_name . '::' . strtolower($method->name);
         }
 
@@ -299,9 +297,7 @@ class MethodChecker extends FunctionLikeChecker
         foreach ($method->getParams() as $param) {
             $param_array = $this->getTranslatedParam(
                 $param,
-                $this->fq_class_name,
-                $this->namespace,
-                $this->getAliasedClasses()
+                $this
             );
 
             self::$method_params[$method_id][] = $param_array;
@@ -331,13 +327,12 @@ class MethodChecker extends FunctionLikeChecker
             $docblock_info = null;
 
             try {
-                $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment);
+                $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment, $doc_comment->getLine());
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Invalid type passed in docblock for ' . $cased_method_id,
-                        $this->getCheckedFileName(),
-                        $method->getLine()
+                        new CodeLocation($this, $method)
                     )
                 )) {
                     return false;
@@ -373,7 +368,7 @@ class MethodChecker extends FunctionLikeChecker
                             $docblock_info->params,
                             $method_param_names,
                             self::$method_params[$method_id],
-                            $method->getLine()
+                            new CodeLocation($this, $method, true)
                         );
                     }
                 }
@@ -433,20 +428,19 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string $method_id
-     * @param  string $file_name
-     * @param  int    $line_number
-     * @param  array  $suppressed_issues
+     * @param  string       $method_id
+     * @param  CodeLocation $code_location
+     * @param  array        $suppressed_issues
      * @return bool|null
      */
-    public static function checkMethodExists($method_id, $file_name, $line_number, array $suppressed_issues)
+    public static function checkMethodExists($method_id, CodeLocation $code_location, array $suppressed_issues)
     {
         if (self::methodExists($method_id)) {
             return true;
         }
 
         if (IssueBuffer::accepts(
-            new UndefinedMethod('Method ' . $method_id . ' does not exist', $file_name, $line_number),
+            new UndefinedMethod('Method ' . $method_id . ' does not exist', $code_location),
             $suppressed_issues
         )) {
             return false;
@@ -501,13 +495,12 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string $method_id
-     * @param  string $file_name
-     * @param  int    $line_number
-     * @param  array  $suppressed_issues
+     * @param  string       $method_id
+     * @param  CodeLocation $code_location
+     * @param  array        $suppressed_issues
      * @return false|null
      */
-    public static function checkMethodNotDeprecated($method_id, $file_name, $line_number, array $suppressed_issues)
+    public static function checkMethodNotDeprecated($method_id, CodeLocation $code_location, array $suppressed_issues)
     {
         self::registerClassMethod($method_id);
 
@@ -515,8 +508,7 @@ class MethodChecker extends FunctionLikeChecker
             if (IssueBuffer::accepts(
                 new DeprecatedMethod(
                     'The method ' . MethodChecker::getCasedMethodId($method_id) . ' has been marked as deprecated',
-                    $file_name,
-                    $line_number
+                    $code_location
                 ),
                 $suppressed_issues
             )) {
@@ -531,7 +523,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string           $method_id
      * @param  string|null      $calling_context
      * @param  StatementsSource $source
-     * @param  int              $line_number
+     * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
      * @return false|null
      */
@@ -539,7 +531,7 @@ class MethodChecker extends FunctionLikeChecker
         $method_id,
         $calling_context,
         StatementsSource $source,
-        $line_number,
+        CodeLocation $code_location,
         array $suppressed_issues
     ) {
         self::registerClassMethod($method_id);
@@ -551,7 +543,7 @@ class MethodChecker extends FunctionLikeChecker
 
         if (!isset(self::$method_visibility[$declared_method_id])) {
             if (IssueBuffer::accepts(
-                new InaccessibleMethod('Cannot access method ' . $method_id, $source->getFileName(), $line_number),
+                new InaccessibleMethod('Cannot access method ' . $method_id, $code_location),
                 $suppressed_issues
             )) {
                 return false;
@@ -572,8 +564,7 @@ class MethodChecker extends FunctionLikeChecker
                         new InaccessibleMethod(
                             'Cannot access private method ' . MethodChecker::getCasedMethodId($method_id) .
                                 ' from context ' . $calling_context,
-                            $source->getFileName(),
-                            $line_number
+                            $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -592,8 +583,7 @@ class MethodChecker extends FunctionLikeChecker
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $method_id,
-                            $source->getFileName(),
-                            $line_number
+                            $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -614,8 +604,7 @@ class MethodChecker extends FunctionLikeChecker
                         new InaccessibleMethod(
                             'Cannot access protected method ' . MethodChecker::getCasedMethodId($method_id) .
                                 ' from context ' . $calling_context,
-                            $source->getFileName(),
-                            $line_number
+                            $code_location
                         ),
                         $suppressed_issues
                     )) {

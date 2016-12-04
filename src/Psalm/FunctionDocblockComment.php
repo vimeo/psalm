@@ -30,4 +30,7 @@ class FunctionDocblockComment
      * @var array<string>
      */
     public $suppress = [];
+
+    /** @var int */
+    public $return_type_line_number;
 }

@@ -27,6 +27,7 @@ class TraitChecker extends ClassLikeChecker
         $this->namespace = $source->getNamespace();
         $this->aliased_classes = $source->getAliasedClasses();
         $this->file_name = $source->getFileName();
+        $this->file_path = $source->getFilePath();
         $this->fq_class_name = $fq_class_name;
 
         $this->parent_class = null;

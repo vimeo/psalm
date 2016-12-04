@@ -12,6 +12,7 @@ use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\Checker\Statements\Expression\FetchChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
+use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -309,8 +310,7 @@ class ExpressionChecker
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine(),
+                        new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
@@ -354,7 +354,10 @@ class ExpressionChecker
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(
-                new ForbiddenCode('Use of shell_exec', $statements_checker->getCheckedFileName(), $stmt->getLine()),
+                new ForbiddenCode(
+                    'Use of shell_exec',
+                    new CodeLocation($statements_checker->getSource(), $stmt)
+                ),
                 $statements_checker->getSuppressedIssues()
             )) {
                 return false;
@@ -371,8 +374,7 @@ class ExpressionChecker
             if (IssueBuffer::accepts(
                 new UnrecognizedExpression(
                     'Psalm does not understand ' . get_class($stmt),
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine()
+                    new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -380,14 +382,20 @@ class ExpressionChecker
             }
         }
 
-        foreach (Config::getInstance()->getPlugins() as $plugin) {
-            if ($plugin->checkExpression(
-                $stmt,
-                $context,
-                $statements_checker->getCheckedFileName(),
-                $statements_checker->getSuppressedIssues()
-            ) === false) {
-                return false;
+        $plugins = Config::getInstance()->getPlugins();
+
+        if ($plugins) {
+            $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
+            
+            foreach ($plugins as $plugin) {
+                if ($plugin->checkExpression(
+                    $stmt,
+                    $context,
+                    $code_location,
+                    $statements_checker->getSuppressedIssues()
+                ) === false) {
+                    return false;
+                }
             }
         }
 
@@ -416,8 +424,7 @@ class ExpressionChecker
                 if (IssueBuffer::accepts(
                     new InvalidStaticVariable(
                         'Invalid reference to $this in a static context',
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -475,8 +482,7 @@ class ExpressionChecker
                     IssueBuffer::add(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
-                            $statements_checker->getCheckedFileName(),
-                            $stmt->getLine()
+                            new CodeLocation($statements_checker->getSource(), $stmt)
                         )
                     );
 
@@ -489,8 +495,7 @@ class ExpressionChecker
                     new PossiblyUndefinedVariable(
                         'Possibly undefined variable ' . $var_name .', first seen on line ' .
                             $statements_checker->getFirstAppearance($var_name),
-                        $statements_checker->getCheckedFileName(),
-                        $stmt->getLine()
+                        new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -647,8 +652,7 @@ class ExpressionChecker
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $left_type_assertions,
                 $context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $stmt->getLine(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -695,8 +699,7 @@ class ExpressionChecker
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $negated_type_assertions,
                 $context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $stmt->getLine(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -745,10 +748,8 @@ class ExpressionChecker
 
         // let's do some fun type assignment
         if (isset($stmt->left->inferredType) && isset($stmt->right->inferredType)) {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
                 self::checkPlusOp(
-                    $statements_checker,
-                    $stmt->getLine(),
                     $stmt->left->inferredType,
                     $stmt->right->inferredType,
                     $result_type
@@ -758,9 +759,7 @@ class ExpressionChecker
                     $stmt->inferredType = $result_type;
                 }
 
-            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus
-            ) {
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
                 if ($stmt->left->inferredType->isInt() && $stmt->right->inferredType->isInt()) {
                     $stmt->inferredType = Type::getInt();
                 } elseif ($stmt->left->inferredType->hasNumericType() &&
@@ -798,16 +797,12 @@ class ExpressionChecker
     }
 
     /**
-     * @param  StatementsChecker $statements_checker
-     * @param  int               $line_number
      * @param  Type\Union|null   $left_type
      * @param  Type\Union|null   $right_type
      * @param  Type\Union|null   &$result_type
      * @return void
      */
     public static function checkPlusOp(
-        StatementsChecker $statements_checker,
-        $line_number,
         Type\Union $left_type = null,
         Type\Union $right_type = null,
         Type\Union &$result_type = null
@@ -1021,8 +1016,7 @@ class ExpressionChecker
                         IssueBuffer::add(
                             new UndefinedVariable(
                                 'Cannot find referenced variable $' . $use->var,
-                                $statements_checker->getCheckedFileName(),
-                                $use->getLine()
+                                new CodeLocation($statements_checker->getSource(), $use)
                             )
                         );
 
@@ -1035,8 +1029,7 @@ class ExpressionChecker
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable $' . $use->var . ', first seen on line ' .
                                 $statements_checker->getFirstAppearance('$' . $use->var),
-                            $statements_checker->getCheckedFileName(),
-                            $use->getLine()
+                            new CodeLocation($statements_checker->getSource(), $use)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -1050,8 +1043,7 @@ class ExpressionChecker
                     IssueBuffer::add(
                         new UndefinedVariable(
                             'Cannot find referenced variable $' . $use->var,
-                            $statements_checker->getCheckedFileName(),
-                            $use->getLine()
+                            new CodeLocation($statements_checker->getSource(), $use)
                         )
                     );
 
@@ -1172,8 +1164,7 @@ class ExpressionChecker
         $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
             $reconcilable_if_types,
             $t_if_context->vars_in_scope,
-            $statements_checker->getCheckedFileName(),
-            $stmt->getLine(),
+            new CodeLocation($statements_checker->getSource(), $stmt),
             $statements_checker->getSuppressedIssues()
         );
 
@@ -1197,8 +1188,7 @@ class ExpressionChecker
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
-                $statements_checker->getCheckedFileName(),
-                $stmt->getLine(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -1225,8 +1215,7 @@ class ExpressionChecker
                     '!empty',
                     $stmt->cond->inferredType,
                     '',
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
 

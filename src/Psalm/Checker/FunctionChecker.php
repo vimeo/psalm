@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
@@ -194,9 +195,7 @@ class FunctionChecker extends FunctionLikeChecker
         foreach ($function->getParams() as $param) {
             $param_array = self::getTranslatedParam(
                 $param,
-                $this->fq_class_name,
-                $this->namespace,
-                $this->getAliasedClasses()
+                $this
             );
 
             self::$file_function_params[$file_name][$function_id][] = $param_array;
@@ -210,63 +209,69 @@ class FunctionChecker extends FunctionLikeChecker
 
         $this->suppressed_issues = [];
 
-        try {
-            $docblock_info = CommentChecker::extractDocblockInfo((string)$function->getDocComment());
-        } catch (DocblockParseException $e) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    'Invalid type passed in docblock for ' . $this->getMethodId(),
-                    $this->getCheckedFileName(),
-                    $function->getLine()
-                )
-            )) {
-                return false;
-            }
-        }
+        $doc_comment = $function->getDocComment();
 
-        if ($docblock_info) {
-            if ($docblock_info->deprecated) {
-                self::$deprecated_functions[$file_name][$function_id] = true;
-            }
-
-            if ($docblock_info->variadic) {
-                self::$variadic_functions[$file_name][$function_id] = true;
-            }
-
-            $this->suppressed_issues = $docblock_info->suppress;
-
-            if ($function->returnType) {
-                $return_type = Type::parseString(
-                    is_string($function->returnType)
-                        ? $function->returnType
-                        : ClassLikeChecker::getFQCLNFromNameObject(
-                            $function->returnType,
-                            $this->namespace,
-                            $this->getAliasedClasses()
-                        )
+        if ($doc_comment) {
+            try {
+                $docblock_info = CommentChecker::extractDocblockInfo(
+                    (string)$doc_comment,
+                    $doc_comment->getLine()
                 );
+            } catch (DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Invalid type passed in docblock for ' . $this->getMethodId(),
+                        new CodeLocation($this, $function, true)
+                    )
+                )) {
+                    return false;
+                }
             }
 
-            if ($config->use_docblock_types) {
-                if ($docblock_info->return_type) {
-                    $return_type =
-                        Type::parseString(
-                            self::fixUpLocalType(
-                                (string)$docblock_info->return_type,
-                                null,
+            if ($docblock_info) {
+                if ($docblock_info->deprecated) {
+                    self::$deprecated_functions[$file_name][$function_id] = true;
+                }
+
+                if ($docblock_info->variadic) {
+                    self::$variadic_functions[$file_name][$function_id] = true;
+                }
+
+                $this->suppressed_issues = $docblock_info->suppress;
+
+                if ($function->returnType) {
+                    $return_type = Type::parseString(
+                        is_string($function->returnType)
+                            ? $function->returnType
+                            : ClassLikeChecker::getFQCLNFromNameObject(
+                                $function->returnType,
                                 $this->namespace,
                                 $this->getAliasedClasses()
                             )
-                        );
+                    );
                 }
 
-                if ($docblock_info->params) {
-                    $this->improveParamsFromDocblock(
-                        $docblock_info->params,
-                        $function_param_names,
-                        self::$file_function_params[$file_name][$function_id],
-                        $function->getLine()
-                    );
+                if ($config->use_docblock_types) {
+                    if ($docblock_info->return_type) {
+                        $return_type =
+                            Type::parseString(
+                                self::fixUpLocalType(
+                                    (string)$docblock_info->return_type,
+                                    null,
+                                    $this->namespace,
+                                    $this->getAliasedClasses()
+                                )
+                            );
+                    }
+
+                    if ($docblock_info->params) {
+                        $this->improveParamsFromDocblock(
+                            $docblock_info->params,
+                            $function_param_names,
+                            self::$file_function_params[$file_name][$function_id],
+                            new CodeLocation($this, $function, false)
+                        );
+                    }
                 }
             }
         }
@@ -326,6 +331,7 @@ class FunctionChecker extends FunctionLikeChecker
                     $arg_name,
                     $by_reference,
                     $arg_type ? Type::parseString($arg_type) : Type::getMixed(),
+                    null,
                     $optional,
                     false,
                     $arg_name === '...'
@@ -362,16 +368,14 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string                      $function_id
      * @param  array<PhpParser\Node\Arg>   $call_args
-     * @param  string                      $file_name
-     * @param  int                         $line_number
+     * @param  CodeLocation                $code_location
      * @param  array                       $suppressed_issues
      * @return Type\Union
      */
     public static function getReturnTypeFromCallMapWithArgs(
         $function_id,
         array $call_args,
-        $file_name,
-        $line_number,
+        CodeLocation $code_location,
         array $suppressed_issues
     ) {
         $call_map_key = strtolower($function_id);
@@ -409,8 +413,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $array_return_type = self::getArrayReturnType(
                     $call_map_key,
                     $call_args,
-                    $file_name,
-                    $line_number,
+                    $code_location,
                     $suppressed_issues
                 );
 
@@ -434,20 +437,18 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string                       $call_map_key
      * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  string                       $file_name
-     * @param  int                          $line_number
+     * @param  CodeLocation                 $code_location
      * @param  array                        $suppressed_issues
      * @return Type\Union|null
      */
     protected static function getArrayReturnType(
         $call_map_key,
         $call_args,
-        $file_name,
-        $line_number,
+        CodeLocation $code_location,
         array $suppressed_issues
     ) {
         if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
-            return self::getArrayMapReturnType($call_map_key, $call_args, $file_name, $line_number, $suppressed_issues);
+            return self::getArrayMapReturnType($call_map_key, $call_args, $code_location, $suppressed_issues);
         }
 
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
@@ -552,16 +553,14 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string                       $call_map_key
      * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  string                       $file_name
-     * @param  int                          $line_number
+     * @param  CodeLocation                 $code_location
      * @param  array                        $suppressed_issues
      * @return Type\Union
      */
     protected static function getArrayMapReturnType(
         $call_map_key,
         $call_args,
-        $file_name,
-        $line_number,
+        CodeLocation $code_location,
         array $suppressed_issues
     ) {
         $function_index = $call_map_key === 'array_map' ? 0 : 1;
@@ -591,8 +590,7 @@ class FunctionChecker extends FunctionLikeChecker
                     IssueBuffer::accepts(
                         new InvalidReturnType(
                             'No return type could be found in the closure passed to ' . $call_map_key,
-                            $file_name,
-                            $line_number
+                            $code_location
                         ),
                         $suppressed_issues
                     );

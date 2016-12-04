@@ -3,6 +3,7 @@ namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\CodeLocation;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Context;
@@ -43,8 +44,7 @@ class TryChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    $statements_checker->getCheckedFileName(),
-                    $stmt->getLine(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;

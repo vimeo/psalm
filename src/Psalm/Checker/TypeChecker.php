@@ -3,6 +3,7 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\CodeLocation;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -1049,16 +1050,14 @@ class TypeChecker
      *
      * @param  array<string,string>     $new_types
      * @param  array<string,Type\Union> $existing_types
-     * @param  string                   $file_name
-     * @param  int                      $line_number
+     * @param  CodeLocation             $code_location
      * @param  array<string>            $suppressed_issues
      * @return array|false
      */
     public static function reconcileKeyedTypes(
         array $new_types,
         array $existing_types,
-        $file_name,
-        $line_number,
+        CodeLocation $code_location,
         array $suppressed_issues = []
     ) {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
@@ -1087,8 +1086,7 @@ class TypeChecker
                     (string) $new_type_part,
                     $result_type,
                     $key,
-                    $file_name,
-                    $line_number,
+                    $code_location,
                     $suppressed_issues
                 );
 
@@ -1124,8 +1122,7 @@ class TypeChecker
      * @param   string       $new_var_type
      * @param   Type\Union   $existing_var_type
      * @param   string       $key
-     * @param   string       $file_name
-     * @param   int          $line_number
+     * @param   CodeLocation $code_location
      * @param   array        $suppressed_issues
      * @return  Type\Union|null|false
      */
@@ -1133,8 +1130,7 @@ class TypeChecker
         $new_var_type,
         Type\Union $existing_var_type = null,
         $key = null,
-        $file_name = null,
-        $line_number = null,
+        CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
         $result_var_types = null;
@@ -1191,9 +1187,9 @@ class TypeChecker
             $existing_var_type->removeType($negated_type);
 
             if (empty($existing_var_type->types)) {
-                if ($key && $file_name && $line_number) {
+                if ($key && $code_location) {
                     if (IssueBuffer::accepts(
-                        new FailedTypeResolution('Cannot resolve types for ' . $key, $file_name, $line_number),
+                        new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),
                         $suppressed_issues
                     )) {
                         return false;

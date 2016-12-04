@@ -2,6 +2,7 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Checker\ClassChecker;
@@ -101,8 +102,7 @@ class ForeachChecker
                         if (IssueBuffer::accepts(
                             new NullReference(
                                 'Cannot iterate over ' . $return_type->value,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -120,8 +120,7 @@ class ForeachChecker
                         if (IssueBuffer::accepts(
                             new InvalidIterator(
                                 'Cannot iterate over ' . $return_type->value,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine()
+                                new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -159,8 +158,7 @@ class ForeachChecker
                         ) {
                             if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                 $return_type->value,
-                                $statements_checker->getCheckedFileName(),
-                                $stmt->getLine(),
+                                new CodeLocation($statements_checker->getSource(), $stmt),
                                 $statements_checker->getSuppressedIssues()
                             ) === false) {
                                 return false;
