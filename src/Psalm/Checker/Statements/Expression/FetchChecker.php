@@ -14,7 +14,8 @@ use Psalm\Context;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyFetch;
-use Psalm\Issue\InvisibleProperty;
+use Psalm\Issue\InaccessibleClassConstant;
+use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayOffset;
@@ -393,18 +394,48 @@ class FetchChecker
                 return null;
             }
 
-            $class_constants = ClassLikeChecker::getConstantsForClass($fq_class_name, \ReflectionProperty::IS_PUBLIC);
+            if ($fq_class_name === $context->self
+                || (
+                    $statements_checker->getSource()->getSource() instanceof TraitChecker &&
+                    $fq_class_name === $statements_checker->getSource()->getFQCLN()
+                )
+            ) {
+                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+            } elseif ($context->self && ClassChecker::classExtends($context->self, $fq_class_name)) {
+                $class_visibility = \ReflectionProperty::IS_PROTECTED;
+            } else {
+                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+            }
+
+            $class_constants = ClassLikeChecker::getConstantsForClass($fq_class_name, $class_visibility);
 
             if (!isset($class_constants[$stmt->name])) {
-                if (IssueBuffer::accepts(
-                    new UndefinedConstant(
-                        'Const ' . $const_id . ' is not defined',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
+                $all_class_constants = [];
+
+                if ($fq_class_name !== $context->self) {
+                    $all_class_constants = ClassLikeChecker::getConstantsForClass(
+                        $fq_class_name,
+                        \ReflectionProperty::IS_PRIVATE
+                    );
                 }
+
+                if ($all_class_constants && isset($all_class_constants[$stmt->name])) {
+                    IssueBuffer::add(
+                        new InaccessibleClassConstant(
+                            'Constant ' . $const_id . ' is not visible in this context',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        )
+                    );
+                } else {
+                    IssueBuffer::add(
+                        new UndefinedConstant(
+                            'Constant ' . $const_id . ' is not defined',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        )
+                    );
+                }
+
+                return false;
             } else {
                 $stmt->inferredType = $class_constants[$stmt->name];
             }
@@ -540,7 +571,7 @@ class FetchChecker
 
                 if ($all_class_properties && isset($all_class_properties[$stmt->name])) {
                     IssueBuffer::add(
-                        new InvisibleProperty(
+                        new InaccessibleProperty(
                             'Static property ' . $var_id . ' is not visible in this context',
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         )

@@ -58,4 +58,134 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testPrivateClassConst()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A
+        {
+            private const IS_PRIVATE = 1;
+
+            function foo() : int {
+                return A::IS_PRIVATE;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleClassConstant
+     */
+    public function testInvalidPrivateClassConstFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A
+        {
+            private const IS_PRIVATE = 1;
+        }
+
+        echo A::IS_PRIVATE;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleClassConstant
+     */
+    public function testInvalidPrivateClassConstFetchFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A
+        {
+            private const IS_PRIVATE = 1;
+        }
+
+        class B extends A
+        {
+            function foo() : int {
+                return A::IS_PRIVATE;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testProtectedClassConst()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A
+        {
+            protected const IS_PROTECTED = 1;
+        }
+
+        class B extends A
+        {
+            function foo() : int {
+                return A::IS_PROTECTED;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleClassConstant
+     */
+    public function testInvalidProtectedClassConstFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A
+        {
+            protected const IS_PROTECTED = 1;
+        }
+
+        echo A::IS_PROTECTED;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testPublicClassConstFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A
+        {
+            public const IS_PUBLIC = 1;
+            const IS_ALSO_PUBLIC = 2;
+        }
+
+        class B extends A
+        {
+            function foo() : int {
+                echo A::IS_PUBLIC;
+                return A::IS_ALSO_PUBLIC;
+            }
+        }
+
+        echo A::IS_PUBLIC;
+        echo A::IS_ALSO_PUBLIC;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

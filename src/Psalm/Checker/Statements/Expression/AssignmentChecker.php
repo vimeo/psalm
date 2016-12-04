@@ -15,7 +15,7 @@ use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidScope;
-use Psalm\Issue\InvisibleProperty;
+use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\MissingPropertyDeclaration;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedPropertyAssignment;
@@ -568,7 +568,7 @@ class AssignmentChecker
 
             if (isset($all_class_properties[$prop_name])) {
                 if (IssueBuffer::accepts(
-                    new InvisibleProperty(
+                    new InaccessibleProperty(
                         'Static property ' . $var_id . ' is not visible in this context',
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),

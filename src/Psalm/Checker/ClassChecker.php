@@ -65,6 +65,8 @@ class ClassChecker extends ClassLikeChecker
                 $this->namespace,
                 $this->aliased_classes
             );
+
+            self::$class_extends[$this->fq_class_name][$this->parent_class] = true;
         }
 
         foreach ($class->implements as $interface_name) {

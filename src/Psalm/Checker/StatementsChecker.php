@@ -359,6 +359,16 @@ class StatementsChecker
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+                $const_visibility = \ReflectionProperty::IS_PUBLIC;
+
+                if ($stmt->isProtected()) {
+                    $const_visibility = \ReflectionProperty::IS_PROTECTED;
+                }
+
+                if ($stmt->isPrivate()) {
+                    $const_visibility = \ReflectionProperty::IS_PRIVATE;
+                }
+                
                 foreach ($stmt->consts as $const) {
                     ExpressionChecker::check($this, $const->value, $context);
 
@@ -366,7 +376,8 @@ class StatementsChecker
                         ClassLikeChecker::setConstantType(
                             $this->fq_class_name,
                             $const->name,
-                            $const->value->inferredType
+                            $const->value->inferredType,
+                            $const_visibility
                         );
                     }
                 }
