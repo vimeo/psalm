@@ -209,6 +209,18 @@ class FunctionChecker extends FunctionLikeChecker
 
         $this->suppressed_issues = [];
 
+        if ($function->returnType) {
+            $return_type = Type::parseString(
+                is_string($function->returnType)
+                    ? $function->returnType
+                    : ClassLikeChecker::getFQCLNFromNameObject(
+                        $function->returnType,
+                        $this->namespace,
+                        $this->getAliasedClasses()
+                    )
+            );
+        }
+
         $doc_comment = $function->getDocComment();
 
         if ($doc_comment) {
@@ -238,18 +250,6 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 $this->suppressed_issues = $docblock_info->suppress;
-
-                if ($function->returnType) {
-                    $return_type = Type::parseString(
-                        is_string($function->returnType)
-                            ? $function->returnType
-                            : ClassLikeChecker::getFQCLNFromNameObject(
-                                $function->returnType,
-                                $this->namespace,
-                                $this->getAliasedClasses()
-                            )
-                    );
-                }
 
                 if ($config->use_docblock_types) {
                     if ($docblock_info->return_type) {
