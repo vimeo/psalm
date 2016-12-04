@@ -494,7 +494,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
-                    'No return type was found for method ' . $cased_method_id .
+                    'No return statements were found for method ' . $cased_method_id .
                         ' but return type \'' . $declared_return_type . '\' was expected',
                     new CodeLocation($this, $this->function, true)
                 )

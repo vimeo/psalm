@@ -211,6 +211,28 @@ class FunctionChecker extends FunctionLikeChecker
 
         $doc_comment = $function->getDocComment();
 
+        if ($function->returnType) {
+            $parser_return_type = $function->returnType;
+
+            $suffix = '';
+
+            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
+                $suffix = '|null';
+                $parser_return_type = $parser_return_type->type;
+            }
+
+            $return_type = Type::parseString(
+                (is_string($parser_return_type)
+                    ? $parser_return_type
+                    : ClassLikeChecker::getFQCLNFromNameObject(
+                        $parser_return_type,
+                        $this->namespace,
+                        $this->getAliasedClasses()
+                    )
+                ) . $suffix
+            );
+        }
+
         if ($doc_comment) {
             try {
                 $docblock_info = CommentChecker::extractDocblockInfo(
@@ -238,18 +260,6 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 $this->suppressed_issues = $docblock_info->suppress;
-
-                if ($function->returnType) {
-                    $return_type = Type::parseString(
-                        is_string($function->returnType)
-                            ? $function->returnType
-                            : ClassLikeChecker::getFQCLNFromNameObject(
-                                $function->returnType,
-                                $this->namespace,
-                                $this->getAliasedClasses()
-                            )
-                    );
-                }
 
                 if ($config->use_docblock_types) {
                     if ($docblock_info->return_type) {
