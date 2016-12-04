@@ -124,7 +124,7 @@ class CallChecker
                 $context,
                 $code_location
             ) === false) {
-                return false;
+                // fall through
             }
 
             if ($in_call_map) {
