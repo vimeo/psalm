@@ -151,6 +151,14 @@ class Union extends Type
         return isset($this->types['int']);
     }
 
+     /**
+     * @return boolean
+     */
+    public function hasFloat()
+    {
+        return isset($this->types['float']);
+    }
+
     /**
      * @return boolean
      */

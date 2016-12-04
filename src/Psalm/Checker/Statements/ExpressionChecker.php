@@ -810,7 +810,11 @@ class ExpressionChecker
         if ($left_type && !$left_type->isMixed()) {
             if ($left_type->hasNumericType()) {
                 if ($right_type) {
-                    if ($left_type->isInt() && $right_type->isInt()) {
+                    if ($left_type->hasInt() &&
+                        $right_type->hasInt() &&
+                        !$left_type->hasFloat() &&
+                        !$right_type->hasFloat()
+                    ) {
                         $result_type = Type::getInt();
                         return;
                     }
