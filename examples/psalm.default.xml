@@ -19,6 +19,7 @@
         <MixedInferredReturnType errorLevel="suppress" />
 
         <InvalidDocblock errorLevel="info" />
+        <MissingPropertyType errorLevel="info" />
         <MissingReturnType errorLevel="info" />
         <DeprecatedMethod errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
