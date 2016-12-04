@@ -312,14 +312,24 @@ class MethodChecker extends FunctionLikeChecker
         self::$method_suppress[$method_id] = [];
 
         if (isset($method->returnType)) {
+            $parser_return_type = $method->returnType;
+
+            $suffix = '';
+
+            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
+                $suffix = '|null';
+                $parser_return_type = $parser_return_type->type;
+            }
+
             $return_type = Type::parseString(
-                is_string($method->returnType)
-                    ? $method->returnType
+                (is_string($parser_return_type)
+                    ? $parser_return_type
                     : ClassLikeChecker::getFQCLNFromNameObject(
-                        $method->returnType,
+                        $parser_return_type,
                         $this->namespace,
                         $this->getAliasedClasses()
                     )
+                ) . $suffix
             );
         }
 
