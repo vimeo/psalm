@@ -655,7 +655,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         foreach ($stmt->props as $property) {
             if (!$property_group_type) {
-                if (!$property->default) {
+                if (!$property->default || !$config->use_property_default_for_type) {
                     $property_type = false;
                 } else {
                     $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();

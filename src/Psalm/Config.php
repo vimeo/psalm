@@ -56,6 +56,13 @@ class Config
     public $cache_directory = '/var/tmp/psalm';
 
     /**
+     * Whether or not to use property defaults to inform type when none is listed
+     *
+     * @var boolean
+     */
+    public $use_property_default_for_type = true;
+
+    /**
      * Path to the autoader
      *
      * @var string|null
@@ -164,6 +171,15 @@ class Config
 
         if (isset($config_xml['cacheDirectory'])) {
             $config->cache_directory = (string) $config_xml['cacheDirectory'];
+        }
+
+        if (isset($config_xml['cacheDirectory'])) {
+            $config->cache_directory = (string) $config_xml['cacheDirectory'];
+        }
+
+        if (isset($config_xml['usePropertyDefaultForType'])) {
+            $attribute_text = (string) $config_xml['usePropertyDefaultForType'];
+            $config->use_property_default_for_type = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->inspectFiles)) {
