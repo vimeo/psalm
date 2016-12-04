@@ -1555,7 +1555,7 @@ class TypeChecker
                 }
 
                 if (!$is_match) {
-                    return true;
+                    return false;
                 }
             }
         }
