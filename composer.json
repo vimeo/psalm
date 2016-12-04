@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": ">=5.4",
-        "nikic/PHP-Parser": ">=2.1.0"
+        "nikic/PHP-Parser": ">=3.0.1"
     },
     "bin": ["bin/psalm"],
     "autoload": {
