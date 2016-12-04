@@ -213,27 +213,6 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('string|int', (string) $context->vars_in_scope['$name2']);
     }
 
-    public function testArrayListDestructuringInForeach()
-    {
-        $stmts = self::$parser->parse('<?php
-        $data = [
-            [1, "Tom"],
-            [2, "Fred"],
-        ];
-
-        // list() style
-        foreach ($data as list($id, $name)) {
-            echo $id;
-            echo $name;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
-
-    }
-
     public function testArrayDestructuringInForeach()
     {
         $stmts = self::$parser->parse('<?php
@@ -252,5 +231,79 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
+    }
+
+    public function testArrayDestructuringWithKeys()
+    {
+        $stmts = self::$parser->parse('<?php
+        $data = [
+            ["id" => 1, "name" => "Tom"],
+            ["id" => 2, "name" => "Fred"],
+        ];
+
+        // list() style
+        list("id" => $id1, "name" => $name1) = $data[0];
+
+        // [] style
+        ["id" => $id2, "name" => $name2] = $data[1];
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$id1']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['$name1']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$id2']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['$name2']);
+    }
+
+    public function testArrayListDestructuringInForeachWithKeys()
+    {
+        $stmts = self::$parser->parse('<?php
+        $data = [
+            ["id" => 1, "name" => "Tom"],
+            ["id" => 2, "name" => "Fred"],
+        ];
+
+        $last_id = null;
+        $last_name = null;
+
+        // list() style
+        foreach ($data as list("id" => $id, "name" => $name)) {
+            $last_id = $id;
+            $last_name = $name;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('null|int', (string) $context->vars_in_scope['$last_id']);
+        $this->assertEquals('null|string', (string) $context->vars_in_scope['$last_name']);
+    }
+
+    public function testArrayDestructuringInForeachWithKeys()
+    {
+        $stmts = self::$parser->parse('<?php
+        $data = [
+            ["id" => 1, "name" => "Tom"],
+            ["id" => 2, "name" => "Fred"],
+        ];
+
+        $last_id = null;
+        $last_name = null;
+
+        // [] style
+        foreach ($data as ["id" => $id, "name" => $name]) {
+            $last_id = $id;
+            $last_name = $name;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('null|int', (string) $context->vars_in_scope['$last_id']);
+        $this->assertEquals('null|string', (string) $context->vars_in_scope['$last_name']);
     }
 }

@@ -10,6 +10,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Issue\InvalidIterator;
 use Psalm\Issue\NullReference;
@@ -178,21 +179,14 @@ class ForeachChecker
             $value_type = new Type\Union([$value_type]);
         }
 
-        if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_
-            || $stmt->valueVar instanceof PhpParser\Node\Expr\Array_
-        ) {
-            foreach ($stmt->valueVar->items as $list_item) {
-                if ($list_item->value && $list_item->value instanceof PhpParser\Node\Expr\Variable) {
-                    $foreach_context->vars_in_scope['$' . $list_item->value->name] = Type::getMixed();
-                    $foreach_context->vars_possibly_in_scope['$' . $list_item->value->name] = true;
-                    $statements_checker->registerVariable('$' . $list_item->value->name, $list_item->value->getLine());
-                }
-            }
-        } elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable) {
-            $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
-            $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
-            $statements_checker->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());
-        }
+        AssignmentChecker::check(
+            $statements_checker,
+            $stmt->valueVar,
+            null,
+            $value_type ?: Type::getMixed(),
+            $foreach_context,
+            (string)$stmt->getDocComment()
+        );
 
         CommentChecker::getTypeFromComment(
             (string) $stmt->getDocComment(),
