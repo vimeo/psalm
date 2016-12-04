@@ -178,7 +178,9 @@ class ForeachChecker
             $value_type = new Type\Union([$value_type]);
         }
 
-        if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
+        if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_
+            || $stmt->valueVar instanceof PhpParser\Node\Expr\Array_
+        ) {
             foreach ($stmt->valueVar->items as $list_item) {
                 if ($list_item->value && $list_item->value instanceof PhpParser\Node\Expr\Variable) {
                     $foreach_context->vars_in_scope['$' . $list_item->value->name] = Type::getMixed();

@@ -188,4 +188,69 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testArrayDestructuring()
+    {
+        $stmts = self::$parser->parse('<?php
+        $data = [
+            [1, "Tom"],
+            [2, "Fred"],
+        ];
+
+        // list() style
+        list($id1, $name1) = $data[0];
+
+        // [] style
+        [$id2, $name2] = $data[1];
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string|int', (string) $context->vars_in_scope['$id1']);
+        $this->assertEquals('string|int', (string) $context->vars_in_scope['$name1']);
+        $this->assertEquals('string|int', (string) $context->vars_in_scope['$id2']);
+        $this->assertEquals('string|int', (string) $context->vars_in_scope['$name2']);
+    }
+
+    public function testArrayListDestructuringInForeach()
+    {
+        $stmts = self::$parser->parse('<?php
+        $data = [
+            [1, "Tom"],
+            [2, "Fred"],
+        ];
+
+        // list() style
+        foreach ($data as list($id, $name)) {
+            echo $id;
+            echo $name;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+
+    }
+
+    public function testArrayDestructuringInForeach()
+    {
+        $stmts = self::$parser->parse('<?php
+        $data = [
+            [1, "Tom"],
+            [2, "Fred"],
+        ];
+
+        // [] style
+        foreach ($data as [$id, $name]) {
+            echo $id;
+            echo $name;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
