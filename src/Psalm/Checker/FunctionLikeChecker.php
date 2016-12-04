@@ -672,16 +672,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param->default->name instanceof PhpParser\Node\Name &&
             strtolower($param->default->name->parts[0]) === 'null';
 
-        if ($param->type) {
-            if (is_string($param->type)) {
-                $param_type_string = $param->type;
-            } elseif ($param->type instanceof PhpParser\Node\Name\FullyQualified) {
-                $param_type_string = implode('\\', $param->type->parts);
-            } elseif ($param->type->parts === ['self']) {
+        $param_typehint = $param->type;
+
+        if ($param_typehint instanceof PhpParser\Node\NullableType) {
+            $is_nullable = true;
+            $param_typehint = $param_typehint->type;
+        }
+
+        if ($param_typehint) {
+            if (is_string($param_typehint)) {
+                $param_type_string = $param_typehint;
+            } elseif ($param_typehint instanceof PhpParser\Node\Name\FullyQualified) {
+                $param_type_string = implode('\\', $param_typehint->parts);
+            } elseif ($param_typehint->parts === ['self']) {
                 $param_type_string = $source->getFQCLN();
             } else {
                 $param_type_string = ClassLikeChecker::getFQCLNFromString(
-                    implode('\\', $param->type->parts),
+                    implode('\\', $param_typehint->parts),
                     $source->getNamespace(),
                     $source->getAliasedClasses()
                 );

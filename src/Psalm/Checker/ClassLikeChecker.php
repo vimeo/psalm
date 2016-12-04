@@ -894,7 +894,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getClassName()
     {

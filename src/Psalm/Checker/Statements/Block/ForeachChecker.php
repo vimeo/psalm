@@ -179,11 +179,11 @@ class ForeachChecker
         }
 
         if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
-            foreach ($stmt->valueVar->vars as $var) {
-                if ($var && $var instanceof PhpParser\Node\Expr\Variable) {
-                    $foreach_context->vars_in_scope['$' . $var->name] = Type::getMixed();
-                    $foreach_context->vars_possibly_in_scope['$' . $var->name] = true;
-                    $statements_checker->registerVariable('$' . $var->name, $var->getLine());
+            foreach ($stmt->valueVar->items as $list_item) {
+                if ($list_item->value && $list_item->value instanceof PhpParser\Node\Expr\Variable) {
+                    $foreach_context->vars_in_scope['$' . $list_item->value->name] = Type::getMixed();
+                    $foreach_context->vars_possibly_in_scope['$' . $list_item->value->name] = true;
+                    $statements_checker->registerVariable('$' . $list_item->value->name, $list_item->value->getLine());
                 }
             }
         } elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable) {

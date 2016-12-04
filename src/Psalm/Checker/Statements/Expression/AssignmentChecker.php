@@ -92,8 +92,10 @@ class AssignmentChecker
             $context->vars_possibly_in_scope[$var_id] = true;
             $statements_checker->registerVariable($var_id, $assign_var->getLine());
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_) {
-            foreach ($assign_var->vars as $offset => $var) {
+            foreach ($assign_var->items as $offset => $assign_var_item) {
                 // $var can be null e.g. list($a, ) = ['a', 'b']
+                $var = $assign_var_item->value;
+
                 if (!$var) {
                     continue;
                 }

@@ -191,7 +191,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                     $leftover_stmts = [];
                 }
 
-                if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+                if ($stmt instanceof PhpParser\Node\Stmt\Class_ && $stmt->name) {
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new ClassChecker($stmt, $this, $stmt->name);
@@ -199,7 +199,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                         $this->declared_classes[] = $class_checker->getFQCLN();
                         $class_checker->check($check_functions, null, $update_docblocks);
                     }
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $stmt->name) {
                     if ($check_classes) {
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new InterfaceChecker($stmt, $this, $stmt->name);
@@ -207,7 +207,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                         $this->declared_classes[] = $class_checker->getFQCLN();
                         $class_checker->check(false);
                     }
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_ && $stmt->name) {
                     if ($check_classes) {
                         $trait_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new TraitChecker($stmt, $this, $stmt->name);
@@ -339,7 +339,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache_location = null;
         $name_cache_key = null;
 
-        $version = 'parsercache2';
+        $version = 'parsercache3';
 
         $file_contents = (string)file_get_contents($file_name);
         $file_content_hash = md5($version . $file_contents);

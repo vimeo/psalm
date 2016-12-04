@@ -1060,8 +1060,19 @@ class TypeChecker
         CodeLocation $code_location,
         array $suppressed_issues = []
     ) {
-        $keys = array_merge(array_keys($new_types), array_keys($existing_types));
-        $keys = array_unique($keys);
+        $keys = [];
+
+        foreach ($existing_types as $ek => $_) {
+            if (!in_array($ek, $keys)) {
+                $keys[] = $ek;
+            }
+        }
+
+        foreach ($new_types as $nk => $_) {
+            if (!in_array($nk, $keys)) {
+                $keys[] = $nk;
+            }
+        }
 
         $result_types = [];
 
@@ -1071,7 +1082,7 @@ class TypeChecker
 
         foreach ($keys as $key) {
             if (!isset($new_types[$key])) {
-                $result_types[$key] = $existing_types[$key];
+                $existing_types[$key];
                 continue;
             }
 
@@ -1104,10 +1115,10 @@ class TypeChecker
                 return false;
             }
 
-            $result_types[$key] = $result_type;
+            $existing_types[$key] = $result_type;
         }
 
-        return $result_types;
+        return $existing_types;
     }
 
     /**

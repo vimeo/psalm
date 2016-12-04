@@ -67,8 +67,8 @@ class EffectsAnalyser
                     $return_types = array_merge($return_types, self::getReturnTypes($catch->stmts, $yield_types));
                 }
 
-                if ($stmt->finallyStmts) {
-                    $return_types = array_merge($return_types, self::getReturnTypes($stmt->finallyStmts, $yield_types));
+                if ($stmt->finally) {
+                    $return_types = array_merge($return_types, self::getReturnTypes($stmt->finally->stmts, $yield_types));
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));

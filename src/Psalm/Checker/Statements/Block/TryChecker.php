@@ -33,27 +33,36 @@ class TryChecker
         foreach ($stmt->catches as $catch) {
             $catch_context = clone $original_context;
 
-            $catch_class = ClassLikeChecker::getFQCLNFromNameObject(
-                $catch->type,
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
+            $fq_catch_classes = [];
+
+            foreach ($catch->types as $catch_type) {
+                $fq_catch_classes[]= ClassLikeChecker::getFQCLNFromNameObject(
+                    $catch_type,
+                    $statements_checker->getNamespace(),
+                    $statements_checker->getAliasedClasses()
+                );
+            }
 
             if ($context->check_classes) {
-                $fq_class_name = $catch_class;
-
-                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $fq_class_name,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker->getSuppressedIssues()
-                ) === false) {
-                    return false;
+                foreach ($fq_catch_classes as $fq_catch_class) {
+                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $fq_catch_class,
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues()
+                    ) === false) {
+                        return false;
+                    }
                 }
             }
 
-            $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union([
-                new Type\Atomic($catch_class)
-            ]);
+            $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union(
+                array_map(
+                    function ($fq_catch_class) {
+                        return new Type\Atomic($fq_catch_class);
+                    },
+                    $fq_catch_classes
+                )
+            );
 
             $catch_context->vars_possibly_in_scope['$' . $catch->var] = true;
 
@@ -81,8 +90,8 @@ class TryChecker
             }
         }
 
-        if ($stmt->finallyStmts) {
-            $statements_checker->check($stmt->finallyStmts, $context, $loop_context);
+        if ($stmt->finally) {
+            $statements_checker->check($stmt->finally->stmts, $context, $loop_context);
         }
 
         return null;
