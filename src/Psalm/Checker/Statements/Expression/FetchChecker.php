@@ -758,14 +758,16 @@ class FetchChecker
                         //
                         // means we need add $a['b'], $a['b']['c'] to the current context
                         // (but not $a['b']['c']['d'], which is handled in checkArrayAssignment)
-                        if ($keyed_array_var_id && $keyed_assignment_type) {
-                            if (isset($context->vars_in_scope[$keyed_array_var_id])) {
-                                $context->vars_in_scope[$keyed_array_var_id] = Type::combineUnionTypes(
-                                    $keyed_assignment_type,
-                                    $context->vars_in_scope[$keyed_array_var_id]
-                                );
-                            } else {
-                                $context->vars_in_scope[$keyed_array_var_id] = $keyed_assignment_type;
+                        if ($keyed_assignment_type) {
+                            if ($keyed_array_var_id) {
+                                if (isset($context->vars_in_scope[$keyed_array_var_id])) {
+                                    $context->vars_in_scope[$keyed_array_var_id] = Type::combineUnionTypes(
+                                        $keyed_assignment_type,
+                                        $context->vars_in_scope[$keyed_array_var_id]
+                                    );
+                                } else {
+                                    $context->vars_in_scope[$keyed_array_var_id] = $keyed_assignment_type;
+                                }
                             }
 
                             $stmt->inferredType = $keyed_assignment_type;
