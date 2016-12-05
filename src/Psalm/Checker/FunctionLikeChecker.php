@@ -896,6 +896,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $type_match_found = true;
                 }
 
+                if ($param_type_part->isIterable() &&
+                    (
+                        $input_type_part->isArray() ||
+                        ClassChecker::classExtendsOrImplements($input_type_part->value, 'Traversable')
+                    )
+                ) {
+                    $type_match_found = true;
+                }
+
                 if ($param_type_part->isScalar() && $input_type_part->isScalarType()) {
                     $type_match_found = true;
                 }

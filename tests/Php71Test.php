@@ -306,4 +306,48 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|int', (string) $context->vars_in_scope['$last_id']);
         $this->assertEquals('null|string', (string) $context->vars_in_scope['$last_name']);
     }
+
+    public function testIterableArg()
+    {
+        $stmts = self::$parser->parse('<?php
+        function iterator(iterable $iter) : void
+        {
+            foreach ($iter as $val) {
+                //
+            }
+        }
+
+        iterator([1, 2, 3, 4]);
+        iterator(new SplFixedArray(5));
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidArgument
+     */
+    public function testInvalidIterableArg()
+    {
+        $stmts = self::$parser->parse('<?php
+        function iterator(iterable $iter) : void
+        {
+            foreach ($iter as $val) {
+                //
+            }
+        }
+
+        class A {
+        }
+
+        iterator(new A());
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

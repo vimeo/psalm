@@ -172,6 +172,7 @@ class Atomic extends Type
                     && !$this->isVoid()
                     && !$this->isEmpty()
                     && !$this->isResource()
+                    && !$this->isIterable()
                 );
     }
 
@@ -221,6 +222,14 @@ class Atomic extends Type
     public function isGenerator()
     {
         return $this->value === 'Generator';
+    }
+
+    /**
+     * @return bool
+     */
+    public function isIterable()
+    {
+        return $this->value === 'iterable';
     }
 
     /**

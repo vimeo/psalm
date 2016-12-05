@@ -75,7 +75,8 @@ abstract class Type
                 'array',
                 'object',
                 'mixed',
-                'resource'
+                'resource',
+                'iterable'
             ]
         )) {
             return strtolower($type_string);
