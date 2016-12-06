@@ -111,6 +111,8 @@ class Config
      */
     public $hide_external_errors = true;
 
+    public $allow_includes = true;
+
     /**
      * Psalm plugins
      *
@@ -180,6 +182,11 @@ class Config
         if (isset($config_xml['usePropertyDefaultForType'])) {
             $attribute_text = (string) $config_xml['usePropertyDefaultForType'];
             $config->use_property_default_for_type = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['allowFileIncludes'])) {
+            $attribute_text = (string) $config_xml['allowFileIncludes'];
+            $config->allow_includes = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->inspectFiles)) {
