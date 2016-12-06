@@ -134,7 +134,7 @@ class ForeachChecker
                     default:
                         if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
                             $iterator_method = $return_type->value . '::current';
-                            $iterator_class_type = MethodChecker::getMethodReturnTypes($iterator_method);
+                            $iterator_class_type = MethodChecker::getMethodReturnType($iterator_method);
 
                             if ($iterator_class_type) {
                                 $value_type_part = ExpressionChecker::fleshOutTypes(
