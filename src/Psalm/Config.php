@@ -111,6 +111,7 @@ class Config
      */
     public $hide_external_errors = true;
 
+    /** @var bool */
     public $allow_includes = true;
 
     /**
