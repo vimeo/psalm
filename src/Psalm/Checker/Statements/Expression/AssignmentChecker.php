@@ -2,6 +2,8 @@
 namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
@@ -31,17 +33,19 @@ use Psalm\Type;
 class AssignmentChecker
 {
     /**
-     * @param  StatementsChecker   $statements_checker
-     * @param  PhpParser\Node\Expr $assign_var
-     * @param  PhpParser\Node\Expr $assign_value
-     * @param  Context             $context
-     * @param  string              $doc_comment
+     * @param  StatementsChecker        $statements_checker
+     * @param  PhpParser\Node\Expr      $assign_var
+     * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
+     * @param  Type\Union|null          $assign_value_type
+     * @param  Context                  $context
+     * @param  string                   $doc_comment
      * @return false|Type\Union
      */
     public static function check(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $assign_var,
-        PhpParser\Node\Expr $assign_value,
+        PhpParser\Node\Expr $assign_value = null,
+        Type\Union $assign_value_type = null,
         Context $context,
         $doc_comment
     ) {
@@ -71,24 +75,26 @@ class AssignmentChecker
             $var_id
         );
 
-        if (ExpressionChecker::check($statements_checker, $assign_value, $context) === false) {
+        if ($assign_value && ExpressionChecker::check($statements_checker, $assign_value, $context) === false) {
             // if we're not exiting immediately, make everything mixed
             $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
 
             return false;
         }
 
-        if ($type_in_comments) {
-            $return_type = $type_in_comments;
-        } elseif (isset($assign_value->inferredType)) {
-            /** @var Type\Union */
-            $return_type = $assign_value->inferredType;
-        } else {
-            $return_type = Type::getMixed();
+        if (!$assign_value_type) {
+            if ($type_in_comments) {
+                $assign_value_type = $type_in_comments;
+            } elseif (isset($assign_value->inferredType)) {
+                /** @var Type\Union */
+                $assign_value_type = $assign_value->inferredType;
+            } else {
+                $assign_value_type = Type::getMixed();
+            }
         }
 
         if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
-            $context->vars_in_scope[$var_id] = $return_type;
+            $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
             $statements_checker->registerVariable($var_id, $assign_var->getLine());
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_) {
@@ -105,6 +111,7 @@ class AssignmentChecker
                         $statements_checker,
                         $var,
                         $assign_value->items[$offset]->value,
+                        null,
                         $context,
                         $doc_comment
                     );
@@ -120,26 +127,37 @@ class AssignmentChecker
                 );
 
                 if ($list_var_id) {
-                    if (isset($return_type->types['array']) && $return_type->types['array'] instanceof Type\Generic) {
-                        $array_type = $return_type->types['array']->type_params[1];
-                    } else {
-                        $array_type = null;
-                    }
-
-                    $context->vars_in_scope[$list_var_id] = $array_type ? clone $array_type : Type::getMixed();
                     $context->vars_possibly_in_scope[$list_var_id] = true;
                     $statements_checker->registerVariable($list_var_id, $var->getLine());
+
+                    if (isset($assign_value_type->types['array'])) {
+                        if ($assign_value_type->types['array'] instanceof Type\Generic) {
+                            $context->vars_in_scope[$list_var_id] =
+                                clone $assign_value_type->types['array']->type_params[1];
+
+                            continue;
+                        }
+                    }
+
+                    $context->vars_in_scope[$list_var_id] = Type::getMixed();
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            if (self::checkArrayAssignment($statements_checker, $assign_var, $context, $return_type) === false) {
+            if (self::checkArrayAssignment($statements_checker, $assign_var, $context, $assign_value_type) === false) {
                 return false;
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch &&
             $assign_var->var instanceof PhpParser\Node\Expr\Variable &&
             is_string($assign_var->name)
         ) {
-            self::checkPropertyAssignment($statements_checker, $assign_var, $assign_var->name, $return_type, $context);
+            self::checkPropertyAssignment(
+                $statements_checker,
+                $assign_var,
+                $assign_var->name,
+                $assign_value,
+                $assign_value_type,
+                $context
+            );
 
             $context->vars_possibly_in_scope[$var_id] = true;
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
@@ -150,7 +168,13 @@ class AssignmentChecker
                 return false;
             }
 
-            self::checkStaticPropertyAssignment($statements_checker, $assign_var, $return_type, $context);
+            self::checkStaticPropertyAssignment(
+                $statements_checker,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context
+            );
 
             $context->vars_possibly_in_scope[$var_id] = true;
         }
@@ -167,7 +191,7 @@ class AssignmentChecker
             }
         }
 
-        return $return_type;
+        return $assign_value_type;
     }
 
     /**
@@ -211,23 +235,25 @@ class AssignmentChecker
     }
 
     /**
-     * @param   StatementsChecker                                                        $statements_checker
-     * @param   PhpParser\Node\Expr\PropertyFetch|PhpParser\Node\Stmt\PropertyProperty   $stmt
-     * @param   string                                                                   $prop_name
-     * @param   Type\Union                                                               $assignment_type
-     * @param   Context                                                                  $context
+     * @param   StatementsChecker               $statements_checker
+     * @param   PropertyFetch|PropertyProperty  $stmt
+     * @param   string                          $prop_name
+     * @param   PhpParser\Node\Expr|null        $assignment_value
+     * @param   Type\Union                      $assignment_value_type
+     * @param   Context                         $context
      * @return  false|null
      */
     public static function checkPropertyAssignment(
         StatementsChecker $statements_checker,
         $stmt,
         $prop_name,
-        Type\Union $assignment_type,
+        PhpParser\Node\Expr $assignment_value = null,
+        Type\Union $assignment_value_type,
         Context $context
     ) {
         $class_property_types = [];
 
-        if ($stmt instanceof PhpParser\Node\Stmt\PropertyProperty) {
+        if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
                 return null;
             }
@@ -245,31 +271,38 @@ class AssignmentChecker
 
             $var_id = '$this->' . $prop_name;
         } elseif ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            $assignment_var = $stmt->var;
+            $assignment_var = $stmt;
 
-            if (!isset($context->vars_in_scope['$' . $assignment_var->name])) {
-                if (ExpressionChecker::check($statements_checker, $assignment_var, $context) === false) {
+            if (!isset($context->vars_in_scope['$' . $stmt->var->name])) {
+                if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
                     return false;
                 }
 
                 return null;
             }
 
-            $assignment_var->inferredType = $context->vars_in_scope['$' . $assignment_var->name];
+            $stmt->var->inferredType = $context->vars_in_scope['$' . $stmt->var->name];
 
-            $lhs_type = $context->vars_in_scope['$' . $assignment_var->name];
+            $lhs_type = $context->vars_in_scope['$' . $stmt->var->name];
 
-            if ($assignment_var->name === 'this' && !$statements_checker->getSource()->getClassLikeChecker()) {
+            if ($stmt->var->name === 'this' && !$statements_checker->getSource()->getClassLikeChecker()) {
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Cannot use $this when not inside class',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_checker->getSource(), $stmt->var)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
                     return false;
                 }
             }
+
+            $lhs_var_id = ExpressionChecker::getVarId(
+                $stmt->var,
+                $statements_checker->getFQCLN(),
+                $statements_checker->getNamespace(),
+                $statements_checker->getAliasedClasses()
+            );
 
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
@@ -281,8 +314,8 @@ class AssignmentChecker
             if ($lhs_type->isMixed()) {
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
-                        $var_id . ' with mixed type cannot be assigned to',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        $lhs_var_id . ' of type mixed cannot be assigned to',
+                        new CodeLocation($statements_checker->getSource(), $stmt->var)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -295,8 +328,8 @@ class AssignmentChecker
             if ($lhs_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullPropertyAssignment(
-                        $var_id . ' with null type cannot be assigned to',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        $lhs_var_id . ' of type null cannot be assigned to',
+                        new CodeLocation($statements_checker->getSource(), $stmt->var)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -309,8 +342,8 @@ class AssignmentChecker
             if ($lhs_type->isNullable()) {
                 if (IssueBuffer::accepts(
                     new NullPropertyAssignment(
-                        $var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
+                        new CodeLocation($statements_checker->getSource(), $stmt->var)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -335,8 +368,8 @@ class AssignmentChecker
                 if (!$lhs_type_part->isObjectType()) {
                     if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
-                            $var_id . ' with possible non-object type \'' . $lhs_type_part . '\' cannot be assigned to',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            $lhs_var_id . ' with possible non-object type \'' . $lhs_type_part . '\' cannot treated as an object',
+                            new CodeLocation($statements_checker->getSource(), $stmt->var)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -368,7 +401,7 @@ class AssignmentChecker
                     return null;
                 }
 
-                if ($assignment_var->name === 'this' || $lhs_type_part->value === $context->self) {
+                if ($stmt->var->name === 'this' || $lhs_type_part->value === $context->self) {
                     $class_visibility = \ReflectionProperty::IS_PRIVATE;
                 } elseif ($context->self && ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
                     $class_visibility = \ReflectionProperty::IS_PROTECTED;
@@ -410,7 +443,7 @@ class AssignmentChecker
                 );
 
                 if (!isset($class_properties[$prop_name])) {
-                    if ($assignment_var->name === 'this') {
+                    if ($stmt->var->name === 'this') {
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
                                 'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
@@ -462,7 +495,7 @@ class AssignmentChecker
             }
 
             // because we don't want to be assigning for property declarations
-            $context->vars_in_scope[$var_id] = $assignment_type;
+            $context->vars_in_scope[$var_id] = $assignment_value_type;
         } else {
             return null;
         }
@@ -486,7 +519,7 @@ class AssignmentChecker
             return null;
         }
 
-        if ($assignment_type->isMixed()) {
+        if ($assignment_value_type->isMixed()) {
             return null;
         }
 
@@ -495,14 +528,14 @@ class AssignmentChecker
                 continue;
             }
 
-            if (!$assignment_type->isIn($class_property_type)) {
+            if (!$assignment_value_type->isIn($class_property_type)) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignment(
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
-                            $assignment_type . '\'',
+                            $assignment_value_type . '\'',
                         new CodeLocation(
                             $statements_checker->getSource(),
-                            $assignment_var
+                            $assignment_value ?: $stmt
                         )
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -518,14 +551,16 @@ class AssignmentChecker
     /**
      * @param   StatementsChecker                         $statements_checker
      * @param   PhpParser\Node\Expr\StaticPropertyFetch   $stmt
-     * @param   Type\Union                                $assignment_type
+     * @param   PhpParser\Node\Expr|null                  $assignment_value
+     * @param   Type\Union                                $assignment_value_type
      * @param   Context                                   $context
      * @return  false|null
      */
     protected static function checkStaticPropertyAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
-        Type\Union $assignment_type,
+        PhpParser\Node\Expr $assignment_value = null,
+        Type\Union $assignment_value_type,
         Context $context
     ) {
         $class_property_types = [];
@@ -608,7 +643,7 @@ class AssignmentChecker
             return null;
         }
 
-        $context->vars_in_scope[$var_id] = $assignment_type;
+        $context->vars_in_scope[$var_id] = $assignment_value_type;
 
         $class_property_type = $class_properties[$prop_name];
 
@@ -628,7 +663,7 @@ class AssignmentChecker
             $class_property_type = clone $class_property_type;
         }
 
-        if ($assignment_type->isMixed()) {
+        if ($assignment_value_type->isMixed()) {
             return null;
         }
 
@@ -638,12 +673,15 @@ class AssignmentChecker
 
         $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $fq_class_name);
 
-        if (!$assignment_type->isIn($class_property_type)) {
+        if (!$assignment_value_type->isIn($class_property_type)) {
             if (IssueBuffer::accepts(
                 new InvalidPropertyAssignment(
                     $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
-                        $assignment_type . '\'',
-                    new CodeLocation($statements_checker->getSource(), $stmt)
+                        $assignment_value_type . '\'',
+                    new CodeLocation(
+                        $statements_checker->getSource(),
+                        $assignment_value ?: $stmt
+                    )
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -651,7 +689,7 @@ class AssignmentChecker
             }
         }
 
-        $context->vars_in_scope[$var_id] = $assignment_type;
+        $context->vars_in_scope[$var_id] = $assignment_value_type;
         return null;
     }
 
@@ -807,7 +845,7 @@ class AssignmentChecker
                             || $context->vars_in_scope[$var_id]->hasObjectLike()
                             || ($array_type && $array_type->type_params[0]->isEmpty()))
                     ) {
-                        $assignment_type = new Type\Union([
+                        $assignment_value_type = new Type\Union([
                             new Type\ObjectLike(
                                 'array',
                                 [
@@ -816,7 +854,7 @@ class AssignmentChecker
                             )
                         ]);
                     } else {
-                        $assignment_type = new Type\Union([
+                        $assignment_value_type = new Type\Union([
                             new Type\Generic(
                                 'array',
                                 [
@@ -830,10 +868,10 @@ class AssignmentChecker
                     if (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
-                            $assignment_type
+                            $assignment_value_type
                         );
                     } else {
-                        $context->vars_in_scope[$var_id] = $assignment_type;
+                        $context->vars_in_scope[$var_id] = $assignment_value_type;
                     }
                 }
             }

@@ -350,6 +350,7 @@ class StatementsChecker
                                     $this,
                                     $prop,
                                     $prop->name,
+                                    $prop->default,
                                     $prop->default->inferredType,
                                     $context
                                 ) === false) {

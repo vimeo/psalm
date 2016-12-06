@@ -58,6 +58,7 @@ class ExpressionChecker
                 $statements_checker,
                 $stmt->var,
                 $stmt->expr,
+                null,
                 $context,
                 (string)$stmt->getDocComment()
             );
