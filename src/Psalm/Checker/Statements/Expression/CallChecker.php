@@ -147,7 +147,10 @@ class CallChecker
             }
         }
 
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['get_class'] && $stmt->args) {
+        if ($stmt->name instanceof PhpParser\Node\Name &&
+            ($stmt->name->parts === ['get_class'] || $stmt->name->parts === ['gettype']) &&
+            $stmt->args
+        ) {
             $var = $stmt->args[0]->value;
 
             if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
