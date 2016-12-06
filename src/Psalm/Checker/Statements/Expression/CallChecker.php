@@ -136,7 +136,7 @@ class CallChecker
                 );
             } else {
                 try {
-                    $stmt->inferredType = FunctionChecker::getFunctionReturnTypes(
+                    $stmt->inferredType = FunctionChecker::getFunctionReturnType(
                         $method_id,
                         $statements_checker->getCheckedFileName()
                     );
@@ -473,7 +473,7 @@ class CallChecker
                                 return false;
                             }
 
-                            $return_type_candidate = MethodChecker::getMethodReturnTypes($method_id);
+                            $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
                         }
 
                         if ($return_type_candidate) {
@@ -671,7 +671,7 @@ class CallChecker
                     return false;
                 }
 
-                $return_types = MethodChecker::getMethodReturnTypes($method_id);
+                $return_types = MethodChecker::getMethodReturnType($method_id);
 
                 if ($return_types) {
                     $return_types = ExpressionChecker::fleshOutTypes(

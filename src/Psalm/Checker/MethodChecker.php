@@ -36,9 +36,14 @@ class MethodChecker extends FunctionLikeChecker
     protected static $method_namespaces = [];
 
     /**
-     * @var array<string,Type\Union>
+     * @var array<string, Type\Union|null>
      */
     protected static $method_return_types = [];
+
+    /**
+     * @var array<string, CodeLocation|null>
+     */
+    protected static $method_return_type_locations = [];
 
     /**
      * @var array<string, string>
@@ -139,7 +144,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string $method_id
      * @return Type\Union|null
      */
-    public static function getMethodReturnTypes($method_id)
+    public static function getMethodReturnType($method_id)
     {
         self::registerClassMethod($method_id);
 
@@ -156,7 +161,7 @@ class MethodChecker extends FunctionLikeChecker
             if (isset(self::$method_return_types[$overridden_method_id])) {
                 $implementary_return_type = self::$method_return_types[$overridden_method_id];
 
-                if ($implementary_return_type->isNull()) {
+                if ($implementary_return_type && $implementary_return_type->isNull()) {
                     return Type::getVoid();
                 }
 
@@ -165,6 +170,32 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         return null;
+    }
+
+    /**
+     * @param  string               $method_id
+     * @param  CodeLocation|null    $defined_location
+     * @return CodeLocation|null
+     */
+    public static function getMethodReturnTypeLocation($method_id, CodeLocation &$defined_location = null)
+    {
+        self::registerClassMethod($method_id);
+
+        /** @var string */
+        $method_id = self::getDeclaringMethodId($method_id);
+
+        if (!self::$method_return_type_locations[$method_id]) {
+            $overridden_method_ids = self::getOverriddenMethodIds($method_id);
+
+            foreach ($overridden_method_ids as $overridden_method_id) {
+                if (isset(self::$method_return_type_locations[$overridden_method_id])) {
+                    $defined_location = self::$method_return_type_locations[$overridden_method_id];
+                    break;
+                }
+            }
+        }
+
+        return self::$method_return_type_locations[$method_id];
     }
 
     /**
@@ -220,6 +251,7 @@ class MethodChecker extends FunctionLikeChecker
 
         $return_type = null;
 
+        self::$method_return_type_locations[$method_id] = null;
         self::$method_return_types[$method_id] = $return_type;
         return null;
     }
@@ -306,6 +338,7 @@ class MethodChecker extends FunctionLikeChecker
 
         $config = Config::getInstance();
         $return_type = null;
+        $return_type_location = null;
 
         $doc_comment = $method->getDocComment();
 
@@ -321,6 +354,8 @@ class MethodChecker extends FunctionLikeChecker
                         $this->getAliasedClasses()
                     )
             );
+
+            $return_type_location = new CodeLocation($this->getSource(), $method, false, self::RETURN_TYPE_REGEX);
         }
 
         if ($doc_comment) {
@@ -361,6 +396,12 @@ class MethodChecker extends FunctionLikeChecker
                                 $this->getAliasedClasses()
                             )
                         );
+
+                        if (!$return_type_location) {
+                            $return_type_location = new CodeLocation($this->getSource(), $method, true);
+                        }
+
+                        $return_type_location->setCommentLine($docblock_info->return_type_line_number);
                     }
 
                     if ($docblock_info->params) {
@@ -375,6 +416,7 @@ class MethodChecker extends FunctionLikeChecker
             }
         }
 
+        self::$method_return_type_locations[$method_id] = $return_type_location;
         self::$method_return_types[$method_id] = $return_type;
         return null;
     }
@@ -678,6 +720,7 @@ class MethodChecker extends FunctionLikeChecker
         self::$cased_method_ids = [];
         self::$method_namespaces = [];
         self::$method_return_types = [];
+        self::$method_return_type_locations = [];
         self::$static_methods = [];
         self::$declaring_methods = [];
         self::$have_reflected = [];

@@ -21,6 +21,8 @@ use Psalm\Type;
 
 abstract class FunctionLikeChecker extends SourceChecker implements StatementsSource
 {
+    const RETURN_TYPE_REGEX = '/\\:\s+(\\??[A-Za-z0-9_\\\\]+)/';
+
     /**
      * @var Closure|Function_|ClassMethod
      */
@@ -418,17 +420,26 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $method_id = (string)$this->getMethodId();
         $cased_method_id = $this instanceof MethodChecker ? MethodChecker::getCasedMethodId($method_id) : $method_id;
 
+        $secondary_return_type_location = null;
+
         if ($this instanceof MethodChecker) {
-            $method_return_types = MethodChecker::getMethodReturnTypes($method_id);
+            $return_type = MethodChecker::getMethodReturnType($method_id);
+            $return_type_location = MethodChecker::getMethodReturnTypeLocation($method_id, $secondary_return_type_location);
         } else {
             try {
-                $method_return_types = FunctionChecker::getFunctionReturnTypes($method_id, $this->file_name);
+                $return_type = FunctionChecker::getFunctionReturnType($method_id, $this->file_name);
+                $return_type_location = FunctionChecker::getFunctionReturnTypeLocation($method_id, $this->file_name);
             } catch (\Exception $e) {
-                $method_return_types = null;
+                $return_type = null;
+                $return_type_location = null;
             }
         }
 
-        if (!$method_return_types && !$update_docblock) {
+        if (!$return_type_location) {
+            $return_type_location = new CodeLocation($this, $this->function, true);
+        }
+
+        if (!$return_type && !$update_docblock) {
             if (IssueBuffer::accepts(
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type',
@@ -459,7 +470,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $inferred_return_type = $inferred_yield_type;
         }
 
-        if (!$method_return_types) {
+        if (!$return_type) {
             if ($inferred_return_type && !$inferred_return_type->isMixed()) {
                 FileChecker::addDocblockReturnType(
                     $this->file_name,
@@ -475,7 +486,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         // passing it through fleshOutTypes eradicates errant $ vars
         $declared_return_type = ExpressionChecker::fleshOutTypes(
-            $method_return_types,
+            $return_type,
             [],
             $this->fq_class_name,
             $method_id
@@ -496,7 +507,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 new InvalidReturnType(
                     'No return statements were found for method ' . $cased_method_id .
                         ' but return type \'' . $declared_return_type . '\' was expected',
-                    new CodeLocation($this, $this->function, true)
+                    $secondary_return_type_location ?: $return_type_location
                 )
             )) {
                 return false;
@@ -515,7 +526,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     new MixedInferredReturnType(
                         'Could not verify return type \'' . $declared_return_type . '\' for ' .
                             $cased_method_id,
-                        new CodeLocation($this, $this->function, true)
+                        $secondary_return_type_location ?: $return_type_location
                     ),
                     $this->getSuppressedIssues()
                 )) {
@@ -548,7 +559,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     new InvalidReturnType(
                         'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' is incorrect, got \'' . $inferred_return_type . '\'',
-                        new CodeLocation($this, $this->function, true)
+                        $secondary_return_type_location ?: $return_type_location
                     ),
                     $this->getSuppressedIssues()
                 )) {

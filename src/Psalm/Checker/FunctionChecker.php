@@ -16,9 +16,14 @@ use Psalm\Type;
 class FunctionChecker extends FunctionLikeChecker
 {
     /**
-     * @var array<string,array<string,Type\Union|false>>
+     * @var array<string, array<string, Type\Union|false>>
      */
     protected static $function_return_types = [];
+
+    /**
+     * @var array<string, array<string, CodeLocation|false>>
+     */
+    protected static $function_return_type_locations = [];
 
     /**
      * @var array<string, array<string, string>>
@@ -156,7 +161,7 @@ class FunctionChecker extends FunctionLikeChecker
      * @param  string $file_name
      * @return Type\Union|null
      */
-    public static function getFunctionReturnTypes($function_id, $file_name)
+    public static function getFunctionReturnType($function_id, $file_name)
     {
         if (!isset(self::$function_return_types[$file_name][$function_id])) {
             throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_name);
@@ -167,6 +172,20 @@ class FunctionChecker extends FunctionLikeChecker
         return $function_return_types
             ? clone $function_return_types
             : null;
+    }
+
+    /**
+     * @param  string $function_id
+     * @param  string $file_name
+     * @return CodeLocation|null
+     */
+    public static function getFunctionReturnTypeLocation($function_id, $file_name)
+    {
+        if (!isset(self::$function_return_type_locations[$file_name][$function_id])) {
+            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_name);
+        }
+
+        return self::$function_return_type_locations[$file_name][$function_id] ?: null;
     }
 
     /**
@@ -205,6 +224,8 @@ class FunctionChecker extends FunctionLikeChecker
         $config = Config::getInstance();
         $return_type = null;
 
+        $return_type_location = null;
+
         $docblock_info = null;
 
         $this->suppressed_issues = [];
@@ -219,6 +240,8 @@ class FunctionChecker extends FunctionLikeChecker
                         $this->getAliasedClasses()
                     )
             );
+
+            $return_type_location = new CodeLocation($this->getSource(), $function, false, self::RETURN_TYPE_REGEX);
         }
 
         $doc_comment = $function->getDocComment();
@@ -262,6 +285,12 @@ class FunctionChecker extends FunctionLikeChecker
                                     $this->getAliasedClasses()
                                 )
                             );
+
+                        if (!$return_type_location) {
+                            $return_type_location = new CodeLocation($this->getSource(), $function, true);
+                        }
+
+                        $return_type_location->setCommentLine($docblock_info->return_type_line_number);
                     }
 
                     if ($docblock_info->params) {
@@ -275,6 +304,8 @@ class FunctionChecker extends FunctionLikeChecker
                 }
             }
         }
+
+        self::$function_return_type_locations[$file_name][$function_id] =
 
         self::$function_return_types[$file_name][$function_id] = $return_type ?: false;
         return null;
