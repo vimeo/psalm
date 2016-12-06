@@ -13,6 +13,7 @@ use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\InvalidNamespace;
@@ -179,7 +180,7 @@ class StatementsChecker
 
             if ($plugins) {
                 $code_location = new CodeLocation($this->source, $stmt);
-                
+
                 foreach ($plugins as $plugin) {
                     if ($plugin->checkStatement(
                         $stmt,
@@ -191,7 +192,7 @@ class StatementsChecker
                     }
                 }
             }
-            
+
 
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
                 !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)) {
@@ -689,6 +690,12 @@ class StatementsChecker
      */
     public function checkInclude(PhpParser\Node\Expr\Include_ $stmt, Context $context)
     {
+        $config = Config::getInstance();
+
+        if (!$config->allow_includes) {
+            throw new FileIncludeException('File includes are not allowed per your Psalm config - check the allowFileIncludes flag.');
+        }
+
         if (ExpressionChecker::check($this, $stmt->expr, $context) === false) {
             return false;
         }
@@ -735,7 +742,7 @@ class StatementsChecker
                 $old_include_file_name = $this->include_file_name;
                 $old_include_file_path = $this->include_file_path;
                 $this->include_file_path = $path_to_file;
-                $this->include_file_name = Config::getInstance()->shortenFileName($this->include_file_path);
+                $this->include_file_name = $config->shortenFileName($this->include_file_path);
                 $this->source->setIncludeFileName($this->include_file_name, $this->include_file_path);
                 $this->check($include_stmts, $context);
                 $this->include_file_name = $old_include_file_name;
