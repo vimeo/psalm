@@ -204,13 +204,11 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function extractReflectionMethodInfo(\ReflectionMethod $method)
     {
+        $method_id = $method->class . '::' . strtolower((string)$method->name);
+        self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
+
         if (strtolower((string)$method->name) === strtolower((string)$method->class)) {
-            $method_id = $method->class . '::__construct';
-            self::$cased_method_ids[$method_id] = $method->class . '::__construct';
-        }
-        else {
-            $method_id = $method->class . '::' . strtolower((string)$method->name);
-            self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
+            self::setDeclaringMethodId($method->class . '::__construct', $method_id);
         }
 
         if (isset(self::$have_reflected[$method_id])) {
@@ -292,13 +290,12 @@ class MethodChecker extends FunctionLikeChecker
      */
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {
-        if (strtolower($method->name) === strtolower((string)$this->class_name)) {
-            $method_id = $this->fq_class_name . '::__construct';
-        } else {
-            $method_id = $this->fq_class_name . '::' . strtolower($method->name);
-        }
-
+        $method_id = $this->fq_class_name . '::' . strtolower($method->name);
         $cased_method_id = self::$cased_method_ids[$method_id] = $this->fq_class_name . '::' . $method->name;
+
+        if (strtolower((string)$method->name) === strtolower((string)$this->fq_class_name)) {
+            self::setDeclaringMethodId($this->fq_class_name . '::__construct', $method_id);
+        }
 
         if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
             $this->suppressed_issues = self::$method_suppress[$method_id];
