@@ -30,6 +30,6 @@
     "scripts": {
         "psalm": "./bin/psalm",
         "standards": "phpcs --standard=phpcs.xml",
-        "tests": "phpunit tests/"
+        "tests": "phpunit"
     }
 }
