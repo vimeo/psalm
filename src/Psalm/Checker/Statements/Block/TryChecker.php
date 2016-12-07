@@ -57,6 +57,9 @@ class TryChecker
 
             $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union(
                 array_map(
+                    /**
+                     * @param string $fq_catch_class
+                     */
                     function ($fq_catch_class) {
                         return new Type\Atomic($fq_catch_class);
                     },

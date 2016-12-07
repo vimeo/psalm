@@ -28,7 +28,7 @@
         "phpunit/phpunit": ">=4.1"
     },
     "scripts": {
-        "psalm": "./bin/psalm --self-check",
+        "psalm": "./bin/psalm",
         "standards": "phpcs --standard=phpcs.xml",
         "tests": "phpunit tests/"
     }

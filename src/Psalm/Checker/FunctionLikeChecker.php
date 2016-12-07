@@ -3,12 +3,13 @@ namespace Psalm\Checker;
 
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
-use Psalm\CodeLocation;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;
+use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
@@ -205,12 +206,65 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $function_params = FunctionChecker::getParams(strtolower((string)$this->getMethodId()), $this->file_name);
             } else { // Closure
                 $function_params = [];
+                $function_param_names = [];
 
                 foreach ($this->function->getParams() as $param) {
-                    $function_params[] = self::getTranslatedParam(
+                    $param_array = self::getTranslatedParam(
                         $param,
                         $this
                     );
+
+                    $function_params[] = $param_array;
+                    $function_param_names[$param->name] = $param_array->type;
+                }
+
+                $doc_comment = $this->function->getDocComment();
+
+                if ($doc_comment) {
+                    try {
+                        $docblock_info = CommentChecker::extractDocblockInfo(
+                            (string)$doc_comment,
+                            $doc_comment->getLine()
+                        );
+                    } catch (DocblockParseException $e) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                'Invalid type passed in docblock for ' . $this->getMethodId(),
+                                new CodeLocation($this, $this->function, true)
+                            )
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    if ($docblock_info) {
+                        $this->suppressed_issues = $docblock_info->suppress;
+
+                        $config = \Psalm\Config::getInstance();
+
+                        if ($config->use_docblock_types) {
+                            if ($docblock_info->return_type) {
+                                $return_type =
+                                    Type::parseString(
+                                        self::fixUpLocalType(
+                                            (string)$docblock_info->return_type,
+                                            null,
+                                            $this->namespace,
+                                            $this->getAliasedClasses()
+                                        )
+                                    );
+                            }
+
+                            if ($docblock_info->params) {
+                                $this->improveParamsFromDocblock(
+                                    $docblock_info->params,
+                                    $function_param_names,
+                                    $function_params,
+                                    new CodeLocation($this, $this->function, false)
+                                );
+                            }
+                        }
+                    }
                 }
             }
 

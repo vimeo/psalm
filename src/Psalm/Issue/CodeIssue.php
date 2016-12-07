@@ -87,7 +87,10 @@ abstract class CodeIssue
         );
 
         if ($this->code_location->comment_line_number && $preview_start < $selection_start) {
-            $preview_lines = explode("\n", substr($file_contents, $preview_start, $selection_start - $preview_start - 1));
+            $preview_lines = explode(
+                "\n",
+                substr($file_contents, $preview_start, $selection_start - $preview_start - 1)
+            );
 
             $preview_offset = 0;
 
@@ -103,8 +106,7 @@ abstract class CodeIssue
 
             $selection_start = $preview_offset + $preview_start;
             $selection_end = (int)strpos($file_contents, "\n", $selection_start);
-        }
-        elseif ($this->code_location->regex) {
+        } elseif ($this->code_location->regex) {
             $preview_snippet = substr($file_contents, $selection_start, $selection_end - $selection_start);
 
             if (preg_match($this->code_location->regex, $preview_snippet, $matches, PREG_OFFSET_CAPTURE)) {
