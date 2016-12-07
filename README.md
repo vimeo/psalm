@@ -1,3 +1,5 @@
+<img src="https://travis-ci.org/vimeo/psalm.svg?branch=master" />
+
 <h1><img src="PsalmLogo.png" height="64" alt="logo" /></h1>
 
 Psalm is a static analysis tool for finding errors in PHP applications.
