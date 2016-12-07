@@ -133,6 +133,10 @@ class ClassChecker extends ClassLikeChecker
             throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $fq_class_name);
         }
 
+        if ($fq_class_name === 'Generator') {
+            return true;
+        }
+
         return isset(self::$existing_classes[$fq_class_name]);
     }
 
