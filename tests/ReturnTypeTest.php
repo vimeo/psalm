@@ -475,9 +475,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public function testOverrideReturnTypeInGrandparent()
     {
         $stmts = self::$parser->parse('<?php
-        class A {
+        abstract class A {
             /** @return string|null */
-            public function blah();
+            abstract public function blah();
         }
 
         class B extends A {

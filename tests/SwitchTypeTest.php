@@ -31,12 +31,18 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /**
+             * @return void
+             */
             public function foo() {
 
             }
         }
 
         class B {
+            /**
+             * @return void
+             */
             public function bar() {
 
             }
@@ -68,12 +74,14 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function foo() {
 
             }
         }
 
         class B {
+            /** @return void */
             public function bar() {
 
             }

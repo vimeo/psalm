@@ -228,7 +228,8 @@ class FileChecker extends SourceChecker implements StatementsSource
                     );
 
                     $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliasedClasses();
-                    $this->namespace_aliased_classes_flipped[$namespace_name] = $namespace_checker->getAliasedClassesFlipped();
+                    $this->namespace_aliased_classes_flipped[$namespace_name] =
+                        $namespace_checker->getAliasedClassesFlipped();
 
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
@@ -236,7 +237,24 @@ class FileChecker extends SourceChecker implements StatementsSource
                     $function_checkers[$stmt->name]->check($function_context, $file_context);
 
                     if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                        $function_checkers[$stmt->name]->checkReturnTypes();
+                        /** @var string */
+                        $method_id = $function_checkers[$stmt->name]->getMethodId();
+
+                        $return_type = FunctionChecker::getFunctionReturnType(
+                            $method_id,
+                            $this->file_name
+                        );
+
+                        $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
+                            $method_id,
+                            $this->file_name
+                        );
+
+                        $function_checkers[$stmt->name]->checkReturnTypes(
+                            false,
+                            $return_type,
+                            $return_type_location
+                        );
                     }
                 }
             } else {
@@ -333,7 +351,9 @@ class FileChecker extends SourceChecker implements StatementsSource
         $stmts = [];
 
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
-        $parser_cache_directory = $root_cache_directory ? $root_cache_directory . '/' . self::PARSER_CACHE_DIRECTORY : null;
+        $parser_cache_directory = $root_cache_directory
+            ? $root_cache_directory . '/' . self::PARSER_CACHE_DIRECTORY
+            : null;
         $from_cache = false;
 
         $cache_location = null;
@@ -347,9 +367,10 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         if (self::$file_content_hashes === null) {
             /** @var array<string, string> */
-            self::$file_content_hashes = $root_cache_directory && is_readable($root_cache_directory . '/' . self::FILE_HASHES)
-                ? unserialize((string)file_get_contents($root_cache_directory . '/' . self::FILE_HASHES))
-                : [];
+            self::$file_content_hashes = $root_cache_directory &&
+                is_readable($root_cache_directory . '/' . self::FILE_HASHES)
+                    ? unserialize((string)file_get_contents($root_cache_directory . '/' . self::FILE_HASHES))
+                    : [];
         }
 
         if ($parser_cache_directory) {
@@ -390,7 +411,10 @@ class FileChecker extends SourceChecker implements StatementsSource
 
                 self::$file_content_hashes[$name_cache_key] = $file_content_hash;
 
-                file_put_contents($root_cache_directory . '/' . self::FILE_HASHES, serialize(self::$file_content_hashes));
+                file_put_contents(
+                    $root_cache_directory . '/' . self::FILE_HASHES,
+                    serialize(self::$file_content_hashes)
+                );
             }
         }
 
@@ -660,8 +684,12 @@ class FileChecker extends SourceChecker implements StatementsSource
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
+                /**
+                 * @param  string $file_name
+                 * @return bool
+                 */
                 function ($file_name) {
-                    return !file_exists((string)$file_name);
+                    return !file_exists($file_name);
                 }
             );
         }

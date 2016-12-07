@@ -33,8 +33,12 @@ class Union extends Type
         return implode(
             '|',
             array_map(
+                /**
+                 * @param string $type
+                 * @return string
+                 */
                 function ($type) {
-                    return (string)$type;
+                    return $type;
                 },
                 $this->types
             )
@@ -52,6 +56,9 @@ class Union extends Type
         return implode(
             '|',
             array_map(
+                /**
+                 * @return string
+                 */
                 function (Atomic $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {
                     return $type->toNamespacedString($aliased_classes, $this_class, $use_phpdoc_format);
                 },

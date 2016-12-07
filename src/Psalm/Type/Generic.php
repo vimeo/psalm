@@ -30,6 +30,9 @@ class Generic extends Atomic
                 implode(
                     ', ',
                     array_map(
+                        /**
+                         * @return string
+                         */
                         function (Union $type_param) {
                             return (string)$type_param;
                         },
@@ -72,6 +75,9 @@ class Generic extends Atomic
                 implode(
                     ', ',
                     array_map(
+                        /**
+                         * @return string
+                         */
                         function (Union $type_param) use ($aliased_classes, $this_class) {
                             return $type_param->toNamespacedString($aliased_classes, $this_class, false);
                         },

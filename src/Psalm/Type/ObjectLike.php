@@ -34,6 +34,9 @@ class ObjectLike extends Atomic
                 implode(
                     ', ',
                     array_map(
+                        /**
+                         * @return string
+                         */
                         function ($name, $type) {
                             return $name . ':' . $type;
                         },
@@ -61,6 +64,9 @@ class ObjectLike extends Atomic
                 implode(
                     ', ',
                     array_map(
+                        /**
+                         * @return string
+                         */
                         function ($name, Union $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {
                             return $name . ':' . $type->toNamespacedString($aliased_classes, $this_class, $use_phpdoc_format);
                         },

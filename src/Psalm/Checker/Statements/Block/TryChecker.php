@@ -59,6 +59,7 @@ class TryChecker
                 array_map(
                     /**
                      * @param string $fq_catch_class
+                     * @return Type\Atomic
                      */
                     function ($fq_catch_class) {
                         return new Type\Atomic($fq_catch_class);
