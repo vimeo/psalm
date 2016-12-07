@@ -94,6 +94,10 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
+        if ($fq_class_name === 'Generator') {
+            return true;
+        }
+
         $old_level = error_reporting();
         error_reporting(0);
         $class_exists = class_exists($fq_class_name);
