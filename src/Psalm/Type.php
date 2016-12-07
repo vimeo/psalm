@@ -104,6 +104,9 @@ abstract class Type
             $generic_type = array_shift($parse_tree->children);
 
             $generic_params = array_map(
+                /**
+                 * @return Union
+                 */
                 function (ParseTree $child_tree) {
                     $tree_type = self::getTypeFromTree($child_tree);
                     return $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
@@ -136,8 +139,19 @@ abstract class Type
 
         if ($parse_tree->value === ParseTree::UNION) {
             $union_types = array_map(
+                /**
+                 * @return Atomic
+                 */
                 function (ParseTree $child_tree) {
-                    return self::getTypeFromTree($child_tree);
+                    $atomic_type = self::getTypeFromTree($child_tree);
+
+                    if (!$atomic_type instanceof Atomic) {
+                        throw new \UnexpectedValueException(
+                            'Was expecting an atomic type, got ' . get_class($atomic_type)
+                        );
+                    }
+
+                    return $atomic_type;
                 },
                 $parse_tree->children
             );
@@ -223,6 +237,9 @@ abstract class Type
         $class_chars = '[a-zA-Z\<\>\\\\_]+';
         return preg_replace_callback(
             '/(' . $class_chars . '|' . '\((' . $class_chars . '(\|' . $class_chars . ')*' . ')\))((\[\])+)/',
+            /**
+             * @return string
+             */
             function (array $matches) {
                 $inner_type = str_replace(['(', ')'], '', (string)$matches[1]);
 

@@ -417,7 +417,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $method_checker->check(clone $class_context);
 
                 if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                    $method_checker->checkReturnTypes($update_docblocks);
+                    /** @var string */
+                    $method_id = $method_checker->getMethodId();
+                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                        $method_id,
+                        $secondary_return_type_location
+                    );
+
+                    $method_checker->checkReturnTypes(
+                        $update_docblocks,
+                        MethodChecker::getMethodReturnType($method_id),
+                        $return_type_location,
+                        $secondary_return_type_location
+                    );
                 }
             }
         }
@@ -508,9 +520,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)),
                 $method_id
             );
-
-            self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
         }
+
+        self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
     }
 
     /**

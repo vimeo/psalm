@@ -1236,6 +1236,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class One {
+            /** @return void */
             public function foo() {}
         }
 

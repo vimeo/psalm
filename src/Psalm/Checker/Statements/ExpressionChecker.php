@@ -231,7 +231,9 @@ class ExpressionChecker
 
             $closure_checker->check($use_context);
 
-            $stmt->inferredType = Type::getClosure();
+            if (!isset($stmt->inferredType)) {
+                $stmt->inferredType = Type::getClosure();
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             if (FetchChecker::checkArrayAccess(
                 $statements_checker,

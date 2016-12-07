@@ -29,8 +29,11 @@ class Php40Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /**
+             * @return string
+             */
             public function A() {
-
+                return "hello";
             }
         }
 

@@ -38,6 +38,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         interface B
         {
+            /**
+             * @return string
+             */
             public function bar();
         }
 
@@ -53,14 +56,17 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         {
             public function foo()
             {
+                return "hello";
             }
 
             public function bar()
             {
+                return "goodbye";
             }
 
             public function baz()
             {
+                return "hello again";
             }
         }
 
@@ -99,13 +105,19 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         {
             public function foo()
             {
+                return "hello";
             }
 
             public function baz()
             {
+                return "goodbye";
             }
         }
 
+        /**
+         * @param  A      $a
+         * @return void
+         */
         function qux(A $a) {
         }
 

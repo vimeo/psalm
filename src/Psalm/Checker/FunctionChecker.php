@@ -305,7 +305,7 @@ class FunctionChecker extends FunctionLikeChecker
             }
         }
 
-        self::$function_return_type_locations[$file_name][$function_id] =
+        self::$function_return_type_locations[$file_name][$function_id] = $return_type_location ?: false;
 
         self::$function_return_types[$file_name][$function_id] = $return_type ?: false;
         return null;
@@ -609,15 +609,13 @@ class FunctionChecker extends FunctionLikeChecker
         if (isset($call_args[$function_index])) {
             $function_call_arg = $call_args[$function_index];
 
-            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure) {
-                $closure_yield_types = [];
-                $closure_return_types = EffectsAnalyser::getReturnTypes(
-                    $function_call_arg->value->stmts,
-                    $closure_yield_types,
-                    true
-                );
+            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure &&
+                isset($function_call_arg->value->inferredType) &&
+                $function_call_arg->value->inferredType->types['Closure'] instanceof Type\Fn
+            ) {
+                $closure_return_type = $function_call_arg->value->inferredType->types['Closure']->return_type;
 
-                if (!$closure_return_types) {
+                if ($closure_return_type->isVoid()) {
                     IssueBuffer::accepts(
                         new InvalidReturnType(
                             'No return type could be found in the closure passed to ' . $call_map_key,
@@ -630,7 +628,7 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 if ($call_map_key === 'array_map') {
-                    $inner_type = new Type\Union($closure_return_types);
+                    $inner_type = clone $closure_return_type;
                     return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
                 }
 

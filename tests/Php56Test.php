@@ -76,6 +76,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
     public function testVariadic()
     {
         $stmts = self::$parser->parse('<?php
+        /**
+         * @return void
+         */
         function f($req, $opt = null, ...$params) {
         }
 
@@ -94,11 +97,19 @@ class Php56Test extends PHPUnit_Framework_TestCase
     public function testVariadicArray()
     {
         $stmts = self::$parser->parse('<?php
-        /** @return array<int> */
+        /**
+         * @return array<int>
+         */
         function f(int ...$a_list) {
-            return array_map(function (int $a) {
-                return $a + 1;
-            }, $a_list);
+            return array_map(
+                /**
+                 * @return int
+                 */
+                function (int $a) {
+                    return $a + 1;
+                },
+                $a_list
+            );
         }
 
         f(1);

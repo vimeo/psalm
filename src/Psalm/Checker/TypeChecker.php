@@ -1439,9 +1439,16 @@ class TypeChecker
             return ['mixed'];
         }
 
-        $array_types = array_filter($all_types, function ($type) {
-            return preg_match('/^array(\<|$)/', (string)$type);
-        });
+        $array_types = array_filter(
+            $all_types,
+            /**
+             * @param string $type
+             * @return bool
+             */
+            function ($type) {
+                return (bool)preg_match('/^array(\<|$)/', $type);
+            }
+        );
 
         $all_types = array_flip($all_types);
 
@@ -1465,6 +1472,10 @@ class TypeChecker
     public static function negateTypes(array $types)
     {
         return array_map(
+            /**
+             * @param  string $type
+             * @return  string
+             */
             function ($type) {
                 if ($type === 'mixed') {
                     return $type;
@@ -1502,6 +1513,10 @@ class TypeChecker
 
         $simple_declared_types = array_filter(
             array_keys($declared_type->types),
+            /**
+             * @param  string $type_value
+             * @return  bool
+             */
             function ($type_value) {
                 return $type_value !== 'null';
             }
@@ -1509,6 +1524,10 @@ class TypeChecker
 
         $simple_inferred_types = array_filter(
             array_keys($inferred_type->types),
+            /**
+             * @param  string $type_value
+             * @return  bool
+             */
             function ($type_value) {
                 return $type_value !== 'null';
             }
