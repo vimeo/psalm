@@ -1359,7 +1359,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return array<string, array<string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
-     * @psalm-suppress MixedArgument also buggered
      */
     protected static function getPropertyMap()
     {
