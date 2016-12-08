@@ -23,6 +23,7 @@ use Psalm\Type;
 abstract class FunctionLikeChecker extends SourceChecker implements StatementsSource
 {
     const RETURN_TYPE_REGEX = '/\\:\s+(\\??[A-Za-z0-9_\\\\]+)/';
+    const PARAM_TYPE_REGEX = '/^(\\??[A-Za-z0-9_\\\\]+)\s/';
 
     /**
      * @var Closure|Function_|ClassMethod
@@ -864,7 +865,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param->name,
             $param->byRef,
             $param_type ?: Type::getMixed(),
-            new CodeLocation($source, $param),
+            new CodeLocation($source, $param, false, self::PARAM_TYPE_REGEX),
             $is_optional,
             $is_nullable,
             $param->variadic
