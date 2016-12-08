@@ -118,10 +118,10 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function __construct($file_name, array $preloaded_statements = [])
     {
         $this->file_path = $file_name;
-        $this->file_name = Config::getInstance()->shortenFileName($file_name);
+        $this->file_name = Config::getInstance()->shortenFileName($this->file_path);
 
         self::$file_checkers[$this->file_name] = $this;
-        self::$file_checkers[$file_name] = $this;
+        self::$file_checkers[$this->file_path] = $this;
 
         if ($preloaded_statements) {
             $this->preloaded_statements = $preloaded_statements;
@@ -143,7 +143,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache = true,
         $update_docblocks = false
     ) {
-        if ($cache && isset(self::$functions_checked[$this->file_name])) {
+        if ($cache && isset(self::$functions_checked[$this->file_path])) {
             return null;
         }
 
@@ -343,13 +343,14 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  string $file_name
+     * @param  string $file_path
      * @return array<int, \PhpParser\Node>
      */
-    public static function getStatementsForFile($file_name)
+    public static function getStatementsForFile($file_path)
     {
         $stmts = [];
 
+        $project_checker = ProjectChecker::getInstance();
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
         $parser_cache_directory = $root_cache_directory
             ? $root_cache_directory . '/' . self::PARSER_CACHE_DIRECTORY
@@ -361,9 +362,9 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $version = 'parsercache2';
 
-        $file_contents = (string)file_get_contents($file_name);
+        $file_contents = $project_checker->getFileContents($file_path);
         $file_content_hash = md5($version . $file_contents);
-        $name_cache_key = self::getParserCacheKey($file_name);
+        $name_cache_key = self::getParserCacheKey($file_path);
 
         if (self::$file_content_hashes === null) {
             /** @var array<string, string> */
@@ -379,7 +380,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             if (isset(self::$file_content_hashes[$name_cache_key]) &&
                 $file_content_hash === self::$file_content_hashes[$name_cache_key] &&
                 is_readable($cache_location) &&
-                filemtime($cache_location) > filemtime($file_name)
+                filemtime($cache_location) > filemtime($file_path)
             ) {
                 /** @var array<int, \PhpParser\Node> */
                 $stmts = unserialize((string)file_get_contents($cache_location));

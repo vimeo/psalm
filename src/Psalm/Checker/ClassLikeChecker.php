@@ -822,7 +822,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        FileChecker::addFileReferenceToClass(Config::getInstance()->getBaseDir() . $code_location->file_name, $fq_class_name);
+        FileChecker::addFileReferenceToClass(
+            Config::getInstance()->getBaseDir() . $code_location->file_name,
+            $fq_class_name
+        );
 
         return true;
     }
