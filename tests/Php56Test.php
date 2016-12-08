@@ -70,7 +70,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$d']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$e']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$f']);
-        $this->assertEquals('float', (string) $context->vars_in_scope['$g']);
+        $this->assertEquals('float|int', (string) $context->vars_in_scope['$g']);
     }
 
     public function testVariadic()
