@@ -449,7 +449,7 @@ class CallChecker
 
                         $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                             $fq_class_name,
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_checker->getSource(), $stmt->var),
                             $statements_checker->getSuppressedIssues()
                         );
 
@@ -607,7 +607,7 @@ class CallChecker
 
                 $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($statements_checker->getSource(), $stmt->class),
                     $statements_checker->getSuppressedIssues()
                 );
 

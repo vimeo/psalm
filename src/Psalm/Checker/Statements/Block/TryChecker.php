@@ -44,11 +44,13 @@ class TryChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($statements_checker->getSource(), $catch),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
                 }
+
+                $fq_catch_classes[] = $fq_catch_class;
             }
 
             $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union([

@@ -379,7 +379,7 @@ class FetchChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($statements_checker->getSource(), $stmt->class),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -482,7 +482,7 @@ class FetchChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($statements_checker->getSource(), $stmt->class),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
