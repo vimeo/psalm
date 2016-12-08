@@ -79,4 +79,30 @@ function foo(int $a) : int {
             substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
         );
     }
+
+    public function testJsonOutputForUnknownParamClass()
+    {
+        $file_contents = '<?php
+function foo(Badger\Bodger $a) : Badger\Bodger {
+    return $a;
+}';
+
+        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
+        $project_checker->registerFile(
+            'somefile.php',
+            $file_contents
+        );
+
+        $file_checker = new FileChecker('somefile.php');
+        $file_checker->check();
+        $issue_data = IssueBuffer::getIssueData()[0];
+        $this->assertSame('somefile.php', $issue_data['file_path']);
+        $this->assertSame('error', $issue_data['type']);
+        $this->assertSame('Class or interface Badger\\Bodger does not exist', $issue_data['message']);
+        $this->assertSame(2, $issue_data['line_number']);
+        $this->assertSame(
+            'Badger\\Bodger',
+            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
+        );
+    }
 }
