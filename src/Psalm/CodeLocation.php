@@ -90,7 +90,7 @@ class CodeLocation
         }
 
         $this->selection_start = $this->file_start;
-        $this->selection_end = $this->file_end;
+        $this->selection_end = $this->file_end + 1;
 
         $project_checker = Checker\ProjectChecker::getInstance();
 

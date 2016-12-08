@@ -28,7 +28,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         FileChecker::clearCache();
     }
 
-    public function testJsonOutput()
+    public function testJsonOutputForReturnTypeError()
     {
         $file_contents = '<?php
 function foo(int $a) : string {
@@ -50,6 +50,32 @@ function foo(int $a) : string {
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
             'string',
+            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
+        );
+    }
+
+    public function testJsonOutputForUndefinedVar()
+    {
+        $file_contents = '<?php
+function foo(int $a) : int {
+    return $b + 1;
+}';
+
+        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
+        $project_checker->registerFile(
+            'somefile.php',
+            $file_contents
+        );
+
+        $file_checker = new FileChecker('somefile.php');
+        $file_checker->check();
+        $issue_data = IssueBuffer::getIssueData()[0];
+        $this->assertSame('somefile.php', $issue_data['file_path']);
+        $this->assertSame('error', $issue_data['type']);
+        $this->assertSame('Cannot find referenced variable $b', $issue_data['message']);
+        $this->assertSame(3, $issue_data['line_number']);
+        $this->assertSame(
+            '$b',
             substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
         );
     }

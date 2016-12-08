@@ -389,7 +389,7 @@ class ExpressionChecker
 
         if ($plugins) {
             $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
-            
+
             foreach ($plugins as $plugin) {
                 if ($plugin->checkExpression(
                     $stmt,
