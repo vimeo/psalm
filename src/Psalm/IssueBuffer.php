@@ -6,6 +6,11 @@ use Psalm\Checker\ProjectChecker;
 class IssueBuffer
 {
     /**
+     * @var array<int, array>
+     */
+    protected static $issue_data = [];
+
+    /**
      * @var array<int, string>
      */
     protected static $errors = [];
@@ -46,11 +51,12 @@ class IssueBuffer
     public static function add(Issue\CodeIssue $e)
     {
         $config = Config::getInstance();
+        $project_checker = ProjectChecker::getInstance();
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
-        $error_message = $issue_type . ' - ' . $e->getMessage();
+        $error_message = $issue_type . ' - ' . $e->getShortLocation() . ' - ' . $e->getMessage();
 
         $reporting_level = $config->getReportingLevel($issue_type);
 
@@ -59,8 +65,16 @@ class IssueBuffer
         }
 
         if ($reporting_level === Config::REPORT_INFO) {
-            if (ProjectChecker::$show_info && !self::alreadyEmitted($error_message)) {
-                echo 'INFO: ' . $error_message . PHP_EOL;
+            if ($project_checker->show_info && !self::alreadyEmitted($error_message)) {
+                switch ($project_checker->output_format) {
+                    case ProjectChecker::TYPE_CONSOLE:
+                        echo 'INFO: ' . $error_message . PHP_EOL;
+                        break;
+
+                    case ProjectChecker::TYPE_JSON:
+                        self::$issue_data[] = self::getIssueArray($e, Config::REPORT_INFO);
+                        break;
+                }
             }
             return false;
         }
@@ -70,10 +84,19 @@ class IssueBuffer
         }
 
         if (!self::alreadyEmitted($error_message)) {
-            echo (ProjectChecker::$use_color ? "\e[0;31m" : '') . 'ERROR: ' .
-                (ProjectChecker::$use_color ? "\e[0m" : '') . $error_message . PHP_EOL;
+            switch ($project_checker->output_format) {
+                case ProjectChecker::TYPE_CONSOLE:
+                    echo ($project_checker->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR') .
+                        ': ' . $error_message . PHP_EOL;
 
-            echo $e->getFileSnippet() . PHP_EOL;
+                    echo self::getSnippet($e, $project_checker->use_color) . PHP_EOL . PHP_EOL;
+
+                    break;
+
+                case ProjectChecker::TYPE_JSON:
+                    self::$issue_data[] = self::getIssueArray($e);
+                    break;
+            }
         }
 
         if ($config->stop_on_first_error) {
@@ -86,6 +109,62 @@ class IssueBuffer
     }
 
     /**
+     * @param  Issue\CodeIssue $e
+     * @param  string          $severity
+     * @return array
+     */
+    protected static function getIssueArray(Issue\CodeIssue $e, $severity = Config::REPORT_ERROR)
+    {
+        $location = $e->getLocation();
+        $selection_bounds = $location->getSelectionBounds();
+
+        return [
+            'type' => $severity,
+            'line_number' => $location->getLineNumber(),
+            'message' => $e->getMessage(),
+            'file_name' => $location->file_name,
+            'file_path' => $location->file_path,
+            'snippet' => $location->getSnippet(),
+            'from' => $selection_bounds[0],
+            'to' => $selection_bounds[1],
+        ];
+    }
+
+    /**
+     * @return array<int, array>
+     */
+    public static function getIssueData()
+    {
+        return self::$issue_data;
+    }
+
+    /**
+     * @param  Issue\CodeIssue $e
+     * @param  boolean         $use_color
+     * @return string
+     */
+    protected static function getSnippet(Issue\CodeIssue $e, $use_color = true)
+    {
+        $location = $e->getLocation();
+
+        $snippet = $location->getSnippet();
+
+        if (!$use_color) {
+            return $snippet;
+        }
+
+        $snippet_bounds = $location->getSnippetBounds();
+        $selection_bounds = $location->getSelectionBounds();
+
+        $selection_start = $selection_bounds[0] - $snippet_bounds[0];
+        $selection_length = $selection_bounds[1] - $selection_bounds[0] + 1;
+
+        return substr($snippet, 0, $selection_start) .
+            "\e[97;41m" . substr($snippet, $selection_start, $selection_length) .
+            "\e[0m" . substr($snippet, $selection_length + $selection_start) . PHP_EOL;
+    }
+
+    /**
      * @param  bool     $is_full
      * @param  int|null $start_time
      * @return void
@@ -95,6 +174,11 @@ class IssueBuffer
         Checker\FileChecker::updateReferenceCache();
 
         if (count(self::$errors)) {
+            $project_checker = ProjectChecker::getInstance();
+            if ($project_checker->output_format === ProjectChecker::TYPE_JSON) {
+                echo json_encode(self::$issue_data) . PHP_EOL;
+            }
+
             exit(1);
         }
 

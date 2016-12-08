@@ -14,21 +14,60 @@ class ProjectChecker
      *
      * @var Config|null
      */
-    protected static $config;
+    protected $config;
+
+    /**
+     * @var self
+     */
+    public static $instance;
 
     /**
      * Whether or not to use colors in error output
      *
      * @var boolean
      */
-    public static $use_color = true;
+    public $use_color;
 
     /**
      * Whether or not to show informational messages
      *
      * @var boolean
      */
-    public static $show_info = true;
+    public $show_info;
+
+    /**
+     * @var string
+     */
+    public $output_format;
+
+    /**
+     * @var array<string, string>
+     */
+    public $fake_files = [];
+
+    const TYPE_CONSOLE = 'console';
+    const TYPE_JSON = 'json';
+
+    public function __construct($use_color = true, $show_info = true, $output_format = self::TYPE_CONSOLE)
+    {
+        $this->use_color = $use_color;
+        $this->show_info = $show_info;
+
+        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON])) {
+            throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
+        }
+
+        $this->output_format = $output_format;
+        self::$instance = $this;
+    }
+
+    /**
+     * @return self
+     */
+    public static function getInstance()
+    {
+        return self::$instance;
+    }
 
     /**
      * @param  boolean $debug
@@ -36,7 +75,7 @@ class ProjectChecker
      * @param  boolean $update_docblocks
      * @return void
      */
-    public static function check($debug = false, $is_diff = false, $update_docblocks = false)
+    public function check($debug = false, $is_diff = false, $update_docblocks = false)
     {
         $cwd = getcwd();
 
@@ -46,8 +85,8 @@ class ProjectChecker
             throw new \InvalidArgumentException('Cannot work with empty cwd');
         }
 
-        if (!self::$config) {
-            self::$config = self::getConfigForPath($cwd);
+        if (!$this->config) {
+            $this->config = self::getConfigForPath($cwd);
         }
 
         $diff_files = null;
@@ -57,16 +96,16 @@ class ProjectChecker
             $deleted_files = FileChecker::getDeletedReferencedFiles();
             $diff_files = $deleted_files;
 
-            foreach (self::$config->getIncludeDirs() as $dir_name) {
-                $diff_files = array_merge($diff_files, self::getDiffFilesInDir($dir_name, self::$config));
+            foreach ($this->config->getIncludeDirs() as $dir_name) {
+                $diff_files = array_merge($diff_files, self::getDiffFilesInDir($dir_name, $this->config));
             }
         }
 
         $files_checked = [];
 
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
-            foreach (self::$config->getIncludeDirs() as $dir_name) {
-                self::checkDirWithConfig($dir_name, self::$config, $debug, $update_docblocks);
+            foreach ($this->config->getIncludeDirs() as $dir_name) {
+                $this->checkDirWithConfig($dir_name, $this->config, $debug, $update_docblocks);
             }
         } else {
             if ($debug) {
@@ -77,7 +116,7 @@ class ProjectChecker
 
             // strip out deleted files
             $file_list = array_diff($file_list, $deleted_files);
-            self::checkDiffFilesWithConfig(self::$config, $debug, $file_list);
+            $this->checkDiffFilesWithConfig($this->config, $debug, $file_list);
         }
 
         $removed_parser_files = FileChecker::deleteOldParserCaches(
@@ -89,7 +128,7 @@ class ProjectChecker
         }
 
         if ($is_diff) {
-            FileChecker::touchParserCaches(self::getAllFiles(self::$config), $start_checks);
+            FileChecker::touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
         IssueBuffer::finish(true, (int)$start_checks);
@@ -101,18 +140,18 @@ class ProjectChecker
      * @param  boolean $update_docblocks
      * @return void
      */
-    public static function checkDir($dir_name, $debug = false, $update_docblocks = false)
+    public function checkDir($dir_name, $debug = false, $update_docblocks = false)
     {
-        if (!self::$config) {
-            self::$config = self::getConfigForPath($dir_name);
-            self::$config->hide_external_errors = self::$config->isInProjectDirs(
-                self::$config->shortenFileName($dir_name)
+        if (!$this->config) {
+            $this->config = self::getConfigForPath($dir_name);
+            $this->config->hide_external_errors = $this->config->isInProjectDirs(
+                $this->config->shortenFileName($dir_name)
             );
         }
 
         FileChecker::loadReferenceCache();
 
-        self::checkDirWithConfig($dir_name, self::$config, $debug, $update_docblocks);
+        $this->checkDirWithConfig($dir_name, $this->config, $debug, $update_docblocks);
 
         IssueBuffer::finish();
     }
@@ -124,7 +163,7 @@ class ProjectChecker
      * @param  bool   $update_docblocks
      * @return void
      */
-    protected static function checkDirWithConfig($dir_name, Config $config, $debug, $update_docblocks)
+    protected function checkDirWithConfig($dir_name, Config $config, $debug, $update_docblocks)
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
@@ -162,7 +201,7 @@ class ProjectChecker
      * @param  Config $config
      * @return array<int, string>
      */
-    protected static function getAllFiles(Config $config)
+    protected function getAllFiles(Config $config)
     {
         $file_extensions = $config->getFileExtensions();
         $file_names = [];
@@ -227,7 +266,7 @@ class ProjectChecker
      * @param  array<string>    $file_list
      * @return void
      */
-    protected static function checkDiffFilesWithConfig(Config $config, $debug, array $file_list = [])
+    protected function checkDiffFilesWithConfig(Config $config, $debug, array $file_list = [])
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
@@ -270,25 +309,25 @@ class ProjectChecker
      * @param  bool    $update_docblocks
      * @return void
      */
-    public static function checkFile($file_name, $debug = false, $update_docblocks = false)
+    public function checkFile($file_name, $debug = false, $update_docblocks = false)
     {
         if ($debug) {
             echo 'Checking ' . $file_name . PHP_EOL;
         }
 
-        if (!self::$config) {
-            self::$config = self::getConfigForPath($file_name);
+        if (!$this->config) {
+            $this->config = self::getConfigForPath($file_name);
         }
 
-        self::$config->hide_external_errors = self::$config->isInProjectDirs(
-            self::$config->shortenFileName($file_name)
+        $this->config->hide_external_errors = $this->config->isInProjectDirs(
+            $this->config->shortenFileName($file_name)
         );
 
         $file_name_parts = explode('.', $file_name);
 
         $extension = array_pop($file_name_parts);
 
-        $filetype_handlers = self::$config->getFiletypeHandlers();
+        $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileChecker::loadReferenceCache();
 
@@ -353,7 +392,7 @@ class ProjectChecker
      * @return void
      * @throws Exception\ConfigException If a config file is not found in the given location.
      */
-    public static function setConfigXML($path_to_config)
+    public function setConfigXML($path_to_config)
     {
         if (!file_exists($path_to_config)) {
             throw new Exception\ConfigException('Config not found at location ' . $path_to_config);
@@ -361,13 +400,13 @@ class ProjectChecker
 
         $dir_path = dirname($path_to_config) . '/';
 
-        self::$config = Config::loadFromXML($path_to_config);
+        $this->config = Config::loadFromXML($path_to_config);
 
-        if (self::$config->autoloader) {
-            require_once($dir_path . self::$config->autoloader);
+        if ($this->config->autoloader) {
+            require_once($dir_path . $this->config->autoloader);
         }
 
-        self::$config->collectPredefinedConstants();
+        $this->config->collectPredefinedConstants();
     }
 
     /**
@@ -396,5 +435,28 @@ class ProjectChecker
         }
 
         return array_unique($all_files_to_check);
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  string $file_contents
+     * @return void
+     */
+    public function registerFile($file_path, $file_contents)
+    {
+        $this->fake_files[$file_path] = $file_contents;
+    }
+
+    /**
+     * @param  string $file_path
+     * @return string
+     */
+    public function getFileContents($file_path)
+    {
+        if (isset($this->fake_files[$file_path])) {
+            return $this->fake_files[$file_path];
+        }
+
+        return (string)file_get_contents($file_path);
     }
 }

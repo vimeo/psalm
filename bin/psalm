@@ -19,7 +19,13 @@ ini_set('memory_limit', '2048M');
 ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
-$options = getopt('f:m:hc:', ['help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff', 'file:', 'self-check', 'update-docblocks']);
+$options = getopt(
+    'f:m:hc:',
+    [
+        'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
+        'file:', 'self-check', 'update-docblocks', 'output-format:',
+    ]
+);
 
 if (array_key_exists('help', $options)) {
     $options['h'] = false;
@@ -47,6 +53,7 @@ Options:
          --diff                  File to check is a diff
          --self-check            Psalm checks itself
          --update-docblocks      Adds correct return types to the given file(s)
+         --output-format=json    Changes the output format
 
 
 HELP;
@@ -59,10 +66,11 @@ $debug = array_key_exists('debug', $options);
 
 if (isset($options['f'])) {
     $input_paths = is_array($options['f']) ? $options['f'] : [$options['f']];
-}
-else {
+} else {
     $input_paths = $argv ? $argv : null;
 }
+
+$output_format = isset($options['output-format']) ? $options['output-format'] : ProjectChecker::TYPE_CONSOLE;
 
 $paths_to_check = null;
 
@@ -120,21 +128,20 @@ if ($path_to_config) {
     ProjectChecker::setConfigXML($path_to_config);
 }
 
-ProjectChecker::$use_color = $use_color;
-ProjectChecker::$show_info = $show_info;
+$project_checker = new ProjectChecker($use_color, $show_info, $output_format);
 
 $time = microtime(true);
 
 if (array_key_exists('self-check', $options)) {
-    ProjectChecker::checkDir(dirname(__DIR__) . '/src', $debug);
+    $project_checker->checkDir(dirname(__DIR__) . '/src', $debug);
 } elseif ($paths_to_check === null) {
-    ProjectChecker::check($debug, $is_diff);
+    $project_checker->check($debug, $is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            ProjectChecker::checkDir($path_to_check, $debug, $update_docblocks);
+            $project_checker->checkDir($path_to_check, $debug, $update_docblocks);
         } else {
-            ProjectChecker::checkFile($path_to_check, $debug, $update_docblocks);
+            $project_checker->checkFile($path_to_check, $debug, $update_docblocks);
         }
     }
 }
