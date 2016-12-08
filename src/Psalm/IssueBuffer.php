@@ -103,8 +103,6 @@ class IssueBuffer
             exit(1);
         }
 
-        self::$errors[] = $error_message;
-
         return true;
     }
 
@@ -157,7 +155,7 @@ class IssueBuffer
         $selection_bounds = $location->getSelectionBounds();
 
         $selection_start = $selection_bounds[0] - $snippet_bounds[0];
-        $selection_length = $selection_bounds[1] - $selection_bounds[0] + 1;
+        $selection_length = $selection_bounds[1] - $selection_bounds[0];
 
         return substr($snippet, 0, $selection_start) .
             "\e[97;41m" . substr($snippet, $selection_start, $selection_length) .
@@ -173,7 +171,7 @@ class IssueBuffer
     {
         Checker\FileChecker::updateReferenceCache();
 
-        if (count(self::$errors)) {
+        if (count(self::$emitted)) {
             $project_checker = ProjectChecker::getInstance();
             if ($project_checker->output_format === ProjectChecker::TYPE_JSON) {
                 echo json_encode(self::$issue_data) . PHP_EOL;
@@ -202,5 +200,14 @@ class IssueBuffer
         self::$emitted[$sham] = true;
 
         return false;
+    }
+
+    /**
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$issue_data = [];
+        self::$emitted = [];
     }
 }

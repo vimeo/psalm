@@ -5,6 +5,7 @@ use PhpParser\ParserFactory;
 use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 
 class FileChecker extends SourceChecker implements StatementsSource
@@ -757,6 +758,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         ClassLikeChecker::clearCache();
         FunctionChecker::clearCache();
         StatementsChecker::clearCache();
+        IssueBuffer::clearCache();
     }
 
     /**
