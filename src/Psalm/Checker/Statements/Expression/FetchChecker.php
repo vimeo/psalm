@@ -370,6 +370,22 @@ class FetchChecker
         ) {
             if ($stmt->class->parts === ['self']) {
                 $fq_class_name = (string)$context->self;
+            } elseif ($stmt->class->parts[0] === 'parent') {
+                $fq_class_name = $statements_checker->getParentClass();
+
+                if ($fq_class_name === null) {
+                    if (IssueBuffer::accepts(
+                        new ParentNotFound(
+                            'Cannot check property fetch on parent as this class does not extend another',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    return;
+                }
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
