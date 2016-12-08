@@ -751,8 +751,13 @@ class ExpressionChecker
 
         // let's do some fun type assignment
         if (isset($stmt->left->inferredType) && isset($stmt->right->inferredType)) {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
-                self::checkPlusOp(
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
+            ) {
+                self::checkNonDivArithmenticOp(
                     $stmt->left->inferredType,
                     $stmt->right->inferredType,
                     $result_type
@@ -761,20 +766,11 @@ class ExpressionChecker
                 if ($result_type) {
                     $stmt->inferredType = $result_type;
                 }
-
-            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-                if ($stmt->left->inferredType->isInt() && $stmt->right->inferredType->isInt()) {
-                    $stmt->inferredType = Type::getInt();
-                } elseif ($stmt->left->inferredType->hasNumericType() &&
-                    $stmt->right->inferredType->hasNumericType()
-                ) {
-                    $stmt->inferredType = Type::getFloat();
-                }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div
                 && $stmt->left->inferredType->hasNumericType()
                 && $stmt->right->inferredType->hasNumericType()
             ) {
-                $stmt->inferredType = Type::getFloat();
+                $stmt->inferredType = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
             }
         }
 
@@ -805,7 +801,7 @@ class ExpressionChecker
      * @param  Type\Union|null   &$result_type
      * @return void
      */
-    public static function checkPlusOp(
+    public static function checkNonDivArithmenticOp(
         Type\Union $left_type = null,
         Type\Union $right_type = null,
         Type\Union &$result_type = null

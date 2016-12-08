@@ -236,12 +236,25 @@ class AssignmentChecker
         $var_type = isset($stmt->var->inferredType) ? clone $stmt->var->inferredType : null;
         $expr_type = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
 
-        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus) {
-            ExpressionChecker::checkPlusOp($var_type, $expr_type, $result_type);
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus ||
+            $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus ||
+            $stmt instanceof PhpParser\Node\Expr\AssignOp\Mod ||
+            $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul ||
+            $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
+        ) {
+            ExpressionChecker::checkNonDivArithmenticOp($var_type, $expr_type, $result_type);
 
             if ($result_type && $var_id) {
                 $context->vars_in_scope[$var_id] = $result_type;
             }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div
+            && $var_type
+            && $expr_type
+            && $var_type->hasNumericType()
+            && $expr_type->hasNumericType()
+            && $var_id
+        ) {
+            $context->vars_in_scope[$var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
         }
 
         return null;
