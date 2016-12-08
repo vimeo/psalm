@@ -36,23 +36,23 @@ class TryChecker
             $fq_catch_classes = [];
 
             foreach ($catch->types as $catch_type) {
-                $fq_catch_classes[]= ClassLikeChecker::getFQCLNFromNameObject(
+                $fq_catch_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $catch_type,
                     $statements_checker->getNamespace(),
                     $statements_checker->getAliasedClasses()
                 );
-            }
 
-            if ($context->check_classes) {
-                foreach ($fq_catch_classes as $fq_catch_class) {
+                if ($context->check_classes) {
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_catch_class,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        new CodeLocation($statements_checker->getSource(), $catch_type),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
                     }
                 }
+
+                $fq_catch_classes[] = $fq_catch_class;
             }
 
             $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union(

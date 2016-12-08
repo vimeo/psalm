@@ -159,7 +159,7 @@ class ForeachChecker
                         ) {
                             if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                 $return_type->value,
-                                new CodeLocation($statements_checker->getSource(), $stmt),
+                                new CodeLocation($statements_checker->getSource(), $stmt->expr),
                                 $statements_checker->getSuppressedIssues()
                             ) === false) {
                                 return false;
