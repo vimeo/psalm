@@ -484,23 +484,41 @@ class FunctionChecker extends FunctionLikeChecker
 
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
 
-        $first_arg_array = $first_arg
+        $first_arg_array_generic = $first_arg
                 && isset($first_arg->inferredType)
                 && isset($first_arg->inferredType->types['array'])
                 && $first_arg->inferredType->types['array'] instanceof Type\Generic
             ? $first_arg->inferredType->types['array']
             : null;
 
+        $first_arg_array_objectlike = $first_arg
+                && isset($first_arg->inferredType)
+                && isset($first_arg->inferredType->types['array'])
+                && $first_arg->inferredType->types['array'] instanceof Type\ObjectLike
+            ? $first_arg->inferredType->types['array']
+            : null;
+
         if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
-            if ($first_arg_array) {
-                $inner_type = clone $first_arg_array->type_params[1];
+            if ($first_arg_array_generic || $first_arg_array_objectlike) {
+                if ($first_arg_array_generic) {
+                    $inner_type = clone $first_arg_array_generic->type_params[1];
+                } else {
+                    /** @var Type\ObjectLike $first_arg_array_objectlike */
+                    $inner_type = $first_arg_array_objectlike->getGenericTypeParam();
+                }
+
                 return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
             }
         }
 
         if ($call_map_key === 'array_keys') {
-            if ($first_arg_array) {
-                $inner_type = clone $first_arg_array->type_params[0];
+            if ($first_arg_array_generic || $first_arg_array_objectlike) {
+                if ($first_arg_array_generic) {
+                    $inner_type = clone $first_arg_array_generic->type_params[0];
+                } else {
+                    $inner_type = Type::getString();
+                }
+
                 return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
             }
         }
@@ -547,7 +565,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_map_key === 'array_diff') {
-            if (!$first_arg_array) {
+            if (!$first_arg_array_generic) {
                 return Type::getArray();
             }
 
@@ -556,14 +574,14 @@ class FunctionChecker extends FunctionLikeChecker
                     'array',
                     [
                         Type::getInt(),
-                        clone $first_arg_array->type_params[1]
+                        clone $first_arg_array_generic->type_params[1]
                     ]
                 )
             ]);
         }
 
         if ($call_map_key === 'array_diff_key') {
-            if (!$first_arg_array) {
+            if (!$first_arg_array_generic) {
                 return Type::getArray();
             }
 
@@ -571,11 +589,11 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_map_key === 'array_shift' || $call_map_key === 'array_pop') {
-            if (!$first_arg_array) {
+            if (!$first_arg_array_generic) {
                 return Type::getMixed();
             }
 
-            return clone $first_arg_array->type_params[1];
+            return clone $first_arg_array_generic->type_params[1];
         }
 
         return null;

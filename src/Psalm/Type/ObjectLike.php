@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\Type;
+
 class ObjectLike extends Atomic
 {
     /**
@@ -75,5 +77,19 @@ class ObjectLike extends Atomic
                     )
                 ) .
                 '}';
+    }
+
+    /**
+     * @return Union
+     */
+    public function getGenericTypeParam()
+    {
+        $all_types = [];
+
+        foreach ($this->properties as $property) {
+            $all_types = array_merge($property->types, $all_types);
+        }
+
+        return Type::combineTypes($all_types);
     }
 }
