@@ -49,8 +49,6 @@ class TryChecker
                 ) === false) {
                     return false;
                 }
-
-                $fq_catch_classes[] = $fq_catch_class;
             }
 
             $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union([
