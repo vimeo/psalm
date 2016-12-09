@@ -13,6 +13,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
+use Psalm\Issue\InvalidToString;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
@@ -556,7 +557,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return null;
         }
 
-        if ($this->function instanceof ClassMethod && substr($this->function->name, 0, 2) === '__') {
+        $is_to_string = $this->function instanceof ClassMethod && strtolower($this->function->name) === '__tostring';
+
+        if ($this->function instanceof ClassMethod &&
+            substr($this->function->name, 0, 2) === '__' &&
+            !$is_to_string
+        ) {
             // do not check __construct, __set, __get, __call etc.
             return null;
         }
@@ -568,7 +574,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $return_type_location = new CodeLocation($this, $this->function, true);
         }
 
-        if (!$return_type && !$update_docblock) {
+        if (!$return_type && !$update_docblock && !$is_to_string) {
             if (IssueBuffer::accepts(
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type',
@@ -597,6 +603,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if ($inferred_yield_type) {
             $inferred_generator_return_type = $inferred_return_type;
             $inferred_return_type = $inferred_yield_type;
+        }
+
+        if ($is_to_string) {
+            if (!$inferred_return_type->isMixed() && (string)$inferred_return_type !== 'string') {
+                if (IssueBuffer::accepts(
+                    new InvalidToString(
+                        '__toString methods must return a string',
+                        $secondary_return_type_location ?: $return_type_location
+                    )
+                )) {
+                    return false;
+                }
+            }
+
+            if (!$return_type && !$update_docblock) {
+                return null;
+            }
         }
 
         if (!$return_type) {
@@ -1063,6 +1086,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 if ($param_type_part->isScalar() && $input_type_part->isScalarType()) {
                     $type_match_found = true;
+                }
+
+                if ($param_type_part->isString() && $input_type_part->isObjectType()) {
+                    // check whether the object has a __toString method
+                    if (MethodChecker::methodExists($input_type_part->value . '::__toString')) {
+                        $type_match_found = true;
+                    }
                 }
 
                 if ($param_type_part->isCallable() &&

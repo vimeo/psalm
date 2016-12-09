@@ -1110,7 +1110,7 @@ class CallChecker
      * @param   CodeLocation        $code_location
      * @return  null|false
      */
-    protected static function checkFunctionArgumentType(
+    public static function checkFunctionArgumentType(
         StatementsChecker $statements_checker,
         Type\Union $input_type,
         Type\Union $param_type,
