@@ -10,6 +10,7 @@ use Psalm\Checker\Statements\Block\TryChecker;
 use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
+use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -261,8 +262,21 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 $this->checkStatic($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
-                foreach ($stmt->exprs as $expr) {
+                foreach ($stmt->exprs as $i => $expr) {
                     ExpressionChecker::check($this, $expr, $context);
+
+                    if (isset($expr->inferredType)) {
+                        if (CallChecker::checkFunctionArgumentType(
+                            $this,
+                            $expr->inferredType,
+                            Type::getString(),
+                            'echo',
+                            $i,
+                            new CodeLocation($this->getSource(), $expr)
+                        ) === false) {
+                            return false;
+                        }
+                    }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($this->file_name, $context->self);
