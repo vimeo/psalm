@@ -273,6 +273,16 @@ class Config
     }
 
     /**
+     * @param string $issue_key
+     * @param string $error_level
+     * @return void
+     */
+    public function setCustomErrorLevel($issue_key, $error_level)
+    {
+        $this->custom_error_levels[$issue_key] = $error_level;
+    }
+
+    /**
      * @param  array<\SimpleXMLElement> $extensions
      * @return void
      * @throws ConfigException If a Config file could not be found.
