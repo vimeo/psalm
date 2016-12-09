@@ -1137,7 +1137,7 @@ class CallChecker
             return null;
         }
 
-        if ($input_type->isNullable() && !$param_type->isNullable()) {
+        if ($input_type->isNullable() && !$param_type->isNullable() && $cased_method_id !== 'echo') {
             if (IssueBuffer::accepts(
                 new NullReference(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be null, possibly ' .
