@@ -4633,7 +4633,7 @@ return [
 'libxml_set_external_entity_loader' => ['', 'resolver_function'=>'callable'],
 'libxml_set_streams_context' => ['', 'streams_context'=>''],
 'libxml_use_internal_errors' => ['bool', 'use_errors='=>'bool'],
-'LimitIterator::__construct' => ['Iterator', 'offset='=>'int', 'count='=>'int'],
+'LimitIterator::__construct' => ['Iterator', 'iterator'=>'Iterator', 'offset='=>'int', 'count='=>'int'],
 'LimitIterator::current' => [''],
 'LimitIterator::getInnerIterator' => ['Iterator'],
 'LimitIterator::getPosition' => ['int'],
