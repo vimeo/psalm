@@ -1172,15 +1172,17 @@ class CallChecker
 
         if (!$type_match_found) {
             if ($scalar_type_match_found) {
-                if (IssueBuffer::accepts(
-                    new InvalidScalarArgument(
-                        'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
-                            ', ' . $input_type . ' provided',
-                        $code_location
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
+                if ($cased_method_id !== 'echo') {
+                    if (IssueBuffer::accepts(
+                        new InvalidScalarArgument(
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
+                                ', ' . $input_type . ' provided',
+                            $code_location
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
                 }
             } elseif (IssueBuffer::accepts(
                 new InvalidArgument(
