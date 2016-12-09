@@ -385,6 +385,11 @@ class IfChecker
             );
         }
 
+        // check the elseif
+        if (ExpressionChecker::check($statements_checker, $elseif->cond, $elseif_context) === false) {
+            return false;
+        }
+
         $negated_elseif_types = $negatable_elseif_types
                                 ? TypeChecker::negateTypes($negatable_elseif_types)
                                 : [];
@@ -420,11 +425,6 @@ class IfChecker
             }
 
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
-        }
-
-        // check the elseif
-        if (ExpressionChecker::check($statements_checker, $elseif->cond, $elseif_context) === false) {
-            return false;
         }
 
         $old_elseif_context = clone $elseif_context;
