@@ -1104,21 +1104,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             /** @var array<array<FunctionLikeParameter>> */
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
         } elseif ($fq_class_name) {
-            if ($method_params = MethodChecker::getMethodParams($method_id)) {
-                // fall back to using reflected params anyway
-                return $method_params;
-            }
-
             $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
 
-            $method_id = $declaring_method_id ?: $method_id;
-
-            if (!FunctionChecker::inCallMap($method_id)) {
+            if (FunctionChecker::inCallMap($declaring_method_id ?: $method_id)) {
+                /** @var array<array<FunctionLikeParameter>> */
+                $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
+            } elseif ($method_params = MethodChecker::getMethodParams($method_id)) {
+                // fall back to using reflected params anyway
+                return $method_params;
+            } else {
                 throw new \InvalidArgumentException('Cannot get params for ' . $method_id);
             }
-
-            /** @var array<array<FunctionLikeParameter>> */
-            $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
         } else {
             return FunctionChecker::getParams(strtolower($method_id), $file_name);
         }

@@ -723,10 +723,17 @@ class ExpressionChecker
                 $op_context->vars_possibly_in_scope,
                 $context->vars_possibly_in_scope
             );
-        } else {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-                $stmt->inferredType = Type::getString();
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            $stmt->inferredType = Type::getString();
+
+            if (self::check($statements_checker, $stmt->left, $context) === false) {
+                return false;
             }
+
+            if (self::check($statements_checker, $stmt->right, $context) === false) {
+                return false;
+            }
+        } else {
 
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
                 if (self::checkBinaryOp($statements_checker, $stmt->left, $context, ++$nesting) === false) {
@@ -953,8 +960,7 @@ class ExpressionChecker
         if ($return_type->value === '$this' || $return_type->value === 'static' || $return_type->value === 'self') {
             if (!$calling_class) {
                 throw new \InvalidArgumentException(
-                    'Cannot handle ' . $return_type->value . ' when $calling_class is empty',
-                    null
+                    'Cannot handle ' . $return_type->value . ' when $calling_class is empty'
                 );
             }
 
@@ -964,8 +970,7 @@ class ExpressionChecker
 
             if (!$method_params) {
                 throw new \InvalidArgumentException(
-                    'Cannot get method params of ' . $method_id,
-                    null
+                    'Cannot get method params of ' . $method_id
                 );
             }
 

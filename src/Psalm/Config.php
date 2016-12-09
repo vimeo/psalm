@@ -142,6 +142,10 @@ class Config
     {
         $file_contents = file_get_contents($file_name);
 
+        if ($file_contents === false) {
+            throw new \InvalidArgumentException('Cannot open ' . $file_name);
+        }
+
         $config = new self();
 
         $config->base_dir = dirname($file_name) . '/';
