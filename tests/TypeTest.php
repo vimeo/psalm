@@ -1671,6 +1671,32 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testAssignInIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        if ($row = (rand(0, 10) ? [5] : null)) {
+            echo $row[0];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testAssignInElseIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (rand(0, 10) > 5) {
+            echo "hello";
+        } elseif ($row = (rand(0, 10) ? [5] : null)) {
+            echo $row[0];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testIfNotEqualFalse()
     {
         $this->markTestIncomplete('This currently fails');
