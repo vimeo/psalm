@@ -3,21 +3,21 @@ namespace Psalm;
 
 /**
  * Imported from https://github.com/etsy/phan/blob/master/src/Phan/Language/Internal/FunctionSignatureMap.php
- * 
+ *
  * The MIT License (MIT)
  * Copyright (c) 2015 Rasmus Lerdorf
  * Copyright (c) 2015 Andrew Morrison
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -187,7 +187,7 @@ return [
 'ArrayIterator::current' => [''],
 'ArrayIterator::getArrayCopy' => ['array'],
 'ArrayIterator::getFlags' => [''],
-'ArrayIterator::key' => [''],
+'ArrayIterator::key' => ['int|string|false'],
 'ArrayIterator::ksort' => [''],
 'ArrayIterator::natcasesort' => [''],
 'ArrayIterator::natsort' => [''],
@@ -204,8 +204,8 @@ return [
 'ArrayIterator::uksort' => ['', 'cmp_function'=>'callable'],
 'ArrayIterator::unserialize' => ['string', 'serialized'=>'string'],
 'ArrayIterator::valid' => ['bool'],
-'array_key_exists' => ['bool', 'key'=>'', 'search'=>'array'],
-'array_keys' => ['array', 'input'=>'array', 'search_value='=>'', 'strict='=>'bool'],
+'array_key_exists' => ['bool', 'key'=>'string|int', 'search'=>'array'],
+'array_keys' => ['int[]|string[]', 'input'=>'array', 'search_value='=>'', 'strict='=>'bool'],
 'array_map' => ['array', 'callback'=>'callable|null', 'input1'=>'array', '...='=>'array'],
 'array_merge' => ['array', 'arr1'=>'array', '...='=>'array'],
 'array_merge_recursive' => ['array', 'arr1'=>'array', '...='=>'array'],
@@ -297,11 +297,11 @@ return [
 'bbcode_parse' => ['string', 'bbcode_container'=>'', 'to_parse'=>'string'],
 'bbcode_set_arg_parser' => ['bool', 'bbcode_container'=>'', 'bbcode_arg_parser'=>''],
 'bbcode_set_flags' => ['bool', 'bbcode_container'=>'', 'flags'=>'int', 'mode='=>'int'],
-'bcadd' => ['string', 'left_operand'=>'string', 'right_operand'=>'string', 'scale='=>'int'],
-'bccomp' => ['int', 'left_operand'=>'string', 'right_operand'=>'string', 'scale='=>'int'],
-'bcdiv' => ['string', 'left_operand'=>'string', 'right_operand'=>'string', 'scale='=>'int'],
-'bcmod' => ['string', 'left_operand'=>'string', 'right_operand'=>'string'],
-'bcmul' => ['string', 'left_operand'=>'string', 'right_operand'=>'string', 'scale='=>'int'],
+'bcadd' => ['string', 'left_operand'=>'int|string', 'right_operand'=>'int|string', 'scale='=>'int'],
+'bccomp' => ['int', 'left_operand'=>'int|string', 'right_operand'=>'int|string', 'scale='=>'int'],
+'bcdiv' => ['string', 'left_operand'=>'int|string', 'right_operand'=>'int|string', 'scale='=>'int'],
+'bcmod' => ['string', 'left_operand'=>'int|string', 'right_operand'=>'int|string'],
+'bcmul' => ['string', 'left_operand'=>'int|string', 'right_operand'=>'int|string', 'scale='=>'int'],
 'bcompiler_load' => ['bool', 'filename'=>'string'],
 'bcompiler_load_exe' => ['bool', 'filename'=>'string'],
 'bcompiler_parse_class' => ['bool', 'class'=>'string', 'callback'=>'string'],
@@ -315,11 +315,11 @@ return [
 'bcompiler_write_functions_from_file' => ['bool', 'filehandle'=>'', 'filename'=>'string'],
 'bcompiler_write_header' => ['bool', 'filehandle'=>'', 'write_ver='=>'string'],
 'bcompiler_write_included_filename' => ['bool', 'filehandle'=>'', 'filename'=>'string'],
-'bcpowmod' => ['string', 'x'=>'string', 'y'=>'string', 'mod'=>'string', 'scale='=>'int'],
-'bcpow' => ['string', 'x'=>'string', 'y'=>'string', 'scale='=>'int'],
+'bcpowmod' => ['string', 'x'=>'int|string', 'y'=>'int|string', 'mod'=>'int|string', 'scale='=>'int'],
+'bcpow' => ['string', 'x'=>'int|string', 'y'=>'int|string', 'scale='=>'int'],
 'bcscale' => ['bool', 'scale'=>'int'],
-'bcsqrt' => ['string', 'operand'=>'string', 'scale='=>'int'],
-'bcsub' => ['string', 'left_operand'=>'string', 'right_operand'=>'string', 'scale='=>'int'],
+'bcsqrt' => ['string', 'operand'=>'int|string', 'scale='=>'int'],
+'bcsub' => ['string', 'left_operand'=>'int|string', 'right_operand'=>'int|string', 'scale='=>'int'],
 'bin2hex' => ['string', 'data'=>'string'],
 'bindec' => ['int', 'binary_number'=>'string'],
 'bind_textdomain_codeset' => ['string', 'domain'=>'string', 'codeset'=>'string'],
@@ -820,15 +820,15 @@ return [
 'chunk_split' => ['string', 'str'=>'string', 'chunklen='=>'int', 'ending='=>'string'],
 'class_alias' => ['bool', 'user_class_name='=>'string', 'alias_name='=>'string', 'autoload='=>'bool'],
 'class_exists' => ['bool', 'classname'=>'string', 'autoload='=>'bool'],
-'class_implements' => ['array', 'what'=>'object|string', 'autoload='=>'bool'],
+'class_implements' => ['string[]', 'what'=>'object|string', 'autoload='=>'bool'],
 'classkit_import' => ['array', 'filename'=>'string'],
 'classkit_method_add' => ['bool', 'classname'=>'string', 'methodname'=>'string', 'args'=>'string', 'code'=>'string', 'flags='=>'int'],
 'classkit_method_copy' => ['bool', 'dclass'=>'string', 'dmethod'=>'string', 'sclass'=>'string', 'smethod='=>'string'],
 'classkit_method_redefine' => ['bool', 'classname'=>'string', 'methodname'=>'string', 'args'=>'string', 'code'=>'string', 'flags='=>'int'],
 'classkit_method_remove' => ['bool', 'classname'=>'string', 'methodname'=>'string'],
 'classkit_method_rename' => ['bool', 'classname'=>'string', 'methodname'=>'string', 'newname'=>'string'],
-'class_parents' => ['array', 'instance'=>'object', 'autoload='=>'bool'],
-'class_uses' => ['array', 'what'=>'object|string', 'autoload='=>'bool'],
+'class_parents' => ['string[]', 'instance'=>'object|string', 'autoload='=>'bool'],
+'class_uses' => ['string[]', 'what'=>'object|string', 'autoload='=>'bool'],
 'clearstatcache' => ['', 'clear_realpath_cache='=>'bool', 'filename='=>'string'],
 'cli_get_process_title' => ['string'],
 'cli_set_process_title' => ['bool', 'arg'=>'string'],
@@ -7124,7 +7124,7 @@ return [
 'posix_getsid' => ['int', 'pid'=>'int'],
 'posix_getuid' => ['int'],
 'posix_initgroups' => ['bool', 'name'=>'string', 'base_group_id'=>'int'],
-'posix_isatty' => ['bool', 'fd'=>'int'],
+'posix_isatty' => ['bool', 'fd'=>'resource|int'],
 'posix_kill' => ['bool', 'pid'=>'int', 'sig'=>'int'],
 'posix_mkfifo' => ['bool', 'pathname'=>'string', 'mode'=>'int'],
 'posix_mknod' => ['bool', 'pathname'=>'string', 'mode'=>'int', 'major='=>'int', 'minor='=>'int'],
@@ -7136,7 +7136,7 @@ return [
 'posix_setuid' => ['bool', 'uid'=>'int'],
 'posix_strerror' => ['string', 'errno'=>'int'],
 'posix_times' => ['array'],
-'posix_ttyname' => ['string|false', 'fd'=>'int'],
+'posix_ttyname' => ['string|false', 'fd'=>'resource|int'],
 'posix_uname' => ['array'],
 'pow' => ['float', 'base'=>'float', 'exponent'=>'float'],
 'preg_filter' => ['', 'regex'=>'', 'replace'=>'', 'subject'=>'', 'limit='=>'int', '&count='=>'int'],
@@ -7575,7 +7575,7 @@ return [
 'ReflectionClass::getConstants' => ['array'],
 'ReflectionClass::getConstructor' => ['ReflectionMethod'],
 'ReflectionClass::getDefaultProperties' => ['array'],
-'ReflectionClass::getDocComment' => ['string'],
+'ReflectionClass::getDocComment' => ['string|false'],
 'ReflectionClass::getEndLine' => ['int'],
 'ReflectionClass::getExtensionName' => ['string|false'],
 'ReflectionClass::getExtension' => ['ReflectionExtension|NULL'],
@@ -7639,7 +7639,7 @@ return [
 'ReflectionFunctionAbstract::__clone' => ['ReflectionFunctionAbstract'],
 'ReflectionFunctionAbstract::getClosureScopeClass' => ['ReflectionClass'],
 'ReflectionFunctionAbstract::getClosureThis' => ['object'],
-'ReflectionFunctionAbstract::getDocComment' => ['string'],
+'ReflectionFunctionAbstract::getDocComment' => ['string|false'],
 'ReflectionFunctionAbstract::getEndLine' => ['int'],
 'ReflectionFunctionAbstract::getExtensionName' => ['string'],
 'ReflectionFunctionAbstract::getExtension' => ['ReflectionExtension'],
@@ -7648,8 +7648,8 @@ return [
 'ReflectionFunctionAbstract::getName' => ['string'],
 'ReflectionFunctionAbstract::getNumberOfParameters' => ['int'],
 'ReflectionFunctionAbstract::getNumberOfRequiredParameters' => ['int'],
-'ReflectionFunctionAbstract::getParameters' => ['ReflectionParameter'],
-'ReflectionFunctionAbstract::getReturnType' => ['string'],
+'ReflectionFunctionAbstract::getParameters' => ['ReflectionParameter[]'],
+'ReflectionFunctionAbstract::getReturnType' => ['ReflectionType|null'],
 'ReflectionFunctionAbstract::getShortName' => ['string'],
 'ReflectionFunctionAbstract::getStartLine' => ['int'],
 'ReflectionFunctionAbstract::getStaticVariables' => ['array'],
@@ -7663,12 +7663,12 @@ return [
 'ReflectionFunctionAbstract::isVariadic' => ['bool'],
 'ReflectionFunctionAbstract::returnsReference' => ['bool'],
 'ReflectionFunctionAbstract::__toString' => [''],
-'ReflectionFunction::__construct' => ['ReflectionFunction', 'name'=>'string'],
+'ReflectionFunction::__construct' => ['ReflectionFunction', 'name'=>'string|Closure'],
 'ReflectionFunction::export' => ['string', 'name'=>'string', 'return='=>'bool'],
 'ReflectionFunction::getClosure' => ['Closure'],
 'ReflectionFunction::getClosureScopeClass' => ['ReflectionClass'],
 'ReflectionFunction::getClosureThis' => ['bool'],
-'ReflectionFunction::getDocComment' => ['string'],
+'ReflectionFunction::getDocComment' => ['string|false'],
 'ReflectionFunction::getEndLine' => ['int'],
 'ReflectionFunction::getExtensionName' => ['string|false'],
 'ReflectionFunction::getExtension' => ['ReflectionExtension|NULL'],
@@ -7677,7 +7677,8 @@ return [
 'ReflectionFunction::getName' => ['string'],
 'ReflectionFunction::getNumberOfParameters' => ['int'],
 'ReflectionFunction::getNumberOfRequiredParameters' => ['int'],
-'ReflectionFunction::getParameters' => ['array'],
+'ReflectionFunction::getParameters' => ['ReflectionParameter[]'],
+'ReflectionFunction::getReturnType' => ['ReflectionType|null'],
 'ReflectionFunction::getShortName' => ['string'],
 'ReflectionFunction::getStartLine' => ['int'],
 'ReflectionFunction::getStaticVariables' => ['array'],
