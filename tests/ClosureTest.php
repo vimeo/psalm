@@ -35,7 +35,10 @@ class ClosureTest extends PHPUnit_Framework_TestCase
 
         // here we have to make sure $data exists as a side-effect of calling `run_function`
         // because it could exist depending on how run_function is implemented
-        /** @return void */
+        /**
+         * @return void
+         * @psalm-suppress MixedArgument
+         */
         function fn() {
             run_function(
                 /**
