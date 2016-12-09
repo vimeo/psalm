@@ -271,7 +271,7 @@ class StatementsChecker
                             $expr->inferredType,
                             Type::getString(),
                             'echo',
-                            $i,
+                            (int)$i,
                             new CodeLocation($this->getSource(), $expr)
                         ) === false) {
                             return false;
