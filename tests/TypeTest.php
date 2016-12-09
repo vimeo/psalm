@@ -1315,13 +1315,10 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         echo $var;
         ');
-
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-
-        $return_stmt = array_pop($stmts);
-
-        $this->assertSame('int|string', (string) $return_stmt->exprs[0]->inferredType);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
 
     public function testTypeMixedAdjustment()
@@ -1337,13 +1334,10 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         echo $var;
         ');
-
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-
-        $return_stmt = array_pop($stmts);
-
-        $this->assertSame('int|string', (string) $return_stmt->exprs[0]->inferredType);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
 
     public function testTypeAdjustmentIfNull()
@@ -1357,16 +1351,11 @@ class TypeTest extends PHPUnit_Framework_TestCase
         if ($var === null) {
             $var = new B;
         }
-
-        echo $var;
         ');
-
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-
-        $return_stmt = array_pop($stmts);
-
-        $this->assertSame('A|B', (string) $return_stmt->exprs[0]->inferredType);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('A|B', (string) $context->vars_in_scope['$var']);
     }
 
     public function testWhileTrue()
@@ -1668,46 +1657,6 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check();
-    }
-
-    public function testAssignInIf()
-    {
-        $stmts = self::$parser->parse('<?php
-        if ($row = (rand(0, 10) ? [5] : null)) {
-            echo $row[0];
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-    }
-
-    public function testAssignInElseIf()
-    {
-        $stmts = self::$parser->parse('<?php
-        if (rand(0, 10) > 5) {
-            echo "hello";
-        } elseif ($row = (rand(0, 10) ? [5] : null)) {
-            echo $row[0];
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-    }
-
-    public function testIfNotEqualFalse()
-    {
-        $this->markTestIncomplete('This currently fails');
-        $stmts = self::$parser->parse('<?php
-        if (($row = rand(0,10) ? [] : false) !== false) {
-           $row[0] = "good";
-           echo $row[0];
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
 }

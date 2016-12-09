@@ -331,20 +331,40 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     public function testAssignmentInIf()
     {
         $stmts = self::$parser->parse('<?php
-        class A {
-            /** @return bool */
-            public static function bar() {
-                return true;
-            }
+        if (!($row = (rand(0, 10) ? [5] : null))) {
+            // do nothing
+        }
+        else {
+            echo $row[0];
+        }
 
-            /** @return void */
-            public function baz() {
-                if (!($a = A::bar())) {
-                    return;
-                }
+        ');
 
-                echo $a;
-            }
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testAssignInElseIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (rand(0, 10) > 5) {
+            echo "hello";
+        } elseif ($row = (rand(0, 10) ? [5] : null)) {
+            echo $row[0];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testIfNotEqualFalse()
+    {
+        $this->markTestIncomplete('This currently fails');
+        $stmts = self::$parser->parse('<?php
+        if (($row = rand(0,10) ? [] : false) !== false) {
+           $row[0] = "good";
+           echo $row[0];
         }
         ');
 
@@ -356,7 +376,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         if (preg_match("/bad/", "badger", $matches)) {
-            echo $matches[0];
+            echo (string)$matches[0];
         }
         ');
 
@@ -370,7 +390,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         if (!preg_match("/bad/", "badger", $matches)) {
             exit();
         }
-        echo $matches[0];
+        echo (string)$matches[0];
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -382,7 +402,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         $a = true;
         if ($a && preg_match("/bad/", "badger", $matches)) {
-            echo $matches[0];
+            echo (string)$matches[0];
         }
         ');
 
@@ -432,6 +452,10 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         class A {
             /** @var A|null */
             public $foo;
+
+            public function __toString() : string {
+                return "boop";
+            }
         }
 
         $a = rand(0, 10) === 5 ? new A() : null;
