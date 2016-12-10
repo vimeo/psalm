@@ -79,7 +79,7 @@ abstract class SourceChecker implements StatementsSource
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
                     $this->aliased_classes[strtolower($use->alias)] = $use_path;
-                    $this->aliased_classes_flipped[$use_path] = strtolower($use->alias);
+                    $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
                     break;
             }
         }
@@ -107,7 +107,7 @@ abstract class SourceChecker implements StatementsSource
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
                     $this->aliased_classes[strtolower($use->alias)] = $use_path;
-                    $this->aliased_classes_flipped[$use_path] = strtolower($use->alias);
+                    $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
                     break;
             }
         }
