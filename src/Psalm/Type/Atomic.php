@@ -43,8 +43,8 @@ class Atomic extends Type
             return array_pop($class_parts);
         }
 
-        if (isset($aliased_classes[$this->value])) {
-            return $aliased_classes[$this->value];
+        if (isset($aliased_classes[strtolower($this->value)])) {
+            return $aliased_classes[strtolower($this->value)];
         }
 
         if ($this->isObjectType()) {
