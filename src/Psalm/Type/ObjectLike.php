@@ -92,4 +92,11 @@ class ObjectLike extends Atomic
 
         return Type::combineTypes($all_types);
     }
+
+    public function __clone()
+    {
+        foreach ($this->properties as $key => &$property) {
+            $property = clone $property;
+        }
+    }
 }

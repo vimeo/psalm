@@ -86,4 +86,11 @@ class Generic extends Atomic
                 ) .
                 '>';
     }
+
+    public function __clone()
+    {
+        foreach ($this->type_params as &$type_param) {
+            $type_param = clone $type_param;
+        }
+    }
 }

@@ -660,9 +660,12 @@ class FetchChecker
             $statements_checker->getAliasedClasses()
         );
 
-        $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
-            ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
-            : null;
+        $keyed_array_var_id = ExpressionChecker::getArrayVarId(
+            $stmt,
+            $statements_checker->getFQCLN(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
 
         if ($stmt->dim && ExpressionChecker::check($statements_checker, $stmt->dim, $context) === false) {
             return false;

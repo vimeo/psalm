@@ -923,7 +923,11 @@ class ExpressionChecker
                 $stmt->dim instanceof PhpParser\Node\Scalar\LNumber)
         ) {
             $root_var_id = self::getArrayVarId($stmt->var, $this_class_name, $namespace, $aliased_classes);
-            return $root_var_id ? $root_var_id . '[\'' . $stmt->dim->value . '\']' : null;
+            $offset = $stmt->dim instanceof PhpParser\Node\Scalar\String_
+                ? '\'' . $stmt->dim->value . '\''
+                : $stmt->dim->value;
+
+            return $root_var_id ? $root_var_id . '[' . $offset . ']' : null;
         }
 
         return self::getVarId($stmt, $this_class_name, $namespace, $aliased_classes);
