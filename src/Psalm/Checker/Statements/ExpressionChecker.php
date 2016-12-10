@@ -965,7 +965,13 @@ class ExpressionChecker
                 );
             }
 
-            $return_type->value = $calling_class;
+            if ($return_type->value === 'static' || !$method_id) {
+                $return_type->value = $calling_class;
+            } else {
+                $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+
+                $return_type->value = explode('::', (string)$declaring_method_id)[0];
+            }
         } elseif ($return_type->value[0] === '$' && $method_id) {
             $method_params = MethodChecker::getMethodParams($method_id);
 
