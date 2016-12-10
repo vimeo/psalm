@@ -1081,6 +1081,10 @@ class TypeChecker
                 ? clone $existing_types[$key]
                 : self::getValueForKey($key, $existing_types);
 
+            if ($result_type && empty($result_type->types)) {
+                throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
+            }
+
             foreach ($new_type_parts as $new_type_part) {
                 $result_type = self::reconcileTypes(
                     (string) $new_type_part,
@@ -1194,9 +1198,9 @@ class TypeChecker
                     )) {
                         return false;
                     }
-
-                    return Type::getMixed();
                 }
+
+                return Type::getMixed();
             }
 
             return $existing_var_type;
@@ -1304,7 +1308,7 @@ class TypeChecker
      */
     protected static function getArrayValueForKey($key, array &$existing_keys)
     {
-        $key_parts = preg_split('/(\'\]|\[\')/', $key, -1, PREG_SPLIT_NO_EMPTY);
+        $key_parts = preg_split('/(\]|\[)/', $key, -1, PREG_SPLIT_NO_EMPTY);
 
         if (count($key_parts) === 1) {
             return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
@@ -1319,30 +1323,35 @@ class TypeChecker
 
         // for an expression like $obj->key1->key2
         for ($i = 1; $i < count($key_parts); $i++) {
-            $new_base_key = $base_key . '[\'' . $key_parts[$i] . '\']';
+            $new_base_key = $base_key . '[' . $key_parts[$i] . ']';
 
             if (!isset($existing_keys[$new_base_key])) {
                 /** @var Type\Union|null */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
-                    if (!$existing_key_type_part->isObjectLike()) {
+                    if ($existing_key_type_part instanceof Type\Generic) {
+                        $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
+                    } elseif (!$existing_key_type_part instanceof Type\ObjectLike) {
                         return null;
-                    }
+                    } else {
+                        $array_properties = $existing_key_type_part->properties;
 
-                    /** @var Type\ObjectLike $existing_key_type_part */
-                    $array_properties = $existing_key_type_part->properties;
+                        $key_parts_key = str_replace('\'', '', $key_parts[$i]);
 
-                    if (!isset($array_properties[$key_parts[$i]])) {
-                        return null;
+                        if (!isset($array_properties[$key_parts_key])) {
+                            return null;
+                        }
+
+                        $new_base_type_candidate = clone $array_properties[$key_parts_key];
                     }
 
                     if (!$new_base_type) {
-                        $new_base_type = clone $array_properties[$key_parts[$i]];
+                        $new_base_type = $new_base_type_candidate;
                     } else {
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
-                            clone $array_properties[$key_parts[$i]]
+                            $new_base_type_candidate
                         );
                     }
 
