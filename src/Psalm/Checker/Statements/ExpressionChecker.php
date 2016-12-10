@@ -919,7 +919,8 @@ class ExpressionChecker
         array $aliased_classes
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch &&
-            $stmt->dim instanceof PhpParser\Node\Scalar\String_
+            ($stmt->dim instanceof PhpParser\Node\Scalar\String_ ||
+                $stmt->dim instanceof PhpParser\Node\Scalar\LNumber)
         ) {
             $root_var_id = self::getArrayVarId($stmt->var, $this_class_name, $namespace, $aliased_classes);
             return $root_var_id ? $root_var_id . '[\'' . $stmt->dim->value . '\']' : null;
