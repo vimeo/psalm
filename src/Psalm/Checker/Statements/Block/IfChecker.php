@@ -112,7 +112,7 @@ class IfChecker
                 TypeChecker::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($statements_checker->getSource(), $stmt->cond),
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -139,7 +139,7 @@ class IfChecker
             $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
-                new CodeLocation($statements_checker->getSource(), $stmt),
+                new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -283,7 +283,7 @@ class IfChecker
             $outer_context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $outer_context->vars_in_scope,
-                new CodeLocation($statements_checker->getSource(), $stmt),
+                new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -351,7 +351,7 @@ class IfChecker
             $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
-                new CodeLocation($statements_checker->getSource(), $elseif),
+                new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -416,7 +416,7 @@ class IfChecker
             $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
-                new CodeLocation($statements_checker->getSource(), $elseif),
+                new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
 
