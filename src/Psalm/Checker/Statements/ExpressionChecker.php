@@ -1183,7 +1183,7 @@ class ExpressionChecker
         $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
             $reconcilable_if_types,
             $t_if_context->vars_in_scope,
-            new CodeLocation($statements_checker->getSource(), $stmt),
+            new CodeLocation($statements_checker->getSource(), $stmt->cond),
             $statements_checker->getSuppressedIssues()
         );
 
@@ -1207,7 +1207,7 @@ class ExpressionChecker
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
-                new CodeLocation($statements_checker->getSource(), $stmt),
+                new CodeLocation($statements_checker->getSource(), $stmt->else),
                 $statements_checker->getSuppressedIssues()
             );
 
