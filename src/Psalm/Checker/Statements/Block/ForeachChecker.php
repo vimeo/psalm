@@ -174,10 +174,6 @@ class ForeachChecker
             $statements_checker->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
         }
 
-        if ($value_type && $value_type instanceof Type\Atomic) {
-            $value_type = new Type\Union([$value_type]);
-        }
-
         if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->valueVar->vars as $var) {
                 if ($var && $var instanceof PhpParser\Node\Expr\Variable) {

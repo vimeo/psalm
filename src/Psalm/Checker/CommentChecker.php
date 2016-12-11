@@ -229,6 +229,7 @@ class CommentChecker
             $line_number++;
         }
 
+        /** @var int|false */
         $last = false;
         foreach ($lines as $k => $line) {
             if (preg_match('/^\s?@\w/i', $line)) {

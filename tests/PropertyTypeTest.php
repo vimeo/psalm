@@ -64,7 +64,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
             public $foo;
         }
 
-        $a = null;
+        $a = rand(0, 10) ? new A() : (rand(0, 10) ? new B() : null);
         $b = null;
 
         if ($a instanceof A || $a instanceof B) {
@@ -90,7 +90,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
             public $foo;
         }
 
-        $a = null;
+        $a = rand(0, 10) ? new A() : new B();
         $b = null;
 
         if (rand(0, 10) === 4) {

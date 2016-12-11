@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\TypeChecker;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
@@ -1002,125 +1003,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * Does the input param type match the given param type
-     *
-     * @param  Type\Union $input_type
-     * @param  Type\Union $param_type
-     * @param  bool       &$has_scalar_match
-     * @param  bool       &$type_coerced    whether or not there was type coercion involved
-     * @return bool
-     */
-    public static function doesParamMatch(
-        Type\Union $input_type,
-        Type\Union $param_type,
-        &$has_scalar_match = null,
-        &$type_coerced = null
-    ) {
-        $has_scalar_match = true;
-
-        if ($param_type->isMixed()) {
-            return true;
-        }
-
-        $type_match_found = false;
-        $has_type_mismatch = false;
-
-        foreach ($input_type->types as $input_type_part) {
-            if ($input_type_part->isNull()) {
-                continue;
-            }
-
-            $type_match_found = false;
-            $scalar_type_match_found = false;
-
-            foreach ($param_type->types as $param_type_part) {
-                if ($param_type_part->isNull()) {
-                    continue;
-                }
-
-                if ($input_type_part->value === $param_type_part->value ||
-                    ClassChecker::classExtendsOrImplements($input_type_part->value, $param_type_part->value) ||
-                    ExpressionChecker::isMock($input_type_part->value)
-                ) {
-                    $type_match_found = true;
-                    break;
-                }
-
-                if ($input_type_part->value === 'false' && $param_type_part->value === 'bool') {
-                    $type_match_found = true;
-                }
-
-                if ($input_type_part->value === 'int' && $param_type_part->value === 'float') {
-                    $type_match_found = true;
-                }
-
-                if ($input_type_part->value === 'Closure' && $param_type_part->value === 'callable') {
-                    $type_match_found = true;
-                }
-
-                if ($param_type_part->isNumeric() && $input_type_part->isNumericType()) {
-                    $type_match_found = true;
-                }
-
-                if ($param_type_part->isGenericArray() && $input_type_part->isObjectLike()) {
-                    $type_match_found = true;
-                }
-
-                if ($param_type_part->isScalar() && $input_type_part->isScalarType()) {
-                    $type_match_found = true;
-                }
-
-                if ($param_type_part->isString() && $input_type_part->isObjectType()) {
-                    // check whether the object has a __toString method
-                    if (MethodChecker::methodExists($input_type_part->value . '::__toString')) {
-                        $type_match_found = true;
-                    }
-                }
-
-                if ($param_type_part->isCallable() &&
-                    ($input_type_part->value === 'string' || $input_type_part->value === 'array')
-                ) {
-                    // @todo add value checks if possible here
-                    $type_match_found = true;
-                }
-
-                if ($input_type_part->isNumeric()) {
-                    if ($param_type_part->isNumericType()) {
-                        $scalar_type_match_found = true;
-                    }
-                }
-
-                if ($input_type_part->isScalarType() || $input_type_part->isScalar()) {
-                    if ($param_type_part->isScalarType()) {
-                        $scalar_type_match_found = true;
-                    }
-                } elseif ($param_type_part->isObject() &&
-                    !$input_type_part->isArray() &&
-                    !$input_type_part->isResource()
-                ) {
-                    $type_match_found = true;
-                }
-
-                if (ClassChecker::classExtendsOrImplements($param_type_part->value, $input_type_part->value)) {
-                    $type_coerced = true;
-                    $type_match_found = true;
-                    break;
-                }
-            }
-
-            if (!$type_match_found) {
-                if (!$scalar_type_match_found) {
-                    $has_scalar_match = false;
-                }
-
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * @param  string                       $method_id
      * @param  array<PhpParser\Node\Arg>    $args
      * @param  string                       $file_name
@@ -1196,7 +1078,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     continue;
                 }
 
-                if (FunctionLikeChecker::doesParamMatch($arg->value->inferredType, $param_type)) {
+                if (TypeChecker::isContainedBy($arg->value->inferredType, $param_type)) {
                     continue;
                 }
 
