@@ -175,10 +175,6 @@ class ForeachChecker
             $statements_checker->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
         }
 
-        if ($value_type && $value_type instanceof Type\Atomic) {
-            $value_type = new Type\Union([$value_type]);
-        }
-
         AssignmentChecker::check(
             $statements_checker,
             $stmt->valueVar,

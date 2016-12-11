@@ -90,16 +90,6 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject'))
-        );
-
-        $this->assertEquals(
-            'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject|false'))
-        );
-
-        $this->assertEquals(
-            'null',
             (string) TypeChecker::reconcileTypes('null', Type::parseString('mixed'))
         );
     }
@@ -161,12 +151,22 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testAllMixed()
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeDoesNotContainType
+     */
+    public function testMakeNonNullableNull()
     {
-        $this->assertEquals(
-            'mixed',
-            (string) TypeChecker::reconcileTypes('mixed', Type::parseString('mixed'))
-        );
+        $stmts = self::$parser->parse('<?php
+        class A { }
+        $a = new A();
+        if ($a === null) {
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
     }
 
     public function testNotInstanceOf()

@@ -10,6 +10,7 @@ use Psalm\Checker\MethodChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TraitChecker;
+use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -1013,9 +1014,10 @@ class CallChecker
                             continue;
                         }
 
-                        $type_match_found = FunctionLikeChecker::doesParamMatch(
+                        $type_match_found = TypeChecker::isContainedBy(
                             $input_type,
                             $closure_param_type,
+                            false,
                             $scalar_type_match_found,
                             $coerced_type
                         );
@@ -1150,9 +1152,10 @@ class CallChecker
             }
         }
 
-        $type_match_found = FunctionLikeChecker::doesParamMatch(
+        $type_match_found = TypeChecker::isContainedBy(
             $input_type,
             $param_type,
+            true,
             $scalar_type_match_found,
             $coerced_type
         );

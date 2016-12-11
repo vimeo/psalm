@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\FailedTypeResolution;
+use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -348,7 +349,7 @@ class TypeChecker
                     }
 
                     if ($var_name) {
-                        if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                             $if_types[$var_name] = 'false';
                         } else {
                             // we do this because == null gives us a weaker idea than === null
@@ -386,7 +387,7 @@ class TypeChecker
                     );
 
                     if ($var_name) {
-                        $if_types[$var_name] = 'null';
+                        $if_types[$var_name] = 'isset';
                     }
                 }
             }
@@ -598,7 +599,7 @@ class TypeChecker
                 }
 
                 if ($var_name) {
-                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                         $if_types[$var_name] = '!false';
                     } else {
                         $if_types[$var_name] = '!empty';
@@ -654,7 +655,7 @@ class TypeChecker
                 );
 
                 if ($var_name) {
-                    $if_types[$var_name] = '!null';
+                    $if_types[$var_name] = '!isset';
                 }
             }
         }
@@ -1162,10 +1163,6 @@ class TypeChecker
             return $existing_var_type;
         }
 
-        if ($new_var_type === 'null') {
-            return Type::getNull();
-        }
-
         if ($new_var_type[0] === '!') {
             if ($new_var_type === '!object' && !$existing_var_type->isMixed()) {
                 $non_object_types = [];
@@ -1181,7 +1178,7 @@ class TypeChecker
                 }
             }
 
-            if (in_array($new_var_type, ['!empty', '!null'])) {
+            if (in_array($new_var_type, ['!empty', '!null', '!isset'])) {
                 $existing_var_type->removeType('null');
 
                 if ($new_var_type === '!empty') {
@@ -1246,7 +1243,159 @@ class TypeChecker
             }
         }
 
-        return Type::parseString($new_var_type);
+        if ($new_var_type === 'isset') {
+            return Type::getNull();
+        }
+
+        $new_type = Type::parseString($new_var_type);
+
+        if ($existing_var_type->isMixed()) {
+            return $new_type;
+        }
+
+        if (!TypeChecker::isContainedBy($new_type, $existing_var_type) && $code_location) {
+            if (IssueBuffer::accepts(
+                new TypeDoesNotContainType(
+                    'Cannot resolve types for ' . $key . ' - ' . $existing_var_type . ' does not contain ' . $new_type,
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
+            }
+        }
+
+        return $new_type;
+    }
+
+/**
+     * Does the input param type match the given param type
+     *
+     * @param  Type\Union $input_type
+     * @param  Type\Union $container_type
+     * @param  bool       $ignore_null
+     * @param  bool       &$has_scalar_match
+     * @param  bool       &$type_coerced    whether or not there was type coercion involved
+     * @return bool
+     */
+    public static function isContainedBy(
+        Type\Union $input_type,
+        Type\Union $container_type,
+        $ignore_null = false,
+        &$has_scalar_match = null,
+        &$type_coerced = null
+    ) {
+        $has_scalar_match = true;
+
+        if ($container_type->isMixed()) {
+            return true;
+        }
+
+        $type_match_found = false;
+        $has_type_mismatch = false;
+
+        foreach ($input_type->types as $input_type_part) {
+            if ($input_type_part->isNull() && $ignore_null) {
+                continue;
+            }
+
+            $type_match_found = false;
+            $scalar_type_match_found = false;
+
+            foreach ($container_type->types as $container_type_part) {
+                if ($container_type_part->isNull() && $ignore_null) {
+                    continue;
+                }
+
+                if ($input_type_part->value === $container_type_part->value ||
+                    ClassChecker::classExtendsOrImplements($input_type_part->value, $container_type_part->value) ||
+                    ExpressionChecker::isMock($input_type_part->value)
+                ) {
+                    $type_match_found = true;
+                    break;
+                }
+
+                if ($input_type_part->value === 'false' && $container_type_part->value === 'bool') {
+                    $type_match_found = true;
+                }
+
+                if ($input_type_part->value === 'int' && $container_type_part->value === 'float') {
+                    $type_match_found = true;
+                }
+
+                if ($input_type_part->value === 'Closure' && $container_type_part->value === 'callable') {
+                    $type_match_found = true;
+                }
+
+                if ($container_type_part->isNumeric() && $input_type_part->isNumericType()) {
+                    $type_match_found = true;
+                }
+
+                if ($container_type_part->isGenericArray() && $input_type_part->isObjectLike()) {
+                    $type_match_found = true;
+                }
+
+                if ($container_type_part->isIterable() &&
+                    (
+                        $input_type_part->isArray() ||
+                        ClassChecker::classExtendsOrImplements($input_type_part->value, 'Traversable')
+                    )
+                ) {
+                    $type_match_found = true;
+                }
+
+                if ($container_type_part->isScalar() && $input_type_part->isScalarType()) {
+                    $type_match_found = true;
+                }
+
+                if ($container_type_part->isString() && $input_type_part->isObjectType()) {
+                    // check whether the object has a __toString method
+                    if (MethodChecker::methodExists($input_type_part->value . '::__toString')) {
+                        $type_match_found = true;
+                    }
+                }
+
+                if ($container_type_part->isCallable() &&
+                    ($input_type_part->value === 'string' || $input_type_part->value === 'array')
+                ) {
+                    // @todo add value checks if possible here
+                    $type_match_found = true;
+                }
+
+                if ($input_type_part->isNumeric()) {
+                    if ($container_type_part->isNumericType()) {
+                        $scalar_type_match_found = true;
+                    }
+                }
+
+                if ($input_type_part->isScalarType() || $input_type_part->isScalar()) {
+                    if ($container_type_part->isScalarType()) {
+                        $scalar_type_match_found = true;
+                    }
+                } elseif ($container_type_part->isObject() &&
+                    !$input_type_part->isArray() &&
+                    !$input_type_part->isResource()
+                ) {
+                    $type_match_found = true;
+                }
+
+                if (ClassChecker::classExtendsOrImplements($container_type_part->value, $input_type_part->value)) {
+                    $type_coerced = true;
+                    $type_match_found = true;
+                    break;
+                }
+            }
+
+            if (!$type_match_found) {
+                if (!$scalar_type_match_found) {
+                    $has_scalar_match = false;
+                }
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1273,6 +1422,7 @@ class TypeChecker
             $new_base_key = $base_key . '->' . $key_parts[$i];
 
             if (!isset($existing_keys[$new_base_key])) {
+                /** @var null|Type\Union */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {

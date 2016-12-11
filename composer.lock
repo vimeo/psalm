@@ -4,21 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "11441a18f0cfe84a623e41d06913af49",
-    "content-hash": "1922cc6635c63bfa5cf5efac8b57e44a",
+    "hash": "388130e1e8fbae6b9998981593ede881",
+    "content-hash": "dc7c43d263dbc2c21eb204be11c4b80e",
     "packages": [
         {
             "name": "nikic/php-parser",
-            "version": "v3.0.1",
+            "version": "v3.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "aa6aec90e11a7a4e7d44129c7cb5422ffd15939e"
+                "reference": "adf44419c0fc014a0f191db6f89d3e55d4211744"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/aa6aec90e11a7a4e7d44129c7cb5422ffd15939e",
-                "reference": "aa6aec90e11a7a4e7d44129c7cb5422ffd15939e",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/adf44419c0fc014a0f191db6f89d3e55d4211744",
+                "reference": "adf44419c0fc014a0f191db6f89d3e55d4211744",
                 "shasum": ""
             },
             "require": {
@@ -56,7 +56,7 @@
                 "parser",
                 "php"
             ],
-            "time": "2016-12-01 12:37:30"
+            "time": "2016-12-06 11:30:35"
         }
     ],
     "packages-dev": [
