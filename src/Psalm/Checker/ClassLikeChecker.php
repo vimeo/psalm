@@ -92,6 +92,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected static $class_methods = [];
 
     /**
+     * A lookup table of all public methods on a given class
+     *
+     * @var array<string,array<string,bool>>
+     */
+    protected static $public_class_methods = [];
+
+    /**
+     * A lookup table of all protected methods on a given class
+     *
+     * @var array<string,array<string,bool>>
+     */
+    protected static $protected_class_methods = [];
+
+    /**
      * A lookup table of cached ClassLikeCheckers
      *
      * @var array<string,self>
@@ -266,6 +280,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
 
         self::$class_methods[$this->fq_class_name] = [];
+
+        self::$public_class_methods[$this->fq_class_name] = [];
+        self::$protected_class_methods[$this->fq_class_name] = [];
 
         self::$public_class_properties[$this->fq_class_name] = [];
         self::$protected_class_properties[$this->fq_class_name] = [];
@@ -555,6 +572,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         self::$class_methods[$class_context->self][strtolower($stmt->name)] = true;
+
+        if ($stmt->isPublic()) {
+            self::$public_class_methods[$class_context->self][strtolower($stmt->name)] = true;
+        } elseif ($stmt->isProtected()) {
+            self::$protected_class_methods[$class_context->self][strtolower($stmt->name)] = true;
+        }
     }
 
     /**
@@ -1143,6 +1166,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         );
 
         self::$class_methods[$class_name] = [];
+        self::$protected_class_methods[$class_name] = [];
+        self::$public_class_methods[$class_name] = [];
 
         /** @var \ReflectionMethod $reflection_method */
         foreach ($reflection_methods as $reflection_method) {
@@ -1155,12 +1180,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 );
 
                 self::$class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
+                self::$public_class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
             }
 
             if (!$reflection_method->isAbstract() &&
                 $reflection_method->getDeclaringClass()->getName() === $class_name
             ) {
                 self::$class_methods[$class_name][strtolower((string)$reflection_method->getName())] = true;
+                self::$public_class_methods[$class_name][strtolower((string)$reflection_method->getName())] = true;
             }
         }
     }
@@ -1171,17 +1198,32 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected function registerInheritedMethods($parent_class)
     {
-        $class_methods = self::$class_methods[$parent_class];
+        $public_class_methods = self::$public_class_methods[$parent_class];
 
-        foreach ($class_methods as $method_name => $_) {
+        foreach ($public_class_methods as $method_name => $_) {
             $parent_method_id = $parent_class . '::' . $method_name;
             /** @var string */
             $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
             $implemented_method_id = $this->fq_class_name . '::' . $method_name;
 
-            if (!isset(self::$class_methods[$this->fq_class_name][$method_name])) {
+            if (!isset(self::$public_class_methods[$this->fq_class_name][$method_name])) {
                 MethodChecker::setDeclaringMethodId($implemented_method_id, $declaring_method_id);
-                self::$class_methods[$this->fq_class_name][$method_name] = true;
+                self::$public_class_methods[$this->fq_class_name][$method_name] = true;
+                MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
+            }
+        }
+
+        $protected_class_methods = self::$protected_class_methods[$parent_class];
+
+        foreach ($protected_class_methods as $method_name => $_) {
+            $parent_method_id = $parent_class . '::' . $method_name;
+            /** @var string */
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
+            $implemented_method_id = $this->fq_class_name . '::' . $method_name;
+
+            if (!isset(self::$protected_class_methods[$this->fq_class_name][$method_name])) {
+                MethodChecker::setDeclaringMethodId($implemented_method_id, $declaring_method_id);
+                self::$protected_class_methods[$this->fq_class_name][$method_name] = true;
                 MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
             }
         }
@@ -1445,6 +1487,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         self::$method_checkers = [];
 
         self::$class_methods = [];
+        self::$protected_class_methods = [];
+        self::$public_class_methods = [];
 
         self::$class_checkers = [];
 
