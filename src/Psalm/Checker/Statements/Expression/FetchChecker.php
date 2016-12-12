@@ -245,11 +245,23 @@ class FetchChecker
             if (!$class_properties || !isset($class_properties[$stmt->name])) {
                 $stmt->inferredType = Type::getMixed();
 
+                $all_class_properties = ClassLikeChecker::getInstancePropertiesForClass(
+                    $lhs_type_part->value,
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
                 if ($var_id) {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
                 }
 
-                if ($stmt_var_id === '$this') {
+                if ($all_class_properties && isset($all_class_properties[$stmt->name])) {
+                    IssueBuffer::add(
+                        new InaccessibleProperty(
+                            'Property ' . $var_id . ' is not visible in this context',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        )
+                    );
+                } elseif ($stmt_var_id === '$this') {
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
