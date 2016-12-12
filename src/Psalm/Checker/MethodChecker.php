@@ -385,7 +385,7 @@ class MethodChecker extends FunctionLikeChecker
 
                 if ($config->use_docblock_types) {
                     if ($docblock_info->return_type) {
-                        $return_type = Type::parseString(
+                        $docblock_return_type = Type::parseString(
                             $this->fixUpLocalType(
                                 (string)$docblock_info->return_type,
                                 $this->fq_class_name,
@@ -396,6 +396,19 @@ class MethodChecker extends FunctionLikeChecker
 
                         if (!$return_type_location) {
                             $return_type_location = new CodeLocation($this->getSource(), $method, true);
+                        }
+
+                        if ($return_type && !TypeChecker::hasIdenticalTypes($return_type, $docblock_return_type)) {
+                            if (IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    'Docblock return type does not match method return type for ' . $this->getMethodId(),
+                                    new CodeLocation($this, $method, true)
+                                )
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            $return_type = $docblock_return_type;
                         }
 
                         $return_type_location->setCommentLine($docblock_info->return_type_line_number);
@@ -715,6 +728,7 @@ class MethodChecker extends FunctionLikeChecker
         self::$method_files = [];
         self::$method_params = [];
         self::$cased_method_ids = [];
+        self::$deprecated_methods = [];
         self::$method_namespaces = [];
         self::$method_return_types = [];
         self::$method_return_type_locations = [];

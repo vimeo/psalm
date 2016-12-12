@@ -275,7 +275,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                     if ($config->use_docblock_types) {
                         if ($docblock_info->return_type) {
-                            $closure_return_type =
+                            $closure_docblock_return_type =
                                 Type::parseString(
                                     self::fixUpLocalType(
                                         (string)$docblock_info->return_type,
@@ -291,6 +291,21 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                     $this->function,
                                     true
                                 );
+                            }
+
+                            if ($closure_return_type &&
+                                !TypeChecker::isContainedBy($closure_return_type, $closure_docblock_return_type)
+                            ) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidDocblock(
+                                        'Docblock return type does not match closure return type ' . $this->getMethodId(),
+                                        new CodeLocation($this, $this->function, true)
+                                    )
+                                )) {
+                                    return false;
+                                }
+                            } else {
+                                $closure_return_type = $closure_docblock_return_type;
                             }
 
                             $closure_return_type_location->setCommentLine($docblock_info->return_type_line_number);
@@ -695,10 +710,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
+            $inferred_return_type = ExpressionChecker::fleshOutTypes(
+                $inferred_return_type,
+                [],
+                $this->fq_class_name,
+                ''
+            );
+
             if (!TypeChecker::hasIdenticalTypes(
                 $declared_return_type,
-                $inferred_return_type,
-                $this->fq_class_name
+                $inferred_return_type
             )) {
                 if ($update_docblock) {
                     if (!in_array('InvalidReturnType', $this->getSuppressedIssues())) {

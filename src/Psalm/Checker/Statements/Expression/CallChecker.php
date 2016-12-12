@@ -63,7 +63,7 @@ class CallChecker
                 $context->check_consts = false;
             } elseif ($method->parts === ['extract']) {
                 $context->check_variables = false;
-            } elseif ($method->parts === ['var_dump'] || $method->parts === ['die'] || $method->parts === ['exit']) {
+            } elseif ($method->parts === ['var_dump'] || $method->parts === ['shell_exec']) {
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
                         'Unsafe ' . implode('', $method->parts),
@@ -679,8 +679,10 @@ class CallChecker
 
                 if ($stmt->class instanceof PhpParser\Node\Name
                     && $stmt->class->parts[0] !== 'parent'
-                    && $context->self
-                    && ($statements_checker->isStatic() || !ClassChecker::classExtends($context->self, $fq_class_name))
+                    && (!$context->self
+                        || $statements_checker->isStatic()
+                        || !ClassChecker::classExtends($context->self, $fq_class_name)
+                    )
                 ) {
                     if (MethodChecker::checkMethodStatic(
                         $method_id,

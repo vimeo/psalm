@@ -193,6 +193,19 @@ class Union extends Type
     }
 
     /**
+     * @return bool
+     */
+    public function hasScalarType()
+    {
+        return isset($this->types['int']) ||
+            isset($this->types['float']) ||
+            isset($this->types['string']) ||
+            isset($this->types['bool']) ||
+            isset($this->types['false']) ||
+            isset($this->types['numeric']);
+    }
+
+    /**
      * @return boolean
      */
     public function hasResource()

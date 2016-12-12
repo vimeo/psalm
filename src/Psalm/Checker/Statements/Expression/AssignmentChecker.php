@@ -93,6 +93,16 @@ class AssignmentChecker
             }
         }
 
+        if ($var_id === '$this' && IssueBuffer::accepts(
+            new InvalidScope(
+                'Cannot re-assign ' . $var_id,
+                new CodeLocation($statements_checker->getSource(), $assign_var)
+            ),
+            $statements_checker->getSuppressedIssues()
+        )) {
+            return false;
+        }
+
         if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
@@ -764,6 +774,10 @@ class AssignmentChecker
             && isset($context->vars_in_scope[$var_id])
             && $context->vars_in_scope[$var_id]->hasString();
 
+        $has_scalar = $var_id
+            && isset($context->vars_in_scope[$var_id])
+            && $context->vars_in_scope[$var_id]->hasScalarType();
+
         if (ExpressionChecker::check(
             $statements_checker,
             $stmt->var,
@@ -821,6 +835,17 @@ class AssignmentChecker
 
                         break;
                     }
+                }
+            } elseif ($has_scalar) {
+
+                if (IssueBuffer::accepts(
+                    new InvalidArrayAssignment(
+                        'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $context->vars_in_scope[$var_id],
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
                 }
             } else {
                 // we want to support multiple array types:

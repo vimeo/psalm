@@ -1646,10 +1646,9 @@ class TypeChecker
     /**
      * @param  Type\Union $declared_type
      * @param  Type\Union $inferred_type
-     * @param  string     $fq_class_name
      * @return boolean
      */
-    public static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type, $fq_class_name)
+    public static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type)
     {
         if ($declared_type->isMixed() || $inferred_type->isEmpty()) {
             return true;
@@ -1658,8 +1657,6 @@ class TypeChecker
         if ($declared_type->isNullable() !== $inferred_type->isNullable()) {
             return false;
         }
-
-        $inferred_type = ExpressionChecker::fleshOutTypes($inferred_type, [], $fq_class_name, '');
 
         $simple_declared_types = array_filter(
             array_keys($declared_type->types),
@@ -1737,8 +1734,7 @@ class TypeChecker
             foreach ($declared_atomic_type->type_params as $offset => $type_param) {
                 if (!self::hasIdenticalTypes(
                     $declared_atomic_type->type_params[$offset],
-                    $inferred_atomic_type->type_params[$offset],
-                    $fq_class_name
+                    $inferred_atomic_type->type_params[$offset]
                 )) {
                     return false;
                 }
@@ -1768,8 +1764,7 @@ class TypeChecker
 
                 if (!self::hasIdenticalTypes(
                     $type_param,
-                    $inferred_atomic_type->properties[$property_name],
-                    $fq_class_name
+                    $inferred_atomic_type->properties[$property_name]
                 )) {
                     return false;
                 }

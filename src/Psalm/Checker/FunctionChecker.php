@@ -276,7 +276,7 @@ class FunctionChecker extends FunctionLikeChecker
 
                 if ($config->use_docblock_types) {
                     if ($docblock_info->return_type) {
-                        $return_type =
+                        $docblock_return_type =
                             Type::parseString(
                                 self::fixUpLocalType(
                                     (string)$docblock_info->return_type,
@@ -288,6 +288,19 @@ class FunctionChecker extends FunctionLikeChecker
 
                         if (!$return_type_location) {
                             $return_type_location = new CodeLocation($this->getSource(), $function, true);
+                        }
+
+                        if ($return_type && !TypeChecker::isContainedBy($return_type, $docblock_return_type)) {
+                            if (IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    'Docblock return type does not match function return type for ' . $this->getMethodId(),
+                                    new CodeLocation($this, $function, true)
+                                )
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            $return_type = $docblock_return_type;
                         }
 
                         $return_type_location->setCommentLine($docblock_info->return_type_line_number);

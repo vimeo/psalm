@@ -7,7 +7,7 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Issue\InvalidContinue;
+use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -132,7 +132,7 @@ class SwitchChecker
                         );
                     } else {
                         if (IssueBuffer::accepts(
-                            new InvalidContinue(
+                            new ContinueOutsideLoop(
                                 'Continue called when not in loop',
                                 new CodeLocation($statements_checker->getSource(), $case)
                             )
