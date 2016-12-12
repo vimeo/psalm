@@ -491,6 +491,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             self::$public_class_constants[$this->fq_class_name]
         );
 
+        if (isset(self::$used_traits[$parent_class])) {
+            self::$used_traits[$this->fq_class_name] = self::$used_traits[$parent_class];
+        }
+
         return null;
     }
 
