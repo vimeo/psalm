@@ -590,12 +590,16 @@ class MethodChecker extends FunctionLikeChecker
 
         $declared_method_id = self::getDeclaringMethodId($method_id);
 
-        $calling_class = explode('::', (string)$method_id)[0];
-
-        $method_class = explode('::', (string)$declared_method_id)[0];
+        $method_class = explode('::', (string)$method_id)[0];
+        $declaring_method_class = explode('::', (string)$declared_method_id)[0];
         $method_name = explode('::', $method_id)[1];
 
-        if (TraitChecker::traitExists($method_class) && ClassLikeChecker::classUsesTrait($calling_class, $method_class)) {
+        if (TraitChecker::traitExists($declaring_method_class) && ClassLikeChecker::classUsesTrait($method_class, $declaring_method_class)) {
+            return null;
+        }
+
+        // if the calling class is the same, we know the method exists, so it must be visible
+        if ($method_class === $calling_context) {
             return null;
         }
 
@@ -608,7 +612,7 @@ class MethodChecker extends FunctionLikeChecker
             }
         }
 
-        if ($source->getSource() instanceof TraitChecker && $method_class === $source->getFQCLN()) {
+        if ($source->getSource() instanceof TraitChecker && $declaring_method_class === $source->getFQCLN()) {
             return null;
         }
 
@@ -617,7 +621,7 @@ class MethodChecker extends FunctionLikeChecker
                 return null;
 
             case self::VISIBILITY_PRIVATE:
-                if (!$calling_context || $method_class !== $calling_context) {
+                if (!$calling_context || $declaring_method_class !== $calling_context) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access private method ' . MethodChecker::getCasedMethodId($method_id) .
@@ -633,7 +637,7 @@ class MethodChecker extends FunctionLikeChecker
                 return null;
 
             case self::VISIBILITY_PROTECTED:
-                if ($method_class === $calling_context) {
+                if ($declaring_method_class === $calling_context) {
                     return null;
                 }
 
@@ -651,13 +655,13 @@ class MethodChecker extends FunctionLikeChecker
                     return null;
                 }
 
-                if (ClassChecker::classExtends($method_class, $calling_context) &&
+                if (ClassChecker::classExtends($declaring_method_class, $calling_context) &&
                     MethodChecker::methodExists($calling_context . '::' . $method_name)
                 ) {
                     return null;
                 }
 
-                if (!ClassChecker::classExtends($calling_context, $method_class)) {
+                if (!ClassChecker::classExtends($calling_context, $declaring_method_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . MethodChecker::getCasedMethodId($method_id) .
