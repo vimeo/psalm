@@ -495,75 +495,16 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
     }
 
-    public function testInstanceOfStringOffset()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A {
-            public function foo() : void { }
-        }
-        function bar (array $a) : void {
-            if ($a["a"] instanceof A) {
-                $a["a"]->foo();
-            }
-        }
-        ');
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
-        $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
-    }
-
-    public function testInstanceOfIntOffset()
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidArrayAssignment
+     */
+    public function testInvalidArrayAccess()
     {
         $context = new Context('somefile.php');
         $stmts = self::$parser->parse('<?php
-        class A {
-            public function foo() : void { }
-        }
-        function bar (array $a) : void {
-            if ($a[0] instanceof A) {
-                $a[0]->foo();
-            }
-        }
-        ');
-
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
-        $file_checker->check(true, true, $context);
-    }
-
-    public function testNotEmptyStringOffset()
-    {
-        $context = new Context('somefile.php');
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param  array<string>  $a
-         */
-        function bar (array $a) : string {
-            if ($a["bat"]) {
-                return $a["bat"];
-            }
-
-            return "blah";
-        }
-        ');
-
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
-        $file_checker->check(true, true, $context);
-    }
-
-    public function testNotEmptyIntOffset()
-    {
-        $context = new Context('somefile.php');
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param  array<string>  $a
-         */
-        function bar (array $a) : string {
-            if ($a[0]) {
-                return $a[0];
-            }
-
-            return "blah";
-        }
+        $a = 5;
+        $a[0] = 5;
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);

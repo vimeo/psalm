@@ -497,4 +497,38 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$blah']);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     */
+    public function testWrongReturnType1()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo() : string {
+            return 5;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     */
+    public function testWrongReturnType2()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo() : string {
+            return rand(0, 5) ? "hello" : null;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
