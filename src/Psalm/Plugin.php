@@ -23,10 +23,10 @@ abstract class Plugin
     /**
      * Checks a statement
      *
-     * @param  PhpParser\Node       $stmt
-     * @param  Context              $context
-     * @param  CodeLocation         $code_location
-     * @param  array                $suppressed_issues
+     * @param  PhpParser\Node\Stmt|PhpParser\Node\Expr  $stmt
+     * @param  Context                                  $context
+     * @param  CodeLocation                             $code_location
+     * @param  array                                    $suppressed_issues
      * @return null|false
      * @psalm-suppress InvalidReturnType
      */

@@ -171,6 +171,27 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeDoesNotContainType
+     */
+    public function testMakeInstanceOfThingInElseif()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A { }
+        class B { }
+        class C { }
+        $a = rand(0, 10) > 5 ? new A() : new B();
+        if ($a instanceof A) {
+        } elseif ($a instanceof C) {
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage FailedTypeResolution
      */
     public function testFailedTypeResolution()

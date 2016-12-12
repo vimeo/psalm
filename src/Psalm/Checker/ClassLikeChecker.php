@@ -190,6 +190,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected static $property_map;
 
     /**
+     * @var array<string, array<string, bool>>
+     */
+    protected static $used_traits = [];
+
+    /**
      * @param PhpParser\Node\Stmt\ClassLike $class
      * @param StatementsSource              $source
      * @param string                        $fq_class_name
@@ -564,9 +569,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     return false;
                 }
             } else {
-                try {
-                    $reflection_trait = new \ReflectionClass($trait_name);
-                } catch (\ReflectionException $e) {
+                if (!TraitChecker::hasCorrectCase($trait_name)) {
                     if (IssueBuffer::accepts(
                         new UndefinedTrait(
                             'Trait ' . $trait_name . ' has wrong casing',
@@ -580,12 +583,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     continue;
                 }
 
-                /** @var TraitChecker */
-                $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
+                if (isset(self::$class_checkers[$trait_name])) {
+                    /** @var TraitChecker */
+                    $trait_checker = self::$class_checkers[$trait_name];
+                } else {
+                    /** @var TraitChecker */
+                    $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
+                }
 
                 $trait_checker->setMethodMap($method_map);
 
                 $trait_checker->check(false, $class_context);
+
+                ClassLikeChecker::registerTraitUse($this->fq_class_name, $trait_name);
 
                 FileChecker::addFileInheritanceToClass(
                     Config::getInstance()->getBaseDir() . $this->file_name,
@@ -1350,6 +1360,24 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
+     * @param  string $fq_class_name
+     * @param  string $fq_trait_name
+     * @return void
+     */
+    public static function registerTraitUse($fq_class_name, $fq_trait_name)
+    {
+        self::$used_traits[$fq_class_name][$fq_trait_name] = true;
+    }
+
+    /**
+     * @return bool
+     */
+    public static function classUsesTrait($fq_class_name, $fq_trait_name)
+    {
+        return isset(self::$used_traits[$fq_class_name][$fq_trait_name]);
+    }
+
+    /**
      * @return void
      */
     public static function clearCache()
@@ -1384,7 +1412,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         self::$file_classes = [];
 
+        self::$used_traits = [];
+
         ClassChecker::clearCache();
         InterfaceChecker::clearCache();
+        TraitChecker::clearCache();
     }
 }
