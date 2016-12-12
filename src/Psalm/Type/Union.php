@@ -179,7 +179,9 @@ class Union extends Type
      */
     public function hasNumericType()
     {
-        return isset($this->types['int']) || isset($this->types['float']) || isset($this->types['numeric']);
+        return isset($this->types['int']) ||
+            isset($this->types['float']) ||
+            isset($this->types['string']);
     }
 
     /**

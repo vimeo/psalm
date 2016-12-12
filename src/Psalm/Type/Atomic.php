@@ -141,7 +141,7 @@ class Atomic extends Type
      */
     public function isNumericType()
     {
-        return $this->value === 'int' || $this->value === 'float';
+        return $this->value === 'int' || $this->value === 'float' || $this->value === 'string';
     }
 
     /**
