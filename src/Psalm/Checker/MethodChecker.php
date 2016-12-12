@@ -151,6 +151,12 @@ class MethodChecker extends FunctionLikeChecker
         /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
 
+        $method_class = explode('::', $method_id)[0];
+
+        if (!ClassLikeChecker::isUserDefined($method_class) && FunctionChecker::inCallMap($method_id)) {
+            return FunctionChecker::getReturnTypeFromCallMap($method_id);
+        }
+
         if (self::$method_return_types[$method_id]) {
             return clone self::$method_return_types[$method_id];
         }
