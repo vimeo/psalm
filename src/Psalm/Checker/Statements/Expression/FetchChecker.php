@@ -14,7 +14,7 @@ use Psalm\Context;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyFetch;
-use Psalm\Issue\InvisibleProperty;
+use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayOffset;
@@ -568,7 +568,7 @@ class FetchChecker
 
                 if ($all_class_properties && isset($all_class_properties[$stmt->name])) {
                     IssueBuffer::add(
-                        new InvisibleProperty(
+                        new InaccessibleProperty(
                             'Static property ' . $var_id . ' is not visible in this context',
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         )
