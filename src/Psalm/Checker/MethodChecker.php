@@ -577,7 +577,7 @@ class MethodChecker extends FunctionLikeChecker
 
         $declared_method_id = self::getDeclaringMethodId($method_id);
 
-        $method_class = explode('::', $method_id)[0];
+        $method_class = explode('::', (string)$declared_method_id)[0];
         $method_name = explode('::', $method_id)[1];
 
         if (!isset(self::$method_visibility[$declared_method_id])) {
