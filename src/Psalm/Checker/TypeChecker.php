@@ -717,10 +717,6 @@ class TypeChecker
             if ($first_var_name) {
                 $if_types[$first_var_name] = $prefix . 'object';
             }
-        } elseif (self::hasNumericCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = $prefix . 'numeric';
-            }
         } elseif (self::hasIntCheck($expr)) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = $prefix . 'int';
@@ -954,19 +950,6 @@ class TypeChecker
     protected static function hasObjectCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_object']) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param   PhpParser\Node\Expr\FuncCall    $stmt
-     * @return  bool
-     */
-    protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt)
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_numeric']) {
             return true;
         }
 
