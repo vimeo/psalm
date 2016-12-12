@@ -598,6 +598,69 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testAccessiblePrivateMethodFromTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait A {
+            private function foo() : void {
+            }
+        }
+
+        class B {
+            use A;
+
+            public function doFoo() : void {
+                $this->foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testAccessibleProtectedMethodFromTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait A {
+            protected function foo() : void {
+            }
+        }
+
+        class B {
+            use A;
+
+            public function doFoo() : void {
+                $this->foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testAccessiblePublicMethodFromTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait A {
+            public function foo() : void {
+            }
+        }
+
+        class B {
+            use A;
+
+            public function doFoo() : void {
+                $this->foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleProperty

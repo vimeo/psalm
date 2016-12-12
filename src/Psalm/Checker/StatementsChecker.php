@@ -156,10 +156,10 @@ class StatementsChecker
     /**
      * Checks an array of statements for validity
      *
-     * @param  array<PhpParser\Node>        $stmts
-     * @param  Context                      $context
-     * @param  Context|null                 $loop_context
-     * @param  Context|null                 $global_context
+     * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
+     * @param  Context                                          $context
+     * @param  Context|null                                     $loop_context
+     * @param  Context|null                                     $global_context
      * @return null|false
      */
     public function check(array $stmts, Context $context, Context $loop_context = null, Context $global_context = null)

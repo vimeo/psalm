@@ -212,8 +212,6 @@ class FileChecker extends SourceChecker implements StatementsSource
                     if ($check_classes) {
                         $trait_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new TraitChecker($stmt, $this, $stmt->name);
-
-                        $trait_checker->check($check_functions);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_ &&
                     $stmt->name instanceof PhpParser\Node\Name

@@ -13,6 +13,16 @@ class TraitChecker extends ClassLikeChecker
     protected $method_map = [];
 
     /**
+     * @var array<string, string>
+     */
+    protected static $trait_names = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected static $existing_traits = [];
+
+    /**
      * @param   PhpParser\Node\Stmt\ClassLike   $class
      * @param   StatementsSource                $source
      * @param   string                          $fq_class_name
@@ -33,6 +43,8 @@ class TraitChecker extends ClassLikeChecker
         $this->parent_class = null;
 
         $this->suppressed_issues = $source->getSuppressedIssues();
+
+        self::$trait_names[strtolower($this->fq_class_name)] = $this->fq_class_name;
 
         self::$class_checkers[$fq_class_name] = $this;
     }
@@ -80,6 +92,45 @@ class TraitChecker extends ClassLikeChecker
      */
     public static function traitExists($trait_name)
     {
-        return trait_exists($trait_name);
+        if (isset(self::$trait_names[strtolower($trait_name)])) {
+            return true;
+        }
+
+        if (isset(self::$existing_traits[strtolower($trait_name)])) {
+            return self::$existing_traits[strtolower($trait_name)];
+        }
+
+        $trait_exists = trait_exists($trait_name);
+
+        self::$existing_traits[strtolower($trait_name)] = $trait_exists;
+
+        return $trait_exists;
+    }
+
+    /**
+     * @param  string  $trait_name
+     * @return boolean
+     */
+    public static function hasCorrectCase($trait_name)
+    {
+        if (isset(self::$trait_names[strtolower($trait_name)])) {
+            return self::$trait_names[strtolower($trait_name)] === $trait_name;
+        }
+
+        try {
+            $reflection_trait = new \ReflectionClass($trait_name);
+            return $reflection_trait->getName() === $trait_name;
+        } catch (\ReflectionException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$trait_names = [];
+        self::$existing_traits = [];
     }
 }
