@@ -16,6 +16,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
@@ -427,6 +428,18 @@ class ExpressionChecker
                 if (IssueBuffer::accepts(
                     new InvalidStaticVariable(
                         'Invalid reference to $this in a static context',
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                return null;
+            } elseif (!isset($context->vars_in_scope['$this'])) {
+                if (IssueBuffer::accepts(
+                    new InvalidScope(
+                        'Invalid reference to $this in a non-class context',
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
