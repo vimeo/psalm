@@ -774,8 +774,8 @@ class ExpressionChecker
                     $stmt->inferredType = $result_type;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div
-                && $stmt->left->inferredType->hasNumericType()
-                && $stmt->right->inferredType->hasNumericType()
+                && ($stmt->left->inferredType->hasInt() || $stmt->left->inferredType->hasFloat())
+                && ($stmt->right->inferredType->hasInt() || $stmt->right->inferredType->hasFloat())
             ) {
                 $stmt->inferredType = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
             }
