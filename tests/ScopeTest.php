@@ -514,4 +514,201 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleMethod
+     */
+    public function testInaccessiblePrivateMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            private function foo() : void {
+
+            }
+        }
+
+        (new A())->foo();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleMethod
+     */
+    public function testInaccessibleProtectedMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            protected function foo() : void {
+
+            }
+        }
+
+        (new A())->foo();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleMethod
+     */
+    public function testInaccessiblePrivateMethodFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            private function foo() : void {
+
+            }
+        }
+
+        class B extends A {
+            public function doFoo() : void {
+                $this->foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testAccessibleProtectedMethodFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            protected function foo() : void {
+            }
+        }
+
+        class B extends A {
+            public function doFoo() : void {
+                $this->foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleProperty
+     */
+    public function testInaccessiblePrivateProperty()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            private $foo;
+        }
+
+        echo (new A())->foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleProperty
+     */
+    public function testInaccessibleProtectedProperty()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            protected $foo;
+        }
+
+        echo (new A())->foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedThisPropertyFetch
+     */
+    public function testInaccessiblePrivatePropertyFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            private $foo;
+        }
+
+        class B extends A {
+            public function doFoo() : void {
+                echo $this->foo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testAccessibleProtectedPropertyFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            protected $foo;
+        }
+
+        class B extends A {
+            public function doFoo() : void {
+                echo $this->foo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidGlobal
+     */
+    public function testInvalidGlobal()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = "heli";
+
+        global $a;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidStaticVariable
+     */
+    public function testThisInStatic()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public static function foo() {
+                echo $this;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
 }

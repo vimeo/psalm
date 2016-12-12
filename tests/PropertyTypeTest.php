@@ -52,6 +52,58 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyAssignment
+     */
+    public function testBadAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            public $foo;
+
+            public function bar() : void
+            {
+                $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyAssignment
+     */
+    public function testBadAssignmentAsWell()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = "hello";
+        $a->foo = "bar";
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyFetch
+     */
+    public function testBadFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = "hello";
+        echo $a->foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testSharedPropertyInIf()
     {
         $stmts = self::$parser->parse('<?php
