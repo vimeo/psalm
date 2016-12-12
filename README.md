@@ -4,9 +4,8 @@
 
 Psalm is a static analysis tool for finding errors in PHP applications.
 
-Version 0.3.x supports checking PHP 5.4 - 7.1 code, and requires PHP 5.5 and higher to run.
-
-Version 0.2.x supports checking PHP 5.4 - 7.0 code and requires PHP 5.4 and higher to run.
+ - **v0.3.x** supports checking PHP 5.4 - 7.1 code, and requires PHP **5.5+** to run. 
+ - **v0.2.x** supports checking PHP 5.4 - 7.0 code and requires PHP **5.4+** to run.
 
 Check out the [wiki](https://github.com/vimeo/psalm/wiki) or [try a live demo](http://getpsalm.org/)!
 
