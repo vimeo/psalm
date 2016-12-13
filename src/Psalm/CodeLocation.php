@@ -89,6 +89,8 @@ class CodeLocation
             return;
         }
 
+        $this->have_recalculated = true;
+
         $this->selection_start = $this->file_start;
         $this->selection_end = $this->file_end + 1;
 
@@ -96,11 +98,18 @@ class CodeLocation
 
         $file_contents = $project_checker->getFileContents($this->file_path);
 
-        $this->preview_end = (int)strpos(
+        $preview_end = strpos(
             $file_contents,
             "\n",
             $this->single_line ? $this->selection_start : $this->selection_end
         );
+
+        // if the string didn't contain a newline
+        if ($preview_end === false) {
+            $preview_end = $this->selection_end;
+        }
+
+        $this->preview_end = $preview_end;
 
         if ($this->docblock_line_number && $this->preview_start < $this->selection_start) {
             $preview_lines = explode(
@@ -145,6 +154,9 @@ class CodeLocation
             "\n",
             min($this->preview_start, $this->selection_start) - strlen($file_contents)
         ) + 1;
+
+        $this->selection_start = max($this->preview_start, $this->selection_start);
+        $this->selection_end = min($this->preview_end, $this->selection_end);
 
         $this->snippet = substr($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
     }
