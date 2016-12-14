@@ -1228,8 +1228,9 @@ class CallChecker
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
-                return false;
+                // fall through
             }
+            return false;
         }
 
         return true;

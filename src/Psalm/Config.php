@@ -124,7 +124,7 @@ class Config
     /** @var array<string, mixed> */
     protected $predefined_constants;
 
-    private function __construct()
+    protected function __construct()
     {
         self::$config = $this;
     }

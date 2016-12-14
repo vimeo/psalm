@@ -51,44 +51,54 @@ class FileFilter
     protected $inclusive;
 
     /**
+     * @param  bool             $inclusive
+     * @return self
+     * @psalm-suppress FailedTypeResolution
+     */
+    public function __construct($inclusive)
+    {
+        if (!is_bool($inclusive)) {
+            throw new \InvalidArgumentException('Filter arg must be bool');
+        }
+
+        $this->inclusive = $inclusive;
+    }
+
+    /**
      * @param  SimpleXMLElement $e
      * @param  bool             $inclusive
      * @return self
      */
     public static function loadFromXML(SimpleXMLElement $e, $inclusive)
     {
-        $filter = new self();
+        $filter = new self($inclusive);
 
         if ($inclusive) {
-            $filter->inclusive = true;
-
             if ($e->directory) {
                 /** @var \SimpleXMLElement $directory */
                 foreach ($e->directory as $directory) {
-                    $filter->include_dirs[] = self::slashify((string)$directory['name']);
+                    $filter->addIncludeDirectory((string)$directory['name']);
                 }
             }
 
             if ($e->file) {
                 /** @var \SimpleXMLElement $file */
                 foreach ($e->file as $file) {
-                    $filter->include_files[] = $file['name'];
-                    $filter->include_files_lowercase[] = strtolower((string)$file['name']);
+                    $filter->addIncludeFile((string)$file['name']);
                 }
             }
         } else {
             if ($e->directory) {
                 /** @var \SimpleXMLElement $directory */
                 foreach ($e->directory as $directory) {
-                    $filter->exclude_dirs[] = self::slashify((string)$directory['name']);
+                    $filter->addExcludeDirectory((string)$directory['name']);
                 }
             }
 
             if ($e->file) {
                 /** @var \SimpleXMLElement $file */
                 foreach ($e->file as $file) {
-                    $filter->exclude_files[] = (string)$file['name'];
-                    $filter->exclude_files_lowercase[] = strtolower((string)$file['name']);
+                    $filter->addExcludeFile((string)$file['name']);
                 }
             }
         }
@@ -197,19 +207,48 @@ class FileFilter
     }
 
     /**
-     * @return void
+     * @param   string $file_name
+     * @return  void
      */
-    public function makeExclusive()
+    public function addExcludeFile($file_name)
     {
-        $this->inclusive = false;
+        if ($this->inclusive !== false) {
+            throw new \UnexpectedValueException('Cannot add exclude file when filter is not exclusive');
+        }
+
+        $this->exclude_files[] = $file_name;
+        $this->exclude_files_lowercase[] = strtolower($file_name);
     }
 
     /**
      * @param   string $file_name
      * @return  void
      */
-    public function addExcludeFile($file_name)
+    public function addIncludeFile($file_name)
     {
-        $this->exclude_files[] = $file_name;
+        if ($this->inclusive !== true) {
+            throw new \UnexpectedValueException('Cannot add include file when filter is not inclusive');
+        }
+
+        $this->include_files[] = $file_name;
+        $this->include_files_lowercase[] = strtolower($file_name);
+    }
+
+    /**
+     * @param string $dir_name
+     * @return void
+     */
+    public function addExcludeDirectory($dir_name)
+    {
+        $this->exclude_dirs[] = self::slashify($dir_name);
+    }
+
+    /**
+     * @param string $dir_name
+     * @return void
+     */
+    public function addIncludeDirectory($dir_name)
+    {
+        $this->include_dirs[] = self::slashify($dir_name);
     }
 }

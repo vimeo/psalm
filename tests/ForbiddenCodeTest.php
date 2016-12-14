@@ -15,7 +15,7 @@ class ForbiddenCodeTest extends PHPUnit_Framework_TestCase
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = Config::getInstance();
+        $config = new TestConfig();
         $config->throw_exception = true;
         $config->use_docblock_types = true;
     }
