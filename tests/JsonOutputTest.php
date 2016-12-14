@@ -17,7 +17,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
-        $config = Config::getInstance();
+        $config = new TestConfig();
         $config->throw_exception = false;
         $config->cache_directory = null;
         $config->stop_on_first_error = false;

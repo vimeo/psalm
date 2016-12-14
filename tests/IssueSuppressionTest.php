@@ -14,21 +14,13 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = Config::getInstance();
-        $config->throw_exception = true;
-
-        $filter = new Config\FileFilter();
-        $filter->addExcludeFile('somefile.php');
-        $filter->makeExclusive();
-
-        self::$file_filter = $filter;
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
+        $config->throw_exception = true;
         FileChecker::clearCache();
-        Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', null);
     }
 
     public function testUndefinedClass()
@@ -49,5 +41,83 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
+    }
+
+    public function testExcludeFile()
+    {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
+
+        $stmts = self::$parser->parse('<?php
+        foo();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedFunction - somefile.php:2 - Function foo does not exist
+     */
+    public function testIncludeFile()
+    {
+        $filter = new Config\FileFilter(true);
+        $filter->addIncludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
+
+        $stmts = self::$parser->parse('<?php
+        foo();
+        ');
+
+        $file_checker = new FileChecker('someotherfile.php', $stmts);
+        $file_checker->check();
+
+        $stmts = self::$parser->parse('<?php
+        foo();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testExcludeDirectory()
+    {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeDirectory('src');
+        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
+
+        $stmts = self::$parser->parse('<?php
+        foo();
+        ');
+
+        $file_checker = new FileChecker('src/somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedFunction - src2/somefile.php:2 - Function foo does not exist
+     */
+    public function testIncludeDirectory()
+    {
+        $filter = new Config\FileFilter(true);
+        $filter->addIncludeDirectory('src2');
+        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
+
+        (new FileChecker(
+            'src1/somefile.php',
+            self::$parser->parse('<?php
+            foo();
+            ')
+        ))->check();
+
+        (new FileChecker(
+            'src2/somefile.php',
+            self::$parser->parse('<?php
+            foo();
+            ')
+        ))->check();
     }
 }
