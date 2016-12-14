@@ -11,6 +11,7 @@ use Psalm\Type;
 
 class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 {
+    /** @var \PhpParser\Parser */
     protected static $parser;
 
     public static function setUpBeforeClass()
@@ -115,6 +116,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
             (string) TypeChecker::reconcileTypes('empty', Type::parseString('mixed'))
         );
 
+        /** @var Type\Union */
         $reconciled = TypeChecker::reconcileTypes('empty', Type::parseString('bool'));
         $this->assertEquals('false', (string) $reconciled);
         $this->assertInstanceOf('Psalm\Type\Atomic', $reconciled->types['false']);

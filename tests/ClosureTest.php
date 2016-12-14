@@ -9,6 +9,7 @@ use Psalm\Context;
 
 class ClosureTest extends PHPUnit_Framework_TestCase
 {
+    /** @var \PhpParser\Parser */
     protected static $parser;
 
     public static function setUpBeforeClass()

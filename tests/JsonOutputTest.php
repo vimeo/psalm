@@ -11,6 +11,7 @@ use Psalm\IssueBuffer;
 
 class JsonOutputTest extends PHPUnit_Framework_TestCase
 {
+    /** @var \PhpParser\Parser */
     protected static $parser;
 
     public static function setUpBeforeClass()

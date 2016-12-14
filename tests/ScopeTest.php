@@ -8,6 +8,7 @@ use Psalm\Config;
 
 class ScopeTest extends PHPUnit_Framework_TestCase
 {
+    /** @var \PhpParser\Parser */
     protected static $parser;
     protected static $file_filter;
 

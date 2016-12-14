@@ -9,6 +9,7 @@ use Psalm\Context;
 
 class PropertyTypeTest extends PHPUnit_Framework_TestCase
 {
+    /** @var \PhpParser\Parser */
     protected static $parser;
     protected static $file_filter;
 
