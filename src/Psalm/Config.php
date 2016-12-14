@@ -258,6 +258,10 @@ class Config
                 if (isset($issue_handler->excludeFiles)) {
                     $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->excludeFiles, false);
                 }
+
+                if (isset($issue_handler->includeFiles)) {
+                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->includeFiles, true);
+                }
             }
         }
 
