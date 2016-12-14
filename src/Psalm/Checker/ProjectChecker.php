@@ -131,7 +131,7 @@ class ProjectChecker
             FileChecker::touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
-        IssueBuffer::finish(true, (int)$start_checks);
+        IssueBuffer::finish(true, (int)$start_checks, $debug);
     }
 
     /**
@@ -153,7 +153,7 @@ class ProjectChecker
 
         $this->checkDirWithConfig($dir_name, $this->config, $debug, $update_docblocks);
 
-        IssueBuffer::finish();
+        IssueBuffer::finish(false, null, $debug);
     }
 
     /**
