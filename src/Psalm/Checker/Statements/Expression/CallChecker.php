@@ -19,6 +19,7 @@ use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\NullArgument;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\TooFewArguments;
@@ -1143,7 +1144,7 @@ class CallChecker
 
         if ($input_type->isNullable() && !$param_type->isNullable() && $cased_method_id !== 'echo') {
             if (IssueBuffer::accepts(
-                new NullReference(
+                new NullArgument(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be null, possibly ' .
                         'null value provided',
                     $code_location
