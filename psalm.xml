@@ -6,5 +6,56 @@
 >
     <inspectFiles>
         <directory name="src" />
+        <directory name="tests" />
     </inspectFiles>
+
+    <issueHandler>
+        <MissingReturnType>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </MissingReturnType>
+
+        <MissingPropertyType>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </MissingPropertyType>
+
+        <MixedArgument>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </MixedArgument>
+
+        <MixedPropertyFetch>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </MixedPropertyFetch>
+
+        <NoInterfaceProperties>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </NoInterfaceProperties>
+
+        <NullArrayAccess>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </NullArrayAccess>
+
+        <NullPropertyFetch>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </NullPropertyFetch>
+
+        <NullArgument>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </NullArgument>
+    </issueHandler>
 </psalm>
