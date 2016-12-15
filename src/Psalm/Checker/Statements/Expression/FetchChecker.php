@@ -784,6 +784,8 @@ class FetchChecker
             return false;
         }
 
+        $inferred_key_type = null;
+
         if (isset($stmt->var->inferredType)) {
             /** @var Type\Union */
             $var_type = $stmt->var->inferredType;
@@ -807,6 +809,12 @@ class FetchChecker
                                     $key_type = Type::combineUnionTypes($key_type, $type->type_params[0]);
                                 } else {
                                     $key_type = $type->type_params[0];
+                                }
+
+                                if ($inferred_key_type) {
+                                    Type::combineUnionTypes($key_type, $type->type_params[0]);
+                                } else {
+                                    $inferred_key_type = $type->type_params[0];
                                 }
                             }
                         }
@@ -950,6 +958,12 @@ class FetchChecker
                         $key_type = Type::getInt();
                     }
 
+                    if (!$inferred_key_type) {
+                        $inferred_key_type = Type::getInt();
+                    } else {
+                        $inferred_key_type = Type::combineUnionTypes($inferred_key_type, Type::getInt());
+                    }
+
                     $stmt->inferredType = Type::getString();
                 } elseif ($type->isNull()) {
                     if (IssueBuffer::accepts(
@@ -961,8 +975,7 @@ class FetchChecker
                     )) {
                         if (isset($stmt->inferredType)) {
                             $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
-                        }
-                        else {
+                        } else {
                             $stmt->inferredType = Type::getNull();
                         }
                         continue;
@@ -1013,7 +1026,7 @@ class FetchChecker
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType) && $key_type && !$key_type->isEmpty()) {
                 foreach ($stmt->dim->inferredType->types as $at) {
-                    if (($at->isMixed() || $at->isEmpty()) && !$key_type->isMixed()) {
+                    if (($at->isMixed() || $at->isEmpty()) && !$inferred_key_type->isMixed()) {
                         if (IssueBuffer::accepts(
                             new MixedArrayOffset(
                                 'Cannot access value on variable ' . $var_id . ' using mixed offset - expecting ' .

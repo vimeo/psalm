@@ -116,4 +116,38 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedArrayAccess
+     */
+    public function testMixedArrayAccess()
+    {
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /** @var mixed */
+        $a = [];
+        echo $a[0];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedArrayOffset
+     */
+    public function testMixedArrayOffset()
+    {
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /** @var mixed */
+        $a = 5;
+        echo [1, 2, 3, 4][$a];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
 }
