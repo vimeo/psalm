@@ -556,6 +556,24 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testAccessiblePrivateMethodFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            private function foo() : void {
+
+            }
+
+            private function bar() : void {
+                $this->foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedMethod
@@ -666,7 +684,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedMethod
      */
-    public function testAccessiblePrivateMethodFromInheritedTrait()
+    public function testInccessiblePrivateMethodFromInheritedTrait()
     {
         $stmts = self::$parser->parse('<?php
         trait A {

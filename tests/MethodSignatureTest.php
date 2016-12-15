@@ -7,7 +7,7 @@ use Psalm\Checker\FileChecker;
 use Psalm\Config;
 use Psalm\Context;
 
-class FunctionCallTest extends PHPUnit_Framework_TestCase
+class MethodSignatureTest extends PHPUnit_Framework_TestCase
 {
     /** @var \PhpParser\Parser */
     protected static $parser;
@@ -28,13 +28,22 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
+     * @expectedExceptionMessage Method B::foo has fewer arguments than parent method A::foo
      */
-    public function testInvalidScalarArgument()
+    public function testFewerArguments()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
-        foo("string");
+        class A {
+            public function foo(int $a, bool $b) : void {
+
+            }
+        }
+
+        class B extends A {
+            public function foo(int $a) : void {
+
+            }
+        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -44,31 +53,22 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MixedArgument
+     * @expectedExceptionMessage Argument 1 of B::foo has wrong type 'bool', expecting 'int' as defined by A::foo
      */
-    public function testMixedArgument()
+    public function testDifferentArguments()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
-        /** @var mixed */
-        $a = "hello";
-        foo($a);
-        ');
+        class A {
+            public function foo(int $a, bool $b) : void {
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
-    }
+            }
+        }
 
-    /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage NullArgument
-     */
-    public function testNullArgument()
-    {
-        $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
-        foo(null);
+        class B extends A {
+            public function foo(bool $b, int $a) : void {
+
+            }
+        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);

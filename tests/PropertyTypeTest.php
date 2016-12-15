@@ -16,13 +16,12 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
-        $config->throw_exception = true;
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
+        $config->throw_exception = true;
         FileChecker::clearCache();
     }
 
@@ -46,6 +45,60 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
                     // do something
                 }
             }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testPropertyWithoutTypeSuppressingIssue()
+    {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
+
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public $foo;
+        }
+
+        $a = (new A)->foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyDeclaration
+     */
+    public function testMissingPropertyDeclaration()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+        }
+
+        /** @psalm-suppress UndefinedPropertyAssignment */
+        function fooDo() : void {
+            (new A)->foo = "cool";
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType
+     */
+    public function testMissingPropertyType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public $foo;
         }
         ');
 
