@@ -130,7 +130,7 @@ if ($path_to_config) {
 
 $project_checker = new ProjectChecker($use_color, $show_info, $output_format);
 
-$time = microtime(true);
+\Psalm\IssueBuffer::setStartTime(microtime(true));
 
 if (array_key_exists('self-check', $options)) {
     $project_checker->checkDir(dirname(__DIR__) . '/src', $debug);
