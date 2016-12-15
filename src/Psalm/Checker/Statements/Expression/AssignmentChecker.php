@@ -169,10 +169,7 @@ class AssignmentChecker
             if (self::checkArrayAssignment($statements_checker, $assign_var, $context, $assign_value_type) === false) {
                 return false;
             }
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch &&
-            $assign_var->var instanceof PhpParser\Node\Expr\Variable &&
-            is_string($assign_var->name)
-        ) {
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch && is_string($assign_var->name)) {
             self::checkPropertyAssignment(
                 $statements_checker,
                 $assign_var,
@@ -306,32 +303,15 @@ class AssignmentChecker
             $assignment_var = $stmt->default;
 
             $var_id = '$this->' . $prop_name;
-        } elseif ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
+        } else {
             $assignment_var = $stmt;
 
-            if (!isset($context->vars_in_scope['$' . $stmt->var->name])) {
-                if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
-                    return false;
-                }
-
-                return null;
+            if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+                return false;
             }
 
-            $stmt->var->inferredType = $context->vars_in_scope['$' . $stmt->var->name];
-
-            $lhs_type = $context->vars_in_scope['$' . $stmt->var->name];
-
-            if ($stmt->var->name === 'this' && !$statements_checker->getSource()->getClassLikeChecker()) {
-                if (IssueBuffer::accepts(
-                    new InvalidScope(
-                        'Cannot use $this when not inside class',
-                        new CodeLocation($statements_checker->getSource(), $stmt->var)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            }
+            /** @var Type\Union */
+            $lhs_type = $stmt->var->inferredType;
 
             $lhs_var_id = ExpressionChecker::getVarId(
                 $stmt->var,
@@ -437,7 +417,9 @@ class AssignmentChecker
                     return null;
                 }
 
-                if ($stmt->var->name === 'this' || $lhs_type_part->value === $context->self) {
+                if (($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this')
+                    || $lhs_type_part->value === $context->self
+                ) {
                     $class_visibility = \ReflectionProperty::IS_PRIVATE;
                 } elseif ($context->self && ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
                     $class_visibility = \ReflectionProperty::IS_PROTECTED;
@@ -479,7 +461,7 @@ class AssignmentChecker
                 );
 
                 if (!isset($class_properties[$prop_name])) {
-                    if ($stmt->var->name === 'this') {
+                    if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
                                 'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
@@ -536,8 +518,6 @@ class AssignmentChecker
 
             // because we don't want to be assigning for property declarations
             $context->vars_in_scope[$var_id] = $assignment_value_type;
-        } else {
-            return null;
         }
 
         if ($var_id && count($class_property_types) === 1 && isset($class_property_types[0]->types['stdClass'])) {

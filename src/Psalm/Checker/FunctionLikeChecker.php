@@ -328,6 +328,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
+            /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([
                 new Type\Fn(
                     'Closure',
@@ -390,9 +391,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     true
                 );
 
-                if ($closure_return_types) {
-                    $this->function->inferredType->types['Closure']->return_type =
-                        new Type\Union($closure_return_types);
+                if ($closure_return_types && $this->function->inferredType) {
+                    /** @var Type\Fn */
+                    $closure_atomic = $this->function->inferredType->types['Closure'];
+                    $closure_atomic->return_type = new Type\Union($closure_return_types);
                 }
             }
         }
