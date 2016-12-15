@@ -21,6 +21,11 @@ class IssueBuffer
     protected static $emitted = [];
 
     /**
+     * @var int
+     */
+    protected static $start_time = 0;
+
+    /**
      * @param   Issue\CodeIssue $e
      * @param   array           $suppressed_issues
      * @return  bool
@@ -165,11 +170,17 @@ class IssueBuffer
     /**
      * @param  bool     $is_full
      * @param  int|null $start_time
+     * @param  bool     $debug
      * @return void
      */
-    public static function finish($is_full = false, $start_time = null)
+    public static function finish($is_full = false, $start_time = null, $debug = false)
     {
         Checker\FileChecker::updateReferenceCache();
+
+        if ($debug) {
+            echo('Checks took ' . (microtime(true) - self::$start_time));
+            echo(' and used ' . memory_get_peak_usage() . PHP_EOL);
+        }
 
         if (count(self::$emitted)) {
             $project_checker = ProjectChecker::getInstance();
@@ -200,6 +211,15 @@ class IssueBuffer
         self::$emitted[$sham] = true;
 
         return false;
+    }
+
+    /**
+     * @param int
+     * @return void
+     */
+    public static function setStartTime($time)
+    {
+        self::$start_time = $time;
     }
 
     /**

@@ -796,6 +796,67 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleProperty
+     */
+    public function testInaccessibleStaticPrivateProperty()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            private static $foo;
+        }
+
+        echo A::$foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleProperty
+     */
+    public function testInaccessibleStaticProtectedProperty()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            protected static $foo;
+        }
+
+        echo A::$foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InaccessibleProperty
+     */
+    public function testInaccessibleStaticPrivatePropertyFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            private static $foo;
+        }
+
+        class B extends A {
+            public function doFoo() : void {
+                echo A::$foo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     public function testAccessibleProtectedPropertyFromSubclass()
     {
         $stmts = self::$parser->parse('<?php
@@ -807,6 +868,29 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         class B extends A {
             public function doFoo() : void {
                 echo $this->foo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testAccessibleStaticPropertyFromSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            protected static $foo;
+
+            public function bar() : void {
+                echo self::$foo;
+            }
+        }
+
+        class B extends A {
+            public function doFoo() : void {
+                echo A::$foo;
             }
         }
         ');
