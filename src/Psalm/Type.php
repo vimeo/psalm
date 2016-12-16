@@ -389,8 +389,8 @@ abstract class Type
     }
 
     /**
-     * @param  array<Union> $redefined_vars
-     * @param  Context      $context
+     * @param  array<string, Union> $redefined_vars
+     * @param  Context              $context
      * @return void
      */
     public static function redefineGenericUnionTypes(array $redefined_vars, Context $context)

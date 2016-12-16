@@ -57,6 +57,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $filter = new Config\FileFilter(false);
         $filter->addExcludeFile('somefile.php');
         Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
         $stmts = self::$parser->parse('<?php
         class A {
@@ -211,5 +212,61 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedPropertyFetch
+     */
+    public function testMixedPropertyFetch()
+    {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
+        $stmts = self::$parser->parse('<?php
+        class Foo {
+            /** @var string */
+            public $foo;
+        }
+
+        /** @var mixed */
+        $a = (new Foo());
+
+        echo $a->foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedPropertyAssignment
+     */
+    public function testMixedPropertyAssignment()
+    {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
+        $stmts = self::$parser->parse('<?php
+        class Foo {
+            /** @var string */
+            public $foo;
+        }
+
+        /** @var mixed */
+        $a = (new Foo());
+
+        $a->foo = "hello";
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
     }
 }

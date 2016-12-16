@@ -1058,14 +1058,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             if ($ids === null) {
                 $ids = [];
             }
-
-            foreach ($ids as $id) {
-
-            }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
 
     public function testArrayUnionTypeAssertionWithIsArray()
@@ -1077,14 +1075,12 @@ class TypeTest extends PHPUnit_Framework_TestCase
             if (!is_array($ids)) {
                 $ids = [];
             }
-
-            foreach ($ids as $id) {
-
-            }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
 
     public function testVariableReassignment()

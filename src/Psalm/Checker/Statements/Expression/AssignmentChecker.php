@@ -20,6 +20,7 @@ use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\MissingPropertyDeclaration;
 use Psalm\Issue\MissingPropertyType;
+use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedStringOffsetAssignment;
 use Psalm\Issue\NoInterfaceProperties;
@@ -90,6 +91,18 @@ class AssignmentChecker
                 $assign_value_type = $assign_value->inferredType;
             } else {
                 $assign_value_type = Type::getMixed();
+            }
+        }
+
+        if ($assign_value_type->isMixed()) {
+            if (IssueBuffer::accepts(
+                new MixedAssignment(
+                    'Cannot assign ' . $var_id . ' to a mixed type',
+                    new CodeLocation($statements_checker->getSource(), $assign_var)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
             }
         }
 
@@ -763,14 +776,6 @@ class AssignmentChecker
             && isset($context->vars_in_scope[$var_id])
             && $context->vars_in_scope[$var_id]->hasObjectType();
 
-        $is_string = $var_id
-            && isset($context->vars_in_scope[$var_id])
-            && $context->vars_in_scope[$var_id]->hasString();
-
-        $has_scalar = $var_id
-            && isset($context->vars_in_scope[$var_id])
-            && $context->vars_in_scope[$var_id]->hasScalarType();
-
         if (ExpressionChecker::check(
             $statements_checker,
             $stmt->var,
@@ -789,6 +794,12 @@ class AssignmentChecker
             $statements_checker->getNamespace(),
             $statements_checker->getAliasedClasses()
         );
+
+        $is_string = isset($stmt->var->inferredType)
+            && $stmt->var->inferredType->hasString();
+
+        $has_scalar = isset($stmt->var->inferredType)
+            && $stmt->var->inferredType->hasScalarType();
 
         $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
             ? $array_var_id . '[\'' . $stmt->dim->value . '\']'

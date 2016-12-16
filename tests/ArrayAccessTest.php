@@ -15,14 +15,14 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
-        $config->throw_exception = true;
-        $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
+        $config->throw_exception = true;
+        $config->use_docblock_types = true;
+
         FileChecker::clearCache();
     }
 
@@ -123,6 +123,10 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedArrayAccess()
     {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
         $context = new Context('somefile.php');
         $stmts = self::$parser->parse('<?php
         /** @var mixed */
@@ -140,6 +144,10 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedArrayOffset()
     {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
         $context = new Context('somefile.php');
         $stmts = self::$parser->parse('<?php
         /** @var mixed */

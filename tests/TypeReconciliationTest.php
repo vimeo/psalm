@@ -306,7 +306,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $stmts);
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$b']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['$c']);
     }
 }

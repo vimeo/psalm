@@ -784,6 +784,7 @@ class FetchChecker
             return false;
         }
 
+        /** @var Type\Union|null */
         $inferred_key_type = null;
 
         if (isset($stmt->var->inferredType)) {
@@ -1026,11 +1027,15 @@ class FetchChecker
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType) && $key_type && !$key_type->isEmpty()) {
                 foreach ($stmt->dim->inferredType->types as $at) {
-                    if (($at->isMixed() || $at->isEmpty()) && !$inferred_key_type->isMixed()) {
+                    if (($at->isMixed() || $at->isEmpty()) &&
+                        $inferred_key_type &&
+                        !$inferred_key_type->isMixed() &&
+                        !$inferred_key_type->isEmpty()
+                    ) {
                         if (IssueBuffer::accepts(
                             new MixedArrayOffset(
                                 'Cannot access value on variable ' . $var_id . ' using mixed offset - expecting ' .
-                                    $key_type,
+                                    $inferred_key_type,
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()

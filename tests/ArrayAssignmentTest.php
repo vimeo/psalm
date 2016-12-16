@@ -25,6 +25,151 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         \Psalm\Checker\FileChecker::clearCache();
     }
 
+    public function testGenericArrayCreation()
+    {
+        $stmts = self::$parser->parse('<?php
+        $out = [];
+
+        foreach ([1, 2, 3, 4, 5] as $value) {
+            $out[] = 4;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$out']);
+    }
+
+    public function testGeneric2DArrayCreation()
+    {
+        $stmts = self::$parser->parse('<?php
+        $out = [];
+
+        foreach ([1, 2, 3, 4, 5] as $value) {
+            $out[] = [4];
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, array<int, int>>', (string) $context->vars_in_scope['$out']);
+    }
+
+    public function testGeneric2DArrayCreationAddedInIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        $out = [];
+
+        $bits = [];
+
+        foreach ([1, 2, 3, 4, 5] as $value) {
+            if (rand(0,100) > 50) {
+                $out[] = $bits;
+                $bits = [];
+            }
+
+            $bits[] = 4;
+        }
+
+        if ($bits) {
+            $out[] = $bits;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, array<int, int>>', (string) $context->vars_in_scope['$out']);
+    }
+
+    public function testGenericArrayCreationWithObjectAddedInIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        class B {}
+
+        $out = [];
+
+        if (rand(0,10) === 10) {
+            $out[] = new B();
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, B>', (string) $context->vars_in_scope['$out']);
+    }
+
+    public function testGenericArrayCreationWithElementAddedInSwitch()
+    {
+        $stmts = self::$parser->parse('<?php
+        $out = [];
+
+        switch (rand(0,10)) {
+            case 5:
+                $out[] = 4;
+                break;
+
+            case 6:
+                // do nothing
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$out']);
+    }
+
+    public function testGenericArrayCreationWithElementsAddedInSwitch()
+    {
+        $stmts = self::$parser->parse('<?php
+        $out = [];
+
+        switch (rand(0,10)) {
+            case 5:
+                $out[] = 4;
+                break;
+
+            case 6:
+                $out[] = "hello";
+                break;
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$out']);
+    }
+
+    public function testGenericArrayCreationWithElementsAddedInSwitchWithNothing()
+    {
+        $stmts = self::$parser->parse('<?php
+        $out = [];
+
+        switch (rand(0,10)) {
+            case 5:
+                $out[] = 4;
+                break;
+
+            case 6:
+                $out[] = "hello";
+                break;
+
+            case 7:
+                // do nothing
+        }
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$out']);
+    }
+
     public function testImplicitIntArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -506,6 +651,23 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         $a = 5;
         $a[0] = 5;
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedStringOffsetAssignment
+     */
+    public function testMixedStringOffsetAssignment()
+    {
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /** @var mixed */
+        $a = 5;
+        "hello"[0] = $a;
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);

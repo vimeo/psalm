@@ -15,14 +15,14 @@ class Php71Test extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
-        $config->throw_exception = true;
-        $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
+        $config->throw_exception = true;
+        $config->use_docblock_types = true;
+
         FileChecker::clearCache();
     }
 
@@ -311,6 +311,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
     public function testIterableArg()
     {
         $stmts = self::$parser->parse('<?php
+        /**
+         * @param  iterable<string> $iter
+         */
         function iterator(iterable $iter) : void
         {
             foreach ($iter as $val) {
@@ -334,6 +337,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
     public function testInvalidIterableArg()
     {
         $stmts = self::$parser->parse('<?php
+        /**
+         * @param  iterable<string> $iter
+         */
         function iterator(iterable $iter) : void
         {
             foreach ($iter as $val) {
