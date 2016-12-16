@@ -9,7 +9,7 @@ class Fn extends Atomic
     public $value = 'Closure';
 
     /**
-     * @var array<Union>
+     * @var array<int, Union>
      */
     public $parameters = [];
 

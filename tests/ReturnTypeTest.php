@@ -549,4 +549,21 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedInferredReturnType
+     */
+    public function testMixedInferredReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo() : string {
+            return array_pop([]);
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

@@ -15,14 +15,14 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
-        $config->throw_exception = true;
-        $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
+        $config->throw_exception = true;
+        $config->use_docblock_types = true;
+
         FileChecker::clearCache();
     }
 
@@ -111,6 +111,48 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         $a = 5;
         echo $a[0];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedArrayAccess
+     */
+    public function testMixedArrayAccess()
+    {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /** @var mixed */
+        $a = [];
+        echo $a[0];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedArrayOffset
+     */
+    public function testMixedArrayOffset()
+    {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /** @var mixed */
+        $a = 5;
+        echo [1, 2, 3, 4][$a];
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);

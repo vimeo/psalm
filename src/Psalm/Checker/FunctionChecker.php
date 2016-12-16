@@ -469,6 +469,33 @@ class FunctionChecker extends FunctionLikeChecker
             if ($call_map_key === 'explode' || $call_map_key === 'preg_split') {
                 return Type::parseString('array<int, string>');
             }
+
+            if ($call_map_key === 'min' || $call_map_key === 'max') {
+                $minmax_return_type = null;
+
+                if (isset($call_args[0])) {
+                    $first_arg = $call_args[0]->value;
+
+                    if ($first_arg->inferredType) {
+                        if ($first_arg->inferredType->hasArray()) {
+                            $array_type = $first_arg->inferredType->types['array'];
+                            if ($array_type instanceof Type\ObjectLike) {
+                                return $array_type->getGenericTypeParam();
+                            }
+
+                            if ($array_type instanceof Type\Generic) {
+                                return clone $array_type->type_params[1];
+                            }
+                        } elseif ($first_arg->inferredType->hasScalarType() &&
+                            ($second_arg = $call_args[1]->value) &&
+                            $second_arg->inferredType &&
+                            $second_arg->inferredType->hasScalarType()
+                        ) {
+                            return Type::combineUnionTypes($first_arg->inferredType, $second_arg->inferredType);
+                        }
+                    }
+                }
+            }
         }
 
         if (!$call_map[$call_map_key][0]) {
@@ -511,7 +538,7 @@ class FunctionChecker extends FunctionLikeChecker
             ? $first_arg->inferredType->types['array']
             : null;
 
-        if ($call_map_key === 'array_values' || $call_map_key === 'array_unique') {
+        if ($call_map_key === 'array_values' || $call_map_key === 'array_unique' || $call_map_key === 'array_intersect') {
             if ($first_arg_array_generic || $first_arg_array_objectlike) {
                 if ($first_arg_array_generic) {
                     $inner_type = clone $first_arg_array_generic->type_params[1];

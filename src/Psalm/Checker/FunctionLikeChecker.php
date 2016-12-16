@@ -697,7 +697,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
-            if ($inferred_return_type->isMixed()) {
+            if ($inferred_return_type->isMixed() || $inferred_return_type->isEmpty()) {
                 if (IssueBuffer::accepts(
                     new MixedInferredReturnType(
                         'Could not verify return type \'' . $declared_return_type . '\' for ' .

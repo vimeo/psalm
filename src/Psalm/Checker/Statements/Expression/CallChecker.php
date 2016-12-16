@@ -1000,6 +1000,7 @@ class CallChecker
                         }
                     }
 
+
                     $closure_params = $closure_type->parameters;
                     $closure_return_type = $closure_type->return_type;
 

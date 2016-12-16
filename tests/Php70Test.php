@@ -15,14 +15,13 @@ class Php70Test extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
-        $config->throw_exception = true;
-        $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
+        $config->throw_exception = true;
+        $config->use_docblock_types = true;
         FileChecker::clearCache();
     }
 
@@ -76,6 +75,10 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testNullCoalesce()
     {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
         $stmts = self::$parser->parse('<?php
         $a = $_GET["bar"] ?? "nobody";
         ');
@@ -170,6 +173,10 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testGeneratorDelegation()
     {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
         $stmts = self::$parser->parse('<?php
         /**
          * @return Generator<int,int>

@@ -1340,7 +1340,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param   string $file_name
-     * @return  array
+     * @return  array<string>
      */
     public static function getClassesForFile($file_name)
     {
