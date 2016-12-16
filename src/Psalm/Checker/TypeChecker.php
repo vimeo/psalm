@@ -1242,7 +1242,9 @@ class TypeChecker
             return $new_type;
         }
 
-        if (!TypeChecker::isContainedBy($new_type, $existing_var_type) && $code_location) {
+        if (!TypeChecker::isContainedBy($new_type, $existing_var_type) &&
+            !TypeChecker::isContainedBy($existing_var_type, $new_type) &&
+            $code_location) {
             if (IssueBuffer::accepts(
                 new TypeDoesNotContainType(
                     'Cannot resolve types for ' . $key . ' - ' . $existing_var_type . ' does not contain ' . $new_type,
