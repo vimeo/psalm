@@ -55,7 +55,7 @@ abstract class SourceChecker implements StatementsSource
     protected $suppressed_issues = [];
 
     /**
-     * @var array
+     * @var array<string, bool>
      */
     protected $declared_classes = [];
 
@@ -161,7 +161,7 @@ abstract class SourceChecker implements StatementsSource
     /**
      * Gets a list of the classes declared
      *
-     * @return array<int, string>
+     * @return array<string, bool>
      */
     public function getDeclaredClasses()
     {
@@ -283,5 +283,10 @@ abstract class SourceChecker implements StatementsSource
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
+    }
+
+    public function getNamespace()
+    {
+        return '';
     }
 }

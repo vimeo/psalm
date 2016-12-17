@@ -101,6 +101,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param PhpParser\Node\FunctionLike $function
      * @param StatementsSource            $source
      * @param array                       $this_vars
+     * @psalm-suppress MixedAssignment
      */
     public function __construct($function, StatementsSource $source, array $this_vars = [])
     {
@@ -293,6 +294,7 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param PhpParser\Node\Stmt\ClassMethod $method
      * @return null|false
+     * @psalm-suppress MixedAssignment
      */
     protected function registerMethod(PhpParser\Node\Stmt\ClassMethod $method)
     {

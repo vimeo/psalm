@@ -48,6 +48,11 @@ class ProjectChecker
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
 
+    /**
+     * @param boolean $use_color
+     * @param boolean $show_info
+     * @param string  $output_format
+     */
     public function __construct($use_color = true, $show_info = true, $output_format = self::TYPE_CONSOLE)
     {
         $this->use_color = $use_color;

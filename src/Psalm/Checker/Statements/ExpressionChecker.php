@@ -139,22 +139,15 @@ class ExpressionChecker
             if (self::checkBinaryOp($statements_checker, $stmt, $context) === false) {
                 return false;
             }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\PostInc) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\PostInc ||
+            $stmt instanceof PhpParser\Node\Expr\PostDec ||
+            $stmt instanceof PhpParser\Node\Expr\PreInc ||
+            $stmt instanceof PhpParser\Node\Expr\PreDec
+        ) {
             if (self::check($statements_checker, $stmt->var, $context) === false) {
                 return false;
             }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\PostDec) {
-            if (self::check($statements_checker, $stmt->var, $context) === false) {
-                return false;
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\PreInc) {
-            if (self::check($statements_checker, $stmt->var, $context) === false) {
-                return false;
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\PreDec) {
-            if (self::check($statements_checker, $stmt->var, $context) === false) {
-                return false;
-            }
+            $stmt->inferredType = clone $stmt->var->inferredType;
         } elseif ($stmt instanceof PhpParser\Node\Expr\New_) {
             if (CallChecker::checkNew($statements_checker, $stmt, $context) === false) {
                 return false;

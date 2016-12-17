@@ -1049,11 +1049,11 @@ class TypeChecker
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
-     * @param  array<string,string>     $new_types
-     * @param  array<string,Type\Union> $existing_types
-     * @param  CodeLocation             $code_location
-     * @param  array<string>            $suppressed_issues
-     * @return array|false
+     * @param  array<string, string>     $new_types
+     * @param  array<string, Type\Union> $existing_types
+     * @param  CodeLocation              $code_location
+     * @param  array<string>             $suppressed_issues
+     * @return array<string, Type\Union>|false
      */
     public static function reconcileKeyedTypes(
         array $new_types,
@@ -1558,9 +1558,9 @@ class TypeChecker
     /**
      * Takes two arrays of types and merges them
      *
-     * @param  array<Type\Union>  $new_types
-     * @param  array<Type\Union>  $existing_types
-     * @return array<string,Type\Union>
+     * @param  array<string, Type\Union>  $new_types
+     * @param  array<string, Type\Union>  $existing_types
+     * @return array<string, Type\Union>
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types)
     {
@@ -1602,7 +1602,7 @@ class TypeChecker
     }
 
     /**
-     * @param  array<string,string>  $all_types
+     * @param  array<string, string>  $all_types
      * @return array<string>
      */
     public static function reduceTypes(array $all_types)
@@ -1638,8 +1638,8 @@ class TypeChecker
     }
 
     /**
-     * @param  array<string>  $types
-     * @return array<string>
+     * @param  array<int, string>  $types
+     * @return array<int, string>
      */
     public static function negateTypes(array $types)
     {

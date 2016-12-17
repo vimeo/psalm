@@ -214,7 +214,7 @@ class IssueBuffer
     }
 
     /**
-     * @param int
+     * @param int $time
      * @return void
      */
     public static function setStartTime($time)

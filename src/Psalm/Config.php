@@ -137,6 +137,7 @@ class Config
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
      * @psalm-suppress MixedMethodCall
+     * @psalm-suppress MixedAssignment
      */
     public static function loadFromXML($file_name)
     {
@@ -295,6 +296,7 @@ class Config
      * @return void
      * @throws ConfigException If a Config file could not be found.
      * @psalm-suppress MixedArrayAccess
+     * @psalm-suppress MixedAssignment
      */
     protected function loadFileExtensions($extensions)
     {
@@ -309,7 +311,7 @@ class Config
                     throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
-                $declared_classes = array_keys(FileChecker::getDeclaredClassesInFile($path));
+                $declared_classes = FileChecker::getDeclaredClassesInFile($path);
 
                 if (count($declared_classes) !== 1) {
                     throw new \InvalidArgumentException(

@@ -88,8 +88,8 @@ class ScopeChecker
     }
 
     /**
-     * @param   array   $stmts
-     * @param   bool    $ignore_break
+     * @param   array<PhpParser\Node>   $stmts
+     * @param   bool                    $ignore_break
      * @return  bool
      */
     public static function doesEverBreakOrContinue(array $stmts, $ignore_break = false)
@@ -144,8 +144,8 @@ class ScopeChecker
     }
 
     /**
-     * @param   array   $stmts
-     * @param   bool    $ignore_break
+     * @param   array<PhpParser\Node>   $stmts
+     * @param   bool                    $ignore_break
      * @return  bool
      */
     public static function doesAlwaysBreakOrContinue(array $stmts, $ignore_break = false)
@@ -204,7 +204,7 @@ class ScopeChecker
     }
 
     /**
-     * @param   array $stmts
+     * @param   array<PhpParser\Node> $stmts
      * @return  bool
      */
     public static function doesAlwaysReturnOrThrow(array $stmts)
@@ -301,7 +301,7 @@ class ScopeChecker
     }
 
     /**
-     * @param   array $stmts
+     * @param   array<PhpParser\Node> $stmts
      * @return  bool
      */
     public static function onlyThrows(array $stmts)

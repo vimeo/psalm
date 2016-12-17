@@ -5,6 +5,7 @@ use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
 use Psalm\Config;
+use Psalm\Context;
 
 class ScopeTest extends PHPUnit_Framework_TestCase
 {
@@ -270,17 +271,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
             $worked = false;
         }
 
-        if ($worked) {
-
-        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-
-        $conditional = $stmts[1]->cond;
-
-        $this->assertSame('bool', (string) $conditional->inferredType);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
     public function testWhileVar()
@@ -292,18 +288,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         while (rand(0,100) === 10) {
             $worked = true;
         }
-
-        if ($worked) {
-
-        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-
-        $conditional = $stmts[2]->cond;
-
-        $this->assertSame('bool', (string) $conditional->inferredType);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
     public function testDoWhileVar()
@@ -315,18 +305,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
             $worked = true;
         }
         while (rand(0,100) === 10);
-
-        if ($worked) {
-
-        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-
-        $conditional = $stmts[2]->cond;
-
-        $this->assertSame('bool', (string) $conditional->inferredType);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
     public function testAssignmentInIf()
