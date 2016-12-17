@@ -73,6 +73,76 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedPropertyAssignment
+     */
+    public function testUndefinedPropertyAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+        }
+
+        (new A)->foo = "cool";
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedPropertyFetch
+     */
+    public function testUndefinedPropertyFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+        }
+
+        echo (new A)->foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedThisPropertyAssignment
+     */
+    public function testUndefinedThisPropertyAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function foo() : void {
+                $this->foo = "cool";
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedThisPropertyFetch
+     */
+    public function testUndefinedThisPropertyFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function foo() : void {
+                echo $this->foo;
+            }
+        }        
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage MissingPropertyDeclaration
      */
     public function testMissingPropertyDeclaration()
@@ -263,6 +333,50 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $a = (new Foo());
 
         $a->foo = "hello";
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NullPropertyAssignment
+     */
+    public function testNullablePropertyAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        class Foo {
+            /** @var string */
+            public $foo;
+        }
+
+        $a = rand(0, 10) ? new Foo() : null;
+
+        $a->foo = "hello";
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NullPropertyFetch
+     */
+    public function testNullablePropertyFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        class Foo {
+            /** @var string */
+            public $foo;
+        }
+
+        $a = rand(0, 10) ? new Foo() : null;
+
+        echo $a->foo;
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);

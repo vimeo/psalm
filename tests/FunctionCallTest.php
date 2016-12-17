@@ -79,4 +79,55 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TooFewArguments
+     */
+    public function testTooFewArguments()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(int $a) : void {}
+        foo();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TooManyArguments
+     */
+    public function testTooManyArguments()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(int $a) : void {}
+        foo(5, "dfd");
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeCoercion
+     */
+    public function testTypeCoercion()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {}
+        class B extends A{}
+
+        function foo(B $b) : void {}
+        foo(new A());
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

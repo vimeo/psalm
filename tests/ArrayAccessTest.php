@@ -158,4 +158,20 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NullArrayAccess
+     */
+    public function testNullArrayAccess()
+    {
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        $a = null;
+        echo $a[0];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
 }

@@ -105,4 +105,23 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage ParentNotFound
+     */
+    public function testNoParent()
+    {
+        $stmts = self::$parser->parse('<?php
+        class Foo {
+            public function bar() : void {
+                parent::bar();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
