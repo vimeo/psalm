@@ -86,4 +86,35 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedConstant
+     */
+    public function testUndefinedConstant()
+    {
+        $stmts = self::$parser->parse('<?php
+        echo HELLO;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedConstant
+     */
+    public function testUndefinedClassConstant()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {}
+        echo A::HELLO;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

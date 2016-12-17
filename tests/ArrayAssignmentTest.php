@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Type;
 
@@ -14,14 +15,14 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = \Psalm\Config::getInstance();
-        $config->throw_exception = true;
-        $config->use_docblock_types = true;
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
+        $config->throw_exception = true;
+        $config->use_docblock_types = true;
+
         \Psalm\Checker\FileChecker::clearCache();
     }
 
@@ -663,6 +664,10 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedStringOffsetAssignment()
     {
+        $filter = new Config\FileFilter(false);
+        $filter->addExcludeFile('somefile.php');
+        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+
         $context = new Context('somefile.php');
         $stmts = self::$parser->parse('<?php
         /** @var mixed */
