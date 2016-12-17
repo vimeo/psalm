@@ -1130,6 +1130,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
+        /** @var array<string, int|string|float|null|array> */
         $class_constants = $reflected_class->getConstants();
 
         if ($reflected_class->isInterface()) {

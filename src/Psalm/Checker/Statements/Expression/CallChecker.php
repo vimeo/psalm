@@ -187,13 +187,13 @@ class CallChecker
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
-                if ($context->check_classes) {
-                    $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
-                        $stmt->class,
-                        $statements_checker->getNamespace(),
-                        $statements_checker->getAliasedClasses()
-                    );
+                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
+                    $stmt->class,
+                    $statements_checker->getNamespace(),
+                    $statements_checker->getAliasedClasses()
+                );
 
+                if ($context->check_classes) {
                     if ($context->isPhantomClass($fq_class_name)) {
                         return null;
                     }
