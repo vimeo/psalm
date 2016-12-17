@@ -790,6 +790,7 @@ class StatementsChecker
      * @param  PhpParser\Node\Expr $stmt
      * @param  string              $file_name
      * @return string|null
+     * @psalm-suppress MixedAssignment
      */
     protected static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
     {

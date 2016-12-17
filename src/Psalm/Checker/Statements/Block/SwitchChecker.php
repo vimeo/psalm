@@ -75,6 +75,7 @@ class SwitchChecker
 
         for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
             $case = $stmt->cases[$i];
+            /** @var string */
             $case_exit_type = $case_exit_types[$i];
             $case_type = null;
 

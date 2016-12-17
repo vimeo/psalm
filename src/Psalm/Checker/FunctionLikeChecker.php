@@ -1026,9 +1026,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @param  string                       $method_id
-     * @param  array<PhpParser\Node\Arg>    $args
-     * @param  string                       $file_name
+     * @param  string                           $method_id
+     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  string                           $file_name
      * @return array<int,FunctionLikeParameter>
      */
     public static function getParamsById($method_id, array $args, $file_name)
@@ -1039,13 +1039,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             /** @var array<\Psalm\FunctionLikeParameter> */
             return MethodChecker::getMethodParams($method_id);
         } elseif (!$fq_class_name && FunctionChecker::inCallMap($method_id)) {
-            /** @var array<array<FunctionLikeParameter>> */
+            /** @var array<array<int, FunctionLikeParameter>> */
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
         } elseif ($fq_class_name) {
             $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
 
             if (FunctionChecker::inCallMap($declaring_method_id ?: $method_id)) {
-                /** @var array<array<FunctionLikeParameter>> */
+                /** @var array<array<int, FunctionLikeParameter>> */
                 $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
             } elseif ($method_params = MethodChecker::getMethodParams($method_id)) {
                 // fall back to using reflected params anyway

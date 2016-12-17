@@ -114,9 +114,10 @@ class CommentChecker
         }
 
         if (isset($comments['specials']['param'])) {
+            /** @var string $param */
             foreach ($comments['specials']['param'] as $line_number => $param) {
                 try {
-                    $line_parts = self::splitDocLine((string)$param);
+                    $line_parts = self::splitDocLine($param);
                 } catch (DocblockParseException $e) {
                     throw $e;
                 }
@@ -145,8 +146,9 @@ class CommentChecker
         }
 
         if (isset($comments['specials']['psalm-suppress'])) {
+            /** @var string $suppress_entry */
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
-                $info->suppress[] = preg_split('/[\s]+/', (string)$suppress_entry)[0];
+                $info->suppress[] = preg_split('/[\s]+/', $suppress_entry)[0];
             }
         }
 
@@ -255,8 +257,8 @@ class CommentChecker
         $have_specials = preg_match_all('/^\s?@([\w\-:]+)\s*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
         if ($have_specials) {
             $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
+            /** @var string[] $match */
             foreach ($matches as $m => $match) {
-                /** @var string[] $match */
                 list($_, $type, $data) = $match;
 
                 if (empty($special[$type])) {

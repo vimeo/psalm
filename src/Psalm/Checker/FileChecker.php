@@ -197,7 +197,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new ClassChecker($stmt, $this, $stmt->name);
 
-                        $this->declared_classes[] = $class_checker->getFQCLN();
+                        $this->declared_classes[$class_checker->getFQCLN()] = true;
                         $class_checker->check($check_functions, null, $update_docblocks);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
@@ -205,7 +205,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                         $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                             ?: new InterfaceChecker($stmt, $this, $stmt->name);
 
-                        $this->declared_classes[] = $class_checker->getFQCLN();
+                        $this->declared_classes[$class_checker->getFQCLN()] = true;
                         $class_checker->check(false);
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
@@ -317,7 +317,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      * Gets a list of the classes declared in that file
      *
      * @param  string $file_name
-     * @return array<string>
+     * @return array<int, string>
      */
     public static function getDeclaredClassesInFile($file_name)
     {
@@ -328,7 +328,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             $file_checker->check(false, false, new Context($file_name));
         }
 
-        return $file_checker->getDeclaredClasses();
+        return array_keys($file_checker->getDeclaredClasses());
     }
 
     /**
@@ -427,6 +427,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @return bool
+     * @psalm-suppress MixedAssignment
      */
     public static function loadReferenceCache()
     {
@@ -436,7 +437,13 @@ class FileChecker extends SourceChecker implements StatementsSource
             $cache_location = $cache_directory . '/' . self::REFERENCE_CACHE_NAME;
 
             if (is_readable($cache_location)) {
-                self::$file_references = unserialize((string) file_get_contents($cache_location));
+                $reference_cache = unserialize((string) file_get_contents($cache_location));
+
+                if (!is_array($reference_cache)) {
+                    throw new \UnexpectedValueException('The reference cache must be an array');
+                }
+
+                self::$file_references = $reference_cache;
                 return true;
             }
         }

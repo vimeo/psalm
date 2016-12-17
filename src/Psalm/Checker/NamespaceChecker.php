@@ -93,7 +93,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this->namespace_name, []);
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-            $this->declared_classes[$fq_class_name] = 1;
+            $this->declared_classes[$fq_class_name] = true;
 
             if ($check_classes) {
                 $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($fq_class_name)
@@ -105,7 +105,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             if ($check_classes) {
                 $class_checker = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
                     ?: new InterfaceChecker($stmt, $this, $fq_class_name);
-                $this->declared_classes[] = $class_checker->getFQCLN();
+                $this->declared_classes[$class_checker->getFQCLN()] = true;
                 $class_checker->check(false);
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {

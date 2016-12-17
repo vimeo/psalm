@@ -9076,7 +9076,7 @@ return [
 'str_rot13' => ['string', 'str'=>'string'],
 'strrpos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],
 'str_shuffle' => ['', 'str'=>'string'],
-'str_split' => ['array', 'str'=>'string', 'split_length='=>'int'],
+'str_split' => ['string[]', 'str'=>'string', 'split_length='=>'int'],
 'strspn' => ['int', 'str'=>'string', 'mask'=>'string', 'start='=>'int', 'len='=>'int'],
 'strstr' => ['string|false', 'haystack'=>'string', 'needle'=>'', 'part='=>'bool'],
 'strtok\'1' => ['string|bool', 'token'=>'string'],

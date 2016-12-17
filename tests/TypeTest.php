@@ -1671,4 +1671,18 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check();
     }
+
+    public function testPlusPlus()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = 0;
+        $b = $a++;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+
+        $this->assertSame('int', (string) $context->vars_in_scope['$a']);
+    }
 }
