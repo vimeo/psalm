@@ -83,10 +83,10 @@ class AssignmentChecker
             return false;
         }
 
-        if (!$assign_value_type) {
-            if ($type_in_comments) {
-                $assign_value_type = $type_in_comments;
-            } elseif (isset($assign_value->inferredType)) {
+        if ($type_in_comments) {
+            $assign_value_type = $type_in_comments;
+        } elseif (!$assign_value_type) {
+            if (isset($assign_value->inferredType)) {
                 /** @var Type\Union */
                 $assign_value_type = $assign_value->inferredType;
             } else {

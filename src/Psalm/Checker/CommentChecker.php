@@ -91,7 +91,7 @@ class CommentChecker
         $info = new FunctionDocblockComment();
 
         if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
-            /** @var array */
+            /** @var array<int, string> */
             $return_specials = isset($comments['specials']['psalm-return'])
                 ? $comments['specials']['psalm-return']
                 : $comments['specials']['return'];
