@@ -426,7 +426,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $implemented_method_id = $this->fq_class_name . '::' . $method_name;
                     MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
 
-                    if (!isset(self::$public_class_methods[$this->fq_class_name])) {
+                    if (!isset(self::$public_class_methods[$this->fq_class_name][$method_name])) {
                         if (IssueBuffer::accepts(
                             new UnimplementedInterfaceMethod(
                                 'Method ' . $method_name . ' is not defined on class ' . $this->fq_class_name,

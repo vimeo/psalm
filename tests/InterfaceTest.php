@@ -158,4 +158,46 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NoInterfaceProperties
+     */
+    public function testNoInterfaceProperties()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A { }
+
+        function foo(A $a) : void {
+            if ($a->bar) {
+
+            }
+        }
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UnimplementedInterfaceMethod
+     */
+    public function testUnimplementedInterfaceMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A {
+            public function foo();
+        }
+
+        class B implements A { }
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
