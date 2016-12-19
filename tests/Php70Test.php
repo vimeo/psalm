@@ -20,8 +20,6 @@ class Php70Test extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $config = new TestConfig();
-        $config->throw_exception = true;
-        $config->use_docblock_types = true;
         FileChecker::clearCache();
     }
 
