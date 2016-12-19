@@ -23,6 +23,21 @@ class Config
     ];
 
     /**
+     * @var array
+     */
+    protected static $MIXED_ISSUES = [
+        'MixedArgument',
+        'MixedArrayAccess',
+        'MixedArrayOffset',
+        'MixedAssignment',
+        'MixedInferredReturnType',
+        'MixedMethodCall',
+        'MixedPropertyFetch',
+        'MixedPropertyAssignment',
+        'MixedStringOffsetAssignment'
+    ];
+
+    /**
      * @var self|null
      */
     protected static $config;
@@ -114,6 +129,9 @@ class Config
     /** @var bool */
     public $allow_includes = true;
 
+    /** @var bool */
+    public $totally_typed = false;
+
     /**
      * Psalm plugins
      *
@@ -193,6 +211,11 @@ class Config
         if (isset($config_xml['allowFileIncludes'])) {
             $attribute_text = (string) $config_xml['allowFileIncludes'];
             $config->allow_includes = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['totallyTyped'])) {
+            $attribute_text = (string) $config_xml['totallyTyped'];
+            $config->totally_typed = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->inspectFiles)) {
@@ -349,6 +372,10 @@ class Config
      */
     public function excludeIssueInFile($issue_type, $file_name)
     {
+        if (!$this->totally_typed && in_array($issue_type, self::$MIXED_ISSUES)) {
+            return true;
+        }
+
         if ($this->getReportingLevel($issue_type) === self::REPORT_SUPPRESS) {
             return true;
         }

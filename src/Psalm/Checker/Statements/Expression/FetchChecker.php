@@ -780,6 +780,12 @@ class FetchChecker
                                 } else {
                                     $key_type = $type->type_params[0];
                                 }
+
+                                if ($inferred_key_type) {
+                                    Type::combineUnionTypes($key_type, $type->type_params[0]);
+                                } else {
+                                    $inferred_key_type = $type->type_params[0];
+                                }
                             }
                         }
                     }
@@ -920,6 +926,12 @@ class FetchChecker
                         $key_type = Type::combineUnionTypes($key_type, Type::getInt());
                     } else {
                         $key_type = Type::getInt();
+                    }
+
+                    if (!$inferred_key_type) {
+                        $inferred_key_type = Type::getInt();
+                    } else {
+                        $inferred_key_type = Type::combineUnionTypes($inferred_key_type, Type::getInt());
                     }
 
                     $stmt->inferredType = Type::getString();

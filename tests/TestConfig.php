@@ -11,5 +11,6 @@ class TestConfig extends Config
 
         $this->throw_exception = true;
         $this->use_docblock_types = true;
+        $this->totally_typed = true;
     }
 }
