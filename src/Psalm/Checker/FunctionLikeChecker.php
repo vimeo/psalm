@@ -776,6 +776,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     ) {
         $docblock_param_vars = [];
 
+        $method_id = $cased_method_id = $this->getMethodId();
+
+        if ($method_id) {
+            $cased_method_id = $this instanceof MethodChecker
+                ? MethodChecker::getCasedMethodId($method_id)
+                : FunctionChecker::getCasedFunctionId($method_id, $this->file_name);
+        }
+
         foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
             $line_number = $docblock_param['line_number'];
@@ -785,7 +793,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $param_name .' does not appear in the argument list for ' .
-                            $this->getMethodId(),
+                            $cased_method_id,
                         $code_location
                     )
                 )) {
@@ -843,7 +851,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $function_signature_param->name .' does not appear in the docbock for ' .
-                            $this->getMethodId(),
+                            $cased_method_id,
                         $function_signature_param->code_location
                     )
                 )) {

@@ -189,13 +189,28 @@ class FunctionChecker extends FunctionLikeChecker
     }
 
     /**
+     * @param  string $function_id
+     * @param  string $file_name
+     * @return string
+     */
+    public static function getCasedFunctionId($function_id, $file_name)
+    {
+        if (!isset(self::$existing_functions[$file_name][$function_id])) {
+            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_name);
+        }
+
+        return self::$existing_functions[$file_name][$function_id];
+    }
+
+    /**
      * @param  PhpParser\Node\Stmt\Function_ $function
      * @param  string                        $file_name
      * @return null|false
      */
     protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
     {
-        $function_id = ($this->namespace ? strtolower($this->namespace) . '\\' : '') . strtolower($function->name);
+        $cased_function_id = ($this->namespace ? $this->namespace . '\\' : '') . $function->name;
+        $function_id = strtolower($cased_function_id);
 
         if (isset(self::$have_registered_function[$file_name][$function_id])) {
             return null;
@@ -204,7 +219,7 @@ class FunctionChecker extends FunctionLikeChecker
         self::$have_registered_function[$file_name][$function_id] = true;
 
         self::$function_namespaces[$file_name][$function_id] = $this->namespace;
-        self::$existing_functions[$file_name][$function_id] = true;
+        self::$existing_functions[$file_name][$function_id] = $cased_function_id;
 
         self::$file_function_params[$file_name][$function_id] = [];
 
