@@ -17,8 +17,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
         $config = new TestConfig();
-        $config->throw_exception = true;
-        $config->use_docblock_types = true;
     }
 
     public function setUp()
