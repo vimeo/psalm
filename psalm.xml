@@ -3,6 +3,7 @@
     name="Psalm for Psalm"
     stopOnFirstError="false"
     useDocblockTypes="true"
+    totallyTyped="true"
 >
     <inspectFiles>
         <directory name="src" />
