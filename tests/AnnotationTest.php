@@ -85,7 +85,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidDocblock
+     * @expectedExceptionMessage InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the argument list for fooBar
      */
     public function testExtraneousDocblockParam()
     {
@@ -93,7 +93,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         /**
          * @param int $bar
          */
-        function foo() : void {
+        function fooBar() : void {
         }
         ');
 
