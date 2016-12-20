@@ -20,7 +20,6 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
 
         $config = new TestConfig();
         $config->throw_exception = false;
-        $config->cache_directory = null;
         $config->stop_on_first_error = false;
     }
 
