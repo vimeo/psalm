@@ -1056,17 +1056,28 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
         if ($fq_class_name && ClassLikeChecker::isUserDefined($fq_class_name)) {
-            /** @var array<\Psalm\FunctionLikeParameter> */
-            return MethodChecker::getMethodParams($method_id);
+            $method_params = MethodChecker::getMethodParams($method_id);
+            
+            if ($method_params === null) {
+                throw new \UnexpectedValueException('Not expecting $method_params to be null');
+            }
+            
+            return $method_params;
         } elseif (!$fq_class_name && FunctionChecker::inCallMap($method_id)) {
-            /** @var array<array<int, FunctionLikeParameter>> */
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
+            
+            if ($function_param_options === null) {
+                throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
+            }
         } elseif ($fq_class_name) {
             $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
 
             if (FunctionChecker::inCallMap($declaring_method_id ?: $method_id)) {
-                /** @var array<array<int, FunctionLikeParameter>> */
                 $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
+
+                if ($function_param_options === null) {
+                    throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
+                }
             } elseif ($method_params = MethodChecker::getMethodParams($method_id)) {
                 // fall back to using reflected params anyway
                 return $method_params;
