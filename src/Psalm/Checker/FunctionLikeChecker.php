@@ -789,17 +789,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $line_number = $docblock_param['line_number'];
 
             if (!array_key_exists($param_name, $function_param_names)) {
-                $code_location->setCommentLine($line_number);
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        'Parameter $' . $param_name .' does not appear in the argument list for ' .
-                            $cased_method_id,
-                        $code_location
-                    )
-                )) {
-                    return false;
-                }
-
                 continue;
             }
 
