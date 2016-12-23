@@ -5,7 +5,7 @@
          backupStaticAttributes="false"
          bootstrap="tests/bootstrap.php"
          colors="false"
-         convertErrorsToExceptions="false"
+         convertErrorsToExceptions="true"
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
          forceCoversAnnotation="false"
