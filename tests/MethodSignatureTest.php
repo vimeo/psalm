@@ -24,6 +24,27 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
         FileChecker::clearCache();
     }
 
+    public function testMoreArguments()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function foo(int $a, bool $b) : void {
+
+            }
+        }
+
+        class B extends A {
+            public function foo(int $a, bool $b, array $c) : void {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage Method B::foo has fewer arguments than parent method A::foo
