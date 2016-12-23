@@ -12,3 +12,7 @@ cache:
 
 install:
   - composer --prefer-source install
+
+script:
+  - vendor/bin/phpunit
+  - bin/psalm
