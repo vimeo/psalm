@@ -32,6 +32,7 @@ class Config
         'MixedAssignment',
         'MixedInferredReturnType',
         'MixedMethodCall',
+        'MixedOperand',
         'MixedPropertyFetch',
         'MixedPropertyAssignment',
         'MixedStringOffsetAssignment'
@@ -132,6 +133,9 @@ class Config
     /** @var bool */
     public $totally_typed = false;
 
+    /** @var bool */
+    public $strict_binary_operands = false;
+
     /**
      * Psalm plugins
      *
@@ -156,6 +160,7 @@ class Config
      * @psalm-suppress MixedPropertyFetch
      * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedOperand
      */
     public static function loadFromXML($file_name)
     {
@@ -216,6 +221,11 @@ class Config
         if (isset($config_xml['totallyTyped'])) {
             $attribute_text = (string) $config_xml['totallyTyped'];
             $config->totally_typed = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['strictBinaryOperands'])) {
+            $attribute_text = (string) $config_xml['strictBinaryOperands'];
+            $config->strict_binary_operands = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->inspectFiles)) {
@@ -320,6 +330,7 @@ class Config
      * @throws ConfigException If a Config file could not be found.
      * @psalm-suppress MixedArrayAccess
      * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedOperand
      */
     protected function loadFileExtensions($extensions)
     {
@@ -328,7 +339,7 @@ class Config
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['filetypeHandler'])) {
-                $path = $this->base_dir . $extension['filetypeHandler'];
+                $path = $this->base_dir . (string)$extension['filetypeHandler'];
 
                 if (!file_exists($path)) {
                     throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);

@@ -182,6 +182,14 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testNumeric()
+    {
+        $this->assertEquals(
+            'string',
+            (string) TypeChecker::reconcileTypes('numeric', Type::parseString('string'))
+        );
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeDoesNotContainType
@@ -338,5 +346,26 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$c']);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeDoesNotContainType
+     */
+    public function testTypeTransformation()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = "5";
+        
+        if (is_numeric($a)) {
+            if (is_int($a)) {
+                echo $a;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
     }
 }

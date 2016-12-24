@@ -4,6 +4,7 @@
     stopOnFirstError="false"
     useDocblockTypes="true"
     totallyTyped="true"
+    strictBinaryOperands="false"
 >
     <inspectFiles>
         <directory name="src" />
@@ -28,6 +29,12 @@
                 <directory name="tests" />
             </excludeFiles>
         </MixedArgument>
+
+        <MixedOperand>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </MixedOperand>
 
         <MixedPropertyFetch>
             <excludeFiles>

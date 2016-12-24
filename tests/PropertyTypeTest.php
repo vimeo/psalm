@@ -383,4 +383,20 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testReflectionProperties()
+    {
+        $stmts = self::$parser->parse('<?php
+        class Foo {
+        }
+
+        $a = new \ReflectionMethod("Foo", "__construct");
+
+        echo $a->name . " - " . $a->class;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

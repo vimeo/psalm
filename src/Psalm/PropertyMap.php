@@ -384,6 +384,16 @@ return [
         'file' => 'string',
         'line' => 'int'
     ],
+    'reflectionclass' => [
+        'name' => 'string'
+    ],
+    'reflectionmethod' => [
+        'class' => 'string',
+        'name' => 'string'
+    ],
+    'reflectionparameter' => [
+        'name' => 'string'
+    ],
     'phpparser\\node\\expr' => [
         'inferredType' => 'Psalm\\Type\\Union|null'
     ],
