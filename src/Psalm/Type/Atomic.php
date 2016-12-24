@@ -27,6 +27,10 @@ class Atomic extends Type
      */
     public function __toString()
     {
+        if ($this->isNumericString()) {
+            return 'string';
+        }
+
         return $this->value;
     }
 
@@ -38,6 +42,14 @@ class Atomic extends Type
      */
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
     {
+        if (!$this->isObjectType()) {
+            if ($this->isNumericString()) {
+                return 'string';
+            }
+
+            return $this->value;
+        }
+
         if ($this->value === $this_class) {
             $class_parts = explode('\\', $this_class);
             return array_pop($class_parts);
@@ -46,12 +58,8 @@ class Atomic extends Type
         if (isset($aliased_classes[strtolower($this->value)])) {
             return $aliased_classes[strtolower($this->value)];
         }
-
-        if ($this->isObjectType()) {
-            return '\\' . $this->value;
-        }
-
-        return $this->value;
+        
+        return '\\' . $this->value;
     }
 
     /**
@@ -141,7 +149,7 @@ class Atomic extends Type
      */
     public function isNumericType()
     {
-        return $this->value === 'int' || $this->value === 'float' || $this->value === 'string';
+        return $this->value === 'int' || $this->value === 'float' || $this->value === 'numeric-string';
     }
 
     /**
@@ -154,7 +162,8 @@ class Atomic extends Type
                 $this->value === 'float' ||
                 $this->value === 'bool' ||
                 $this->value === 'false' ||
-                $this->value === 'numeric';
+                $this->value === 'numeric' ||
+                $this->value === 'numeric-string';
     }
 
     /**
@@ -180,7 +189,23 @@ class Atomic extends Type
      */
     public function isString()
     {
-        return $this->value === 'string';
+        return $this->value === 'string' || $this->value === 'numeric-string';
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInt()
+    {
+        return $this->value === 'int';
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFloat()
+    {
+        return $this->value === 'float';
     }
 
     /**
@@ -189,6 +214,14 @@ class Atomic extends Type
     public function isNumeric()
     {
         return $this->value === 'numeric';
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNumericString()
+    {
+        return $this->value === 'numeric-string';
     }
 
     /**

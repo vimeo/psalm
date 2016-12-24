@@ -1232,6 +1232,13 @@ class TypeChecker
             }
         }
 
+        if ($new_var_type === 'numeric' && $existing_var_type->hasString()) {
+            $existing_var_type->removeType('string');
+            $existing_var_type->types['numeric-string'] = new Type\Atomic('numeric-string');
+
+            return $existing_var_type;
+        }
+
         if ($new_var_type === 'isset') {
             return Type::getNull();
         }

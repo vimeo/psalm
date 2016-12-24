@@ -202,7 +202,8 @@ class Union extends Type
             isset($this->types['string']) ||
             isset($this->types['bool']) ||
             isset($this->types['false']) ||
-            isset($this->types['numeric']);
+            isset($this->types['numeric']) ||
+            isset($this->types['numeric-string']);
     }
 
     /**

@@ -249,7 +249,13 @@ class AssignmentChecker
             $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul ||
             $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
         ) {
-            ExpressionChecker::checkNonDivArithmenticOp($var_type, $expr_type, $result_type);
+            ExpressionChecker::checkNonDivArithmenticOp(
+                $statements_checker,
+                $stmt->var,
+                $stmt->expr,
+                $stmt,
+                $result_type
+            );
 
             if ($result_type && $var_id) {
                 $context->vars_in_scope[$var_id] = $result_type;
@@ -262,6 +268,18 @@ class AssignmentChecker
             && $var_id
         ) {
             $context->vars_in_scope[$var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
+            ExpressionChecker::checkConcatOp(
+                $statements_checker,
+                $stmt->var,
+                $stmt->expr,
+                $stmt,
+                $result_type
+            );
+
+            if ($result_type && $var_id) {
+                $context->vars_in_scope[$var_id] = $result_type;
+            }
         }
 
         return null;
