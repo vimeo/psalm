@@ -392,5 +392,17 @@ return [
     ],
     'phpparser\\node\\stmt\\return_' => [
         'inferredType' => 'Psalm\\Type\\Union|null'
-    ]
+    ],
+    'phpparser\\node\\expr\\funccall' => [
+        'args' => 'array<int, PhpParser\Node\Arg>'
+    ],
+    'phpparser\\node\\expr\\new_' => [
+        'args' => 'array<int, PhpParser\Node\Arg>'
+    ],
+    'phpparser\\node\\expr\\methodcall' => [
+        'args' => 'array<int, PhpParser\Node\Arg>'
+    ],
+    'phpparser\\node\\expr\\staticcall' => [
+        'args' => 'array<int, PhpParser\Node\Arg>'
+    ],
 ];

@@ -131,4 +131,18 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testNopType()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = "hello";
+
+        /** @var int $a */
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+    }
 }

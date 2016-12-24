@@ -4,37 +4,37 @@ namespace Psalm;
 class IfScope
 {
     /**
-     * @var array<string,Type\Union>|null
+     * @var array<string, Type\Union>|null
      */
     public $new_vars = null;
 
     /**
-     * @var array<string,boolean>
+     * @var array<string, boolean>
      */
     public $new_vars_possibly_in_scope = [];
 
      /**
-     * @var array<string,Type\Union>|null
+     * @var array<string, Type\Union>|null
      */
     public $forced_new_vars = null;
 
     /**
-     * @var array<string,Type\Union>|null
+     * @var array<string, Type\Union>|null
      */
     public $redefined_vars = null;
 
     /**
-     * @var array<string,Type\Union>
+     * @var array<string, Type\Union>
      */
     public $possibly_redefined_vars = [];
 
     /**
-     * @var array<string,Type\Union>|null
+     * @var array<string, Type\Union>|null
      */
     public $redefined_loop_vars = null;
 
     /**
-     * @var array<string,Type\Union>
+     * @var array<string, Type\Union>
      */
     public $possibly_redefined_loop_vars = [];
 
@@ -44,7 +44,7 @@ class IfScope
     public $updated_vars = [];
 
     /**
-     * @var array<string>
+     * @var array<string, string>
      */
     public $negated_types = [];
 

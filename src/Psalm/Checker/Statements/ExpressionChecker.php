@@ -538,13 +538,22 @@ class ExpressionChecker
             $statements_checker->getAliasedClasses()
         );
 
-        if ($var_id && !isset($context->vars_in_scope[$var_id])) {
-            $context->vars_possibly_in_scope[$var_id] = true;
-            $statements_checker->registerVariable($var_id, $stmt->getLine());
+        if ($var_id) {
+            if (!isset($context->vars_in_scope[$var_id])) {
+                $context->vars_possibly_in_scope[$var_id] = true;
+                $statements_checker->registerVariable($var_id, $stmt->getLine());
+            } else {
+                $existing_type = $context->vars_in_scope[$var_id];
+                if (TypeChecker::isContainedBy($existing_type, $by_ref_type) &&
+                    (string)$existing_type !== 'array<empty, empty>'
+                ) {
+                    $stmt->inferredType = $context->vars_in_scope[$var_id];
+                    return;
+                }
+            }
         }
 
         $stmt->inferredType = $by_ref_type;
-
         $context->vars_in_scope[$var_id] = $by_ref_type;
     }
 
@@ -858,11 +867,11 @@ class ExpressionChecker
     }
 
     /**
-     * @param  PhpParser\Node\Expr $stmt
-     * @param  string              $this_class_name
-     * @param  string              $namespace
-     * @param  array               $aliased_classes
-     * @param  int|null            &$nesting
+     * @param  PhpParser\Node\Expr      $stmt
+     * @param  string                   $this_class_name
+     * @param  string                   $namespace
+     * @param  array<string, string>    $aliased_classes
+     * @param  int|null                 &$nesting
      * @return string|null
      */
     public static function getVarId(
@@ -912,10 +921,10 @@ class ExpressionChecker
     }
 
     /**
-     * @param  PhpParser\Node\Expr $stmt
-     * @param  string              $this_class_name
-     * @param  string              $namespace
-     * @param  array               $aliased_classes
+     * @param  PhpParser\Node\Expr      $stmt
+     * @param  string                   $this_class_name
+     * @param  string                   $namespace
+     * @param  array<string, string>    $aliased_classes
      * @return string|null
      */
     public static function getArrayVarId(
@@ -940,10 +949,10 @@ class ExpressionChecker
     }
 
     /**
-     * @param  Type\Union                   $return_type
-     * @param  array<PhpParser\Node\Arg>    $args
-     * @param  string|null                  $calling_class
-     * @param  string|null                  $method_id
+     * @param  Type\Union                       $return_type
+     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  string|null                      $calling_class
+     * @param  string|null                      $method_id
      * @return Type\Union
      */
     public static function fleshOutTypes(Type\Union $return_type, array $args, $calling_class = null, $method_id = null)
@@ -960,10 +969,10 @@ class ExpressionChecker
     }
 
     /**
-     * @param  Type\Atomic                  &$return_type
-     * @param  array<PhpParser\Node\Arg>    $args
-     * @param  string|null                  $calling_class
-     * @param  string|null                  $method_id
+     * @param  Type\Atomic                      &$return_type
+     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  string|null                      $calling_class
+     * @param  string|null                      $method_id
      * @return Type\Atomic
      */
     protected static function fleshOutAtomicType(Type\Atomic $return_type, array $args, $calling_class, $method_id)

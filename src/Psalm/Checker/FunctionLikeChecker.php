@@ -58,7 +58,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     protected $source;
 
     /**
-     * @var array<string,array<string,Psalm\Type\Union>>
+     * @var array<string, array<string, Type\Union>>
      */
     protected $return_vars_in_scope = [];
 
@@ -972,10 +972,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @param  string       $return_type
-     * @param  string|null  $fq_class_name
-     * @param  string       $namespace
-     * @param  array        $aliased_classes
+     * @param  string                   $return_type
+     * @param  string|null              $fq_class_name
+     * @param  string                   $namespace
+     * @param  array<string, string>    $aliased_classes
      * @return string
      */
     public static function fixUpLocalType($return_type, $fq_class_name, $namespace, array $aliased_classes)

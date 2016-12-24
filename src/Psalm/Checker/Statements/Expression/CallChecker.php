@@ -284,6 +284,14 @@ class CallChecker
                             }
                         }
 
+                        if ($key_type === null) {
+                            throw new \UnexpectedValueException('$key_type cannot be null');
+                        }
+
+                        if ($value_type === null) {
+                            throw new \UnexpectedValueException('$value_type cannot be null');
+                        }
+
                         $stmt->inferredType = new Type\Union([
                             new Type\Generic(
                                 $fq_class_name,

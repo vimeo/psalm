@@ -9,7 +9,7 @@ interface StatementsSource
     public function getNamespace();
 
     /**
-     * @return array<string>
+     * @return array<string, string>
      */
     public function getAliasedClasses();
 

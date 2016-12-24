@@ -17,10 +17,10 @@ class TypeChecker
     /**
      * Gets all the type assertions in a conditional that are && together
      *
-     * @param  PhpParser\Node\Expr  $conditional
-     * @param  string               $this_class_name
-     * @param  string               $namespace
-     * @param  array<string>        $aliased_classes
+     * @param  PhpParser\Node\Expr      $conditional
+     * @param  string                   $this_class_name
+     * @param  string                   $namespace
+     * @param  array<string, string>    $aliased_classes
      * @return array<string,string>
      */
     public static function getReconcilableTypeAssertions(
@@ -79,10 +79,10 @@ class TypeChecker
     }
 
     /**
-     * @param  PhpParser\Node\Expr  $conditional
-     * @param  string               $this_class_name
-     * @param  string               $namespace
-     * @param  array<string>        $aliased_classes
+     * @param  PhpParser\Node\Expr      $conditional
+     * @param  string                   $this_class_name
+     * @param  string                   $namespace
+     * @param  array<string, string>    $aliased_classes
      * @return array<string,string>
      */
     public static function getNegatableTypeAssertions(
@@ -148,10 +148,10 @@ class TypeChecker
     /**
      * Gets all the type assertions in a conditional
      *
-     * @param  PhpParser\Node\Expr  $conditional
-     * @param  string               $this_class_name
-     * @param  string               $namespace
-     * @param  array<string>        $aliased_classes
+     * @param  PhpParser\Node\Expr      $conditional
+     * @param  string                   $this_class_name
+     * @param  string                   $namespace
+     * @param  array<string, string>    $aliased_classes
      * @param  bool                 $allow_non_negatable Allow type assertions that should not be negated
      * @return array<string, string>
      */
@@ -668,7 +668,7 @@ class TypeChecker
      * @param  array<string>                &$if_types
      * @param  string                       $this_class_name
      * @param  string                       $namespace
-     * @param  array<string>                $aliased_classes
+     * @param  array<string, string>        $aliased_classes
      * @param  boolean                      $negate
      * @return void
      */
@@ -748,7 +748,7 @@ class TypeChecker
      * @param  PhpParser\Node\Expr\Instanceof_ $stmt
      * @param  string                          $this_class_name
      * @param  string                          $namespace
-     * @param  array                           $aliased_classes
+     * @param  array<string, string>           $aliased_classes
      * @return string|null
      */
     protected static function getInstanceOfTypes(
@@ -1302,7 +1302,22 @@ class TypeChecker
                     ClassChecker::classExtendsOrImplements($input_type_part->value, $container_type_part->value) ||
                     ExpressionChecker::isMock($input_type_part->value)
                 ) {
-                    $type_match_found = true;
+                    $all_types_contain = true;
+
+                    if ($input_type_part instanceof Type\Generic && $container_type_part instanceof Type\Generic) {
+                        foreach ($input_type_part->type_params as $i => $input_param) {
+                            $container_param = $container_type_part->type_params[$i];
+
+                            if (!$input_param->isEmpty() && !self::isContainedBy($input_param, $container_param)) {
+                                $all_types_contain = false;
+                            }
+                        }
+                    }
+
+                    if ($all_types_contain) {
+                        $type_match_found = true;
+                    }
+
                     break;
                 }
 
@@ -1618,8 +1633,8 @@ class TypeChecker
     }
 
     /**
-     * @param  array<int, string>  $types
-     * @return array<int, string>
+     * @param  array<string, string>  $types
+     * @return array<string, string>
      */
     public static function negateTypes(array $types)
     {
