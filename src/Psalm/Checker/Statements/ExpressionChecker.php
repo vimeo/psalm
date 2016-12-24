@@ -149,7 +149,12 @@ class ExpressionChecker
             if (self::check($statements_checker, $stmt->var, $context) === false) {
                 return false;
             }
-            $stmt->inferredType = clone $stmt->var->inferredType;
+
+            if (isset($stmt->var->inferredType)) {
+                $stmt->inferredType = clone $stmt->var->inferredType;
+            } else {
+                $stmt->inferredType = Type::getMixed();
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\New_) {
             if (CallChecker::checkNew($statements_checker, $stmt, $context) === false) {
                 return false;
