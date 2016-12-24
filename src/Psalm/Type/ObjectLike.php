@@ -37,6 +37,8 @@ class ObjectLike extends Atomic
                     ', ',
                     array_map(
                         /**
+                         * @param  string $name
+                         * @param  string $type
                          * @return string
                          */
                         function ($name, $type) {
@@ -67,6 +69,8 @@ class ObjectLike extends Atomic
                     ', ',
                     array_map(
                         /**
+                         * @param  string $name
+                         * @param  Union  $type
                          * @return string
                          */
                         function ($name, Union $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {

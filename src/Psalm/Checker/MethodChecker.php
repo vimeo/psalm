@@ -26,7 +26,7 @@ class MethodChecker extends FunctionLikeChecker
     protected static $method_files = [];
 
     /**
-     * @var array<string,array<\Psalm\FunctionLikeParameter>>
+     * @var array<string,array<int, \Psalm\FunctionLikeParameter>>
      */
     protected static $method_params = [];
 
@@ -117,7 +117,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
-     * @return array<\Psalm\FunctionLikeParameter>|null
+     * @return array<int, \Psalm\FunctionLikeParameter>|null
      */
     public static function getMethodParams($method_id)
     {
