@@ -400,7 +400,11 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 (new ClassChecker($stmt, $this->source, $stmt->name))->check();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-                // do nothing
+                CommentChecker::getTypeFromComment(
+                    (string)$stmt->getDocComment(),
+                    $context,
+                    $this->getSource()
+                );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
@@ -785,19 +789,6 @@ class StatementsChecker
     }
 
     /**
-     * @param  string  $method_id
-     * @param  array   $args
-     * @param  int     $argument_offset
-     * @return boolean
-     */
-    protected function isPassedByReference($method_id, array $args, $argument_offset)
-    {
-        $function_params = FunctionLikeChecker::getParamsById($method_id, $args, $this->file_name);
-
-        return $argument_offset < count($function_params) && $function_params[$argument_offset]->by_ref;
-    }
-
-    /**
      * @param  PhpParser\Node\Expr $stmt
      * @param  string              $file_name
      * @return string|null
@@ -883,7 +874,7 @@ class StatementsChecker
     }
 
     /**
-     * @return array<string>
+     * @return array<string, string>
      */
     public function getAliasedClasses()
     {

@@ -151,6 +151,37 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testArrayContains()
+    {
+        $this->assertTrue(
+            TypeChecker::isContainedBy(
+                Type::parseString('array<string>'),
+                Type::parseString('array')
+            )
+        );
+
+        $this->assertTrue(
+            TypeChecker::isContainedBy(
+                Type::parseString('array<Exception>'),
+                Type::parseString('array')
+            )
+        );
+
+        $this->assertTrue(
+            TypeChecker::isContainedBy(
+                Type::parseString('array<UnexpectedValueException>'),
+                Type::parseString('array<Exception>')
+            )
+        );
+
+        $this->assertFalse(
+            TypeChecker::isContainedBy(
+                Type::parseString('array<ValueException>'),
+                Type::parseString('array<UnexpectedException>')
+            )
+        );
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeDoesNotContainType

@@ -11,7 +11,7 @@ class ParseTree
     const UNION = '|';
 
     /**
-     * @var array<ParseTree>
+     * @var array<int, ParseTree>
      */
     public $children = [];
 

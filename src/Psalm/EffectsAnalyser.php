@@ -12,9 +12,9 @@ class EffectsAnalyser
     /**
      * Gets the return types from a list of statements
      *
-     * @param  array<int,PhpParser\Node\Stmt|PhpParser\Node\Expr> $stmts
-     * @param  array<int,Type\Atomic>                             $yield_types
-     * @param  bool                                               $collapse_types
+     * @param  array<PhpParser\Node>     $stmts
+     * @param  array<int,Type\Atomic>    $yield_types
+     * @param  bool                      $collapse_types
      * @return array<int,Type\Atomic>    a list of return types
      */
     public static function getReturnTypes(array $stmts, array &$yield_types, $collapse_types = false)

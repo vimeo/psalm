@@ -170,7 +170,7 @@ abstract class Type
                 if (!$property_type instanceof Union) {
                     $property_type = new Union([$property_type]);
                 }
-                $properties[$property_branch->children[0]->value] = $property_type;
+                $properties[(string)($property_branch->children[0]->value)] = $property_type;
             }
 
             if (!$type->value) {
@@ -453,6 +453,7 @@ abstract class Type
      *
      * @param  array<Atomic>    $types
      * @return Union
+     * @psalm-suppress InvalidArgument
      */
     public static function combineTypes(array $types)
     {

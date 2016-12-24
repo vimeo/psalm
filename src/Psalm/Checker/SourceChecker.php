@@ -50,7 +50,7 @@ abstract class SourceChecker implements StatementsSource
     protected $include_file_path;
 
     /**
-     * @var array
+     * @var array<string>
      */
     protected $suppressed_issues = [];
 
@@ -123,7 +123,7 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
-     * @return array
+     * @return array<string, string>
      */
     public function getAliasedClasses()
     {

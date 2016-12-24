@@ -16,6 +16,10 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @param  string $string
+     * @return Type\Atomic
+     */
     private static function getAtomic($string)
     {
         return array_values(Type::parseString($string)->types)[0];

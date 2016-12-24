@@ -164,6 +164,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $stmts = $this->getStatements();
 
+        /** @var array<int, PhpParser\Node> */
         $leftover_stmts = [];
 
         $statments_checker = new StatementsChecker($this);

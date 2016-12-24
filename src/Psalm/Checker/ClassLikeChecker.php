@@ -70,7 +70,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected $parent_class;
 
     /**
-     * @var array
+     * @var array<string>
      */
     protected $suppressed_issues;
 
@@ -894,9 +894,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * Gets the fully-qualified class name from a Name object
      *
-     * @param  PhpParser\Node\Name $class_name
-     * @param  string              $namespace
-     * @param  array<int,string>   $aliased_classes
+     * @param  PhpParser\Node\Name      $class_name
+     * @param  string                   $namespace
+     * @param  array<string, string>    $aliased_classes
      * @return string
      */
     public static function getFQCLNFromNameObject(

@@ -315,10 +315,11 @@ class FunctionChecker extends FunctionLikeChecker
                             $return_type_location = new CodeLocation($this->getSource(), $function, true);
                         }
 
-                        if ($return_type && !TypeChecker::isContainedBy($return_type, $docblock_return_type)) {
+                        if ($return_type && !TypeChecker::isContainedBy($docblock_return_type, $return_type)) {
                             if (IssueBuffer::accepts(
                                 new InvalidDocblock(
-                                    'Docblock return type does not match function return type for ' . $this->getMethodId(),
+                                    'Docblock return type does not match function return type for ' .
+                                        $this->getMethodId(),
                                     new CodeLocation($this, $function, true)
                                 )
                             )) {
@@ -710,14 +711,16 @@ class FunctionChecker extends FunctionLikeChecker
                     return Type::getArray();
                 }
 
+                $key_type = $array_arg_type ? clone $array_arg_type->type_params[0] : Type::getMixed();
+
                 if ($call_map_key === 'array_map') {
                     $inner_type = clone $closure_return_type;
-                    return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                    return new Type\Union([new Type\Generic('array', [$key_type, $inner_type])]);
                 }
 
                 if ($array_arg_type) {
                     $inner_type = clone $array_arg_type->type_params[1];
-                    return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                    return new Type\Union([new Type\Generic('array', [$key_type, $inner_type])]);
                 }
             } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_) {
                 $mapped_function_id = strtolower($function_call_arg->value->value);

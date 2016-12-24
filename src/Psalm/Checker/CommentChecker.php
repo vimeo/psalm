@@ -63,8 +63,7 @@ class CommentChecker
 
         try {
             $defined_type = Type::parseString($type_in_comments);
-        }
-        catch (TypeParseTreeException $e) {
+        } catch (TypeParseTreeException $e) {
             throw new DocblockParseException($type_in_comments . ' is not a valid type');
         }
 

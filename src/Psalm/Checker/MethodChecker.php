@@ -211,7 +211,7 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function extractReflectionMethodInfo(\ReflectionMethod $method)
     {
-        $method_id = $method->class . '::' . strtolower((string)$method->name);
+        $method_id = $method->class . '::' . strtolower($method->getName());
         self::$cased_method_ids[$method_id] = $method->class . '::' . $method->name;
 
         if (strtolower((string)$method->name) === strtolower((string)$method->class)) {
@@ -264,9 +264,9 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * Determines whether a given method is static or not
      *
-     * @param  string               $method_id
-     * @param  CodeLocation         $code_location
-     * @param  array<int, string>   $suppressed_issues
+     * @param  string          $method_id
+     * @param  CodeLocation    $code_location
+     * @param  array<string>   $suppressed_issues
      * @return bool
      */
     public static function checkMethodStatic($method_id, CodeLocation $code_location, array $suppressed_issues)
