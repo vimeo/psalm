@@ -4,6 +4,7 @@
     stopOnFirstError="false"
     useDocblockTypes="true"
     totallyTyped="true"
+    strictBinaryOperands="false"
 >
     <inspectFiles>
         <directory name="src" />

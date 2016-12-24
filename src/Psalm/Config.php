@@ -32,6 +32,7 @@ class Config
         'MixedAssignment',
         'MixedInferredReturnType',
         'MixedMethodCall',
+        'MixedOperand',
         'MixedPropertyFetch',
         'MixedPropertyAssignment',
         'MixedStringOffsetAssignment'
@@ -132,6 +133,9 @@ class Config
     /** @var bool */
     public $totally_typed = false;
 
+    /** @var bool */
+    public $strict_binary_operands = false;
+
     /**
      * Psalm plugins
      *
@@ -216,6 +220,11 @@ class Config
         if (isset($config_xml['totallyTyped'])) {
             $attribute_text = (string) $config_xml['totallyTyped'];
             $config->totally_typed = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['strictBinaryOperands'])) {
+            $attribute_text = (string) $config_xml['strictBinaryOperands'];
+            $config->strict_binary_operands = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->inspectFiles)) {

@@ -16,8 +16,10 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
+use Psalm\Issue\MixedOperand;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\UnrecognizedExpression;
@@ -780,8 +782,10 @@ class ExpressionChecker
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
                 self::checkNonDivArithmenticOp(
-                    $stmt->left->inferredType,
-                    $stmt->right->inferredType,
+                    $statements_checker,
+                    $stmt->left,
+                    $stmt->right,
+                    $stmt,
                     $result_type
                 );
 
@@ -793,6 +797,18 @@ class ExpressionChecker
                 && ($stmt->right->inferredType->hasInt() || $stmt->right->inferredType->hasFloat())
             ) {
                 $stmt->inferredType = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+                self::checkConcatOp(
+                    $statements_checker,
+                    $stmt->left,
+                    $stmt->right,
+                    $stmt,
+                    $result_type
+                );
+
+                if ($result_type) {
+                    $stmt->inferredType = $result_type;
+                }
             }
         }
 
@@ -818,50 +834,239 @@ class ExpressionChecker
     }
 
     /**
-     * @param  Type\Union|null   $left_type
-     * @param  Type\Union|null   $right_type
+     * @param  StatementsChecker     $statements_checker
+     * @param  PhpParser\Node\Expr   $left
+     * @param  PhpParser\Node\Expr   $right
+     * @param  PhpParser\Node        $parent
      * @param  Type\Union|null   &$result_type
      * @return void
      */
     public static function checkNonDivArithmenticOp(
-        Type\Union $left_type = null,
-        Type\Union $right_type = null,
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr $left,
+        PhpParser\Node\Expr $right,
+        PhpParser\Node $parent,
         Type\Union &$result_type = null
     ) {
-        if ($left_type && !$left_type->isMixed()) {
-            if ($left_type->hasNumericType()) {
-                if ($right_type) {
-                    if ($left_type->hasInt() &&
-                        $right_type->hasInt() &&
-                        !$left_type->hasFloat() &&
-                        !$right_type->hasFloat()
-                    ) {
-                        $result_type = Type::getInt();
+        $left_type = $left->inferredType;
+        $right_type = $right->inferredType;
+        $config = Config::getInstance();
+
+        if ($left_type && $right_type) {
+            foreach ($left_type->types as $left_type_part) {
+                foreach ($right_type->types as $right_type_part) {
+                    if ($left_type_part->isMixed() || $right_type_part->isMixed()) {
+                        if ($left_type_part->isMixed()) {
+                            if (IssueBuffer::accepts(
+                                new MixedOperand(
+                                    'Left operand cannot be mixed',
+                                    new CodeLocation($statements_checker->getSource(), $left)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new MixedOperand(
+                                    'Right operand cannot be mixed',
+                                    new CodeLocation($statements_checker->getSource(), $right)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+
+                        $result_type = Type::getMixed();
                         return;
                     }
 
-                    if ($left_type->hasNumericType() && $right_type->hasNumericType()) {
-                        $result_type = Type::getFloat();
-                        return;
+                    if ($left_type_part->isArray() || $right_type_part->isArray()) {
+                        if (!$right_type_part->isArray() || !$left_type_part->isArray()) {
+                            if (!$left_type_part->isArray()) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidOperand(
+                                        'Cannot add an array to a non-array',
+                                        new CodeLocation($statements_checker->getSource(), $left)
+                                    ),
+                                    $statements_checker->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+
+                            $result_type = Type::getArray();
+                            return;
+                        }
+
+                        $result_type_member = Type::combineTypes([$left_type_part, $right_type_part]);
+
+                        if (!$result_type) {
+                            $result_type = $result_type_member;
+                        } else {
+                            $result_type = Type::combineUnionTypes($result_type_member, $result_type);
+                        }
+
+                        continue;
+                    }
+
+                    if ($left_type_part->isNumericType() || $right_type_part->isNumericType()) {
+                        if ($left_type_part->isInt() &&
+                            $right_type_part->isInt()
+                        ) {
+                            if (!$result_type) {
+                                $result_type = Type::getInt();
+                            } else {
+                                $result_type = Type::combineUnionTypes(Type::getInt(), $result_type);
+                            }
+
+                            continue;
+                        }
+
+                        if ($left_type_part->isFloat() &&
+                            $right_type_part->isFloat()
+                        ) {
+                            if (!$result_type) {
+                                $result_type = Type::getFloat();
+                            } else {
+                                $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                            }
+                            
+                            continue;
+                        }
+
+                        if (($left_type_part->isFloat() && $right_type_part->isInt()) ||
+                            ($left_type_part->isInt() && $right_type_part->isFloat())
+                        ) {
+                            if ($config->strict_binary_operands) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidOperand(
+                                        'Cannot add ints to floats',
+                                        new CodeLocation($statements_checker->getSource(), $parent)
+                                    ),
+                                    $statements_checker->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+
+                            if (!$result_type) {
+                                $result_type = Type::getFloat();
+                            } else {
+                                $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                            }
+                            
+                            continue;
+                        }
+
+                        if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
+                            if ($config->strict_binary_operands) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidOperand(
+                                        'Cannot add numeric types together, please cast explicitly',
+                                        new CodeLocation($statements_checker->getSource(), $parent)
+                                    ),
+                                    $statements_checker->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+
+                            if (!$result_type) {
+                                $result_type = Type::getFloat();
+                            } else {
+                                $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                            }
+
+                            continue;
+                        }
+
+                        $non_numeric_type = $left_type_part->isNumericType() ? $right_type_part : $left_type_part;
+
+                        if (IssueBuffer::accepts(
+                            new InvalidOperand(
+                                'Cannot add a numeric type to a non-numeric type ' . $non_numeric_type,
+                                new CodeLocation($statements_checker->getSource(), $parent)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
-            } elseif ($left_type->hasArray()) {
-                if (!$right_type || $right_type->isMixed()) {
-                    // @todo emit issue
-                    $result_type = Type::getMixed();
-                    return;
+            }
+        }
+    }
+
+    /**
+     * @param  StatementsChecker     $statements_checker
+     * @param  PhpParser\Node\Expr   $left
+     * @param  PhpParser\Node\Expr   $right
+     * @param  PhpParser\Node        $parent
+     * @param  Type\Union|null   &$result_type
+     * @return void
+     */
+    public static function checkConcatOp(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr $left,
+        PhpParser\Node\Expr $right,
+        PhpParser\Node $parent,
+        Type\Union &$result_type = null
+    ) {
+        $left_type = $left->inferredType;
+        $right_type = $right->inferredType;
+        $config = Config::getInstance();
+
+        if ($left_type && $right_type) {
+            foreach ($left_type->types as $left_type_part) {
+                foreach ($right_type->types as $right_type_part) {
+                    if ($left_type_part->isMixed() || $right_type_part->isMixed()) {
+                        if ($left_type_part->isMixed()) {
+                            if (IssueBuffer::accepts(
+                                new MixedOperand(
+                                    'Left operand cannot be mixed',
+                                    new CodeLocation($statements_checker->getSource(), $left)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new MixedOperand(
+                                    'Right operand cannot be mixed',
+                                    new CodeLocation($statements_checker->getSource(), $right)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+
+                        $result_type = Type::getString();
+                        return;
+                    }
+
+                    if ($left_type_part->isString() && $right_type_part->isString()) {
+                        $result_type = Type::getString();
+                        continue;
+                    }
+                        
+                    if ($config->strict_binary_operands) {
+                        if (IssueBuffer::accepts(
+                            new InvalidOperand(
+                                'Cannot concatenate a string and a non-string',
+                                new CodeLocation($statements_checker->getSource(), $parent)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+
+                    $result_type = Type::getString();
                 }
-
-                if (!$right_type->hasArray()) {
-                    // @todo emit issue
-
-                    return;
-                }
-
-                $var_array_type = $left_type->types['array'];
-                $expr_array_type = $right_type->types['array'];
-
-                $result_type = Type::combineTypes([$var_array_type, $expr_array_type]);
             }
         }
     }
