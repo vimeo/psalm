@@ -1131,8 +1131,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             if ($reflection_method->class !== $class_name) {
                 MethodChecker::setDeclaringMethodId(
-                    $class_name . '::' . strtolower((string)$reflection_method->name),
-                    $reflection_method->class . '::' . strtolower((string)$reflection_method->name)
+                    $class_name . '::' . strtolower($reflection_method->name),
+                    $reflection_method->class . '::' . strtolower($reflection_method->name)
                 );
 
                 self::$public_class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
@@ -1334,7 +1334,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param   string $method_name
-     * @return  mixed
+     * @return  string
      */
     protected function getMappedMethodName($method_name)
     {

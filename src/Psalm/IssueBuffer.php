@@ -178,7 +178,7 @@ class IssueBuffer
         Checker\FileChecker::updateReferenceCache();
 
         if ($debug) {
-            echo('Checks took ' . (microtime(true) - self::$start_time));
+            echo('Checks took ' . ((float)microtime(true) - self::$start_time));
             echo(' and used ' . memory_get_peak_usage() . PHP_EOL);
         }
 

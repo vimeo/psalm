@@ -30,6 +30,12 @@
             </excludeFiles>
         </MixedArgument>
 
+        <MixedOperand>
+            <excludeFiles>
+                <directory name="tests" />
+            </excludeFiles>
+        </MixedOperand>
+
         <MixedPropertyFetch>
             <excludeFiles>
                 <directory name="tests" />
