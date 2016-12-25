@@ -121,21 +121,24 @@ class CommentChecker
                     throw $e;
                 }
 
-                if (count($line_parts) > 1
-                    && preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
-                    && !preg_match('/\[[^\]]+\]/', $line_parts[0])
-                    && preg_match('/^&?\$[A-Za-z0-9_]+$/', $line_parts[1])
-                    && !strpos($line_parts[0], '::')
-                ) {
-                    if ($line_parts[1][0] === '&') {
-                        $line_parts[1] = substr($line_parts[1], 1);
-                    }
+                if (count($line_parts) > 1) {
+                    if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
+                        && !preg_match('/\[[^\]]+\]/', $line_parts[0])
+                        && preg_match('/^&?\$[A-Za-z0-9_]+$/', $line_parts[1])
+                        && !strpos($line_parts[0], '::')
+                    ) {
+                        if ($line_parts[1][0] === '&') {
+                            $line_parts[1] = substr($line_parts[1], 1);
+                        }
 
-                    $info->params[] = [
-                        'name' => substr($line_parts[1], 1),
-                        'type' => $line_parts[0],
-                        'line_number' => $line_number
-                    ];
+                        $info->params[] = [
+                            'name' => substr($line_parts[1], 1),
+                            'type' => $line_parts[0],
+                            'line_number' => $line_number
+                        ];
+                    }
+                } else {
+                    throw new DocblockParseException('Badly-formatted @param');
                 }
             }
         }

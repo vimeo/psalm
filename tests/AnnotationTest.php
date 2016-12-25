@@ -85,6 +85,63 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the argument list for fooBar
+     */
+    public function testExtraneousDocblockParam()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param int $bar
+         */
+        function fooBar() : void {
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidDocblock - somefile.php:2 - Badly-formatted @param in docblock for fooBar
+     */
+    public function testMissingParamType()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param $bar
+         */
+        function fooBar() : void {
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidDocblock - somefile.php:2 - Badly-formatted @param in docblock for fooBar
+     */
+    public function testMissingParamVar()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param string
+         */
+        function fooBar() : void {
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidDocblock
      */
     public function testInvalidDocblockReturn()

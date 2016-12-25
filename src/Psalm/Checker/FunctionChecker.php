@@ -16,6 +16,11 @@ use Psalm\Type;
 class FunctionChecker extends FunctionLikeChecker
 {
     /**
+     * @var PhpParser\Node\Stmt\Function_
+     */
+    protected $function;
+
+    /**
      * @var array<string, array<string, Type\Union|false>>
      */
     protected static $function_return_types = [];
@@ -270,7 +275,7 @@ class FunctionChecker extends FunctionLikeChecker
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Invalid type passed in docblock for ' . $this->getMethodId(),
+                        $e->getMessage() . ' in docblock for ' . $this->function->name,
                         new CodeLocation($this, $function, true)
                     )
                 )) {
