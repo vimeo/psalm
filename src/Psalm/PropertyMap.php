@@ -415,4 +415,40 @@ return [
     'phpparser\\node\\expr\\staticcall' => [
         'args' => 'array<int, PhpParser\Node\Arg>'
     ],
+    'phpparser\\node\\stmt\\namespace_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\if_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\elseif_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\else_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\for_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\foreach_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\trycatch' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\catch_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\finally_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\case_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\while_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
+    'phpparser\\node\\stmt\\do_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>'
+    ],
 ];

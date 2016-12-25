@@ -341,8 +341,11 @@ class AssignmentChecker
                 return false;
             }
 
-            /** @var Type\Union */
             $lhs_type = $stmt->var->inferredType;
+
+            if ($lhs_type === null) {
+                return null;
+            }
 
             $lhs_var_id = ExpressionChecker::getVarId(
                 $stmt->var,
