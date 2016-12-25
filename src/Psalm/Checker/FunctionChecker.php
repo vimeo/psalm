@@ -651,7 +651,15 @@ class FunctionChecker extends FunctionLikeChecker
                 return Type::getArray();
             }
 
-            return clone $first_arg_array_generic;
+            return new Type\Union([
+                new Type\Generic(
+                    'array',
+                    [
+                        clone $first_arg_array_generic->type_params[0],
+                        clone $first_arg_array_generic->type_params[1]
+                    ]
+                )
+            ]);
         }
 
         if ($call_map_key === 'array_diff_key') {
