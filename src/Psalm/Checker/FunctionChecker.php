@@ -544,7 +544,7 @@ class FunctionChecker extends FunctionLikeChecker
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        if ($call_map_key === 'array_map' || $call_map_key === 'array_filter') {
+        if ($call_map_key === 'array_map') {
             return self::getArrayMapReturnType($call_map_key, $call_args, $code_location, $suppressed_issues);
         }
 
@@ -644,6 +644,14 @@ class FunctionChecker extends FunctionLikeChecker
                     ]
                 )
             ]);
+        }
+
+        if ($call_map_key === 'array_filter') {
+            if (!$first_arg_array_generic) {
+                return Type::getArray();
+            }
+
+            return clone $first_arg_array_generic;
         }
 
         if ($call_map_key === 'array_diff_key') {
