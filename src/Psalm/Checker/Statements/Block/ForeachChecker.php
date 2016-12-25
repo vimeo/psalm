@@ -102,7 +102,7 @@ class ForeachChecker
                         if (IssueBuffer::accepts(
                             new NullReference(
                                 'Cannot iterate over ' . $return_type->value,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_checker->getSource(), $stmt->expr)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -120,7 +120,7 @@ class ForeachChecker
                         if (IssueBuffer::accepts(
                             new InvalidIterator(
                                 'Cannot iterate over ' . $return_type->value,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_checker->getSource(), $stmt->expr)
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {

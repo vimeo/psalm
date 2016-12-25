@@ -1315,8 +1315,20 @@ class TypeChecker
                         foreach ($input_type_part->type_params as $i => $input_param) {
                             $container_param = $container_type_part->type_params[$i];
 
-                            if (!$input_param->isEmpty() && !self::isContainedBy($input_param, $container_param)) {
-                                $all_types_contain = false;
+                            if (!$input_param->isEmpty() &&
+                                !self::isContainedBy(
+                                    $input_param,
+                                    $container_param,
+                                    $ignore_null,
+                                    $has_scalar_match,
+                                    $type_coerced
+                                )
+                            ) {
+                                if (self::isContainedBy($container_param, $input_param)) {
+                                    $type_coerced = true;
+                                } else {
+                                    $all_types_contain = false;
+                                }
                             }
                         }
                     }

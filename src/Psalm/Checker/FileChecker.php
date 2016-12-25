@@ -31,7 +31,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $namespace_aliased_classes_flipped = [];
 
     /**
-     * @var array<int, \PhpParser\Node>
+     * @var array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     protected $preloaded_statements = [];
 
@@ -164,7 +164,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $stmts = $this->getStatements();
 
-        /** @var array<int, PhpParser\Node> */
+        /** @var array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt> */
         $leftover_stmts = [];
 
         $statments_checker = new StatementsChecker($this);
@@ -333,7 +333,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return array<int, \PhpParser\Node>
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     protected function getStatements()
     {
@@ -344,7 +344,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  string $file_path
-     * @return array<int, \PhpParser\Node>
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     public static function getStatementsForFile($file_path)
     {
@@ -382,7 +382,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                 is_readable($cache_location) &&
                 filemtime($cache_location) > filemtime($file_path)
             ) {
-                /** @var array<int, \PhpParser\Node> */
+                /** @var array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt> */
                 $stmts = unserialize((string)file_get_contents($cache_location));
                 $from_cache = true;
             }
@@ -397,6 +397,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
             $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);
 
+            /** @var array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt> */
             $stmts = $parser->parse($file_contents);
         }
 

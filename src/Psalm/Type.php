@@ -452,7 +452,7 @@ abstract class Type
      *
      * @param  array<Atomic>    $types
      * @return Union
-     * @psalm-suppress InvalidArgument
+     * @psalm-suppress TypeCoercion
      */
     public static function combineTypes(array $types)
     {
