@@ -729,7 +729,7 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string $method_id
+     * @param  string $original_method_id
      * @return string
      */
     public static function getCasedMethodId($original_method_id)
