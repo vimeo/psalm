@@ -646,12 +646,21 @@ class FunctionChecker extends FunctionLikeChecker
                 return Type::getArray();
             }
 
+            $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+
+            $inner_type = clone $first_arg_array_generic->type_params[1];
+
+            if (!$second_arg) {
+                $inner_type->removeType('null');
+                $inner_type->removeType('false');
+            }
+
             return new Type\Union([
                 new Type\Generic(
                     'array',
                     [
                         clone $first_arg_array_generic->type_params[0],
-                        clone $first_arg_array_generic->type_params[1]
+                        $inner_type
                     ]
                 )
             ]);
@@ -747,20 +756,6 @@ class FunctionChecker extends FunctionLikeChecker
                     // @todo handle array_map('some_custom_function', $arr)
                 }
             }
-        }
-
-        // where there's no function passed to array_filter
-        if ($call_map_key === 'array_filter' && $array_arg_type) {
-            $inner_type = clone $array_arg_type->type_params[1];
-
-            $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
-
-            if (!$second_arg) {
-                $inner_type->removeType('null');
-                $inner_type->removeType('false');
-            }
-
-            return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
         }
 
         return Type::getArray();
