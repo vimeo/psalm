@@ -301,7 +301,7 @@ class MethodChecker extends FunctionLikeChecker
         $method_id = $this->fq_class_name . '::' . strtolower($method->name);
         $cased_method_id = self::$cased_method_ids[$method_id] = $this->fq_class_name . '::' . $method->name;
 
-        if (strtolower((string)$method->name) === strtolower((string)$this->fq_class_name)) {
+        if (strtolower((string)$method->name) === strtolower((string)$this->class_name)) {
             self::setDeclaringMethodId($this->fq_class_name . '::__construct', $method_id);
         }
 
@@ -732,9 +732,14 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string $method_id
      * @return string
      */
-    public static function getCasedMethodId($method_id)
+    public static function getCasedMethodId($original_method_id)
     {
-        $method_id = self::getDeclaringMethodId($method_id);
+        $method_id = self::getDeclaringMethodId($original_method_id);
+
+        if ($method_id === null) {
+            throw new \UnexpectedValueException('Cannot get declaring method id for ' . $original_method_id);
+        }
+
         return self::$cased_method_ids[$method_id];
     }
 
