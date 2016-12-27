@@ -66,6 +66,13 @@ class Context
     protected $phantom_classes = [];
 
     /**
+     * A list of clauses in Conjunctive Normal Form
+     *
+     * @var array<Clause>
+     */
+    public $clauses = [];
+
+    /**
      * @param string      $file_name
      * @param string|null $self
      */
@@ -84,6 +91,10 @@ class Context
             if ($type) {
                 $type = clone $type;
             }
+        }
+
+        foreach ($this->clauses as &$clause) {
+            $clause = clone $clause;
         }
     }
 
@@ -175,6 +186,16 @@ class Context
         if (!$type) {
             return;
         }
+
+        $clauses_to_keep = [];
+
+        foreach ($this->clauses as $clause) {
+            if (!isset($clause->possibilities[$remove_var_id])) {
+                $clauses_to_keep[] = $clause;
+            }
+        }
+
+        $this->clauses = $clauses_to_keep;
 
         if ($type->hasArray() || $type->isMixed()) {
             $vars_to_remove = [];
