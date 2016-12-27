@@ -42,14 +42,6 @@ class EffectsAnalyser
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
-            } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
-                $key_type = null;
-
-                if (isset($stmt->inferredType)) {
-                    $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
-                } else {
-                    $return_types[] = new Type\Atomic('mixed');
-                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge($return_types, self::getReturnTypes($stmt->stmts, $yield_types));
 

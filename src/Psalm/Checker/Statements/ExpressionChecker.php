@@ -661,12 +661,16 @@ class ExpressionChecker
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
             // ignore deeply-nested string concatenation
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-            $left_type_assertions = TypeChecker::getReconcilableTypeAssertions(
+            $if_clauses = TypeChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
+
+            $simplified_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+
+            $left_type_assertions = TypeChecker::getTruthsFromFormula($simplified_clauses);
 
             if (self::check($statements_checker, $stmt->left, $context) === false) {
                 return false;
@@ -706,14 +710,21 @@ class ExpressionChecker
                 $context->vars_possibly_in_scope
             );
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-            $left_type_assertions = TypeChecker::getNegatableTypeAssertions(
+            $if_clauses = TypeChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker->getNamespace(),
                 $statements_checker->getAliasedClasses()
             );
 
-            $negated_type_assertions = TypeChecker::negateTypes($left_type_assertions);
+            $rhs_clauses = TypeChecker::simplifyCNF(
+                array_merge(
+                    $context->clauses,
+                    TypeChecker::negateFormula($if_clauses)
+                )
+            );
+
+            $negated_type_assertions = TypeChecker::getTruthsFromFormula($rhs_clauses);
 
             if (self::check($statements_checker, $stmt->left, $context) === false) {
                 return false;
@@ -733,6 +744,7 @@ class ExpressionChecker
             }
 
             $op_context = clone $context;
+            $op_context->clauses = $rhs_clauses;
             $op_context->vars_in_scope = $op_vars_in_scope;
 
             if (self::check($statements_checker, $stmt->right, $op_context) === false) {
@@ -937,7 +949,7 @@ class ExpressionChecker
                             } else {
                                 $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                             }
-                            
+
                             continue;
                         }
 
@@ -961,7 +973,7 @@ class ExpressionChecker
                             } else {
                                 $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                             }
-                            
+
                             continue;
                         }
 
@@ -1057,7 +1069,7 @@ class ExpressionChecker
                         $result_type = Type::getString();
                         continue;
                     }
-                        
+
                     if ($config->strict_binary_operands) {
                         if (IssueBuffer::accepts(
                             new InvalidOperand(
@@ -1380,28 +1392,20 @@ class ExpressionChecker
 
         $t_if_context = clone $context;
 
-        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) {
-            $reconcilable_if_types = TypeChecker::getReconcilableTypeAssertions(
-                $stmt->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
+        $if_clauses = TypeChecker::getFormula(
+            $stmt->cond,
+            $statements_checker->getFQCLN(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
 
-            $negatable_if_types = TypeChecker::getNegatableTypeAssertions(
-                $stmt->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
-        } else {
-            $reconcilable_if_types = $negatable_if_types = TypeChecker::getTypeAssertions(
-                $stmt->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
-        }
+        $ternary_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+
+        $negated_clauses = TypeChecker::negateFormula($if_clauses);
+
+        $negated_if_types = TypeChecker::getTruthsFromFormula($negated_clauses);
+
+        $reconcilable_if_types = TypeChecker::getTruthsFromFormula($ternary_clauses);
 
         $if_return_type = null;
 
@@ -1426,9 +1430,7 @@ class ExpressionChecker
 
         $t_else_context = clone $context;
 
-        if ($negatable_if_types) {
-            $negated_if_types = TypeChecker::negateTypes($negatable_if_types);
-
+        if ($negated_if_types) {
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $negated_if_types,
                 $t_else_context->vars_in_scope,

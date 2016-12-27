@@ -203,8 +203,8 @@ class StatementsChecker
             }
 
             /*
-            if (isset($context->vars_in_scope['$value_types'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$value_types']);
+            if (isset($context->vars_in_scope['$type'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$type']);
             }
             */
 

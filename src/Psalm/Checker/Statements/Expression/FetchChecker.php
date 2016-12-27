@@ -829,7 +829,7 @@ class FetchChecker
                                 if (!$keyed_assignment_type) {
                                     throw new \UnexpectedValueException('$keyed_assignment_type cannot be null');
                                 }
-                                
+
                                 $assignment_type = new Type\Union([
                                     new Type\Generic(
                                         'array',
