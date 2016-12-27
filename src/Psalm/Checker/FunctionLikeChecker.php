@@ -1057,15 +1057,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($fq_class_name && ClassLikeChecker::isUserDefined($fq_class_name)) {
             $method_params = MethodChecker::getMethodParams($method_id);
-            
+
             if ($method_params === null) {
                 throw new \UnexpectedValueException('Not expecting $method_params to be null');
             }
-            
+
             return $method_params;
         } elseif (!$fq_class_name && FunctionChecker::inCallMap($method_id)) {
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
-            
+
             if ($function_param_options === null) {
                 throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
             }
