@@ -756,8 +756,8 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $a = rand(0, 10) ? "hello" : null;
         $b = rand(0, 10) ? "goodbye" : null;
 
-        if ($a || $b) {
-            if ($a) {
+        if ($a !== null || $b !== null) {
+            if ($a !== null) {
                 $c = $a;
             } else {
                 $c = $b;
@@ -778,10 +778,10 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $b = rand(0, 10) ? "goodbye" : null;
         $c = rand(0, 10) ? "hello" : null;
 
-        if ($a || $b || $c) {
-            if ($a) {
+        if ($a !== null || $b !== null || $c !== null) {
+            if ($a !== null) {
                 $d = $a;
-            } elseif ($b) {
+            } elseif ($b !== null) {
                 $d = $b;
             } else {
                 $d = $c;
@@ -797,7 +797,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
+     * @expectedExceptionMessage NullArgument
      */
     public function testThreeVarLogicWithChange()
     {
@@ -806,12 +806,44 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $b = rand(0, 10) ? "goodbye" : null;
         $c = rand(0, 10) ? "hello" : null;
 
-        if ($a || $b || $c) {
-            $c = false;
+        if ($a !== null || $b !== null || $c !== null) {
+            $c = null;
 
-            if ($a) {
+            if ($a !== null) {
                 $d = $a;
-            } elseif ($b) {
+            } elseif ($b !== null) {
+                $d = $b;
+            } else {
+                $d = $c;
+            }
+
+            echo strpos($d, "e");
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NullArgument
+     */
+    public function testThreeVarLogicWithException()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 10) ? "hello" : null;
+        $b = rand(0, 10) ? "goodbye" : null;
+        $c = rand(0, 10) ? "hello" : null;
+
+        if ($a !== null || $b !== null || $c !== null) {
+            if ($c !== null) {
+                throw new \Exception("bad");
+            }
+
+            if ($a !== null) {
+                $d = $a;
+            } elseif ($b !== null) {
                 $d = $b;
             } else {
                 $d = $c;
