@@ -180,6 +180,9 @@ class FileChecker extends SourceChecker implements StatementsSource
             }
         }
 
+        $classes_to_check = [];
+        $interfaces_to_check = [];
+
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Class_
                 || $stmt instanceof PhpParser\Node\Stmt\Interface_
@@ -199,7 +202,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                             ?: new ClassChecker($stmt, $this, $stmt->name);
 
                         $this->declared_classes[$class_checker->getFQCLN()] = true;
-                        $class_checker->check($check_functions, null, $update_docblocks);
+                        $classes_to_check[] = $class_checker;
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     if ($check_classes) {
@@ -207,7 +210,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                             ?: new InterfaceChecker($stmt, $this, $stmt->name);
 
                         $this->declared_classes[$class_checker->getFQCLN()] = true;
-                        $class_checker->check(false);
+                        $interfaces_to_check[] = $class_checker;
                     }
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     if ($check_classes) {
@@ -232,33 +235,43 @@ class FileChecker extends SourceChecker implements StatementsSource
                         $namespace_checker->getAliasedClassesFlipped();
 
                     $this->declared_classes = array_merge($namespace_checker->getDeclaredClasses());
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_ && $check_functions) {
-                    $function_context = new Context($this->file_name, $file_context->self);
-                    $function_checkers[$stmt->name]->check($function_context, $file_context);
-
-                    if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                        /** @var string */
-                        $method_id = $function_checkers[$stmt->name]->getMethodId();
-
-                        $return_type = FunctionChecker::getFunctionReturnType(
-                            $method_id,
-                            $this->file_name
-                        );
-
-                        $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
-                            $method_id,
-                            $this->file_name
-                        );
-
-                        $function_checkers[$stmt->name]->checkReturnTypes(
-                            false,
-                            $return_type,
-                            $return_type_location
-                        );
-                    }
                 }
             } else {
                 $leftover_stmts[] = $stmt;
+            }
+        }
+
+        foreach ($interfaces_to_check as $interface_checker) {
+            $interface_checker->check(false);
+        }
+
+        foreach ($classes_to_check as $class_checker) {
+            $class_checker->check($check_functions, null, $update_docblocks);
+        }
+
+        foreach ($function_checkers as $function_checker) {
+            $function_context = new Context($this->file_name, $file_context->self);
+            $function_checker->check($function_context, $file_context);
+
+            if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+                /** @var string */
+                $method_id = $function_checker->getMethodId();
+
+                $return_type = FunctionChecker::getFunctionReturnType(
+                    $method_id,
+                    $this->file_name
+                );
+
+                $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
+                    $method_id,
+                    $this->file_name
+                );
+
+                $function_checker->checkReturnTypes(
+                    false,
+                    $return_type,
+                    $return_type_location
+                );
             }
         }
 
