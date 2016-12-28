@@ -53,7 +53,7 @@ class IfChecker
         //   exit
         // }
         // echo $matches[0];
-        $first_if_cond_expr = self::getFirstFunctionCallOrAssignment($stmt->cond);
+        $first_if_cond_expr = self::getDefinitelyEvaluatedExpression($stmt->cond);
 
         if ($first_if_cond_expr &&
             ExpressionChecker::check($statements_checker, $first_if_cond_expr, $context) === false
@@ -721,7 +721,7 @@ class IfChecker
      * @param  PhpParser\Node\Expr $stmt
      * @return PhpParser\Node\Expr|null
      */
-    protected static function getFirstFunctionCallOrAssignment(PhpParser\Node\Expr $stmt)
+    protected static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             || $stmt instanceof PhpParser\Node\Expr\StaticCall
@@ -732,11 +732,21 @@ class IfChecker
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            return self::getFirstFunctionCallOrAssignment($stmt->left);
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
+            ) {
+                return self::getDefinitelyEvaluatedExpression($stmt->left);
+            }
+
+            return $stmt;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
+            return self::getDefinitelyEvaluatedExpression($stmt->left);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            return self::getFirstFunctionCallOrAssignment($stmt->expr);
+            return self::getDefinitelyEvaluatedExpression($stmt->expr);
         }
 
         return null;

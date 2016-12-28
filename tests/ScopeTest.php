@@ -358,9 +358,46 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     public function testIfNotEqualsFalse()
     {
         $stmts = self::$parser->parse('<?php
-        if (($row = rand(0,10) ? [] : false) !== false) {
-           $row[0] = "good";
+        if (($row = rand(0,10) ? [1] : false) !== false) {
            echo $row[0];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testIfNotEqualsNull()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (($row = rand(0,10) ? [1] : null) !== null) {
+           echo $row[0];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testIfNullNotEquals()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (null !== ($row = rand(0,10) ? [1] : null)) {
+           echo $row[0];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testIfNullEquals()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (null === ($row = rand(0,10) ? [1] : null)) {
+
+        } else {
+            echo $row[0];
         }
         ');
 
