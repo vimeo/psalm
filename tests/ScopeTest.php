@@ -327,7 +327,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function testNegatedAssignmentInIf()
     {
-        $this->markTestIncomplete('This currently fails');
         $stmts = self::$parser->parse('<?php
         if (!($row = (rand(0, 10) ? [5] : null))) {
             // do nothing
@@ -356,7 +355,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
-    public function testIfNotEqualFalse()
+    public function testIfNotEqualsFalse()
     {
         $this->markTestIncomplete('This currently fails');
         $stmts = self::$parser->parse('<?php
