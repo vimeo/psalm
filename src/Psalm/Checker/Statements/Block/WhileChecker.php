@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\Statements\Expression\AssertionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Type;
@@ -28,7 +29,7 @@ class WhileChecker
             return false;
         }
 
-        $while_types = TypeChecker::getTypeAssertions(
+        $while_types = AssertionChecker::getAssertions(
             $stmt->cond,
             $statements_checker->getFQCLN(),
             $statements_checker->getNamespace(),
