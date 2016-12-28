@@ -798,4 +798,117 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
     }
+
+    public function testTwoVarLogic()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 10) ? "hello" : null;
+        $b = rand(0, 10) ? "goodbye" : null;
+
+        if ($a || $b) {
+            if ($a) {
+                $c = $a;
+            } else {
+                $c = $b;
+            }
+
+            echo strpos($c, "e");
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testThreeVarLogic()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 10) ? "hello" : null;
+        $b = rand(0, 10) ? "goodbye" : null;
+        $c = rand(0, 10) ? "hello" : null;
+
+        if ($a || $b || $c) {
+            if ($a) {
+                $d = $a;
+            } elseif ($b) {
+                $d = $b;
+            } else {
+                $d = $c;
+            }
+
+            echo strpos($d, "e");
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     */
+    public function testThreeVarLogicWithChange()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 10) ? "hello" : null;
+        $b = rand(0, 10) ? "goodbye" : null;
+        $c = rand(0, 10) ? "hello" : null;
+
+        if ($a || $b || $c) {
+            $c = false;
+
+            if ($a) {
+                $d = $a;
+            } elseif ($b) {
+                $d = $b;
+            } else {
+                $d = $c;
+            }
+
+            echo strpos($d, "e");
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
+    public function testNegateAssertionAndOther()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 10) ? "hello" : null;
+
+        if (rand(0, 10) > 1 && is_string($a)) {
+            throw new \Exception("bad");
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
+    }
+
+    public function testRefineORedType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function doThing() : void
+            {
+                if ($this instanceof B || $this instanceof C) {
+                    if ($this instanceof B) {
+
+                    }
+                }
+            }
+        }
+        class B extends A {}
+        class C extends A {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

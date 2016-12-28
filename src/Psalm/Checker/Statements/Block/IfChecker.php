@@ -6,6 +6,7 @@ use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
+use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IfScope;
@@ -77,34 +78,20 @@ class IfChecker
 
         $reconcilable_if_types = null;
 
-        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp) {
-            $reconcilable_if_types = TypeChecker::getReconcilableTypeAssertions(
-                $stmt->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
+        $if_clauses = TypeChecker::getFormula(
+            $stmt->cond,
+            $statements_checker->getFQCLN(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
 
-            $if_scope->negatable_if_types = TypeChecker::getNegatableTypeAssertions(
-                $stmt->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
-        } else {
-            $reconcilable_if_types = TypeChecker::getTypeAssertions(
-                $stmt->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
+        $if_context->clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-            $if_scope->negatable_if_types = $reconcilable_if_types;
-        }
+        $negated_clauses = TypeChecker::negateFormula($if_clauses);
 
-        $if_scope->negated_types = $if_scope->negatable_if_types
-                                    ? TypeChecker::negateTypes($if_scope->negatable_if_types)
-                                    : [];
+        $if_scope->negated_types = TypeChecker::getTruthsFromFormula($negated_clauses);
+
+        $reconcilable_if_types = TypeChecker::getTruthsFromFormula($if_context->clauses);
 
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
@@ -167,23 +154,29 @@ class IfChecker
 
         // check the elseifs
         foreach ($stmt->elseifs as $elseif) {
+            $elseif_context = clone $original_context;
+
             self::checkElseIfBlock(
                 $statements_checker,
                 $elseif,
                 $if_scope,
-                clone $original_context,
-                $context
+                $elseif_context,
+                $context,
+                $negated_clauses
             );
         }
 
         // check the else
         if ($stmt->else) {
+            $else_context = clone $original_context;
+
             self::checkElseBlock(
                 $statements_checker,
                 $stmt->else,
                 $if_scope,
-                clone $original_context,
-                $context
+                $else_context,
+                $context,
+                $negated_clauses
             );
         }
 
@@ -298,12 +291,12 @@ class IfChecker
         // update the parent context as necessary, but only if we can safely reason about type negation.
         // We only update vars that changed both at the start of the if block and then again by an assignment
         // in the if statement.
-        if ($if_scope->negatable_if_types && !$mic_drop) {
+        if ($if_scope->negated_types && !$mic_drop) {
             $outer_context->update(
                 $old_if_context,
                 $if_context,
                 $has_leaving_statements,
-                array_intersect(array_keys($pre_assignment_else_redefined_vars), array_keys($if_scope->negatable_if_types)),
+                array_intersect(array_keys($pre_assignment_else_redefined_vars), array_keys($if_scope->negated_types)),
                 $if_scope->updated_vars
             );
         }
@@ -336,6 +329,7 @@ class IfChecker
      * @param  IfScope                     $if_scope
      * @param  Context                     $elseif_context
      * @param  Context                     $outer_context
+     * @param  array<Clause>               $negated_clauses
      * @return false|null
      */
     protected static function checkElseIfBlock(
@@ -343,7 +337,8 @@ class IfChecker
         PhpParser\Node\Stmt\ElseIf_ $elseif,
         IfScope $if_scope,
         Context $elseif_context,
-        Context $outer_context
+        Context $outer_context,
+        array &$negated_clauses
     ) {
         $original_context = clone $elseif_context;
 
@@ -362,37 +357,28 @@ class IfChecker
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
         }
 
-        if ($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp) {
-            $reconcilable_elseif_types = TypeChecker::getReconcilableTypeAssertions(
-                $elseif->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
-
-            $negatable_elseif_types = TypeChecker::getNegatableTypeAssertions(
-                $elseif->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
-        } else {
-            $reconcilable_elseif_types = $negatable_elseif_types = TypeChecker::getTypeAssertions(
-                $elseif->cond,
-                $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
-            );
-        }
-
         // check the elseif
         if (ExpressionChecker::check($statements_checker, $elseif->cond, $elseif_context) === false) {
             return false;
         }
 
-        $negated_elseif_types = $negatable_elseif_types
-                                ? TypeChecker::negateTypes($negatable_elseif_types)
-                                : [];
+        $elseif_clauses = TypeChecker::getFormula(
+            $elseif->cond,
+            $statements_checker->getFQCLN(),
+            $statements_checker->getNamespace(),
+            $statements_checker->getAliasedClasses()
+        );
+
+        $elseif_context->clauses = TypeChecker::simplifyCNF(
+            array_merge(
+                $original_context->clauses,
+                $negated_clauses,
+                $elseif_clauses
+            )
+        );
+
+        $reconcilable_elseif_types = TypeChecker::getTruthsFromFormula($elseif_context->clauses);
+        $negated_elseif_types = TypeChecker::getTruthsFromFormula(TypeChecker::negateFormula($elseif_clauses));
 
         $all_negated_vars = array_unique(
             array_merge(
@@ -489,7 +475,7 @@ class IfChecker
                 }
             }
 
-            if ($negatable_elseif_types) {
+            if ($negated_elseif_types) {
                 $outer_context->update(
                     $old_elseif_context,
                     $elseif_context,
@@ -542,6 +528,11 @@ class IfChecker
                 }
             }
         }
+
+        $negated_clauses = array_merge(
+            $negated_clauses,
+            TypeChecker::negateFormula($elseif_clauses)
+        );
     }
 
     /**
@@ -550,6 +541,7 @@ class IfChecker
      * @param  IfScope                   $if_scope
      * @param  Context                   $else_context
      * @param  Context                   $outer_context
+     * @param  array<Clause>             $negated_clauses
      * @return false|null
      */
     protected static function checkElseBlock(
@@ -557,13 +549,23 @@ class IfChecker
         PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
         Context $else_context,
-        Context $outer_context
+        Context $outer_context,
+        array $negated_clauses
     ) {
         $original_context = clone $else_context;
 
-        if ($if_scope->negated_types) {
+        $else_context->clauses = TypeChecker::simplifyCNF(
+            array_merge(
+                $outer_context->clauses,
+                $negated_clauses
+            )
+        );
+
+        $else_types = TypeChecker::getTruthsFromFormula($else_context->clauses);
+
+        if ($else_types) {
             $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
-                $if_scope->negated_types,
+                $else_types,
                 $else_context->vars_in_scope,
                 new CodeLocation($statements_checker->getSource(), $else),
                 $statements_checker->getSuppressedIssues()

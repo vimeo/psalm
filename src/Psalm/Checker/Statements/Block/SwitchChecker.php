@@ -156,16 +156,20 @@ class SwitchChecker
                         }
                     }
 
+                    $context_new_vars = array_diff_key($case_context->vars_in_scope, $context->vars_in_scope);
+
                     if ($new_vars_in_scope === null) {
-                        $new_vars_in_scope = array_diff_key($case_context->vars_in_scope, $context->vars_in_scope);
+                        $new_vars_in_scope = $context_new_vars;
                         $new_vars_possibly_in_scope = array_diff_key(
                             $case_context->vars_possibly_in_scope,
                             $context->vars_possibly_in_scope
                         );
                     } else {
-                        foreach ($new_vars_in_scope as $new_var => $type) {
+                        foreach ($new_vars_in_scope as $new_var => &$type) {
                             if (!isset($case_context->vars_in_scope[$new_var])) {
                                 unset($new_vars_in_scope[$new_var]);
+                            } else {
+                                $type = Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);
                             }
                         }
 
