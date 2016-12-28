@@ -41,9 +41,12 @@ class WhileChecker
         ) {
             // do nothing
         } else {
+            $changed_vars = [];
+
             $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $while_types,
                 $while_context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );

@@ -1317,6 +1317,7 @@ class TypeChecker
      *
      * @param  array<string, string>     $new_types
      * @param  array<string, Type\Union> $existing_types
+     * @param  array<string>             $changed_types
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues
      * @return array<string, Type\Union>|false
@@ -1324,13 +1325,12 @@ class TypeChecker
     public static function reconcileKeyedTypes(
         array $new_types,
         array $existing_types,
+        array &$changed_types,
         CodeLocation $code_location,
         array $suppressed_issues = []
     ) {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
         $keys = array_unique($keys);
-
-        $result_types = [];
 
         if (empty($new_types)) {
             return $existing_types;
@@ -1338,7 +1338,6 @@ class TypeChecker
 
         foreach ($keys as $key) {
             if (!isset($new_types[$key])) {
-                $result_types[$key] = $existing_types[$key];
                 continue;
             }
 
@@ -1351,6 +1350,8 @@ class TypeChecker
             if ($result_type && empty($result_type->types)) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
+
+            $before_adjustment = (string)$result_type;
 
             foreach ($new_type_parts as $new_type_part) {
                 $result_type = self::reconcileTypes(
@@ -1375,10 +1376,14 @@ class TypeChecker
                 return false;
             }
 
-            $result_types[$key] = $result_type;
+            if ((string)$result_type !== $before_adjustment) {
+                $changed_types[] = $key;
+            }
+
+            $existing_types[$key] = $result_type;
         }
 
-        return $result_types;
+        return $existing_types;
     }
 
     /**
