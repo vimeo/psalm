@@ -414,7 +414,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $config = Config::getInstance();
 
-        if ($this instanceof ClassChecker) {
+        if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
             foreach (ClassChecker::getInterfacesForClass($this->fq_class_name) as $interface_id => $interface_name) {
                 if (isset(self::$public_class_constants[$interface_name])) {
                     self::$public_class_constants[$this->fq_class_name] +=
@@ -426,7 +426,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $implemented_method_id = $this->fq_class_name . '::' . $method_name;
                     MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
 
-                    if (!isset(self::$public_class_methods[$this->fq_class_name][$method_name])) {
+                    if (!isset(self::$public_class_methods[$this->fq_class_name][$method_name]) &&
+                        !$this->class->isAbstract()
+                    ) {
                         $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
 
                         if (IssueBuffer::accepts(
