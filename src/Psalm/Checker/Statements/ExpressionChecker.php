@@ -7,6 +7,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\MethodChecker;
+use Psalm\Checker\Statements\Expression\AssertionChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\Checker\Statements\Expression\FetchChecker;
@@ -1504,7 +1505,10 @@ class ExpressionChecker
         Context $context
     ) {
         $stmt->inferredType = Type::getBool();
-        return self::check($statements_checker, $stmt->expr, $context);
+
+        if (self::check($statements_checker, $stmt->expr, $context) === false) {
+            return false;
+        }
     }
 
     /**

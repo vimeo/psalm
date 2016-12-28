@@ -53,7 +53,7 @@ class IfChecker
         //   exit
         // }
         // echo $matches[0];
-        $first_if_cond_expr = self::getFirstFunctionCall($stmt->cond);
+        $first_if_cond_expr = self::getFirstFunctionCallOrAssignment($stmt->cond);
 
         if ($first_if_cond_expr &&
             ExpressionChecker::check($statements_checker, $first_if_cond_expr, $context) === false
@@ -721,21 +721,22 @@ class IfChecker
      * @param  PhpParser\Node\Expr $stmt
      * @return PhpParser\Node\Expr|null
      */
-    protected static function getFirstFunctionCall(PhpParser\Node\Expr $stmt)
+    protected static function getFirstFunctionCallOrAssignment(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             || $stmt instanceof PhpParser\Node\Expr\StaticCall
             || $stmt instanceof PhpParser\Node\Expr\FuncCall
+            || $stmt instanceof PhpParser\Node\Expr\Assign
         ) {
             return $stmt;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            return self::getFirstFunctionCall($stmt->left);
+            return self::getFirstFunctionCallOrAssignment($stmt->left);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            return self::getFirstFunctionCall($stmt->expr);
+            return self::getFirstFunctionCallOrAssignment($stmt->expr);
         }
 
         return null;
