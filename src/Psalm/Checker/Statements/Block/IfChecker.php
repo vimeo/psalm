@@ -293,6 +293,10 @@ class IfChecker
                 $statements_checker->getSuppressedIssues()
             );
 
+            foreach ($changed_vars as $changed_var) {
+                $outer_context->removeVarFromClauses($changed_var);
+            }
+
             if ($outer_context_vars_reconciled === false) {
                 return false;
             }
@@ -305,11 +309,16 @@ class IfChecker
         // We only update vars that changed both at the start of the if block and then again by an assignment
         // in the if statement.
         if ($if_scope->negated_types && !$mic_drop) {
+            $vars_to_update = array_intersect(
+                array_keys($pre_assignment_else_redefined_vars),
+                array_keys($if_scope->negated_types)
+            );
+
             $outer_context->update(
                 $old_if_context,
                 $if_context,
                 $has_leaving_statements,
-                array_intersect(array_keys($pre_assignment_else_redefined_vars), array_keys($if_scope->negated_types)),
+                $vars_to_update,
                 $if_scope->updated_vars
             );
         }
