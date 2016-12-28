@@ -1162,6 +1162,10 @@ class ExpressionChecker
         $namespace,
         array $aliased_classes
     ) {
+        if ($stmt instanceof PhpParser\Node\Expr\Assign) {
+            return self::getArrayVarId($stmt->var, $this_class_name, $namespace, $aliased_classes);
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch &&
             ($stmt->dim instanceof PhpParser\Node\Scalar\String_ ||
                 $stmt->dim instanceof PhpParser\Node\Scalar\LNumber)

@@ -357,7 +357,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     public function testIfNotEqualsFalse()
     {
-        $this->markTestIncomplete('This currently fails');
         $stmts = self::$parser->parse('<?php
         if (($row = rand(0,10) ? [] : false) !== false) {
            $row[0] = "good";
