@@ -1351,7 +1351,6 @@ class TypeChecker
 
         foreach ($keys as $key) {
             if (!isset($new_types[$key])) {
-                $existing_types[$key];
                 continue;
             }
 

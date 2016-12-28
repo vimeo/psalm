@@ -165,11 +165,12 @@ class SwitchChecker
                             $context->vars_possibly_in_scope
                         );
                     } else {
-                        foreach ($new_vars_in_scope as $new_var => &$type) {
+                        foreach ($new_vars_in_scope as $new_var => $type) {
                             if (!isset($case_context->vars_in_scope[$new_var])) {
                                 unset($new_vars_in_scope[$new_var]);
                             } else {
-                                $type = Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);
+                                $new_vars_in_scope[$new_var] =
+                                    Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);
                             }
                         }
 
