@@ -174,6 +174,23 @@ class Context
 
     /**
      * @param  string                 $remove_var_id
+     * @return void
+     */
+    public function removeVarFromClauses($remove_var_id)
+    {
+        $clauses_to_keep = [];
+
+        foreach ($this->clauses as $clause) {
+            if (!isset($clause->possibilities[$remove_var_id])) {
+                $clauses_to_keep[] = $clause;
+            }
+        }
+
+        $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * @param  string                 $remove_var_id
      * @param  \Psalm\Type\Union|null $type
      * @return void
      */
@@ -187,15 +204,7 @@ class Context
             return;
         }
 
-        $clauses_to_keep = [];
-
-        foreach ($this->clauses as $clause) {
-            if (!isset($clause->possibilities[$remove_var_id])) {
-                $clauses_to_keep[] = $clause;
-            }
-        }
-
-        $this->clauses = $clauses_to_keep;
+        $this->removeVarFromClauses($remove_var_id);
 
         if ($type->hasArray() || $type->isMixed()) {
             $vars_to_remove = [];

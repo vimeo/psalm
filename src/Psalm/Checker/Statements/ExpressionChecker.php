@@ -676,11 +676,14 @@ class ExpressionChecker
                 return false;
             }
 
+            $changed_vars = [];
+
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $left_type_assertions,
                 $context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
@@ -730,11 +733,14 @@ class ExpressionChecker
                 return false;
             }
 
+            $changed_vars = [];
+
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $negated_type_assertions,
                 $context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
@@ -1409,9 +1415,12 @@ class ExpressionChecker
 
         $if_return_type = null;
 
+        $changed_vars = [];
+
         $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
             $reconcilable_if_types,
             $t_if_context->vars_in_scope,
+            $changed_vars,
             new CodeLocation($statements_checker->getSource(), $stmt->cond),
             $statements_checker->getSuppressedIssues()
         );
@@ -1434,6 +1443,7 @@ class ExpressionChecker
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $stmt->else),
                 $statements_checker->getSuppressedIssues()
             );

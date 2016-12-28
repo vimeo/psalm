@@ -95,16 +95,23 @@ class IfChecker
 
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
+            $changed_vars = [];
+
             $if_vars_in_scope_reconciled =
                 TypeChecker::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
+                    $changed_vars,
                     new CodeLocation($statements_checker->getSource(), $stmt->cond),
                     $statements_checker->getSuppressedIssues()
                 );
 
             if ($if_vars_in_scope_reconciled === false) {
                 return false;
+            }
+
+            foreach ($changed_vars as $changed_var) {
+                $if_context->removeVarFromClauses($changed_var);
             }
 
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
@@ -123,9 +130,12 @@ class IfChecker
         $temp_else_context = clone $original_context;
 
         if ($if_scope->negated_types) {
+            $changed_vars = [];
+
             $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -273,9 +283,12 @@ class IfChecker
             $if_scope->redefined_vars = Context::getRedefinedVars($outer_context, $if_context);
             $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
         } elseif (!$stmt->else && !$stmt->elseifs && $if_scope->negated_types) {
+            $changed_vars = [];
+
             $outer_context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $outer_context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -343,9 +356,12 @@ class IfChecker
         $original_context = clone $elseif_context;
 
         if ($if_scope->negated_types) {
+            $changed_vars = [];
+
             $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -399,9 +415,12 @@ class IfChecker
 
         // if the elseif has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_elseif_types) {
+            $changed_vars = [];
+
             $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -564,9 +583,12 @@ class IfChecker
         $else_types = TypeChecker::getTruthsFromFormula($else_context->clauses);
 
         if ($else_types) {
+            $changed_vars = [];
+
             $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
                 $else_types,
                 $else_context->vars_in_scope,
+                $changed_vars,
                 new CodeLocation($statements_checker->getSource(), $else),
                 $statements_checker->getSuppressedIssues()
             );
