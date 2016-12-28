@@ -890,6 +890,24 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
     }
 
+    public function testRepeatAssertionWithOther()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 10) ? "hello" : null;
+
+        if (rand(0, 10) > 1 || is_string($a)) {
+            if (is_string($a)) {
+                echo strpos("e", $a);
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
+    }
+
     public function testRefineORedType()
     {
         $stmts = self::$parser->parse('<?php

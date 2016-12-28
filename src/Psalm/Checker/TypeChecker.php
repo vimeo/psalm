@@ -264,7 +264,7 @@ class TypeChecker
             $is_redundant = false;
 
             foreach ($cloned_clauses as $clause_b) {
-                if ($clause_a === $clause_b) {
+                if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
                     continue;
                 }
 
