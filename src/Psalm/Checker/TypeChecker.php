@@ -655,6 +655,7 @@ class TypeChecker
      * @param  bool       $ignore_null
      * @param  bool       &$has_scalar_match
      * @param  bool       &$type_coerced    whether or not there was type coercion involved
+     * @param  bool       &$to_string_cast
      * @return bool
      */
     public static function isContainedBy(
@@ -662,7 +663,8 @@ class TypeChecker
         Type\Union $container_type,
         $ignore_null = false,
         &$has_scalar_match = null,
-        &$type_coerced = null
+        &$type_coerced = null,
+        &$to_string_cast = null
     ) {
         $has_scalar_match = true;
 
@@ -758,6 +760,7 @@ class TypeChecker
                     // check whether the object has a __toString method
                     if (MethodChecker::methodExists($input_type_part->value . '::__toString')) {
                         $type_match_found = true;
+                        $to_string_cast = true;
                     }
                 }
 

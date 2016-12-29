@@ -14,6 +14,7 @@ use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\InvalidScope;
@@ -1169,7 +1170,8 @@ class CallChecker
             $param_type,
             true,
             $scalar_type_match_found,
-            $coerced_type
+            $coerced_type,
+            $to_string_cast
         );
 
         if ($coerced_type) {
@@ -1185,13 +1187,26 @@ class CallChecker
             }
         }
 
+        if ($to_string_cast && $cased_method_id !== 'echo') {
+            if (IssueBuffer::accepts(
+                new ImplicitToStringCast(
+                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' .
+                        $param_type . ', ' . $input_type . ' provided with a __toString method',
+                    $code_location
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         if (!$type_match_found) {
             if ($scalar_type_match_found) {
                 if ($cased_method_id !== 'echo') {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
-                                ', ' . $input_type . ' provided',
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' .
+                                $param_type . ', ' . $input_type . ' provided',
                             $code_location
                         ),
                         $statements_checker->getSuppressedIssues()
