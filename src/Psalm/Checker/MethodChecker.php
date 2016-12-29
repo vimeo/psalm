@@ -305,12 +305,6 @@ class MethodChecker extends FunctionLikeChecker
             self::setDeclaringMethodId($this->fq_class_name . '::__construct', $method_id);
         }
 
-        if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
-            $this->suppressed_issues = self::$method_suppress[$method_id];
-
-            return null;
-        }
-
         self::$have_registered[$method_id] = true;
 
         self::$declaring_methods[$method_id] = $method_id;

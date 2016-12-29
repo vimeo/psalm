@@ -23,6 +23,11 @@ class TraitChecker extends ClassLikeChecker
     protected static $existing_traits = [];
 
     /**
+     * @var array<MethodChecker>
+     */
+    protected $methods = [];
+
+    /**
      * @param   PhpParser\Node\Stmt\ClassLike   $class
      * @param   StatementsSource                $source
      * @param   string                          $fq_class_name
@@ -61,7 +66,18 @@ class TraitChecker extends ClassLikeChecker
             throw new \InvalidArgumentException('TraitChecker::check must be called with a $class_context');
         }
 
-        parent::check($check_methods, $class_context);
+        parent::check(false, $class_context);
+    }
+
+    /**
+     * @param   Context    $class_context
+     * @return  void
+     */
+    public function checkMethods(Context $class_context)
+    {
+        foreach ($this->methods as $method_checker) {
+            $method_checker->check($class_context, null);
+        }
     }
 
     /**

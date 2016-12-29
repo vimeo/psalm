@@ -301,8 +301,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($this instanceof InterfaceChecker) {
                 $parent_interfaces = InterfaceChecker::getParentInterfaces($this->fq_class_name);
                 $extra_interfaces = $parent_interfaces;
-            }
-            else {
+            } else {
                 $parent_interfaces = self::$class_implements[$this->fq_class_name];
             }
 
@@ -331,8 +330,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 if ($this instanceof ClassChecker) {
                     self::$class_implements[$this->fq_class_name][strtolower($extra_interface_name)] =
                         $extra_interface_name;
-                }
-                else {
+                } else {
                     $this->registerInheritedMethods($extra_interface_name);
                 }
             }
@@ -430,7 +428,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if ($check_methods) {
             foreach ($trait_checkers as $trait_checker) {
-                $trait_checker->check(true, $class_context);
+                $trait_checker->checkMethods($class_context);
             }
 
             // do the method checks after all class methods have been initialised
@@ -455,6 +453,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     );
                 }
             }
+        } elseif ($this instanceof TraitChecker) {
+            $this->methods = $method_checkers;
         }
 
         if (!$this->class->name) {
