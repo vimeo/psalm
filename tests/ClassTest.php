@@ -115,4 +115,25 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testSingleFileInheritance()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A extends B {}
+
+        class B {
+            public function foo() : void {
+                $c = new A();
+                $c->bar();
+            }
+
+            protected function bar() : void {
+                echo "hello";
+            }
+        }');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
