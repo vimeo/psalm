@@ -1043,53 +1043,73 @@ class ExpressionChecker
         $config = Config::getInstance();
 
         if ($left_type && $right_type) {
-            foreach ($left_type->types as $left_type_part) {
-                foreach ($right_type->types as $right_type_part) {
-                    if ($left_type_part->isMixed() || $right_type_part->isMixed()) {
-                        if ($left_type_part->isMixed()) {
-                            if (IssueBuffer::accepts(
-                                new MixedOperand(
-                                    'Left operand cannot be mixed',
-                                    new CodeLocation($statements_checker->getSource(), $left)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } else {
-                            if (IssueBuffer::accepts(
-                                new MixedOperand(
-                                    'Right operand cannot be mixed',
-                                    new CodeLocation($statements_checker->getSource(), $right)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        }
+            $result_type = Type::getString();
 
-                        $result_type = Type::getString();
-                        return;
+            if ($left_type->isMixed() || $right_type->isMixed()) {
+                if ($left_type->isMixed()) {
+                    if (IssueBuffer::accepts(
+                        new MixedOperand(
+                            'Left operand cannot be mixed',
+                            new CodeLocation($statements_checker->getSource(), $left)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
                     }
-
-                    if ($left_type_part->isString() && $right_type_part->isString()) {
-                        $result_type = Type::getString();
-                        continue;
+                } else {
+                    if (IssueBuffer::accepts(
+                        new MixedOperand(
+                            'Right operand cannot be mixed',
+                            new CodeLocation($statements_checker->getSource(), $right)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
                     }
+                }
 
-                    if ($config->strict_binary_operands) {
-                        if (IssueBuffer::accepts(
-                            new InvalidOperand(
-                                'Cannot concatenate a string and a non-string',
-                                new CodeLocation($statements_checker->getSource(), $parent)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
+                return;
+            }
 
-                    $result_type = Type::getString();
+            $left_type_match = TypeChecker::isContainedBy(
+                $left_type,
+                Type::getString(),
+                false,
+                $left_has_scalar_match,
+                $left_type_coerced,
+                $left_to_string_cast
+            );
+
+            $right_type_match = TypeChecker::isContainedBy(
+                $right_type,
+                Type::getString(),
+                false,
+                $right_has_scalar_match,
+                $right_type_coerced,
+                $right_to_string_cast
+            );
+
+            if (!$left_type_match && (!$left_has_scalar_match || $config->strict_binary_operands)) {
+                if (IssueBuffer::accepts(
+                    new InvalidOperand(
+                        'Cannot concatenate a string and a ' . $left_type,
+                        new CodeLocation($statements_checker->getSource(), $left)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if (!$right_type_match && (!$right_has_scalar_match || $config->strict_binary_operands)) {
+                if (IssueBuffer::accepts(
+                    new InvalidOperand(
+                        'Cannot concatenate a string and a ' . $right_type,
+                        new CodeLocation($statements_checker->getSource(), $right)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
             }
         }
