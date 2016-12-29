@@ -12,6 +12,8 @@
     </inspectFiles>
 
     <issueHandler>
+        <NullOperand errorLevel="suppress" />
+
         <MissingReturnType>
             <excludeFiles>
                 <directory name="tests" />

@@ -525,7 +525,7 @@ class AssignmentChecker
                 if ($class_property_type === false) {
                     if (IssueBuffer::accepts(
                         new MissingPropertyType(
-                            'Property ' . $lhs_type_part->value . '::$' . $stmt->name . ' does not have a declared ' .
+                            'Property ' . $lhs_type_part->value . '::$' . $prop_name . ' does not have a declared ' .
                                 'type',
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
@@ -649,6 +649,10 @@ class AssignmentChecker
         );
 
         $prop_name = $stmt->name;
+
+        if (!is_string($prop_name)) {
+            return;
+        }
 
         if (!isset($class_properties[$prop_name])) {
             $all_class_properties = null;

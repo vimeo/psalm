@@ -565,7 +565,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $method_checker = self::$method_checkers[$method_id];
         }
 
-        if (!$stmt->isAbstract()) {
+        if (!$stmt->isAbstract() && $class_context->self) {
             MethodChecker::setDeclaringMethodId(
                 $class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)),
                 $method_id
