@@ -8,42 +8,22 @@ class FileFilter
     /**
      * @var array<string>
      */
-    protected $only_dirs = [];
+    protected $directories = [];
 
     /**
      * @var array<string>
      */
-    protected $ignore_dirs = [];
+    protected $files = [];
 
     /**
      * @var array<string>
      */
-    protected $only_files = [];
+    protected $files_lowercase = [];
 
     /**
      * @var array<string>
      */
-    protected $only_files_lowercase = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $ignore_files = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $ignore_files_lowercase = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $include_patterns = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $exclude_patterns = [];
+    protected $patterns = [];
 
     /**
      * @var bool
@@ -69,37 +49,21 @@ class FileFilter
      * @param  bool             $inclusive
      * @return self
      */
-    public static function loadFromXML(SimpleXMLElement $e, $inclusive)
+    public static function loadFromXMLElement(SimpleXMLElement $e, $inclusive)
     {
         $filter = new self($inclusive);
 
-        if ($inclusive) {
-            if ($e->directory) {
-                /** @var \SimpleXMLElement $directory */
-                foreach ($e->directory as $directory) {
-                    $filter->addOnlyDirectory((string)$directory['name']);
-                }
+        if ($e->directory) {
+            /** @var \SimpleXMLElement $directory */
+            foreach ($e->directory as $directory) {
+                $filter->addDirectory((string)$directory['name']);
             }
+        }
 
-            if ($e->file) {
-                /** @var \SimpleXMLElement $file */
-                foreach ($e->file as $file) {
-                    $filter->addOnlyFile((string)$file['name']);
-                }
-            }
-        } else {
-            if ($e->directory) {
-                /** @var \SimpleXMLElement $directory */
-                foreach ($e->directory as $directory) {
-                    $filter->addIgnoreDirectory((string)$directory['name']);
-                }
-            }
-
-            if ($e->file) {
-                /** @var \SimpleXMLElement $file */
-                foreach ($e->file as $file) {
-                    $filter->addIgnoreFile((string)$file['name']);
-                }
+        if ($e->file) {
+            /** @var \SimpleXMLElement $file */
+            foreach ($e->file as $file) {
+                $filter->addFile((string)$file['name']);
             }
         }
 
@@ -123,7 +87,7 @@ class FileFilter
     public function allows($file_name, $case_sensitive = false)
     {
         if ($this->inclusive) {
-            foreach ($this->only_dirs as $include_dir) {
+            foreach ($this->directories as $include_dir) {
                 if ($case_sensitive) {
                     if (strpos($file_name, $include_dir) === 0) {
                         return true;
@@ -136,11 +100,11 @@ class FileFilter
             }
 
             if ($case_sensitive) {
-                if (in_array($file_name, $this->only_files)) {
+                if (in_array($file_name, $this->files)) {
                     return true;
                 }
             } else {
-                if (in_array(strtolower($file_name), $this->only_files_lowercase)) {
+                if (in_array(strtolower($file_name), $this->files_lowercase)) {
                     return true;
                 }
             }
@@ -149,7 +113,7 @@ class FileFilter
         }
 
         // exclusive
-        foreach ($this->ignore_dirs as $exclude_dir) {
+        foreach ($this->directories as $exclude_dir) {
             if ($case_sensitive) {
                 if (strpos($file_name, $exclude_dir) === 0) {
                     return false;
@@ -162,11 +126,11 @@ class FileFilter
         }
 
         if ($case_sensitive) {
-            if (in_array($file_name, $this->ignore_files)) {
+            if (in_array($file_name, $this->files)) {
                 return false;
             }
         } else {
-            if (in_array(strtolower($file_name), $this->ignore_files_lowercase)) {
+            if (in_array(strtolower($file_name), $this->files_lowercase)) {
                 return false;
             }
         }
@@ -177,78 +141,35 @@ class FileFilter
     /**
      * @return array<string>
      */
-    public function getIncludeDirs()
+    public function getDirectories()
     {
-        return $this->only_dirs;
+        return $this->directories;
     }
 
     /**
      * @return array
      */
-    public function getExcludeDirs()
+    public function getFiles()
     {
-        return $this->ignore_dirs;
-    }
-
-    /**
-     * @return array
-     */
-    public function getIncludeFiles()
-    {
-        return $this->only_files;
-    }
-
-    /**
-     * @return array
-     */
-    public function getExcludeFiles()
-    {
-        return $this->ignore_files;
+        return $this->files;
     }
 
     /**
      * @param   string $file_name
      * @return  void
      */
-    public function addIgnoreFile($file_name)
+    public function addFile($file_name)
     {
-        if ($this->inclusive !== false) {
-            throw new \UnexpectedValueException('Cannot add exclude file when filter is not exclusive');
-        }
-
-        $this->ignore_files[] = $file_name;
-        $this->ignore_files_lowercase[] = strtolower($file_name);
-    }
-
-    /**
-     * @param   string $file_name
-     * @return  void
-     */
-    public function addOnlyFile($file_name)
-    {
-        if ($this->inclusive !== true) {
-            throw new \UnexpectedValueException('Cannot add include file when filter is not inclusive');
-        }
-
-        $this->only_files[] = $file_name;
-        $this->only_files_lowercase[] = strtolower($file_name);
+        $this->files[] = $file_name;
+        $this->files_lowercase[] = strtolower($file_name);
     }
 
     /**
      * @param string $dir_name
      * @return void
      */
-    public function addIgnoreDirectory($dir_name)
+    public function addDirectory($dir_name)
     {
-        $this->ignore_dirs[] = self::slashify($dir_name);
-    }
-
-    /**
-     * @param string $dir_name
-     * @return void
-     */
-    public function addOnlyDirectory($dir_name)
-    {
-        $this->only_dirs[] = self::slashify($dir_name);
+        $this->directories[] = self::slashify($dir_name);
     }
 }

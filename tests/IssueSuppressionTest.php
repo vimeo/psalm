@@ -47,7 +47,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
     public function testExcludeFile()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addIgnoreFile('somefile.php');
+        $filter->addFile('somefile.php');
         Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
 
         $stmts = self::$parser->parse('<?php
@@ -65,7 +65,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
     public function testIncludeFile()
     {
         $filter = new Config\FileFilter(true);
-        $filter->addOnlyFile('somefile.php');
+        $filter->addFile('somefile.php');
         Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
 
         $stmts = self::$parser->parse('<?php
@@ -86,7 +86,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
     public function testExcludeDirectory()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addIgnoreDirectory('src');
+        $filter->addDirectory('src');
         Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
 
         $stmts = self::$parser->parse('<?php
@@ -104,7 +104,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
     public function testIncludeDirectory()
     {
         $filter = new Config\FileFilter(true);
-        $filter->addOnlyDirectory('src2');
+        $filter->addDirectory('src2');
         Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
 
         (new FileChecker(

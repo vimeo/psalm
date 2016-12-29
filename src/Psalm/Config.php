@@ -154,7 +154,25 @@ class Config
     /**
      * Creates a new config object from the file
      *
-     * @param  string $file_name
+     * @param  string $file_path
+     * @return self
+     */
+    public static function loadFromXMLFile($file_path)
+    {
+        $file_contents = file_get_contents($file_path);
+
+        if ($file_contents === false) {
+            throw new \InvalidArgumentException('Cannot open ' . $file_path);
+        }
+
+        return self::loadFromXML($file_path, $file_contents);
+    }
+
+    /**
+     * Creates a new config object from an XML string
+     *
+     * @param  string $file_path
+     * @param  string $file_contents
      * @return self
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
@@ -162,17 +180,11 @@ class Config
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedOperand
      */
-    public static function loadFromXML($file_name)
+    public static function loadFromXML($file_path, $file_contents)
     {
-        $file_contents = file_get_contents($file_name);
-
-        if ($file_contents === false) {
-            throw new \InvalidArgumentException('Cannot open ' . $file_name);
-        }
-
         $config = new self();
 
-        $config->base_dir = dirname($file_name) . '/';
+        $config->base_dir = dirname($file_path) . '/';
 
         $config_xml = new SimpleXMLElement($file_contents);
 
@@ -229,7 +241,7 @@ class Config
         }
 
         if (isset($config_xml->projectFiles)) {
-            $config->project_files = FileFilter::loadFromXML($config_xml->projectFiles, true);
+            $config->project_files = FileFilter::loadFromXMLElement($config_xml->projectFiles, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -290,11 +302,11 @@ class Config
                 }
 
                 if (isset($issue_handler->ignoreFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->ignoreFiles, false);
+                    $config->issue_handlers[$key] = FileFilter::loadFromXMLElement($issue_handler->ignoreFiles, false);
                 }
 
                 if (isset($issue_handler->onlyFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->onlyFiles, true);
+                    $config->issue_handlers[$key] = FileFilter::loadFromXMLElement($issue_handler->onlyFiles, true);
                 }
             }
         }
@@ -393,7 +405,7 @@ class Config
 
         $file_name = $this->shortenFileName($file_name);
 
-        if ($this->getIncludeDirs() && $this->hide_external_errors) {
+        if ($this->getProjectDirectories() && $this->hide_external_errors) {
             if (!$this->isInProjectDirs($file_name)) {
                 return true;
             }
@@ -412,7 +424,7 @@ class Config
      */
     public function isInProjectDirs($file_name)
     {
-        foreach ($this->getIncludeDirs() as $dir_name) {
+        foreach ($this->getProjectDirectories() as $dir_name) {
             if (preg_match('/^' . preg_quote($dir_name, '/') . '/', $file_name)) {
                 return true;
             }
@@ -437,13 +449,13 @@ class Config
     /**
      * @return array<string>
      */
-    public function getIncludeDirs()
+    public function getProjectDirectories()
     {
         if (!$this->project_files) {
             return [];
         }
 
-        return $this->project_files->getIncludeDirs();
+        return $this->project_files->getDirectories();
     }
 
     /**

@@ -55,7 +55,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     public function testPropertyWithoutTypeSuppressingIssue()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addIgnoreFile('somefile.php');
+        $filter->addFile('somefile.php');
         Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
@@ -291,7 +291,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     public function testMixedPropertyFetch()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addIgnoreFile('somefile.php');
+        $filter->addFile('somefile.php');
         Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
@@ -319,7 +319,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     public function testMixedPropertyAssignment()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addIgnoreFile('somefile.php');
+        $filter->addFile('somefile.php');
         Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
