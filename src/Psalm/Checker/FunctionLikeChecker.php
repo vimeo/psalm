@@ -475,7 +475,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($this->function instanceof Function_) {
-            return ($this->namespace ? $this->namespace . '\\' : '') . strtolower($this->function->name);
+            return ($this->namespace ? strtolower($this->namespace) . '\\' : '') . strtolower($this->function->name);
         }
 
         return null;

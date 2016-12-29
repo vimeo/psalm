@@ -281,6 +281,29 @@ class StatementsChecker
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($this->file_name, $context->self);
                 $function_checkers[$stmt->name]->check($function_context, $context);
+
+                $config = Config::getInstance();
+
+                if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+                    /** @var string */
+                    $method_id = $function_checkers[$stmt->name]->getMethodId();
+
+                    $return_type = FunctionChecker::getFunctionReturnType(
+                        $method_id,
+                        $this->file_name
+                    );
+
+                    $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
+                        $method_id,
+                        $this->file_name
+                    );
+
+                    $function_checker->checkReturnTypes(
+                        false,
+                        $return_type,
+                        $return_type_location
+                    );
+                }
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 ExpressionChecker::check($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {

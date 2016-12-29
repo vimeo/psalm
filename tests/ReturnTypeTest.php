@@ -533,6 +533,44 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     */
+    public function testWrongReturnTypeInNamespace1()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace bar;
+
+        function foo() : string {
+            return 5;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     */
+    public function testWrongReturnTypeInNamespace2()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace bar;
+
+        function foo() : string {
+            return rand(0, 5) ? "hello" : null;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage MissingReturnType
      */
     public function testMissingReturnType()
