@@ -298,7 +298,7 @@ class StatementsChecker
                         $this->file_name
                     );
 
-                    $function_checker->checkReturnTypes(
+                    $function_checkers[$stmt->name]->checkReturnTypes(
                         false,
                         $return_type,
                         $return_type_location
