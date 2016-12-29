@@ -204,6 +204,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         namespace Name\Space {
+            /**
+             * @return void
+             */
             function f() { echo __FUNCTION__."\n"; }
         }
 
@@ -224,6 +227,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         namespace Name\Space {
+            /**
+             * @return void
+             */
             function f() { echo __FUNCTION__."\n"; }
         }
 
