@@ -27,4 +27,21 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($config->isInProjectDirs('src/main.php'));
         $this->assertFalse($config->isInProjectDirs('main.php'));
     }
+
+    public function testIgnoreProjectDirectory()
+    {
+        $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
+<psalm>
+    <projectFiles>
+        <directory name="src" />
+        <ignoreFiles>
+            <directory name="src/ignoreme" />
+        </ignoreFiles>
+    </projectFiles>
+</psalm>');
+
+        $this->assertTrue($config->isInProjectDirs('src/main.php'));
+        $this->assertFalse($config->isInProjectDirs('src/ignoreme/main.php'));
+        $this->assertFalse($config->isInProjectDirs('main.php'));
+    }
 }
