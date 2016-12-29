@@ -305,7 +305,15 @@ class MethodChecker extends FunctionLikeChecker
             self::setDeclaringMethodId($this->fq_class_name . '::__construct', $method_id);
         }
 
-        self::$have_registered[$method_id] = true;
+        if (isset(self::$have_reflected[$method_id]) || isset(self::$have_registered[$method_id])) {
+            $this->suppressed_issues = self::$method_suppress[$method_id];
+
+            return null;
+        }
+
+        if (!$this->source instanceof TraitChecker) {
+            self::$have_registered[$method_id] = true;
+        }
 
         self::$declaring_methods[$method_id] = $method_id;
         self::$static_methods[$method_id] = $method->isStatic();
