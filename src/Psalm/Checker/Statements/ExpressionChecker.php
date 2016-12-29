@@ -21,6 +21,7 @@ use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
 use Psalm\Issue\MixedOperand;
+use Psalm\Issue\NullOperand;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\UnrecognizedExpression;
@@ -1071,28 +1072,48 @@ class ExpressionChecker
                 return;
             }
 
+            if ($left_type->isNullable()) {
+                if (IssueBuffer::accepts(
+                    new NullOperand(
+                        'Cannot concatenate with a ' . $left_type,
+                        new CodeLocation($statements_checker->getSource(), $left)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($right_type->isNullable()) {
+                if (IssueBuffer::accepts(
+                    new NullOperand(
+                        'Cannot concatenate with a ' . $right_type,
+                        new CodeLocation($statements_checker->getSource(), $right)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
             $left_type_match = TypeChecker::isContainedBy(
                 $left_type,
                 Type::getString(),
-                false,
-                $left_has_scalar_match,
-                $left_type_coerced,
-                $left_to_string_cast
+                true,
+                $left_has_scalar_match
             );
 
             $right_type_match = TypeChecker::isContainedBy(
                 $right_type,
                 Type::getString(),
-                false,
-                $right_has_scalar_match,
-                $right_type_coerced,
-                $right_to_string_cast
+                true,
+                $right_has_scalar_match
             );
 
             if (!$left_type_match && (!$left_has_scalar_match || $config->strict_binary_operands)) {
                 if (IssueBuffer::accepts(
                     new InvalidOperand(
-                        'Cannot concatenate a string and a ' . $left_type,
+                        'Cannot concatenate with a ' . $left_type,
                         new CodeLocation($statements_checker->getSource(), $left)
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -1104,7 +1125,7 @@ class ExpressionChecker
             if (!$right_type_match && (!$right_has_scalar_match || $config->strict_binary_operands)) {
                 if (IssueBuffer::accepts(
                     new InvalidOperand(
-                        'Cannot concatenate a string and a ' . $right_type,
+                        'Cannot concatenate with a ' . $right_type,
                         new CodeLocation($statements_checker->getSource(), $right)
                     ),
                     $statements_checker->getSuppressedIssues()

@@ -288,6 +288,7 @@ class TypeChecker
      */
     public static function getTruthsFromFormula(array $clauses)
     {
+        /** @var array<string, string> */
         $truths = [];
 
         if (empty($clauses)) {

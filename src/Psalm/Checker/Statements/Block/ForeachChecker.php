@@ -168,7 +168,7 @@ class ForeachChecker
             }
         }
 
-        if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable) {
+        if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
             $foreach_context->vars_in_scope['$' . $stmt->keyVar->name] = $key_type ?: Type::getMixed();
             $foreach_context->vars_possibly_in_scope['$' . $stmt->keyVar->name] = true;
             $statements_checker->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
