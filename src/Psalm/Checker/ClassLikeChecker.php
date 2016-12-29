@@ -308,6 +308,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
+        if ($this instanceof TraitChecker && $class_context->self) {
+            $this->fq_class_name = $class_context->self;
+        }
+
         if ($this instanceof ClassChecker) {
             if ($this->parent_class && $this->registerParentClassProperties($this->parent_class) === false) {
                 return false;
@@ -454,7 +458,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             // do the method checks after all class methods have been initialised
             foreach ($method_checkers as $method_checker) {
-                $method_checker->check(clone $class_context);
+                $method_checker->check(clone $class_context, null);
 
                 if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
                     $secondary_return_type_location = null;

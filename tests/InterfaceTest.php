@@ -198,4 +198,55 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MethodSignatureMismatch
+     */
+    public function testMismatchingInterfaceMethodSignature()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A {
+            public function foo(int $a);
+        }
+
+        class B implements A {
+            public function foo(string $a) {
+
+            }
+        }
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MethodSignatureMismatch
+     */
+    public function testMismatchingInterfaceMethodSignatureInTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A {
+            public function foo(int $a, int $b) : void;
+        }
+
+        trait T {
+            public function foo(int $a) : void {
+            }
+        }
+
+        class B implements A {
+            use T;
+        }
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }
