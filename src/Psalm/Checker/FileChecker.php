@@ -246,32 +246,38 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         foreach ($classes_to_check as $class_checker) {
-            $class_checker->check($check_functions, null, $update_docblocks);
+            $class_checker->check(false, null, $update_docblocks);
         }
 
-        foreach ($function_checkers as $function_checker) {
-            $function_context = new Context($this->file_name, $file_context->self);
-            $function_checker->check($function_context, $file_context);
+        if ($check_functions) {
+            foreach ($classes_to_check as $class_checker) {
+                $class_checker->check(true, null, $update_docblocks);
+            }
 
-            if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                /** @var string */
-                $method_id = $function_checker->getMethodId();
+            foreach ($function_checkers as $function_checker) {
+                $function_context = new Context($this->file_name, $file_context->self);
+                $function_checker->check($function_context, $file_context);
 
-                $return_type = FunctionChecker::getFunctionReturnType(
-                    $method_id,
-                    $this->file_name
-                );
+                if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+                    /** @var string */
+                    $method_id = $function_checker->getMethodId();
 
-                $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
-                    $method_id,
-                    $this->file_name
-                );
+                    $return_type = FunctionChecker::getFunctionReturnType(
+                        $method_id,
+                        $this->file_name
+                    );
 
-                $function_checker->checkReturnTypes(
-                    false,
-                    $return_type,
-                    $return_type_location
-                );
+                    $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
+                        $method_id,
+                        $this->file_name
+                    );
+
+                    $function_checker->checkReturnTypes(
+                        false,
+                        $return_type,
+                        $return_type_location
+                    );
+                }
             }
         }
 
