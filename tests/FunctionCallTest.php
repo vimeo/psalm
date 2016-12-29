@@ -46,7 +46,7 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     public function testMixedArgument()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
+        $filter->addIgnoreFile('somefile.php');
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
         $stmts = self::$parser->parse('<?php

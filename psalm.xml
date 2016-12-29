@@ -6,66 +6,67 @@
     totallyTyped="true"
     strictBinaryOperands="false"
 >
-    <inspectFiles>
+    <projectFiles>
         <directory name="src" />
         <directory name="tests" />
-    </inspectFiles>
+    </projectFiles>
+
 
     <issueHandler>
         <NullOperand errorLevel="suppress" />
 
         <MissingReturnType>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </MissingReturnType>
 
         <MissingPropertyType>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </MissingPropertyType>
 
         <MixedArgument>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </MixedArgument>
 
         <MixedOperand>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </MixedOperand>
 
         <MixedPropertyFetch>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </MixedPropertyFetch>
 
         <NoInterfaceProperties>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </NoInterfaceProperties>
 
         <NullArrayAccess>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </NullArrayAccess>
 
         <NullPropertyFetch>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </NullPropertyFetch>
 
         <NullArgument>
-            <excludeFiles>
+            <ignoreFiles>
                 <directory name="tests" />
-            </excludeFiles>
+            </ignoreFiles>
         </NullArgument>
     </issueHandler>
 </psalm>
