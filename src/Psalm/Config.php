@@ -405,7 +405,7 @@ class Config
 
         $file_name = $this->shortenFileName($file_name);
 
-        if ($this->getProjectDirectories() && $this->hide_external_errors) {
+        if ($this->project_files && $this->hide_external_errors) {
             if (!$this->isInProjectDirs($file_name)) {
                 return true;
             }
@@ -424,13 +424,7 @@ class Config
      */
     public function isInProjectDirs($file_name)
     {
-        foreach ($this->getProjectDirectories() as $dir_name) {
-            if (preg_match('/^' . preg_quote($dir_name, '/') . '/', $file_name)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->project_files && $this->project_files->allows($file_name);
     }
 
     /**
