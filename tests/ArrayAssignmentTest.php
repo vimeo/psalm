@@ -662,7 +662,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     public function testMixedStringOffsetAssignment()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
+        $filter->addIgnoreFile('somefile.php');
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
         $context = new Context('somefile.php');

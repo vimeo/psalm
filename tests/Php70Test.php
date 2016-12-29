@@ -74,7 +74,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
     public function testNullCoalesce()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
+        $filter->addIgnoreFile('somefile.php');
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
         $stmts = self::$parser->parse('<?php
@@ -172,7 +172,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
     public function testGeneratorDelegation()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
+        $filter->addIgnoreFile('somefile.php');
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
         $stmts = self::$parser->parse('<?php

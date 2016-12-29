@@ -88,7 +88,7 @@ class Config
     /**
      * @var FileFilter|null
      */
-    protected $inspect_files;
+    protected $project_files;
 
     /**
      * The base directory of this config file
@@ -228,8 +228,8 @@ class Config
             $config->strict_binary_operands = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml->inspectFiles)) {
-            $config->inspect_files = FileFilter::loadFromXML($config_xml->inspectFiles, true);
+        if (isset($config_xml->projectFiles)) {
+            $config->project_files = FileFilter::loadFromXML($config_xml->projectFiles, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -289,12 +289,12 @@ class Config
                     $config->custom_error_levels[$key] = $error_level;
                 }
 
-                if (isset($issue_handler->excludeFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->excludeFiles, false);
+                if (isset($issue_handler->ignoreFiles)) {
+                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->ignoreFiles, false);
                 }
 
-                if (isset($issue_handler->includeFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->includeFiles, true);
+                if (isset($issue_handler->onlyFiles)) {
+                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->onlyFiles, true);
                 }
             }
         }
@@ -439,11 +439,11 @@ class Config
      */
     public function getIncludeDirs()
     {
-        if (!$this->inspect_files) {
+        if (!$this->project_files) {
             return [];
         }
 
-        return $this->inspect_files->getIncludeDirs();
+        return $this->project_files->getIncludeDirs();
     }
 
     /**
