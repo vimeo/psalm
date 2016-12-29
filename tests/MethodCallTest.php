@@ -64,7 +64,7 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     public function testMixedMethodCall()
     {
         $filter = new Config\FileFilter(false);
-        $filter->addIgnoreFile('somefile.php');
+        $filter->addFile('somefile.php');
         Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
         Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
 
