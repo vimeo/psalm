@@ -15,6 +15,21 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         FileChecker::clearCache();
     }
 
+    public static function getAllIssues()
+    {
+        return array_filter(
+            array_map(
+                function ($file_name) {
+                    return substr($file_name, 0, -4);
+                },
+                scandir(dirname(__DIR__) . '/src/Psalm/Issue')
+            ),
+            function ($issue_name) {
+                return !empty($issue_name) && $issue_name !== 'CodeError' && $issue_name !== 'CodeIssue';
+            }
+        );
+    }
+
     public function testBarebonesConfig()
     {
         $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
@@ -90,5 +105,47 @@ class ConfigTest extends PHPUnit_Framework_TestCase
 
         $this->assertSame('info', $config->getReportingLevelForFile('MissingReturnType', 'src/somefile.php'));
         $this->assertSame('error', $config->getReportingLevelForFile('MissingReturnType', 'src/Core/somefile.php'));
+    }
+
+    public function testAllPossibleIssues()
+    {
+        $all_possible_handlers = implode(
+            ' ',
+            array_map(
+                function ($issue_name) {
+                    return '<' . $issue_name . ' errorLevel="suppress" />' . PHP_EOL;
+                },
+                self::getAllIssues()
+            )
+        );
+
+        $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
+<psalm>
+    <projectFiles>
+        <directory name="src" />
+    </projectFiles>
+
+    <issueHandlers>
+    ' . $all_possible_handlers . '
+    </issueHandlers>
+</psalm>');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\ConfigException
+     * @expectedExceptionMessage This element is not expected
+     */
+    public function testImpossibleIssue()
+    {
+        $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
+<psalm>
+    <projectFiles>
+        <directory name="src" />
+    </projectFiles>
+
+    <issueHandlers>
+        <ImpossibleIssue errorLevel="suppress" />
+    </issueHandlers>
+</psalm>');
     }
 }
