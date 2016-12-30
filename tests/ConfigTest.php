@@ -87,5 +87,8 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($config->excludeIssueInFile('MissingReturnType', 'tests/somefile.php'));
         $this->assertFalse($config->excludeIssueInFile('MissingReturnType', 'src/somefile.php'));
         $this->assertFalse($config->excludeIssueInFile('MissingReturnType', 'src/Core/somefile.php'));
+
+        $this->assertSame('info', $config->getReportingLevelForFile('MissingReturnType', 'src/somefile.php'));
+        $this->assertSame('error', $config->getReportingLevelForFile('MissingReturnType', 'src/Core/somefile.php'));
     }
 }
