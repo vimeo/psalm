@@ -3,13 +3,13 @@
     <xs:element name="psalm" type="PsalmType" />
 
     <xs:complexType name="PsalmType">
-        <xs:sequence>
+        <xs:choice maxOccurs="unbounded">
             <xs:element name="projectFiles" type="ProjectFilesType" minOccurs="1" maxOccurs="1" />
             <xs:element name="fileExtensions" type="FileExtensionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="mockClasses" type="MockClassesType" minOccurs="0" maxOccurs="1" />
             <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
-        </xs:sequence>
+        </xs:choice>
 
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="stopOnFirstError" type="xs:string" />
@@ -45,7 +45,7 @@
 
     <xs:complexType name="FileExtensionsType">
         <xs:sequence>
-            <xs:element name="extension">
+            <xs:element name="extension" maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:attribute name="name" type="xs:string" use="required" />
                     <xs:attribute name="filetypeHandler" type="xs:string" />
