@@ -101,7 +101,7 @@ class ProjectChecker
             $deleted_files = FileChecker::getDeletedReferencedFiles();
             $diff_files = $deleted_files;
 
-            foreach ($this->config->getIncludeDirs() as $dir_name) {
+            foreach ($this->config->getProjectDirectories() as $dir_name) {
                 $diff_files = array_merge($diff_files, self::getDiffFilesInDir($dir_name, $this->config));
             }
         }
@@ -109,7 +109,7 @@ class ProjectChecker
         $files_checked = [];
 
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
-            foreach ($this->config->getIncludeDirs() as $dir_name) {
+            foreach ($this->config->getProjectDirectories() as $dir_name) {
                 $this->checkDirWithConfig($dir_name, $this->config, $debug, $update_docblocks);
             }
         } else {
@@ -211,7 +211,7 @@ class ProjectChecker
         $file_extensions = $config->getFileExtensions();
         $file_names = [];
 
-        foreach ($config->getIncludeDirs() as $dir_name) {
+        foreach ($config->getProjectDirectories() as $dir_name) {
             /** @var RecursiveDirectoryIterator */
             $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
             $iterator->rewind();
@@ -371,7 +371,7 @@ class ProjectChecker
             $maybe_path = $dir_path . Config::DEFAULT_FILE_NAME;
 
             if (file_exists($maybe_path)) {
-                $config = Config::loadFromXML($maybe_path);
+                $config = Config::loadFromXMLFile($maybe_path);
 
                 if ($config->autoloader) {
                     require_once($dir_path . $config->autoloader);
@@ -405,7 +405,7 @@ class ProjectChecker
 
         $dir_path = dirname($path_to_config) . '/';
 
-        $this->config = Config::loadFromXML($path_to_config);
+        $this->config = Config::loadFromXMLFile($path_to_config);
 
         if ($this->config->autoloader) {
             require_once($dir_path . $this->config->autoloader);

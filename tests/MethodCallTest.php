@@ -63,10 +63,8 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedMethodCall()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MissingPropertyType', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
         class Foo {

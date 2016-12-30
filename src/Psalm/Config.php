@@ -2,7 +2,8 @@
 namespace Psalm;
 
 use Psalm\Checker\FileChecker;
-use Psalm\Config\FileFilter;
+use Psalm\Config\IssueHandler;
+use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use SimpleXMLElement;
 
@@ -86,9 +87,9 @@ class Config
     public $autoloader;
 
     /**
-     * @var FileFilter|null
+     * @var ProjectFileFilter|null
      */
-    protected $inspect_files;
+    protected $project_files;
 
     /**
      * The base directory of this config file
@@ -108,14 +109,9 @@ class Config
     protected $filetype_handlers = [];
 
     /**
-     * @var array<string, FileFilter>
+     * @var array<string, IssueHandler>
      */
     protected $issue_handlers = [];
-
-    /**
-     * @var array<string, string>
-     */
-    protected $custom_error_levels = [];
 
     /**
      * @var array<int, string>
@@ -154,7 +150,25 @@ class Config
     /**
      * Creates a new config object from the file
      *
-     * @param  string $file_name
+     * @param  string $file_path
+     * @return self
+     */
+    public static function loadFromXMLFile($file_path)
+    {
+        $file_contents = file_get_contents($file_path);
+
+        if ($file_contents === false) {
+            throw new \InvalidArgumentException('Cannot open ' . $file_path);
+        }
+
+        return self::loadFromXML($file_path, $file_contents);
+    }
+
+    /**
+     * Creates a new config object from an XML string
+     *
+     * @param  string $file_path
+     * @param  string $file_contents
      * @return self
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
@@ -162,17 +176,33 @@ class Config
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedOperand
      */
-    public static function loadFromXML($file_name)
+    public static function loadFromXML($file_path, $file_contents)
     {
-        $file_contents = file_get_contents($file_name);
-
-        if ($file_contents === false) {
-            throw new \InvalidArgumentException('Cannot open ' . $file_name);
-        }
-
         $config = new self();
 
-        $config->base_dir = dirname($file_name) . '/';
+        $config->base_dir = dirname($file_path) . '/';
+
+        $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
+
+        if (!file_exists($schema_path)) {
+            throw new ConfigException('Cannot locate config schema');
+        }
+
+        $dom_document = new \DOMDocument();
+        $dom_document->loadXML($file_contents);
+
+        // Enable user error handling
+        libxml_use_internal_errors(true);
+
+        if (!$dom_document->schemaValidate($schema_path)) {
+            $errors = libxml_get_errors();
+            foreach ($errors as $error) {
+                if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
+                    throw new ConfigException('Error parsing file ' . $error->file . ' on line ' . $error->line . ': ' . $error->message);
+                }
+            }
+            libxml_clear_errors();
+        }
 
         $config_xml = new SimpleXMLElement($file_contents);
 
@@ -204,10 +234,6 @@ class Config
             $config->cache_directory = (string) $config_xml['cacheDirectory'];
         }
 
-        if (isset($config_xml['cacheDirectory'])) {
-            $config->cache_directory = (string) $config_xml['cacheDirectory'];
-        }
-
         if (isset($config_xml['usePropertyDefaultForType'])) {
             $attribute_text = (string) $config_xml['usePropertyDefaultForType'];
             $config->use_property_default_for_type = $attribute_text === 'true' || $attribute_text === '1';
@@ -228,8 +254,8 @@ class Config
             $config->strict_binary_operands = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml->inspectFiles)) {
-            $config->inspect_files = FileFilter::loadFromXML($config_xml->inspectFiles, true);
+        if (isset($config_xml->projectFiles)) {
+            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -276,26 +302,12 @@ class Config
             }
         }
 
-        if (isset($config_xml->issueHandler)) {
+        if (isset($config_xml->issueHandlers)) {
             /** @var \SimpleXMLElement $issue_handler */
-            foreach ($config_xml->issueHandler->children() as $key => $issue_handler) {
-                if (isset($issue_handler['errorLevel'])) {
-                    $error_level = (string) $issue_handler['errorLevel'];
-
-                    if (!in_array($error_level, self::$ERROR_LEVELS)) {
-                        throw new \InvalidArgumentException('Error level ' . $error_level . ' could not be recognised');
-                    }
-
-                    $config->custom_error_levels[$key] = $error_level;
-                }
-
-                if (isset($issue_handler->excludeFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->excludeFiles, false);
-                }
-
-                if (isset($issue_handler->includeFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXML($issue_handler->includeFiles, true);
-                }
+            foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
+                $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
+                    $issue_handler
+                );
             }
         }
 
@@ -321,7 +333,8 @@ class Config
      */
     public function setCustomErrorLevel($issue_key, $error_level)
     {
-        $this->custom_error_levels[$issue_key] = $error_level;
+        $this->issue_handlers[$issue_key] = new IssueHandler();
+        $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
     }
 
     /**
@@ -387,23 +400,19 @@ class Config
             return true;
         }
 
-        if ($this->getReportingLevel($issue_type) === self::REPORT_SUPPRESS) {
-            return true;
-        }
-
         $file_name = $this->shortenFileName($file_name);
 
-        if ($this->getIncludeDirs() && $this->hide_external_errors) {
+        if ($this->project_files && $this->hide_external_errors) {
             if (!$this->isInProjectDirs($file_name)) {
                 return true;
             }
         }
 
-        if (!isset($this->issue_handlers[$issue_type])) {
-            return false;
+        if ($this->getReportingLevelForFile($issue_type, $file_name) === self::REPORT_SUPPRESS) {
+            return true;
         }
 
-        return !$this->issue_handlers[$issue_type]->allows($file_name);
+        return false;
     }
 
     /**
@@ -412,23 +421,18 @@ class Config
      */
     public function isInProjectDirs($file_name)
     {
-        foreach ($this->getIncludeDirs() as $dir_name) {
-            if (preg_match('/^' . preg_quote($dir_name, '/') . '/', $file_name)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->project_files && $this->project_files->allows($file_name);
     }
 
     /**
      * @param   string $issue_type
+     * @param   string $file_name
      * @return  string
      */
-    public function getReportingLevel($issue_type)
+    public function getReportingLevelForFile($issue_type, $file_name)
     {
-        if (isset($this->custom_error_levels[$issue_type])) {
-            return $this->custom_error_levels[$issue_type];
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForFile($file_name);
         }
 
         return self::REPORT_ERROR;
@@ -437,13 +441,13 @@ class Config
     /**
      * @return array<string>
      */
-    public function getIncludeDirs()
+    public function getProjectDirectories()
     {
-        if (!$this->inspect_files) {
+        if (!$this->project_files) {
             return [];
         }
 
-        return $this->inspect_files->getIncludeDirs();
+        return $this->project_files->getDirectories();
     }
 
     /**
@@ -496,12 +500,12 @@ class Config
 
     /**
      * @param string            $issue_name
-     * @param FileFilter|null   $filter
+     * @param IssueHandler|null $handler
      * @return void
      */
-    public function setIssueHandler($issue_name, FileFilter $filter = null)
+    public function setIssueHandler($issue_name, IssueHandler $handler = null)
     {
-        $this->issue_handlers[$issue_name] = $filter;
+        $this->issue_handlers[$issue_name] = $handler;
     }
 
     /**

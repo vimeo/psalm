@@ -54,10 +54,8 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     public function testPropertyWithoutTypeSuppressingIssue()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MissingPropertyType', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
         class A {
@@ -134,7 +132,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
             public function foo() : void {
                 echo $this->foo;
             }
-        }        
+        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -290,10 +288,8 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedPropertyFetch()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MissingPropertyType', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
         class Foo {
@@ -318,10 +314,8 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedPropertyAssignment()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addExcludeFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MissingPropertyType', $filter);
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MissingPropertyType', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
         class Foo {

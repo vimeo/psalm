@@ -6,66 +6,66 @@
     totallyTyped="true"
     strictBinaryOperands="false"
 >
-    <inspectFiles>
+    <projectFiles>
         <directory name="src" />
         <directory name="tests" />
-    </inspectFiles>
+    </projectFiles>
 
-    <issueHandler>
+    <issueHandlers>
         <NullOperand errorLevel="suppress" />
 
         <MissingReturnType>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </MissingReturnType>
 
         <MissingPropertyType>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </MissingPropertyType>
 
         <MixedArgument>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </MixedArgument>
 
         <MixedOperand>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </MixedOperand>
 
         <MixedPropertyFetch>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </MixedPropertyFetch>
 
         <NoInterfaceProperties>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </NoInterfaceProperties>
 
         <NullArrayAccess>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </NullArrayAccess>
 
         <NullPropertyFetch>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </NullPropertyFetch>
 
         <NullArgument>
-            <excludeFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </excludeFiles>
+            </errorLevel>
         </NullArgument>
-    </issueHandler>
+    </issueHandlers>
 </psalm>

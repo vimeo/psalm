@@ -8,42 +8,22 @@ class FileFilter
     /**
      * @var array<string>
      */
-    protected $include_dirs = [];
+    protected $directories = [];
 
     /**
      * @var array<string>
      */
-    protected $exclude_dirs = [];
+    protected $files = [];
 
     /**
      * @var array<string>
      */
-    protected $include_files = [];
+    protected $files_lowercase = [];
 
     /**
      * @var array<string>
      */
-    protected $include_files_lowercase = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $exclude_files = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $exclude_files_lowercase = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $include_patterns = [];
-
-    /**
-     * @var array<string>
-     */
-    protected $exclude_patterns = [];
+    protected $patterns = [];
 
     /**
      * @var bool
@@ -67,39 +47,25 @@ class FileFilter
     /**
      * @param  SimpleXMLElement $e
      * @param  bool             $inclusive
-     * @return self
+     * @return static
      */
-    public static function loadFromXML(SimpleXMLElement $e, $inclusive)
-    {
-        $filter = new self($inclusive);
+    public static function loadFromXMLElement(
+        SimpleXMLElement $e,
+        $inclusive
+    ) {
+        $filter = new static($inclusive);
 
-        if ($inclusive) {
-            if ($e->directory) {
-                /** @var \SimpleXMLElement $directory */
-                foreach ($e->directory as $directory) {
-                    $filter->addIncludeDirectory((string)$directory['name']);
-                }
+        if ($e->directory) {
+            /** @var \SimpleXMLElement $directory */
+            foreach ($e->directory as $directory) {
+                $filter->addDirectory((string)$directory['name']);
             }
+        }
 
-            if ($e->file) {
-                /** @var \SimpleXMLElement $file */
-                foreach ($e->file as $file) {
-                    $filter->addIncludeFile((string)$file['name']);
-                }
-            }
-        } else {
-            if ($e->directory) {
-                /** @var \SimpleXMLElement $directory */
-                foreach ($e->directory as $directory) {
-                    $filter->addExcludeDirectory((string)$directory['name']);
-                }
-            }
-
-            if ($e->file) {
-                /** @var \SimpleXMLElement $file */
-                foreach ($e->file as $file) {
-                    $filter->addExcludeFile((string)$file['name']);
-                }
+        if ($e->file) {
+            /** @var \SimpleXMLElement $file */
+            foreach ($e->file as $file) {
+                $filter->addFile((string)$file['name']);
             }
         }
 
@@ -123,7 +89,7 @@ class FileFilter
     public function allows($file_name, $case_sensitive = false)
     {
         if ($this->inclusive) {
-            foreach ($this->include_dirs as $include_dir) {
+            foreach ($this->directories as $include_dir) {
                 if ($case_sensitive) {
                     if (strpos($file_name, $include_dir) === 0) {
                         return true;
@@ -136,11 +102,11 @@ class FileFilter
             }
 
             if ($case_sensitive) {
-                if (in_array($file_name, $this->include_files)) {
+                if (in_array($file_name, $this->files)) {
                     return true;
                 }
             } else {
-                if (in_array(strtolower($file_name), $this->include_files_lowercase)) {
+                if (in_array(strtolower($file_name), $this->files_lowercase)) {
                     return true;
                 }
             }
@@ -149,7 +115,7 @@ class FileFilter
         }
 
         // exclusive
-        foreach ($this->exclude_dirs as $exclude_dir) {
+        foreach ($this->directories as $exclude_dir) {
             if ($case_sensitive) {
                 if (strpos($file_name, $exclude_dir) === 0) {
                     return false;
@@ -162,11 +128,11 @@ class FileFilter
         }
 
         if ($case_sensitive) {
-            if (in_array($file_name, $this->exclude_files)) {
+            if (in_array($file_name, $this->files)) {
                 return false;
             }
         } else {
-            if (in_array(strtolower($file_name), $this->exclude_files_lowercase)) {
+            if (in_array(strtolower($file_name), $this->files_lowercase)) {
                 return false;
             }
         }
@@ -177,78 +143,35 @@ class FileFilter
     /**
      * @return array<string>
      */
-    public function getIncludeDirs()
+    public function getDirectories()
     {
-        return $this->include_dirs;
+        return $this->directories;
     }
 
     /**
      * @return array
      */
-    public function getExcludeDirs()
+    public function getFiles()
     {
-        return $this->exclude_dirs;
-    }
-
-    /**
-     * @return array
-     */
-    public function getIncludeFiles()
-    {
-        return $this->include_files;
-    }
-
-    /**
-     * @return array
-     */
-    public function getExcludeFiles()
-    {
-        return $this->exclude_files;
+        return $this->files;
     }
 
     /**
      * @param   string $file_name
      * @return  void
      */
-    public function addExcludeFile($file_name)
+    public function addFile($file_name)
     {
-        if ($this->inclusive !== false) {
-            throw new \UnexpectedValueException('Cannot add exclude file when filter is not exclusive');
-        }
-
-        $this->exclude_files[] = $file_name;
-        $this->exclude_files_lowercase[] = strtolower($file_name);
-    }
-
-    /**
-     * @param   string $file_name
-     * @return  void
-     */
-    public function addIncludeFile($file_name)
-    {
-        if ($this->inclusive !== true) {
-            throw new \UnexpectedValueException('Cannot add include file when filter is not inclusive');
-        }
-
-        $this->include_files[] = $file_name;
-        $this->include_files_lowercase[] = strtolower($file_name);
+        $this->files[] = $file_name;
+        $this->files_lowercase[] = strtolower($file_name);
     }
 
     /**
      * @param string $dir_name
      * @return void
      */
-    public function addExcludeDirectory($dir_name)
+    public function addDirectory($dir_name)
     {
-        $this->exclude_dirs[] = self::slashify($dir_name);
-    }
-
-    /**
-     * @param string $dir_name
-     * @return void
-     */
-    public function addIncludeDirectory($dir_name)
-    {
-        $this->include_dirs[] = self::slashify($dir_name);
+        $this->directories[] = self::slashify($dir_name);
     }
 }
