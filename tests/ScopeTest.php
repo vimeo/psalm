@@ -18,9 +18,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
 
         $config = new TestConfig();
-        $config->throw_exception = true;
-
-        self::$file_filter = null;
     }
 
     public function setUp()
@@ -135,8 +132,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         echo $array;
         ');
-
-        Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$file_filter);
 
         $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();

@@ -5,14 +5,14 @@
     useDocblockTypes="true"
     totallyTyped="false"
 >
-    <inspectFiles>
+    <projectFiles>
         <directory name="src" />
-    </inspectFiles>
+    </projectFiles>
 
-    <issueHandler>
+    <issueHandlers>
         <InvalidDocblock errorLevel="info" />
         <MissingReturnType errorLevel="info" />
         <DeprecatedMethod errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
-    </issueHandler>
+    </issueHandlers>
 </psalm>

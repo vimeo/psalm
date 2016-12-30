@@ -22,9 +22,9 @@ cat > psalm.xml << EOF
   stopOnFirstError="false"
   useDocblockTypes="true"
 >
-    <inspectFiles>
+    <projectFiles>
         <directory name="src" />
-    </inspectFiles>
+    </projectFiles>
 </psalm>
 EOF
 ```

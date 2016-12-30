@@ -21,11 +21,6 @@ class FileFilter
     protected $files_lowercase = [];
 
     /**
-     * @var FileFilter|null
-     */
-    protected $file_filter = null;
-
-    /**
      * @var array<string>
      */
     protected $patterns = [];
@@ -52,11 +47,13 @@ class FileFilter
     /**
      * @param  SimpleXMLElement $e
      * @param  bool             $inclusive
-     * @return self
+     * @return static
      */
-    public static function loadFromXMLElement(SimpleXMLElement $e, $inclusive)
-    {
-        $filter = new self($inclusive);
+    public static function loadFromXMLElement(
+        SimpleXMLElement $e,
+        $inclusive
+    ) {
+        $filter = new static($inclusive);
 
         if ($e->directory) {
             /** @var \SimpleXMLElement $directory */
@@ -70,15 +67,6 @@ class FileFilter
             foreach ($e->file as $file) {
                 $filter->addFile((string)$file['name']);
             }
-        }
-
-        if (isset($e->ignoreFiles)) {
-            if (!$inclusive) {
-                throw new \Psalm\Exception\ConfigException('Cannot nest ignoreFiles inside itself');
-            }
-
-            /** @var \SimpleXMLElement $e->ignoreFiles */
-            $filter->file_filter = self::loadFromXMLElement($e->ignoreFiles, false);
         }
 
         return $filter;
@@ -101,12 +89,6 @@ class FileFilter
     public function allows($file_name, $case_sensitive = false)
     {
         if ($this->inclusive) {
-            if ($this->file_filter) {
-                if (!$this->file_filter->allows($file_name, $case_sensitive)) {
-                    return false;
-                }
-            }
-
             foreach ($this->directories as $include_dir) {
                 if ($case_sensitive) {
                     if (strpos($file_name, $include_dir) === 0) {

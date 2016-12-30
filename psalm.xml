@@ -11,61 +11,61 @@
         <directory name="tests" />
     </projectFiles>
 
-    <issueHandler>
+    <issueHandlers>
         <NullOperand errorLevel="suppress" />
 
         <MissingReturnType>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </MissingReturnType>
 
         <MissingPropertyType>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </MissingPropertyType>
 
         <MixedArgument>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </MixedArgument>
 
         <MixedOperand>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </MixedOperand>
 
         <MixedPropertyFetch>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </MixedPropertyFetch>
 
         <NoInterfaceProperties>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </NoInterfaceProperties>
 
         <NullArrayAccess>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </NullArrayAccess>
 
         <NullPropertyFetch>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </NullPropertyFetch>
 
         <NullArgument>
-            <ignoreFiles>
+            <errorLevel type="suppress">
                 <directory name="tests" />
-            </ignoreFiles>
+            </errorLevel>
         </NullArgument>
-    </issueHandler>
+    </issueHandlers>
 </psalm>
