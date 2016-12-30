@@ -212,7 +212,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         } elseif ($this instanceof FunctionChecker) {
-            $function_params = FunctionChecker::getParams(strtolower((string)$this->getMethodId()), $this->file_name);
+            $function_params = FunctionChecker::getParams(strtolower((string)$this->getMethodId()), $this->file_path);
         } else { // Closure
             $function_params = [];
             $function_param_names = [];
@@ -789,7 +789,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if ($method_id) {
             $cased_method_id = $this instanceof MethodChecker
                 ? MethodChecker::getCasedMethodId($method_id)
-                : FunctionChecker::getCasedFunctionId($method_id, $this->file_name);
+                : FunctionChecker::getCasedFunctionId($method_id, $this->file_path);
         }
 
         foreach ($docblock_params as $docblock_param) {
@@ -1051,10 +1051,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  string                           $file_name
+     * @param  string                           $file_path
      * @return array<int,FunctionLikeParameter>
      */
-    public static function getParamsById($method_id, array $args, $file_name)
+    public static function getParamsById($method_id, array $args, $file_path)
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
@@ -1088,7 +1088,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 throw new \InvalidArgumentException('Cannot get params for ' . $method_id);
             }
         } else {
-            return FunctionChecker::getParams(strtolower($method_id), $file_name);
+            return FunctionChecker::getParams(strtolower($method_id), $file_path);
         }
 
         $function_params = null;

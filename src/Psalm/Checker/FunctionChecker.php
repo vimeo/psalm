@@ -11,6 +11,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 
 class FunctionChecker extends FunctionLikeChecker
@@ -21,59 +22,14 @@ class FunctionChecker extends FunctionLikeChecker
     protected $function;
 
     /**
-     * @var array<string, array<string, Type\Union|false>>
-     */
-    protected static $function_return_types = [];
-
-    /**
-     * @var array<string, array<string, CodeLocation|false>>
-     */
-    protected static $function_return_type_locations = [];
-
-    /**
-     * @var array<string, array<string, string>>
-     */
-    protected static $function_namespaces = [];
-
-    /**
-     * @var array<string, array<string, string>>
-     */
-    protected static $existing_functions = [];
-
-    /**
-     * @var array<string, array<string, bool>>
-     */
-    protected static $deprecated_functions = [];
-
-    /**
-     * @var array<string, array<string, bool>>
-     */
-    protected static $have_registered_function = [];
-
-    /**
-     * @var array<string, array<string, array<FunctionLikeParameter>>>
-     */
-    protected static $file_function_params = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    protected static $variadic_functions = [];
-
-    /**
-     * @var array<string, array<int, FunctionLikeParameter>>
-     */
-    protected static $builtin_function_params = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    protected static $builtin_functions = [];
-
-    /**
      * @var array<array<string,string>>|null
      */
     protected static $call_map = null;
+
+    /**
+     * @var array<string, FunctionLikeStorage>
+     */
+    protected static $builtin_functions = [];
 
     /**
      * @param mixed                         $function
@@ -93,12 +49,12 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
-     * @param  string $file_name
+     * @param  string $file_path
      * @return boolean
      */
-    public static function functionExists($function_id, $file_name)
+    public static function functionExists($function_id, $file_path)
     {
-        if (isset(self::$existing_functions[$file_name][$function_id])) {
+        if (isset(FileChecker::$storage[$file_path]->functions[$function_id])) {
             return true;
         }
 
@@ -106,127 +62,139 @@ class FunctionChecker extends FunctionLikeChecker
             $function_id = strtolower(preg_replace('/^[^:]+::/', '', $function_id));
         }
 
-        if (!isset(self::$builtin_functions[$function_id])) {
-            self::extractReflectionInfo($function_id);
+        if (isset(self::$builtin_functions[$function_id])) {
+            return true;
         }
 
-        return self::$builtin_functions[$function_id];
+        if (self::extractReflectionInfo($function_id) === false) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
      * @param  string $function_id
-     * @param  string $file_name
+     * @param  string $file_path
      * @return array<FunctionLikeParameter>
      */
-    public static function getParams($function_id, $file_name)
+    public static function getParams($function_id, $file_path)
     {
         if (isset(self::$builtin_functions[$function_id]) && self::$builtin_functions[$function_id]) {
-            return self::$builtin_function_params[$function_id];
+            return self::$builtin_functions[$function_id]->params;
         }
 
-        return self::$file_function_params[$file_name][$function_id];
+        $file_storage = FileChecker::$storage[$file_path];
+
+        return $file_storage->functions[$function_id]->params;
     }
 
     /**
      * @param  string $function_id
-     * @param  string $file_name
+     * @param  string $file_path
      * @return boolean
      */
-    public static function isVariadic($function_id, $file_name)
+    public static function isVariadic($function_id, $file_path)
     {
-        return isset(self::$variadic_functions[$file_name][$function_id]);
+        $file_storage = FileChecker::$storage[$file_path];
+
+        return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
     }
 
     /**
      * @param  string $function_id
-     * @return void
+     * @return false|null
      */
     protected static function extractReflectionInfo($function_id)
     {
         try {
             $reflection_function = new \ReflectionFunction($function_id);
 
-            $reflection_params = $reflection_function->getParameters();
+            $storage = self::$builtin_functions[$function_id] = new FunctionLikeStorage();
 
-            self::$builtin_function_params[$function_id] = [];
+            $reflection_params = $reflection_function->getParameters();
 
             /** @var \ReflectionParameter $param */
             foreach ($reflection_params as $param) {
-                self::$builtin_function_params[$function_id][] = self::getReflectionParamArray($param);
+                $storage->params[] = self::getReflectionParamArray($param);
             }
 
-            self::$builtin_functions[$function_id] = true;
+            $storage->cased_name = $reflection_function->getName();
         } catch (\ReflectionException $e) {
-            self::$builtin_functions[$function_id] = false;
+            return false;
         }
     }
 
     /**
      * @param  string $function_id
-     * @param  string $file_name
+     * @param  string $file_path
      * @return Type\Union|null
      */
-    public static function getFunctionReturnType($function_id, $file_name)
+    public static function getFunctionReturnType($function_id, $file_path)
     {
-        if (!isset(self::$function_return_types[$file_name][$function_id])) {
-            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_name);
+        $file_storage = FileChecker::$storage[$file_path];
+
+        if (!isset($file_storage->functions[$function_id])) {
+            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
         }
 
-        $function_return_types = self::$function_return_types[$file_name][$function_id];
+        $function_return_type = $file_storage->functions[$function_id]->return_type;
 
-        return $function_return_types
-            ? clone $function_return_types
-            : null;
+        return $function_return_type ? clone $function_return_type : null;
     }
 
     /**
      * @param  string $function_id
-     * @param  string $file_name
+     * @param  string $file_path
      * @return CodeLocation|null
      */
-    public static function getFunctionReturnTypeLocation($function_id, $file_name)
+    public static function getFunctionReturnTypeLocation($function_id, $file_path)
     {
-        if (!isset(self::$function_return_type_locations[$file_name][$function_id])) {
-            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_name);
+        $file_storage = FileChecker::$storage[$file_path];
+
+        if (!isset($file_storage->functions[$function_id])) {
+            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
         }
 
-        return self::$function_return_type_locations[$file_name][$function_id] ?: null;
+        return $file_storage->functions[$function_id]->return_type_location;
     }
 
     /**
      * @param  string $function_id
-     * @param  string $file_name
+     * @param  string $file_path
      * @return string
      */
-    public static function getCasedFunctionId($function_id, $file_name)
+    public static function getCasedFunctionId($function_id, $file_path)
     {
-        if (!isset(self::$existing_functions[$file_name][$function_id])) {
-            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_name);
+        $file_storage = FileChecker::$storage[$file_path];
+
+        if (!isset($file_storage->functions[$function_id])) {
+            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
         }
 
-        return self::$existing_functions[$file_name][$function_id];
+        return $file_storage->functions[$function_id]->cased_name;
     }
 
     /**
      * @param  PhpParser\Node\Stmt\Function_ $function
-     * @param  string                        $file_name
+     * @param  string                        $file_path
      * @return null|false
      */
-    protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_name)
+    protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_path)
     {
         $cased_function_id = ($this->namespace ? $this->namespace . '\\' : '') . $function->name;
         $function_id = strtolower($cased_function_id);
 
-        if (isset(self::$have_registered_function[$file_name][$function_id])) {
+        $file_storage = FileChecker::$storage[$file_path];
+
+        if (isset($file_storage->functions[$function_id])) {
             return null;
         }
 
-        self::$have_registered_function[$file_name][$function_id] = true;
+        $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
 
-        self::$function_namespaces[$file_name][$function_id] = $this->namespace;
-        self::$existing_functions[$file_name][$function_id] = $cased_function_id;
-
-        self::$file_function_params[$file_name][$function_id] = [];
+        $storage->namespace = $this->namespace;
+        $storage->cased_name = $cased_function_id;
 
         $function_param_names = [];
 
@@ -237,7 +205,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $this
             );
 
-            self::$file_function_params[$file_name][$function_id][] = $param_array;
+            $storage->params[] = $param_array;
             $function_param_names[$param->name] = $param_array->type;
         }
 
@@ -276,6 +244,9 @@ class FunctionChecker extends FunctionLikeChecker
             $return_type_location = new CodeLocation($this->getSource(), $function, false, self::RETURN_TYPE_REGEX);
         }
 
+        $storage->return_type = $return_type;
+        $storage->return_type_location = $return_type_location;
+
         if ($doc_comment) {
             try {
                 $docblock_info = CommentChecker::extractDocblockInfo(
@@ -295,11 +266,11 @@ class FunctionChecker extends FunctionLikeChecker
 
             if ($docblock_info) {
                 if ($docblock_info->deprecated) {
-                    self::$deprecated_functions[$file_name][$function_id] = true;
+                    $storage->deprecated = true;
                 }
 
                 if ($docblock_info->variadic) {
-                    self::$variadic_functions[$file_name][$function_id] = true;
+                    $storage->variadic = true;
                 }
 
                 $this->suppressed_issues = $docblock_info->suppress;
@@ -335,13 +306,16 @@ class FunctionChecker extends FunctionLikeChecker
                         }
 
                         $return_type_location->setCommentLine($docblock_info->return_type_line_number);
+
+                        $storage->return_type = $return_type;
+                        $storage->return_type_location = $return_type_location;
                     }
 
                     if ($docblock_info->params) {
                         $this->improveParamsFromDocblock(
                             $docblock_info->params,
                             $function_param_names,
-                            self::$file_function_params[$file_name][$function_id],
+                            $storage->params,
                             new CodeLocation($this, $function, false)
                         );
                     }
@@ -349,9 +323,6 @@ class FunctionChecker extends FunctionLikeChecker
             }
         }
 
-        self::$function_return_type_locations[$file_name][$function_id] = $return_type_location ?: false;
-
-        self::$function_return_types[$file_name][$function_id] = $return_type ?: false;
         return null;
     }
 
@@ -810,17 +781,6 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function clearCache()
     {
-        self::$function_return_types = [];
-        self::$function_namespaces = [];
-        self::$existing_functions = [];
-        self::$deprecated_functions = [];
-        self::$have_registered_function = [];
-
-        self::$file_function_params = [];
-
-        self::$variadic_functions = [];
-
-        self::$builtin_function_params = [];
         self::$builtin_functions = [];
     }
 }

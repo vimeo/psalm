@@ -290,12 +290,12 @@ class StatementsChecker
 
                     $return_type = FunctionChecker::getFunctionReturnType(
                         $method_id,
-                        $this->file_name
+                        $this->file_path
                     );
 
                     $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
                         $method_id,
-                        $this->file_name
+                        $this->file_path
                     );
 
                     $function_checkers[$stmt->name]->checkReturnTypes(

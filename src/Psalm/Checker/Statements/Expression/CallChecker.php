@@ -150,7 +150,7 @@ class CallChecker
                 try {
                     $stmt->inferredType = FunctionChecker::getFunctionReturnType(
                         $method_id,
-                        $statements_checker->getCheckedFileName()
+                        $statements_checker->getCheckedFilePath()
                     );
                 } catch (\InvalidArgumentException $e) {
                     // this can happen when the function was defined in the Config startup script
@@ -882,7 +882,7 @@ class CallChecker
     ) {
         // we need to do this calculation after the above vars have already processed
         $function_params = $method_id
-            ? FunctionLikeChecker::getParamsById($method_id, $args, $statements_checker->getFileName())
+            ? FunctionLikeChecker::getParamsById($method_id, $args, $statements_checker->getFilePath())
             : [];
 
         $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
@@ -895,7 +895,7 @@ class CallChecker
 
         if ($method_id) {
             if ($in_call_map || !strpos($method_id, '::')) {
-                $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFileName());
+                $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFilePath());
             } else {
                 $fq_class_name = explode('::', $method_id)[0];
                 $is_variadic = $is_mock || MethodChecker::isVariadic($method_id);
@@ -1245,7 +1245,7 @@ class CallChecker
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 
-        if (!FunctionChecker::functionExists($function_id, $context->file_name)) {
+        if (!FunctionChecker::functionExists($function_id, $statements_checker->getFilePath())) {
             if (IssueBuffer::accepts(
                 new UndefinedFunction(
                     'Function ' . $cased_function_id . ' does not exist',

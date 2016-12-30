@@ -7,6 +7,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\FileStorage;
 
 class FileChecker extends SourceChecker implements StatementsSource
 {
@@ -113,16 +114,27 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected static $file_content_hashes = null;
 
     /**
-     * @param string $file_name
+     * A list of data useful to analyse files
+     *
+     * @var array<string, FileStorage>
+     */
+    public static $storage = [];
+
+    /**
+     * @param string $file_path
      * @param array  $preloaded_statements
      */
-    public function __construct($file_name, array $preloaded_statements = [])
+    public function __construct($file_path, array $preloaded_statements = [])
     {
-        $this->file_path = $file_name;
+        $this->file_path = $file_path;
         $this->file_name = Config::getInstance()->shortenFileName($this->file_path);
 
         self::$file_checkers[$this->file_name] = $this;
         self::$file_checkers[$this->file_path] = $this;
+
+        if (!isset(self::$storage[$file_path])) {
+            self::$storage[$file_path] = new FileStorage();
+        }
 
         if ($preloaded_statements) {
             $this->preloaded_statements = $preloaded_statements;
@@ -264,12 +276,12 @@ class FileChecker extends SourceChecker implements StatementsSource
 
                     $return_type = FunctionChecker::getFunctionReturnType(
                         $method_id,
-                        $this->file_name
+                        $this->file_path
                     );
 
                     $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
                         $method_id,
-                        $this->file_name
+                        $this->file_path
                     );
 
                     $function_checker->checkReturnTypes(
@@ -780,6 +792,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         self::$functions_checked = [];
         self::$classes_checked = [];
         self::$files_checked = [];
+        self::$storage = [];
 
         ClassLikeChecker::clearCache();
         FunctionChecker::clearCache();

@@ -6,5 +6,10 @@ class FileStorage
     /**
      * @var array<int, string>
      */
-    protected $classes_in_file = [];
+    public $classes_in_file = [];
+
+    /**
+     * @var array<FunctionLikeStorage>
+     */
+    public $functions = [];
 }
