@@ -25,18 +25,18 @@
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
-        <xs:sequence>
+        <xs:choice maxOccurs="unbounded">
             <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
             <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
             <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
-                    <xs:sequence>
+                    <xs:choice maxOccurs="unbounded">
                         <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                         <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
-                    </xs:sequence>
+                    </xs:choice>
                 </xs:complexType>
             </xs:element>
-        </xs:sequence>
+        </xs:choice>
     </xs:complexType>
 
     <xs:complexType name="NameAttributeType">
@@ -144,10 +144,10 @@
         <xs:sequence>
             <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
-                    <xs:sequence>
+                    <xs:choice maxOccurs="unbounded">
                         <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                         <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
-                    </xs:sequence>
+                    </xs:choice>
 
                     <xs:attribute name="type" type="xs:string" use="required" />
                 </xs:complexType>
