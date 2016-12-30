@@ -47,7 +47,7 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage Method B::foo has fewer arguments than parent method A::foo
+     * @expectedExceptionMessage Method B::fooFoo has fewer arguments than parent method A::foo
      */
     public function testFewerArguments()
     {
@@ -72,7 +72,7 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage Argument 1 of B::foo has wrong type 'bool', expecting 'int' as defined by A::foo
+     * @expectedExceptionMessage Argument 1 of B::fooFoo has wrong type 'bool', expecting 'int' as defined by A::foo
      */
     public function testDifferentArguments()
     {

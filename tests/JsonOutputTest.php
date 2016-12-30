@@ -46,7 +46,7 @@ function fooFoo(int $a) : string {
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
-        $this->assertSame("The given return type 'string' for foo is incorrect, got 'int'", $issue_data['message']);
+        $this->assertSame("The given return type 'string' for fooFoo is incorrect, got 'int'", $issue_data['message']);
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
             'string',
@@ -124,7 +124,7 @@ function fooFoo() {
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('Method foo does not have a return type', $issue_data['message']);
+        $this->assertSame('Method fooFoo does not have a return type', $issue_data['message']);
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
             'function fooFoo() {',
