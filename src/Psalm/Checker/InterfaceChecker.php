@@ -29,10 +29,10 @@ class InterfaceChecker extends ClassLikeChecker
 
         parent::__construct($interface, $source, $interface_name);
 
+        $storage = self::$storage[$interface_name];
+
         self::$existing_interfaces[$interface_name] = true;
         self::$existing_interfaces_ci[strtolower($interface_name)] = true;
-
-        self::$parent_interfaces[$interface_name] = [];
 
         if ($interface->extends) {
             foreach ($interface->extends as $extended_interface) {
@@ -42,7 +42,7 @@ class InterfaceChecker extends ClassLikeChecker
                     $this->aliased_classes
                 );
 
-                self::$parent_interfaces[$interface_name][] = $extended_interface_name;
+                $storage->parent_interfaces[] = $extended_interface_name;
             }
         }
     }
@@ -108,7 +108,9 @@ class InterfaceChecker extends ClassLikeChecker
 
         $extended_interfaces = [];
 
-        foreach (self::$parent_interfaces[$interface_name] as $extended_interface_name) {
+        $storage = self::$storage[$interface_name];
+
+        foreach ($storage->parent_interfaces as $extended_interface_name) {
             $extended_interfaces[] = $extended_interface_name;
 
             $extended_interfaces = array_merge(

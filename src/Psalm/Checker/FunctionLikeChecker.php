@@ -146,7 +146,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 throw new \InvalidArgumentException('Cannot get params for own method');
             }
 
-            $implemented_method_ids = MethodChecker::getOverriddenMethodIds((string)$this->getMethodId());
+            $method_id = (string)$this->getMethodId($context->self);
+
+            $implemented_method_ids = MethodChecker::getOverriddenMethodIds($method_id);
 
             if ($implemented_method_ids) {
                 $have_emitted = false;
@@ -465,9 +467,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
+     * @param string|null $context_self
      * @return null|string
      */
-    public function getMethodId()
+    public function getMethodId($context_self = null)
     {
         if ($this->function instanceof ClassMethod) {
             $function_name = (string)$this->function->name;
@@ -476,7 +479,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $function_name = '__construct';
             }
 
-            return $this->fq_class_name . '::' . strtolower($function_name);
+            return ($context_self ?: $this->fq_class_name) . '::' . strtolower($function_name);
         }
 
         if ($this->function instanceof Function_) {

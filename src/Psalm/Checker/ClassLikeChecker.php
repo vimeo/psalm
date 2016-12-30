@@ -14,6 +14,7 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionClass;
 use ReflectionMethod;
@@ -85,136 +86,26 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected static $this_class = null;
 
     /**
-     * A lookup table of all public methods on a given class
-     *
-     * @var array<string,array<string,bool>>
-     */
-    protected static $public_class_methods = [];
-
-    /**
-     * A lookup table of all protected methods on a given class
-     *
-     * @var array<string,array<string,bool>>
-     */
-    protected static $protected_class_methods = [];
-
-    /**
-     * A lookup table of cached ClassLikeCheckers
-     *
-     * @var array<string,self>
-     */
-    protected static $class_checkers = [];
-
-    /**
-     * A lookup table for public class properties
-     *
-     * @var array<string,array<string,Type\Union|false>>
-     */
-    protected static $public_class_properties = [];
-
-    /**
-     * A lookup table for protected class properties
-     *
-     * @var array<string,array<string,Type\Union|false>>
-     */
-    protected static $protected_class_properties = [];
-
-    /**
-     * A lookup table for protected class properties
-     *
-     * @var array<string,array<string,Type\Union|false>>
-     */
-    protected static $private_class_properties = [];
-
-    /**
-     * A lookup table for public static class properties
-     *
-     * @var array<string,array<string,Type\Union|false>>
-     */
-    protected static $public_static_class_properties = [];
-
-    /**
-     * A lookup table for protected static class properties
-     *
-     * @var array<string,array<string,Type\Union|false>>
-     */
-    protected static $protected_static_class_properties = [];
-
-    /**
-     * A lookup table for private static class properties
-     *
-     * @var array<string,array<string,Type\Union|false>>
-     */
-    protected static $private_static_class_properties = [];
-
-    /**
-     * A lookup table for public class constants
-     *
-     * @var array<string,array<string,Type\Union>>
-     */
-    protected static $public_class_constants = [];
-
-    /**
-     * A lookup table for protected class constants
-     *
-     * @var array<string,array<string,Type\Union>>
-     */
-    protected static $protected_class_constants = [];
-
-    /**
-     * A lookup table for private class constants
-     *
-     * @var array<string,array<string,Type\Union>>
-     */
-    protected static $private_class_constants = [];
-
-    /**
-     * A lookup table to record which classes have been scanned
-     *
-     * @var array<string,bool>
-     */
-    protected static $registered_classes = [];
-
-    /**
-     * A lookup table to record which classes are user-defined
-     *
-     * @var array<string,bool>
-     */
-    protected static $user_defined = [];
-
-    /**
-     * A lookup table used for storing the results of ClassChecker::classImplements
-     *
-     * @var array<string,array<string,string>>
-     */
-    protected static $class_implements = [];
-
-    /**
-     * A lookup table for interface parents
-     *
-     * @var array<string, array<string>>
-     */
-    protected static $parent_interfaces = [];
-
-    /**
-     * @var array<string,string>
-     */
-    protected static $class_files = [];
-
-    /**
-     * @var array<string,array<int,string>>
-     */
-    protected static $file_classes = [];
-
-    /**
-     * @var array<string,array<string,string>>|null
+     * @var array<string, array<string, string>>|null
      */
     protected static $property_map;
 
     /**
-     * @var array<string, array<string, bool>>
+     * @var array<string, ClassLikeStorage>
      */
-    protected static $used_traits = [];
+    protected static $storage = [];
+
+    /**
+     * A lookup table of cached ClassLikeCheckers
+     *
+     * @var array<string, self>
+     */
+    public static $class_checkers;
+
+    /**
+     * @var array<string, array<string, string>>
+     */
+    public static $file_classes = [];
 
     /**
      * @param PhpParser\Node\Stmt\ClassLike $class
@@ -237,7 +128,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $this->suppressed_issues = $source->getSuppressedIssues();
 
-        self::$class_files[$fq_class_name] = $this->file_name;
+        if (!isset(self::$storage[$fq_class_name])) {
+            self::$storage[$fq_class_name] = new ClassLikeStorage();
+            self::$storage[$fq_class_name]->file_name = $this->file_name;
+            self::$storage[$fq_class_name]->file_path = $this->file_path;
+        }
+
         self::$file_classes[$this->file_name][] = $fq_class_name;
 
         if (self::$this_class) {
@@ -253,16 +149,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public function check($check_methods = true, Context $class_context = null, $update_docblocks = false)
     {
-        if (!$check_methods &&
-            !($this instanceof TraitChecker) &&
-            isset(self::$registered_classes[$this->fq_class_name])
-        ) {
+        $storage = self::$storage[$class_context ? $class_context->self : $this->fq_class_name];
+
+        if (!$check_methods && !($this instanceof TraitChecker) && $storage->registered) {
             return null;
         }
 
         $config = Config::getInstance();
 
-        self::$user_defined[$this->fq_class_name] = true;
+        $storage->user_defined = true;
+        $storage->registered = true;
 
         $leftover_stmts = [];
 
@@ -270,26 +166,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $method_checkers = [];
 
         $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
-
-
-        if (!isset(self::$registered_classes[$this->fq_class_name])) {
-            self::$public_class_methods[$this->fq_class_name] = [];
-            self::$protected_class_methods[$this->fq_class_name] = [];
-
-            self::$public_class_properties[$this->fq_class_name] = [];
-            self::$protected_class_properties[$this->fq_class_name] = [];
-            self::$private_class_properties[$this->fq_class_name] = [];
-
-            self::$public_static_class_properties[$this->fq_class_name] = [];
-            self::$protected_static_class_properties[$this->fq_class_name] = [];
-            self::$private_static_class_properties[$this->fq_class_name] = [];
-
-            self::$public_class_constants[$this->fq_class_name] = [];
-            self::$protected_class_constants[$this->fq_class_name] = [];
-            self::$private_class_constants[$this->fq_class_name] = [];
-        }
-
-        self::$registered_classes[$this->fq_class_name] = true;
 
         if (!$class_context) {
             $class_context = new Context($this->file_name, $this->fq_class_name);
@@ -302,18 +178,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 foreach ($stmt->consts as $const) {
                     if ($stmt->isProtected()) {
-                        self::$protected_class_constants[$class_context->self][$const->name] = Type::getMixed();
+                        $storage->protected_class_constants[$const->name] = Type::getMixed();
                     } elseif ($stmt->isPrivate()) {
-                        self::$private_class_constants[$class_context->self][$const->name] = Type::getMixed();
+                        $storage->private_class_constants[$const->name] = Type::getMixed();
                     } else {
-                        self::$public_class_constants[$class_context->self][$const->name] = Type::getMixed();
+                        $storage->public_class_constants[$const->name] = Type::getMixed();
                     }
                 }
             }
-        }
-
-        if ($this instanceof TraitChecker && $class_context->self) {
-            $this->fq_class_name = $class_context->self;
         }
 
         if ($this instanceof ClassChecker) {
@@ -329,7 +201,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $parent_interfaces = InterfaceChecker::getParentInterfaces($this->fq_class_name);
                 $extra_interfaces = $parent_interfaces;
             } else {
-                $parent_interfaces = self::$class_implements[$this->fq_class_name];
+                $parent_interfaces = self::$storage[$this->fq_class_name]->class_implements;
             }
 
             foreach ($parent_interfaces as $interface_name) {
@@ -355,8 +227,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
 
                 if ($this instanceof ClassChecker) {
-                    self::$class_implements[$this->fq_class_name][strtolower($extra_interface_name)] =
-                        $extra_interface_name;
+                    $storage->class_implements[strtolower($extra_interface_name)] = $extra_interface_name;
                 } else {
                     $this->registerInheritedMethods($extra_interface_name);
                 }
@@ -398,9 +269,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         $all_instance_properties = array_merge(
-            self::$public_class_properties[$this->fq_class_name],
-            self::$protected_class_properties[$this->fq_class_name],
-            self::$private_class_properties[$this->fq_class_name]
+            $storage->public_class_properties,
+            $storage->protected_class_properties,
+            $storage->private_class_properties
         );
 
         foreach ($all_instance_properties as $property_name => $property_type) {
@@ -408,9 +279,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         $all_static_properties = array_merge(
-            self::$public_static_class_properties[$this->fq_class_name],
-            self::$protected_static_class_properties[$this->fq_class_name],
-            self::$private_static_class_properties[$this->fq_class_name]
+            $storage->public_static_class_properties,
+            $storage->protected_static_class_properties,
+            $storage->private_static_class_properties
         );
 
         foreach ($all_static_properties as $property_name => $property_type) {
@@ -422,19 +293,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
             foreach (ClassChecker::getInterfacesForClass($this->fq_class_name) as $interface_id => $interface_name) {
-                if (isset(self::$public_class_constants[$interface_name])) {
-                    self::$public_class_constants[$this->fq_class_name] +=
-                        self::$public_class_constants[$interface_name];
-                }
+                $interface_storage = self::$storage[$interface_name];
 
-                foreach (self::$public_class_methods[$interface_name] as $method_name => $_) {
+                $storage->public_class_constants += $interface_storage->public_class_constants;
+
+                foreach ($interface_storage->public_class_methods as $method_name => $_) {
                     $mentioned_method_id = $interface_name . '::' . $method_name;
                     $implemented_method_id = $this->fq_class_name . '::' . $method_name;
                     MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
 
-                    if (!isset(self::$public_class_methods[$this->fq_class_name][$method_name]) &&
-                        !$this->class->isAbstract()
-                    ) {
+                    if (!isset($storage->public_class_methods[$method_name]) && !$this->class->isAbstract()) {
                         $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
 
                         if (IssueBuffer::accepts(
@@ -518,27 +386,24 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $this->registerInheritedMethods($parent_class);
 
+        $storage = self::$storage[$this->fq_class_name];
+
+        $parent_storage = self::$storage[$parent_class];
+
         FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $parent_class);
 
-        self::$class_implements[$this->fq_class_name] += self::$class_implements[$parent_class];
+        $storage->class_implements += $parent_storage->class_implements;
 
-        self::$public_class_properties[$this->fq_class_name] = self::$public_class_properties[$parent_class];
-        self::$protected_class_properties[$this->fq_class_name] = self::$protected_class_properties[$parent_class];
+        $storage->public_class_properties = $parent_storage->public_class_properties;
+        $storage->protected_class_properties = $parent_storage->protected_class_properties;
 
-        self::$public_static_class_properties[$this->fq_class_name] =
-            self::$public_static_class_properties[$parent_class];
+        $storage->public_static_class_properties = $parent_storage->public_static_class_properties;
+        $storage->protected_static_class_properties = $parent_storage->protected_static_class_properties;
 
-        self::$protected_static_class_properties[$this->fq_class_name] =
-            self::$protected_static_class_properties[$parent_class];
+        $storage->public_class_constants = $parent_storage->public_class_constants;
+        $storage->protected_class_constants = $parent_storage->protected_class_constants;
 
-        self::$public_class_constants[$this->fq_class_name] = self::$public_class_constants[$parent_class];
-
-        self::$protected_class_constants[$this->fq_class_name] =
-            self::$protected_class_constants[$parent_class];
-
-        if (isset(self::$used_traits[$parent_class])) {
-            self::$used_traits[$this->fq_class_name] = self::$used_traits[$parent_class];
-        }
+        $storage->used_traits = $parent_storage->used_traits;
 
         return null;
     }
@@ -557,6 +422,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $cache_method_checker
     ) {
         $method_id = $this->fq_class_name . '::' . strtolower($stmt->name);
+        $storage = self::$storage[$class_context->self];
 
         if (!isset(self::$method_checkers[$method_id])) {
             $method_checker = new MethodChecker($stmt, $this);
@@ -577,9 +443,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         if ($stmt->isPublic()) {
-            self::$public_class_methods[$class_context->self][strtolower($stmt->name)] = true;
+            $storage->public_class_methods[strtolower($stmt->name)] = true;
         } elseif ($stmt->isProtected()) {
-            self::$protected_class_methods[$class_context->self][strtolower($stmt->name)] = true;
+            $storage->protected_class_methods[strtolower($stmt->name)] = true;
         }
     }
 
@@ -677,6 +543,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     ) {
         $comment = $stmt->getDocComment();
         $type_in_comment = null;
+        $storage = self::$storage[$class_context->self];
 
         if ($comment && $config->use_docblock_types) {
             try {
@@ -719,19 +586,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             if ($stmt->isStatic()) {
                 if ($stmt->isPublic()) {
-                    self::$public_static_class_properties[$class_context->self][$property->name] = $property_type;
+                    $storage->public_static_class_properties[$property->name] = $property_type;
                 } elseif ($stmt->isProtected()) {
-                    self::$protected_static_class_properties[$class_context->self][$property->name] = $property_type;
+                    $storage->protected_static_class_properties[$property->name] = $property_type;
                 } elseif ($stmt->isPrivate()) {
-                    self::$private_static_class_properties[$class_context->self][$property->name] = $property_type;
+                    $storage->private_static_class_properties[$property->name] = $property_type;
                 }
             } else {
                 if ($stmt->isPublic()) {
-                    self::$public_class_properties[$class_context->self][$property->name] = $property_type;
+                    $storage->public_class_properties[$property->name] = $property_type;
                 } elseif ($stmt->isProtected()) {
-                    self::$protected_class_properties[$class_context->self][$property->name] = $property_type;
+                    $storage->protected_class_properties[$property->name] = $property_type;
                 } elseif ($stmt->isPrivate()) {
-                    self::$private_class_properties[$class_context->self][$property->name] = $property_type;
+                    $storage->private_class_properties[$property->name] = $property_type;
                 }
             }
         }
@@ -750,6 +617,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     ) {
         $comment = $stmt->getDocComment();
         $type_in_comment = null;
+        $storage = self::$storage[$class_context->self];
 
         if ($comment && $config->use_docblock_types && count($stmt->consts) === 1) {
             $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
@@ -759,11 +627,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         foreach ($stmt->consts as $const) {
             if ($stmt->isProtected()) {
-                self::$protected_class_constants[$class_context->self][$const->name] = $const_type;
+                $storage->protected_class_constants[$const->name] = $const_type;
             } elseif ($stmt->isPrivate()) {
-                self::$private_class_constants[$class_context->self][$const->name] = $const_type;
+                $storage->private_class_constants[$const->name] = $const_type;
             } else {
-                self::$public_class_constants[$class_context->self][$const->name] = $const_type;
+                $storage->public_class_constants[$const->name] = $const_type;
             }
         }
     }
@@ -1028,7 +896,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function registerClass($class_name)
     {
-        if (isset(self::$registered_classes[$class_name])) {
+        if (isset(self::$storage[$class_name]) && self::$storage[$class_name]->registered) {
             return true;
         }
 
@@ -1052,8 +920,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $short_file_name = $file_checker->getFileName();
 
-            self::$class_files[$class_name] = $class_file_name;
             self::$file_classes[$class_file_name][] = $class_name;
+
+            if (!isset(self::$storage[$class_name])) {
+                self::$storage[$class_name] = new ClassLikeStorage();
+                self::$storage[$class_name]->file_path = $class_file_name;
+                self::$storage[$class_name]->file_name = $short_file_name;
+            }
+
+            $storage = self::$storage[$class_name];
 
             // this doesn't work on traits
             $file_checker->check(true, false);
@@ -1062,7 +937,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $public_mapped_properties = self::getPropertyMap()[strtolower($class_name)];
 
                 foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
-                    self::$public_class_properties[$class_name][$property_name] = Type::parseString(
+                    $storage->public_class_properties[$property_name] = Type::parseString(
                         $public_mapped_property
                     );
                 }
@@ -1081,28 +956,21 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected static function registerReflectedClass($class_name, ReflectionClass $reflected_class)
     {
-        self::$public_class_properties[$class_name] = [];
-        self::$protected_class_properties[$class_name] = [];
-        self::$private_class_properties[$class_name] = [];
-
-        self::$public_static_class_properties[$class_name] = [];
-        self::$protected_static_class_properties[$class_name] = [];
-        self::$private_static_class_properties[$class_name] = [];
-
         $parent_class = $reflected_class->getParentClass();
+
+        $storage = self::$storage[$class_name] = new ClassLikeStorage();
 
         if ($parent_class) {
             $parent_class_name = $parent_class->getName();
             self::registerClass($parent_class_name);
 
-            self::$public_class_properties[$class_name] = self::$public_class_properties[$parent_class_name];
-            self::$protected_class_properties[$class_name] = self::$protected_class_properties[$parent_class_name];
+            $parent_storage = self::$storage[$parent_class_name];
 
-            self::$public_static_class_properties[$class_name] =
-                self::$public_static_class_properties[$parent_class_name];
+            $storage->public_class_properties = $parent_storage->public_class_properties;
+            $storage->protected_class_properties[$class_name] = $parent_storage->protected_class_properties;
 
-            self::$protected_static_class_properties[$class_name] =
-                self::$protected_static_class_properties[$parent_class_name];
+            $storage->public_static_class_properties = $parent_storage->public_static_class_properties;
+            $storage->protected_static_class_properties = $parent_storage->protected_static_class_properties;
         }
 
         $class_properties = $reflected_class->getProperties();
@@ -1111,24 +979,24 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($class_properties as $class_property) {
             if ($class_property->isStatic()) {
                 if ($class_property->isPublic()) {
-                    self::$public_static_class_properties[$class_name][$class_property->getName()] =
+                    $storage->public_static_class_properties[$class_property->getName()] =
                         Type::getMixed();
                 } elseif ($class_property->isProtected()) {
-                    self::$protected_static_class_properties[$class_name][$class_property->getName()] =
+                    $storage->protected_static_class_properties[$class_property->getName()] =
                         Type::getMixed();
                 } elseif ($class_property->isPrivate()) {
-                    self::$private_static_class_properties[$class_name][$class_property->getName()] =
+                    $storage->private_static_class_properties[$class_property->getName()] =
                         Type::getMixed();
                 }
             } else {
                 if ($class_property->isPublic()) {
-                    self::$public_class_properties[$class_name][$class_property->getName()] =
+                    $storage->public_class_properties[$class_property->getName()] =
                         Type::getMixed();
                 } elseif ($class_property->isProtected()) {
-                    self::$protected_class_properties[$class_name][$class_property->getName()] =
+                    $storage->protected_class_properties[$class_property->getName()] =
                         Type::getMixed();
                 } elseif ($class_property->isPrivate()) {
-                    self::$private_class_properties[$class_name][$class_property->getName()] =
+                    $storage->private_class_properties[$class_property->getName()] =
                         Type::getMixed();
                 }
             }
@@ -1138,7 +1006,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $public_mapped_properties = self::getPropertyMap()[strtolower($class_name)];
 
             foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
-                self::$public_class_properties[$class_name][$property_name] = Type::parseString(
+                $storage->public_class_properties[$property_name] = Type::parseString(
                     $public_mapped_property
                 );
             }
@@ -1147,19 +1015,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         /** @var array<string, int|string|float|null|array> */
         $class_constants = $reflected_class->getConstants();
 
-        if ($reflected_class->isInterface()) {
-            self::$parent_interfaces[$class_name] = [];
-        }
-
-        self::$public_class_constants[$class_name] = [];
-        self::$private_class_constants[$class_name] = [];
-        self::$protected_class_constants[$class_name] = [];
-
         foreach ($class_constants as $name => $value) {
-            self::$public_class_constants[$class_name][$name] = self::getTypeFromValue($value);
+            $storage->public_class_constants[$name] = self::getTypeFromValue($value);
         }
 
-        self::$registered_classes[$class_name] = true;
+        $storage->registered = true;
 
         if (!$reflected_class->isTrait() && !$reflected_class->isInterface()) {
             ClassChecker::getInterfacesForClass($class_name);
@@ -1169,8 +1029,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
         );
 
-        self::$protected_class_methods[$class_name] = [];
-        self::$public_class_methods[$class_name] = [];
+        $interfaces = $reflected_class->getInterfaces();
+
+        /** @var \ReflectionClass $interface */
+        foreach ($interfaces as $interface) {
+            $interface_name = $interface->getName();
+            $storage->class_implements[strtolower($interface_name)] = $interface_name;
+        }
+
+        $storage->protected_class_methods = [];
+        $storage->public_class_methods = [];
 
         /** @var \ReflectionMethod $reflection_method */
         foreach ($reflection_methods as $reflection_method) {
@@ -1182,13 +1050,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $reflection_method->class . '::' . strtolower($reflection_method->name)
                 );
 
-                self::$public_class_methods[$class_name][strtolower((string)$reflection_method->name)] = true;
+                $storage->public_class_methods[strtolower((string)$reflection_method->name)] = true;
             }
 
             if (!$reflection_method->isAbstract() &&
                 $reflection_method->getDeclaringClass()->getName() === $class_name
             ) {
-                self::$public_class_methods[$class_name][strtolower((string)$reflection_method->getName())] = true;
+                $storage->public_class_methods[strtolower((string)$reflection_method->getName())] = true;
             }
         }
     }
@@ -1199,32 +1067,31 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected function registerInheritedMethods($parent_class)
     {
-        $public_class_methods = self::$public_class_methods[$parent_class];
+        $storage = self::$storage[$this->fq_class_name];
+        $parent_storage = self::$storage[$parent_class];
 
-        foreach ($public_class_methods as $method_name => $_) {
+        foreach ($parent_storage->public_class_methods as $method_name => $_) {
             $parent_method_id = $parent_class . '::' . $method_name;
             /** @var string */
             $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
             $implemented_method_id = $this->fq_class_name . '::' . $method_name;
 
-            if (!isset(self::$public_class_methods[$this->fq_class_name][$method_name])) {
+            if (!isset($storage->public_class_methods[$method_name])) {
                 MethodChecker::setDeclaringMethodId($implemented_method_id, $declaring_method_id);
-                self::$public_class_methods[$this->fq_class_name][$method_name] = true;
+                $storage->public_class_methods[$method_name] = true;
                 MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
             }
         }
 
-        $protected_class_methods = self::$protected_class_methods[$parent_class];
-
-        foreach ($protected_class_methods as $method_name => $_) {
+        foreach ($parent_storage->protected_class_methods as $method_name => $_) {
             $parent_method_id = $parent_class . '::' . $method_name;
             /** @var string */
             $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
             $implemented_method_id = $this->fq_class_name . '::' . $method_name;
 
-            if (!isset(self::$protected_class_methods[$this->fq_class_name][$method_name])) {
+            if (!isset($storage->protected_class_methods[$method_name])) {
                 MethodChecker::setDeclaringMethodId($implemented_method_id, $declaring_method_id);
-                self::$protected_class_methods[$this->fq_class_name][$method_name] = true;
+                $storage->protected_class_methods[$method_name] = true;
                 MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
             }
         }
@@ -1241,22 +1108,24 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return [];
         }
 
+        $storage = self::$storage[$class_name];
+
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
-            return self::$public_class_properties[$class_name];
+            return $storage->public_class_properties;
         }
 
         if ($visibility === ReflectionProperty::IS_PROTECTED) {
             return array_merge(
-                self::$public_class_properties[$class_name],
-                self::$protected_class_properties[$class_name]
+                $storage->public_class_properties,
+                $storage->protected_class_properties
             );
         }
 
         if ($visibility === ReflectionProperty::IS_PRIVATE) {
             return array_merge(
-                self::$public_class_properties[$class_name],
-                self::$protected_class_properties[$class_name],
-                self::$private_class_properties[$class_name]
+                $storage->public_class_properties,
+                $storage->protected_class_properties,
+                $storage->private_class_properties
             );
         }
 
@@ -1274,22 +1143,24 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return [];
         }
 
+        $storage = self::$storage[$class_name];
+
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
-            return self::$public_static_class_properties[$class_name];
+            return $storage->public_static_class_properties;
         }
 
         if ($visibility === ReflectionProperty::IS_PROTECTED) {
             return array_merge(
-                self::$public_static_class_properties[$class_name],
-                self::$protected_static_class_properties[$class_name]
+                $storage->public_static_class_properties,
+                $storage->protected_static_class_properties
             );
         }
 
         if ($visibility === ReflectionProperty::IS_PRIVATE) {
             return array_merge(
-                self::$public_static_class_properties[$class_name],
-                self::$protected_static_class_properties[$class_name],
-                self::$private_static_class_properties[$class_name]
+                $storage->public_static_class_properties,
+                $storage->protected_static_class_properties,
+                $storage->private_static_class_properties
             );
         }
 
@@ -1339,22 +1210,24 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return [];
         }
 
+        $storage = self::$storage[$class_name];
+
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
-            return self::$public_class_constants[$class_name];
+            return $storage->public_class_constants;
         }
 
         if ($visibility === ReflectionProperty::IS_PROTECTED) {
             return array_merge(
-                self::$public_class_constants[$class_name],
-                self::$protected_class_constants[$class_name]
+                $storage->public_class_constants,
+                $storage->protected_class_constants
             );
         }
 
         if ($visibility === ReflectionProperty::IS_PRIVATE) {
             return array_merge(
-                self::$public_class_constants[$class_name],
-                self::$protected_class_constants[$class_name],
-                self::$private_class_constants[$class_name]
+                $storage->public_class_constants,
+                $storage->protected_class_constants,
+                $storage->private_class_constants
             );
         }
 
@@ -1370,12 +1243,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function setConstantType($class_name, $const_name, Type\Union $type, $visibility)
     {
+        $storage = self::$storage[$class_name];
+
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
-            self::$public_class_constants[$class_name][$const_name] = $type;
+            $storage->public_class_constants[$const_name] = $type;
         } elseif ($visibility === ReflectionProperty::IS_PROTECTED) {
-            self::$protected_class_constants[$class_name][$const_name] = $type;
+            $storage->protected_class_constants[$const_name] = $type;
         } elseif ($visibility === ReflectionProperty::IS_PRIVATE) {
-            self::$private_class_constants[$class_name][$const_name] = $type;
+            $storage->private_class_constants[$const_name] = $type;
         }
     }
 
@@ -1423,7 +1298,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public static function isUserDefined($fq_class_name)
     {
         self::registerClass($fq_class_name);
-        return isset(self::$user_defined[$fq_class_name]);
+        $storage = self::$storage[$fq_class_name];
+        return $storage->user_defined;
     }
 
     /**
@@ -1467,15 +1343,21 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function registerTraitUse($fq_class_name, $fq_trait_name)
     {
-        self::$used_traits[$fq_class_name][$fq_trait_name] = true;
+        $storage = self::$storage[$fq_class_name];
+
+        $storage->used_traits[$fq_trait_name] = true;
     }
 
     /**
+     * @param string $fq_class_name
+     * @param string $fq_trait_name
      * @return bool
      */
     public static function classUsesTrait($fq_class_name, $fq_trait_name)
     {
-        return isset(self::$used_traits[$fq_class_name][$fq_trait_name]);
+        $storage = self::$storage[$fq_class_name];
+
+        return isset($storage->used_traits[$fq_trait_name]);
     }
 
     /**
@@ -1487,36 +1369,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         self::$method_checkers = [];
 
-        self::$protected_class_methods = [];
-        self::$public_class_methods = [];
+        self::$file_classes = [];
 
         self::$class_checkers = [];
 
-        self::$public_class_properties = [];
-
-        self::$protected_class_properties = [];
-
-        self::$private_class_properties = [];
-
-        self::$public_static_class_properties = [];
-
-        self::$protected_static_class_properties = [];
-
-        self::$private_static_class_properties = [];
-
-        self::$public_class_constants = [];
-        self::$protected_class_constants = [];
-        self::$private_class_constants = [];
-
-        self::$registered_classes = [];
-
-        self::$class_implements = [];
-
-        self::$class_files = [];
-
-        self::$file_classes = [];
-
-        self::$used_traits = [];
+        self::$storage = [];
 
         ClassChecker::clearCache();
         InterfaceChecker::clearCache();

@@ -54,10 +54,10 @@ class ClassChecker extends ClassLikeChecker
 
         parent::__construct($class, $source, $fq_class_name);
 
+        $storage = self::$storage[$fq_class_name];
+
         self::$existing_classes[$fq_class_name] = true;
         self::$existing_classes_ci[strtolower($fq_class_name)] = true;
-
-        self::$class_implements[$fq_class_name] = [];
 
         if ($this->class->extends) {
             $this->parent_class = self::getFQCLNFromNameObject(
@@ -76,7 +76,7 @@ class ClassChecker extends ClassLikeChecker
                 $this->aliased_classes
             );
 
-            self::$class_implements[$fq_class_name][strtolower($fq_interface_name)] = $fq_interface_name;
+            $storage->class_implements[strtolower($fq_interface_name)] = $fq_interface_name;
         }
     }
 
@@ -168,18 +168,9 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function getInterfacesForClass($fq_class_name)
     {
-        if (!isset(self::$class_implements[$fq_class_name])) {
-            /** @var string[] */
-            $class_implements = class_implements($fq_class_name);
+        self::registerClass($fq_class_name);
 
-            self::$class_implements[$fq_class_name] = [];
-
-            foreach ($class_implements as $interface) {
-                 self::$class_implements[$fq_class_name][strtolower($interface)] = $interface;
-            }
-        }
-
-        return self::$class_implements[$fq_class_name];
+        return self::$storage[$fq_class_name]->class_implements;
     }
 
     /**
@@ -197,25 +188,17 @@ class ClassChecker extends ClassLikeChecker
             return true;
         }
 
-        if (isset(self::$class_implements[$fq_class_name][$interface_id])) {
-            return true;
-        }
-
-        if (isset(self::$class_implements[$fq_class_name])) {
+        if (in_array($interface_id, self::$SPECIAL_TYPES) || in_array($fq_class_name, self::$SPECIAL_TYPES)) {
             return false;
         }
 
-        if (!ClassChecker::classExists($fq_class_name)) {
+        if (self::registerClass($fq_class_name) === false) {
             return false;
         }
 
-        if (in_array($interface_id, self::$SPECIAL_TYPES)) {
-            return false;
-        }
+        $storage = self::$storage[$fq_class_name];
 
-        $class_implementations = self::getInterfacesForClass($fq_class_name);
-
-        return isset($class_implementations[$interface_id]);
+        return isset($storage->class_implements[$interface_id]);
     }
 
     /**
