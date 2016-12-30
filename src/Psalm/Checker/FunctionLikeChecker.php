@@ -63,7 +63,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     protected $return_vars_in_scope = [];
 
     /**
-     * @var array<string,array<string,bool>>
+     * @var array<string, array<string,bool>>
      */
     protected $return_vars_possibly_in_scope = [];
 

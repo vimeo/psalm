@@ -145,8 +145,3 @@ if (array_key_exists('self-check', $options)) {
         }
     }
 }
-
-if ($debug) {
-    echo('Checks took ' . (microtime(true) - $time));
-    echo(' and used ' . memory_get_peak_usage() . PHP_EOL);
-}

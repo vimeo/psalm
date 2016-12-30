@@ -136,7 +136,7 @@ class ProjectChecker
             FileChecker::touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
-        IssueBuffer::finish(true, (int)$start_checks);
+        IssueBuffer::finish(true, (int)$start_checks, $debug);
     }
 
     /**
