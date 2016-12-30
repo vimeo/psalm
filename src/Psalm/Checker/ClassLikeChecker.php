@@ -93,7 +93,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @var array<string, ClassLikeStorage>
      */
-    protected static $storage = [];
+    public static $storage = [];
 
     /**
      * A lookup table of cached ClassLikeCheckers
@@ -300,6 +300,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 foreach ($interface_storage->public_class_methods as $method_name => $_) {
                     $mentioned_method_id = $interface_name . '::' . $method_name;
                     $implemented_method_id = $this->fq_class_name . '::' . $method_name;
+
                     MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
 
                     if (!isset($storage->public_class_methods[$method_name]) && !$this->class->isAbstract()) {
@@ -437,7 +438,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if (!$stmt->isAbstract() && $class_context->self) {
             MethodChecker::setDeclaringMethodId(
-                $class_context->self . '::' . $this->getMappedMethodName(strtolower($stmt->name)),
+                $class_context->self . '::' . strtolower($this->getMappedMethodName(strtolower($stmt->name))),
                 $method_id
             );
         }
@@ -956,13 +957,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected static function registerReflectedClass($class_name, ReflectionClass $reflected_class)
     {
+        if (isset(self::$storage[$class_name]) && self::$storage[$class_name]->reflected) {
+            return;
+        }
+
         $parent_class = $reflected_class->getParentClass();
 
         $storage = self::$storage[$class_name] = new ClassLikeStorage();
 
         if ($parent_class) {
             $parent_class_name = $parent_class->getName();
-            self::registerClass($parent_class_name);
+            self::registerReflectedClass($parent_class_name, $parent_class);
 
             $parent_storage = self::$storage[$parent_class_name];
 
@@ -1034,6 +1039,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         /** @var \ReflectionClass $interface */
         foreach ($interfaces as $interface) {
             $interface_name = $interface->getName();
+            self::registerReflectedClass($interface_name, $interface);
             $storage->class_implements[strtolower($interface_name)] = $interface_name;
         }
 

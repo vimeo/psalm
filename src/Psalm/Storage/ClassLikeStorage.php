@@ -83,11 +83,14 @@ class ClassLikeStorage
     public $private_class_constants = [];
 
     /**
-     * A lookup table to record which classes have been scanned
-     *
      * @var bool
      */
     public $registered = false;
+
+    /**
+     * @var bool
+     */
+    public $reflected = false;
 
     /**
      * Is this class user-defined
@@ -124,4 +127,19 @@ class ClassLikeStorage
      * @var array<string, bool>
      */
     public $used_traits = [];
+
+    /**
+     * @var array<string, MethodStorage>
+     */
+    public $methods = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $declaring_method_ids = [];
+
+    /**
+     * @var array<string, array<string>>
+     */
+    public $overridden_method_ids = [];
 }

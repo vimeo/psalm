@@ -207,11 +207,11 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface A {
-            public function fooFoo(int $a);
+            public function fooFoo(int $a) : void;
         }
 
         class B implements A {
-            public function fooFoo(string $a) {
+            public function fooFoo(string $a) : void {
 
             }
         }

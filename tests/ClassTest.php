@@ -123,8 +123,8 @@ class ClassTest extends PHPUnit_Framework_TestCase
 
         class B {
             public function fooFoo() : void {
-                $c = new A();
-                $c->barBar();
+                $a = new A();
+                $a->barBar();
             }
 
             protected function barBar() : void {
