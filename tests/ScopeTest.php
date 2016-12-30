@@ -538,12 +538,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            private function foo() : void {
+            private function fooFoo() : void {
 
             }
         }
 
-        (new A())->foo();
+        (new A())->fooFoo();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -558,12 +558,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            protected function foo() : void {
+            protected function fooFoo() : void {
 
             }
         }
 
-        (new A())->foo();
+        (new A())->fooFoo();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -574,12 +574,12 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            private function foo() : void {
+            private function fooFoo() : void {
 
             }
 
-            private function bar() : void {
-                $this->foo();
+            private function barBar() : void {
+                $this->fooFoo();
             }
         }
         ');
@@ -596,14 +596,14 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            private function foo() : void {
+            private function fooFoo() : void {
 
             }
         }
 
         class B extends A {
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -616,13 +616,13 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            protected function foo() : void {
+            protected function fooFoo() : void {
             }
         }
 
         class B extends A {
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -779,7 +779,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
             /** @var string */
             protected static $foo;
 
-            public function bar() : void {
+            public function barBar() : void {
                 echo self::$foo;
             }
         }
@@ -819,7 +819,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public static function foo() {
+            public static function fooFoo() {
                 echo $this;
             }
         }

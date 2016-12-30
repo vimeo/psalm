@@ -27,11 +27,11 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public function foo() : void { }
+            public function fooFoo() : void { }
         }
         function bar (array $a) : void {
             if ($a["a"] instanceof A) {
-                $a["a"]->foo();
+                $a["a"]->fooFoo();
             }
         }
         ');
@@ -45,11 +45,11 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $stmts = self::$parser->parse('<?php
         class A {
-            public function foo() : void { }
+            public function fooFoo() : void { }
         }
         function bar (array $a) : void {
             if ($a[0] instanceof A) {
-                $a[0]->foo();
+                $a[0]->fooFoo();
             }
         }
         ');

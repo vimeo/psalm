@@ -30,8 +30,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     public function testInvalidScalarArgument()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
-        foo("string");
+        function fooFoo(int $a) : void {}
+        fooFoo("string");
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -48,10 +48,10 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
+        function fooFoo(int $a) : void {}
         /** @var mixed */
         $a = "hello";
-        foo($a);
+        fooFoo($a);
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -66,8 +66,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     public function testNullArgument()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
-        foo(null);
+        function fooFoo(int $a) : void {}
+        fooFoo(null);
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -82,8 +82,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     public function testTooFewArguments()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
-        foo();
+        function fooFoo(int $a) : void {}
+        fooFoo();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -98,8 +98,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     public function testTooManyArguments()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(int $a) : void {}
-        foo(5, "dfd");
+        function fooFoo(int $a) : void {}
+        fooFoo(5, "dfd");
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -117,8 +117,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         class A {}
         class B extends A{}
 
-        function foo(B $b) : void {}
-        foo(new A());
+        function fooFoo(B $b) : void {}
+        fooFoo(new A());
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);

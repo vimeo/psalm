@@ -35,7 +35,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
             public $foo;
 
             /** @return void */
-            public function bar()
+            public function barBar()
             {
                 if (rand(0,10) === 5) {
                     $this->foo = [];
@@ -111,7 +111,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public function foo() : void {
+            public function fooFoo() : void {
                 $this->foo = "cool";
             }
         }
@@ -129,7 +129,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public function foo() : void {
+            public function fooFoo() : void {
                 echo $this->foo;
             }
         }
@@ -186,7 +186,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
             /** @var string */
             public $foo;
 
-            public function bar() : void
+            public function barBar() : void
             {
                 $this->foo = 5;
             }

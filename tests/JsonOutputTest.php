@@ -31,7 +31,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     public function testJsonOutputForReturnTypeError()
     {
         $file_contents = '<?php
-function foo(int $a) : string {
+function fooFoo(int $a) : string {
     return $a + 1;
 }';
 
@@ -57,7 +57,7 @@ function foo(int $a) : string {
     public function testJsonOutputForUndefinedVar()
     {
         $file_contents = '<?php
-function foo(int $a) : int {
+function fooFoo(int $a) : int {
     return $b + 1;
 }';
 
@@ -83,7 +83,7 @@ function foo(int $a) : int {
     public function testJsonOutputForUnknownParamClass()
     {
         $file_contents = '<?php
-function foo(Badger\Bodger $a) : Badger\Bodger {
+function fooFoo(Badger\Bodger $a) : Badger\Bodger {
     return $a;
 }';
 
@@ -109,7 +109,7 @@ function foo(Badger\Bodger $a) : Badger\Bodger {
     public function testJsonOutputForMissingReturnType()
     {
         $file_contents = '<?php
-function foo() {
+function fooFoo() {
     return "hello";
 }';
 
@@ -127,7 +127,7 @@ function foo() {
         $this->assertSame('Method foo does not have a return type', $issue_data['message']);
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
-            'function foo() {',
+            'function fooFoo() {',
             substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
         );
     }

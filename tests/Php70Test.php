@@ -153,7 +153,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
          * @return Generator<int,int>
          * @psalm-generator-return string
          */
-        function foo(int $i) : Generator {
+        function fooFoo(int $i) : Generator {
             if ($i === 1) {
                 return "bash";
             }

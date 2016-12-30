@@ -510,7 +510,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
                  * @param  array{b:string} $a
                  * @return null|string
                  */
-                function foo($a) {
+                function fooFoo($a) {
                     if ($a["b"]) {
                         return $a["b"];
                     }

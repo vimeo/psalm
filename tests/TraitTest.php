@@ -27,7 +27,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         trait A {
-            private function foo() : void {
+            private function fooFoo() : void {
             }
         }
 
@@ -35,7 +35,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
             use A;
 
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -48,7 +48,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         trait A {
-            protected function foo() : void {
+            protected function fooFoo() : void {
             }
         }
 
@@ -56,7 +56,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
             use A;
 
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -69,7 +69,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         trait A {
-            public function foo() : void {
+            public function fooFoo() : void {
             }
         }
 
@@ -77,7 +77,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
             use A;
 
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -94,7 +94,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         trait A {
-            private function foo() : void {
+            private function fooFoo() : void {
             }
         }
 
@@ -104,7 +104,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
 
         class C extends B {
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -117,7 +117,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         trait A {
-            protected function foo() : void {
+            protected function fooFoo() : void {
             }
         }
 
@@ -127,7 +127,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
 
         class C extends B {
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -140,7 +140,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         trait A {
-            public function foo() : void {
+            public function fooFoo() : void {
             }
         }
 
@@ -150,7 +150,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
 
         class C extends B {
             public function doFoo() : void {
-                $this->foo();
+                $this->fooFoo();
             }
         }
         ');
@@ -163,15 +163,15 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         trait A {
-            public function foo() : void {
-                self::bar();
+            public function fooFoo() : void {
+                self::barBar();
             }
         }
 
         class B {
             use A;
 
-            public static function bar() : void {
+            public static function barBar() : void {
 
             }
         }

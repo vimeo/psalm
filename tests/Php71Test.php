@@ -66,7 +66,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
         {
             private const IS_PRIVATE = 1;
 
-            function foo() : int {
+            function fooFoo() : int {
                 return A::IS_PRIVATE;
             }
         }
@@ -111,7 +111,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         class B extends A
         {
-            function foo() : int {
+            function fooFoo() : int {
                 return A::IS_PRIVATE;
             }
         }
@@ -132,7 +132,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         class B extends A
         {
-            function foo() : int {
+            function fooFoo() : int {
                 return A::IS_PROTECTED;
             }
         }
@@ -174,7 +174,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         class B extends A
         {
-            function foo() : int {
+            function fooFoo() : int {
                 echo A::IS_PUBLIC;
                 return A::IS_ALSO_PUBLIC;
             }

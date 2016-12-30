@@ -125,8 +125,8 @@ class ToStringTest extends PHPUnit_Framework_TestCase
             }
         }
 
-        function foo(string $b) : void {}
-        foo(new A());
+        function fooFoo(string $b) : void {}
+        fooFoo(new A());
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);

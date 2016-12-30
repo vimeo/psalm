@@ -32,7 +32,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             /**
              * @return string
              */
-            public function foo();
+            public function fooFoo();
         }
 
         interface B
@@ -40,7 +40,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             /**
              * @return string
              */
-            public function bar();
+            public function barBar();
         }
 
         interface C extends A, B
@@ -53,12 +53,12 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         class D implements C
         {
-            public function foo()
+            public function fooFoo()
             {
                 return "hello";
             }
 
-            public function bar()
+            public function barBar()
             {
                 return "goodbye";
             }
@@ -70,7 +70,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         }
 
         $cee = (new D())->baz();
-        $dee = (new D())->foo();
+        $dee = (new D())->fooFoo();
         ?>
         ');
 
@@ -89,7 +89,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             /**
              * @return string
              */
-            public function foo();
+            public function fooFoo();
         }
 
         interface B extends A
@@ -102,7 +102,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         class C implements B
         {
-            public function foo()
+            public function fooFoo()
             {
                 return "hello";
             }
@@ -137,17 +137,17 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             /**
              * @return string
              */
-            public function foo();
+            public function fooFoo();
         }
 
         interface B extends A
         {
-            public function bar();
+            public function barBar();
         }
 
         /** @return void */
         function mux(B $b) {
-            $b->foo();
+            $b->fooFoo();
         }
         ?>
         ');
@@ -166,7 +166,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         interface A { }
 
-        function foo(A $a) : void {
+        function fooFoo(A $a) : void {
             if ($a->bar) {
 
             }
@@ -187,7 +187,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface A {
-            public function foo();
+            public function fooFoo();
         }
 
         class B implements A { }
@@ -207,11 +207,11 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface A {
-            public function foo(int $a);
+            public function fooFoo(int $a);
         }
 
         class B implements A {
-            public function foo(string $a) {
+            public function fooFoo(string $a) {
 
             }
         }
@@ -227,11 +227,11 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface A {
-            public function foo(int $a) : void;
+            public function fooFoo(int $a) : void;
         }
 
         class B implements A {
-            public function foo(int $a) : void {
+            public function fooFoo(int $a) : void {
 
             }
         }
@@ -247,7 +247,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface MyInterface {
-            public function foo(int $a) : void;
+            public function fooFoo(int $a) : void;
         }
 
         trait T {
@@ -255,7 +255,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
-            public function foo(int $a) : void {
+            public function fooFoo(int $a) : void {
 
             }
         }
@@ -279,11 +279,11 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface A {
-            public function foo(int $a, int $b) : void;
+            public function fooFoo(int $a, int $b) : void;
         }
 
         trait T {
-            public function foo(int $a) : void {
+            public function fooFoo(int $a) : void {
             }
         }
 
@@ -302,11 +302,11 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface A {
-            public function foo(int $a, int $b) : void;
+            public function fooFoo(int $a, int $b) : void;
         }
 
         trait T {
-            public function foo(int $a, int $b) : void {
+            public function fooFoo(int $a, int $b) : void {
             }
         }
 
@@ -329,18 +329,18 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         interface A {
-            public function foo(int $a, int $b) : void;
+            public function fooFoo(int $a, int $b) : void;
         }
 
         trait T {
-            public function foo(int $a, int $b) : void {
+            public function fooFoo(int $a, int $b) : void {
             }
         }
 
         class B implements A {
             use T;
 
-            public function foo(int $a) : void {
+            public function fooFoo(int $a) : void {
             }
         }
         ?>

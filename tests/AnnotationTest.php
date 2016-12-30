@@ -31,7 +31,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
             /**
              * @deprecated
              */
-            public static function bar() : void {
+            public static function barBar() : void {
             }
         }
         ');
@@ -52,11 +52,11 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
             /**
              * @deprecated
              */
-            public static function bar() : void {
+            public static function barBar() : void {
             }
         }
 
-        Foo::bar();
+        Foo::barBar();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -74,7 +74,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         /**
          * @param int $bar
          */
-        function foo(array $bar) : void {
+        function fooFoo(array $bar) : void {
         }
         ');
 
@@ -150,7 +150,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         /**
          * @return string
          */
-        function foo() : void {
+        function fooFoo() : void {
         }
         ');
 
@@ -165,7 +165,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         /**
          * @return string
          */
-        function foo() : string {
+        function fooFoo() : string {
             return "boop";
         }
 

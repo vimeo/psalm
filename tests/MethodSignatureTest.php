@@ -28,13 +28,13 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public function foo(int $a, bool $b) : void {
+            public function fooFoo(int $a, bool $b) : void {
 
             }
         }
 
         class B extends A {
-            public function foo(int $a, bool $b, array $c) : void {
+            public function fooFoo(int $a, bool $b, array $c) : void {
 
             }
         }
@@ -53,13 +53,13 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public function foo(int $a, bool $b) : void {
+            public function fooFoo(int $a, bool $b) : void {
 
             }
         }
 
         class B extends A {
-            public function foo(int $a) : void {
+            public function fooFoo(int $a) : void {
 
             }
         }
@@ -78,13 +78,13 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public function foo(int $a, bool $b) : void {
+            public function fooFoo(int $a, bool $b) : void {
 
             }
         }
 
         class B extends A {
-            public function foo(bool $b, int $a) : void {
+            public function fooFoo(bool $b, int $a) : void {
 
             }
         }

@@ -187,7 +187,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
 
             class A {
                 /** @return void */
-                public function foo() {
+                public function fooFoo() {
                     echo FOO . "\n";
                     echo \Name\Space\FOO;
                 }
@@ -238,7 +238,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
 
             class A {
                 /** @return void */
-                public function foo() {
+                public function fooFoo() {
                     f();
                     \Name\Space\f();
                 }

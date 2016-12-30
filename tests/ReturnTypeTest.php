@@ -33,7 +33,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             /**
              * @return One|null
              */
-            public function bar() {
+            public function barBar() {
                 $baz = rand(0,100) > 50 ? new One() : null;
 
                 // should have no effect
@@ -57,7 +57,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
              * @param string|null $str
              * @return string
              */
-            public function bar($str) {
+            public function barBar($str) {
                 if (empty($str)) {
                     $str = "";
                 }
@@ -77,7 +77,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
              * @param string|null $str
              * @return string
              */
-            public function bar($str) {
+            public function barBar($str) {
                 if ($str === "badger") {
                     // do nothing
                 }
@@ -100,7 +100,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
              * @param string|null $str
              * @return string
              */
-            public function bar($str) {
+            public function barBar($str) {
                 if (!empty($str)) {
                     // do nothing
                 }
@@ -122,7 +122,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             /**
              * @return string|null
              */
-            public function bar() {
+            public function barBar() {
                 $str = null;
                 $bar1 = rand(0, 100) > 40;
                 if ($bar1) {
@@ -147,7 +147,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             /**
              * @return A1
              */
-            public function bar(A1 $a1 = null, A2 $a2 = null) {
+            public function barBar(A1 $a1 = null, A2 $a2 = null) {
                 if (!$a1) {
                     throw new \Exception();
                 }
@@ -173,7 +173,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
             /**
              * @return A1
              */
-            public function bar(A1 $a1 = null, A2 $a2 = null) {
+            public function barBar(A1 $a1 = null, A2 $a2 = null) {
                 if (!$a1) {
                     throw new \Exception();
                 }
@@ -193,7 +193,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
-            public function foo() {
+            public function fooFoo() {
                 try {
                     // do a thing
                     return true;
@@ -214,7 +214,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
-            public function foo() {
+            public function fooFoo() {
                 switch (rand(0,10)) {
                     case 1:
                     default:
@@ -233,7 +233,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
-            public function foo() {
+            public function fooFoo() {
                 switch (rand(0,10)) {
                     case 1:
                         $a = 5;
@@ -256,7 +256,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
-            public function foo() {
+            public function fooFoo() {
                 switch (rand(0,10)) {
                     case 1:
                         break;
@@ -279,7 +279,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
-            public function foo() {
+            public function fooFoo() {
                 switch (rand(0,10)) {
                     case 1:
                         if (rand(0,10) === 5) {
@@ -304,7 +304,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @return bool */
-            public function foo() {
+            public function fooFoo() {
                 switch (rand(0,10)) {
                     case 1:
                     case 2:
@@ -326,7 +326,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
              * @psalm-suppress TooManyArguments
              * @return bool
              */
-            public function foo() {
+            public function fooFoo() {
                 switch (rand(0,10)) {
                     case 1:
                     case 2:
@@ -504,7 +504,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public function testWrongReturnType1()
     {
         $stmts = self::$parser->parse('<?php
-        function foo() : string {
+        function fooFoo() : string {
             return 5;
         }
         ');
@@ -521,7 +521,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public function testWrongReturnType2()
     {
         $stmts = self::$parser->parse('<?php
-        function foo() : string {
+        function fooFoo() : string {
             return rand(0, 5) ? "hello" : null;
         }
         ');
@@ -540,7 +540,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         namespace bar;
 
-        function foo() : string {
+        function fooFoo() : string {
             return 5;
         }
         ');
@@ -559,7 +559,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         namespace bar;
 
-        function foo() : string {
+        function fooFoo() : string {
             return rand(0, 5) ? "hello" : null;
         }
         ');
@@ -576,7 +576,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public function testMissingReturnType()
     {
         $stmts = self::$parser->parse('<?php
-        function foo() {
+        function fooFoo() {
             return rand(0, 5) ? "hello" : null;
         }
         ');
@@ -593,7 +593,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public function testMixedInferredReturnType()
     {
         $stmts = self::$parser->parse('<?php
-        function foo() : string {
+        function fooFoo() : string {
             return array_pop([]);
         }
         ');

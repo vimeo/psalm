@@ -47,7 +47,7 @@ class ClassTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class Foo {}
-        (new foo());
+        (new fooFoo());
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -122,12 +122,12 @@ class ClassTest extends PHPUnit_Framework_TestCase
         class A extends B {}
 
         class B {
-            public function foo() : void {
+            public function fooFoo() : void {
                 $c = new A();
-                $c->bar();
+                $c->barBar();
             }
 
-            protected function bar() : void {
+            protected function barBar() : void {
                 echo "hello";
             }
         }');

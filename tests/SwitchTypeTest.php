@@ -33,7 +33,7 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
             /**
              * @return void
              */
-            public function foo() {
+            public function fooFoo() {
 
             }
         }
@@ -42,7 +42,7 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
             /**
              * @return void
              */
-            public function bar() {
+            public function barBar() {
 
             }
         }
@@ -51,11 +51,11 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
 
         switch (get_class($a)) {
             case "A":
-                $a->foo();
+                $a->fooFoo();
                 break;
 
             case "B":
-                $a->bar();
+                $a->barBar();
                 break;
         }
         ');
@@ -74,14 +74,14 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @return void */
-            public function foo() {
+            public function fooFoo() {
 
             }
         }
 
         class B {
             /** @return void */
-            public function bar() {
+            public function barBar() {
 
             }
         }
@@ -90,7 +90,7 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
 
         switch (get_class($a)) {
             case "A":
-                $a->bar();
+                $a->barBar();
                 break;
         }
         ');

@@ -31,10 +31,10 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class Foo {
-            public function bar() : void {}
+            public function barBar() : void {}
         }
 
-        Foo::bar();
+        Foo::barBar();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -46,10 +46,10 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class Foo {
-            public static function bar() : void {}
+            public static function barBar() : void {}
         }
 
-        (new Foo())->bar();
+        (new Foo())->barBar();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -68,13 +68,13 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
 
         $stmts = self::$parser->parse('<?php
         class Foo {
-            public static function bar() : void {}
+            public static function barBar() : void {}
         }
 
         /** @var mixed */
         $a = (new Foo());
 
-        $a->bar();
+        $a->barBar();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -86,14 +86,14 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A {
-            public static function foo() : void {}
+            public static function fooFoo() : void {}
         }
 
         class B extends A {
 
         }
 
-        B::foo();
+        B::fooFoo();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
@@ -109,8 +109,8 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class Foo {
-            public function bar() : void {
-                parent::bar();
+            public function barBar() : void {
+                parent::barBar();
             }
         }
         ');

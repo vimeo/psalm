@@ -74,7 +74,7 @@ class ListTest extends PHPUnit_Framework_TestCase
             /** @var string */
             public $b;
 
-            public function foo() : string
+            public function fooFoo() : string
             {
                 list($this->a, $this->b) = ["a", "b"];
 
@@ -102,7 +102,7 @@ class ListTest extends PHPUnit_Framework_TestCase
             /** @var string */
             public $b;
 
-            public function foo() : string
+            public function fooFoo() : string
             {
                 list($this->a, $this->b) = ["a", "b"];
 

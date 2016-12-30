@@ -35,7 +35,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
              * @psalm-suppress MissingReturnType
              */
             public function a() {
-                B::foo()->bar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
+                B::fooFoo()->barBar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
             }
         }
         ');
@@ -49,7 +49,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         Config::getInstance()->setCustomErrorLevel('UndefinedFunction', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
-        foo();
+        fooFoo();
         ');
 
         $file_checker = new FileChecker('somefile.php', $stmts);
