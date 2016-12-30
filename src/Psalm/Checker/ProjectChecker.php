@@ -183,18 +183,20 @@ class ProjectChecker
                 if (in_array($extension, $file_extensions)) {
                     $file_name = (string)$iterator->getRealPath();
 
-                    if ($debug) {
-                        echo 'Checking ' . $file_name . PHP_EOL;
-                    }
+                    if ($config->isInProjectDirs($config->shortenFileName($file_name))) {
+                        if ($debug) {
+                            echo 'Checking ' . $file_name . PHP_EOL;
+                        }
 
-                    if (isset($filetype_handlers[$extension])) {
-                        /** @var FileChecker */
-                        $file_checker = new $filetype_handlers[$extension]($file_name);
-                    } else {
-                        $file_checker = new FileChecker($file_name);
-                    }
+                        if (isset($filetype_handlers[$extension])) {
+                            /** @var FileChecker */
+                            $file_checker = new $filetype_handlers[$extension]($file_name);
+                        } else {
+                            $file_checker = new FileChecker($file_name);
+                        }
 
-                    $file_checker->check(true, true, null, true, $update_docblocks);
+                        $file_checker->check(true, true, null, true, $update_docblocks);
+                    }
                 }
             }
 
@@ -253,8 +255,10 @@ class ProjectChecker
                 if (in_array($extension, $file_extensions)) {
                     $file_name = (string)$iterator->getRealPath();
 
-                    if (FileChecker::hasFileChanged($file_name)) {
-                        $diff_files[] = $file_name;
+                    if ($config->isInProjectDirs($config->shortenFileName($file_name))) {
+                        if (FileChecker::hasFileChanged($file_name)) {
+                            $diff_files[] = $file_name;
+                        }
                     }
                 }
             }

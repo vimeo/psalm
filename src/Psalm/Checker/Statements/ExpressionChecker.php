@@ -873,8 +873,8 @@ class ExpressionChecker
         PhpParser\Node $parent,
         Type\Union &$result_type = null
     ) {
-        $left_type = $left->inferredType;
-        $right_type = $right->inferredType;
+        $left_type = isset($left->inferredType) ? $left->inferredType : null;
+        $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
 
         if ($left_type && $right_type) {
