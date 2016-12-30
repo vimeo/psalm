@@ -73,9 +73,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testNullCoalesce()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
         $a = $_GET["bar"] ?? "nobody";
@@ -171,9 +169,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
 
     public function testGeneratorDelegation()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
         /**

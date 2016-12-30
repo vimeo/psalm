@@ -44,11 +44,9 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
-    public function testExcludeFile()
+    public function testExcludeIssue()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addFile('somefile.php');
-        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
+        Config::getInstance()->setCustomErrorLevel('UndefinedFunction', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
         foo();
@@ -56,69 +54,5 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $stmts);
         $file_checker->check();
-    }
-
-    /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedFunction - somefile.php:2 - Function foo does not exist
-     */
-    public function testIncludeFile()
-    {
-        $filter = new Config\FileFilter(true);
-        $filter->addFile('somefile.php');
-        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
-
-        $stmts = self::$parser->parse('<?php
-        foo();
-        ');
-
-        $file_checker = new FileChecker('someotherfile.php', $stmts);
-        $file_checker->check();
-
-        $stmts = self::$parser->parse('<?php
-        foo();
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
-    }
-
-    public function testExcludeDirectory()
-    {
-        $filter = new Config\FileFilter(false);
-        $filter->addDirectory('src');
-        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
-
-        $stmts = self::$parser->parse('<?php
-        foo();
-        ');
-
-        $file_checker = new FileChecker('src/somefile.php', $stmts);
-        $file_checker->check();
-    }
-
-    /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedFunction - src2/somefile.php:2 - Function foo does not exist
-     */
-    public function testIncludeDirectory()
-    {
-        $filter = new Config\FileFilter(true);
-        $filter->addDirectory('src2');
-        Config::getInstance()->setIssueHandler('UndefinedFunction', $filter);
-
-        (new FileChecker(
-            'src1/somefile.php',
-            self::$parser->parse('<?php
-            foo();
-            ')
-        ))->check();
-
-        (new FileChecker(
-            'src2/somefile.php',
-            self::$parser->parse('<?php
-            foo();
-            ')
-        ))->check();
     }
 }

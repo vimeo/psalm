@@ -2,7 +2,8 @@
 namespace Psalm;
 
 use Psalm\Checker\FileChecker;
-use Psalm\Config\FileFilter;
+use Psalm\Config\IssueHandler;
+use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use SimpleXMLElement;
 
@@ -86,7 +87,7 @@ class Config
     public $autoloader;
 
     /**
-     * @var FileFilter|null
+     * @var ProjectFileFilter|null
      */
     protected $project_files;
 
@@ -108,14 +109,9 @@ class Config
     protected $filetype_handlers = [];
 
     /**
-     * @var array<string, FileFilter>
+     * @var array<string, IssueHandler>
      */
     protected $issue_handlers = [];
-
-    /**
-     * @var array<string, string>
-     */
-    protected $custom_error_levels = [];
 
     /**
      * @var array<int, string>
@@ -241,7 +237,7 @@ class Config
         }
 
         if (isset($config_xml->projectFiles)) {
-            $config->project_files = FileFilter::loadFromXMLElement($config_xml->projectFiles, true);
+            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -288,26 +284,12 @@ class Config
             }
         }
 
-        if (isset($config_xml->issueHandler)) {
+        if (isset($config_xml->issueHandlers)) {
             /** @var \SimpleXMLElement $issue_handler */
-            foreach ($config_xml->issueHandler->children() as $key => $issue_handler) {
-                if (isset($issue_handler['errorLevel'])) {
-                    $error_level = (string) $issue_handler['errorLevel'];
-
-                    if (!in_array($error_level, self::$ERROR_LEVELS)) {
-                        throw new \InvalidArgumentException('Error level ' . $error_level . ' could not be recognised');
-                    }
-
-                    $config->custom_error_levels[$key] = $error_level;
-                }
-
-                if (isset($issue_handler->ignoreFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXMLElement($issue_handler->ignoreFiles, false);
-                }
-
-                if (isset($issue_handler->onlyFiles)) {
-                    $config->issue_handlers[$key] = FileFilter::loadFromXMLElement($issue_handler->onlyFiles, true);
-                }
+            foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
+                $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
+                    $issue_handler
+                );
             }
         }
 
@@ -333,7 +315,8 @@ class Config
      */
     public function setCustomErrorLevel($issue_key, $error_level)
     {
-        $this->custom_error_levels[$issue_key] = $error_level;
+        $this->issue_handlers[$issue_key] = new IssueHandler();
+        $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
     }
 
     /**
@@ -399,10 +382,6 @@ class Config
             return true;
         }
 
-        if ($this->getReportingLevel($issue_type) === self::REPORT_SUPPRESS) {
-            return true;
-        }
-
         $file_name = $this->shortenFileName($file_name);
 
         if ($this->project_files && $this->hide_external_errors) {
@@ -411,11 +390,11 @@ class Config
             }
         }
 
-        if (!isset($this->issue_handlers[$issue_type])) {
-            return false;
+        if ($this->getReportingLevelForFile($issue_type, $file_name) === self::REPORT_SUPPRESS) {
+            return true;
         }
 
-        return !$this->issue_handlers[$issue_type]->allows($file_name);
+        return false;
     }
 
     /**
@@ -429,12 +408,13 @@ class Config
 
     /**
      * @param   string $issue_type
+     * @param   string $file_name
      * @return  string
      */
-    public function getReportingLevel($issue_type)
+    public function getReportingLevelForFile($issue_type, $file_name)
     {
-        if (isset($this->custom_error_levels[$issue_type])) {
-            return $this->custom_error_levels[$issue_type];
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForFile($file_name);
         }
 
         return self::REPORT_ERROR;
@@ -502,12 +482,12 @@ class Config
 
     /**
      * @param string            $issue_name
-     * @param FileFilter|null   $filter
+     * @param IssueHandler|null $handler
      * @return void
      */
-    public function setIssueHandler($issue_name, FileFilter $filter = null)
+    public function setIssueHandler($issue_name, IssueHandler $handler = null)
     {
-        $this->issue_handlers[$issue_name] = $filter;
+        $this->issue_handlers[$issue_name] = $handler;
     }
 
     /**

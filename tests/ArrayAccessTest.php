@@ -120,9 +120,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedArrayAccess()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $context = new Context('somefile.php');
         $stmts = self::$parser->parse('<?php
@@ -141,9 +139,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedArrayOffset()
     {
-        $filter = new Config\FileFilter(false);
-        $filter->addFile('somefile.php');
-        Config::getInstance()->setIssueHandler('MixedAssignment', $filter);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $context = new Context('somefile.php');
         $stmts = self::$parser->parse('<?php
