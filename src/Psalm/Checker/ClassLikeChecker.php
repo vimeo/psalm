@@ -257,8 +257,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
 
-        self::$public_class_methods[$this->fq_class_name] = [];
-        self::$protected_class_methods[$this->fq_class_name] = [];
+        if (!isset(self::$public_class_methods[$this->fq_class_name])) {
+            self::$public_class_methods[$this->fq_class_name] = [];
+            self::$protected_class_methods[$this->fq_class_name] = [];
+        }
 
         self::$public_class_properties[$this->fq_class_name] = [];
         self::$protected_class_properties[$this->fq_class_name] = [];
