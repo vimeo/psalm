@@ -159,6 +159,28 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->check();
     }
 
+    public function testStaticClassMethodFromWithinTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait A {
+            public function foo() : void {
+                self::bar();
+            }
+        }
+
+        class B {
+            use A;
+
+            public static function bar() : void {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker->check();
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedTrait

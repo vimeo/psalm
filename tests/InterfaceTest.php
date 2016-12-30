@@ -223,6 +223,54 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
     }
 
+    public function testCorrectInterfaceMethodSignature()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A {
+            public function foo(int $a) : void;
+        }
+
+        class B implements A {
+            public function foo(int $a) : void {
+
+            }
+        }
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testInterfaceMethodImplementedInParentAndTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface MyInterface {
+            public function foo(int $a) : void;
+        }
+
+        trait T {
+
+        }
+
+        class B {
+            public function foo(int $a) : void {
+
+            }
+        }
+
+        class C extends B implements MyInterface {
+            use T;
+        }
+        ?>
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage MethodSignatureMismatch

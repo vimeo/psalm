@@ -599,7 +599,7 @@ class CallChecker
                         ? $statements_checker->getNamespace() . '\\'
                         : '';
 
-                    $fq_class_name = $namespace . $statements_checker->getClassName();
+                    $fq_class_name = $context->self ?: $namespace . $statements_checker->getClassName();
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {

@@ -262,7 +262,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $config = Config::getInstance();
 
-        self::$registered_classes[$this->fq_class_name] = true;
         self::$user_defined[$this->fq_class_name] = true;
 
         $leftover_stmts = [];
@@ -272,20 +271,25 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
 
-        self::$public_class_methods[$this->fq_class_name] = [];
-        self::$protected_class_methods[$this->fq_class_name] = [];
 
-        self::$public_class_properties[$this->fq_class_name] = [];
-        self::$protected_class_properties[$this->fq_class_name] = [];
-        self::$private_class_properties[$this->fq_class_name] = [];
+        if (!isset(self::$registered_classes[$this->fq_class_name])) {
+            self::$public_class_methods[$this->fq_class_name] = [];
+            self::$protected_class_methods[$this->fq_class_name] = [];
 
-        self::$public_static_class_properties[$this->fq_class_name] = [];
-        self::$protected_static_class_properties[$this->fq_class_name] = [];
-        self::$private_static_class_properties[$this->fq_class_name] = [];
+            self::$public_class_properties[$this->fq_class_name] = [];
+            self::$protected_class_properties[$this->fq_class_name] = [];
+            self::$private_class_properties[$this->fq_class_name] = [];
 
-        self::$public_class_constants[$this->fq_class_name] = [];
-        self::$protected_class_constants[$this->fq_class_name] = [];
-        self::$private_class_constants[$this->fq_class_name] = [];
+            self::$public_static_class_properties[$this->fq_class_name] = [];
+            self::$protected_static_class_properties[$this->fq_class_name] = [];
+            self::$private_static_class_properties[$this->fq_class_name] = [];
+
+            self::$public_class_constants[$this->fq_class_name] = [];
+            self::$protected_class_constants[$this->fq_class_name] = [];
+            self::$private_class_constants[$this->fq_class_name] = [];
+        }
+
+        self::$registered_classes[$this->fq_class_name] = true;
 
         if (!$class_context) {
             $class_context = new Context($this->file_name, $this->fq_class_name);
