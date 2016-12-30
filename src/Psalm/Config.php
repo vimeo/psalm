@@ -182,6 +182,28 @@ class Config
 
         $config->base_dir = dirname($file_path) . '/';
 
+        $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
+
+        if (!file_exists($schema_path)) {
+            throw new ConfigException('Cannot locate config schema');
+        }
+
+        $dom_document = new \DOMDocument();
+        $dom_document->loadXML($file_contents);
+
+        // Enable user error handling
+        libxml_use_internal_errors(true);
+
+        if (!$dom_document->schemaValidate($schema_path)) {
+            $errors = libxml_get_errors();
+            foreach ($errors as $error) {
+                if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
+                    throw new ConfigException('Error parsing file ' . $error->file . ' on line ' . $error->line . ': ' . $error->message);
+                }
+            }
+            libxml_clear_errors();
+        }
+
         $config_xml = new SimpleXMLElement($file_contents);
 
         if (isset($config_xml['stopOnFirstError'])) {
@@ -206,10 +228,6 @@ class Config
 
         if (isset($config_xml['autoloader'])) {
             $config->autoloader = (string) $config_xml['autoloader'];
-        }
-
-        if (isset($config_xml['cacheDirectory'])) {
-            $config->cache_directory = (string) $config_xml['cacheDirectory'];
         }
 
         if (isset($config_xml['cacheDirectory'])) {

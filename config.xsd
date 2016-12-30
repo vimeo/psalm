@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:element name="psalm" type="PsalmType" />
+
+    <xs:complexType name="PsalmType">
+        <xs:sequence>
+            <xs:element name="projectFiles" type="ProjectFilesType" minOccurs="1" maxOccurs="1" />
+            <xs:element name="fileExtensions" type="FileExtensionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="mockClasses" type="MockClassesType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="stopOnFirstError" type="xs:string" />
+        <xs:attribute name="useDocblockTypes" type="xs:string" />
+        <xs:attribute name="throwExceptionOnError" type="xs:string" />
+        <xs:attribute name="hideExternalErrors" type="xs:string" />
+        <xs:attribute name="autoloader" type="xs:string" />
+        <xs:attribute name="cacheDirectory" type="xs:string" />
+        <xs:attribute name="usePropertyDefaultForType" type="xs:string" />
+        <xs:attribute name="allowFileIncludes" type="xs:string" />
+        <xs:attribute name="totallyTyped" type="xs:string" />
+        <xs:attribute name="strictBinaryOperands" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="ProjectFilesType">
+        <xs:sequence>
+            <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+            <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+            <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="NameAttributeType">
+        <xs:attribute name="name" type="xs:string" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="FileExtensionsType">
+        <xs:sequence>
+            <xs:element name="extension">
+                <xs:complexType>
+                    <xs:attribute name="name" type="xs:string" use="required" />
+                    <xs:attribute name="filetypeHandler" type="xs:string" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="MockClassesType">
+        <xs:sequence>
+            <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="PluginsType">
+        <xs:sequence>
+            <xs:element name="plugin" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="filename" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="IssueHandlersType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="FailedTypeResolution" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InaccessibleClassConstant" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InaccessibleMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InaccessibleProperty" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidDocblock" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidGlobal" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidIterator" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidNamespace" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidOperand" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidScalarArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidScope" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidStaticInvocation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidStaticVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingPropertyDeclaration" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedArrayAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedArrayOffset" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedInferredReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedMethodCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedOperand" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedPropertyFetch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NoInterfaceProperties" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NullArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NullArrayAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NullOperand" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NullPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUndefinedVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TooManyArguments" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TypeDoesNotContainType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedConstant" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedFunction" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedPropertyFetch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedThisPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedThisPropertyFetch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedTrait" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnimplementedInterfaceMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnrecognizedExpression" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnrecognizedStatement" type="IssueHandlerType" minOccurs="0" />
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="IssueHandlerType">
+        <xs:sequence>
+            <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:sequence>
+
+                    <xs:attribute name="type" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="errorLevel" type="xs:string" />
+    </xs:complexType>
+</xs:schema>
