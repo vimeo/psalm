@@ -132,6 +132,10 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function getFunctionReturnType($function_id, $file_path)
     {
+        if (!isset(FileChecker::$storage[$file_path])) {
+            return null;
+        }
+
         $file_storage = FileChecker::$storage[$file_path];
 
         if (!isset($file_storage->functions[$function_id])) {
@@ -478,7 +482,7 @@ class FunctionChecker extends FunctionLikeChecker
                 if (isset($call_args[0])) {
                     $first_arg = $call_args[0]->value;
 
-                    if ($first_arg->inferredType) {
+                    if (isset($first_arg->inferredType)) {
                         if ($first_arg->inferredType->hasArray()) {
                             $array_type = $first_arg->inferredType->types['array'];
                             if ($array_type instanceof Type\ObjectLike) {

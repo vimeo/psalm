@@ -103,7 +103,7 @@ class ExpressionChecker
             if (self::check($statements_checker, $stmt->expr, $context) === false) {
                 return false;
             }
-            $stmt->inferredType = $stmt->expr->inferredType;
+            $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
             if (self::check($statements_checker, $stmt->expr, $context) === false) {
                 return false;
@@ -1039,8 +1039,8 @@ class ExpressionChecker
         PhpParser\Node $parent,
         Type\Union &$result_type = null
     ) {
-        $left_type = $left->inferredType;
-        $right_type = $right->inferredType;
+        $left_type = isset($left->inferredType) ? $left->inferredType : null;
+        $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
 
         if ($left_type && $right_type) {

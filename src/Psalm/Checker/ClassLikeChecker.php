@@ -329,6 +329,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             // do the method checks after all class methods have been initialised
             foreach ($method_checkers as $method_checker) {
+                var_dump($class_context->vars_in_scope);
                 $method_checker->check(clone $class_context, null);
 
                 if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {

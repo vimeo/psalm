@@ -155,7 +155,10 @@ class ClassChecker extends ClassLikeChecker
             self::$class_extends[$fq_class_name] = [];
         }
 
+        $old_level = error_reporting();
+        error_reporting(0);
         self::$class_extends[$fq_class_name][$possible_parent] = is_subclass_of($fq_class_name, $possible_parent);
+        error_reporting($old_level);
 
         return self::$class_extends[$fq_class_name][$possible_parent];
     }

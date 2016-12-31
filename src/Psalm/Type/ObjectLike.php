@@ -94,7 +94,7 @@ class ObjectLike extends Atomic
             $all_types = array_merge($property->types, $all_types);
         }
 
-        return Type::combineTypes($all_types);
+        return Type::combineTypes(array_values($all_types));
     }
 
     public function __clone()

@@ -341,7 +341,7 @@ class AssignmentChecker
                 return false;
             }
 
-            $lhs_type = $stmt->var->inferredType;
+            $lhs_type = isset($stmt->var->inferredType) ? $stmt->var->inferredType : null;
 
             if ($lhs_type === null) {
                 return null;

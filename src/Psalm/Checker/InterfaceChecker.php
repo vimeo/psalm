@@ -61,7 +61,14 @@ class InterfaceChecker extends ClassLikeChecker
             return false;
         }
 
-        if (interface_exists($interface, true)) {
+        $old_level = error_reporting();
+        error_reporting(0);
+
+        $interface_exists = interface_exists($interface, true);
+
+        error_reporting($old_level);
+
+        if ($interface_exists) {
             $reflected_interface = new \ReflectionClass($interface);
 
             self::$existing_interfaces_ci[strtolower($interface)] = true;
@@ -104,7 +111,9 @@ class InterfaceChecker extends ClassLikeChecker
      */
     public static function getParentInterfaces($interface_name)
     {
-        self::registerClass($interface_name);
+        if (self::registerClass($interface_name) === false) {
+            throw new \UnexpectedValueException('Cannot deal with unfound file');
+        }
 
         $extended_interfaces = [];
 
