@@ -58,7 +58,7 @@ class Atomic extends Type
         if (isset($aliased_classes[strtolower($this->value)])) {
             return $aliased_classes[strtolower($this->value)];
         }
-        
+
         return '\\' . $this->value;
     }
 
@@ -182,6 +182,7 @@ class Atomic extends Type
                     && !$this->isEmpty()
                     && !$this->isResource()
                     && !$this->isIterable()
+                    && !$this->isScalar()
                 );
     }
 

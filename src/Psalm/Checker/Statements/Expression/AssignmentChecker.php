@@ -422,7 +422,7 @@ class AssignmentChecker
                     continue;
                 }
 
-                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
+                if (!$lhs_type_part->isObject() && MethodChecker::methodExists($lhs_type_part . '::__set')) {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
                     continue;
                 }

@@ -494,7 +494,7 @@ class FunctionChecker extends FunctionLikeChecker
                             }
                         } elseif ($first_arg->inferredType->hasScalarType() &&
                             ($second_arg = $call_args[1]->value) &&
-                            $second_arg->inferredType &&
+                            isset($second_arg->inferredType) &&
                             $second_arg->inferredType->hasScalarType()
                         ) {
                             return Type::combineUnionTypes($first_arg->inferredType, $second_arg->inferredType);

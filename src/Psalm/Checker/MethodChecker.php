@@ -504,7 +504,9 @@ class MethodChecker extends FunctionLikeChecker
 
         $old_method_id = null;
 
-        ClassLikeChecker::registerClass($method_parts[0]);
+        if (ClassLikeChecker::registerClass($method_parts[0]) === false) {
+            return false;
+        }
 
         $class_storage = ClassLikeChecker::$storage[$method_parts[0]];
 

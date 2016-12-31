@@ -757,7 +757,7 @@ class TypeChecker
                     $type_match_found = true;
                 }
 
-                if ($container_type_part->isString() && $input_type_part->isObjectType()) {
+                if ($container_type_part->isString() && $input_type_part->isObjectType() && !$input_type_part->isObject()) {
                     // check whether the object has a __toString method
                     if (MethodChecker::methodExists($input_type_part->value . '::__toString')) {
                         $type_match_found = true;

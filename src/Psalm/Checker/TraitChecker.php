@@ -123,7 +123,10 @@ class TraitChecker extends ClassLikeChecker
             return self::$existing_traits[strtolower($trait_name)];
         }
 
+        $old_level = error_reporting();
+        error_reporting(0);
         $trait_exists = trait_exists($trait_name);
+        error_reporting($old_level);
 
         self::$existing_traits[strtolower($trait_name)] = $trait_exists;
 
