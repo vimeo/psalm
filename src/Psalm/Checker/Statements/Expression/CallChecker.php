@@ -700,7 +700,7 @@ class CallChecker
                         new CodeLocation($statements_checker->getSource(), $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
-                        return false;
+                        // fall through
                     }
                 }
 
@@ -709,7 +709,7 @@ class CallChecker
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
-                    return false;
+                    // fall through
                 }
 
                 $return_types = MethodChecker::getMethodReturnType($method_id);
