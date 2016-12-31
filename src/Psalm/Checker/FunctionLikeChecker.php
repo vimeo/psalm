@@ -335,7 +335,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $this->function->inferredType = new Type\Union([
                 new Type\Fn(
                     'Closure',
-                    array_values($function_param_names),
+                    $function_params,
                     $closure_return_type ?: Type::getMixed()
                 )
             ]);
@@ -1070,10 +1070,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  string                           $file_path
-     * @return array<int,FunctionLikeParameter>
+     * @return array<int, FunctionLikeParameter>
      */
-    public static function getParamsById($method_id, array $args, $file_path)
+    public static function getMethodParamsById($method_id, array $args)
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
@@ -1085,31 +1084,56 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             return $method_params;
-        } elseif (!$fq_class_name && FunctionChecker::inCallMap($method_id)) {
+        }
+
+        $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+
+        if (FunctionChecker::inCallMap($declaring_method_id ?: $method_id)) {
+            $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
+
+            if ($function_param_options === null) {
+                throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
+            }
+
+            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args);
+        }
+
+        if ($method_params = MethodChecker::getMethodParams($method_id)) {
+            // fall back to using reflected params anyway
+            return $method_params;
+        }
+
+        throw new \InvalidArgumentException('Cannot get params for ' . $method_id);
+    }
+
+    /**
+     * @param  string                           $method_id
+     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  string                           $file_path
+     * @return array<int, FunctionLikeParameter>
+     */
+    public static function getFunctionParamsById($method_id, array $args, $file_path)
+    {
+        if (FunctionChecker::inCallMap($method_id)) {
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
 
             if ($function_param_options === null) {
                 throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
             }
-        } elseif ($fq_class_name) {
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
 
-            if (FunctionChecker::inCallMap($declaring_method_id ?: $method_id)) {
-                $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
-
-                if ($function_param_options === null) {
-                    throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
-                }
-            } elseif ($method_params = MethodChecker::getMethodParams($method_id)) {
-                // fall back to using reflected params anyway
-                return $method_params;
-            } else {
-                throw new \InvalidArgumentException('Cannot get params for ' . $method_id);
-            }
-        } else {
-            return FunctionChecker::getParams(strtolower($method_id), $file_path);
+            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args);
         }
 
+        return FunctionChecker::getParams(strtolower($method_id), $file_path);
+    }
+
+     /**
+     * @param  array<int, array<int, FunctionLikeParameter>>  $function_param_options
+     * @param  array<int, PhpParser\Node\Arg>                 $args
+     * @return array<int, FunctionLikeParameter>
+     */
+    protected static function getMatchingParamsFromCallMapOptions(array $function_param_options, array $args)
+    {
         $function_params = null;
 
         if (count($function_param_options) === 1) {

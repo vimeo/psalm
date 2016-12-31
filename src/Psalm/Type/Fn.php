@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\FunctionLikeParameter;
+
 class Fn extends Atomic
 {
     /**
@@ -9,7 +11,7 @@ class Fn extends Atomic
     public $value = 'Closure';
 
     /**
-     * @var array<int, Union>
+     * @var array<int, FunctionLikeParameter>
      */
     public $parameters = [];
 
@@ -21,9 +23,9 @@ class Fn extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param string            $value
-     * @param array<int, Union> $parameters
-     * @param Union             $return_type
+     * @param string                            $value
+     * @param array<int, FunctionLikeParameter> $parameters
+     * @param Union                             $return_type
      */
     public function __construct($value, array $parameters, Union $return_type)
     {

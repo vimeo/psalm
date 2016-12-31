@@ -121,4 +121,38 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testVarReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+
+        $add_one = function(int $a) : int {
+            return $a + 1;
+        };
+
+        $a = $add_one(1);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidFunctionCall
+     */
+    public function testStringFunctionCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        $bad_one = "hello";
+        $a = $bad_one(1);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+    }
 }
