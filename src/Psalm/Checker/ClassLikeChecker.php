@@ -975,7 +975,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $parent_storage = self::$storage[$parent_class_name];
 
             $storage->public_class_properties = $parent_storage->public_class_properties;
-            $storage->protected_class_properties[$class_name] = $parent_storage->protected_class_properties;
+            $storage->protected_class_properties = $parent_storage->protected_class_properties;
 
             $storage->public_static_class_properties = $parent_storage->public_static_class_properties;
             $storage->protected_static_class_properties = $parent_storage->protected_static_class_properties;
