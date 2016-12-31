@@ -905,14 +905,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             throw new \InvalidArgumentException('Invalid class name ' . $class_name);
         }
 
+        $old_level = error_reporting();
+        error_reporting(0);
+
         try {
-            $old_level = error_reporting();
-            error_reporting(0);
             $reflected_class = new ReflectionClass($class_name);
-            error_reporting($old_level);
         } catch (\ReflectionException $e) {
+            error_reporting($old_level);
             return false;
         }
+
+        error_reporting($old_level);
 
         if ($reflected_class->isUserDefined()) {
             $class_file_name = (string)$reflected_class->getFileName();

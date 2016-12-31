@@ -696,7 +696,7 @@ class MethodChecker extends FunctionLikeChecker
     public static function setDeclaringMethodId($method_id, $declaring_method_id)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
-        
+
         ClassLikeChecker::$storage[$fq_class_name]->declaring_method_ids[$method_name] = $declaring_method_id;
     }
 
@@ -733,7 +733,13 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        return ClassLikeChecker::$storage[$fq_class_name]->overridden_method_ids[$method_name];
+        $class_storage = ClassLikeChecker::$storage[$fq_class_name];
+
+        if (isset($class_storage->overridden_method_ids[$method_name])) {
+            return $class_storage->overridden_method_ids[$method_name];
+        }
+
+        return [];
     }
 
     /**

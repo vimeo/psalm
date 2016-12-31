@@ -408,13 +408,6 @@ class AssignmentChecker
                     continue;
                 }
 
-                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                    continue;
-                }
-
-                $has_regular_setter = true;
-
                 if (!$lhs_type_part->isObjectType()) {
                     if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
@@ -428,6 +421,13 @@ class AssignmentChecker
 
                     continue;
                 }
+
+                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    continue;
+                }
+
+                $has_regular_setter = true;
 
                 if ($lhs_type_part->isObject()) {
                     continue;
