@@ -113,6 +113,7 @@
             <xs:element name="MixedPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullOperand" type="IssueHandlerType" minOccurs="0" />

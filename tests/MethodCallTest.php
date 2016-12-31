@@ -103,6 +103,27 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NonStaticSelfCall
+     */
+    public function testSelfNonStaticInvocation()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function fooFoo() : void {}
+
+            public function barBar() : void {
+                self::fooFoo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage ParentNotFound
      */
     public function testNoParent()

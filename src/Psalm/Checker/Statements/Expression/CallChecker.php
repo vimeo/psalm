@@ -696,6 +696,7 @@ class CallChecker
                 ) {
                     if (MethodChecker::checkMethodStatic(
                         $method_id,
+                        $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
                         new CodeLocation($statements_checker->getSource(), $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {

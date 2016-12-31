@@ -9,6 +9,7 @@ use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidStaticInvocation;
+use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -213,12 +214,17 @@ class MethodChecker extends FunctionLikeChecker
      * Determines whether a given method is static or not
      *
      * @param  string          $method_id
+     * @param  bool            $self_call
      * @param  CodeLocation    $code_location
      * @param  array<string>   $suppressed_issues
      * @return bool
      */
-    public static function checkMethodStatic($method_id, CodeLocation $code_location, array $suppressed_issues)
-    {
+    public static function checkMethodStatic(
+        $method_id,
+        $self_call,
+        CodeLocation $code_location,
+        array $suppressed_issues
+    ) {
         self::registerClassMethod($method_id);
 
         /** @var string */
@@ -231,14 +237,26 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         if (!$storage->is_static) {
-            if (IssueBuffer::accepts(
-                new InvalidStaticInvocation(
-                    'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static',
-                    $code_location
-                ),
-                $suppressed_issues
-            )) {
-                return false;
+            if ($self_call) {
+                if (IssueBuffer::accepts(
+                    new NonStaticSelfCall(
+                        'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static, but is called using self::',
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    return false;
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new InvalidStaticInvocation(
+                        'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static, but is called statically',
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    return false;
+                }
             }
         }
 
