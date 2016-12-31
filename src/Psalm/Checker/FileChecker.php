@@ -188,7 +188,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_checkers[$stmt->name] = new FunctionChecker($stmt, $this, $file_context->file_name);
+                $function_checkers[$stmt->name] = new FunctionChecker($stmt, $this, $this->file_path);
             }
         }
 

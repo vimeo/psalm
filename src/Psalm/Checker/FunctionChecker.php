@@ -34,9 +34,9 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param mixed                         $function
      * @param StatementsSource              $source
-     * @param string                        $base_file_name
+     * @param string                        $base_file_path
      */
-    public function __construct($function, StatementsSource $source, $base_file_name)
+    public function __construct($function, StatementsSource $source, $base_file_path)
     {
         if (!$function instanceof PhpParser\Node\Stmt\Function_) {
             throw new \InvalidArgumentException('Bad');
@@ -44,7 +44,7 @@ class FunctionChecker extends FunctionLikeChecker
 
         parent::__construct($function, $source);
 
-        $this->registerFunction($function, $base_file_name);
+        $this->registerFunction($function, $base_file_path);
     }
 
     /**

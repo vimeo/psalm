@@ -776,7 +776,7 @@ class CallChecker
             $function_params = FunctionLikeChecker::getParamsById(
                 $method_id,
                 $args,
-                $statements_checker->getFileName()
+                $statements_checker->getFilePath()
             );
         }
 
