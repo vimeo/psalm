@@ -76,7 +76,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
-     * @return array<FunctionLikeParameter>
+     * @return array<int, FunctionLikeParameter>
      */
     public static function getParams($function_id, $file_path)
     {

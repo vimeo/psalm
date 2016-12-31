@@ -94,4 +94,23 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidParamDefault
+     */
+    public function testInvalidDefault()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function fooFoo(int $a = "hello") : void {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

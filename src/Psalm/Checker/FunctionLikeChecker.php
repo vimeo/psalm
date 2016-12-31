@@ -13,6 +13,7 @@ use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
 use Psalm\Issue\MethodSignatureMismatch;
@@ -340,7 +341,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ]);
         }
 
-        foreach ($function_params as $function_param) {
+        foreach ($function_params as $offset => $function_param) {
             $param_type = ExpressionChecker::fleshOutTypes(
                 clone $function_param->type,
                 [],
@@ -350,6 +351,24 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if (!$function_param->code_location) {
                 throw new \UnexpectedValueException('We should know where this code is');
+            }
+
+            $parser_param = $this->function->getParams()[$offset];
+
+            if ($parser_param->default) {
+                $default_type = StatementsChecker::getSimpleType($parser_param->default);
+
+                if ($default_type && !TypeChecker::isContainedBy($default_type, $param_type)) {
+                    if (IssueBuffer::accepts(
+                        new InvalidParamDefault(
+                            'Default value for argument ' . ($offset + 1) . ' of method ' . $this->getMethodId() .
+                                ' does not match the given type ' . $param_type,
+                            $function_param->code_location
+                        )
+                    )) {
+                        return false;
+                    }
+                }
             }
 
             foreach ($param_type->types as $atomic_type) {
