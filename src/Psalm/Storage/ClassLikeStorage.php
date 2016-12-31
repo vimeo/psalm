@@ -139,6 +139,11 @@ class ClassLikeStorage
     public $declaring_method_ids = [];
 
     /**
+     * @var array<string, string>
+     */
+    public $appearing_method_ids = [];
+
+    /**
      * @var array<string, array<string>>
      */
     public $overridden_method_ids = [];

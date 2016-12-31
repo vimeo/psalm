@@ -437,9 +437,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         if (!$stmt->isAbstract() && $class_context->self) {
+            $implemented_method_id =
+                $class_context->self . '::' . strtolower($this->getMappedMethodName(strtolower($stmt->name)));
+
             MethodChecker::setDeclaringMethodId(
-                $class_context->self . '::' . strtolower($this->getMappedMethodName(strtolower($stmt->name))),
+                $implemented_method_id,
                 $method_id
+            );
+
+            // set a different apparent method if we're in a trait checker
+            MethodChecker::setAppearingMethodId(
+                $implemented_method_id,
+                $this instanceof TraitChecker ? $implemented_method_id : $method_id
             );
         }
 
@@ -1083,10 +1092,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $parent_method_id = $parent_class . '::' . $method_name;
             /** @var string */
             $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
+            /** @var string */
+            $appearing_method_id = MethodChecker::getAppearingMethodId($parent_method_id);
             $implemented_method_id = $this->fq_class_name . '::' . $method_name;
 
             if (!isset($storage->public_class_methods[$method_name])) {
                 MethodChecker::setDeclaringMethodId($implemented_method_id, $declaring_method_id);
+                MethodChecker::setAppearingMethodId($implemented_method_id, $appearing_method_id);
                 $storage->public_class_methods[$method_name] = true;
                 MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
             }
@@ -1096,10 +1108,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $parent_method_id = $parent_class . '::' . $method_name;
             /** @var string */
             $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
+            /** @var string */
+            $appearing_method_id = MethodChecker::getAppearingMethodId($parent_method_id);
             $implemented_method_id = $this->fq_class_name . '::' . $method_name;
 
             if (!isset($storage->protected_class_methods[$method_name])) {
                 MethodChecker::setDeclaringMethodId($implemented_method_id, $declaring_method_id);
+                MethodChecker::setAppearingMethodId($implemented_method_id, $appearing_method_id);
                 $storage->protected_class_methods[$method_name] = true;
                 MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
             }

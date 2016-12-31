@@ -163,6 +163,7 @@ class MethodChecker extends FunctionLikeChecker
 
         if (strtolower((string)$method->name) === strtolower((string)$method->class)) {
             self::setDeclaringMethodId($method->class . '::__construct', $method->class . '::' . $method_name);
+            self::setAppearingMethodId($method->class . '::__construct', $method->class . '::' . $method_name);
         }
 
         if ($storage->reflected) {
@@ -179,6 +180,8 @@ class MethodChecker extends FunctionLikeChecker
         $storage->namespace = $declaring_class->getNamespaceName();
         $class_storage->declaring_method_ids[$method_name] =
             $declaring_class->name . '::' . strtolower((string)$method->getName());
+
+        $class_storage->appearing_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
         $class_storage->overridden_method_ids[$method_name] = [];
 
         $storage->visibility = $method->isPrivate()
@@ -279,6 +282,7 @@ class MethodChecker extends FunctionLikeChecker
 
         if (strtolower((string)$method->name) === strtolower((string)$this->class_name)) {
             self::setDeclaringMethodId($this->fq_class_name . '::__construct', $method_id);
+            self::setAppearingMethodId($this->fq_class_name . '::__construct', $method_id);
         }
 
         if ($storage->reflected || $storage->registered) {
@@ -292,6 +296,7 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         $class_storage->declaring_method_ids[strtolower($method->name)] = $method_id;
+        $class_storage->appearing_method_ids[strtolower($method->name)] = $method_id;
 
         if (!isset($class_storage->overridden_method_ids[strtolower($method->name)])) {
             $class_storage->overridden_method_ids[strtolower($method->name)] = [];
@@ -340,16 +345,16 @@ class MethodChecker extends FunctionLikeChecker
                 $parser_return_type = $parser_return_type->type;
             }
 
-            $return_type = Type::parseString(
-                (is_string($parser_return_type)
-                    ? $parser_return_type
-                    : ClassLikeChecker::getFQCLNFromNameObject(
-                        $parser_return_type,
-                        $this->namespace,
-                        $this->getAliasedClasses()
-                    )
-                ) . $suffix
-            );
+            $return_type_string = (is_string($parser_return_type)
+                ? $parser_return_type
+                : ClassLikeChecker::getFQCLNFromNameObject(
+                    $parser_return_type,
+                    $this->namespace,
+                    $this->getAliasedClasses()
+                )
+            ) . $suffix;
+
+            $return_type = Type::parseString($return_type_string);
 
             $return_type_location = new CodeLocation($this->getSource(), $method, false, self::RETURN_TYPE_REGEX);
         }
@@ -721,6 +726,18 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
+     * @param string $method_id
+     * @param string $appearing_method_id
+     * @return void
+     */
+    public static function setAppearingMethodId($method_id, $appearing_method_id)
+    {
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        ClassLikeChecker::$storage[$fq_class_name]->appearing_method_ids[$method_name] = $appearing_method_id;
+    }
+
+    /**
      * @param  string $method_id
      * @return string|null
      */
@@ -730,6 +747,21 @@ class MethodChecker extends FunctionLikeChecker
 
         if (isset(ClassLikeChecker::$storage[$fq_class_name]->declaring_method_ids[$method_name])) {
             return ClassLikeChecker::$storage[$fq_class_name]->declaring_method_ids[$method_name];
+        }
+    }
+
+    /**
+     * Get the class this method appears in (vs is declared in, which could give a trait)
+     *
+     * @param  string $method_id
+     * @return string|null
+     */
+    public static function getAppearingMethodId($method_id)
+    {
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        if (isset(ClassLikeChecker::$storage[$fq_class_name]->appearing_method_ids[$method_name])) {
+            return ClassLikeChecker::$storage[$fq_class_name]->appearing_method_ids[$method_name];
         }
     }
 
