@@ -202,4 +202,42 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
+
+    public function testGoodDocblock()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /**
+             * @param A $a
+             * @param bool $b
+             */
+            public function g(A $a, $b) : void {
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testGoodDocblockInNamespace()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Foo;
+
+        class A {
+            /**
+             * @param \Foo\A $a
+             * @param bool $b
+             */
+            public function g(A $a, $b) : void {
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

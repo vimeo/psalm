@@ -366,7 +366,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             $function_param->code_location
                         )
                     )) {
-                        return false;
+                        // fall through
                     }
                 }
             }
