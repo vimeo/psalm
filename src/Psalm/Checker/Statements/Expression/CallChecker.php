@@ -596,7 +596,7 @@ class CallChecker
             $stmt->inferredType = $return_type;
         }
 
-        $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : [];
+        $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
 
         if (self::checkFunctionArguments(
             $statements_checker,
@@ -806,7 +806,7 @@ class CallChecker
                 }
             }
 
-            $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : [];
+            $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
 
             if (self::checkFunctionArguments(
                 $statements_checker,
@@ -836,7 +836,7 @@ class CallChecker
     /**
      * @param   StatementsChecker                       $statements_checker
      * @param   array<int, PhpParser\Node\Arg>          $args
-     * @param   array<int,FunctionLikeParameter>|null   $function_params
+     * @param   array<int, FunctionLikeParameter>|null  $function_params
      * @param   Context                                 $context
      * @return  false|null
      */
@@ -849,17 +849,12 @@ class CallChecker
         foreach ($args as $argument_offset => $arg) {
             if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch) {
                 if ($function_params !== null) {
-                    $by_ref = false;
-                    $by_ref_type = null;
+                    $by_ref = $argument_offset < count($function_params) &&
+                        $function_params[$argument_offset]->by_ref;
 
-                    if ($function_params) {
-                        $by_ref = $argument_offset < count($function_params) &&
-                            $function_params[$argument_offset]->by_ref;
-
-                        $by_ref_type = $by_ref && $argument_offset < count($function_params)
-                            ? clone $function_params[$argument_offset]->type
-                            : null;
-                    }
+                    $by_ref_type = $by_ref && $argument_offset < count($function_params)
+                        ? clone $function_params[$argument_offset]->type
+                        : null;
 
                     if ($by_ref && $by_ref_type) {
                         ExpressionChecker::assignByRefParam($statements_checker, $arg->value, $by_ref_type, $context);
@@ -887,17 +882,12 @@ class CallChecker
                 }
             } elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                 if ($function_params !== null) {
-                    $by_ref = false;
-                    $by_ref_type = null;
+                    $by_ref = $argument_offset < count($function_params) &&
+                        $function_params[$argument_offset]->by_ref;
 
-                    if ($function_params) {
-                        $by_ref = $argument_offset < count($function_params) &&
-                            $function_params[$argument_offset]->by_ref;
-
-                        $by_ref_type = $by_ref && $argument_offset < count($function_params)
-                            ? clone $function_params[$argument_offset]->type
-                            : null;
-                    }
+                    $by_ref_type = $by_ref && $argument_offset < count($function_params)
+                        ? clone $function_params[$argument_offset]->type
+                        : null;
 
                     if (ExpressionChecker::checkVariable(
                         $statements_checker,
