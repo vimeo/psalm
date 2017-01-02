@@ -14,6 +14,12 @@
     <issueHandlers>
         <NullOperand errorLevel="suppress" />
 
+        <InvalidArgument>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </InvalidArgument>
+
         <MissingReturnType>
             <errorLevel type="suppress">
                 <directory name="tests" />
@@ -67,5 +73,11 @@
                 <directory name="tests" />
             </errorLevel>
         </NullArgument>
+
+        <TypeCoercion>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </TypeCoercion>
     </issueHandlers>
 </psalm>
