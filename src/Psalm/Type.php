@@ -235,7 +235,7 @@ abstract class Type
      */
     public static function convertSquareBrackets($type)
     {
-        $class_chars = '[a-zA-Z\<\>\\\\_]+';
+        $class_chars = '[a-zA-Z0-9\<\>\\\\_]+';
         return preg_replace_callback(
             '/(' . $class_chars . '|' . '\((' . $class_chars . '(\|' . $class_chars . ')*' . ')\))((\[\])+)/',
             /**
