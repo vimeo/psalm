@@ -305,20 +305,6 @@ class Union extends Type
     /**
      * @return boolean
      */
-    public function isIn(Union $parent)
-    {
-        foreach ($this->types as $type) {
-            if (!$type->isIn($parent)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @return boolean
-     */
     public function isSingle()
     {
         if (count($this->types) > 1) {

@@ -11,6 +11,7 @@ use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\FailedTypeResolution;
@@ -606,7 +607,7 @@ class AssignmentChecker
                 continue;
             }
 
-            if (!$assignment_value_type->isIn($class_property_type)) {
+            if (!TypeChecker::isContainedBy($assignment_value_type, $class_property_type)) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignment(
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
@@ -742,7 +743,7 @@ class AssignmentChecker
 
         $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $fq_class_name);
 
-        if (!$assignment_value_type->isIn($class_property_type)) {
+        if (!TypeChecker::isContainedBy($assignment_value_type, $class_property_type)) {
             if (IssueBuffer::accepts(
                 new InvalidPropertyAssignment(
                     $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .

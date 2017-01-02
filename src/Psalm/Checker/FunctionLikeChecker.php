@@ -842,7 +842,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             );
 
             if ($function_param_names[$param_name] && !$function_param_names[$param_name]->isMixed()) {
-                if (!$new_param_type->isIn($function_param_names[$param_name])) {
+                if (!TypeChecker::isContainedBy($new_param_type, $function_param_names[$param_name])) {
                     $code_location->setCommentLine($line_number);
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(

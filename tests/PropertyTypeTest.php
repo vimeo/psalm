@@ -453,4 +453,59 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
         $this->assertEquals('DOMDocument', (string) $context->vars_in_scope['$owner']);
     }
+
+    public function testGoodArrayProperties()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+
+        interface I1 {}
+
+        class A1 implements I1{}
+
+        class B1 implements I1 {}
+
+        class C1 {
+            /** @var array<I1> */
+            public $is;
+        }
+
+        $c = new C1;
+        $c->is = [new A1];
+        $c->is = [new A1, new A1];
+        $c->is = [new A1, new B1];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyAssignment
+     */
+    public function testBadArrayProperty()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        class A {}
+
+        class B {}
+
+        class C {
+            /** @var array<B> */
+            public $bb;
+        }
+
+        $c = new C;
+        $c->bb = [new A];
+        ');
+
+        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker->check(true, true, $context);
+    }
 }
