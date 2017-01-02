@@ -121,8 +121,8 @@ class FileChecker extends SourceChecker implements StatementsSource
     public static $storage = [];
 
     /**
-     * @param string $file_path
-     * @param array  $preloaded_statements
+     * @param string                                               $file_path
+     * @param array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>  $preloaded_statements
      */
     public function __construct($file_path, array $preloaded_statements = [])
     {
@@ -461,6 +461,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @return bool
      * @psalm-suppress MixedAssignment
+     * @psalm-suppress InvalidPropertyAssignment
      */
     public static function loadReferenceCache()
     {

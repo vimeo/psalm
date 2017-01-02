@@ -125,4 +125,20 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testTypedArrayWithDefault()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {}
+
+        /** @param array<A> $a */
+        function fooFoo(array $a = []) : void {
+
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
 }

@@ -518,6 +518,7 @@ class Config
 
     /**
      * @return void
+     * @psalm-suppress InvalidPropertyAssignment
      */
     public function collectPredefinedConstants()
     {

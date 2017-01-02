@@ -14,21 +14,21 @@ interface StatementsSource
     public function getAliasedClasses();
 
     /**
-     * @return array<string>
+     * @return array<string, string>
      */
     public function getAliasedClassesFlipped();
 
     /**
      * Gets a list of all aliased constants
      *
-     * @return array
+     * @return array<string, string>
      */
     public function getAliasedConstants();
 
     /**
      * Gets a list of all aliased functions
      *
-     * @return array
+     * @return array<string, string>
      */
     public function getAliasedFunctions();
 
@@ -101,7 +101,7 @@ interface StatementsSource
     /**
      * Get a list of suppressed issues
      *
-     * @return array<string>
+     * @return array<int, string>
      */
     public function getSuppressedIssues();
 }

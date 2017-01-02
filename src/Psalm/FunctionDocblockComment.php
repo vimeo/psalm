@@ -27,7 +27,7 @@ class FunctionDocblockComment
     public $variadic = false;
 
     /**
-     * @var array<string>
+     * @var array<int, string>
      */
     public $suppress = [];
 

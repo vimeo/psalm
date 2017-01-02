@@ -50,7 +50,7 @@ abstract class SourceChecker implements StatementsSource
     protected $include_file_path;
 
     /**
-     * @var array<string>
+     * @var array<int, string>
      */
     protected $suppressed_issues = [];
 

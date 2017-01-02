@@ -509,6 +509,10 @@ class StatementsChecker
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             return Type::getFloat();
         } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
+            if (count($stmt->items) === 0) {
+                return Type::getEmptyArray();
+            }
+
             return Type::getArray();
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             return Type::getInt();

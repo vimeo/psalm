@@ -502,7 +502,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         }
 
         $c = new C;
-        $c->bb = [new A];
+        $c->bb = [new A, new B];
         ');
 
         $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);

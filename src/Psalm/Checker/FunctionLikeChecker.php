@@ -359,9 +359,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $default_type = StatementsChecker::getSimpleType($parser_param->default);
 
                 if ($default_type && !TypeChecker::isContainedBy($default_type, $param_type)) {
+                    $method_id = $this->getMethodId();
+                    $cased_method_id = $method_id;
+
+                    if ($cased_method_id) {
+                        if ($this instanceof MethodChecker) {
+                            $cased_method_id = MethodChecker::getCasedMethodId($cased_method_id);
+                        } elseif ($this->function instanceof PhpParser\Node\Stmt\Function_) {
+                            $cased_method_id = $this->function->name;
+                        }
+                    }
+
                     if (IssueBuffer::accepts(
                         new InvalidParamDefault(
-                            'Default value for argument ' . ($offset + 1) . ' of method ' . $this->getMethodId() .
+                            'Default value for argument ' . ($offset + 1) . ' of method ' . $cased_method_id .
                                 ' does not match the given type ' . $param_type,
                             $function_param->code_location
                         )

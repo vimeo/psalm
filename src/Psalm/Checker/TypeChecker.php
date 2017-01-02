@@ -710,9 +710,9 @@ class TypeChecker
                             ) {
                                 if (self::isContainedBy($container_param, $input_param)) {
                                     $type_coerced = true;
-                                } else {
-                                    $all_types_contain = false;
                                 }
+
+                                $all_types_contain = false;
                             }
                         }
                     }

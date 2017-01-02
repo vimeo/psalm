@@ -88,7 +88,7 @@ class TraitChecker extends ClassLikeChecker
     }
 
     /**
-     * @param   array $method_map
+     * @param   array<string, string> $method_map
      * @return  void
      */
     public function setMethodMap(array $method_map)
