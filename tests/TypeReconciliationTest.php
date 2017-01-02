@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\Config;
@@ -15,6 +16,12 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
+    /** @var FileChecker */
+    protected $file_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -25,28 +32,34 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
+
+        $this->file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $this->file_checker->context = new Context('somefile.php');
+
+        $this->project_checker = new ProjectChecker();
     }
 
     public function testNotNull()
     {
         $this->assertEquals(
             'MyObject',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject'))
+            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'MyObject',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|null'))
+            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|null'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'MyObject|false',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|false'))
+            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|false'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'mixed',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('mixed'))
+            (string) TypeChecker::reconcileTypes('!null', Type::parseString('mixed'), null, $this->file_checker)
         );
     }
 
@@ -54,22 +67,22 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'MyObject',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject'))
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'MyObject',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|null'))
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|null'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'MyObject',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|false'))
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|false'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'mixed',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('mixed'))
+            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('mixed'), null, $this->file_checker)
         );
 
         // @todo in the future this should also work
@@ -85,12 +98,12 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject|null'))
+            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject|null'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('mixed'))
+            (string) TypeChecker::reconcileTypes('null', Type::parseString('mixed'), null, $this->file_checker)
         );
     }
 
@@ -98,25 +111,25 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject'))
+            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject'), null, $this->file_checker)
         );
         $this->assertEquals(
             'false',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|false'))
+            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|false'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'false',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|bool'))
+            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|bool'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'mixed',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('mixed'))
+            (string) TypeChecker::reconcileTypes('empty', Type::parseString('mixed'), null, $this->file_checker)
         );
 
         /** @var Type\Union */
-        $reconciled = TypeChecker::reconcileTypes('empty', Type::parseString('bool'));
+        $reconciled = TypeChecker::reconcileTypes('empty', Type::parseString('bool'), null, $this->file_checker);
         $this->assertEquals('false', (string) $reconciled);
         $this->assertInstanceOf('Psalm\Type\Atomic', $reconciled->types['false']);
     }
@@ -125,17 +138,17 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'bool',
-            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|bool'))
+            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|bool'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'null',
-            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|null'))
+            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|null'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'MyObjectB',
-            (string) TypeChecker::reconcileTypes('!MyObjectA', Type::parseString('MyObjectA|MyObjectB'))
+            (string) TypeChecker::reconcileTypes('!MyObjectA', Type::parseString('MyObjectA|MyObjectB'), null, $this->file_checker)
         );
     }
 
@@ -143,12 +156,12 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'MyObject',
-            (string) TypeChecker::reconcileTypes('MyObject', Type::parseString('MyObject|bool'))
+            (string) TypeChecker::reconcileTypes('MyObject', Type::parseString('MyObject|bool'), null, $this->file_checker)
         );
 
         $this->assertEquals(
             'MyObjectA',
-            (string) TypeChecker::reconcileTypes('MyObjectA', Type::parseString('MyObjectA|MyObjectB'))
+            (string) TypeChecker::reconcileTypes('MyObjectA', Type::parseString('MyObjectA|MyObjectB'), null, $this->file_checker)
         );
     }
 
@@ -157,28 +170,16 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertTrue(
             TypeChecker::isContainedBy(
                 Type::parseString('array<string>'),
-                Type::parseString('array')
+                Type::parseString('array'),
+                $this->file_checker
             )
         );
 
         $this->assertTrue(
             TypeChecker::isContainedBy(
                 Type::parseString('array<Exception>'),
-                Type::parseString('array')
-            )
-        );
-
-        $this->assertTrue(
-            TypeChecker::isContainedBy(
-                Type::parseString('array<UnexpectedValueException>'),
-                Type::parseString('array<Exception>')
-            )
-        );
-
-        $this->assertFalse(
-            TypeChecker::isContainedBy(
-                Type::parseString('array<ValueException>'),
-                Type::parseString('array<UnexpectedException>')
+                Type::parseString('array'),
+                $this->file_checker
             )
         );
     }
@@ -187,7 +188,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'string',
-            (string) TypeChecker::reconcileTypes('numeric', Type::parseString('string'))
+            (string) TypeChecker::reconcileTypes('numeric', Type::parseString('string'), null, $this->file_checker)
         );
     }
 
@@ -294,9 +295,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -315,9 +316,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -333,9 +334,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testNotInstanceOf()
@@ -355,10 +356,10 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
         $context->vars_in_scope['$a'] = Type::parseString('A');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('null|A', (string) $context->vars_in_scope['$out']);
     }
 
@@ -384,10 +385,10 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
         $context->vars_in_scope['$a'] = Type::parseString('A');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
     }
 
@@ -416,10 +417,10 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
         $context->vars_in_scope['$a'] = Type::parseString('A');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
     }
 
@@ -431,9 +432,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $c = min("a", "b");
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$c']);
@@ -456,8 +457,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 }

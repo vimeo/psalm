@@ -125,7 +125,7 @@ class StatementsChecker
     /**
      * @var array<string, array<string, Type\Union>>
      */
-    protected static $user_constants = [];
+    public static $user_constants = [];
 
     /**
      * @param StatementsSource $source
@@ -184,6 +184,7 @@ class StatementsChecker
 
                 foreach ($plugins as $plugin) {
                     if ($plugin->checkStatement(
+                        $this,
                         $stmt,
                         $context,
                         $code_location,
@@ -301,6 +302,7 @@ class StatementsChecker
                     $function_checkers[$stmt->name]->checkReturnTypes(
                         false,
                         $return_type,
+                        $this->fq_class_name,
                         $return_type_location
                     );
                 }
@@ -446,7 +448,8 @@ class StatementsChecker
                 }
 
                 $namespace_checker = new NamespaceChecker($stmt, $this->source);
-                $namespace_checker->check(true);
+                $namespace_checker->visit();
+                $namespace_checker->checkMethods($context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
                 // do nothing
             } else {
@@ -555,6 +558,7 @@ class StatementsChecker
      */
     public function checkInsideMethod($method_id, Context $context)
     {
+        /**
         $method_checker = ClassLikeChecker::getMethodChecker($method_id);
 
         if ($method_checker &&
@@ -587,6 +591,7 @@ class StatementsChecker
                 $context->vars_in_scope[$var] = $type;
             }
         }
+        **/
     }
 
     /**
@@ -601,7 +606,8 @@ class StatementsChecker
 
             $this->setConstType(
                 $const->name,
-                isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed()
+                isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed(),
+                $context
             );
         }
     }
@@ -609,9 +615,10 @@ class StatementsChecker
     /**
      * @param   string  $const_name
      * @param   bool    $is_fully_qualified
+     * @param   Context $context
      * @return  Type\Union|null
      */
-    public function getConstType($const_name, $is_fully_qualified)
+    public function getConstType($const_name, $is_fully_qualified, Context $context)
     {
         $fq_const_name = null;
 
@@ -636,8 +643,8 @@ class StatementsChecker
             }
         }
 
-        if (isset(self::$user_constants[$this->file_name][$const_name])) {
-            return self::$user_constants[$this->file_name][$const_name];
+        if (isset($context->vars_in_scope[$const_name])) {
+            return $context->vars_in_scope[$const_name];
         }
 
         $predefined_constants = Config::getInstance()->getPredefinedConstants();
@@ -652,14 +659,15 @@ class StatementsChecker
     /**
      * @param   string      $const_name
      * @param   Type\Union  $const_type
+     * @param   Context     $context
      * @return  void
      */
-    public function setConstType($const_name, Type\Union $const_type)
+    public function setConstType($const_name, Type\Union $const_type, Context $context)
     {
         if ($this->source instanceof NamespaceChecker) {
             $this->source->setConstType($const_name, $const_type);
-        }
-        else {
+        } else {
+            $context->vars_in_scope[$const_name] = $const_type;
             self::$user_constants[$this->file_name][$const_name] = $const_type;
         }
 
@@ -962,6 +970,14 @@ class StatementsChecker
     public function getFilePath()
     {
         return $this->file_path;
+    }
+
+    /**
+     * @return FileChecker
+     */
+    public function getFileChecker()
+    {
+        return $this->source->getFileChecker();
     }
 
     /**

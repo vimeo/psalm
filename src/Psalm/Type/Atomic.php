@@ -4,6 +4,7 @@ namespace Psalm\Type;
 use Psalm\Type;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\FileChecker;
 
 class Atomic extends Type
 {
@@ -63,16 +64,17 @@ class Atomic extends Type
     }
 
     /**
-     * @param   Union   $parent
+     * @param   Union        $parent
+     * @param   FileChecker  $file_checker
      * @return  bool
      */
-    public function isIn(Union $parent)
+    public function isIn(Union $parent, FileChecker $file_checker)
     {
         if ($parent->isMixed()) {
             return true;
         }
 
-        if ($parent->hasType('object') && ClassLikeChecker::classOrInterfaceExists($this->value)) {
+        if ($parent->hasType('object') && ClassLikeChecker::classOrInterfaceExists($this->value, $file_checker)) {
             return true;
         }
 
@@ -94,7 +96,7 @@ class Atomic extends Type
         }
 
         // last check to see if class is subclass
-        if (ClassChecker::classExists($this->value)) {
+        if (ClassChecker::classExists($this->value, $file_checker)) {
             $this_is_subclass = false;
 
             foreach ($parent->types as $parent_type) {

@@ -12,6 +12,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -21,6 +24,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
     {
         $config = new TestConfig();
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testAccessiblePrivateMethodFromTrait()
@@ -40,8 +44,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     public function testAccessibleProtectedMethodFromTrait()
@@ -61,8 +65,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     public function testAccessiblePublicMethodFromTrait()
@@ -82,8 +86,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     /**
@@ -109,8 +113,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     public function testAccessibleProtectedMethodFromInheritedTrait()
@@ -132,8 +136,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     public function testAccessiblePublicMethodFromInheritedTrait()
@@ -155,8 +159,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     public function testStaticClassMethodFromWithinTrait()
@@ -177,8 +181,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     /**
@@ -193,8 +197,8 @@ class TraitTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     public function testTraitSelf()
@@ -214,9 +218,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $a = (new A)->g();
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
     }
 
@@ -237,12 +241,16 @@ class TraitTest extends PHPUnit_Framework_TestCase
         class B extends A {
         }
 
+        class C {
+            use T;
+        }
+
         $a = (new B)->g();
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
     }
 }

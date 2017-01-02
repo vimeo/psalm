@@ -128,20 +128,20 @@ if ($path_to_config) {
     ProjectChecker::setConfigXML($path_to_config);
 }
 
-$project_checker = new ProjectChecker($use_color, $show_info, $output_format);
+$project_checker = new ProjectChecker($use_color, $show_info, $output_format, $debug);
 
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 
 if (array_key_exists('self-check', $options)) {
-    $project_checker->checkDir(dirname(__DIR__) . '/src', $debug);
+    $project_checker->checkDir(dirname(__DIR__) . '/src');
 } elseif ($paths_to_check === null) {
-    $project_checker->check($debug, $is_diff);
+    $project_checker->check($is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check, $debug, $update_docblocks);
+            $project_checker->checkDir($path_to_check, $update_docblocks);
         } else {
-            $project_checker->checkFile($path_to_check, $debug, $update_docblocks);
+            $project_checker->checkFile($path_to_check, $update_docblocks);
         }
     }
 }

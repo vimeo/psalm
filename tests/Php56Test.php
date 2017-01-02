@@ -12,16 +12,19 @@ class Php56Test extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
     }
 
     public function setUp()
     {
+        $config = new TestConfig();
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testConstArray()
@@ -31,9 +34,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $a = ARR[0];
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
     }
 
@@ -63,9 +66,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $g = C::ONE_THIRD;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$d']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$e']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$f']);
@@ -88,9 +91,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         f(1, 2, 3, 4, 5);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testVariadicArray()
@@ -116,9 +119,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         f(1, 2, 3);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testArgumentUnpacking()
@@ -138,9 +141,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         echo add(1, ...$operators);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testExponentiation()
@@ -150,9 +153,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $a **= 3;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testConstantAliasInNamespace()
@@ -170,9 +173,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testConstantAliasInClass()
@@ -195,9 +198,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testFunctionAliasInNamespace()
@@ -218,9 +221,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testFunctionAliasInClass()
@@ -246,8 +249,8 @@ class Php56Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 }

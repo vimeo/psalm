@@ -7,16 +7,6 @@ use Psalm\StatementsSource;
 class InterfaceChecker extends ClassLikeChecker
 {
     /**
-     * @var array<string, bool>
-     */
-    protected static $existing_interfaces = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    protected static $existing_interfaces_ci = [];
-
-    /**
      * @param PhpParser\Node\Stmt\ClassLike  $interface
      * @param StatementsSource               $source
      * @param string                         $interface_name
@@ -42,6 +32,8 @@ class InterfaceChecker extends ClassLikeChecker
                     $this->aliased_classes
                 );
 
+                $source->getFileChecker()->evaluateClassLike($extended_interface_name);
+
                 $storage->parent_interfaces[] = $extended_interface_name;
             }
         }
@@ -49,22 +41,21 @@ class InterfaceChecker extends ClassLikeChecker
 
     /**
      * @param  string $interface
+     * @param  FileChecker  $file_checker
      * @return boolean
      */
-    public static function interfaceExists($interface)
+    public static function interfaceExists($interface, FileChecker $file_checker)
     {
+        if (isset(self::$SPECIAL_TYPES[$interface])) {
+            return false;
+        }
+
+        if ($file_checker->evaluateClassLike($interface) === false) {
+            return false;
+        }
+
         if (isset(self::$existing_interfaces_ci[strtolower($interface)])) {
             return self::$existing_interfaces_ci[strtolower($interface)];
-        }
-
-        if (in_array($interface, self::$SPECIAL_TYPES)) {
-            return false;
-        }
-
-        if (self::registerClassLike($interface) === false) {
-            self::$existing_interfaces_ci[strtolower($interface)] = false;
-
-            return false;
         }
 
         if (!isset(self::$existing_interfaces_ci[strtolower($interface)])) {
@@ -77,21 +68,20 @@ class InterfaceChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string  $interface
+     * @param  string       $interface_name
      * @return boolean
      */
-    public static function hasCorrectCasing($interface)
+    public static function hasCorrectCasing($interface_name)
     {
-        if (!self::interfaceExists(strtolower($interface))) {
-            throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $interface);
+        if (!isset(self::$existing_interfaces_ci[strtolower($interface_name)])) {
+            throw new \UnexpectedValueException('Invalid storage for ' . $interface_name);
         }
-
-        return isset(self::$existing_interfaces[$interface]);
+        return isset(self::$existing_interfaces[$interface_name]);
     }
 
     /**
-     * @param  string $interface_name
-     * @param  string $possible_parent
+     * @param  string       $interface_name
+     * @param  string       $possible_parent
      * @return boolean
      */
     public static function interfaceExtends($interface_name, $possible_parent)
@@ -100,13 +90,13 @@ class InterfaceChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string $interface_name
+     * @param  string       $interface_name
      * @return array<string>   all interfaces extended by $interface_name
      */
     public static function getParentInterfaces($interface_name)
     {
-        if (self::registerClassLike($interface_name) === false) {
-            throw new \UnexpectedValueException('Cannot deal with unfound file');
+        if (!isset(self::$storage[$interface_name])) {
+            throw new \UnexpectedValueException('Invalid storage for ' . $interface_name);
         }
 
         $extended_interfaces = [];
@@ -123,14 +113,5 @@ class InterfaceChecker extends ClassLikeChecker
         }
 
         return $extended_interfaces;
-    }
-
-    /**
-     * @return void
-     */
-    public static function clearCache()
-    {
-        self::$existing_interfaces = [];
-        self::$existing_interfaces_ci = [];
     }
 }

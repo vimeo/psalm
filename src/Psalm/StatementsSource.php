@@ -1,6 +1,9 @@
 <?php
 namespace Psalm;
 
+use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\FileChecker;
+
 interface StatementsSource
 {
     /**
@@ -43,9 +46,14 @@ interface StatementsSource
     public function getClassName();
 
     /**
-     * @return string
+     * @return ClassLikeChecker
      */
     public function getClassLikeChecker();
+
+    /**
+     * @return FileChecker
+     */
+    public function getFileChecker();
 
     /**
      * @return string|null

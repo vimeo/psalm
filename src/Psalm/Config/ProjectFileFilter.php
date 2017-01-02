@@ -40,11 +40,9 @@ class ProjectFileFilter extends FileFilter
      */
     public function allows($file_name, $case_sensitive = false)
     {
-        if ($this->inclusive) {
-            if ($this->file_filter) {
-                if (!$this->file_filter->allows($file_name, $case_sensitive)) {
-                    return false;
-                }
+        if ($this->inclusive && $this->file_filter) {
+            if (!$this->file_filter->allows($file_name, $case_sensitive)) {
+                return false;
             }
         }
 

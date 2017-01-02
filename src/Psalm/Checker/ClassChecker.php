@@ -62,23 +62,22 @@ class ClassChecker extends ClassLikeChecker
     /**
      * Determine whether or not a given class exists
      *
-     * @param  string $fq_class_name
+     * @param  string       $fq_class_name
+     * @param  FileChecker  $file_checker
      * @return bool
      */
-    public static function classExists($fq_class_name)
+    public static function classExists($fq_class_name, FileChecker $file_checker)
     {
+        if (isset(self::$SPECIAL_TYPES[$fq_class_name])) {
+            return false;
+        }
+
+        if ($file_checker->evaluateClassLike($fq_class_name) === false) {
+            return false;
+        }
+
         if (isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
             return self::$existing_classes_ci[strtolower($fq_class_name)];
-        }
-
-        if (in_array($fq_class_name, self::$SPECIAL_TYPES)) {
-            return false;
-        }
-
-        if (parent::registerClassLike($fq_class_name) === false) {
-            self::$existing_classes[$fq_class_name] = false;
-
-            return false;
         }
 
         if (!isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
@@ -93,12 +92,12 @@ class ClassChecker extends ClassLikeChecker
     /**
      * Determine whether or not a class has the correct casing
      *
-     * @param  string  $fq_class_name
+     * @param  string       $fq_class_name
      * @return bool
      */
     public static function hasCorrectCasing($fq_class_name)
     {
-        if (!self::classExists($fq_class_name)) {
+        if (!isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
             throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $fq_class_name);
         }
 
@@ -108,30 +107,17 @@ class ClassChecker extends ClassLikeChecker
     /**
      * Determine whether or not a class extends a parent
      *
-     * @param  string $fq_class_name
-     * @param  string $possible_parent
+     * @param  string       $fq_class_name
+     * @param  string       $possible_parent
      * @return bool
      */
     public static function classExtends($fq_class_name, $possible_parent)
     {
-        if (isset(self::$class_extends[$fq_class_name][$possible_parent])) {
-            return self::$class_extends[$fq_class_name][$possible_parent];
+        if (!isset(self::$storage[$fq_class_name])) {
+            throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
         }
 
-        if (!self::classExists($fq_class_name) || !self::classExists($possible_parent)) {
-            return false;
-        }
-
-        if (!isset(self::$class_extends[$fq_class_name])) {
-            self::$class_extends[$fq_class_name] = [];
-        }
-
-        $old_level = error_reporting();
-        error_reporting(0);
-        self::$class_extends[$fq_class_name][$possible_parent] = is_subclass_of($fq_class_name, $possible_parent);
-        error_reporting($old_level);
-
-        return self::$class_extends[$fq_class_name][$possible_parent];
+        return in_array($possible_parent, self::$storage[$fq_class_name]->parent_classes);
     }
 
     /**
@@ -142,16 +128,14 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function getInterfacesForClass($fq_class_name)
     {
-        self::registerClassLike($fq_class_name);
-
         return self::$storage[$fq_class_name]->class_implements;
     }
 
     /**
      * Check whether a class implements an interface
      *
-     * @param  string $fq_class_name
-     * @param  string $interface
+     * @param  string       $fq_class_name
+     * @param  string       $interface
      * @return bool
      */
     public static function classImplements($fq_class_name, $interface)
@@ -163,10 +147,6 @@ class ClassChecker extends ClassLikeChecker
         }
 
         if (in_array($interface_id, self::$SPECIAL_TYPES) || in_array($fq_class_name, self::$SPECIAL_TYPES)) {
-            return false;
-        }
-
-        if (self::registerClassLike($fq_class_name) === false) {
             return false;
         }
 

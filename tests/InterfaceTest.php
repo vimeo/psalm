@@ -12,6 +12,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testExtendsAndImplements()
@@ -74,9 +78,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$cee']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$dee']);
     }
@@ -124,9 +128,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testExtendsWithMethod()
@@ -152,9 +156,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -174,9 +178,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -194,9 +198,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -218,9 +222,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testCorrectInterfaceMethodSignature()
@@ -238,9 +242,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testInterfaceMethodImplementedInParent()
@@ -260,9 +264,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -287,9 +291,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testInterfaceMethodSignatureInTrait()
@@ -310,9 +314,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -340,8 +344,25 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ?>
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
+    }
+
+    public function testDelayedInterface()
+    {
+        $stmts = self::$parser->parse('<?php
+        // fails in PHP, whatcha gonna do
+        $c = new C;
+
+        class A { }
+
+        interface B { }
+
+        class C extends A implements B { }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndCheckMethods($context);
     }
 }

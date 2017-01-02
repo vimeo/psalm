@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
 use Psalm\Context;
 use Psalm\Type;
 
@@ -10,6 +11,9 @@ class AssignmentTest extends PHPUnit_Framework_TestCase
 {
     /** @var \PhpParser\Parser */
     protected static $parser;
+
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
 
     public static function setUpBeforeClass()
     {
@@ -21,6 +25,7 @@ class AssignmentTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         \Psalm\Checker\FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     /**
@@ -36,7 +41,7 @@ class AssignmentTest extends PHPUnit_Framework_TestCase
         $b = $a;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
-        $file_checker->check(true, true, $context);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods($context);
     }
 }

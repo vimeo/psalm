@@ -10,6 +10,9 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
 {
     /** @var \PhpParser\Parser */
     protected static $parser;
+
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
     protected static $file_filter;
 
     public static function setUpBeforeClass()
@@ -22,6 +25,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
         $config->throw_exception = true;
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testUndefinedClass()
@@ -40,8 +44,8 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 
     public function testExcludeIssue()
@@ -52,7 +56,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         fooFoo();
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
     }
 }

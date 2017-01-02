@@ -125,12 +125,12 @@ class AssignmentChecker
                 || $assign_var instanceof PhpParser\Node\Expr\Array_
         ) {
             foreach ($assign_var->items as $offset => $assign_var_item) {
-                // $var can be null e.g. list($a, ) = ['a', 'b']
-                $var = $assign_var_item->value;
-
-                if (!$var) {
+                // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
+                if (!$assign_var_item) {
                     continue;
                 }
+
+                $var = $assign_var_item->value;
 
                 if ($assign_value instanceof PhpParser\Node\Expr\Array_
                     && isset($assign_value->items[$offset]->value->inferredType)
@@ -318,6 +318,8 @@ class AssignmentChecker
     ) {
         $class_property_types = [];
 
+        $file_checker = $statements_checker->getFileChecker();
+
         if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
                 return null;
@@ -467,14 +469,16 @@ class AssignmentChecker
                     || $lhs_type_part->value === $context->self
                 ) {
                     $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self && ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
+                } elseif ($context->self &&
+                    ClassChecker::classExtends($lhs_type_part->value, $context->self)
+                ) {
                     $class_visibility = \ReflectionProperty::IS_PROTECTED;
                 } else {
                     $class_visibility = \ReflectionProperty::IS_PUBLIC;
                 }
 
-                if (!ClassChecker::classExists($lhs_type_part->value)) {
-                    if (InterfaceChecker::interfaceExists($lhs_type_part->value)) {
+                if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
+                    if (InterfaceChecker::interfaceExists($lhs_type_part->value, $file_checker)) {
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
@@ -607,7 +611,11 @@ class AssignmentChecker
                 continue;
             }
 
-            if (!TypeChecker::isContainedBy($assignment_value_type, $class_property_type)) {
+            if (!TypeChecker::isContainedBy(
+                $assignment_value_type,
+                $class_property_type,
+                $file_checker
+            )) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignment(
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
@@ -657,7 +665,9 @@ class AssignmentChecker
             $fq_class_name === $context->self
         ) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
-        } elseif ($context->self && ClassChecker::classExtends($fq_class_name, $context->self)) {
+        } elseif ($context->self &&
+            ClassChecker::classExtends($fq_class_name, $context->self)
+        ) {
             $class_visibility = \ReflectionProperty::IS_PROTECTED;
         } else {
             $class_visibility = \ReflectionProperty::IS_PUBLIC;
@@ -743,7 +753,11 @@ class AssignmentChecker
 
         $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $fq_class_name);
 
-        if (!TypeChecker::isContainedBy($assignment_value_type, $class_property_type)) {
+        if (!TypeChecker::isContainedBy(
+            $assignment_value_type,
+            $class_property_type,
+            $statements_checker->getFileChecker()
+        )) {
             if (IssueBuffer::accepts(
                 new InvalidPropertyAssignment(
                     $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .

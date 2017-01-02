@@ -254,16 +254,26 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $parser_return_type = $parser_return_type->type;
                 }
 
-                $closure_return_type = Type::parseString(
-                    (is_string($parser_return_type)
-                        ? $parser_return_type
-                        : ClassLikeChecker::getFQCLNFromNameObject(
-                            $parser_return_type,
-                            $this->namespace,
-                            $this->getAliasedClasses()
-                        )
-                    ) . $suffix
-                );
+                if (is_string($parser_return_type)) {
+                    $return_type_string = $parser_return_type . $suffix;
+                } else {
+                    $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
+                        $parser_return_type,
+                        $this->namespace,
+                        $this->getAliasedClasses()
+                    );
+
+                    ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $fq_class_name,
+                        $this->getFileChecker(),
+                        new CodeLocation($this, $parser_return_type),
+                        $this->suppressed_issues
+                    );
+
+                    $return_type_string = $fq_class_name . $suffix;
+                }
+
+                $closure_return_type = Type::parseString($return_type_string);
 
                 $closure_return_type_location = new CodeLocation(
                     $this->getSource(),
@@ -316,7 +326,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             }
 
                             if ($closure_return_type &&
-                                !TypeChecker::isContainedBy($closure_return_type, $closure_docblock_return_type)
+                                !TypeChecker::isContainedBy(
+                                    $closure_return_type,
+                                    $closure_docblock_return_type,
+                                    $statements_checker->getFileChecker()
+                                )
                             ) {
                                 if (IssueBuffer::accepts(
                                     new InvalidDocblock(
@@ -372,7 +386,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if ($parser_param->default) {
                 $default_type = StatementsChecker::getSimpleType($parser_param->default);
 
-                if ($default_type && !TypeChecker::isContainedBy($default_type, $param_type)) {
+                if ($default_type &&
+                    !TypeChecker::isContainedBy(
+                        $default_type,
+                        $param_type,
+                        $statements_checker->getFileChecker()
+                    )
+                ) {
                     $method_id = $this->getMethodId();
                     $cased_method_id = $method_id;
 
@@ -402,6 +422,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     && $this->function instanceof PhpParser\Node
                     && ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $atomic_type->value,
+                        $this->getFileChecker(),
                         $function_param->code_location,
                         $this->suppressed_issues
                     ) === false
@@ -426,6 +447,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $this->checkReturnTypes(
                 false,
                 $closure_return_type,
+                $this->fq_class_name,
                 $closure_return_type_location
             );
 
@@ -604,6 +626,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param   bool                $update_docblock
      * @param   Type\Union|null     $return_type
+     * @param   string              $fq_class_name
      * @param   CodeLocation|null   $return_type_location
      * @param   CodeLocation|null   $secondary_return_type_location
      * @return  false|null
@@ -611,6 +634,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public function checkReturnTypes(
         $update_docblock = false,
         Type\Union $return_type = null,
+        $fq_class_name = null,
         CodeLocation $return_type_location = null,
         CodeLocation $secondary_return_type_location = null
     ) {
@@ -716,7 +740,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $declared_return_type = ExpressionChecker::fleshOutTypes(
             $return_type,
             [],
-            $this->fq_class_name,
+            $fq_class_name ?: $this->fq_class_name,
             $method_id
         );
 
@@ -773,7 +797,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if (!TypeChecker::hasIdenticalTypes(
                 $declared_return_type,
-                $inferred_return_type
+                $inferred_return_type,
+                $this->getFileChecker()
             )) {
                 if ($update_docblock) {
                     if (!in_array('InvalidReturnType', $this->getSuppressedIssues())) {
@@ -867,7 +892,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             );
 
             if ($function_param_names[$param_name] && !$function_param_names[$param_name]->isMixed()) {
-                if (!TypeChecker::isContainedBy($new_param_type, $function_param_names[$param_name])) {
+                if (!TypeChecker::isContainedBy(
+                    $new_param_type,
+                    $function_param_names[$param_name],
+                    $this->getFileChecker()
+                )
+                ) {
                     $code_location->setCommentLine($line_number);
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
@@ -953,6 +983,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $source->getNamespace(),
                     $source->getAliasedClasses()
                 );
+
+                if (!in_array(strtolower($param_type_string), ClassLikeChecker::$SPECIAL_TYPES)) {
+                    ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $param_type_string,
+                        $source->getFileChecker(),
+                        new CodeLocation($source, $param_typehint),
+                        $source->getSuppressedIssues()
+                    );
+                }
             }
 
             if ($param_type_string) {
@@ -1095,9 +1134,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  FileChecker                      $file_checker
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getMethodParamsById($method_id, array $args)
+    public static function getMethodParamsById($method_id, array $args, FileChecker $file_checker)
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
@@ -1120,7 +1160,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
             }
 
-            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args);
+            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
         }
 
         if ($method_params = MethodChecker::getMethodParams($method_id)) {
@@ -1135,9 +1175,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
      * @param  string                           $file_path
+     * @param  FileChecker                      $file_checker
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getFunctionParamsById($method_id, array $args, $file_path)
+    public static function getFunctionParamsById($method_id, array $args, $file_path, FileChecker $file_checker)
     {
         if (FunctionChecker::inCallMap($method_id)) {
             $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
@@ -1146,7 +1187,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
             }
 
-            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args);
+            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
         }
 
         return FunctionChecker::getParams(strtolower($method_id), $file_path);
@@ -1155,10 +1196,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      /**
      * @param  array<int, array<int, FunctionLikeParameter>>  $function_param_options
      * @param  array<int, PhpParser\Node\Arg>                 $args
+     * @param  FileChecker                                    $file_checker
      * @return array<int, FunctionLikeParameter>
      */
-    protected static function getMatchingParamsFromCallMapOptions(array $function_param_options, array $args)
-    {
+    protected static function getMatchingParamsFromCallMapOptions(
+        array $function_param_options,
+        array $args,
+        FileChecker $file_checker
+    ) {
         $function_params = null;
 
         if (count($function_param_options) === 1) {
@@ -1203,7 +1248,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     continue;
                 }
 
-                if (TypeChecker::isContainedBy($arg->value->inferredType, $param_type)) {
+                if (TypeChecker::isContainedBy($arg->value->inferredType, $param_type, $file_checker)) {
                     continue;
                 }
 

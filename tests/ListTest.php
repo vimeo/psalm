@@ -12,6 +12,9 @@ class ListTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,7 @@ class ListTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testSimpleVars()
@@ -30,9 +34,9 @@ class ListTest extends PHPUnit_Framework_TestCase
         list($a, $b) = ["a", "b"];
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$b']);
     }
@@ -43,9 +47,9 @@ class ListTest extends PHPUnit_Framework_TestCase
         list($a, $b) = ["a", 2];
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
     }
@@ -57,9 +61,9 @@ class ListTest extends PHPUnit_Framework_TestCase
         list($a, $b) = $bar;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$b']);
     }
@@ -83,9 +87,9 @@ class ListTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -111,8 +115,8 @@ class ListTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 }

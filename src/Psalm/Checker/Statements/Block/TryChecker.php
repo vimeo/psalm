@@ -45,6 +45,7 @@ class TryChecker
                 if ($context->check_classes) {
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_catch_class,
+                        $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $catch_type),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {

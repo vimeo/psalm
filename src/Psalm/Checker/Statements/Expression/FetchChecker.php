@@ -190,13 +190,10 @@ class FetchChecker
                 continue;
             }
 
-            if (MethodChecker::methodExists($lhs_type_part . '::__get')) {
-                $stmt->inferredType = Type::getMixed();
-                continue;
-            }
+            $file_checker = $statements_checker->getFileChecker();
 
-            if (!ClassChecker::classExists($lhs_type_part->value)) {
-                if (InterfaceChecker::interfaceExists($lhs_type_part->value)) {
+            if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
+                if (InterfaceChecker::interfaceExists($lhs_type_part->value, $file_checker)) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -220,6 +217,11 @@ class FetchChecker
                     return false;
                 }
 
+                continue;
+            }
+
+            if (MethodChecker::methodExists($lhs_type_part . '::__get')) {
+                $stmt->inferredType = Type::getMixed();
                 continue;
             }
 
@@ -324,7 +326,8 @@ class FetchChecker
             default:
                 $const_type = $statements_checker->getConstType(
                     $const_name,
-                    $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                    $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
+                    $context
                 );
 
                 if ($const_type) {
@@ -361,6 +364,10 @@ class FetchChecker
             $stmt->class->parts !== ['static']
         ) {
             if ($stmt->class->parts === ['self']) {
+                if (!$context->self) {
+                    throw new \UnexpectedValueException('$context->self cannot be null');
+                }
+
                 $fq_class_name = (string)$context->self;
             } elseif ($stmt->class->parts[0] === 'parent') {
                 $fq_class_name = $statements_checker->getParentClass();
@@ -387,6 +394,7 @@ class FetchChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
@@ -408,7 +416,9 @@ class FetchChecker
                 )
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
-            } elseif ($context->self && ClassChecker::classExtends($context->self, $fq_class_name)) {
+            } elseif ($context->self &&
+                ClassChecker::classExtends($context->self, $fq_class_name)
+            ) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {
                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
@@ -520,6 +530,7 @@ class FetchChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
@@ -1008,7 +1019,7 @@ class FetchChecker
                         )) {
                             return false;
                         }
-                    } elseif (!$at->isIn($key_type)) {
+                    } elseif (!$at->isIn($key_type, $statements_checker->getFileChecker())) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
                                 'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
@@ -1062,7 +1073,9 @@ class FetchChecker
             return null;
         }
 
-        if (!$type->isArray() && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
+        if (!$type->isArray() &&
+            !ClassChecker::classImplements($type->value, 'ArrayAccess')
+        ) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type->value . ' that does not ' .

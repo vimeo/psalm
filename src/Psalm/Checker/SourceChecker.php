@@ -60,6 +60,11 @@ abstract class SourceChecker implements StatementsSource
     protected $declared_classes = [];
 
     /**
+     * @var StatementsSource|null
+     */
+    protected $source = null;
+
+    /**
      * @param  PhpParser\Node\Stmt\Use_ $stmt
      * @return void
      */
@@ -114,15 +119,6 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
-     * @param   string $class_name
-     * @return  bool
-     */
-    public function containsClass($class_name)
-    {
-        return isset($this->declared_classes[$class_name]);
-    }
-
-    /**
      * @return array<string, string>
      */
     public function getAliasedClasses()
@@ -159,16 +155,6 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
-     * Gets a list of the classes declared
-     *
-     * @return array<string, bool>
-     */
-    public function getDeclaredClasses()
-    {
-        return $this->declared_classes;
-    }
-
-    /**
      * @return null
      */
     public function getFQCLN()
@@ -190,6 +176,22 @@ abstract class SourceChecker implements StatementsSource
     public function getClassLikeChecker()
     {
         return null;
+    }
+
+    /**
+     * @return FileChecker
+     */
+    public function getFileChecker()
+    {
+        if ($this instanceof FileChecker) {
+            return $this;
+        }
+
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$this->source should not be null');
+        }
+
+        return $this->source->getFileChecker();
     }
 
     /**
@@ -268,11 +270,11 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
-     * @return null
+     * @return StatementsSource
      */
     public function getSource()
     {
-        return null;
+        return $this->source ?: $this;
     }
 
     /**

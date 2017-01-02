@@ -12,6 +12,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -20,6 +23,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
         $config = new TestConfig();
     }
 
@@ -29,9 +33,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         echo 5 + 4;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -44,9 +48,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         $a = "b" + 5;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testDifferingNumericTypesAdditionInWeakMode()
@@ -55,9 +59,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         echo 5 + 4.1;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -72,9 +76,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         echo 5 + 4.1;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testNumericAddition()
@@ -87,9 +91,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testConcatenation()
@@ -98,9 +102,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         echo "Hey " + "Jude,";
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testConcatenationWithNumberInWeakMode()
@@ -109,9 +113,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         echo "hi" . 5;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -121,13 +125,13 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     public function testConcatenationWithNumberInStrictMode()
     {
         Config::getInstance()->strict_binary_operands = true;
-        
+
         $stmts = self::$parser->parse('<?php
         echo "hi" . 5;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 }

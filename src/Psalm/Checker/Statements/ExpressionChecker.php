@@ -197,9 +197,12 @@ class ExpressionChecker
             if (!$statements_checker->isStatic()) {
                 $this_class = ClassLikeChecker::getThisClass();
                 $this_class = $this_class &&
-                    ClassChecker::classExtends($this_class, $statements_checker->getFQCLN())
-                    ? $this_class
-                    : $context->self;
+                    ClassChecker::classExtends(
+                        $this_class,
+                        $statements_checker->getFQCLN()
+                    )
+                        ? $this_class
+                        : $context->self;
 
                 if ($this_class) {
                     $use_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($this_class)]);
@@ -316,6 +319,7 @@ class ExpressionChecker
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
+                        $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
@@ -395,6 +399,7 @@ class ExpressionChecker
 
             foreach ($plugins as $plugin) {
                 if ($plugin->checkExpression(
+                    $statements_checker,
                     $stmt,
                     $context,
                     $code_location,
@@ -553,7 +558,11 @@ class ExpressionChecker
                 $statements_checker->registerVariable($var_id, $stmt->getLine());
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
-                if (TypeChecker::isContainedBy($existing_type, $by_ref_type) &&
+                if (TypeChecker::isContainedBy(
+                    $existing_type,
+                    $by_ref_type,
+                    $statements_checker->getFileChecker()
+                ) &&
                     (string)$existing_type !== 'array<empty, empty>'
                 ) {
                     $stmt->inferredType = $context->vars_in_scope[$var_id];
@@ -686,6 +695,7 @@ class ExpressionChecker
                 $left_type_assertions,
                 $context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
@@ -743,6 +753,7 @@ class ExpressionChecker
                 $negated_type_assertions,
                 $context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
@@ -1099,6 +1110,7 @@ class ExpressionChecker
             $left_type_match = TypeChecker::isContainedBy(
                 $left_type,
                 Type::getString(),
+                $statements_checker->getFileChecker(),
                 true,
                 $left_has_scalar_match
             );
@@ -1106,6 +1118,7 @@ class ExpressionChecker
             $right_type_match = TypeChecker::isContainedBy(
                 $right_type,
                 Type::getString(),
+                $statements_checker->getFileChecker(),
                 true,
                 $right_has_scalar_match
             );
@@ -1261,7 +1274,9 @@ class ExpressionChecker
             if ($return_type->value === 'static' || !$method_id) {
                 $return_type->value = $calling_class;
             } else {
-                $appearing_method_id = MethodChecker::getAppearingMethodId($method_id);
+                list(, $method_name) = explode('::', $method_id);
+
+                $appearing_method_id = MethodChecker::getAppearingMethodId($calling_class . '::' . $method_name);
 
                 $return_type->value = explode('::', (string)$appearing_method_id)[0];
             }
@@ -1467,6 +1482,7 @@ class ExpressionChecker
             $reconcilable_if_types,
             $t_if_context->vars_in_scope,
             $changed_vars,
+            $statements_checker->getFileChecker(),
             new CodeLocation($statements_checker->getSource(), $stmt->cond),
             $statements_checker->getSuppressedIssues()
         );
@@ -1490,6 +1506,7 @@ class ExpressionChecker
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt->else),
                 $statements_checker->getSuppressedIssues()
             );
@@ -1517,6 +1534,7 @@ class ExpressionChecker
                     '!empty',
                     $stmt->cond->inferredType,
                     '',
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );

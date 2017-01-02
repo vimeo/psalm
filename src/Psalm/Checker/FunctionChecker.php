@@ -248,16 +248,26 @@ class FunctionChecker extends FunctionLikeChecker
                 $parser_return_type = $parser_return_type->type;
             }
 
-            $return_type = Type::parseString(
-                (is_string($parser_return_type)
-                    ? $parser_return_type
-                    : ClassLikeChecker::getFQCLNFromNameObject(
-                        $parser_return_type,
-                        $this->namespace,
-                        $this->getAliasedClasses()
-                    )
-                ) . $suffix
-            );
+            if (is_string($parser_return_type)) {
+                $return_type_string = $parser_return_type . $suffix;
+            } else {
+                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
+                    $parser_return_type,
+                    $this->namespace,
+                    $this->getAliasedClasses()
+                );
+
+                ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                    $fq_class_name,
+                    $this->getFileChecker(),
+                    new CodeLocation($this, $parser_return_type),
+                    $this->suppressed_issues
+                );
+
+                $return_type_string = $fq_class_name . $suffix;
+            }
+
+            $return_type = Type::parseString($return_type_string);
 
             $return_type_location = new CodeLocation($this->getSource(), $function, false, self::RETURN_TYPE_REGEX);
         }
@@ -278,7 +288,7 @@ class FunctionChecker extends FunctionLikeChecker
                         new CodeLocation($this, $function, true)
                     )
                 )) {
-                    return false;
+                    // fall through
                 }
             }
 
@@ -309,7 +319,13 @@ class FunctionChecker extends FunctionLikeChecker
                             $return_type_location = new CodeLocation($this->getSource(), $function, true);
                         }
 
-                        if ($return_type && !TypeChecker::isContainedBy($docblock_return_type, $return_type)) {
+                        if ($return_type &&
+                            !TypeChecker::isContainedBy(
+                                $docblock_return_type,
+                                $return_type,
+                                $this->getFileChecker()
+                            )
+                        ) {
                             if (IssueBuffer::accepts(
                                 new InvalidDocblock(
                                     'Docblock return type does not match function return type for ' .

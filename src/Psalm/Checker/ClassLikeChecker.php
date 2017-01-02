@@ -33,19 +33,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @var array
      */
-    protected static $SPECIAL_TYPES = [
-        'int',
-        'string',
-        'float',
-        'bool',
-        'false',
-        'object',
-        'empty',
-        'callable',
-        'array',
-        'iterable',
-        'null',
-        'mixed',
+    public static $SPECIAL_TYPES = [
+        'int' => 'int',
+        'string' => 'stirng',
+        'float' => 'float',
+        'bool' => 'bool',
+        'false' => 'false',
+        'object' => 'object',
+        'empty' => 'empty',
+        'callable' => 'callable',
+        'array' => 'array',
+        'iterable' => 'iterable',
+        'null' => 'null',
+        'mixed' => 'mixed',
     ];
 
     /**
@@ -86,9 +86,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected $suppressed_issues;
 
     /**
-     * @var array<string,MethodChecker>
+     * @var array<string, MethodChecker>
      */
-    protected static $method_checkers = [];
+    protected $method_checkers = [];
+
+    /**
+     * @var array<string, MethodChecker>
+     */
+    protected $property_types = [];
 
     /**
      * @var string|null
@@ -106,9 +111,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public static $storage = [];
 
     /**
-     * A lookup table of cached ClassLikeCheckers
+     * A lookup table of cached TraitCheckers
      *
-     * @var array<string, self>
+     * @var array<string, TraitChecker>
+     */
+    public static $trait_checkers;
+
+    /**
+     * A lookup table of cached ClassCheckers
+     *
+     * @var array<string, ClassChecker>
      */
     public static $class_checkers;
 
@@ -130,6 +142,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @var array<string, bool>
      */
     protected static $existing_classes_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected static $existing_interfaces = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected static $existing_interfaces_ci = [];
 
     /**
      * A lookup table used for caching the results of classExtends calls
@@ -165,7 +187,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             self::$storage[$fq_class_name]->file_path = $this->file_path;
         }
 
-        self::$file_classes[$this->file_name][] = $fq_class_name;
+        self::$file_classes[$this->file_path][] = $fq_class_name;
 
         if (self::$this_class) {
             self::$class_checkers[$fq_class_name] = $this;
@@ -173,16 +195,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param bool          $check_methods
      * @param Context|null  $class_context
-     * @param bool          $update_docblocks
+     * @param Context|null  $global_context
      * @return false|null
      */
-    public function check($check_methods = true, Context $class_context = null, $update_docblocks = false)
-    {
+    public function check(
+        Context $class_context = null,
+        Context $global_context = null
+    ) {
         $storage = self::$storage[$class_context ? $class_context->self : $this->fq_class_name];
 
-        if (!$check_methods && !($this instanceof TraitChecker) && $storage->registered) {
+        if (!($this instanceof TraitChecker) && $storage->registered) {
             return null;
         }
 
@@ -193,14 +216,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $leftover_stmts = [];
 
-        /** @var array<MethodChecker> */
-        $method_checkers = [];
-
         $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
 
         if (!$class_context) {
             $class_context = new Context($this->file_name, $this->fq_class_name);
             $class_context->parent = $this->parent_class;
+
+            if ($global_context) {
+                $class_context->vars_in_scope = $global_context->vars_in_scope;
+                $class_context->vars_possibly_in_scope = $global_context->vars_possibly_in_scope;
+            }
+
             $class_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($this->fq_class_name)]);
         }
 
@@ -220,7 +246,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         if ($this instanceof ClassChecker) {
-            if ($this->parent_class && $this->registerParentClassInfo($this->parent_class) === false) {
+            if ($this->parent_class &&
+                $this->registerParentClassInfo($this->parent_class) === false
+            ) {
                 return false;
             }
         }
@@ -229,7 +257,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $extra_interfaces = [];
 
             if ($this instanceof InterfaceChecker) {
-                $parent_interfaces = InterfaceChecker::getParentInterfaces($this->fq_class_name);
+                $parent_interfaces = InterfaceChecker::getParentInterfaces(
+                    $this->fq_class_name
+                );
+
                 $extra_interfaces = $parent_interfaces;
             } else {
                 $parent_interfaces = self::$storage[$this->fq_class_name]->class_implements;
@@ -238,6 +269,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             foreach ($parent_interfaces as $interface_name) {
                 if (self::checkFullyQualifiedClassLikeName(
                     $interface_name,
+                    $this->getFileChecker(),
                     new CodeLocation($this, $this->class, true),
                     $this->getSuppressedIssues()
                 ) === false) {
@@ -246,7 +278,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $extra_interfaces = array_merge(
                     $extra_interfaces,
-                    InterfaceChecker::getParentInterfaces($interface_name)
+                    InterfaceChecker::getParentInterfaces(
+                        $interface_name
+                    )
                 );
 
                 FileChecker::addFileInheritanceToClass($long_file_name, $interface_name);
@@ -265,28 +299,30 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        $trait_checkers = [];
-
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $this->visitClassMethod(
                     $stmt,
-                    $class_context,
-                    $method_checkers,
-                    self::$this_class && !$check_methods
+                    $class_context
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                $this->visitTraitUse($stmt, $class_context, $trait_checkers);
+                $this->visitTraitUse(
+                    $stmt,
+                    $class_context
+                );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 $this->visitPropertyDeclaration(
                     $stmt,
                     $class_context,
-                    $config,
-                    $check_methods
+                    $config
                 );
                 $leftover_stmts[] = $stmt;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-                $this->visitClassConstDeclaration($stmt, $class_context, $config);
+                $this->visitClassConstDeclaration(
+                    $stmt,
+                    $class_context,
+                    $config
+                );
                 $leftover_stmts[] = $stmt;
             }
         }
@@ -299,19 +335,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             (new StatementsChecker($this))->check($leftover_stmts, $class_context);
         }
 
-        foreach ($storage->properties as $property_name => $property) {
-            if ($property->is_static) {
-                $class_context->vars_in_scope[$this->fq_class_name . '::$' . $property_name] = $property->type
-                    ?: Type::getMixed();
-            } else {
-                $class_context->vars_in_scope['$this->' . $property_name] = $property->type ?: Type::getMixed();
-            }
-        }
-
         $config = Config::getInstance();
 
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
-            foreach (ClassChecker::getInterfacesForClass($this->fq_class_name) as $interface_id => $interface_name) {
+            foreach (ClassChecker::getInterfacesForClass(
+                $this->fq_class_name
+            ) as $interface_id => $interface_name) {
                 $interface_storage = self::$storage[$interface_name];
 
                 $storage->public_class_constants += $interface_storage->public_class_constants;
@@ -364,42 +393,64 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        if ($check_methods) {
-            foreach ($trait_checkers as $trait_checker) {
-                $trait_checker->checkMethods($class_context);
-            }
-
-            // do the method checks after all class methods have been initialised
-            foreach ($method_checkers as $method_checker) {
-                $method_checker->check(clone $class_context, null);
-
-                if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                    $secondary_return_type_location = null;
-
-                    /** @var string */
-                    $method_id = $method_checker->getMethodId();
-                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                        $method_id,
-                        $secondary_return_type_location
-                    );
-
-                    $method_checker->checkReturnTypes(
-                        $update_docblocks,
-                        MethodChecker::getMethodReturnType($method_id),
-                        $return_type_location,
-                        $secondary_return_type_location
-                    );
-                }
-            }
-        } elseif ($this instanceof TraitChecker) {
-            $this->methods = $method_checkers;
-        }
-
         if (!$this->class->name) {
             $this->class->name = $this->fq_class_name;
         }
 
         return null;
+    }
+
+    /**
+     * @param Context|null  $class_context
+     * @param Context|null  $global_context
+     * @param bool          $update_docblocks
+     * @return void
+     */
+    public function checkMethods(
+        Context $class_context = null,
+        Context $global_context = null,
+        $update_docblocks = false
+    ) {
+        $config = Config::getInstance();
+
+        $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
+
+        $storage = self::$storage[$fq_class_name];
+
+        if (!$class_context) {
+            $class_context = new Context($this->file_name, $this->fq_class_name);
+            $class_context->parent = $this->parent_class;
+        }
+
+        foreach ($storage->properties as $property_name => $property) {
+            if ($property->is_static) {
+                $class_context->vars_in_scope[$this->fq_class_name . '::$' . $property_name] = $property->type
+                    ?: Type::getMixed();
+            } else {
+                $class_context->vars_in_scope['$this->' . $property_name] = $property->type ?: Type::getMixed();
+            }
+        }
+
+        foreach ($this->method_checkers as $method_id => $method_checker) {
+            $method_checker->check(clone $class_context, null);
+
+            if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+                $secondary_return_type_location = null;
+
+                $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                    $method_id,
+                    $secondary_return_type_location
+                );
+
+                $method_checker->checkReturnTypes(
+                    $update_docblocks,
+                    MethodChecker::getMethodReturnType($method_id),
+                    $this->fq_class_name,
+                    $return_type_location,
+                    $secondary_return_type_location
+                );
+            }
+        }
     }
 
     /**
@@ -418,14 +469,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if (self::checkFullyQualifiedClassLikeName(
             $parent_class,
+            $this->getFileChecker(),
             new CodeLocation($this, $this->class->extends, true),
             $this->getSuppressedIssues()
         ) === false
         ) {
             return false;
         }
-
-        self::registerClassLike($parent_class);
 
         self::$class_extends[$this->fq_class_name] = self::$class_extends[$this->parent_class];
         self::$class_extends[$this->fq_class_name][$this->parent_class] = true;
@@ -442,6 +492,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $storage->public_class_constants = $parent_storage->public_class_constants;
         $storage->protected_class_constants = $parent_storage->protected_class_constants;
 
+        $storage->parent_classes = array_merge([$parent_class], $parent_storage->parent_classes);
+
         $storage->used_traits = $parent_storage->used_traits;
 
         FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $parent_class);
@@ -452,29 +504,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param   PhpParser\Node\Stmt\ClassMethod $stmt
      * @param   Context                         $class_context
-     * @param   array<MethodChecker>            $method_checkers
-     * @param   bool                            $cache_method_checker
      * @return  void
      */
     protected function visitClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
-        Context $class_context,
-        array &$method_checkers,
-        $cache_method_checker
+        Context $class_context
     ) {
         $method_id = $this->fq_class_name . '::' . strtolower($stmt->name);
         $storage = self::$storage[$class_context->self];
 
-        if (!isset(self::$method_checkers[$method_id])) {
-            $method_checker = new MethodChecker($stmt, $this);
-            $method_checkers[$stmt->name] = $method_checker;
-
-            if ($cache_method_checker) {
-                self::$method_checkers[$method_id] = $method_checker;
-            }
-        } else {
-            $method_checker = self::$method_checkers[$method_id];
-        }
+        $this->method_checkers[$method_id] = new MethodChecker($stmt, $this);
 
         if (!$stmt->isAbstract() && $class_context->self) {
             $implemented_method_id =
@@ -496,13 +535,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param   PhpParser\Node\Stmt\TraitUse    $stmt
      * @param   Context                         $class_context
-     * @param   array<TraitChecker>             $trait_checkers
      * @return  false|null
      */
     protected function visitTraitUse(
         PhpParser\Node\Stmt\TraitUse $stmt,
-        Context $class_context,
-        array &$trait_checkers
+        Context $class_context
     ) {
         $method_map = [];
 
@@ -521,7 +558,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $this->aliased_classes
             );
 
-            if (!TraitChecker::traitExists($trait_name)) {
+            if (!TraitChecker::traitExists($trait_name, $this->getFileChecker())) {
                 if (IssueBuffer::accepts(
                     new UndefinedTrait(
                         'Trait ' . $trait_name . ' does not exist',
@@ -546,17 +583,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     continue;
                 }
 
-                if (isset(self::$class_checkers[$trait_name])) {
-                    /** @var TraitChecker */
-                    $trait_checker = self::$class_checkers[$trait_name];
-                } else {
-                    /** @var TraitChecker */
-                    $trait_checker = FileChecker::getClassLikeCheckerFromClass($trait_name);
-                }
+                $trait_checker = self::$trait_checkers[$trait_name];
 
                 $trait_checker->setMethodMap($method_map);
 
-                $trait_checker->check(false, $class_context);
+                $trait_checker->check($class_context);
+
+                $this->method_checkers = array_merge($trait_checker->method_checkers, $this->method_checkers);
 
                 ClassLikeChecker::registerTraitUse($this->fq_class_name, $trait_name);
 
@@ -564,8 +597,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     Config::getInstance()->getBaseDir() . $this->file_name,
                     $trait_name
                 );
-
-                $trait_checkers[] = $trait_checker;
             }
         }
 
@@ -576,14 +607,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   PhpParser\Node\Stmt\Property    $stmt
      * @param   Context                         $class_context
      * @param   Config                          $config
-     * @param   bool                            $check_property_types
-     * @return  false|null
+     * @return  void
      */
     protected function visitPropertyDeclaration(
         PhpParser\Node\Stmt\Property $stmt,
         Context $class_context,
-        Config $config,
-        $check_property_types
+        Config $config
     ) {
         $comment = $stmt->getDocComment();
         $type_in_comment = null;
@@ -599,10 +628,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         new CodeLocation($this, $this->class, true)
                     )
                 )) {
-                    return false;
+                    // fall through
                 }
             }
-        } elseif (!$comment && $check_property_types) {
+        } elseif (!$comment) {
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     'Property ' . $this->fq_class_name . '::$' . $stmt->props[0]->name . ' does not have a ' .
@@ -615,7 +644,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        $property_group_type = $type_in_comment ? $type_in_comment : null;
+        $property_group_type = $type_in_comment ?: null;
 
         foreach ($stmt->props as $property) {
             if (!$property_group_type) {
@@ -692,13 +721,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function getMethodChecker($method_id)
     {
+        /**
         if (isset(self::$method_checkers[$method_id])) {
             return self::$method_checkers[$method_id];
         }
 
         MethodChecker::registerClassLikeMethod($method_id);
 
-        /** @var string */
         $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
         $declaring_class = explode('::', $declaring_method_id)[0];
 
@@ -717,55 +746,49 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
         }
+        **/
 
         throw new \InvalidArgumentException('Method checker not found');
     }
 
     /**
-     * Returns a class checker for the given class, if one has already been registered
-     *
-     * @param  string $class_name
-     * @return self|null
-     */
-    public static function getClassLikeCheckerFromClass($class_name)
-    {
-        if (isset(self::$class_checkers[$class_name])) {
-            return self::$class_checkers[$class_name];
-        }
-
-        return null;
-    }
-
-    /**
      * Check whether a class/interface exists
      *
-     * @param  string $fq_class_name
+     * @param  string       $fq_class_name
+     * @param  FileChecker  $file_checker
      * @return bool
      */
-    public static function classOrInterfaceExists($fq_class_name)
-    {
-        return ClassChecker::classExists($fq_class_name) || InterfaceChecker::interfaceExists($fq_class_name);
+    public static function classOrInterfaceExists(
+        $fq_class_name,
+        FileChecker $file_checker
+    ) {
+        return ClassChecker::classExists($fq_class_name, $file_checker) ||
+            InterfaceChecker::interfaceExists($fq_class_name, $file_checker);
     }
 
     /**
-     * @param  string $fq_class_name
-     * @param  string $possible_parent
+     * @param  string       $fq_class_name
+     * @param  string       $possible_parent
      * @return bool
      */
-    public static function classExtendsOrImplements($fq_class_name, $possible_parent)
-    {
-        return ClassChecker::classExtends($fq_class_name, $possible_parent)
-            || ClassChecker::classImplements($fq_class_name, $possible_parent);
+    public static function classExtendsOrImplements(
+        $fq_class_name,
+        $possible_parent
+    ) {
+        return ClassChecker::classExtends($fq_class_name, $possible_parent) ||
+            ClassChecker::classImplements($fq_class_name, $possible_parent);
     }
 
     /**
      * @param  string           $fq_class_name
-     * @param  CodeLocation    $code_location
+     * @param  FileChecker      $file_checker
+     * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
         $fq_class_name,
+        FileChecker $file_checker,
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
@@ -779,8 +802,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return true;
         }
 
-        $class_exists = ClassChecker::classExists($fq_class_name);
-        $interface_exists = InterfaceChecker::interfaceExists($fq_class_name);
+        $class_exists = ClassChecker::classExists($fq_class_name, $file_checker);
+        $interface_exists = InterfaceChecker::interfaceExists($fq_class_name, $file_checker);
 
         if (!$class_exists && !$interface_exists) {
             if (IssueBuffer::accepts(
@@ -796,8 +819,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        if (($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name))
-            || ($interface_exists && !InterfaceChecker::hasCorrectCasing($fq_class_name))
+        if (($class_exists &&
+            !ClassChecker::hasCorrectCasing($fq_class_name)
+            ) ||
+            ($interface_exists &&
+                !InterfaceChecker::hasCorrectCasing($fq_class_name)
+            )
         ) {
             if (IssueBuffer::accepts(
                 new InvalidClass(
@@ -937,82 +964,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param  string $class_name
-     * @return boolean
-     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
-     */
-    public static function registerClassLike($class_name)
-    {
-        if (isset(self::$storage[$class_name]) && self::$storage[$class_name]->registered) {
-            return true;
-        }
-
-        if (!$class_name || strpos($class_name, '::') !== false) {
-            throw new \InvalidArgumentException('Invalid class name ' . $class_name);
-        }
-
-        $old_level = error_reporting();
-        error_reporting(0);
-
-        try {
-            $reflected_class = new ReflectionClass($class_name);
-        } catch (\ReflectionException $e) {
-            error_reporting($old_level);
-
-            return false;
-        }
-
-        error_reporting($old_level);
-
-        if ($reflected_class->isUserDefined()) {
-            $class_file_name = (string)$reflected_class->getFileName();
-
-            $file_checker = new FileChecker($class_file_name);
-
-            $short_file_name = $file_checker->getFileName();
-
-            self::$file_classes[$class_file_name][] = $class_name;
-
-            if (!isset(self::$storage[$class_name])) {
-                self::$storage[$class_name] = new ClassLikeStorage();
-                self::$storage[$class_name]->file_path = $class_file_name;
-                self::$storage[$class_name]->file_name = $short_file_name;
-            }
-
-            $storage = self::$storage[$class_name];
-
-            // this doesn't work on traits
-            $file_checker->check(true, false);
-
-            if (self::inPropertyMap($class_name)) {
-                $public_mapped_properties = self::getPropertyMap()[strtolower($class_name)];
-
-                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
-                    $property_type = Type::parseString($public_mapped_property);
-                    $storage->properties[$property_name] = new PropertyStorage();
-                    $storage->properties[$property_name]->type = $property_type;
-                    $storage->properties[$property_name]->visibility = self::VISIBILITY_PUBLIC;
-
-                    $property_id = $class_name . '::$' . $property_name;
-
-                    $storage->declaring_property_ids[$property_name] = $property_id;
-                    $storage->appearing_property_ids[$property_name] = $property_id;
-                }
-            }
-        } else {
-            self::registerReflectedClass($reflected_class->name, $reflected_class);
-        }
-
-        return true;
-    }
-
-    /**
      * @param  string          $class_name
      * @param  ReflectionClass $reflected_class
      * @return void
      */
-    protected static function registerReflectedClass($class_name, ReflectionClass $reflected_class)
-    {
+    public static function registerReflectedClass(
+        $class_name,
+        ReflectionClass $reflected_class
+    ) {
         $class_name = $reflected_class->name;
 
         if ($class_name === 'LibXMLError') {
@@ -1037,8 +996,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             self::registerReflectedClass($parent_class_name, $reflected_parent_class);
 
             $parent_storage = self::$storage[$parent_class_name];
-
-            self::registerClassLike($parent_class_name);
 
             self::$class_extends[$class_name] = self::$class_extends[$parent_class_name];
             self::$class_extends[$class_name][$parent_class_name] = true;
@@ -1107,11 +1064,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->public_class_constants[$name] = self::getTypeFromValue($value);
         }
 
-        $storage->registered = true;
-
-        if (!$reflected_class->isTrait() && !$reflected_class->isInterface()) {
-            ClassChecker::getInterfacesForClass($class_name);
+        if ($reflected_class->isInterface()) {
+            self::$existing_interfaces_ci[strtolower($class_name)] = true;
+            self::$existing_interfaces[$class_name] = true;
         }
+
+        $storage->registered = true;
 
         $reflection_methods = $reflected_class->getMethods(
             ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
@@ -1210,8 +1168,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function getPropertiesForClass($class_name, $visibility, $is_static)
     {
-        if (self::registerClassLike($class_name) === false) {
-            return [];
+        if (!isset(self::$storage[$class_name])) {
+            throw new \UnexpectedValueException('$storage should not be null for ' . $class_name);
         }
 
         $storage = self::$storage[$class_name];
@@ -1272,8 +1230,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function getConstantsForClass($class_name, $visibility)
     {
-        if (self::registerClassLike($class_name) === false) {
-            return [];
+        if (!isset(self::$storage[$class_name])) {
+            throw new \UnexpectedValueException('$storage should not be null for ' . $class_name);
         }
 
         $storage = self::$storage[$class_name];
@@ -1335,8 +1293,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $old_property_id = null;
 
-        if (ClassLikeChecker::registerClassLike($fq_class_name) === false) {
-            return false;
+        if (!isset(self::$storage[$fq_class_name])) {
+            throw new \UnexpectedValueException(
+                'Storage not defined for ' . $property_id
+            );
         }
 
         $class_storage = self::$storage[$fq_class_name];
@@ -1433,6 +1393,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     return null;
                 }
 
+                $file_checker = $source->getFileChecker();
+
                 if (ClassChecker::classExtends($appearing_property_class, $calling_context)) {
                     return null;
                 }
@@ -1514,12 +1476,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param   string $file_name
+     * @param   string $file_path
      * @return  array<string>
      */
-    public static function getClassesForFile($file_name)
+    public static function getClassesForFile($file_path)
     {
-        return isset(self::$file_classes[$file_name]) ? array_unique(self::$file_classes[$file_name]) : [];
+        return isset(self::$file_classes[$file_path]) ? array_unique(self::$file_classes[$file_path]) : [];
     }
 
     /**
@@ -1528,7 +1490,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function isUserDefined($fq_class_name)
     {
-        self::registerClassLike($fq_class_name);
         $storage = self::$storage[$fq_class_name];
         return $storage->user_defined;
     }
@@ -1539,7 +1500,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @return array<string, array<string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      */
-    protected static function getPropertyMap()
+    public static function getPropertyMap()
     {
         if (self::$property_map !== null) {
             return self::$property_map;
@@ -1598,9 +1559,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     {
         self::$this_class = null;
 
-        self::$method_checkers = [];
-
         self::$file_classes = [];
+
+        self::$trait_checkers = [];
 
         self::$class_checkers = [];
 
@@ -1609,10 +1570,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         self::$existing_classes = [];
         self::$existing_classes_ci = [];
 
+        self::$existing_interfaces = [];
+        self::$existing_interfaces_ci = [];
+
         self::$class_extends = [];
 
         ClassChecker::clearCache();
-        InterfaceChecker::clearCache();
         TraitChecker::clearCache();
     }
 }

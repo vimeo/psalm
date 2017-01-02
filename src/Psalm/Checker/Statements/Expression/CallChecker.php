@@ -85,7 +85,8 @@ class CallChecker
 
                     $statements_checker->setConstType(
                         $const_name,
-                        isset($second_arg->value->inferredType) ? $second_arg->value->inferredType : Type::getMixed()
+                        isset($second_arg->value->inferredType) ? $second_arg->value->inferredType : Type::getMixed(),
+                        $context
                     );
                 } else {
                     $context->check_consts = false;
@@ -174,7 +175,8 @@ class CallChecker
                 $function_params = FunctionLikeChecker::getFunctionParamsById(
                     $method_id,
                     $stmt->args,
-                    $statements_checker->getFilePath()
+                    $statements_checker->getFilePath(),
+                    $statements_checker->getFileChecker()
                 );
             }
 
@@ -191,7 +193,8 @@ class CallChecker
                 $function_params = FunctionLikeChecker::getFunctionParamsById(
                     $method_id,
                     $stmt->args,
-                    $statements_checker->getFilePath()
+                    $statements_checker->getFilePath(),
+                    $statements_checker->getFileChecker()
                 );
             }
 
@@ -270,6 +273,7 @@ class CallChecker
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
+                        $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
@@ -305,7 +309,9 @@ class CallChecker
             if (MethodChecker::methodExists($fq_class_name . '::__construct')) {
                 $method_id = $fq_class_name . '::__construct';
 
-                $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args);
+                $file_checker = $statements_checker->getFileChecker();
+
+                $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
 
                 if (self::checkFunctionArguments(
                     $statements_checker,
@@ -317,7 +323,7 @@ class CallChecker
                 }
 
                 // check again after we've processed args
-                $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args);
+                $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
 
                 if (self::checkFunctionArgumentsMatch(
                     $statements_checker,
@@ -449,8 +455,11 @@ class CallChecker
             if (($this_class = ClassLikeChecker::getThisClass()) &&
                 (
                     $this_class === $statements_checker->getFQCLN() ||
-                    ClassChecker::classExtends($this_class, $statements_checker->getFQCLN()) ||
-                    TraitChecker::traitExists($statements_checker->getFQCLN())
+                    ClassChecker::classExtends(
+                        $this_class,
+                        $statements_checker->getFQCLN()
+                    ) ||
+                    TraitChecker::traitExists($statements_checker->getFQCLN(), $statements_checker->getFileChecker())
                 )
             ) {
                 $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
@@ -525,8 +534,7 @@ class CallChecker
                         // fall through to default
 
                     default:
-                        if (MethodChecker::methodExists($fq_class_name . '::__call') ||
-                            $is_mock ||
+                        if ($is_mock ||
                             $context->isPhantomClass($fq_class_name)
                         ) {
                             $return_type = Type::getMixed();
@@ -535,12 +543,18 @@ class CallChecker
 
                         $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                             $fq_class_name,
+                            $statements_checker->getFileChecker(),
                             new CodeLocation($statements_checker->getSource(), $stmt->var),
                             $statements_checker->getSuppressedIssues()
                         );
 
                         if (!$does_class_exist) {
                             return $does_class_exist;
+                        }
+
+                        if (MethodChecker::methodExists($fq_class_name . '::__call')) {
+                            $return_type = Type::getMixed();
+                            continue;
                         }
 
                         $method_id = $fq_class_name . '::' . strtolower($stmt->name);
@@ -602,7 +616,9 @@ class CallChecker
             $stmt->inferredType = $return_type;
         }
 
-        $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
+        $method_params = $method_id
+            ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $statements_checker->getFileChecker())
+            : null;
 
         if (self::checkFunctionArguments(
             $statements_checker,
@@ -614,7 +630,9 @@ class CallChecker
         }
 
         // check again after we've processed args
-        $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
+        $method_params = $method_id
+            ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $statements_checker->getFileChecker())
+            : null;
 
         if (self::checkFunctionArgumentsMatch(
             $statements_checker,
@@ -654,6 +672,8 @@ class CallChecker
         $fq_class_name = null;
 
         $lhs_type = null;
+
+        $file_checker = $statements_checker->getFileChecker();
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
@@ -699,6 +719,7 @@ class CallChecker
 
                 $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
+                    $file_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
                     $statements_checker->getSuppressedIssues()
                 );
@@ -815,7 +836,9 @@ class CallChecker
                 }
             }
 
-            $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
+            $method_params = $method_id
+                ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker)
+                : null;
 
             if (self::checkFunctionArguments(
                 $statements_checker,
@@ -827,7 +850,9 @@ class CallChecker
             }
 
             // get them again
-            $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
+            $method_params = $method_id
+                ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker)
+                : null;
 
             if (self::checkFunctionArgumentsMatch(
                 $statements_checker,
@@ -1167,6 +1192,7 @@ class CallChecker
                     $type_match_found = TypeChecker::isContainedBy(
                         $input_type,
                         $closure_param_type,
+                        $statements_checker->getFileChecker(),
                         false,
                         $scalar_type_match_found,
                         $coerced_type
@@ -1265,6 +1291,7 @@ class CallChecker
         $type_match_found = TypeChecker::isContainedBy(
             $input_type,
             $param_type,
+            $statements_checker->getFileChecker(),
             true,
             $scalar_type_match_found,
             $coerced_type,

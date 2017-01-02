@@ -20,6 +20,11 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     protected $namespace_name;
 
     /**
+     * @var array<int, ClassChecker>
+     */
+    protected $class_checkers = [];
+
+    /**
      * A lookup table for public namespace constants
      *
      * @var array<string, array<string, Type\Union>>
@@ -32,6 +37,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
      */
     public function __construct(Namespace_ $namespace, StatementsSource $source)
     {
+        $this->source = $source;
         $this->namespace = $namespace;
         $this->namespace_name = $this->namespace->name ? implode('\\', $this->namespace->name->parts) : '';
         $this->file_name = $source->getFileName();
@@ -42,12 +48,9 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param   bool    $check_classes
-     * @param   bool    $check_class_statements
-     * @param   bool    $update_docblocks
      * @return  void
      */
-    public function check($check_classes = true, $check_class_statements = true, $update_docblocks = false)
+    public function visit()
     {
         $leftover_stmts = [];
 
@@ -55,9 +58,11 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         $classlike_checkers = [];
 
+        $namespace_context = new Context($this->file_name);
+
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
-                $this->visitClassLike($stmt, $check_classes, $classlike_checkers);
+                $this->visitClassLike($stmt, $classlike_checkers);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
@@ -66,39 +71,51 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
                 foreach ($stmt->consts as $const) {
                     self::$public_namespace_constants[$this->namespace_name][$const->name] = Type::getMixed();
                 }
+
                 $leftover_stmts[] = $stmt;
             } else {
                 $leftover_stmts[] = $stmt;
             }
         }
 
-        // defer checking of classes
-        if ($check_classes) {
-            foreach ($classlike_checkers as $classlike_checker) {
-                if ($classlike_checker instanceof ClassChecker) {
-                    $classlike_checker->check($check_class_statements, null, $update_docblocks);
-                } elseif ($classlike_checker instanceof InterfaceChecker) {
-                    $classlike_checker->check(false);
-                }
+        $this->class_checkers = [];
+
+        foreach ($classlike_checkers as $classlike_checker) {
+            if ($classlike_checker instanceof ClassChecker) {
+                $classlike_checker->check(null, null);
+                $this->class_checkers[] = $classlike_checker;
+            } elseif ($classlike_checker instanceof InterfaceChecker) {
+                $classlike_checker->check();
             }
         }
 
         if ($leftover_stmts) {
-            $statments_checker = new StatementsChecker($this);
+            $statements_checker = new StatementsChecker($this);
             $context = new Context($this->file_name);
-            $statments_checker->check($leftover_stmts, $context);
+            $statements_checker->check($leftover_stmts, $context);
         }
     }
 
     /**
+     * @param  Context $context
+     * @return void
+     */
+    public function checkMethods(Context $context)
+    {
+        foreach ($this->class_checkers as $class_checker) {
+            $class_checker->checkMethods(null, $context);
+        }
+
+        $this->class_checkers = [];
+    }
+
+    /**
      * @param  PhpParser\Node\Stmt\ClassLike $stmt
-     * @param  bool                          $check_classes
      * @param  array<ClassLikeChecker>       $classlike_checkers
      * @return void
      */
     public function visitClassLike(
         PhpParser\Node\Stmt\ClassLike $stmt,
-        $check_classes,
         array &$classlike_checkers
     ) {
         if (!$stmt->name) {
@@ -108,24 +125,12 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this->namespace_name, []);
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-            $this->declared_classes[$fq_class_name] = true;
-
-            if ($check_classes) {
-                $classlike_checkers[] = ClassLikeChecker::getClassLikeCheckerFromClass($fq_class_name)
-                    ?: new ClassChecker($stmt, $this, $fq_class_name);
-            }
+            $classlike_checkers[] = new ClassChecker($stmt, $this, $fq_class_name);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
-            if ($check_classes) {
-                $class_checker = $classlike_checkers[] = ClassLikeChecker::getClassLikeCheckerFromClass($stmt->name)
-                    ?: new InterfaceChecker($stmt, $this, $fq_class_name);
-                $this->declared_classes[$class_checker->getFQCLN()] = true;
-            }
+            $classlike_checkers[] = new InterfaceChecker($stmt, $this, $fq_class_name);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-            if ($check_classes) {
-                // register the trait checker
-                ClassLikeChecker::getClassLikeCheckerFromClass($fq_class_name)
-                    ?: new TraitChecker($stmt, $this, $fq_class_name);
-            }
+            // register the trait checker
+            new TraitChecker($stmt, $this, $fq_class_name);
         }
     }
 

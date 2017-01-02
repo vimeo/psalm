@@ -102,6 +102,7 @@ class IfChecker
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
                     $changed_vars,
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->cond),
                     $statements_checker->getSuppressedIssues()
                 );
@@ -136,6 +137,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -289,6 +291,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $outer_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -371,6 +374,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -430,6 +434,7 @@ class IfChecker
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -598,6 +603,7 @@ class IfChecker
                 $else_types,
                 $else_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $else),
                 $statements_checker->getSuppressedIssues()
             );

@@ -43,8 +43,6 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getMethodParams($method_id)
     {
-        self::registerClassLikeMethod($method_id);
-
         if ($method_id = self::getDeclaringMethodId($method_id)) {
             $storage = self::getStorage($method_id);
 
@@ -60,8 +58,6 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function isVariadic($method_id)
     {
-        self::registerClassLikeMethod($method_id);
-
         $method_id = (string)self::getDeclaringMethodId($method_id);
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
@@ -118,8 +114,6 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getMethodReturnTypeLocation($method_id, CodeLocation &$defined_location = null)
     {
-        self::registerClassLikeMethod($method_id);
-
         /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
 
@@ -225,8 +219,6 @@ class MethodChecker extends FunctionLikeChecker
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        self::registerClassLikeMethod($method_id);
-
         /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
 
@@ -355,14 +347,26 @@ class MethodChecker extends FunctionLikeChecker
                 $parser_return_type = $parser_return_type->type;
             }
 
-            $return_type_string = (is_string($parser_return_type)
-                ? $parser_return_type
-                : ClassLikeChecker::getFQCLNFromNameObject(
+            if (is_string($parser_return_type)) {
+                $return_type_string = $parser_return_type . $suffix;
+            } else {
+                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $parser_return_type,
                     $this->namespace,
                     $this->getAliasedClasses()
-                )
-            ) . $suffix;
+                );
+
+                if ($fq_class_name !== 'self') {
+                    ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $fq_class_name,
+                        $this->getFileChecker(),
+                        new CodeLocation($this, $parser_return_type),
+                        $this->suppressed_issues
+                    );
+                }
+
+                $return_type_string = $fq_class_name . $suffix;
+            }
 
             $return_type = Type::parseString($return_type_string);
 
@@ -412,7 +416,13 @@ class MethodChecker extends FunctionLikeChecker
                             $return_type_location = new CodeLocation($this->getSource(), $method, true);
                         }
 
-                        if ($return_type && !TypeChecker::hasIdenticalTypes($return_type, $docblock_return_type)) {
+                        if ($return_type &&
+                            !TypeChecker::hasIdenticalTypes(
+                                $return_type,
+                                $docblock_return_type,
+                                $this->getFileChecker()
+                            )
+                        ) {
                             if (IssueBuffer::accepts(
                                 new InvalidDocblock(
                                     'Docblock return type does not match method return type for ' . $this->getMethodId(),
@@ -488,10 +498,12 @@ class MethodChecker extends FunctionLikeChecker
                     continue;
                 }
 
-                $return_type_token = FileChecker::getFQCLNFromNameInFile(
+                $class_storage = ClassLikeChecker::$storage[$return_type_token];
+
+                $return_type_token = ClassLikeChecker::getFQCLNFromString(
                     $return_type_token,
-                    $storage->namespace,
-                    $storage->file_name
+                    $class_storage->namespace,
+                    $class_storage->aliased_classes
                 );
             }
         }
@@ -531,27 +543,27 @@ class MethodChecker extends FunctionLikeChecker
     {
         // remove trailing backslash if it exists
         $method_id = preg_replace('/^\\\\/', '', $method_id);
-        $method_parts = explode('::', $method_id);
-        $method_parts[1] = strtolower($method_parts[1]);
-        $method_id = implode('::', $method_parts);
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+        $method_name = strtolower($method_name);
+        $method_id = $fq_class_name . '::' . $method_name;
 
         $old_method_id = null;
 
-        if (ClassLikeChecker::registerClassLike($method_parts[0]) === false) {
-            return false;
+        if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
+            throw new \UnexpectedValueException('Storage should exist for ' . $fq_class_name);
         }
 
-        $class_storage = ClassLikeChecker::$storage[$method_parts[0]];
+        $class_storage = ClassLikeChecker::$storage[$fq_class_name];
 
-        if (isset($class_storage->declaring_method_ids[$method_parts[1]])) {
+        if (isset($class_storage->declaring_method_ids[$method_name])) {
             return true;
         }
 
         // support checking oldstyle constructors
-        if ($method_parts[1] === '__construct') {
-            $method_part_parts = explode('\\', $method_parts[0]);
-            $old_constructor_name = array_pop($method_part_parts);
-            $old_method_id = $method_parts[0] . '::' . $old_constructor_name;
+        if ($method_name === '__construct') {
+            $method_name_parts = explode('\\', $fq_class_name);
+            $old_constructor_name = array_pop($method_name_parts);
+            $old_method_id = $fq_class_name . '::' . $old_constructor_name;
         }
 
         if (FunctionChecker::inCallMap($method_id) || ($old_method_id && FunctionChecker::inCallMap($method_id))) {
@@ -563,22 +575,11 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
-     * @return void
-     */
-    public static function registerClassLikeMethod($method_id)
-    {
-        ClassLikeChecker::registerClassLike(explode('::', $method_id)[0]);
-    }
-
-    /**
-     * @param  string $method_id
      * @return MethodStorage|null
      */
     public static function getStorage($method_id)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
-
-        ClassLikeChecker::registerClassLike($fq_class_name);
 
         $class_storage = ClassLikeChecker::$storage[$fq_class_name];
 
@@ -634,8 +635,6 @@ class MethodChecker extends FunctionLikeChecker
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        self::registerClassLikeMethod($method_id);
-
         $declaring_method_id = self::getDeclaringMethodId($method_id);
         $appearing_method_id = self::getAppearingMethodId($method_id);
 
@@ -696,6 +695,8 @@ class MethodChecker extends FunctionLikeChecker
 
                     return null;
                 }
+
+                $file_checker = $source->getFileChecker();
 
                 if (ClassChecker::classExtends($appearing_method_class, $calling_context)) {
                     return null;

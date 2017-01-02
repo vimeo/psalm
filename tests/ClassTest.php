@@ -12,6 +12,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,7 @@ class ClassTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     /**
@@ -34,9 +38,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         (new Foo());
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -50,9 +54,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         (new foo());
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -65,9 +69,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         echo $this;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -80,9 +84,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $this = "hello";
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -95,9 +99,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         echo HELLO;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     /**
@@ -111,9 +115,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         echo A::HELLO;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
     }
 
     public function testSingleFileInheritance()
@@ -132,8 +136,71 @@ class ClassTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndCheckMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidParent
+     */
+    public function testInheritanceLoopOne()
+    {
+        $this->markTestSkipped('A bug');
+        $stmts = self::$parser->parse('<?php
+        class C extends C {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndCheckMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidParent
+     */
+    public function testInheritanceLoopTwo()
+    {
+        $this->markTestSkipped('A bug');
+        $stmts = self::$parser->parse('<?php
+        class E extends F {}
+        class F extends E {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndCheckMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidParent
+     */
+    public function testInheritanceLoopThree()
+    {
+        $this->markTestSkipped('A bug');
+        $stmts = self::$parser->parse('<?php
+        class G extends H {}
+        class H extends I {}
+        class I extends G {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndCheckMethods($context);
+    }
+
+    public function testConstSandwich()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A { const B = 42;}
+        $a = A::B;
+        class C {}
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndCheckMethods($context);
     }
 }

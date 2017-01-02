@@ -37,6 +37,16 @@ class ClassLikeStorage
     public $reflected = false;
 
     /**
+     * @var string;
+     */
+    public $namespace;
+
+    /**
+     * @var array<string, string>
+     */
+    public $aliased_classes;
+
+    /**
      * Is this class user-defined
      *
      * @var bool
@@ -56,6 +66,13 @@ class ClassLikeStorage
      * @var  array<string>
      */
     public $parent_interfaces = [];
+
+    /**
+     * Parent interfaces
+     *
+     * @var  array<string>
+     */
+    public $parent_classes = [];
 
     /**
      * @var string

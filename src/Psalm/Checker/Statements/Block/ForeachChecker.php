@@ -132,7 +132,10 @@ class ForeachChecker
                         break;
 
                     default:
-                        if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
+                        if (ClassChecker::classImplements(
+                            $return_type->value,
+                            'Iterator'
+                        )) {
                             $iterator_method = $return_type->value . '::current';
                             $iterator_class_type = MethodChecker::getMethodReturnType($iterator_method);
 
@@ -159,6 +162,7 @@ class ForeachChecker
                         ) {
                             if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                 $return_type->value,
+                                $statements_checker->getFileChecker(),
                                 new CodeLocation($statements_checker->getSource(), $stmt->expr),
                                 $statements_checker->getSuppressedIssues()
                             ) === false) {
