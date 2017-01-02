@@ -12,6 +12,7 @@ use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
+use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
@@ -225,6 +226,19 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 );
 
                 $function_params[] = $param_array;
+
+                if (isset($function_param_names[$param->name])) {
+                    if (IssueBuffer::accepts(
+                        new DuplicateParam(
+                            'Duplicate param $' . $param->name . ' in closure docblock',
+                            new CodeLocation($this, $param, true)
+                        ),
+                        $this->suppressed_issues
+                    )) {
+                        return false;
+                    }
+                }
+
                 $function_param_names[$param->name] = $param_array->type;
             }
 

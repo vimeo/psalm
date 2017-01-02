@@ -7,6 +7,7 @@ use Psalm\Config;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
+use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
@@ -210,6 +211,19 @@ class FunctionChecker extends FunctionLikeChecker
             );
 
             $storage->params[] = $param_array;
+
+            if (isset($function_param_names[$param->name])) {
+                if (IssueBuffer::accepts(
+                    new DuplicateParam(
+                        'Duplicate param $' . $param->name . ' in docblock for ' . $this->function->name,
+                        new CodeLocation($this, $param, true)
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
+
             $function_param_names[$param->name] = $param_array->type;
         }
 

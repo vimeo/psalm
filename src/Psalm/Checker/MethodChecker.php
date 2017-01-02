@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\DeprecatedMethod;
+use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidStaticInvocation;
@@ -320,6 +321,19 @@ class MethodChecker extends FunctionLikeChecker
             );
 
             $storage->params[] = $param_array;
+
+            if (isset($function_param_names[$param->name])) {
+                if (IssueBuffer::accepts(
+                    new DuplicateParam(
+                        'Duplicate param $' . $param->name . ' in docblock for ' . $cased_method_id,
+                        new CodeLocation($this, $param, true)
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
+
             $method_param_names[$param->name] = $param_array->type;
         }
 
