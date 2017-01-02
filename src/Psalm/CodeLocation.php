@@ -131,10 +131,14 @@ class CodeLocation
                 $preview_offset += strlen($preview_lines[$i]) + 1;
             }
 
-            $preview_offset += (int)strpos($preview_lines[$i], '@');
+            $key_line = $preview_lines[$i];
 
-            $this->selection_start = $preview_offset + $this->preview_start;
-            $this->selection_end = (int)strpos($file_contents, "\n", $this->selection_start);
+            $indentation = (int)strpos($key_line, '@');
+
+            $key_line = trim(preg_replace('@\**/\s*@', '', substr($key_line, $indentation)));
+
+            $this->selection_start = $preview_offset + $indentation + $this->preview_start;
+            $this->selection_end = $this->selection_start + strlen($key_line);
         } elseif ($this->regex) {
             $preview_snippet = substr(
                 $file_contents,

@@ -31,9 +31,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     public function testJsonOutputForReturnTypeError()
     {
         $file_contents = '<?php
-function fooFoo(int $a) : string {
-    return $a + 1;
-}';
+        function fooFoo(int $a) : string {
+            return $a + 1;
+        }';
 
         $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
         $project_checker->registerFile(
@@ -57,9 +57,9 @@ function fooFoo(int $a) : string {
     public function testJsonOutputForUndefinedVar()
     {
         $file_contents = '<?php
-function fooFoo(int $a) : int {
-    return $b + 1;
-}';
+        function fooFoo(int $a) : int {
+            return $b + 1;
+        }';
 
         $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
         $project_checker->registerFile(
@@ -83,9 +83,9 @@ function fooFoo(int $a) : int {
     public function testJsonOutputForUnknownParamClass()
     {
         $file_contents = '<?php
-function fooFoo(Badger\Bodger $a) : Badger\Bodger {
-    return $a;
-}';
+        function fooFoo(Badger\Bodger $a) : Badger\Bodger {
+            return $a;
+        }';
 
         $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
         $project_checker->registerFile(
@@ -109,9 +109,9 @@ function fooFoo(Badger\Bodger $a) : Badger\Bodger {
     public function testJsonOutputForMissingReturnType()
     {
         $file_contents = '<?php
-function fooFoo() {
-    return "hello";
-}';
+        function fooFoo() {
+            return "hello";
+        }';
 
         $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
         $project_checker->registerFile(
@@ -128,6 +128,62 @@ function fooFoo() {
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
             'function fooFoo() {',
+            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
+        );
+    }
+
+    public function testJsonOutputForWrongMultilineReturnType()
+    {
+        $file_contents = '<?php
+        /**
+         * @return int
+         */
+        function fooFoo() {
+            return "hello";
+        }';
+
+        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
+        $project_checker->registerFile(
+            'somefile.php',
+            $file_contents
+        );
+
+        $file_checker = new FileChecker('somefile.php');
+        $file_checker->check();
+        $issue_data = IssueBuffer::getIssueData()[0];
+        $this->assertSame('somefile.php', $issue_data['file_path']);
+        $this->assertSame('error', $issue_data['type']);
+        $this->assertSame('The given return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
+        $this->assertSame(3, $issue_data['line_number']);
+        $this->assertSame(
+            '@return int',
+            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
+        );
+    }
+
+    public function testJsonOutputForWrongSingleLineReturnType()
+    {
+        $file_contents = '<?php
+        /** @return int */
+        function fooFoo() {
+            return "hello";
+        }';
+
+        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
+        $project_checker->registerFile(
+            'somefile.php',
+            $file_contents
+        );
+
+        $file_checker = new FileChecker('somefile.php');
+        $file_checker->check();
+        $issue_data = IssueBuffer::getIssueData()[0];
+        $this->assertSame('somefile.php', $issue_data['file_path']);
+        $this->assertSame('error', $issue_data['type']);
+        $this->assertSame('The given return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
+        $this->assertSame(2, $issue_data['line_number']);
+        $this->assertSame(
+            '@return int',
             substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
         );
     }

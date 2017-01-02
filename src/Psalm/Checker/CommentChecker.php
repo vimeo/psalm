@@ -222,16 +222,12 @@ class CommentChecker
         $docblock = trim($docblock);
         $docblock = preg_replace('@^/\*\*@', '', $docblock);
         $docblock = preg_replace('@\*/$@', '', $docblock);
-        $docblock = preg_replace('@^\s*\*@m', '', $docblock);
+        $docblock = preg_replace('@^[ \t]*\*@m', '', $docblock);
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
 
         $line_map = [];
-
-        if ($line_number) {
-            $line_number++;
-        }
 
         /** @var int|false */
         $last = false;
@@ -241,7 +237,7 @@ class CommentChecker
             } elseif (preg_match('/^\s*$/', $line)) {
                 $last = false;
             } elseif ($last !== false) {
-                $lines[$last] = rtrim($lines[$last]).' '.trim($line);
+                $lines[$last] = rtrim($lines[$last]) .' '. trim($line);
                 unset($lines[$k]);
             }
 
