@@ -440,4 +440,17 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->check(true, true, $context);
     }
+
+    public function testGrandparentReflectedProperties()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = new DOMElement("foo");
+        $owner = $a->ownerDocument;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+        $this->assertEquals('DOMDocument', (string) $context->vars_in_scope['$owner']);
+    }
 }

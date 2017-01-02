@@ -260,7 +260,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 if ($this instanceof ClassChecker) {
                     $storage->class_implements[strtolower($extra_interface_name)] = $extra_interface_name;
                 } else {
-                    $this->registerInheritedMethods($extra_interface_name);
+                    $this->registerInheritedMethods($this->fq_class_name, $extra_interface_name);
                 }
             }
         }
@@ -430,14 +430,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         self::$class_extends[$this->fq_class_name] = self::$class_extends[$this->parent_class];
         self::$class_extends[$this->fq_class_name][$this->parent_class] = true;
 
-        $this->registerInheritedMethods($parent_class);
-        $this->registerInheritedProperties($parent_class);
+        $this->registerInheritedMethods($this->fq_class_name, $parent_class);
+        $this->registerInheritedProperties($this->fq_class_name, $parent_class);
 
         $storage = self::$storage[$this->fq_class_name];
 
         $parent_storage = self::$storage[$parent_class];
-
-        FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $parent_class);
 
         $storage->class_implements += $parent_storage->class_implements;
 
@@ -445,6 +443,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $storage->protected_class_constants = $parent_storage->protected_class_constants;
 
         $storage->used_traits = $parent_storage->used_traits;
+
+        FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $parent_class);
 
         return null;
     }
@@ -1000,7 +1000,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
         } else {
-            self::registerReflectedClass($class_name, $reflected_class);
+            self::registerReflectedClass($reflected_class->name, $reflected_class);
         }
 
         return true;
@@ -1013,30 +1013,45 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected static function registerReflectedClass($class_name, ReflectionClass $reflected_class)
     {
+        $class_name = $reflected_class->name;
+
+        if ($class_name === 'LibXMLError') {
+            $class_name = 'libXMLError';
+        }
+
         if (isset(self::$storage[$class_name]) && self::$storage[$class_name]->reflected) {
             return;
         }
 
-        $parent_class = $reflected_class->getParentClass();
+        $reflected_parent_class = $reflected_class->getParentClass();
 
-        $cased_name = $reflected_class->getName();
-
-        if ($cased_name === 'LibXMLError') {
-            $cased_name = 'libXMLError';
-        }
-
-        $storage = self::$storage[$cased_name] = new ClassLikeStorage();
+        $storage = self::$storage[$class_name] = new ClassLikeStorage();
 
         self::$existing_classes_ci[strtolower($class_name)] = true;
-        self::$existing_classes[$cased_name] = true;
+        self::$existing_classes[$class_name] = true;
 
-        self::$class_extends[$cased_name] = [];
+        self::$class_extends[$class_name] = [];
 
-        if ($parent_class) {
-            $parent_class_name = $parent_class->getName();
-            self::registerReflectedClass($parent_class_name, $parent_class);
+        if ($reflected_parent_class) {
+            $parent_class_name = $reflected_parent_class->getName();
+            self::registerReflectedClass($parent_class_name, $reflected_parent_class);
 
             $parent_storage = self::$storage[$parent_class_name];
+
+            self::registerClassLike($parent_class_name);
+
+            self::$class_extends[$class_name] = self::$class_extends[$parent_class_name];
+            self::$class_extends[$class_name][$parent_class_name] = true;
+
+            self::registerInheritedMethods($class_name, $parent_class_name);
+            self::registerInheritedProperties($class_name, $parent_class_name);
+
+            $storage->class_implements = $parent_storage->class_implements;
+
+            $storage->public_class_constants = $parent_storage->public_class_constants;
+            $storage->protected_class_constants = $parent_storage->protected_class_constants;
+
+            $storage->used_traits = $parent_storage->used_traits;
         }
 
         $class_properties = $reflected_class->getProperties();
@@ -1076,7 +1091,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $storage->properties[$property_name] = new PropertyStorage();
                 $storage->properties[$property_name]->visibility = self::VISIBILITY_PUBLIC;
 
-                $property_id = $cased_name . '::$' . $property_name;
+                $property_id = $class_name . '::$' . $property_name;
 
                 $storage->declaring_property_ids[$property_name] = $property_id;
                 $storage->appearing_property_ids[$property_name] = $property_id;
@@ -1132,13 +1147,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
+     * @param string $fq_class_name
      * @param string $parent_class
      * @return void
      */
-    protected function registerInheritedMethods($parent_class)
+    protected static function registerInheritedMethods($fq_class_name, $parent_class)
     {
         $parent_storage = self::$storage[$parent_class];
-        $storage = self::$storage[$this->fq_class_name];
+        $storage = self::$storage[$fq_class_name];
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
@@ -1146,7 +1162,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             /** @var string */
             $appearing_method_id = MethodChecker::getAppearingMethodId($parent_method_id);
-            $implemented_method_id = $this->fq_class_name . '::' . $method_name;
+            $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->appearing_method_ids[$method_name] = $appearing_method_id;
         }
@@ -1157,7 +1173,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             /** @var string */
             $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
-            $implemented_method_id = $this->fq_class_name . '::' . $method_name;
+            $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
 
@@ -1166,13 +1182,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
+     * @param string $fq_class_name
      * @param string $parent_class
      * @return void
      */
-    protected function registerInheritedProperties($parent_class)
+    protected static function registerInheritedProperties($fq_class_name, $parent_class)
     {
         $parent_storage = self::$storage[$parent_class];
-        $storage = self::$storage[$this->fq_class_name];
+        $storage = self::$storage[$fq_class_name];
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
