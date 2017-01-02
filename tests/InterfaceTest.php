@@ -243,15 +243,11 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
     }
 
-    public function testInterfaceMethodImplementedInParentAndTrait()
+    public function testInterfaceMethodImplementedInParent()
     {
         $stmts = self::$parser->parse('<?php
         interface MyInterface {
             public function fooFoo(int $a) : void;
-        }
-
-        trait T {
-
         }
 
         class B {
@@ -260,9 +256,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
             }
         }
 
-        class C extends B implements MyInterface {
-            use T;
-        }
+        class C extends B implements MyInterface { }
         ?>
         ');
 

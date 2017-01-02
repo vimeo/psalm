@@ -139,7 +139,7 @@ class FetchChecker
         if ($stmt_var_type->isNullable()) {
             if (IssueBuffer::accepts(
                 new NullPropertyFetch(
-                    'Cannot get property on possibly null variable ' . $stmt_var_id,
+                    'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
                     new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
                 $statements_checker->getSuppressedIssues()
@@ -223,48 +223,13 @@ class FetchChecker
                 continue;
             }
 
-            if ($var_name === 'this'
-                || $lhs_type_part->value === $context->self
-                || (
-                    $statements_checker->getSource()->getSource() instanceof TraitChecker &&
-                    $lhs_type_part->value === $statements_checker->getSource()->getFQCLN()
-                )
-            ) {
-                $class_visibility = \ReflectionProperty::IS_PRIVATE;
-            } elseif ($context->self && ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
-                $class_visibility = \ReflectionProperty::IS_PROTECTED;
-            } else {
-                $class_visibility = \ReflectionProperty::IS_PUBLIC;
-            }
+            $property_id = $lhs_type_part->value . '::$' . $stmt->name;
 
-            $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
-                $lhs_type_part->value,
-                $class_visibility
-            );
-
-            if (!$class_properties || !isset($class_properties[$stmt->name])) {
-                $stmt->inferredType = Type::getMixed();
-
-                $all_class_properties = ClassLikeChecker::getInstancePropertiesForClass(
-                    $lhs_type_part->value,
-                    \ReflectionProperty::IS_PRIVATE
-                );
-
-                if ($var_id) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                }
-
-                if ($all_class_properties && isset($all_class_properties[$stmt->name])) {
-                    IssueBuffer::add(
-                        new InaccessibleProperty(
-                            'Property ' . $var_id . ' is not visible in this context',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
-                } elseif ($stmt_var_id === '$this') {
+            if (!ClassLikeChecker::propertyExists($property_id)) {
+                if ($stmt_var_id === '$this') {
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
-                            'Instance property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
+                            'Instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -274,7 +239,7 @@ class FetchChecker
                 } else {
                     if (IssueBuffer::accepts(
                         new UndefinedPropertyFetch(
-                            'Instance property ' . $lhs_type_part->value .'::$' . $stmt->name . ' is not defined',
+                            'Instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -283,10 +248,24 @@ class FetchChecker
                     }
                 }
 
-                return null;
+                return;
             }
 
-            $class_property_type = $class_properties[$stmt->name];
+            if (ClassLikeChecker::checkPropertyVisibility(
+                $property_id,
+                $context->self,
+                $statements_checker->getSource(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
+                $statements_checker->getSuppressedIssues()
+            ) === false) {
+                return false;
+            }
+
+            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
+
+            $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+
+            $class_property_type = $property_storage->type;
 
             if ($class_property_type === false) {
                 if (IssueBuffer::accepts(
@@ -569,57 +548,40 @@ class FetchChecker
                 return null;
             }
 
-            if ($fq_class_name === $context->self
-                || (
-                    $statements_checker->getSource()->getSource() instanceof TraitChecker &&
-                    $fq_class_name === $statements_checker->getSource()->getFQCLN()
-                )
-            ) {
-                $class_visibility = \ReflectionProperty::IS_PRIVATE;
-            } elseif ($context->self && ClassChecker::classExtends($context->self, $fq_class_name)) {
-                $class_visibility = \ReflectionProperty::IS_PROTECTED;
-            } else {
-                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+            $property_id = $fq_class_name . '::$' . $stmt->name;
+
+            if (!ClassLikeChecker::propertyExists($property_id)) {
+                if (IssueBuffer::accepts(
+                    new UndefinedPropertyFetch(
+                        'Static property ' . $property_id . ' is not defined',
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                return;
             }
 
-            $visible_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-                $fq_class_name,
-                $class_visibility
-            );
-
-            if (!isset($visible_class_properties[$stmt->name])) {
-                $all_class_properties = [];
-
-                if ($fq_class_name !== $context->self) {
-                    $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-                        $fq_class_name,
-                        \ReflectionProperty::IS_PRIVATE
-                    );
-                }
-
-                if ($all_class_properties && isset($all_class_properties[$stmt->name])) {
-                    IssueBuffer::add(
-                        new InaccessibleProperty(
-                            'Static property ' . $var_id . ' is not visible in this context',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
-                } else {
-                    IssueBuffer::add(
-                        new UndefinedPropertyFetch(
-                            'Static property ' . $var_id . ' does not exist',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
-                }
-
+            if (ClassLikeChecker::checkPropertyVisibility(
+                $property_id,
+                $context->self,
+                $statements_checker->getSource(),
+                new CodeLocation($statements_checker->getSource(), $stmt),
+                $statements_checker->getSuppressedIssues()
+            ) === false) {
                 return false;
             }
 
-            $visible_class_property = $visible_class_properties[$stmt->name];
+            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+                $fq_class_name . '::$' . $stmt->name
+            );
 
-            $context->vars_in_scope[$var_id] = $visible_class_property
-                ? clone $visible_class_property
+            $property = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+
+            $context->vars_in_scope[$var_id] = $property->type
+                ? clone $property->type
                 : Type::getMixed();
 
             $stmt->inferredType = clone $context->vars_in_scope[$var_id];

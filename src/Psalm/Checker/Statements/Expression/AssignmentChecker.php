@@ -322,12 +322,17 @@ class AssignmentChecker
                 return null;
             }
 
-            $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
-                $context->self,
-                \ReflectionProperty::IS_PRIVATE
-            );
+            $property_id = $context->self . '::$' . $prop_name;
 
-            $class_property_type = $class_properties[$prop_name];
+            if (!ClassLikeChecker::propertyExists($property_id)) {
+                return null;
+            }
+
+            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
+
+            $class_storage = ClassLikeChecker::$storage[$declaring_property_class];
+
+            $class_property_type = $class_storage->properties[$prop_name]->type;
 
             $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
 
@@ -442,12 +447,18 @@ class AssignmentChecker
                         ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode']
                     )
                 ) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    if (strtolower($lhs_type_part->value) === 'stdclass') {
+                        $context->vars_in_scope[$var_id] = $assignment_value_type;
+                    } else {
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                    }
+
                     return null;
                 }
 
                 if (ExpressionChecker::isMock($lhs_type_part->value)) {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
+
                     return null;
                 }
 
@@ -489,16 +500,13 @@ class AssignmentChecker
                     return null;
                 }
 
-                $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
-                    $lhs_type_part->value,
-                    $class_visibility
-                );
+                $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
-                if (!isset($class_properties[$prop_name])) {
+                if (!ClassLikeChecker::propertyExists($property_id)) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
-                                'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
+                                'Instance property ' . $property_id . ' is not defined',
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
@@ -508,7 +516,7 @@ class AssignmentChecker
                     } else {
                         if (IssueBuffer::accepts(
                             new UndefinedPropertyAssignment(
-                                'Instance property ' . $lhs_type_part->value . '::$' . $prop_name . ' is not defined',
+                                'Instance property ' . $property_id . ' is not defined',
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
@@ -520,7 +528,23 @@ class AssignmentChecker
                     continue;
                 }
 
-                $class_property_type = $class_properties[$prop_name];
+                if (ClassLikeChecker::checkPropertyVisibility(
+                    $property_id,
+                    $context->self,
+                    $statements_checker->getSource(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    $statements_checker->getSuppressedIssues()
+                ) === false) {
+                    return false;
+                }
+
+                $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+                    $lhs_type_part->value . '::$' . $prop_name
+                );
+
+                $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+
+                $class_property_type = $property_storage->type;
 
                 if ($class_property_type === false) {
                     if (IssueBuffer::accepts(
@@ -638,36 +662,19 @@ class AssignmentChecker
             $class_visibility = \ReflectionProperty::IS_PUBLIC;
         }
 
-        $class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-            $fq_class_name,
-            $class_visibility
-        );
-
-        $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-            $fq_class_name,
-            $class_visibility
-        );
-
         $prop_name = $stmt->name;
 
         if (!is_string($prop_name)) {
             return;
         }
 
-        if (!isset($class_properties[$prop_name])) {
-            $all_class_properties = null;
+        $property_id = $fq_class_name . '::$' . $prop_name;
 
-            if ($class_visibility !== \ReflectionProperty::IS_PRIVATE) {
-                $all_class_properties = ClassLikeChecker::getStaticPropertiesForClass(
-                    $fq_class_name,
-                    \ReflectionProperty::IS_PRIVATE
-                );
-            }
-
-            if (isset($all_class_properties[$prop_name])) {
+        if (!ClassLikeChecker::propertyExists($property_id)) {
+            if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
                 if (IssueBuffer::accepts(
-                    new InaccessibleProperty(
-                        'Static property ' . $var_id . ' is not visible in this context',
+                    new UndefinedThisPropertyAssignment(
+                        'Static property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -675,35 +682,39 @@ class AssignmentChecker
                     return false;
                 }
             } else {
-                if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
-                    if (IssueBuffer::accepts(
-                        new UndefinedThisPropertyAssignment(
-                            'Static property ' . $var_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new UndefinedPropertyAssignment(
-                            'Static property ' . $var_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
+                if (IssueBuffer::accepts(
+                    new UndefinedPropertyAssignment(
+                        'Static property ' . $property_id . ' is not defined',
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
                 }
             }
 
-            return null;
+            return;
         }
+
+        if (ClassLikeChecker::checkPropertyVisibility(
+            $property_id,
+            $context->self,
+            $statements_checker->getSource(),
+            new CodeLocation($statements_checker->getSource(), $stmt),
+            $statements_checker->getSuppressedIssues()
+        ) === false) {
+            return false;
+        }
+
+        $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+            $fq_class_name . '::$' . $prop_name
+        );
+
+        $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
 
         $context->vars_in_scope[$var_id] = $assignment_value_type;
 
-        $class_property_type = $class_properties[$prop_name];
+        $class_property_type = $property_storage->type;
 
         if ($class_property_type === false) {
             if (IssueBuffer::accepts(

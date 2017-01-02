@@ -12,27 +12,6 @@ class ClassChecker extends ClassLikeChecker
     protected $class;
 
     /**
-     * A lookup table of existing classes
-     *
-     * @var array<string, bool>
-     */
-    protected static $existing_classes = [];
-
-    /**
-     * A lookup table of existing classes, all lowercased
-     *
-     * @var array<string, bool>
-     */
-    protected static $existing_classes_ci = [];
-
-    /**
-     * A lookup table used for caching the results of classExtends calls
-     *
-     * @var array<string, array<string, bool>>
-     */
-    protected static $class_extends = [];
-
-    /**
      * @var integer
      */
     protected static $anonymous_class_count = 0;
@@ -59,14 +38,14 @@ class ClassChecker extends ClassLikeChecker
         self::$existing_classes[$fq_class_name] = true;
         self::$existing_classes_ci[strtolower($fq_class_name)] = true;
 
+        self::$class_extends[$this->fq_class_name] = [];
+
         if ($this->class->extends) {
             $this->parent_class = self::getFQCLNFromNameObject(
                 $this->class->extends,
                 $this->namespace,
                 $this->aliased_classes
             );
-
-            self::$class_extends[$this->fq_class_name][$this->parent_class] = true;
         }
 
         foreach ($class->implements as $interface_name) {
@@ -96,27 +75,19 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        $old_level = error_reporting();
-        error_reporting(0);
-        $class_exists = class_exists($fq_class_name);
-        error_reporting($old_level);
+        if (parent::registerClassLike($fq_class_name) === false) {
+            self::$existing_classes[$fq_class_name] = false;
 
-        if ($class_exists) {
-            $old_level = error_reporting();
-            error_reporting(0);
-            $reflected_class = new \ReflectionClass($fq_class_name);
-            error_reporting($old_level);
-
-            self::$existing_classes_ci[strtolower($fq_class_name)] = true;
-            self::$existing_classes[$reflected_class->getName()] = true;
-
-            return true;
+            return false;
         }
 
-        // we can only be sure that the case-sensitive version does not exist
-        self::$existing_classes[$fq_class_name] = false;
+        if (!isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
+            // it exists, but it's not a class
+            self::$existing_classes_ci[strtolower($fq_class_name)] = false;
+            return false;
+        }
 
-        return false;
+        return true;
     }
 
     /**
@@ -171,7 +142,7 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function getInterfacesForClass($fq_class_name)
     {
-        self::registerClass($fq_class_name);
+        self::registerClassLike($fq_class_name);
 
         return self::$storage[$fq_class_name]->class_implements;
     }
@@ -195,7 +166,7 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        if (self::registerClass($fq_class_name) === false) {
+        if (self::registerClassLike($fq_class_name) === false) {
             return false;
         }
 
@@ -209,11 +180,6 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function clearCache()
     {
-        self::$existing_classes = [];
-        self::$existing_classes_ci = [];
-
-        self::$class_extends = [];
-
         self::$anonymous_class_count = 0;
 
         MethodChecker::clearCache();

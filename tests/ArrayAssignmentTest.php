@@ -488,7 +488,21 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     public function testImplementsArrayAccess()
     {
         $stmts = self::$parser->parse('<?php
-        class A implements \ArrayAccess { }
+        class A implements \ArrayAccess {
+            public function offsetSet($offset, $value) : void {
+            }
+
+            public function offsetExists($offset) : bool {
+                return true;
+            }
+
+            public function offsetUnset($offset) : void {
+            }
+
+            public function offsetGet($offset) : int {
+                return 1;
+            }
+        }
 
         $a = new A();
         $a["bar"] = "cool";

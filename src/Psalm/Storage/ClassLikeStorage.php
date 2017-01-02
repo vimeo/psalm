@@ -6,62 +6,6 @@ use Psalm\Type;
 class ClassLikeStorage
 {
     /**
-     * A lookup table of all public methods in this class
-     *
-     * @var array<string,bool>
-     */
-    public $public_class_methods = [];
-
-    /**
-     * A lookup table of all protected methods in this class
-     *
-     * @var array<string,bool>
-     */
-    public $protected_class_methods = [];
-
-    /**
-     * A lookup table for public class properties
-     *
-     * @var array<string, Type\Union|false>
-     */
-    public $public_class_properties = [];
-
-    /**
-     * A lookup table for protected class properties
-     *
-     * @var array<string, Type\Union|false>
-     */
-    public $protected_class_properties = [];
-
-    /**
-     * A lookup table for protected class properties
-     *
-     * @var array<string, Type\Union|false>
-     */
-    public $private_class_properties = [];
-
-    /**
-     * A lookup table for public class properties
-     *
-     * @var array<string, Type\Union|false>
-     */
-    public $public_static_class_properties = [];
-
-    /**
-     * A lookup table for protected class properties
-     *
-     * @var array<string, Type\Union|false>
-     */
-    public $protected_static_class_properties = [];
-
-    /**
-     * A lookup table for private class properties
-     *
-     * @var array<string, Type\Union|false>
-     */
-    public $private_static_class_properties = [];
-
-    /**
      * A lookup table for public class constants
      *
      * @var array<string, Type\Union>
@@ -147,4 +91,19 @@ class ClassLikeStorage
      * @var array<string, array<string>>
      */
     public $overridden_method_ids = [];
+
+    /**
+     * @var array<string, PropertyStorage>
+     */
+    public $properties = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $declaring_property_ids = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $appearing_property_ids = [];
 }

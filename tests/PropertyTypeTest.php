@@ -378,6 +378,53 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->check(true, true, $context);
     }
 
+    public function testNullablePropertyCheck()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string */
+            public $aa;
+        }
+
+        class B {
+            /** @var A|null */
+            public $bb;
+        }
+
+        $b = rand(0, 10) ? new A() : new B();
+
+        if ($b instanceof B && isset($b->bb) && $b->bb->aa === "aa") {
+            echo $b->bb->aa;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
+    public function testNullableStaticPropertyWithIfCheck()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var A|null */
+            public static $fooFoo;
+
+            public static function getFoo() : A {
+                if (!self::$fooFoo) {
+                    self::$fooFoo = new A();
+                }
+
+                return self::$fooFoo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
     public function testReflectionProperties()
     {
         $stmts = self::$parser->parse('<?php

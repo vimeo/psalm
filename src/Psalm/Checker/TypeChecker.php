@@ -838,17 +838,20 @@ class TypeChecker
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
                     if ($existing_key_type_part->isNull()) {
                         $class_property_type = Type::getNull();
+                    } elseif ($existing_key_type_part->isMixed()) {
+                        $class_property_type = Type::getMixed();
                     } else {
-                        $class_properties = ClassLikeChecker::getInstancePropertiesForClass(
-                            $existing_key_type_part->value,
-                            \ReflectionProperty::IS_PRIVATE
-                        );
+                        $property_id = $existing_key_type_part->value . '::$' . $key_parts[$i];
 
-                        if (!isset($class_properties[$key_parts[$i]])) {
+                        if (!ClassLikeChecker::propertyExists($property_id)) {
                             return null;
                         }
 
-                        $class_property_type = $class_properties[$key_parts[$i]];
+                        $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
+
+                        $class_storage = ClassLikeChecker::$storage[$declaring_property_class];
+
+                        $class_property_type = $class_storage->properties[$key_parts[$i]]->type;
 
                         $class_property_type = $class_property_type ? clone $class_property_type : Type::getMixed();
                     }

@@ -18,10 +18,6 @@ use Psalm\Type;
 
 class MethodChecker extends FunctionLikeChecker
 {
-    const VISIBILITY_PUBLIC = 1;
-    const VISIBILITY_PROTECTED = 2;
-    const VISIBILITY_PRIVATE = 3;
-
     /**
      * @param PhpParser\Node\FunctionLike $function
      * @param StatementsSource            $source
@@ -46,7 +42,7 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getMethodParams($method_id)
     {
-        self::registerClassMethod($method_id);
+        self::registerClassLikeMethod($method_id);
 
         if ($method_id = self::getDeclaringMethodId($method_id)) {
             $storage = self::getStorage($method_id);
@@ -63,7 +59,7 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function isVariadic($method_id)
     {
-        self::registerClassMethod($method_id);
+        self::registerClassLikeMethod($method_id);
 
         $method_id = (string)self::getDeclaringMethodId($method_id);
 
@@ -121,7 +117,7 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getMethodReturnTypeLocation($method_id, CodeLocation &$defined_location = null)
     {
-        self::registerClassMethod($method_id);
+        self::registerClassLikeMethod($method_id);
 
         /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
@@ -185,8 +181,8 @@ class MethodChecker extends FunctionLikeChecker
         $class_storage->overridden_method_ids[$method_name] = [];
 
         $storage->visibility = $method->isPrivate()
-            ? self::VISIBILITY_PRIVATE
-            : ($method->isProtected() ? self::VISIBILITY_PROTECTED : self::VISIBILITY_PUBLIC);
+            ? ClassLikeChecker::VISIBILITY_PRIVATE
+            : ($method->isProtected() ? ClassLikeChecker::VISIBILITY_PROTECTED : ClassLikeChecker::VISIBILITY_PUBLIC);
 
         $params = $method->getParameters();
 
@@ -228,7 +224,7 @@ class MethodChecker extends FunctionLikeChecker
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        self::registerClassMethod($method_id);
+        self::registerClassLikeMethod($method_id);
 
         /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
@@ -308,11 +304,11 @@ class MethodChecker extends FunctionLikeChecker
         $storage->file_name = $this->file_name;
 
         if ($method->isPrivate()) {
-            $storage->visibility = self::VISIBILITY_PRIVATE;
+            $storage->visibility = ClassLikeChecker::VISIBILITY_PRIVATE;
         } elseif ($method->isProtected()) {
-            $storage->visibility = self::VISIBILITY_PROTECTED;
+            $storage->visibility = ClassLikeChecker::VISIBILITY_PROTECTED;
         } else {
-            $storage->visibility = self::VISIBILITY_PUBLIC;
+            $storage->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
         }
 
         $method_param_names = [];
@@ -527,7 +523,7 @@ class MethodChecker extends FunctionLikeChecker
 
         $old_method_id = null;
 
-        if (ClassLikeChecker::registerClass($method_parts[0]) === false) {
+        if (ClassLikeChecker::registerClassLike($method_parts[0]) === false) {
             return false;
         }
 
@@ -555,9 +551,9 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string $method_id
      * @return void
      */
-    public static function registerClassMethod($method_id)
+    public static function registerClassLikeMethod($method_id)
     {
-        ClassLikeChecker::registerClass(explode('::', $method_id)[0]);
+        ClassLikeChecker::registerClassLike(explode('::', $method_id)[0]);
     }
 
     /**
@@ -568,7 +564,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        ClassLikeChecker::registerClass($fq_class_name);
+        ClassLikeChecker::registerClassLike($fq_class_name);
 
         $class_storage = ClassLikeChecker::$storage[$fq_class_name];
 
@@ -624,20 +620,17 @@ class MethodChecker extends FunctionLikeChecker
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        self::registerClassMethod($method_id);
+        self::registerClassLikeMethod($method_id);
 
-        $declared_method_id = self::getDeclaringMethodId($method_id);
+        $declaring_method_id = self::getDeclaringMethodId($method_id);
+        $appearing_method_id = self::getAppearingMethodId($method_id);
 
-        $method_class = explode('::', (string)$method_id)[0];
-        $declaring_method_class = explode('::', (string)$declared_method_id)[0];
-        $method_name = explode('::', $method_id)[1];
-
-        if (TraitChecker::traitExists($declaring_method_class) && ClassLikeChecker::classUsesTrait($method_class, $declaring_method_class)) {
-            return null;
-        }
+        list($method_class, $method_name) = explode('::', (string)$method_id);
+        list($declaring_method_class) = explode('::', (string)$declaring_method_id);
+        list($appearing_method_class) = explode('::', (string)$appearing_method_id);
 
         // if the calling class is the same, we know the method exists, so it must be visible
-        if ($method_class === $calling_context) {
+        if ($appearing_method_class === $calling_context) {
             return null;
         }
 
@@ -645,18 +638,18 @@ class MethodChecker extends FunctionLikeChecker
             return null;
         }
 
-        $storage = self::getStorage((string)$declared_method_id);
+        $storage = self::getStorage((string)$declaring_method_id);
 
         if (!$storage) {
             throw new \UnexpectedValueException('$storage should not be null');
         }
 
         switch ($storage->visibility) {
-            case self::VISIBILITY_PUBLIC:
+            case ClassLikeChecker::VISIBILITY_PUBLIC:
                 return null;
 
-            case self::VISIBILITY_PRIVATE:
-                if (!$calling_context || $declaring_method_class !== $calling_context) {
+            case ClassLikeChecker::VISIBILITY_PRIVATE:
+                if (!$calling_context || $appearing_method_class !== $calling_context) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access private method ' . MethodChecker::getCasedMethodId($method_id) .
@@ -671,8 +664,8 @@ class MethodChecker extends FunctionLikeChecker
 
                 return null;
 
-            case self::VISIBILITY_PROTECTED:
-                if ($declaring_method_class === $calling_context) {
+            case ClassLikeChecker::VISIBILITY_PROTECTED:
+                if ($appearing_method_class === $calling_context) {
                     return null;
                 }
 
@@ -690,13 +683,11 @@ class MethodChecker extends FunctionLikeChecker
                     return null;
                 }
 
-                if (ClassChecker::classExtends($declaring_method_class, $calling_context) &&
-                    MethodChecker::methodExists($calling_context . '::' . $method_name)
-                ) {
+                if (ClassChecker::classExtends($appearing_method_class, $calling_context)) {
                     return null;
                 }
 
-                if (!ClassChecker::classExtends($calling_context, $declaring_method_class)) {
+                if (!ClassChecker::classExtends($calling_context, $appearing_method_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . MethodChecker::getCasedMethodId($method_id) .

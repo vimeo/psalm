@@ -26,13 +26,13 @@ class TraitTest extends PHPUnit_Framework_TestCase
     public function testAccessiblePrivateMethodFromTrait()
     {
         $stmts = self::$parser->parse('<?php
-        trait A {
+        trait T {
             private function fooFoo() : void {
             }
         }
 
         class B {
-            use A;
+            use T;
 
             public function doFoo() : void {
                 $this->fooFoo();
@@ -47,13 +47,13 @@ class TraitTest extends PHPUnit_Framework_TestCase
     public function testAccessibleProtectedMethodFromTrait()
     {
         $stmts = self::$parser->parse('<?php
-        trait A {
+        trait T {
             protected function fooFoo() : void {
             }
         }
 
         class B {
-            use A;
+            use T;
 
             public function doFoo() : void {
                 $this->fooFoo();
@@ -68,13 +68,13 @@ class TraitTest extends PHPUnit_Framework_TestCase
     public function testAccessiblePublicMethodFromTrait()
     {
         $stmts = self::$parser->parse('<?php
-        trait A {
+        trait T {
             public function fooFoo() : void {
             }
         }
 
         class B {
-            use A;
+            use T;
 
             public function doFoo() : void {
                 $this->fooFoo();
@@ -88,18 +88,18 @@ class TraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedMethod
+     * @expectedExceptionMessage InaccessibleMethod
      */
     public function testInccessiblePrivateMethodFromInheritedTrait()
     {
         $stmts = self::$parser->parse('<?php
-        trait A {
+        trait T {
             private function fooFoo() : void {
             }
         }
 
         class B {
-            use A;
+            use T;
         }
 
         class C extends B {
@@ -116,13 +116,13 @@ class TraitTest extends PHPUnit_Framework_TestCase
     public function testAccessibleProtectedMethodFromInheritedTrait()
     {
         $stmts = self::$parser->parse('<?php
-        trait A {
+        trait T {
             protected function fooFoo() : void {
             }
         }
 
         class B {
-            use A;
+            use T;
         }
 
         class C extends B {
@@ -139,13 +139,13 @@ class TraitTest extends PHPUnit_Framework_TestCase
     public function testAccessiblePublicMethodFromInheritedTrait()
     {
         $stmts = self::$parser->parse('<?php
-        trait A {
+        trait T {
             public function fooFoo() : void {
             }
         }
 
         class B {
-            use A;
+            use T;
         }
 
         class C extends B {
@@ -162,14 +162,14 @@ class TraitTest extends PHPUnit_Framework_TestCase
     public function testStaticClassMethodFromWithinTrait()
     {
         $stmts = self::$parser->parse('<?php
-        trait A {
+        trait T {
             public function fooFoo() : void {
                 self::barBar();
             }
         }
 
         class B {
-            use A;
+            use T;
 
             public static function barBar() : void {
 
