@@ -139,6 +139,19 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    public function testCallable()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(Callable $c) : void {
+            echo (string)$c();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->check(true, true, $context);
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidFunctionCall

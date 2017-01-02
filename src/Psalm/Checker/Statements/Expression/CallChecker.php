@@ -122,7 +122,10 @@ class CallChecker
                                     $stmt->inferredType = $var_type_part->return_type;
                                 }
                             }
-                        } elseif (!$var_type_part->isMixed() && $var_type_part->value !== 'Closure') {
+                        } elseif (!$var_type_part->isMixed() &&
+                            $var_type_part->value !== 'Closure' &&
+                            !$var_type_part->isCallable()
+                        ) {
                             $var_id = ExpressionChecker::getVarId(
                                 $stmt->name,
                                 $statements_checker->getFQCLN(),
