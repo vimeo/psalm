@@ -316,6 +316,9 @@ class CallChecker
                     return false;
                 }
 
+                // check again after we've processed args
+                $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args);
+
                 if (self::checkFunctionArgumentsMatch(
                     $statements_checker,
                     $stmt->args,
@@ -610,6 +613,9 @@ class CallChecker
             return false;
         }
 
+        // check again after we've processed args
+        $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
+
         if (self::checkFunctionArgumentsMatch(
             $statements_checker,
             $stmt->args,
@@ -819,6 +825,9 @@ class CallChecker
             ) === false) {
                 return false;
             }
+
+            // get them again
+            $method_params = $method_id ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args) : null;
 
             if (self::checkFunctionArgumentsMatch(
                 $statements_checker,
