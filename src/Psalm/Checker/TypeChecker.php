@@ -699,10 +699,12 @@ class TypeChecker
                 $input_is_object = $input_type_part->isObjectType();
                 $container_is_object = $container_type_part->isObjectType();
 
-                if ($input_type_part->value === $container_type_part->value ||
+                if (strtolower($input_type_part->value) === strtolower($container_type_part->value) ||
                     (
                         $input_is_object &&
                         $container_is_object &&
+                        !$input_type_part->isObject() &&
+                        ClassChecker::classExists($input_type_part->value, $file_checker) &&
                         (
                             ClassChecker::classExtendsOrImplements(
                                 $input_type_part->value,
