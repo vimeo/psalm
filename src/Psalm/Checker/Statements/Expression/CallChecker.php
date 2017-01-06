@@ -111,7 +111,7 @@ class CallChecker
                 if (isset($stmt->name->inferredType)) {
                     foreach ($stmt->name->inferredType->types as $var_type_part) {
                         if ($var_type_part instanceof Type\Fn) {
-                            $function_params = $var_type_part->parameters;
+                            $function_params = $var_type_part->params;
 
                             if ($var_type_part->return_type) {
                                 if (isset($stmt->inferredType)) {
@@ -1147,7 +1147,7 @@ class CallChecker
                     continue;
                 }
 
-                if (count($closure_type->parameters) > $expected_closure_param_count) {
+                if (count($closure_type->params) > $expected_closure_param_count) {
                     if (IssueBuffer::accepts(
                         new TooManyArguments(
                             'Too many arguments in closure for ' . $method_id,
@@ -1157,7 +1157,7 @@ class CallChecker
                     )) {
                         return false;
                     }
-                } elseif (count($closure_type->parameters) < $expected_closure_param_count) {
+                } elseif (count($closure_type->params) < $expected_closure_param_count) {
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
                             'You must supply a param in the closure for ' . $method_id,
@@ -1170,11 +1170,14 @@ class CallChecker
                 }
 
 
-                $closure_params = $closure_type->parameters;
+                $closure_params = $closure_type->params;
                 $closure_return_type = $closure_type->return_type;
 
-                foreach ($closure_params as $i => $closure_param) {
+                $i = 0;
+
+                foreach ($closure_params as $param_name => $closure_param) {
                     if (!$array_arg_types[$i]) {
+                        $i++;
                         continue;
                     }
 
@@ -1184,6 +1187,7 @@ class CallChecker
                     $input_type = $array_arg_type->type_params[1];
 
                     if ($input_type->isMixed()) {
+                        $i++;
                         continue;
                     }
 
@@ -1234,6 +1238,8 @@ class CallChecker
                             return false;
                         }
                     }
+
+                    $i++;
                 }
             }
         }

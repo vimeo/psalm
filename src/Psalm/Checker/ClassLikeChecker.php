@@ -431,24 +431,42 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        foreach ($this->method_checkers as $method_id => $method_checker) {
-            $method_checker->check(clone $class_context, null);
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $method_checker = new MethodChecker($stmt, $this);
 
-            if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
-                $secondary_return_type_location = null;
+                $method_checker->check(clone $class_context, null);
 
-                $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                    $method_id,
-                    $secondary_return_type_location
-                );
+                $method_id = (string)$method_checker->getMethodId();
 
-                $method_checker->checkReturnTypes(
-                    $update_docblocks,
-                    MethodChecker::getMethodReturnType($method_id),
-                    $this->fq_class_name,
-                    $return_type_location,
-                    $secondary_return_type_location
-                );
+                if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+                    $secondary_return_type_location = null;
+
+                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                        $method_id,
+                        $secondary_return_type_location
+                    );
+
+                    $method_checker->checkReturnTypes(
+                        $update_docblocks,
+                        MethodChecker::getMethodReturnType($method_id),
+                        $class_context->self,
+                        $return_type_location,
+                        $secondary_return_type_location
+                    );
+                }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                foreach ($stmt->traits as $trait) {
+                    $trait_name = self::getFQCLNFromNameObject(
+                        $trait,
+                        $this->namespace,
+                        $this->aliased_classes
+                    );
+
+                    $trait_checker = self::$trait_checkers[$trait_name];
+
+                    $trait_checker->checkMethods($class_context, $global_context, $update_docblocks);
+                }
             }
         }
     }
@@ -510,10 +528,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         PhpParser\Node\Stmt\ClassMethod $stmt,
         Context $class_context
     ) {
-        $method_id = $this->fq_class_name . '::' . strtolower($stmt->name);
-        $storage = self::$storage[$class_context->self];
+        $method_name = strtolower($stmt->name);
+        $method_id = $this->fq_class_name . '::' . $method_name;
+        $storage = self::$storage[$this->fq_class_name];
 
-        $this->method_checkers[$method_id] = new MethodChecker($stmt, $this);
+        if (!isset($storage->methods[$method_name])) {
+            FunctionLikeChecker::register($stmt, $this);
+        }
 
         if (!$stmt->isAbstract() && $class_context->self) {
             $implemented_method_id =
@@ -588,8 +609,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $trait_checker->setMethodMap($method_map);
 
                 $trait_checker->check($class_context);
-
-                $this->method_checkers = array_merge($trait_checker->method_checkers, $this->method_checkers);
 
                 ClassLikeChecker::registerTraitUse($this->fq_class_name, $trait_name);
 
@@ -858,11 +877,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $namespace,
         array $aliased_classes
     ) {
+        if ($class_name->parts == ['self']) {
+            return 'self';
+        }
+
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
             return implode('\\', $class_name->parts);
         }
 
-        return self::getFQCLNFromString(implode('\\', $class_name->parts), $namespace, $aliased_classes);
+        return self::getFQCLNFromString(
+            implode('\\', $class_name->parts),
+            $namespace,
+            $aliased_classes
+        );
     }
 
     /**

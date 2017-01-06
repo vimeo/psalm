@@ -171,7 +171,7 @@ class StatementsChecker
         // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_checker = new FunctionChecker($stmt, $this->source, $this->file_path);
+                $function_checker = new FunctionChecker($stmt, $this->source);
                 $function_checkers[$stmt->name] = $function_checker;
             }
         }

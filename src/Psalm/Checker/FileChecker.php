@@ -236,7 +236,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         // hoist functions to the top
         foreach ($function_stmts as $stmt) {
-            $function_checkers[$stmt->name] = new FunctionChecker($stmt, $this, $this->file_path);
+            $function_checkers[$stmt->name] = new FunctionChecker($stmt, $this);
             $function_id = $function_checkers[$stmt->name]->getMethodId();
             $this->function_checkers[$function_id] = $function_checkers[$stmt->name];
         }

@@ -6,6 +6,11 @@ use Psalm\Type;
 class MethodStorage extends FunctionLikeStorage
 {
     /**
+     * @var string
+     */
+    public $fq_class_name;
+
+    /**
      * @var bool
      */
     public $is_static;

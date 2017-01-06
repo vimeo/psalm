@@ -18,6 +18,11 @@ class FunctionLikeStorage
     public $params = [];
 
     /**
+     * @var array<string, Type\Union>
+     */
+    public $param_types = [];
+
+    /**
      * @var string
      */
     public $namespace;

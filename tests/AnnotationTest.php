@@ -181,9 +181,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         }
 
         /**
-         * @return array<int, array<int, string>>
+         * @return array<int, string>
          */
-        function foo2() : array {
+        function foo3() : array {
             return ["hello"];
         }
         ');

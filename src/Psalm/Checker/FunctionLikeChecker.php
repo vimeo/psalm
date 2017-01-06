@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
@@ -22,6 +23,8 @@ use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
 abstract class FunctionLikeChecker extends SourceChecker implements StatementsSource
@@ -113,16 +116,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public function check(Context $context, Context $global_context = null)
     {
+        /** @var array<PhpParser\Node> */
         $function_stmts = $this->function->getStmts() ?: [];
-
-        $statements_checker = new StatementsChecker($this);
 
         $hash = null;
 
-        $closure_return_type = null;
-        $closure_return_type_location = null;
+        $cased_method_id = null;
 
-        if ($this instanceof MethodChecker) {
+        if ($this->function instanceof ClassMethod) {
             if (ClassLikeChecker::getThisClass()) {
                 $hash = $this->getMethodId() . json_encode([
                     $context->vars_in_scope,
@@ -142,13 +143,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
             }
 
-            $function_params = MethodChecker::getMethodParams((string)$this->getMethodId());
-
-            if ($function_params === null) {
-                throw new \InvalidArgumentException('Cannot get params for own method');
-            }
-
             $method_id = (string)$this->getMethodId($context->self);
+
+            $fq_class_name = (string)$context->self;
+
+            $storage = MethodChecker::getStorage(MethodChecker::getDeclaringMethodId($method_id));
+
+            $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
 
             $implemented_method_ids = MethodChecker::getOverriddenMethodIds($method_id);
 
@@ -171,8 +172,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
 
                     foreach ($implemented_params as $i => $implemented_param) {
-                        if (!isset($function_params[$i])) {
-                            $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
+                        if (!isset($storage->params[$i])) {
                             $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
 
                             if (IssueBuffer::accepts(
@@ -189,7 +189,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             break;
                         }
 
-                        if ((string)$function_params[$i]->signature_type !==
+                        if ((string)$storage->params[$i]->signature_type !==
                             (string)$implemented_param->signature_type
                         ) {
                             $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
@@ -198,7 +198,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             if (IssueBuffer::accepts(
                                 new MethodSignatureMismatch(
                                     'Argument ' . ($i + 1) . ' of ' . $cased_method_id .' has wrong type \'' .
-                                        $function_params[$i]->signature_type . '\', expecting \'' .
+                                        $storage->params[$i]->signature_type . '\', expecting \'' .
                                         $implemented_param->signature_type . '\' as defined by ' .
                                         $parent_method_id,
                                     new CodeLocation($this, $this->function)
@@ -213,163 +213,32 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
                 }
             }
-        } elseif ($this instanceof FunctionChecker) {
-            $function_params = FunctionChecker::getParams(strtolower((string)$this->getMethodId()), $this->file_path);
+        } elseif ($this->function instanceof Function_) {
+            $storage = FileChecker::$storage[$this->file_path]->functions[(string)$this->getMethodId()];
+
+            $cased_method_id = $this->function->name;
         } else { // Closure
-            $function_params = [];
-            $function_param_names = [];
-
-            foreach ($this->function->getParams() as $param) {
-                $param_array = self::getTranslatedParam(
-                    $param,
-                    $this
-                );
-
-                $function_params[] = $param_array;
-
-                if (isset($function_param_names[$param->name])) {
-                    if (IssueBuffer::accepts(
-                        new DuplicateParam(
-                            'Duplicate param $' . $param->name . ' in closure docblock',
-                            new CodeLocation($this, $param, true)
-                        ),
-                        $this->suppressed_issues
-                    )) {
-                        return false;
-                    }
-                }
-
-                $function_param_names[$param->name] = $param_array->type;
-            }
-
-            $doc_comment = $this->function->getDocComment();
-
-            if ($this->function->returnType) {
-                $parser_return_type = $this->function->returnType;
-
-                $suffix = '';
-
-                if ($parser_return_type instanceof PhpParser\Node\NullableType) {
-                    $suffix = '|null';
-                    $parser_return_type = $parser_return_type->type;
-                }
-
-                if (is_string($parser_return_type)) {
-                    $return_type_string = $parser_return_type . $suffix;
-                } else {
-                    $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
-                        $parser_return_type,
-                        $this->namespace,
-                        $this->getAliasedClasses()
-                    );
-
-                    ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $fq_class_name,
-                        $this->getFileChecker(),
-                        new CodeLocation($this, $parser_return_type),
-                        $this->suppressed_issues
-                    );
-
-                    $return_type_string = $fq_class_name . $suffix;
-                }
-
-                $closure_return_type = Type::parseString($return_type_string);
-
-                $closure_return_type_location = new CodeLocation(
-                    $this->getSource(),
-                    $this->function,
-                    false,
-                    self::RETURN_TYPE_REGEX
-                );
-            }
-
-            if ($doc_comment) {
-                try {
-                    $docblock_info = CommentChecker::extractDocblockInfo(
-                        (string)$doc_comment,
-                        $doc_comment->getLine()
-                    );
-                } catch (DocblockParseException $e) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Invalid type passed in docblock for ' . $this->getMethodId(),
-                            new CodeLocation($this, $this->function, true)
-                        )
-                    )) {
-                        return false;
-                    }
-                }
-
-                if ($docblock_info) {
-                    $this->suppressed_issues = $docblock_info->suppress;
-
-                    $config = \Psalm\Config::getInstance();
-
-                    if ($config->use_docblock_types) {
-                        if ($docblock_info->return_type) {
-                            $closure_docblock_return_type =
-                                Type::parseString(
-                                    self::fixUpLocalType(
-                                        (string)$docblock_info->return_type,
-                                        null,
-                                        $this->namespace,
-                                        $this->getAliasedClasses()
-                                    )
-                                );
-
-                            if (!$closure_return_type_location) {
-                                $closure_return_type_location = new CodeLocation(
-                                    $this->getSource(),
-                                    $this->function,
-                                    true
-                                );
-                            }
-
-                            if ($closure_return_type &&
-                                !TypeChecker::isContainedBy(
-                                    $closure_return_type,
-                                    $closure_docblock_return_type,
-                                    $statements_checker->getFileChecker()
-                                )
-                            ) {
-                                if (IssueBuffer::accepts(
-                                    new InvalidDocblock(
-                                        'Docblock return type does not match closure return type ' . $this->getMethodId(),
-                                        new CodeLocation($this, $this->function, true)
-                                    )
-                                )) {
-                                    return false;
-                                }
-                            } else {
-                                $closure_return_type = $closure_docblock_return_type;
-                            }
-
-                            $closure_return_type_location->setCommentLine($docblock_info->return_type_line_number);
-                        }
-
-                        if ($docblock_info->params) {
-                            $this->improveParamsFromDocblock(
-                                $docblock_info->params,
-                                $function_param_names,
-                                $function_params,
-                                new CodeLocation($this, $this->function, false)
-                            );
-                        }
-                    }
-                }
-            }
+            $storage = self::register($this->function, $this->getSource());
 
             /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([
                 new Type\Fn(
                     'Closure',
-                    $function_params,
-                    $closure_return_type ?: Type::getMixed()
+                    $storage->params,
+                    $storage->return_type ?: Type::getMixed()
                 )
             ]);
         }
 
-        foreach ($function_params as $offset => $function_param) {
+        $this->suppressed_issues = $storage->suppressed_issues;
+
+        if ($storage instanceof MethodStorage && $storage->is_static) {
+            $this->is_static = true;
+        }
+
+        $statements_checker = new StatementsChecker($this);
+
+        foreach ($storage->params as $offset => $function_param) {
             $param_type = ExpressionChecker::fleshOutTypes(
                 clone $function_param->type,
                 [],
@@ -394,15 +263,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     )
                 ) {
                     $method_id = $this->getMethodId();
-                    $cased_method_id = $method_id;
-
-                    if ($cased_method_id) {
-                        if ($this instanceof MethodChecker) {
-                            $cased_method_id = MethodChecker::getCasedMethodId($cased_method_id);
-                        } elseif ($this->function instanceof PhpParser\Node\Stmt\Function_) {
-                            $cased_method_id = $this->function->name;
-                        }
-                    }
 
                     if (IssueBuffer::accepts(
                         new InvalidParamDefault(
@@ -446,12 +306,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $this->checkReturnTypes(
                 false,
-                $closure_return_type,
+                $storage->return_type,
                 $this->fq_class_name,
-                $closure_return_type_location
+                $storage->return_type_location
             );
 
-            if (!$closure_return_type || $closure_return_type->isMixed()) {
+            if (!$storage->return_type || $storage->return_type->isMixed()) {
                 $closure_yield_types = [];
                 $closure_return_types = EffectsAnalyser::getReturnTypes(
                     $this->function->stmts,
@@ -505,6 +365,225 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
+     * @param  Closure|Function_|ClassMethod    $function
+     * @param  StatementsSource                 $source
+     * @return FunctionLikeStorage
+     */
+    public static function register(
+        $function,
+        StatementsSource $source
+    ) {
+        $namespace = $source->getNamespace();
+
+        if ($function instanceof PhpParser\Node\Stmt\Function_) {
+            $cased_function_id = ($namespace ? $namespace . '\\' : '') . $function->name;
+            $function_id = strtolower($cased_function_id);
+
+            $file_storage = FileChecker::$storage[$source->getFilePath()];
+
+            if (isset($file_storage->functions[$function_id])) {
+                throw new \InvalidArgumentException('Cannot re-register ' . $function_id);
+            }
+
+            $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
+        } elseif ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
+            $fq_class_name = $source->getFQCLN();
+
+            $function_id = $fq_class_name . '::' . strtolower($function->name);
+            $cased_function_id = $fq_class_name . '::' . $function->name;
+
+            if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
+                throw new \UnexpectedValueException('$class_storage cannot be empty for ' . $function_id);
+            }
+
+            $class_storage = ClassLikeChecker::$storage[$fq_class_name];
+
+            if (isset($class_storage->methods[strtolower($function->name)])) {
+                throw new \InvalidArgumentException('Cannot re-register ' . $function_id);
+            }
+
+            $storage = $class_storage->methods[strtolower($function->name)] = new MethodStorage();
+
+            $class_name_parts = explode('\\', $fq_class_name);
+            $class_name = array_pop($class_name_parts);
+
+            if (strtolower((string)$function->name) === strtolower($class_name)) {
+                MethodChecker::setDeclaringMethodId($fq_class_name . '::__construct', $function_id);
+                MethodChecker::setAppearingMethodId($fq_class_name . '::__construct', $function_id);
+            }
+
+            $class_storage->declaring_method_ids[strtolower($function->name)] = $function_id;
+            $class_storage->appearing_method_ids[strtolower($function->name)] = $function_id;
+
+            if (!isset($class_storage->overridden_method_ids[strtolower($function->name)])) {
+                $class_storage->overridden_method_ids[strtolower($function->name)] = [];
+            }
+
+            /** @var bool */
+            $storage->is_static = $function->isStatic();
+
+            if ($function->isPrivate()) {
+                $storage->visibility = ClassLikeChecker::VISIBILITY_PRIVATE;
+            } elseif ($function->isProtected()) {
+                $storage->visibility = ClassLikeChecker::VISIBILITY_PROTECTED;
+            } else {
+                $storage->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
+            }
+        } else {
+            $function_id = $cased_function_id = 'closure';
+
+            $storage = new FunctionLikeStorage();
+        }
+
+        if ($function instanceof ClassMethod || $function instanceof Function_) {
+            $storage->cased_name = $function->name;
+        }
+
+        $storage->file_name = $source->getFileName();
+        $storage->namespace = $source->getNamespace();
+
+        /** @var PhpParser\Node\Param $param */
+        foreach ($function->getParams() as $param) {
+            $param_array = self::getTranslatedParam($param, $source);
+
+            if (isset($storage->param_types[$param_array->name])) {
+                if (IssueBuffer::accepts(
+                    new DuplicateParam(
+                        'Duplicate param $' . $param->name . ' in docblock for ' . $cased_function_id,
+                        new CodeLocation($source, $param, true)
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            $storage->param_types[$param_array->name] = $param_array->type;
+            $storage->params[] = $param_array;
+        }
+
+        $config = Config::getInstance();
+
+        $docblock_info = null;
+        $doc_comment = $function->getDocComment();
+
+        if ($parser_return_type = $function->getReturnType()) {
+            $suffix = '';
+
+            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
+                $suffix = '|null';
+                $parser_return_type = $parser_return_type->type;
+            }
+
+            if (is_string($parser_return_type)) {
+                $return_type_string = $parser_return_type . $suffix;
+            } else {
+                $return_type_fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
+                    $parser_return_type,
+                    $namespace,
+                    $source->getAliasedClasses()
+                );
+
+                $return_type_string = $return_type_fq_class_name . $suffix;
+            }
+
+            $storage->return_type = Type::parseString($return_type_string);
+            $storage->return_type_location = new CodeLocation(
+                $source,
+                $function,
+                false,
+                self::RETURN_TYPE_REGEX
+            );
+        }
+
+        if (!$doc_comment) {
+            return $storage;
+        }
+
+
+        $docblock_info = null;
+
+        try {
+            $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment, $doc_comment->getLine());
+        } catch (DocblockParseException $e) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($source, $function, true)
+                )
+            )) {
+                // fall through
+            }
+        }
+
+        if (!$docblock_info) {
+            return $storage;
+        }
+
+        if ($docblock_info->deprecated) {
+            $storage->deprecated = true;
+        }
+
+        if ($docblock_info->variadic) {
+            $storage->variadic = true;
+        }
+
+        $storage->suppressed_issues = $docblock_info->suppress;
+
+        if (!$config->use_docblock_types) {
+            return $storage;
+        }
+
+        if ($docblock_info->return_type) {
+            $docblock_return_type = Type::parseString(
+                self::fixUpLocalType(
+                    (string)$docblock_info->return_type,
+                    $source->getFQCLN(),
+                    $source->getNamespace(),
+                    $source->getAliasedClasses()
+                )
+            );
+
+            if (!$storage->return_type_location) {
+                $storage->return_type_location = new CodeLocation($source, $function, true);
+            }
+
+            if ($storage->return_type &&
+                !TypeChecker::hasIdenticalTypes(
+                    $storage->return_type,
+                    $docblock_return_type,
+                    $source->getFileChecker()
+                )
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Docblock return type does not match method return type for ' . $cased_function_id,
+                        new CodeLocation($source, $function, true)
+                    )
+                )) {
+                    // fall through
+                }
+            } else {
+                $storage->return_type = $docblock_return_type;
+            }
+
+            $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
+        }
+
+        if ($docblock_info->params) {
+            self::improveParamsFromDocblock(
+                $storage,
+                $docblock_info->params,
+                $source,
+                $source->getFQCLN(),
+                new CodeLocation($source, $function, true)
+            );
+        }
+
+        return $storage;
+    }
+
+    /**
      * Adds return types for the given function
      *
      * @param   string  $return_type
@@ -540,10 +619,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     {
         if ($this->function instanceof ClassMethod) {
             $function_name = (string)$this->function->name;
-
-            if (strtolower($function_name) === strtolower((string)$this->class_name)) {
-                $function_name = '__construct';
-            }
 
             return ($context_self ?: $this->fq_class_name) . '::' . strtolower($function_name);
         }
@@ -840,32 +915,31 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
     /**
      * @param  array<array{type:string,name:string,line_number:int}>  $docblock_params
-     * @param  array<string,Type\Union>               $function_param_names
-     * @param  array<\Psalm\FunctionLikeParameter>    &$function_signature
-     * @param  CodeLocation                           $code_location
+     * @param  FunctionLikeStorage          $storage
+     * @param  StatementsSource             $source
+     * @param  string                       $fq_class_name
+     * @param  CodeLocation                 $code_location
      * @return false|null
      */
-    protected function improveParamsFromDocblock(
+    protected static function improveParamsFromDocblock(
+        FunctionLikeStorage $storage,
         array $docblock_params,
-        array $function_param_names,
-        array &$function_signature,
+        StatementsSource $source,
+        $fq_class_name,
         CodeLocation $code_location
     ) {
         $docblock_param_vars = [];
 
-        $method_id = $cased_method_id = $this->getMethodId();
+        $base = $fq_class_name ? $fq_class_name . '::' : '';
 
-        if ($method_id) {
-            $cased_method_id = $this instanceof MethodChecker
-                ? MethodChecker::getCasedMethodId($method_id)
-                : FunctionChecker::getCasedFunctionId($method_id, $this->file_path);
-        }
+        $method_id = $base . strtolower($storage->cased_name);
+        $cased_method_id = $base . $storage->cased_name;
 
         foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
             $line_number = $docblock_param['line_number'];
 
-            if (!array_key_exists($param_name, $function_param_names)) {
+            if (!isset($storage->param_types[$param_name])) {
                 $code_location->setCommentLine($line_number);
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
@@ -886,23 +960,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 self::fixUpLocalType(
                     $docblock_param['type'],
                     null,
-                    $this->namespace,
-                    $this->getAliasedClasses()
+                    $source->getNamespace(),
+                    $source->getAliasedClasses()
                 )
             );
 
-            if ($function_param_names[$param_name] && !$function_param_names[$param_name]->isMixed()) {
+            if (!$storage->param_types[$param_name]->isMixed()) {
                 if (!TypeChecker::isContainedBy(
                     $new_param_type,
-                    $function_param_names[$param_name],
-                    $this->getFileChecker()
+                    $storage->param_types[$param_name],
+                    $source->getFileChecker()
                 )
                 ) {
                     $code_location->setCommentLine($line_number);
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             'Parameter $' . $param_name .' has wrong type \'' . $new_param_type . '\', should be \'' .
-                                $function_param_names[$param_name] . '\'',
+                                $storage->param_types[$param_name] . '\'',
                             $code_location
                         )
                     )) {
@@ -913,7 +987,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            foreach ($function_signature as &$function_signature_param) {
+            foreach ($storage->params as $function_signature_param) {
                 if ($function_signature_param->name === $param_name) {
                     $existing_param_type_nullable = $function_signature_param->is_nullable;
 
@@ -928,8 +1002,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-        foreach ($function_signature as &$function_signature_param) {
-            if (!isset($docblock_param_vars[$function_signature_param->name]) && $function_signature_param->code_location) {
+        foreach ($storage->params as $function_signature_param) {
+            if (!isset($docblock_param_vars[$function_signature_param->name]) &&
+                $function_signature_param->code_location
+            ) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $function_signature_param->name .' does not appear in the docbock for ' .
@@ -1032,7 +1108,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  \ReflectionParameter $param
      * @return FunctionLikeParameter
      */
-    protected static function getReflectionParamArray(\ReflectionParameter $param)
+    protected static function getReflectionParamData(\ReflectionParameter $param)
     {
         $param_type_string = null;
 
@@ -1204,8 +1280,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         array $args,
         FileChecker $file_checker
     ) {
-        $function_params = null;
-
         if (count($function_param_options) === 1) {
             return $function_param_options[0];
         }

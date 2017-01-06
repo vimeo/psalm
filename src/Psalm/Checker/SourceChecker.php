@@ -287,6 +287,9 @@ abstract class SourceChecker implements StatementsSource
         return $this->suppressed_issues;
     }
 
+    /**
+     * @return string
+     */
     public function getNamespace()
     {
         return '';

@@ -35,9 +35,8 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param mixed                         $function
      * @param StatementsSource              $source
-     * @param string                        $base_file_path
      */
-    public function __construct($function, StatementsSource $source, $base_file_path)
+    public function __construct($function, StatementsSource $source)
     {
         if (!$function instanceof PhpParser\Node\Stmt\Function_) {
             throw new \InvalidArgumentException('Bad');
@@ -45,7 +44,7 @@ class FunctionChecker extends FunctionLikeChecker
 
         parent::__construct($function, $source);
 
-        $this->registerFunction($function, $base_file_path);
+        self::register($function, $this);
     }
 
     /**
@@ -117,7 +116,8 @@ class FunctionChecker extends FunctionLikeChecker
 
             /** @var \ReflectionParameter $param */
             foreach ($reflection_params as $param) {
-                $storage->params[] = self::getReflectionParamArray($param);
+                $param_obj = self::getReflectionParamData($param);
+                $storage->params[] = $param_obj;
             }
 
             $storage->cased_name = $reflection_function->getName();
@@ -178,186 +178,6 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         return $file_storage->functions[$function_id]->cased_name;
-    }
-
-    /**
-     * @param  PhpParser\Node\Stmt\Function_ $function
-     * @param  string                        $file_path
-     * @return null|false
-     */
-    protected function registerFunction(PhpParser\Node\Stmt\Function_ $function, $file_path)
-    {
-        $cased_function_id = ($this->namespace ? $this->namespace . '\\' : '') . $function->name;
-        $function_id = strtolower($cased_function_id);
-
-        $file_storage = FileChecker::$storage[$file_path];
-
-        if (isset($file_storage->functions[$function_id])) {
-            return null;
-        }
-
-        $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
-
-        $storage->namespace = $this->namespace;
-        $storage->cased_name = $cased_function_id;
-
-        $function_param_names = [];
-
-        /** @var PhpParser\Node\Param $param */
-        foreach ($function->getParams() as $param) {
-            $param_array = self::getTranslatedParam(
-                $param,
-                $this
-            );
-
-            $storage->params[] = $param_array;
-
-            if (isset($function_param_names[$param->name])) {
-                if (IssueBuffer::accepts(
-                    new DuplicateParam(
-                        'Duplicate param $' . $param->name . ' in docblock for ' . $this->function->name,
-                        new CodeLocation($this, $param, true)
-                    ),
-                    $this->suppressed_issues
-                )) {
-                    return false;
-                }
-            }
-
-            $function_param_names[$param->name] = $param_array->type;
-        }
-
-        $config = Config::getInstance();
-        $return_type = null;
-
-        $return_type_location = null;
-
-        $docblock_info = null;
-
-        $this->suppressed_issues = [];
-
-        $doc_comment = $function->getDocComment();
-
-        if ($function->returnType) {
-            $parser_return_type = $function->returnType;
-
-            $suffix = '';
-
-            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
-                $suffix = '|null';
-                $parser_return_type = $parser_return_type->type;
-            }
-
-            if (is_string($parser_return_type)) {
-                $return_type_string = $parser_return_type . $suffix;
-            } else {
-                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
-                    $parser_return_type,
-                    $this->namespace,
-                    $this->getAliasedClasses()
-                );
-
-                ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $fq_class_name,
-                    $this->getFileChecker(),
-                    new CodeLocation($this, $parser_return_type),
-                    $this->suppressed_issues
-                );
-
-                $return_type_string = $fq_class_name . $suffix;
-            }
-
-            $return_type = Type::parseString($return_type_string);
-
-            $return_type_location = new CodeLocation($this->getSource(), $function, false, self::RETURN_TYPE_REGEX);
-        }
-
-        $storage->return_type = $return_type;
-        $storage->return_type_location = $return_type_location;
-
-        if ($doc_comment) {
-            try {
-                $docblock_info = CommentChecker::extractDocblockInfo(
-                    (string)$doc_comment,
-                    $doc_comment->getLine()
-                );
-            } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . $this->function->name,
-                        new CodeLocation($this, $function, true)
-                    )
-                )) {
-                    // fall through
-                }
-            }
-
-            if ($docblock_info) {
-                if ($docblock_info->deprecated) {
-                    $storage->deprecated = true;
-                }
-
-                if ($docblock_info->variadic) {
-                    $storage->variadic = true;
-                }
-
-                $this->suppressed_issues = $docblock_info->suppress;
-
-                if ($config->use_docblock_types) {
-                    if ($docblock_info->return_type) {
-                        $docblock_return_type =
-                            Type::parseString(
-                                self::fixUpLocalType(
-                                    (string)$docblock_info->return_type,
-                                    null,
-                                    $this->namespace,
-                                    $this->getAliasedClasses()
-                                )
-                            );
-
-                        if (!$return_type_location) {
-                            $return_type_location = new CodeLocation($this->getSource(), $function, true);
-                        }
-
-                        if ($return_type &&
-                            !TypeChecker::isContainedBy(
-                                $docblock_return_type,
-                                $return_type,
-                                $this->getFileChecker()
-                            )
-                        ) {
-                            if (IssueBuffer::accepts(
-                                new InvalidDocblock(
-                                    'Docblock return type does not match function return type for ' .
-                                        $this->getMethodId(),
-                                    new CodeLocation($this, $function, true)
-                                )
-                            )) {
-                                return false;
-                            }
-                        } else {
-                            $return_type = $docblock_return_type;
-                        }
-
-                        $return_type_location->setCommentLine($docblock_info->return_type_line_number);
-
-                        $storage->return_type = $return_type;
-                        $storage->return_type_location = $return_type_location;
-                    }
-
-                    if ($docblock_info->params) {
-                        $this->improveParamsFromDocblock(
-                            $docblock_info->params,
-                            $function_param_names,
-                            $storage->params,
-                            new CodeLocation($this, $function, false)
-                        );
-                    }
-                }
-            }
-        }
-
-        return null;
     }
 
     /**
