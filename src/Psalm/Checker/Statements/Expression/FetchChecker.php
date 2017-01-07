@@ -388,6 +388,14 @@ class FetchChecker
                     $statements_checker
                 );
 
+                // edge case when evaluating single files
+                if ($stmt->name === 'class' &&
+                    $statements_checker->getFileChecker()->containsUnEvaluatedClassLike($fq_class_name)
+                ) {
+                    $stmt->inferredType = Type::getString();
+                    return null;
+                }
+
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
                     $statements_checker->getFileChecker(),
@@ -398,12 +406,12 @@ class FetchChecker
                 }
             }
 
-            $const_id = $fq_class_name . '::' . $stmt->name;
-
             if ($stmt->name === 'class') {
                 $stmt->inferredType = Type::getString();
                 return null;
             }
+
+            $const_id = $fq_class_name . '::' . $stmt->name;
 
             if ($fq_class_name === $context->self
                 || (

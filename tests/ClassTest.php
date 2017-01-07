@@ -203,4 +203,67 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    public function testDeferredReference()
+    {
+        $stmts = self::$parser->parse('<?php
+        class B {
+            const C = A;
+        }
+
+        const A = 5;
+
+        $a = B::C;
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedConstant
+     */
+    public function testInvalidDeferredReference()
+    {
+        $stmts = self::$parser->parse('<?php
+        class B {
+            const C = A;
+        }
+
+        $b = (new B);
+
+        const A = 5;
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    public function testMoreCyclicalReferences()
+    {
+        $stmts = self::$parser->parse('<?php
+        class B extends C {
+            public function d() : A {
+                return new A;
+            }
+        }
+        class C {
+            /** @var string */
+            public $p = A::class;
+            public static function e() : void {}
+        }
+        class A extends B {
+            private function f() : void {
+                self::e();
+            }
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+
 }
