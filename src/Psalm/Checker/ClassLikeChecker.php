@@ -332,7 +332,43 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $implemented_method_id = $this->fq_class_name . '::' . $method_name;
 
                         MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
+                    }
+                }
+            }
+        }
 
+        return null;
+    }
+
+    /**
+     * @param Context|null  $class_context
+     * @param Context|null  $global_context
+     * @param bool          $update_docblocks
+     * @return null|false
+     */
+    public function analyze(
+        Context $class_context = null,
+        Context $global_context = null,
+        $update_docblocks = false
+    ) {
+        $config = Config::getInstance();
+
+        $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
+
+        $storage = self::$storage[$fq_class_name];
+
+        if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
+            foreach (ClassChecker::getInterfacesForClass(
+                $this->fq_class_name
+            ) as $interface_id => $interface_name) {
+                $interface_storage = self::$storage[$interface_name];
+
+                $storage->public_class_constants += $interface_storage->public_class_constants;
+
+                foreach ($interface_storage->methods as $method_name => $method) {
+                    if ($method->visibility === self::VISIBILITY_PUBLIC) {
+                        $implemented_method_id = $this->fq_class_name . '::' . $method_name;
+                        $mentioned_method_id = $interface_name . '::' . $method_name;
                         $declaring_method_id = MethodChecker::getDeclaringMethodId($implemented_method_id);
 
                         $method_storage = $declaring_method_id
@@ -373,26 +409,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
         }
-
-        return null;
-    }
-
-    /**
-     * @param Context|null  $class_context
-     * @param Context|null  $global_context
-     * @param bool          $update_docblocks
-     * @return void
-     */
-    public function analyzeMethods(
-        Context $class_context = null,
-        Context $global_context = null,
-        $update_docblocks = false
-    ) {
-        $config = Config::getInstance();
-
-        $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
-
-        $storage = self::$storage[$fq_class_name];
 
         if (!$class_context) {
             $class_context = new Context($this->source->getFileName(), $this->fq_class_name);
@@ -444,7 +460,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     $trait_checker = self::$trait_checkers[$trait_name];
 
-                    $trait_checker->analyzeMethods($class_context, $global_context, $update_docblocks);
+                    $trait_checker->analyze($class_context, $global_context, $update_docblocks);
                 }
             }
         }

@@ -289,7 +289,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @param  boolean $update_docblocks
      * @return void
      */
-    public function analyzeMethods($update_docblocks = false)
+    public function analyze($update_docblocks = false)
     {
         $config = Config::getInstance();
 
@@ -298,11 +298,11 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         foreach ($this->namespace_checkers as $namespace_checker) {
-            $namespace_checker->analyzeMethods(clone $this->context);
+            $namespace_checker->analyze(clone $this->context);
         }
 
         foreach ($this->class_checkers as $class_checker) {
-            $class_checker->analyzeMethods(null, $this->context, $update_docblocks);
+            $class_checker->analyze(null, $this->context, $update_docblocks);
         }
 
         foreach ($this->function_checkers as $function_checker) {
@@ -331,6 +331,8 @@ class FileChecker extends SourceChecker implements StatementsSource
                 );
             }
         }
+
+        $this->namespace_checkers = [];
 
         $this->class_checkers = [];
 
@@ -361,7 +363,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
     {
         $this->visit($file_context);
-        $this->analyzeMethods($update_docblocks);
+        $this->analyze($update_docblocks);
     }
 
     /**

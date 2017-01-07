@@ -796,7 +796,7 @@ class CallChecker
                         || !ClassChecker::classExtends($context->self, $fq_class_name)
                     )
                 ) {
-                    if (MethodChecker::analyzeMethodstatic(
+                    if (MethodChecker::analyzetatic(
                         $method_id,
                         $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
                         new CodeLocation($statements_checker->getSource(), $stmt),

@@ -102,10 +102,10 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
      * @param  Context $context
      * @return void
      */
-    public function analyzeMethods(Context $context)
+    public function analyze(Context $context)
     {
         foreach ($this->class_checkers as $class_checker) {
-            $class_checker->analyzeMethods(null, $context);
+            $class_checker->analyze(null, $context);
         }
 
         $this->class_checkers = [];
