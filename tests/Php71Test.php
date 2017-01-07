@@ -42,7 +42,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
     }
 
@@ -60,7 +60,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testPrivateClassConst()
@@ -78,7 +78,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -98,7 +98,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -123,7 +123,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testProtectedClassConst()
@@ -144,7 +144,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -164,7 +164,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testPublicClassConstFetch()
@@ -190,7 +190,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testArrayDestructuring()
@@ -210,7 +210,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string|int', (string) $context->vars_in_scope['$id1']);
         $this->assertEquals('string|int', (string) $context->vars_in_scope['$name1']);
         $this->assertEquals('string|int', (string) $context->vars_in_scope['$id2']);
@@ -234,7 +234,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testArrayDestructuringWithKeys()
@@ -254,7 +254,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$id1']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$name1']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$id2']);
@@ -281,7 +281,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|int', (string) $context->vars_in_scope['$last_id']);
         $this->assertEquals('null|string', (string) $context->vars_in_scope['$last_name']);
     }
@@ -306,7 +306,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|int', (string) $context->vars_in_scope['$last_id']);
         $this->assertEquals('null|string', (string) $context->vars_in_scope['$last_name']);
     }
@@ -330,7 +330,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -358,6 +358,6 @@ class Php71Test extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

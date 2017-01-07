@@ -45,7 +45,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNewVarInIf()
@@ -62,7 +62,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNewVarInIfWithElseReturn()
@@ -79,7 +79,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -98,7 +98,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -117,7 +117,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -138,7 +138,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -157,7 +157,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSwitchVariableWithContinue()
@@ -180,7 +180,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSwitchVariableWithContinueAndIfs()
@@ -209,7 +209,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSwitchVariableWithFallthrough()
@@ -232,7 +232,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSwitchVariableWithFallthroughStatement()
@@ -257,7 +257,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testTryCatchVar()
@@ -274,7 +274,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
@@ -291,7 +291,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
@@ -308,7 +308,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
@@ -321,7 +321,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNegatedAssignmentInIf()
@@ -337,7 +337,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testAssignInElseIf()
@@ -351,7 +351,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testIfNotEqualsFalse()
@@ -363,7 +363,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testIfNotEqualsNull()
@@ -375,7 +375,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testIfNullNotEquals()
@@ -387,7 +387,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testIfNullEquals()
@@ -401,7 +401,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testPassByRefInIf()
@@ -413,7 +413,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testPassByRefInIfCheckAfter()
@@ -426,7 +426,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testPassByRefInIfWithBoolean()
@@ -439,7 +439,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -463,7 +463,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$file_filter);
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testFunctionExists()
@@ -475,7 +475,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNestedPropertyFetchInElseif()
@@ -501,7 +501,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testGlobalReturn()
@@ -517,7 +517,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testStatic()
@@ -531,7 +531,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -547,7 +547,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -565,7 +565,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testTwoVarLogic()
@@ -586,7 +586,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testThreeVarLogic()
@@ -610,7 +610,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -640,7 +640,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -672,7 +672,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNegateAssertionAndOther()
@@ -687,7 +687,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
     }
 
@@ -705,7 +705,7 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
     }
 
@@ -728,6 +728,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

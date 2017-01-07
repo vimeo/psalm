@@ -88,7 +88,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param Context|null  $global_context
      * @return false|null
      */
-    public function check(Context $context, Context $global_context = null)
+    public function analyze(Context $context, Context $global_context = null)
     {
         /** @var array<PhpParser\Node\Expr|PhpParser\Node\Stmt> */
         $function_stmts = $this->function->getStmts() ?: [];
@@ -269,12 +269,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             );
         }
 
-        $statements_checker->check($function_stmts, $context, null, $global_context);
+        $statements_checker->analyze($function_stmts, $context, null, $global_context);
 
         if ($this->function instanceof Closure) {
             $closure_yield_types = [];
 
-            $this->checkReturnTypes(
+            $this->verifyReturnType(
                 false,
                 $storage->return_type,
                 $this->source->getFQCLN(),
@@ -658,7 +658,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param   CodeLocation|null   $secondary_return_type_location
      * @return  false|null
      */
-    public function checkReturnTypes(
+    public function verifyReturnType(
         $update_docblock = false,
         Type\Union $return_type = null,
         $fq_class_name = null,

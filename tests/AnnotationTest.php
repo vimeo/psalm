@@ -42,7 +42,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -65,7 +65,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -84,7 +84,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -103,7 +103,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -122,7 +122,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -141,7 +141,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -160,7 +160,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testValidDocblockReturn()
@@ -190,7 +190,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testNopType()
@@ -203,7 +203,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
@@ -222,7 +222,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testGoodDocblockInNamespace()
@@ -242,6 +242,6 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

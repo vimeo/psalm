@@ -80,7 +80,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$cee']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$dee']);
     }
@@ -130,7 +130,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testExtendsWithMethod()
@@ -158,7 +158,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -180,7 +180,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -200,7 +200,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -224,7 +224,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testCorrectInterfaceMethodSignature()
@@ -244,7 +244,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testInterfaceMethodImplementedInParent()
@@ -266,7 +266,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -293,7 +293,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testInterfaceMethodSignatureInTrait()
@@ -316,7 +316,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -346,7 +346,7 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testDelayedInterface()
@@ -363,6 +363,6 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         ');
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

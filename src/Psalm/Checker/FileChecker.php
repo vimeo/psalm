@@ -266,17 +266,17 @@ class FileChecker extends SourceChecker implements StatementsSource
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
-            $statements_checker->check($leftover_stmts, $this->context);
+            $statements_checker->analyze($leftover_stmts, $this->context);
         }
 
         // check any leftover interfaces not already evaluated
         foreach ($this->interface_checkers_no_methods as $interface_checker) {
-            $interface_checker->check();
+            $interface_checker->visit();
         }
 
         // check any leftover classes not already evaluated
         foreach ($this->class_checkers_no_methods as $class_checker) {
-            $class_checker->check();
+            $class_checker->visit();
         }
 
         $this->class_checkers = $classes_to_check;
@@ -289,7 +289,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @param  boolean $update_docblocks
      * @return void
      */
-    public function checkMethods($update_docblocks = false)
+    public function analyzeMethods($update_docblocks = false)
     {
         $config = Config::getInstance();
 
@@ -298,16 +298,16 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         foreach ($this->namespace_checkers as $namespace_checker) {
-            $namespace_checker->checkMethods(clone $this->context);
+            $namespace_checker->analyzeMethods(clone $this->context);
         }
 
         foreach ($this->class_checkers as $class_checker) {
-            $class_checker->checkMethods(null, $this->context, $update_docblocks);
+            $class_checker->analyzeMethods(null, $this->context, $update_docblocks);
         }
 
         foreach ($this->function_checkers as $function_checker) {
             $function_context = new Context($this->file_name, $this->context->self);
-            $function_checker->check($function_context, $this->context);
+            $function_checker->analyze($function_context, $this->context);
 
             if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
                 /** @var string */
@@ -323,7 +323,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                     $this->file_path
                 );
 
-                $function_checker->checkReturnTypes(
+                $function_checker->verifyReturnType(
                     false,
                     $return_type,
                     null,
@@ -358,10 +358,10 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @param  boolean      $update_docblocks
      * @return void
      */
-    public function visitAndCheckMethods(Context $file_context = null, $update_docblocks = false)
+    public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
     {
         $this->visit($file_context);
-        $this->checkMethods($update_docblocks);
+        $this->analyzeMethods($update_docblocks);
     }
 
     /**
@@ -377,7 +377,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         if (isset($this->interface_checkers_no_methods[$fq_class_name])) {
-            if ($this->interface_checkers_no_methods[$fq_class_name]->check() === false) {
+            if ($this->interface_checkers_no_methods[$fq_class_name]->visit() === false) {
                 return false;
             }
 
@@ -386,7 +386,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         if (isset($this->class_checkers_no_methods[$fq_class_name])) {
-            if ($this->class_checkers_no_methods[$fq_class_name]->check(null, $this->context) === false) {
+            if ($this->class_checkers_no_methods[$fq_class_name]->visit(null, $this->context) === false) {
                 return false;
             }
 

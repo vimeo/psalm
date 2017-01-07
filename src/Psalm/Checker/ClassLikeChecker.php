@@ -180,7 +180,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param Context|null  $global_context
      * @return false|null
      */
-    public function check(
+    public function visit(
         Context $class_context = null,
         Context $global_context = null
     ) {
@@ -313,7 +313,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         if ($leftover_stmts) {
-            (new StatementsChecker($this))->check($leftover_stmts, $class_context);
+            (new StatementsChecker($this))->analyze($leftover_stmts, $class_context);
         }
 
         $config = Config::getInstance();
@@ -374,10 +374,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        if (!$this->class->name) {
-            $this->class->name = $this->fq_class_name;
-        }
-
         return null;
     }
 
@@ -387,7 +383,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param bool          $update_docblocks
      * @return void
      */
-    public function checkMethods(
+    public function analyzeMethods(
         Context $class_context = null,
         Context $global_context = null,
         $update_docblocks = false
@@ -419,7 +415,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_checker = new MethodChecker($stmt, $this);
 
-                $method_checker->check(clone $class_context, clone $global_context);
+                $method_checker->analyze(clone $class_context, clone $global_context);
 
                 $method_id = (string)$method_checker->getMethodId();
 
@@ -431,7 +427,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $secondary_return_type_location
                     );
 
-                    $method_checker->checkReturnTypes(
+                    $method_checker->verifyReturnType(
                         $update_docblocks,
                         MethodChecker::getMethodReturnType($method_id),
                         $class_context->self,
@@ -448,7 +444,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     $trait_checker = self::$trait_checkers[$trait_name];
 
-                    $trait_checker->checkMethods($class_context, $global_context, $update_docblocks);
+                    $trait_checker->analyzeMethods($class_context, $global_context, $update_docblocks);
                 }
             }
         }
@@ -593,7 +589,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $trait_checker->setMethodMap($method_map);
 
-                $trait_checker->check($class_context);
+                $trait_checker->visit($class_context);
 
                 self::registerInheritedProperties($this->fq_class_name, $trait_name);
 

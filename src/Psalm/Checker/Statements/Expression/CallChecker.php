@@ -40,7 +40,7 @@ class CallChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkFunctionCall(
+    public static function analyzeFunctionCall(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context
@@ -80,7 +80,7 @@ class CallChecker
             } elseif ($method->parts === ['define']) {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $second_arg = $stmt->args[1];
-                    ExpressionChecker::check($statements_checker, $second_arg->value, $context);
+                    ExpressionChecker::analyze($statements_checker, $second_arg->value, $context);
                     $const_name = $first_arg->value->value;
 
                     $statements_checker->setConstType(
@@ -104,7 +104,7 @@ class CallChecker
             $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
 
             if ($stmt->name instanceof PhpParser\Node\Expr) {
-                if (ExpressionChecker::check($statements_checker, $stmt->name, $context) === false) {
+                if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
                     return false;
                 }
 
@@ -250,7 +250,7 @@ class CallChecker
      * @param   Context                     $context
      * @return  false|null
      */
-    public static function checkNew(
+    public static function analyzeNew(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context
@@ -295,10 +295,10 @@ class CallChecker
                 }
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
-            $statements_checker->check([$stmt->class], $context);
+            $statements_checker->analyze([$stmt->class], $context);
             $fq_class_name = $stmt->class->name;
         } else {
-            ExpressionChecker::check($statements_checker, $stmt->class, $context);
+            ExpressionChecker::analyze($statements_checker, $stmt->class, $context);
         }
 
         if ($fq_class_name) {
@@ -399,12 +399,12 @@ class CallChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkMethodCall(
+    public static function analyzeMethodCall(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context
     ) {
-        if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
             return false;
         }
 
@@ -654,7 +654,7 @@ class CallChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkStaticCall(
+    public static function analyzeStaticCall(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context
@@ -741,7 +741,7 @@ class CallChecker
                 $lhs_type = new Type\Union([new Type\Atomic($fq_class_name)]);
             }
         } else {
-            ExpressionChecker::check($statements_checker, $stmt->class, $context);
+            ExpressionChecker::analyze($statements_checker, $stmt->class, $context);
 
             /** @var Type\Union */
             $lhs_type = $stmt->class->inferredType;
@@ -796,7 +796,7 @@ class CallChecker
                         || !ClassChecker::classExtends($context->self, $fq_class_name)
                     )
                 ) {
-                    if (MethodChecker::checkMethodStatic(
+                    if (MethodChecker::analyzeMethodstatic(
                         $method_id,
                         $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
                         new CodeLocation($statements_checker->getSource(), $stmt),
@@ -894,7 +894,7 @@ class CallChecker
                     if ($by_ref && $by_ref_type) {
                         ExpressionChecker::assignByRefParam($statements_checker, $arg->value, $by_ref_type, $context);
                     } else {
-                        if (FetchChecker::checkPropertyFetch($statements_checker, $arg->value, $context) === false) {
+                        if (FetchChecker::analyzePropertyFetch($statements_checker, $arg->value, $context) === false) {
                             return false;
                         }
                     }
@@ -923,7 +923,7 @@ class CallChecker
                         ? clone $function_params[$argument_offset]->type
                         : null;
 
-                    if (ExpressionChecker::checkVariable(
+                    if (ExpressionChecker::analyzeVariable(
                         $statements_checker,
                         $arg->value,
                         $context,
@@ -944,7 +944,7 @@ class CallChecker
                     }
                 }
             } else {
-                if (ExpressionChecker::check($statements_checker, $arg->value, $context) === false) {
+                if (ExpressionChecker::analyze($statements_checker, $arg->value, $context) === false) {
                     return false;
                 }
             }

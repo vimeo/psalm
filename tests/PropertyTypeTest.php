@@ -53,7 +53,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testPropertyWithoutTypeSuppressingIssue()
@@ -70,7 +70,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -87,7 +87,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -104,7 +104,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -122,7 +122,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -140,7 +140,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -160,7 +160,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -176,7 +176,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -198,7 +198,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -213,7 +213,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -228,7 +228,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSharedPropertyInIf()
@@ -253,7 +253,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
     }
 
@@ -282,7 +282,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
     }
 
@@ -309,7 +309,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -335,7 +335,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -357,7 +357,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -379,7 +379,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testNullablePropertyCheck()
@@ -404,7 +404,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testNullablePropertyAfterGuard()
@@ -426,7 +426,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testNullableStaticPropertyWithIfCheck()
@@ -448,7 +448,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testReflectionProperties()
@@ -464,7 +464,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testGrandparentReflectedProperties()
@@ -476,7 +476,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('DOMDocument', (string) $context->vars_in_scope['$owner']);
     }
 
@@ -505,7 +505,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -532,6 +532,6 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

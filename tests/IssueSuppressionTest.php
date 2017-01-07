@@ -45,7 +45,7 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testExcludeIssue()
@@ -57,6 +57,6 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 }

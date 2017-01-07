@@ -59,7 +59,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  Context|null                                     $global_context
      * @return null|false
      */
-    public function check(
+    public function analyze(
         array $stmts,
         Context $context,
         Context $loop_context = null,
@@ -112,19 +112,19 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             */
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                IfChecker::check($this, $stmt, $context, $loop_context);
+                IfChecker::analyze($this, $stmt, $context, $loop_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                TryChecker::check($this, $stmt, $context, $loop_context);
+                TryChecker::analyze($this, $stmt, $context, $loop_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
-                ForChecker::check($this, $stmt, $context);
+                ForChecker::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
-                ForeachChecker::check($this, $stmt, $context);
+                ForeachChecker::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                WhileChecker::check($this, $stmt, $context);
+                WhileChecker::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
-                $this->checkDo($stmt, $context);
+                $this->analyzeDo($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
-                $this->checkConstAssignment($stmt, $context);
+                $this->analyzeConstAssignment($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 foreach ($stmt->vars as $var) {
                     $var_id = ExpressionChecker::getArrayVarId(
@@ -139,12 +139,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
-                $this->checkReturn($stmt, $context);
+                $this->analyzeReturn($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $has_returned = true;
-                $this->checkThrow($stmt, $context);
+                $this->analyzeThrow($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
-                SwitchChecker::check($this, $stmt, $context, $loop_context);
+                SwitchChecker::analyze($this, $stmt, $context, $loop_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
@@ -162,10 +162,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
-                $this->checkStatic($stmt, $context);
+                $this->analyzeStatic($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
                 foreach ($stmt->exprs as $i => $expr) {
-                    ExpressionChecker::check($this, $expr, $context);
+                    ExpressionChecker::analyze($this, $expr, $context);
 
                     if (isset($expr->inferredType)) {
                         if (CallChecker::checkFunctionArgumentType(
@@ -182,7 +182,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($this->getFileName(), $context->self);
-                $function_checkers[$stmt->name]->check($function_context, $context);
+                $function_checkers[$stmt->name]->analyze($function_context, $context);
 
                 $config = Config::getInstance();
 
@@ -200,7 +200,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $this->getFilePath()
                     );
 
-                    $function_checkers[$stmt->name]->checkReturnTypes(
+                    $function_checkers[$stmt->name]->verifyReturnType(
                         false,
                         $return_type,
                         $this->getFQCLN(),
@@ -208,7 +208,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
-                ExpressionChecker::check($this, $stmt, $context);
+                ExpressionChecker::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
@@ -234,7 +234,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                                 $context->vars_possibly_in_scope[$var_id] = true;
                             } else {
-                                ExpressionChecker::check($this, $var, $context);
+                                ExpressionChecker::analyze($this, $var, $context);
                             }
                         }
                     }
@@ -242,11 +242,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
                     if ($prop->default) {
-                        ExpressionChecker::check($this, $prop->default, $context);
+                        ExpressionChecker::analyze($this, $prop->default, $context);
 
                         if (isset($prop->default->inferredType)) {
                             if (!$stmt->isStatic()) {
-                                if (AssignmentChecker::checkPropertyAssignment(
+                                if (AssignmentChecker::analyzePropertyAssignment(
                                     $this,
                                     $prop,
                                     $prop->name,
@@ -272,7 +272,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
 
                 foreach ($stmt->consts as $const) {
-                    ExpressionChecker::check($this, $const->value, $context);
+                    ExpressionChecker::analyze($this, $const->value, $context);
 
                     if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
                         ClassLikeChecker::setConstantType(
@@ -284,7 +284,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                (new ClassChecker($stmt, $this->source, $stmt->name))->check();
+                (new ClassChecker($stmt, $this->source, $stmt->name))->visit();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 CommentChecker::getTypeFromComment(
                     (string)$stmt->getDocComment(),
@@ -318,11 +318,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                     $context
      * @return  false|null
      */
-    protected function checkStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
+    protected function analyzeStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
     {
         foreach ($stmt->vars as $var) {
             if ($var->default) {
-                if (ExpressionChecker::check($this, $var->default, $context) === false) {
+                if (ExpressionChecker::analyze($this, $var->default, $context) === false) {
                     return false;
                 }
             }
@@ -386,14 +386,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                 $context
      * @return  false|null
      */
-    protected function checkDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
+    protected function analyzeDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
         // do not clone context for do, because it executes in current scope always
-        if ($this->check($stmt->stmts, $context, $context) === false) {
+        if ($this->analyze($stmt->stmts, $context, $context) === false) {
             return false;
         }
 
-        return ExpressionChecker::check($this, $stmt->cond, $context);
+        return ExpressionChecker::analyze($this, $stmt->cond, $context);
     }
 
     /**
@@ -426,7 +426,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             $this_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
 
-            $method_checker->check($this_context);
+            $method_checker->analyze($this_context);
 
             foreach ($this_context->vars_in_scope as $var => $type) {
                 $context->vars_possibly_in_scope[$var] = true;
@@ -444,10 +444,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                     $context
      * @return  void
      */
-    protected function checkConstAssignment(PhpParser\Node\Stmt\Const_ $stmt, Context $context)
+    protected function analyzeConstAssignment(PhpParser\Node\Stmt\Const_ $stmt, Context $context)
     {
         foreach ($stmt->consts as $const) {
-            ExpressionChecker::check($this, $const->value, $context);
+            ExpressionChecker::analyze($this, $const->value, $context);
 
             $this->setConstType(
                 $const->name,
@@ -526,7 +526,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  Context                     $context
      * @return false|null
      */
-    protected function checkReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
+    protected function analyzeReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
     {
         $type_in_comments = CommentChecker::getTypeFromComment(
             (string) $stmt->getDocComment(),
@@ -535,7 +535,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         );
 
         if ($stmt->expr) {
-            if (ExpressionChecker::check($this, $stmt->expr, $context) === false) {
+            if (ExpressionChecker::analyze($this, $stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -562,9 +562,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                     $context
      * @return  false|null
      */
-    protected function checkThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
+    protected function analyzeThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
     {
-        return ExpressionChecker::check($this, $stmt->expr, $context);
+        return ExpressionChecker::analyze($this, $stmt->expr, $context);
     }
 
     /**
@@ -601,7 +601,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  Context                      $context
      * @return false|null
      */
-    public function checkInclude(PhpParser\Node\Expr\Include_ $stmt, Context $context)
+    public function analyzeInclude(PhpParser\Node\Expr\Include_ $stmt, Context $context)
     {
         $config = Config::getInstance();
 
@@ -609,7 +609,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             throw new FileIncludeException('File includes are not allowed per your Psalm config - check the allowFileIncludes flag.');
         }
 
-        if (ExpressionChecker::check($this, $stmt->expr, $context) === false) {
+        if (ExpressionChecker::analyze($this, $stmt->expr, $context) === false) {
             return false;
         }
 
@@ -655,7 +655,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $old_include_file_name = $this->getIncludeFileName();
                 $old_include_file_path = $this->getIncludeFilePath();
                 $this->setIncludeFileName($config->shortenFileName($path_to_file), $path_to_file);
-                $this->check($include_stmts, $context);
+                $this->analyze($include_stmts, $context);
                 $this->setIncludeFileName($old_include_file_name, $old_include_file_path);
                 return null;
             }

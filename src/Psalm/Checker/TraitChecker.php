@@ -54,7 +54,7 @@ class TraitChecker extends ClassLikeChecker
      * @param   Context|null    $global_context
      * @return void
      */
-    public function check(
+    public function visit(
         Context $class_context = null,
         Context $global_context = null
     ) {
@@ -62,7 +62,7 @@ class TraitChecker extends ClassLikeChecker
             throw new \InvalidArgumentException('TraitChecker::check must be called with a $class_context');
         }
 
-        parent::check($class_context, $global_context);
+        parent::visit($class_context, $global_context);
     }
 
     /**

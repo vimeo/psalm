@@ -43,7 +43,7 @@ class AssignmentChecker
      * @param  string                   $doc_comment
      * @return false|Type\Union
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $assign_var,
         PhpParser\Node\Expr $assign_value = null,
@@ -75,7 +75,7 @@ class AssignmentChecker
             $var_id
         );
 
-        if ($assign_value && ExpressionChecker::check($statements_checker, $assign_value, $context) === false) {
+        if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
             // if we're not exiting immediately, make everything mixed
             $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
 
@@ -133,7 +133,7 @@ class AssignmentChecker
                 if ($assign_value instanceof PhpParser\Node\Expr\Array_
                     && isset($assign_value->items[$offset]->value->inferredType)
                 ) {
-                    self::check(
+                    self::analyze(
                         $statements_checker,
                         $var,
                         $assign_value->items[$offset]->value,
@@ -177,11 +177,17 @@ class AssignmentChecker
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            if (self::checkArrayAssignment($statements_checker, $assign_var, $context, $assign_value_type) === false) {
+            if (self::analyzeArrayAssignment(
+                $statements_checker,
+                $assign_var,
+                $context,
+                $assign_value_type
+            ) === false
+            ) {
                 return false;
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch && is_string($assign_var->name)) {
-            self::checkPropertyAssignment(
+            self::analyzePropertyAssignment(
                 $statements_checker,
                 $assign_var,
                 $assign_var->name,
@@ -195,11 +201,11 @@ class AssignmentChecker
             $assign_var->class instanceof PhpParser\Node\Name &&
             is_string($assign_var->name)
         ) {
-            if (ExpressionChecker::check($statements_checker, $assign_var, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $assign_var, $context) === false) {
                 return false;
             }
 
-            self::checkStaticPropertyAssignment(
+            self::analyzeStaticPropertyAssignment(
                 $statements_checker,
                 $assign_var,
                 $assign_value,
@@ -231,16 +237,16 @@ class AssignmentChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkAssignmentOperation(
+    public static function analyzeAssignmentOperation(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
     ) {
-        if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
             return false;
         }
 
-        if (ExpressionChecker::check($statements_checker, $stmt->expr, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->expr, $context) === false) {
             return false;
         }
 
@@ -259,7 +265,7 @@ class AssignmentChecker
             $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul ||
             $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
         ) {
-            ExpressionChecker::checkNonDivArithmenticOp(
+            ExpressionChecker::analyzeNonDivArithmenticOp(
                 $statements_checker,
                 $stmt->var,
                 $stmt->expr,
@@ -279,7 +285,7 @@ class AssignmentChecker
         ) {
             $context->vars_in_scope[$var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
-            ExpressionChecker::checkConcatOp(
+            ExpressionChecker::analyzeConcatOp(
                 $statements_checker,
                 $stmt->var,
                 $stmt->expr,
@@ -304,7 +310,7 @@ class AssignmentChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkPropertyAssignment(
+    public static function analyzePropertyAssignment(
         StatementsChecker $statements_checker,
         $stmt,
         $prop_name,
@@ -341,7 +347,7 @@ class AssignmentChecker
         } else {
             $assignment_var = $stmt;
 
-            if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
                 return false;
             }
 
@@ -637,7 +643,7 @@ class AssignmentChecker
      * @param   Context                                   $context
      * @return  false|null
      */
-    protected static function checkStaticPropertyAssignment(
+    protected static function analyzeStaticPropertyAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         PhpParser\Node\Expr $assignment_value = null,
@@ -778,13 +784,13 @@ class AssignmentChecker
      * @return  false|null
      * @psalm-suppress MixedMethodCall - some funky logic here
      */
-    protected static function checkArrayAssignment(
+    protected static function analyzeArrayAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         Type\Union $assignment_value_type
     ) {
-        if ($stmt->dim && ExpressionChecker::check($statements_checker, $stmt->dim, $context, false) === false) {
+        if ($stmt->dim && ExpressionChecker::analyze($statements_checker, $stmt->dim, $context, false) === false) {
             return false;
         }
 
@@ -819,7 +825,7 @@ class AssignmentChecker
             && isset($context->vars_in_scope[$var_id])
             && $context->vars_in_scope[$var_id]->hasObjectType();
 
-        if (ExpressionChecker::check(
+        if (ExpressionChecker::analyze(
             $statements_checker,
             $stmt->var,
             $context,

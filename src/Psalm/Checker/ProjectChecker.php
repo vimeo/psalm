@@ -204,7 +204,7 @@ class ProjectChecker
                 echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
             }
 
-            $file_checker->checkMethods();
+            $file_checker->analyzeMethods();
         }
     }
 
@@ -368,7 +368,7 @@ class ProjectChecker
             }
 
             $file_checker->visit();
-            $file_checker->checkMethods();
+            $file_checker->analyzeMethods();
         }
     }
 
@@ -414,7 +414,7 @@ class ProjectChecker
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
         }
 
-        $file_checker->checkMethods();
+        $file_checker->analyzeMethods();
 
         IssueBuffer::finish(false, $start_checks, $this->debug_output);
     }
@@ -451,7 +451,7 @@ class ProjectChecker
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
         }
 
-        $file_checker->checkMethods();
+        $file_checker->analyzeMethods();
     }
 
     /**

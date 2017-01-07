@@ -15,7 +15,7 @@ class ForChecker
      * @param   Context                     $context
      * @return  false|null
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\For_ $stmt,
         Context $context
@@ -24,24 +24,24 @@ class ForChecker
         $for_context->in_loop = true;
 
         foreach ($stmt->init as $init) {
-            if (ExpressionChecker::check($statements_checker, $init, $for_context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $init, $for_context) === false) {
                 return false;
             }
         }
 
         foreach ($stmt->cond as $condition) {
-            if (ExpressionChecker::check($statements_checker, $condition, $for_context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $condition, $for_context) === false) {
                 return false;
             }
         }
 
         foreach ($stmt->loop as $expr) {
-            if (ExpressionChecker::check($statements_checker, $expr, $for_context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $expr, $for_context) === false) {
                 return false;
             }
         }
 
-        $statements_checker->check($stmt->stmts, $for_context, $context);
+        $statements_checker->analyze($stmt->stmts, $for_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

@@ -84,17 +84,17 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         foreach ($classlike_checkers as $classlike_checker) {
             if ($classlike_checker instanceof ClassChecker) {
-                $classlike_checker->check(null, null);
+                $classlike_checker->visit(null, null);
                 $this->class_checkers[] = $classlike_checker;
             } elseif ($classlike_checker instanceof InterfaceChecker) {
-                $classlike_checker->check();
+                $classlike_checker->visit();
             }
         }
 
         if ($leftover_stmts) {
             $statements_checker = new StatementsChecker($this);
             $context = new Context($this->source->getFileName());
-            $statements_checker->check($leftover_stmts, $context);
+            $statements_checker->analyze($leftover_stmts, $context);
         }
     }
 
@@ -102,10 +102,10 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
      * @param  Context $context
      * @return void
      */
-    public function checkMethods(Context $context)
+    public function analyzeMethods(Context $context)
     {
         foreach ($this->class_checkers as $class_checker) {
-            $class_checker->checkMethods(null, $context);
+            $class_checker->analyzeMethods(null, $context);
         }
 
         $this->class_checkers = [];

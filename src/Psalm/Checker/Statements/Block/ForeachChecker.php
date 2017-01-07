@@ -24,12 +24,12 @@ class ForeachChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Foreach_ $stmt,
         Context $context
     ) {
-        if (ExpressionChecker::check($statements_checker, $stmt->expr, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->expr, $context) === false) {
             return false;
         }
 
@@ -178,7 +178,7 @@ class ForeachChecker
             $statements_checker->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
         }
 
-        AssignmentChecker::check(
+        AssignmentChecker::analyze(
             $statements_checker,
             $stmt->valueVar,
             null,
@@ -194,7 +194,7 @@ class ForeachChecker
             null
         );
 
-        $statements_checker->check($stmt->stmts, $foreach_context, $context);
+        $statements_checker->analyze($stmt->stmts, $foreach_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

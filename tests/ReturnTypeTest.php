@@ -50,7 +50,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testReturnTypeNotEmptyCheck()
@@ -70,7 +70,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testReturnTypeNotEmptyCheckInElseIf()
@@ -93,7 +93,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testReturnTypeNotEmptyCheckInElse()
@@ -116,7 +116,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testReturnTypeAfterIf()
@@ -137,7 +137,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testReturnTypeAfterTwoIfsWithThrow()
@@ -163,7 +163,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testReturnTypeAfterIfElseIfWithThrow()
@@ -189,7 +189,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         }');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testTryCatchReturnType()
@@ -210,7 +210,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSwitchReturnTypeWithFallthrough()
@@ -229,7 +229,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSwitchReturnTypeWithFallthroughAndStatement()
@@ -249,7 +249,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -272,7 +272,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -297,7 +297,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -319,7 +319,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testSwitchReturnTypeWitDefaultException()
@@ -344,7 +344,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndCheckMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testExtendsStaticCallReturnType()
@@ -365,7 +365,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertEquals('B', (string) $context->vars_in_scope['$b']);
     }
@@ -388,7 +388,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertEquals('array<int, B>', (string) $context->vars_in_scope['$bees']);
     }
@@ -407,7 +407,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testThisReturnType()
@@ -423,7 +423,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testOverrideReturnType()
@@ -448,7 +448,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$blah']);
     }
 
@@ -471,7 +471,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$blah']);
     }
 
@@ -497,7 +497,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$blah']);
     }
 
@@ -515,7 +515,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -532,7 +532,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -551,7 +551,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -570,7 +570,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -587,7 +587,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -604,6 +604,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->visitAndCheckMethods($context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

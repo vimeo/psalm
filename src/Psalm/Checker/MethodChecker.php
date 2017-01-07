@@ -202,7 +202,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  array<string>   $suppressed_issues
      * @return bool
      */
-    public static function checkMethodStatic(
+    public static function analyzeMethodstatic(
         $method_id,
         $self_call,
         CodeLocation $code_location,

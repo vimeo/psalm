@@ -41,21 +41,21 @@ class FetchChecker
      * @param   bool                                $array_assignment
      * @return  false|null
      */
-    public static function checkPropertyFetch(
+    public static function analyzePropertyFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
         $array_assignment = false
     ) {
         if (!is_string($stmt->name)) {
-            if (ExpressionChecker::check($statements_checker, $stmt->name, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
                 return false;
             }
         }
 
         $var_id = null;
 
-        if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
             return false;
         }
 
@@ -300,7 +300,7 @@ class FetchChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkConstFetch(
+    public static function analyzeConstFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
@@ -351,7 +351,7 @@ class FetchChecker
      * @param   Context                             $context
      * @return  null|false
      */
-    public static function checkClassConstFetch(
+    public static function analyzeClassConstFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
@@ -457,7 +457,7 @@ class FetchChecker
         }
 
         if ($stmt->class instanceof PhpParser\Node\Expr) {
-            if (ExpressionChecker::check($statements_checker, $stmt->class, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->class, $context) === false) {
                 return false;
             }
         }
@@ -471,7 +471,7 @@ class FetchChecker
      * @param   Context                                 $context
      * @return  null|false
      */
-    public static function checkStaticPropertyFetch(
+    public static function analyzeStaticPropertyFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
@@ -605,7 +605,7 @@ class FetchChecker
      * @param   string|null                         $assignment_key_value
      * @return  false|null
      */
-    public static function checkArrayAccess(
+    public static function analyzeArrayAccess(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
@@ -643,7 +643,7 @@ class FetchChecker
             $statements_checker
         );
 
-        if ($stmt->dim && ExpressionChecker::check($statements_checker, $stmt->dim, $context) === false) {
+        if ($stmt->dim && ExpressionChecker::analyze($statements_checker, $stmt->dim, $context) === false) {
             return false;
         }
 
@@ -736,7 +736,7 @@ class FetchChecker
             }
         }
 
-        if (ExpressionChecker::check(
+        if (ExpressionChecker::analyze(
             $statements_checker,
             $stmt->var,
             $context,
