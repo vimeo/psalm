@@ -1689,4 +1689,23 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         $this->assertSame('int', (string) $context->vars_in_scope['$a']);
     }
+
+    public function testTypedValueAssertion()
+    {
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param array|string $a
+         */
+        function fooFoo($a) : void {
+            $b = "aadad";
+
+            if ($a === $b) {
+                echo substr($a, 1);
+            }
+        }');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods($context);
+    }
 }

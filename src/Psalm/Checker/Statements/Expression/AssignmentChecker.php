@@ -54,15 +54,13 @@ class AssignmentChecker
         $var_id = ExpressionChecker::getVarId(
             $assign_var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $assign_var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         if ($array_var_id) {
@@ -150,8 +148,7 @@ class AssignmentChecker
                 $list_var_id = ExpressionChecker::getVarId(
                     $var,
                     $statements_checker->getFQCLN(),
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($list_var_id) {
@@ -250,8 +247,7 @@ class AssignmentChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $var_type = isset($stmt->var->inferredType) ? clone $stmt->var->inferredType : null;
@@ -358,15 +354,13 @@ class AssignmentChecker
             $lhs_var_id = ExpressionChecker::getVarId(
                 $stmt->var,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             if ($lhs_type->isMixed()) {
@@ -655,8 +649,7 @@ class AssignmentChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $fq_class_name = (string)$stmt->class->inferredType;
@@ -817,8 +810,7 @@ class AssignmentChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses(),
+            $statements_checker,
             $nesting
         );
 
@@ -842,8 +834,7 @@ class AssignmentChecker
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $is_string = isset($stmt->var->inferredType)

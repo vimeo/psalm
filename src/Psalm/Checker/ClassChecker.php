@@ -41,18 +41,16 @@ class ClassChecker extends ClassLikeChecker
         self::$class_extends[$this->fq_class_name] = [];
 
         if ($this->class->extends) {
-            $this->parent_class = self::getFQCLNFromNameObject(
+            $this->parent_fq_class_name = self::getFQCLNFromNameObject(
                 $this->class->extends,
-                $this->namespace,
-                $this->aliased_classes
+                $this->source
             );
         }
 
         foreach ($class->implements as $interface_name) {
             $fq_interface_name = self::getFQCLNFromNameObject(
                 $interface_name,
-                $this->namespace,
-                $this->aliased_classes
+                $this->source
             );
 
             $storage->class_implements[strtolower($fq_interface_name)] = $fq_interface_name;

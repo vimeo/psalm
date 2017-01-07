@@ -80,9 +80,8 @@ class IfChecker
 
         $if_clauses = TypeChecker::getFormula(
             $stmt->cond,
-            $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $context->self,
+            $statements_checker
         );
 
         $if_context->clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
@@ -394,8 +393,7 @@ class IfChecker
         $elseif_clauses = TypeChecker::getFormula(
             $elseif->cond,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $elseif_context->clauses = TypeChecker::simplifyCNF(
@@ -738,14 +736,6 @@ class IfChecker
      */
     protected static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt)
     {
-        if ($stmt instanceof PhpParser\Node\Expr\MethodCall
-            || $stmt instanceof PhpParser\Node\Expr\StaticCall
-            || $stmt instanceof PhpParser\Node\Expr\FuncCall
-            || $stmt instanceof PhpParser\Node\Expr\Assign
-        ) {
-            return $stmt;
-        }
-
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
@@ -764,6 +754,6 @@ class IfChecker
             return self::getDefinitelyEvaluatedExpression($stmt->expr);
         }
 
-        return null;
+        return $stmt;
     }
 }

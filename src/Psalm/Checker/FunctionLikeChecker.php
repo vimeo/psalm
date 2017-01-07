@@ -38,19 +38,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     protected $function;
 
     /**
-     * @var string
+     * @var array<string>
      */
-    protected $namespace;
+    protected $suppressed_issues;
 
     /**
      * @var bool
      */
     protected $is_static = false;
-
-    /**
-     * @var string
-     */
-    protected $fq_class_name;
 
     /**
      * @var StatementsChecker|null
@@ -73,16 +68,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     protected $return_vars_possibly_in_scope = [];
 
     /**
-     * @var string|null
-     */
-    protected $class_name;
-
-    /**
-     * @var string|null
-     */
-    protected $class_extends;
-
-    /**
      * @var array<string, array>
      */
     protected static $no_effects_hashes = [];
@@ -94,19 +79,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public function __construct($function, StatementsSource $source)
     {
         $this->function = $function;
-        $this->namespace = $source->getNamespace();
-        $this->class_name = $source->getClassName();
-        $this->class_extends = $source->getParentClass();
-        $this->file_name = $source->getFileName();
-        $this->file_path = $source->getFilePath();
-        $this->include_file_name = $source->getIncludeFileName();
-        $this->include_file_path = $source->getIncludeFilePath();
-        $this->fq_class_name = $source->getFQCLN();
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
-        $this->aliased_classes = $source->getAliasedClasses();
-        $this->aliased_constants = $source->getAliasedConstants();
-        $this->aliased_functions = $source->getAliasedFunctions();
     }
 
     /**
@@ -116,7 +90,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public function check(Context $context, Context $global_context = null)
     {
-        /** @var array<PhpParser\Node> */
+        /** @var array<PhpParser\Node\Expr|PhpParser\Node\Stmt> */
         $function_stmts = $this->function->getStmts() ?: [];
 
         $hash = null;
@@ -143,11 +117,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
             }
 
+            $real_method_id = (string)$this->getMethodId();
+
             $method_id = (string)$this->getMethodId($context->self);
+
+            $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($method_id);
+
+            if ($declaring_method_id !== $real_method_id) {
+                // this trait method has been overridden, so we don't care about it
+                return;
+            }
 
             $fq_class_name = (string)$context->self;
 
-            $storage = MethodChecker::getStorage(MethodChecker::getDeclaringMethodId($method_id));
+            $storage = MethodChecker::getStorage($declaring_method_id);
 
             $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
 
@@ -214,7 +197,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         } elseif ($this->function instanceof Function_) {
-            $storage = FileChecker::$storage[$this->file_path]->functions[(string)$this->getMethodId()];
+            $storage = FileChecker::$storage[$this->source->getFilePath()]->functions[(string)$this->getMethodId()];
 
             $cased_method_id = $this->function->name;
         } else { // Closure
@@ -276,20 +259,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            foreach ($param_type->types as $atomic_type) {
-                if ($atomic_type->isObjectType()
-                    && !$atomic_type->isObject()
-                    && $this->function instanceof PhpParser\Node
-                    && ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $atomic_type->value,
-                        $this->getFileChecker(),
-                        $function_param->code_location,
-                        $this->suppressed_issues
-                    ) === false
-                ) {
-                    return false;
-                }
-            }
+            $param_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
 
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
 
@@ -307,7 +277,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $this->checkReturnTypes(
                 false,
                 $storage->return_type,
-                $this->fq_class_name,
+                $this->source->getFQCLN(),
                 $storage->return_type_location
             );
 
@@ -387,7 +357,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
         } elseif ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
-            $fq_class_name = $source->getFQCLN();
+            $fq_class_name = (string)$source->getFQCLN();
 
             $function_id = $fq_class_name . '::' . strtolower($function->name);
             $cased_function_id = $fq_class_name . '::' . $function->name;
@@ -480,8 +450,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             } else {
                 $return_type_fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $parser_return_type,
-                    $namespace,
-                    $source->getAliasedClasses()
+                    $source
                 );
 
                 $return_type_string = $return_type_fq_class_name . $suffix;
@@ -539,8 +508,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 self::fixUpLocalType(
                     (string)$docblock_info->return_type,
                     $source->getFQCLN(),
-                    $source->getNamespace(),
-                    $source->getAliasedClasses()
+                    $source
                 )
             );
 
@@ -620,22 +588,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if ($this->function instanceof ClassMethod) {
             $function_name = (string)$this->function->name;
 
-            return ($context_self ?: $this->fq_class_name) . '::' . strtolower($function_name);
+            return ($context_self ?: $this->source->getFQCLN()) . '::' . strtolower($function_name);
         }
 
         if ($this->function instanceof Function_) {
-            return ($this->namespace ? strtolower($this->namespace) . '\\' : '') . strtolower($this->function->name);
+            return ($this->source->getNamespace() ? strtolower($this->source->getNamespace()) . '\\' : '') . strtolower($this->function->name);
         }
 
         return null;
-    }
-
-    /**
-     * @return string
-     */
-    public function getNamespace()
-    {
-        return $this->namespace;
     }
 
     /**
@@ -651,11 +611,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getFQCLN()
     {
-        return $this->fq_class_name;
+        return $this->source->getFQCLN();
     }
 
     /**
@@ -663,23 +623,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public function getClassName()
     {
-        return $this->class_name;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getClassLikeChecker()
-    {
-        return $this->source->getClassLikeChecker();
+        return $this->source->getClassName();
     }
 
     /**
      * @return string|null
      */
-    public function getParentClass()
+    public function getParentFQCLN()
     {
-        return $this->class_extends;
+        return $this->source->getParentFQCLN();
     }
 
     /**
@@ -792,17 +744,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if (!$return_type) {
             if ($inferred_return_type && !$inferred_return_type->isMixed()) {
                 FileChecker::addDocblockReturnType(
-                    $this->file_name,
+                    $this->source->getFileName(),
                     $this->function->getLine(),
                     (string)$this->function->getDocComment(),
                     $inferred_return_type->toNamespacedString(
-                        $this->getAliasedClassesFlipped(),
-                        $this->getFQCLN(),
+                        $this->source->getAliasedClassesFlipped(),
+                        $this->source->getFQCLN(),
                         false
                     ),
                     $inferred_return_type->toNamespacedString(
-                        $this->getAliasedClassesFlipped(),
-                        $this->getFQCLN(),
+                        $this->source->getAliasedClassesFlipped(),
+                        $this->source->getFQCLN(),
                         true
                     )
                 );
@@ -815,7 +767,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $declared_return_type = ExpressionChecker::fleshOutTypes(
             $return_type,
             [],
-            $fq_class_name ?: $this->fq_class_name,
+            $fq_class_name ?: $this->source->getFQCLN(),
             $method_id
         );
 
@@ -855,7 +807,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             $cased_method_id,
                         $secondary_return_type_location ?: $return_type_location
                     ),
-                    $this->getSuppressedIssues()
+                    $this->suppressed_issues
                 )) {
                     return false;
                 }
@@ -866,29 +818,29 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $inferred_return_type = ExpressionChecker::fleshOutTypes(
                 $inferred_return_type,
                 [],
-                $this->fq_class_name,
+                $this->source->getFQCLN(),
                 ''
             );
 
             if (!TypeChecker::hasIdenticalTypes(
                 $declared_return_type,
                 $inferred_return_type,
-                $this->getFileChecker()
+                $this->source->getFileChecker()
             )) {
                 if ($update_docblock) {
-                    if (!in_array('InvalidReturnType', $this->getSuppressedIssues())) {
+                    if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
                         FileChecker::addDocblockReturnType(
-                            $this->file_name,
+                            $this->source->getFileName(),
                             $this->function->getLine(),
                             (string)$this->function->getDocComment(),
                             $inferred_return_type->toNamespacedString(
-                                $this->getAliasedClassesFlipped(),
-                                $this->getFQCLN(),
+                                $this->source->getAliasedClassesFlipped(),
+                                $this->source->getFQCLN(),
                                 false
                             ),
                             $inferred_return_type->toNamespacedString(
-                                $this->getAliasedClassesFlipped(),
-                                $this->getFQCLN(),
+                                $this->source->getAliasedClassesFlipped(),
+                                $this->source->getFQCLN(),
                                 true
                             )
                         );
@@ -903,7 +855,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             ' is incorrect, got \'' . $inferred_return_type . '\'',
                         $secondary_return_type_location ?: $return_type_location
                     ),
-                    $this->getSuppressedIssues()
+                    $this->suppressed_issues
                 )) {
                     return false;
                 }
@@ -917,7 +869,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  array<array{type:string,name:string,line_number:int}>  $docblock_params
      * @param  FunctionLikeStorage          $storage
      * @param  StatementsSource             $source
-     * @param  string                       $fq_class_name
+     * @param  string|null                  $fq_class_name
      * @param  CodeLocation                 $code_location
      * @return false|null
      */
@@ -960,8 +912,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 self::fixUpLocalType(
                     $docblock_param['type'],
                     null,
-                    $source->getNamespace(),
-                    $source->getAliasedClasses()
+                    $source
                 )
             );
 
@@ -1056,8 +1007,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             } else {
                 $param_type_string = ClassLikeChecker::getFQCLNFromString(
                     implode('\\', $param_typehint->parts),
-                    $source->getNamespace(),
-                    $source->getAliasedClasses()
+                    $source
                 );
 
                 if (!in_array(strtolower($param_type_string), ClassLikeChecker::$SPECIAL_TYPES)) {
@@ -1159,11 +1109,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  string                   $return_type
      * @param  string|null              $fq_class_name
-     * @param  string                   $namespace
-     * @param  array<string, string>    $aliased_classes
+     * @param  StatementsSource         $source
      * @return string
      */
-    public static function fixUpLocalType($return_type, $fq_class_name, $namespace, array $aliased_classes)
+    public static function fixUpLocalType($return_type, $fq_class_name, StatementsSource $source)
     {
         if (strpos($return_type, '[') !== false) {
             $return_type = Type::convertSquareBrackets($return_type);
@@ -1198,8 +1147,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 $return_type_token = ClassLikeChecker::getFQCLNFromString(
                     $return_type_token,
-                    $namespace,
-                    $aliased_classes
+                    $source
                 );
             }
         }
@@ -1337,5 +1285,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         // if we don't succeed in finding a match, set to the first possible and wait for issues below
         return $function_param_options[0];
+    }
+
+    /**
+     * Get a list of suppressed issues
+     *
+     * @return array<string>
+     */
+    public function getSuppressedIssues()
+    {
+        return $this->suppressed_issues;
     }
 }

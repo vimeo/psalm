@@ -38,8 +38,7 @@ class TryChecker
             foreach ($catch->types as $catch_type) {
                 $fq_catch_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $catch_type,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($context->check_classes) {

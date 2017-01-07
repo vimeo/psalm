@@ -12,6 +12,8 @@ use Psalm\Type;
 
 class FileChecker extends SourceChecker implements StatementsSource
 {
+    use CanAlias;
+
     const PARSER_CACHE_DIRECTORY = 'php-parser';
     const FILE_HASHES = 'file_hashes';
     const REFERENCE_CACHE_NAME = 'references';
@@ -20,7 +22,27 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @var string
      */
+    protected $file_name;
+
+    /**
+     * @var string
+     */
     protected $file_path;
+
+    /**
+     * @var string|null
+     */
+    protected $include_file_name;
+
+    /**
+     * @var string|null
+     */
+    protected $include_file_path;
+
+    /**
+     * @var array<string, string>
+     */
+    protected $suppressed_issues = [];
 
     /**
      * @var array<string, array<string, string>>
@@ -893,8 +915,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         if ($existing_docblock) {
             $parsed_docblock = CommentChecker::parseDocComment($existing_docblock);
-        }
-        else {
+        } else {
             $parsed_docblock['description'] = '';
         }
 
@@ -909,5 +930,79 @@ class FileChecker extends SourceChecker implements StatementsSource
         $line_upset += count($new_docblock_lines) - $existing_line_count;
 
         array_splice($file_lines, $line_number - $existing_line_count - 1, $existing_line_count, $new_docblock_lines);
+    }
+
+    /**
+     * @return string
+     */
+    public function getFileName()
+    {
+        return $this->file_name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFilePath()
+    {
+        return $this->file_path;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getIncludeFileName()
+    {
+        return $this->include_file_name;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getIncludeFilePath()
+    {
+        return $this->include_file_path;
+    }
+
+    /**
+     * @param string|null $file_name
+     * @param string|null $file_path
+     * @return void
+     */
+    public function setIncludeFileName($file_name, $file_path)
+    {
+        $this->include_file_name = $file_name;
+        $this->include_file_path = $file_path;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCheckedFileName()
+    {
+        return $this->include_file_name ?: $this->file_name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCheckedFilePath()
+    {
+        return $this->include_file_path ?: $this->file_path;
+    }
+
+    public function getSuppressedIssues()
+    {
+        return $this->suppressed_issues;
+    }
+
+    public function getFQCLN()
+    {
+        return null;
+    }
+
+    public function isStatic()
+    {
+        return false;
     }
 }

@@ -62,15 +62,13 @@ class FetchChecker
         $stmt_var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $var_id = ExpressionChecker::getVarId(
             $stmt,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $var_name = is_string($stmt->name) ? $stmt->name : null;
@@ -163,8 +161,7 @@ class FetchChecker
                 $stmt_var_id = ExpressionChecker::getVarId(
                     $stmt->var,
                     $statements_checker->getFQCLN(),
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if (IssueBuffer::accepts(
@@ -370,7 +367,7 @@ class FetchChecker
 
                 $fq_class_name = (string)$context->self;
             } elseif ($stmt->class->parts[0] === 'parent') {
-                $fq_class_name = $statements_checker->getParentClass();
+                $fq_class_name = $statements_checker->getParentFQCLN();
 
                 if ($fq_class_name === null) {
                     if (IssueBuffer::accepts(
@@ -388,8 +385,7 @@ class FetchChecker
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
@@ -493,7 +489,7 @@ class FetchChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($stmt->class->parts[0] === 'parent') {
-                    $fq_class_name = $statements_checker->getParentClass();
+                    $fq_class_name = $statements_checker->getParentFQCLN();
 
                     if ($fq_class_name === null) {
                         if (IssueBuffer::accepts(
@@ -520,8 +516,7 @@ class FetchChecker
             } elseif ($context->check_classes) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -549,8 +544,7 @@ class FetchChecker
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
@@ -628,8 +622,7 @@ class FetchChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses(),
+            $statements_checker,
             $nesting
         );
 
@@ -641,15 +634,13 @@ class FetchChecker
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $keyed_array_var_id = ExpressionChecker::getArrayVarId(
             $stmt,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         if ($stmt->dim && ExpressionChecker::check($statements_checker, $stmt->dim, $context) === false) {

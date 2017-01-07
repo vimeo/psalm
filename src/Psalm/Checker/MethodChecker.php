@@ -245,62 +245,6 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string $return_type
-     * @param  string $method_id
-     * @return string
-     */
-    protected static function fixUpReturnType($return_type, $method_id)
-    {
-        $storage = self::getStorage($method_id);
-
-        if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null');
-        }
-
-        if (strpos($return_type, '[') !== false) {
-            $return_type = Type::convertSquareBrackets($return_type);
-        }
-
-        $return_type_tokens = Type::tokenize($return_type);
-
-        foreach ($return_type_tokens as $i => &$return_type_token) {
-            if ($return_type_token[0] === '\\') {
-                $return_type_token = substr($return_type_token, 1);
-                continue;
-            }
-
-            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'])) {
-                continue;
-            }
-
-            if (isset($return_type_token[$i + 1]) && $return_type_token[$i + 1] === ':') {
-                continue;
-            }
-
-            $return_type_token = Type::fixScalarTerms($return_type_token);
-
-            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
-                $fq_class_name = explode('::', $method_id)[0];
-
-                if ($return_type_token === '$this') {
-                    $return_type_token = $fq_class_name;
-                    continue;
-                }
-
-                $class_storage = ClassLikeChecker::$storage[$return_type_token];
-
-                $return_type_token = ClassLikeChecker::getFQCLNFromString(
-                    $return_type_token,
-                    $class_storage->namespace,
-                    $class_storage->aliased_classes
-                );
-            }
-        }
-
-        return implode('', $return_type_tokens);
-    }
-
-    /**
      * @param  string       $method_id
      * @param  CodeLocation $code_location
      * @param  array        $suppressed_issues

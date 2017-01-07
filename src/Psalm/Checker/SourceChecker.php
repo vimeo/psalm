@@ -10,172 +10,84 @@ use Psalm\Type;
 abstract class SourceChecker implements StatementsSource
 {
     /**
-     * @var array<string, string>
-     */
-    protected $aliased_classes = [];
-
-    /**
-     * @var array<string, string>
-     */
-    protected $aliased_classes_flipped = [];
-
-    /**
-     * @var array<string, string>
-     */
-    protected $aliased_functions = [];
-
-    /**
-     * @var array<string, string>
-     */
-    protected $aliased_constants = [];
-
-    /**
-     * @var string
-     */
-    protected $file_name;
-
-    /**
-     * @var string
-     */
-    protected $file_path;
-
-    /**
-     * @var string|null
-     */
-    protected $include_file_name;
-
-    /**
-     * @var string|null
-     */
-    protected $include_file_path;
-
-    /**
-     * @var array<int, string>
-     */
-    protected $suppressed_issues = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    protected $declared_classes = [];
-
-    /**
      * @var StatementsSource|null
      */
     protected $source = null;
-
-    /**
-     * @param  PhpParser\Node\Stmt\Use_ $stmt
-     * @return void
-     */
-    public function visitUse(PhpParser\Node\Stmt\Use_ $stmt)
-    {
-        foreach ($stmt->uses as $use) {
-            $use_path = implode('\\', $use->name->parts);
-
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
-                case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliased_functions[strtolower($use->alias)] = $use_path;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                    $this->aliased_constants[$use->alias] = $use_path;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliased_classes[strtolower($use->alias)] = $use_path;
-                    $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
-                    break;
-            }
-        }
-    }
-
-    /**
-     * @param  PhpParser\Node\Stmt\GroupUse $stmt
-     * @return void
-     */
-    public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt)
-    {
-        $use_prefix = implode('\\', $stmt->prefix->parts);
-
-        foreach ($stmt->uses as $use) {
-            $use_path = $use_prefix . '\\' . implode('\\', $use->name->parts);
-
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
-                case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliased_functions[strtolower($use->alias)] = $use_path;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                    $this->aliased_constants[$use->alias] = $use_path;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliased_classes[strtolower($use->alias)] = $use_path;
-                    $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
-                    break;
-            }
-        }
-    }
 
     /**
      * @return array<string, string>
      */
     public function getAliasedClasses()
     {
-        return $this->aliased_classes;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getAliasedClasses();
     }
 
     /**
-     * @return array
+     * @return array<string, string>
      */
     public function getAliasedClassesFlipped()
     {
-        return $this->aliased_classes_flipped;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getAliasedClassesFlipped();
     }
 
     /**
      * Gets a list of all aliased constants
      *
-     * @return array
+     * @return array<string, string>
      */
     public function getAliasedConstants()
     {
-        return $this->aliased_constants;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getAliasedConstants();
     }
 
     /**
      * Gets a list of all aliased functions
      *
-     * @return array
+     * @return array<string, string>
      */
     public function getAliasedFunctions()
     {
-        return $this->aliased_functions;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getAliasedFunctions();
     }
 
     /**
-     * @return null
+     * @return string|null
      */
     public function getFQCLN()
     {
-        return null;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getFQCLN();
     }
 
     /**
-     * @return null
+     * @return string|null
      */
     public function getClassName()
     {
-        return null;
-    }
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
 
-    /**
-     * @return null
-     */
-    public function getClassLikeChecker()
-    {
-        return null;
+        return $this->source->getClassName();
     }
 
     /**
@@ -197,9 +109,13 @@ abstract class SourceChecker implements StatementsSource
     /**
      * @return string|null
      */
-    public function getParentClass()
+    public function getParentFQCLN()
     {
-        return null;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getParentFQCLN();
     }
 
     /**
@@ -207,7 +123,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getFileName()
     {
-        return $this->file_name;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getFileName();
     }
 
     /**
@@ -215,7 +135,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getFilePath()
     {
-        return $this->file_path;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getFilePath();
     }
 
     /**
@@ -223,7 +147,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getIncludeFileName()
     {
-        return $this->include_file_name;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getIncludeFileName();
     }
 
     /**
@@ -231,7 +159,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getIncludeFilePath()
     {
-        return $this->include_file_path;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getIncludeFilePath();
     }
 
     /**
@@ -241,8 +173,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function setIncludeFileName($file_name, $file_path)
     {
-        $this->include_file_name = $file_name;
-        $this->include_file_path = $file_path;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        $this->source->setIncludeFileName($file_name, $file_path);
     }
 
     /**
@@ -250,7 +185,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getCheckedFileName()
     {
-        return $this->include_file_name ?: $this->file_name;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getCheckedFileName();
     }
 
     /**
@@ -258,15 +197,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getCheckedFilePath()
     {
-        return $this->include_file_path ?: $this->file_path;
-    }
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
 
-    /**
-     * @return bool
-     */
-    public function isStatic()
-    {
-        return false;
+        return $this->source->getCheckedFilePath();
     }
 
     /**
@@ -284,7 +219,11 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getSuppressedIssues()
     {
-        return $this->suppressed_issues;
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getSuppressedIssues();
     }
 
     /**
@@ -292,6 +231,22 @@ abstract class SourceChecker implements StatementsSource
      */
     public function getNamespace()
     {
-        return '';
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getNamespace();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isStatic()
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->isStatic();
     }
 }

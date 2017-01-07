@@ -7,7 +7,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\MethodChecker;
-use Psalm\Checker\Statements\Expression\AssertionChecker;
+use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\Checker\Statements\Expression\FetchChecker;
@@ -26,6 +26,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Type;
 
 class ExpressionChecker
@@ -199,7 +200,7 @@ class ExpressionChecker
                 $this_class = $this_class &&
                     ClassChecker::classExtends(
                         $this_class,
-                        $statements_checker->getFQCLN()
+                        (string)$statements_checker->getFQCLN()
                     )
                         ? $this_class
                         : $context->self;
@@ -313,8 +314,7 @@ class ExpressionChecker
                 if ($context->check_classes) {
                     $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                         $stmt->class,
-                        $statements_checker->getNamespace(),
-                        $statements_checker->getAliasedClasses()
+                        $statements_checker
                     );
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
@@ -548,8 +548,7 @@ class ExpressionChecker
         $var_id = self::getVarId(
             $stmt,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         if ($var_id) {
@@ -675,8 +674,7 @@ class ExpressionChecker
             $if_clauses = TypeChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             $simplified_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
@@ -728,8 +726,7 @@ class ExpressionChecker
             $if_clauses = TypeChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             $rhs_clauses = TypeChecker::simplifyCNF(
@@ -1151,17 +1148,15 @@ class ExpressionChecker
 
     /**
      * @param  PhpParser\Node\Expr      $stmt
-     * @param  string                   $this_class_name
-     * @param  string                   $namespace
-     * @param  array<string, string>    $aliased_classes
+     * @param  string|null              $this_class_name
+     * @param  StatementsSource         $source
      * @param  int|null                 &$nesting
      * @return string|null
      */
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,
-        $namespace,
-        array $aliased_classes,
+        StatementsSource $source,
         &$nesting = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
@@ -1173,12 +1168,15 @@ class ExpressionChecker
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+                if (!$this_class_name) {
+                    throw new \UnexpectedValueException('$this_class_name should not be null');
+                }
+
                 $fq_class_name = $this_class_name;
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $namespace,
-                    $aliased_classes
+                    $source
                 );
             }
 
@@ -1186,7 +1184,7 @@ class ExpressionChecker
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->name)) {
-            $object_id = self::getVarId($stmt->var, $this_class_name, $namespace, $aliased_classes);
+            $object_id = self::getVarId($stmt->var, $this_class_name, $source);
 
             if (!$object_id) {
                 return null;
@@ -1197,7 +1195,7 @@ class ExpressionChecker
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $nesting !== null) {
             $nesting++;
-            return self::getVarId($stmt->var, $this_class_name, $namespace, $aliased_classes, $nesting);
+            return self::getVarId($stmt->var, $this_class_name, $source, $nesting);
         }
 
         return null;
@@ -1205,26 +1203,24 @@ class ExpressionChecker
 
     /**
      * @param  PhpParser\Node\Expr      $stmt
-     * @param  string                   $this_class_name
-     * @param  string                   $namespace
-     * @param  array<string, string>    $aliased_classes
+     * @param  string|null              $this_class_name
+     * @param  StatementsSource         $source
      * @return string|null
      */
     public static function getArrayVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,
-        $namespace,
-        array $aliased_classes
+        StatementsSource $source
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            return self::getArrayVarId($stmt->var, $this_class_name, $namespace, $aliased_classes);
+            return self::getArrayVarId($stmt->var, $this_class_name, $source);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch &&
             ($stmt->dim instanceof PhpParser\Node\Scalar\String_ ||
                 $stmt->dim instanceof PhpParser\Node\Scalar\LNumber)
         ) {
-            $root_var_id = self::getArrayVarId($stmt->var, $this_class_name, $namespace, $aliased_classes);
+            $root_var_id = self::getArrayVarId($stmt->var, $this_class_name, $source);
             $offset = $stmt->dim instanceof PhpParser\Node\Scalar\String_
                 ? '\'' . $stmt->dim->value . '\''
                 : $stmt->dim->value;
@@ -1232,7 +1228,7 @@ class ExpressionChecker
             return $root_var_id ? $root_var_id . '[' . $offset . ']' : null;
         }
 
-        return self::getVarId($stmt, $this_class_name, $namespace, $aliased_classes);
+        return self::getVarId($stmt, $this_class_name, $source);
     }
 
     /**
@@ -1462,8 +1458,7 @@ class ExpressionChecker
         $if_clauses = TypeChecker::getFormula(
             $stmt->cond,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $ternary_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));

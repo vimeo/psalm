@@ -45,8 +45,7 @@ class ForeachChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->expr,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         if (isset($stmt->expr->inferredType)) {

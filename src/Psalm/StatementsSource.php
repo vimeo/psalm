@@ -36,19 +36,14 @@ interface StatementsSource
     public function getAliasedFunctions();
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getFQCLN();
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getClassName();
-
-    /**
-     * @return ClassLikeChecker
-     */
-    public function getClassLikeChecker();
 
     /**
      * @return FileChecker
@@ -58,7 +53,7 @@ interface StatementsSource
     /**
      * @return string|null
      */
-    public function getParentClass();
+    public function getParentFQCLN();
 
     /**
      * @return string

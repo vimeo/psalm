@@ -11,6 +11,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\MissingPropertyType;
+use Psalm\Issue\RedefinedTraitMethod;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedInterfaceMethod;
@@ -54,11 +55,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected $class;
 
     /**
-     * @var string
-     */
-    protected $namespace;
-
-    /**
      * @var StatementsSource
      */
     protected $source;
@@ -78,12 +74,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @var string|null
      */
-    protected $parent_class;
-
-    /**
-     * @var array<string>
-     */
-    protected $suppressed_issues;
+    protected $parent_fq_class_name;
 
     /**
      * @var array<string, MethodChecker>
@@ -169,25 +160,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     {
         $this->class = $class;
         $this->source = $source;
-        $this->namespace = $source->getNamespace();
-        $this->aliased_classes = $source->getAliasedClasses();
-        $this->aliased_constants = $source->getAliasedConstants();
-        $this->aliased_functions = $source->getAliasedFunctions();
-        $this->file_name = $source->getFileName();
-        $this->file_path = $source->getFilePath();
-        $this->include_file_name = $source->getIncludeFileName();
-        $this->include_file_path = $source->getIncludeFilePath();
         $this->fq_class_name = $fq_class_name;
-
-        $this->suppressed_issues = $source->getSuppressedIssues();
 
         if (!isset(self::$storage[$fq_class_name])) {
             self::$storage[$fq_class_name] = new ClassLikeStorage();
-            self::$storage[$fq_class_name]->file_name = $this->file_name;
-            self::$storage[$fq_class_name]->file_path = $this->file_path;
+            self::$storage[$fq_class_name]->file_name = $this->source->getFileName();
+            self::$storage[$fq_class_name]->file_path = $this->source->getFilePath();
         }
 
-        self::$file_classes[$this->file_path][] = $fq_class_name;
+        self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
 
         if (self::$this_class) {
             self::$class_checkers[$fq_class_name] = $this;
@@ -216,11 +197,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $leftover_stmts = [];
 
-        $long_file_name = Config::getInstance()->getBaseDir() . $this->file_name;
+        $long_file_name = Config::getInstance()->getBaseDir() . $this->source->getFileName();
 
         if (!$class_context) {
-            $class_context = new Context($this->file_name, $this->fq_class_name);
-            $class_context->parent = $this->parent_class;
+            $class_context = new Context($this->source->getFileName(), $this->fq_class_name);
+            $class_context->parent = $this->parent_fq_class_name;
 
             if ($global_context) {
                 $class_context->vars_in_scope = $global_context->vars_in_scope;
@@ -230,7 +211,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($this->fq_class_name)]);
         }
 
-        // set all constants first
+         // set all constants first
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 foreach ($stmt->consts as $const) {
@@ -246,8 +227,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         if ($this instanceof ClassChecker) {
-            if ($this->parent_class &&
-                $this->registerParentClassInfo($this->parent_class) === false
+            if ($this->parent_fq_class_name &&
+                $this->registerParentClassInfo($this->parent_fq_class_name) === false
             ) {
                 return false;
             }
@@ -366,7 +347,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                     'Method ' . $cased_method_id . ' is not defined on class ' . $this->fq_class_name,
                                     new CodeLocation($this, $this->class, true)
                                 ),
-                                $this->suppressed_issues
+                                $this->source->getSuppressedIssues()
                             )) {
                                 return false;
                             }
@@ -381,7 +362,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                         ' must be public in ' . $this->fq_class_name,
                                     new CodeLocation($this, $this->class, true)
                                 ),
-                                $this->suppressed_issues
+                                $this->source->getSuppressedIssues()
                             )) {
                                 return false;
                             }
@@ -418,16 +399,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $storage = self::$storage[$fq_class_name];
 
         if (!$class_context) {
-            $class_context = new Context($this->file_name, $this->fq_class_name);
-            $class_context->parent = $this->parent_class;
+            $class_context = new Context($this->source->getFileName(), $this->fq_class_name);
+            $class_context->parent = $this->parent_fq_class_name;
         }
 
         foreach ($storage->properties as $property_name => $property) {
             if ($property->is_static) {
-                $class_context->vars_in_scope[$this->fq_class_name . '::$' . $property_name] = $property->type
-                    ?: Type::getMixed();
+                $property_id = $this->fq_class_name . '::$' . $property_name;
+
+                $class_context->vars_in_scope[$property_id] =
+                    $property->type ? clone $property->type : Type::getMixed();
             } else {
-                $class_context->vars_in_scope['$this->' . $property_name] = $property->type ?: Type::getMixed();
+                $class_context->vars_in_scope['$this->' . $property_name] =
+                    $property->type ? clone $property->type : Type::getMixed();
             }
         }
 
@@ -435,11 +419,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_checker = new MethodChecker($stmt, $this);
 
-                $method_checker->check(clone $class_context, null);
+                $method_checker->check(clone $class_context, clone $global_context);
 
                 $method_id = (string)$method_checker->getMethodId();
 
-                if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+                if (!$config->excludeIssueInFile('InvalidReturnType', $this->source->getFileName())) {
                     $secondary_return_type_location = null;
 
                     $return_type_location = MethodChecker::getMethodReturnTypeLocation(
@@ -459,8 +443,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 foreach ($stmt->traits as $trait) {
                     $trait_name = self::getFQCLNFromNameObject(
                         $trait,
-                        $this->namespace,
-                        $this->aliased_classes
+                        $this->source
                     );
 
                     $trait_checker = self::$trait_checkers[$trait_name];
@@ -495,8 +478,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return false;
         }
 
-        self::$class_extends[$this->fq_class_name] = self::$class_extends[$this->parent_class];
-        self::$class_extends[$this->fq_class_name][$this->parent_class] = true;
+        self::$class_extends[$this->fq_class_name] = self::$class_extends[$this->parent_fq_class_name];
+        self::$class_extends[$this->fq_class_name][$this->parent_fq_class_name] = true;
 
         $this->registerInheritedMethods($this->fq_class_name, $parent_class);
         $this->registerInheritedProperties($this->fq_class_name, $parent_class);
@@ -514,7 +497,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $storage->used_traits = $parent_storage->used_traits;
 
-        FileChecker::addFileInheritanceToClass(Config::getInstance()->getBaseDir() . $this->file_name, $parent_class);
+        FileChecker::addFileInheritanceToClass(
+            Config::getInstance()->getBaseDir() . $this->source->getFileName(),
+            $parent_class
+        );
 
         return null;
     }
@@ -530,10 +516,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     ) {
         $method_name = strtolower($stmt->name);
         $method_id = $this->fq_class_name . '::' . $method_name;
-        $storage = self::$storage[$this->fq_class_name];
+        $class_storage = self::$storage[$this->fq_class_name];
 
-        if (!isset($storage->methods[$method_name])) {
-            FunctionLikeChecker::register($stmt, $this);
+        if (!isset($class_storage->methods[$method_name])) {
+            $storage = FunctionLikeChecker::register($stmt, $this);
         }
 
         if (!$stmt->isAbstract() && $class_context->self) {
@@ -575,8 +561,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($stmt->traits as $trait) {
             $trait_name = self::getFQCLNFromNameObject(
                 $trait,
-                $this->namespace,
-                $this->aliased_classes
+                $this->source
             );
 
             if (!TraitChecker::traitExists($trait_name, $this->getFileChecker())) {
@@ -585,7 +570,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         'Trait ' . $trait_name . ' does not exist',
                         new CodeLocation($this, $trait)
                     ),
-                    $this->suppressed_issues
+                    $this->source->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -596,7 +581,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             'Trait ' . $trait_name . ' has wrong casing',
                             new CodeLocation($this, $trait)
                         ),
-                        $this->suppressed_issues
+                        $this->source->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -610,10 +595,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $trait_checker->check($class_context);
 
+                self::registerInheritedProperties($this->fq_class_name, $trait_name);
+
                 ClassLikeChecker::registerTraitUse($this->fq_class_name, $trait_name);
 
                 FileChecker::addFileInheritanceToClass(
-                    Config::getInstance()->getBaseDir() . $this->file_name,
+                    Config::getInstance()->getBaseDir() . $this->source->getFileName(),
                     $trait_name
                 );
             }
@@ -657,7 +644,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         'declared type',
                     new CodeLocation($this, $stmt)
                 ),
-                $this->suppressed_issues
+                $this->source->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -868,14 +855,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * Gets the fully-qualified class name from a Name object
      *
      * @param  PhpParser\Node\Name      $class_name
-     * @param  string                   $namespace
-     * @param  array<string, string>    $aliased_classes
+     * @param  StatementsSource         $source
      * @return string
      */
     public static function getFQCLNFromNameObject(
         PhpParser\Node\Name $class_name,
-        $namespace,
-        array $aliased_classes
+        StatementsSource $source
     ) {
         if ($class_name->parts == ['self']) {
             return 'self';
@@ -887,18 +872,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         return self::getFQCLNFromString(
             implode('\\', $class_name->parts),
-            $namespace,
-            $aliased_classes
+            $source
         );
     }
 
     /**
      * @param  string                   $class
-     * @param  string                   $namespace
-     * @param  array<string, string>    $imported_namespaces
+     * @param  StatementsSource         $source
      * @return string
      */
-    public static function getFQCLNFromString($class, $namespace, array $imported_namespaces)
+    public static function getFQCLNFromString($class, StatementsSource $source)
     {
         if (empty($class)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -907,6 +890,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if ($class[0] === '\\') {
             return substr($class, 1);
         }
+
+        $imported_namespaces = $source->getAliasedClasses();
 
         if (strpos($class, '\\') !== false) {
             $class_parts = explode('\\', $class);
@@ -919,6 +904,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return $imported_namespaces[strtolower($class)];
         }
 
+        $namespace = $source->getNamespace();
+
         return ($namespace ? $namespace . '\\' : '') . $class;
     }
 
@@ -927,7 +914,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public function getNamespace()
     {
-        return $this->namespace;
+        return $this->source->getNamespace();
     }
 
     /**
@@ -961,9 +948,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @return string|null
      */
-    public function getParentClass()
+    public function getParentFQCLN()
     {
-        return $this->parent_class;
+        return $this->parent_fq_class_name;
     }
 
     /**

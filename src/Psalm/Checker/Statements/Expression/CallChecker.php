@@ -130,8 +130,7 @@ class CallChecker
                             $var_id = ExpressionChecker::getVarId(
                                 $stmt->name,
                                 $statements_checker->getFQCLN(),
-                                $statements_checker->getNamespace(),
-                                $statements_checker->getAliasedClasses()
+                                $statements_checker
                             );
 
                             if (IssueBuffer::accepts(
@@ -262,8 +261,7 @@ class CallChecker
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($context->check_classes) {
@@ -430,8 +428,7 @@ class CallChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $class_type = isset($context->vars_in_scope[$var_id]) ? $context->vars_in_scope[$var_id] : null;
@@ -452,14 +449,16 @@ class CallChecker
         ) {
             $this_method_id = $source->getMethodId();
 
+            $fq_class_name = (string)$statements_checker->getFQCLN();
+
             if (($this_class = ClassLikeChecker::getThisClass()) &&
                 (
-                    $this_class === $statements_checker->getFQCLN() ||
+                    $this_class === $fq_class_name ||
                     ClassChecker::classExtends(
                         $this_class,
-                        $statements_checker->getFQCLN()
+                        $fq_class_name
                     ) ||
-                    TraitChecker::traitExists($statements_checker->getFQCLN(), $statements_checker->getFileChecker())
+                    TraitChecker::traitExists($fq_class_name, $statements_checker->getFileChecker())
                 )
             ) {
                 $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
@@ -680,7 +679,7 @@ class CallChecker
 
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($stmt->class->parts[0] === 'parent') {
-                    $fq_class_name = $statements_checker->getParentClass();
+                    $fq_class_name = $statements_checker->getParentFQCLN();
 
                     if ($fq_class_name === null) {
                         if (IssueBuffer::accepts(
@@ -709,8 +708,7 @@ class CallChecker
             } elseif ($context->check_classes) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -904,8 +902,7 @@ class CallChecker
                     $var_id = ExpressionChecker::getVarId(
                         $arg->value,
                         $statements_checker->getFQCLN(),
-                        $statements_checker->getNamespace(),
-                        $statements_checker->getAliasedClasses()
+                        $statements_checker
                     );
 
                     if ($var_id &&
@@ -1063,7 +1060,7 @@ class CallChecker
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
 
                 return null;

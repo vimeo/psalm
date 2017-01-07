@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Storage;
 
+use PhpParser;
 use Psalm\Type;
 use Psalm\CodeLocation;
 use Psalm\FunctionLikeParameter;

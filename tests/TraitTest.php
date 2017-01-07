@@ -90,6 +90,69 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndCheckMethods();
     }
 
+    public function testAccessiblePrivatePropertyFromTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            /** @var string */
+            private $fooFoo;
+        }
+
+        class B {
+            use T;
+
+            public function doFoo() : void {
+                echo $this->fooFoo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
+    }
+
+    public function testAccessibleProtectedPropertyFromTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            /** @var string */
+            protected $fooFoo;
+        }
+
+        class B {
+            use T;
+
+            public function doFoo() : void {
+                echo $this->fooFoo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
+    }
+
+    public function testAccessiblePublicPropertyFromTrait()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            /** @var string */
+            public $fooFoo;
+        }
+
+        class B {
+            use T;
+
+            public function doFoo() : void {
+                echo $this->fooFoo;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
+    }
+
     /**
      * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleMethod
@@ -194,6 +257,51 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class B {
             use A;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
+    }
+
+    public function testRedefinedTraitMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            public function fooFoo() : void {
+            }
+        }
+
+        class B {
+            use T;
+
+            public function fooFoo(string $a) : void {
+            }
+        }
+
+        (new B)->fooFoo("hello");
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndCheckMethods();
+    }
+
+    public function testRedefinedTraitMethodWithAlias()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            public function fooFoo() : void {
+            }
+        }
+
+        class B {
+            use T {
+                fooFoo as barBar;
+            }
+
+            public function fooFoo() : void {
+                $this->barBar();
+            }
         }
         ');
 

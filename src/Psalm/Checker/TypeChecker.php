@@ -3,42 +3,39 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
-use Psalm\Checker\Statements\Expression\AssertionChecker;
+use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Type;
 
 class TypeChecker
 {
     /**
      * @param  PhpParser\Node\Expr      $conditional
-     * @param  string                   $this_class_name
-     * @param  string                   $namespace
-     * @param  array<string, string>    $aliased_classes
+     * @param  string|null              $this_class_name
+     * @param  StatementsSource         $source
      * @return array<int, Clause>
      */
     public static function getFormula(
         PhpParser\Node\Expr $conditional,
         $this_class_name,
-        $namespace,
-        array $aliased_classes
+        StatementsSource $source
     ) {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
             $left_assertions = self::getFormula(
                 $conditional->left,
                 $this_class_name,
-                $namespace,
-                $aliased_classes
+                $source
             );
 
             $right_assertions = self::getFormula(
                 $conditional->right,
                 $this_class_name,
-                $namespace,
-                $aliased_classes
+                $source
             );
 
             return array_merge(
@@ -54,8 +51,7 @@ class TypeChecker
                 $left_clauses = self::getFormula(
                     $conditional->left,
                     $this_class_name,
-                    $namespace,
-                    $aliased_classes
+                    $source
                 );
             } else {
                 $left_clauses = [new Clause([], true)];
@@ -65,8 +61,7 @@ class TypeChecker
                 $right_clauses = self::getFormula(
                     $conditional->right,
                     $this_class_name,
-                    $namespace,
-                    $aliased_classes
+                    $source
                 );
             } else {
                 $right_clauses = [new Clause([], true)];
@@ -108,11 +103,10 @@ class TypeChecker
             return [new Clause($possibilities, false, $can_reconcile)];
         }
 
-        $assertions = AssertionChecker::getAssertions(
+        $assertions = AssertionFinder::getAssertions(
             $conditional,
             $this_class_name,
-            $namespace,
-            $aliased_classes
+            $source
         );
 
         if ($assertions) {
@@ -529,6 +523,10 @@ class TypeChecker
 
         if ($existing_var_type === null) {
             if ($new_var_type[0] !== '!') {
+                if ($new_var_type[0] === '^') {
+                    $new_var_type = substr($new_var_type, 1);
+                }
+
                 return Type::parseString($new_var_type);
             }
 
@@ -540,6 +538,11 @@ class TypeChecker
         }
 
         if ($new_var_type[0] === '!') {
+            // this is a specific value comparison type that cannot be negated
+            if ($new_var_type[1] === '^') {
+                return $existing_var_type;
+            }
+
             if ($new_var_type === '!object' && !$existing_var_type->isMixed()) {
                 $non_object_types = [];
 
@@ -588,6 +591,10 @@ class TypeChecker
             }
 
             return $existing_var_type;
+        }
+
+        if ($new_var_type[0] === '^') {
+            $new_var_type = substr($new_var_type, 1);
         }
 
         if ($new_var_type === 'empty') {

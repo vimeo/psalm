@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 use Psalm\Type;
 
 class Union extends Type
@@ -47,7 +49,7 @@ class Union extends Type
 
     /**
      * @param  array<string> $aliased_classes
-     * @param  string        $this_class
+     * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      * @return string
      */
@@ -318,5 +320,18 @@ class Union extends Type
         }
 
         return $type->type_params[count($type->type_params) - 1]->isSingle();
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @return void
+     */
+    public function check(StatementsSource $source, CodeLocation $code_location, array $suppressed_issues)
+    {
+        foreach ($this->types as $atomic_type) {
+            $atomic_type->check($source, $code_location, $suppressed_issues);
+        }
     }
 }

@@ -36,23 +36,15 @@ class TraitChecker extends ClassLikeChecker
 
         $this->source = $source;
         $this->class = $class;
-        $this->namespace = $source->getNamespace();
-        $this->aliased_classes = $source->getAliasedClasses();
-        $this->file_name = $source->getFileName();
-        $this->file_path = $source->getFilePath();
         $this->fq_class_name = $fq_class_name;
-
-        $this->parent_class = null;
-
-        $this->suppressed_issues = $source->getSuppressedIssues();
 
         if (!isset(self::$storage[$fq_class_name])) {
             self::$storage[$fq_class_name] = new ClassLikeStorage();
-            self::$storage[$fq_class_name]->file_name = $this->file_name;
-            self::$storage[$fq_class_name]->file_path = $this->file_path;
+            self::$storage[$fq_class_name]->file_name = $this->source->getFileName();
+            self::$storage[$fq_class_name]->file_path = $this->source->getFilePath();
         }
 
-        self::$trait_names[strtolower($this->fq_class_name)] = $this->fq_class_name;
+        self::$trait_names[strtolower($fq_class_name)] = $fq_class_name;
 
         self::$trait_checkers[$fq_class_name] = $this;
     }

@@ -407,6 +407,28 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndCheckMethods($context);
     }
 
+    public function testNullablePropertyAfterGuard()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string|null */
+            public $aa;
+        }
+
+        $a = new A();
+
+        if (!$a->aa) {
+            $a->aa = "hello";
+        }
+
+        echo substr($a->aa, 1);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndCheckMethods($context);
+    }
+
     public function testNullableStaticPropertyWithIfCheck()
     {
         $stmts = self::$parser->parse('<?php

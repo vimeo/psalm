@@ -5,6 +5,8 @@ use Psalm\Type;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 
 class Atomic extends Type
 {
@@ -37,7 +39,7 @@ class Atomic extends Type
 
     /**
      * @param  array<string> $aliased_classes
-     * @param  string        $this_class
+     * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      * @return string
      */
@@ -298,5 +300,32 @@ class Atomic extends Type
     public function isEmpty()
     {
         return $this->value === 'empty';
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @return false|null
+     */
+    public function check(StatementsSource $source, CodeLocation $code_location, array $suppressed_issues)
+    {
+        if ($this->isObjectType()
+            && !$this->isObject()
+            && ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                $this->value,
+                $source->getFileChecker(),
+                $code_location,
+                $suppressed_issues
+            ) === false
+        ) {
+            return false;
+        }
+
+        if ($this instanceof Type\Generic) {
+            foreach ($this->type_params as $type_param) {
+                $type_param->check($source, $code_location, $suppressed_issues);
+            }
+        }
     }
 }

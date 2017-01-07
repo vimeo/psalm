@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Checker\Statements\ExpressionChecker;
-use Psalm\Checker\Statements\Expression\AssertionChecker;
+use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Type;
@@ -29,11 +29,10 @@ class WhileChecker
             return false;
         }
 
-        $while_types = AssertionChecker::getAssertions(
+        $while_types = AssertionFinder::getAssertions(
             $stmt->cond,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         // if the while has an or as the main component, we cannot safely reason about it
