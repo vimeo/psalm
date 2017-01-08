@@ -53,6 +53,16 @@ class ProjectChecker
     protected $files_to_visit = [];
 
     /**
+     * @var array<string, string>
+     */
+    protected $files_to_analyze = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $scanned_files = [];
+
+    /**
      * @var array<string, bool>
      */
     protected $visited_files = [];
@@ -185,9 +195,7 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        while (count($this->files_to_visit)) {
-            $file_path = array_shift($this->files_to_visit);
-
+        foreach ($this->files_to_analyze as $file_path => $_) {
             $this->visitFile($file_path, $filetype_handlers);
         }
     }
@@ -197,8 +205,14 @@ class ProjectChecker
      */
     protected function analyzeFiles()
     {
-        while (count($this->file_checkers)) {
-            $file_checker = array_shift($this->file_checkers);
+        if (!$this->config) {
+            throw new \UnexpectedValueException('$this->config cannot be null');
+        }
+
+        $filetype_handlers = $this->config->getFiletypeHandlers();
+
+        foreach ($this->files_to_analyze as $file_path => $_) {
+            $file_checker = $this->visitFile($file_path, $filetype_handlers);
 
             if ($this->debug_output) {
                 echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -255,7 +269,7 @@ class ProjectChecker
                     $file_path = (string)$iterator->getRealPath();
 
                     if ($config->isInProjectDirs($config->shortenFileName($file_path))) {
-                        $this->files_to_visit[$file_path] = $file_path;
+                        $this->files_to_analyze[$file_path] = $file_path;
                     }
                 }
             }
@@ -401,14 +415,7 @@ class ProjectChecker
 
         FileChecker::loadReferenceCache();
 
-        if (isset($filetype_handlers[$extension])) {
-            /** @var FileChecker */
-            $file_checker = new $filetype_handlers[$extension]($file_name);
-        } else {
-            $file_checker = new FileChecker($file_name, $this);
-        }
-
-        $file_checker->visit(null);
+        $file_checker = $this->visitFile($file_name, $filetype_handlers);
 
         if ($this->debug_output) {
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -422,36 +429,38 @@ class ProjectChecker
     /**
      * @param  string $file_path
      * @param  array  $filetype_handlers
-     * @return void
+     * @return FileChecker
      */
-    public function visitFile($file_path, array $filetype_handlers)
+    public function getFileChecker($file_path, array $filetype_handlers)
     {
-        if (isset($this->visited_files[$file_path])) {
-            return;
-        }
-
-        $this->visited_files[$file_path] = true;
-
         $extension = (string)pathinfo($file_path)['extension'];
 
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
-            $file_checker = new $filetype_handlers[$extension]($file_path);
-        } else {
-            $file_checker = new FileChecker($file_path, $this);
+            return new $filetype_handlers[$extension]($file_path);
         }
+
+        return new FileChecker($file_path, $this);
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  array  $filetype_handlers
+     * @return FileChecker
+     */
+    public function visitFile($file_path, array $filetype_handlers)
+    {
+        $this->visited_files[$file_path] = true;
+
+        $file_checker = $this->getFileChecker($file_path, $filetype_handlers);
 
         if ($this->debug_output) {
-            echo 'Visiting ' . $file_path . PHP_EOL;
+            echo (isset($this->visited_files[$file_path]) ? 'Rev' : 'V') . 'isiting ' . $file_path . PHP_EOL;
         }
 
-        $file_checker->visit(null);
+        $file_checker->visit();
 
-        if ($this->debug_output) {
-            echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
-        }
-
-        $file_checker->analyze();
+        return $file_checker;
     }
 
     /**
@@ -493,7 +502,7 @@ class ProjectChecker
                 return true;
             }
 
-            $this->visited_files[$file_path] = true;
+            $this->scanned_files[$file_path] = true;
 
             $file_checker = new FileChecker($file_path, $this);
 
@@ -514,12 +523,6 @@ class ProjectChecker
             }
 
             $file_checker->visit();
-
-            if (isset($this->files_to_visit[$file_path])) {
-                $this->file_checkers[$file_path] = $file_checker;
-            }
-
-            unset($this->files_to_visit[$file_path]);
 
             if (ClassLikeChecker::inPropertyMap($fq_class_name)) {
                 $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_class_name)];

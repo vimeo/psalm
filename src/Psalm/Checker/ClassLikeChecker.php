@@ -433,19 +433,24 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $method_checker->analyze(clone $class_context, clone $global_context);
 
-                $method_id = (string)$method_checker->getMethodId();
+                $actual_method_id = (string)$method_checker->getMethodId();
+                $analyzed_method_id = (string)$method_checker->getMethodId((string)$class_context->self);
 
-                if (!$config->excludeIssueInFile('InvalidReturnType', $this->source->getFileName())) {
+                $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
+
+                if ($actual_method_id === $declaring_method_id &&
+                    !$config->excludeIssueInFile('InvalidReturnType', $this->source->getFileName())
+                ) {
                     $secondary_return_type_location = null;
 
                     $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                        $method_id,
+                        $actual_method_id,
                         $secondary_return_type_location
                     );
 
                     $method_checker->verifyReturnType(
                         $update_docblocks,
-                        MethodChecker::getMethodReturnType($method_id),
+                        MethodChecker::getMethodReturnType($actual_method_id),
                         $class_context->self,
                         $return_type_location,
                         $secondary_return_type_location
