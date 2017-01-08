@@ -9,6 +9,9 @@
     <projectFiles>
         <directory name="src" />
         <directory name="tests" />
+        <ignoreFiles>
+            <file name="src/Psalm/CallMap.php" />
+        </ignoreFiles>
     </projectFiles>
 
     <issueHandlers>
