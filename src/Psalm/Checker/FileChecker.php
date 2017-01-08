@@ -422,6 +422,15 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
+     * @param  string $file_path
+     * @return bool
+     */
+    public function fileExists($file_path)
+    {
+        return file_exists($file_path) || isset($this->project_checker->fake_files[$file_path]);
+    }
+
+    /**
      * @param  string   $file_path
      * @param  bool     $debug_output
      * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
@@ -916,8 +925,14 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @param  string               $phpdoc_type
      * @return void
      */
-    public static function updateDocblock(array &$file_lines, $line_number, &$line_upset, $existing_docblock, $type, $phpdoc_type)
-    {
+    public static function updateDocblock(
+        array &$file_lines,
+        $line_number,
+        &$line_upset,
+        $existing_docblock,
+        $type,
+        $phpdoc_type
+    ) {
         $line_number += $line_upset;
         $function_line = $file_lines[$line_number - 1];
         $left_padding = str_replace(ltrim($function_line), '', $function_line);
