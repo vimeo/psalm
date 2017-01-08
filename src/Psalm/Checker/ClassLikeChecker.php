@@ -193,7 +193,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $config = Config::getInstance();
 
         $storage->user_defined = true;
-        $storage->registered = true;
 
         $leftover_stmts = [];
 
@@ -336,6 +335,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
         }
+
+        $storage->registered = true;
 
         return null;
     }

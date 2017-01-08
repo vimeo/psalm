@@ -265,5 +265,41 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    public function testReferenceToSubclassInMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function b(B $b) : void {
 
+            }
+
+            public function c() : void {
+
+            }
+        }
+
+        class B extends A {
+            public function d() : void {
+                $this->c();
+            }
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    public function testReferenceToClassInMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function b(A $b) : void {
+                $b->b(new A());
+            }
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
