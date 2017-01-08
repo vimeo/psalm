@@ -450,13 +450,13 @@ class ProjectChecker
      */
     public function visitFile($file_path, array $filetype_handlers)
     {
-        $this->visited_files[$file_path] = true;
-
         $file_checker = $this->getFileChecker($file_path, $filetype_handlers);
 
         if ($this->debug_output) {
             echo (isset($this->visited_files[$file_path]) ? 'Rev' : 'V') . 'isiting ' . $file_path . PHP_EOL;
         }
+
+        $this->visited_files[$file_path] = true;
 
         $file_checker->visit();
 
