@@ -66,16 +66,6 @@ interface StatementsSource
     public function getFilePath();
 
     /**
-     * @return string|null
-     */
-    public function getIncludeFileName();
-
-    /**
-     * @return string|null
-     */
-    public function getIncludeFilePath();
-
-    /**
      * @return string
      */
     public function getCheckedFileName();
@@ -89,7 +79,7 @@ interface StatementsSource
      * @param string|null $file_name
      * @param string|null $file_path
      */
-    public function setIncludeFileName($file_name, $file_path);
+    public function setFileName($file_name, $file_path);
 
     /**
      * @return bool

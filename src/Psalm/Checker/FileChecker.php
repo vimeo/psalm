@@ -32,12 +32,12 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @var string|null
      */
-    protected $include_file_name;
+    protected $actual_file_name;
 
     /**
      * @var string|null
      */
-    protected $include_file_path;
+    protected $actual_file_path;
 
     /**
      * @var array<string, string>
@@ -978,30 +978,17 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return null|string
-     */
-    public function getIncludeFileName()
-    {
-        return $this->include_file_name;
-    }
-
-    /**
-     * @return null|string
-     */
-    public function getIncludeFilePath()
-    {
-        return $this->include_file_path;
-    }
-
-    /**
-     * @param string|null $file_name
-     * @param string|null $file_path
+     * @param string $file_name
+     * @param string $file_path
      * @return void
      */
-    public function setIncludeFileName($file_name, $file_path)
+    public function setFileName($file_name, $file_path)
     {
-        $this->include_file_name = $file_name;
-        $this->include_file_path = $file_path;
+        $this->actual_file_name = $this->file_name;
+        $this->actual_file_path = $this->file_path;
+
+        $this->file_name = $file_name;
+        $this->file_path = $file_path;
     }
 
     /**
@@ -1009,7 +996,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function getCheckedFileName()
     {
-        return $this->include_file_name ?: $this->file_name;
+        return $this->actual_file_name ?: $this->file_name;
     }
 
     /**
@@ -1017,7 +1004,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function getCheckedFilePath()
     {
-        return $this->include_file_path ?: $this->file_path;
+        return $this->actual_file_path ?: $this->file_path;
     }
 
     public function getSuppressedIssues()

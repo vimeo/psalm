@@ -39,7 +39,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            'file2.php',
+            getcwd() . '/file2.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file1.php");
@@ -79,7 +79,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            'file3.php',
+            getcwd() . '/file3.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file2.php");
@@ -108,7 +108,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            'file2.php',
+            getcwd() . '/file2.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file1.php");
@@ -118,6 +118,30 @@ class IncludeTest extends PHPUnit_Framework_TestCase
                     (new Foo\A);
                 }
             }
+            ')
+        );
+
+        $file2_checker->visitAndAnalyzeMethods();
+    }
+
+    public function testRequireFunction()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/file1.php',
+            '<?php
+            function fooFoo() : void {
+
+            }
+            '
+        );
+
+        $file2_checker = new FileChecker(
+            getcwd() . '/file2.php',
+            $this->project_checker,
+            self::$parser->parse('<?php
+            require("file1.php");
+
+            fooFoo();
             ')
         );
 

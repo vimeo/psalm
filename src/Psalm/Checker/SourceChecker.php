@@ -143,41 +143,17 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
-     * @return null|string
-     */
-    public function getIncludeFileName()
-    {
-        if ($this->source === null) {
-            throw new \UnexpectedValueException('$source cannot be null');
-        }
-
-        return $this->source->getIncludeFileName();
-    }
-
-    /**
-     * @return null|string
-     */
-    public function getIncludeFilePath()
-    {
-        if ($this->source === null) {
-            throw new \UnexpectedValueException('$source cannot be null');
-        }
-
-        return $this->source->getIncludeFilePath();
-    }
-
-    /**
      * @param string|null $file_name
      * @param string|null $file_path
      * @return void
      */
-    public function setIncludeFileName($file_name, $file_path)
+    public function setFileName($file_name, $file_path)
     {
         if ($this->source === null) {
             throw new \UnexpectedValueException('$source cannot be null');
         }
 
-        $this->source->setIncludeFileName($file_name, $file_path);
+        $this->source->setFileName($file_name, $file_path);
     }
 
     /**

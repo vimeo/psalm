@@ -626,7 +626,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $path_to_file = getcwd() . '/' . $path_to_file;
             }
         } else {
-            $path_to_file = self::getPathTo($stmt->expr, $this->getIncludeFileName() ?: $this->getFileName());
+            $path_to_file = self::getPathTo($stmt->expr, $this->getFileName());
         }
 
         if ($path_to_file) {
@@ -654,7 +654,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             if ($this->getFileChecker()->fileExists($path_to_file)) {
                 $include_stmts = FileChecker::getStatementsForFile($path_to_file);
-                $include_file_checker = new FileChecker($path_to_file, $current_file_checker->project_checker);
+                $include_file_checker = new FileChecker(
+                    $path_to_file,
+                    $current_file_checker->project_checker,
+                    $include_stmts
+                );
+                $include_file_checker->setFileName($this->getFileName(), $this->getFilePath());
                 $include_file_checker->visit($context);
                 $include_file_checker->analyze();
                 return null;
