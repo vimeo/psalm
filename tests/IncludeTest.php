@@ -147,4 +147,35 @@ class IncludeTest extends PHPUnit_Framework_TestCase
 
         $file2_checker->visitAndAnalyzeMethods();
     }
+
+    public function testRequireNamespaceWithUse()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/file1.php',
+            '<?php
+            namespace Foo;
+
+            class A{
+            }
+            '
+        );
+
+        $file2_checker = new FileChecker(
+            getcwd() . '/file2.php',
+            $this->project_checker,
+            self::$parser->parse('<?php
+            require("file1.php");
+
+            use Foo\A;
+
+            class B {
+                public function foo() : void {
+                    (new A);
+                }
+            }
+            ')
+        );
+
+        $file2_checker->visitAndAnalyzeMethods();
+    }
 }

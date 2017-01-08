@@ -203,8 +203,6 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $statements_checker = new StatementsChecker($this);
 
-        $this->registerUses();
-
         $classes_to_check = [];
         $interfaces_to_check = [];
         $function_stmts = [];
@@ -249,6 +247,10 @@ class FileChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_stmts[] = $stmt;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                $this->visitUse($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                $this->visitGroupUse($stmt);
             } else {
                 $leftover_stmts[] = $stmt;
             }
@@ -614,22 +616,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         return $this->aliased_classes_flipped;
-    }
-
-    /**
-     * @return void
-     */
-    protected function registerUses()
-    {
-        foreach ($this->getStatements() as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                $this->visitUse($stmt);
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
-                $this->visitGroupUse($stmt);
-            }
-        }
     }
 
     /**
