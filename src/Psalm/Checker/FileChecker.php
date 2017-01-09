@@ -393,20 +393,26 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         if (isset($this->interface_checkers_no_methods[$fq_class_name])) {
-            if ($this->interface_checkers_no_methods[$fq_class_name]->visit() === false) {
+            $interface_checker = $this->interface_checkers_no_methods[$fq_class_name];
+
+            unset($this->interface_checkers_no_methods[$fq_class_name]);
+
+            if ($interface_checker->visit() === false) {
                 return false;
             }
 
-            unset($this->interface_checkers_no_methods[$fq_class_name]);
             return;
         }
 
         if (isset($this->class_checkers_no_methods[$fq_class_name])) {
-            if ($this->class_checkers_no_methods[$fq_class_name]->visit(null, $this->context) === false) {
+            $class_checker = $this->class_checkers_no_methods[$fq_class_name];
+
+            unset($this->class_checkers_no_methods[$fq_class_name]);
+
+            if ($class_checker->visit(null, $this->context) === false) {
                 return false;
             }
 
-            unset($this->class_checkers_no_methods[$fq_class_name]);
             return;
         }
 
