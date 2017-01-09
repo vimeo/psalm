@@ -131,6 +131,19 @@ class ForeachChecker
                         break;
 
                     default:
+                        if ($return_type->value !== 'Traversable' &&
+                            $return_type->value !== $statements_checker->getClassName()
+                        ) {
+                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                $return_type->value,
+                                $statements_checker->getFileChecker(),
+                                new CodeLocation($statements_checker->getSource(), $stmt->expr),
+                                $statements_checker->getSuppressedIssues()
+                            ) === false) {
+                                return false;
+                            }
+                        }
+
                         if (ClassChecker::classImplements(
                             $return_type->value,
                             'Iterator'
@@ -153,19 +166,6 @@ class ForeachChecker
                                 }
                             } else {
                                 $value_type = Type::getMixed();
-                            }
-                        }
-
-                        if ($return_type->value !== 'Traversable' &&
-                            $return_type->value !== $statements_checker->getClassName()
-                        ) {
-                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                $return_type->value,
-                                $statements_checker->getFileChecker(),
-                                new CodeLocation($statements_checker->getSource(), $stmt->expr),
-                                $statements_checker->getSuppressedIssues()
-                            ) === false) {
-                                return false;
                             }
                         }
                 }
