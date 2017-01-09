@@ -1337,7 +1337,7 @@ class CallChecker
             }
         }
 
-        if (!$type_match_found) {
+        if (!$type_match_found && !$coerced_type) {
             if ($scalar_type_match_found) {
                 if ($cased_method_id !== 'echo') {
                     if (IssueBuffer::accepts(
