@@ -1009,15 +1009,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     implode('\\', $param_typehint->parts),
                     $source
                 );
-
-                if (!in_array(strtolower($param_type_string), ClassLikeChecker::$SPECIAL_TYPES)) {
-                    ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $param_type_string,
-                        $source->getFileChecker(),
-                        new CodeLocation($source, $param_typehint),
-                        $source->getSuppressedIssues()
-                    );
-                }
             }
 
             if ($param_type_string) {
