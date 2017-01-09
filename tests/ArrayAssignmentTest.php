@@ -696,4 +696,28 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeCoercion
+     */
+    public function testMixedArrayArgument()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /** @param array<mixed, int|string> $foo */
+        function fooFoo(array $foo) : void { }
+
+        function barBar(array $bar) : void {
+            fooFoo($bar);
+        }
+
+        barBar([1, "2"]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

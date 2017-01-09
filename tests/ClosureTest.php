@@ -143,6 +143,24 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    public function testCallableToClosure()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @return callable
+         */
+        function foo() {
+            return function(string $a) : string {
+                return $a . "blah";
+            };
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
     public function testCallable()
     {
         $stmts = self::$parser->parse('<?php

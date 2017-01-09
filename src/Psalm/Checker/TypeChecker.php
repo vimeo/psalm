@@ -834,7 +834,6 @@ class TypeChecker
                     )
                 ) {
                     $type_coerced = true;
-                    $type_match_found = true;
                     break;
                 }
             }
@@ -1188,6 +1187,11 @@ class TypeChecker
 
                 foreach ($simple_declared_types as $simple_declared_type) {
                     if ($simple_declared_type === 'mixed') {
+                        $is_match = true;
+                        break;
+                    }
+
+                    if (strtolower($simple_declared_type) === 'callable' && strtolower($differing_type) === 'closure') {
                         $is_match = true;
                         break;
                     }
