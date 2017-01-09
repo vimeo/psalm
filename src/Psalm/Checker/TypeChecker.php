@@ -827,7 +827,7 @@ class TypeChecker
                 } elseif ($input_is_object &&
                     $container_is_object &&
                     ClassChecker::classExists($container_type_part->value, $file_checker) &&
-                    ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                    ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
                     ClassChecker::classExtendsOrImplements(
                         $container_type_part->value,
                         $input_type_part->value
