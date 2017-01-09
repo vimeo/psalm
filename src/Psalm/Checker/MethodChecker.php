@@ -59,6 +59,8 @@ class MethodChecker extends FunctionLikeChecker
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
+        $fq_class_name = strtolower($fq_class_name);
+
         return ClassLikeChecker::$storage[$fq_class_name]->methods[$method_name]->variadic;
     }
 
@@ -86,6 +88,8 @@ class MethodChecker extends FunctionLikeChecker
         if ($storage->return_type) {
             return clone $storage->return_type;
         }
+
+        $fq_class_name = strtolower($fq_class_name);
 
         $class_storage = ClassLikeChecker::$storage[$fq_class_name];
 
@@ -144,7 +148,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         $method_name = strtolower($method->getName());
 
-        $class_storage = ClassLikeChecker::$storage[$method->class];
+        $class_storage = ClassLikeChecker::$storage[strtolower($method->class)];
 
         if (isset($class_storage->methods[strtolower($method_name)])) {
             return;
@@ -256,6 +260,8 @@ class MethodChecker extends FunctionLikeChecker
             return true;
         }
 
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
         if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $method_id . ' does not exist', $code_location),
             $suppressed_issues
@@ -282,11 +288,13 @@ class MethodChecker extends FunctionLikeChecker
 
         $old_method_id = null;
 
-        if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
+        $fq_class_name_lower = strtolower($fq_class_name);
+
+        if (!isset(ClassLikeChecker::$storage[$fq_class_name_lower])) {
             throw new \UnexpectedValueException('Storage should exist for ' . $fq_class_name);
         }
 
-        $class_storage = ClassLikeChecker::$storage[$fq_class_name];
+        $class_storage = ClassLikeChecker::$storage[$fq_class_name_lower];
 
         if (isset($class_storage->declaring_method_ids[$method_name])) {
             return true;
@@ -314,7 +322,9 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $class_storage = ClassLikeChecker::$storage[$fq_class_name];
+        $fq_class_name_lower = strtolower($fq_class_name);
+
+        $class_storage = ClassLikeChecker::$storage[$fq_class_name_lower];
 
         if (!isset($class_storage->methods[strtolower($method_name)])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
@@ -457,7 +467,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        ClassLikeChecker::$storage[$fq_class_name]->declaring_method_ids[$method_name] = $declaring_method_id;
+        ClassLikeChecker::$storage[strtolower($fq_class_name)]->declaring_method_ids[$method_name] = $declaring_method_id;
     }
 
     /**
@@ -469,7 +479,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        ClassLikeChecker::$storage[$fq_class_name]->appearing_method_ids[$method_name] = $appearing_method_id;
+        ClassLikeChecker::$storage[strtolower($fq_class_name)]->appearing_method_ids[$method_name] = $appearing_method_id;
     }
 
     /**
@@ -479,6 +489,8 @@ class MethodChecker extends FunctionLikeChecker
     public static function getDeclaringMethodId($method_id)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        $fq_class_name = strtolower($fq_class_name);
 
         if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
@@ -499,6 +511,8 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
+        $fq_class_name = strtolower($fq_class_name);
+
         if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
         }
@@ -517,7 +531,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        ClassLikeChecker::$storage[$fq_class_name]->overridden_method_ids[$method_name][] = $overridden_method_id;
+        ClassLikeChecker::$storage[strtolower($fq_class_name)]->overridden_method_ids[$method_name][] = $overridden_method_id;
     }
 
     /**
@@ -528,7 +542,7 @@ class MethodChecker extends FunctionLikeChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $class_storage = ClassLikeChecker::$storage[$fq_class_name];
+        $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
 
         if (isset($class_storage->overridden_method_ids[$method_name])) {
             return $class_storage->overridden_method_ids[$method_name];

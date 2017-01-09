@@ -641,15 +641,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return null;
             }
 
-            /*
-            if (in_array($path_to_file, FileChecker::getIncludesToIgnore())) {
-                $context->check_classes = false;
-                $context->check_variables = false;
-
-                return null;
-            }
-             */
-
             $current_file_checker = $this->getFileChecker();
 
             if ($this->getFileChecker()->fileExists($path_to_file)) {

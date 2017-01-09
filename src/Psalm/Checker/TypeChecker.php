@@ -794,7 +794,9 @@ class TypeChecker
                     !$input_type_part->isObject()
                 ) {
                     // check whether the object has a __toString method
-                    if (MethodChecker::methodExists($input_type_part->value . '::__toString')) {
+                    if (ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                        MethodChecker::methodExists($input_type_part->value . '::__toString')
+                    ) {
                         $type_match_found = true;
                         $to_string_cast = true;
                     }
@@ -879,7 +881,10 @@ class TypeChecker
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
                     if ($existing_key_type_part->isNull()) {
                         $class_property_type = Type::getNull();
-                    } elseif ($existing_key_type_part->isMixed()) {
+                    } elseif ($existing_key_type_part->isMixed() ||
+                        $existing_key_type_part->isObject() ||
+                        strtolower($existing_key_type_part->value) === 'stdclass'
+                    ) {
                         $class_property_type = Type::getMixed();
                     } else {
                         $property_id = $existing_key_type_part->value . '::$' . $key_parts[$i];
@@ -890,7 +895,7 @@ class TypeChecker
 
                         $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
 
-                        $class_storage = ClassLikeChecker::$storage[$declaring_property_class];
+                        $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
 
                         $class_property_type = $class_storage->properties[$key_parts[$i]]->type;
 

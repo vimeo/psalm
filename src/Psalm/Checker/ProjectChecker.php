@@ -48,6 +48,51 @@ class ProjectChecker
     public $debug_output = false;
 
     /**
+     * @var array<string, bool>
+     */
+    protected $existing_classlikes_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_classlikes = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_classes_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    public $existing_classes = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_interfaces_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    public $existing_interfaces = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_traits_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    public $existing_traits = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $classlike_files = [];
+
+    /**
      * @var array<string, string>
      */
     protected $files_to_visit = [];
@@ -464,21 +509,18 @@ class ProjectChecker
     }
 
     /**
+     * Checks whether a class exists, and if it does then records what file it's in
+     * for later checking
+     *
      * @param  string $fq_class_name
      * @return boolean
      * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
-    public function visitFileForClassLike($fq_class_name)
+    public function fileExistsForClassLike($fq_class_name)
     {
-        if (!$fq_class_name || strpos($fq_class_name, '::') !== false) {
-            throw new \InvalidArgumentException('Invalid class name ' . $fq_class_name);
+        if (isset($this->existing_classlikes_ci[strtolower($fq_class_name)])) {
+            return $this->existing_classlikes_ci[strtolower($fq_class_name)];
         }
-
-        if (isset($this->visited_classes[$fq_class_name])) {
-            return $this->visited_classes[$fq_class_name];
-        }
-
-        $this->visited_classes[$fq_class_name] = true;
 
         $old_level = error_reporting();
         error_reporting(0);
@@ -496,13 +538,57 @@ class ProjectChecker
         error_reporting($old_level);
 
         if ($reflected_class->isUserDefined()) {
-            $file_path = (string)$reflected_class->getFileName();
+            $fq_class_name = $reflected_class->getName();
+            $this->existing_classlikes_ci[strtolower($fq_class_name)] = true;
+            $this->existing_classlikes[$fq_class_name] = true;
+
+            if ($reflected_class->isInterface()) {
+                $this->addFullyQualifiedInterfaceName($fq_class_name);
+            } elseif ($reflected_class->isTrait()) {
+                $this->addFullyQualifiedTraitName($fq_class_name);
+            } else {
+                $this->addFullyQualifiedClassName($fq_class_name);
+            }
+
+            $this->classlike_files[$fq_class_name] = (string)$reflected_class->getFileName();
+        } else {
+            $this->visited_classes[$fq_class_name] = true;
+            ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  string $fq_class_name
+     * @return boolean
+     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
+     */
+    public function visitFileForClassLike($fq_class_name)
+    {
+        if (!$fq_class_name || strpos($fq_class_name, '::') !== false) {
+            throw new \InvalidArgumentException('Invalid class name ' . $fq_class_name);
+        }
+
+        if (isset($this->visited_classes[$fq_class_name])) {
+            return $this->visited_classes[$fq_class_name];
+        }
+
+        $this->visited_classes[$fq_class_name] = true;
+
+        // this registers the class if it's not user defined
+        if (!$this->fileExistsForClassLike($fq_class_name)) {
+            return false;
+        }
+
+        if (isset($this->classlike_files[$fq_class_name])) {
+            $file_path = $this->classlike_files[$fq_class_name];
 
             if (isset($this->visited_files[$file_path])) {
                 return true;
             }
 
-            $this->scanned_files[$file_path] = true;
+            $this->visited_files[$file_path] = true;
 
             $file_checker = new FileChecker($file_path, $this);
 
@@ -510,13 +596,16 @@ class ProjectChecker
 
             ClassLikeChecker::$file_classes[$file_path][] = $fq_class_name;
 
-            if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
-                ClassLikeChecker::$storage[$fq_class_name] = new \Psalm\Storage\ClassLikeStorage();
-                ClassLikeChecker::$storage[$fq_class_name]->file_path = $file_path;
-                ClassLikeChecker::$storage[$fq_class_name]->file_name = $short_file_name;
-            }
+            $fq_class_name_lower = strtolower($fq_class_name);
 
-            $storage = ClassLikeChecker::$storage[$fq_class_name];
+            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lower])) {
+                ClassLikeChecker::$storage[$fq_class_name_lower] =
+                    $storage = new \Psalm\Storage\ClassLikeStorage();
+                $storage->file_path = $file_path;
+                $storage->file_name = $short_file_name;
+            } else {
+                $storage = ClassLikeChecker::$storage[$fq_class_name_lower];
+            }
 
             if ($this->debug_output) {
                 echo 'Visiting ' . $file_path . PHP_EOL;
@@ -539,8 +628,6 @@ class ProjectChecker
                     $storage->appearing_property_ids[$property_name] = $property_id;
                 }
             }
-        } else {
-            ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class);
         }
 
         return true;
@@ -663,5 +750,77 @@ class ProjectChecker
         }
 
         return (string)file_get_contents($file_path);
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return void
+     */
+    public function addFullyQualifiedClassName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_classes_ci[$fq_class_name_ci] = true;
+        $this->existing_traits_ci[$fq_class_name_ci] = false;
+        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $this->existing_classes[$fq_class_name] = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return void
+     */
+    public function addFullyQualifiedInterfaceName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_interfaces_ci[$fq_class_name_ci] = true;
+        $this->existing_classes_ci[$fq_class_name_ci] = false;
+        $this->existing_traits_ci[$fq_class_name_ci] = false;
+        $this->existing_interfaces[$fq_class_name] = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return void
+     */
+    public function addFullyQualifiedTraitName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_traits_ci[$fq_class_name_ci] = true;
+        $this->existing_classes_ci[$fq_class_name_ci] = false;
+        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $this->existing_traits[$fq_class_name] = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return bool
+     */
+    public function hasFullyQualifiedClassName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        return isset($this->existing_classes_ci[$fq_class_name_ci]) && $this->existing_classes_ci[$fq_class_name_ci];
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return bool
+     */
+    public function hasFullyQualifiedInterfaceName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        return isset($this->existing_interfaces_ci[$fq_class_name_ci]) && $this->existing_interfaces_ci[$fq_class_name_ci];
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return bool
+     */
+    public function hasFullyQualifiedTraitName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        return isset($this->existing_traits_ci[$fq_class_name_ci]) && $this->existing_traits_ci[$fq_class_name_ci];
     }
 }

@@ -362,11 +362,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $function_id = $fq_class_name . '::' . strtolower($function->name);
             $cased_function_id = $fq_class_name . '::' . $function->name;
 
-            if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
+            $fq_class_name_lower = strtolower($fq_class_name);
+
+            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lower])) {
                 throw new \UnexpectedValueException('$class_storage cannot be empty for ' . $function_id);
             }
 
-            $class_storage = ClassLikeChecker::$storage[$fq_class_name];
+            $class_storage = ClassLikeChecker::$storage[$fq_class_name_lower];
 
             if (isset($class_storage->methods[strtolower($function->name)])) {
                 throw new \InvalidArgumentException('Cannot re-register ' . $function_id);

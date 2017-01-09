@@ -262,7 +262,8 @@ class FetchChecker
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
 
-            $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+            $property_storage =
+                ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
             $class_property_type = $property_storage->type;
 
@@ -400,7 +401,8 @@ class FetchChecker
                     $fq_class_name,
                     $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_checker->getSuppressedIssues(),
+                    true
                 ) === false) {
                     return false;
                 }
@@ -535,7 +537,8 @@ class FetchChecker
                     $fq_class_name,
                     $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_checker->getSuppressedIssues(),
+                    true
                 ) === false) {
                     return false;
                 }
@@ -591,7 +594,8 @@ class FetchChecker
                 $fq_class_name . '::$' . $stmt->name
             );
 
-            $property = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+            $property =
+                ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
             $context->vars_in_scope[$var_id] = $property->type
                 ? clone $property->type

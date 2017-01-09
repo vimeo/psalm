@@ -273,7 +273,8 @@ class CallChecker
                         $fq_class_name,
                         $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_checker->getSuppressedIssues(),
+                        true
                     ) === false) {
                         return false;
                     }
@@ -304,7 +305,9 @@ class CallChecker
         if ($fq_class_name) {
             $stmt->inferredType = new Type\Union([new Type\Atomic($fq_class_name)]);
 
-            if (MethodChecker::methodExists($fq_class_name . '::__construct')) {
+            if (strtolower($fq_class_name) !== 'stdclass' &&
+                MethodChecker::methodExists($fq_class_name . '::__construct')
+            ) {
                 $method_id = $fq_class_name . '::__construct';
 
                 $file_checker = $statements_checker->getFileChecker();
@@ -544,7 +547,8 @@ class CallChecker
                             $fq_class_name,
                             $statements_checker->getFileChecker(),
                             new CodeLocation($statements_checker->getSource(), $stmt->var),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_checker->getSuppressedIssues(),
+                            true
                         );
 
                         if (!$does_class_exist) {
@@ -719,7 +723,8 @@ class CallChecker
                     $fq_class_name,
                     $file_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_checker->getSuppressedIssues(),
+                    true
                 );
 
                 if (!$does_class_exist) {

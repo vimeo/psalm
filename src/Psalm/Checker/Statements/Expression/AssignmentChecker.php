@@ -335,7 +335,7 @@ class AssignmentChecker
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
 
-            $class_storage = ClassLikeChecker::$storage[$declaring_property_class];
+            $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
 
             $class_property_type = $class_storage->properties[$prop_name]->type;
 
@@ -430,17 +430,6 @@ class AssignmentChecker
                     continue;
                 }
 
-                if (!$lhs_type_part->isObject() && MethodChecker::methodExists($lhs_type_part . '::__set')) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                    continue;
-                }
-
-                $has_regular_setter = true;
-
-                if ($lhs_type_part->isObject()) {
-                    continue;
-                }
-
                 // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
                 // but we don't want to throw an error
                 // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
@@ -457,6 +446,17 @@ class AssignmentChecker
                     }
 
                     return null;
+                }
+
+                if (!$lhs_type_part->isObject() && MethodChecker::methodExists($lhs_type_part . '::__set')) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    continue;
+                }
+
+                $has_regular_setter = true;
+
+                if ($lhs_type_part->isObject()) {
+                    continue;
                 }
 
                 if (ExpressionChecker::isMock($lhs_type_part->value)) {
@@ -547,7 +547,8 @@ class AssignmentChecker
                     $lhs_type_part->value . '::$' . $prop_name
                 );
 
-                $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+                $property_storage =
+                    ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
                 $class_property_type = $property_storage->type;
 
@@ -720,7 +721,8 @@ class AssignmentChecker
             $fq_class_name . '::$' . $prop_name
         );
 
-        $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+        $property_storage =
+            ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
         $context->vars_in_scope[$var_id] = $assignment_value_type;
 

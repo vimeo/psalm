@@ -33,10 +33,12 @@ class ClassChecker extends ClassLikeChecker
 
         parent::__construct($class, $source, $fq_class_name);
 
-        $storage = self::$storage[$fq_class_name];
+        $fq_class_name_lower = strtolower($fq_class_name);
 
-        self::$existing_classes[$fq_class_name] = true;
-        self::$existing_classes_ci[strtolower($fq_class_name)] = true;
+        $storage = self::$storage[$fq_class_name_lower];
+
+        $project_checker = $source->getFileChecker()->project_checker;
+        $project_checker->addFullyQualifiedClassName($fq_class_name);
 
         self::$class_extends[$this->fq_class_name] = [];
 
@@ -62,44 +64,40 @@ class ClassChecker extends ClassLikeChecker
      *
      * @param  string       $fq_class_name
      * @param  FileChecker  $file_checker
+     * @param  bool         $visit_file
      * @return bool
      */
-    public static function classExists($fq_class_name, FileChecker $file_checker)
+    public static function classExists($fq_class_name, FileChecker $file_checker, $visit_file = false)
     {
         if (isset(self::$SPECIAL_TYPES[$fq_class_name])) {
             return false;
         }
 
-        if ($file_checker->evaluateClassLike($fq_class_name) === false) {
+        if ($fq_class_name === 'Generator') {
+            return true;
+        }
+
+        if ($file_checker->evaluateClassLike($fq_class_name, $visit_file) === false) {
             return false;
         }
 
-        if (isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
-            return self::$existing_classes_ci[strtolower($fq_class_name)];
-        }
-
-        if (!isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
-            // it exists, but it's not a class
-            self::$existing_classes_ci[strtolower($fq_class_name)] = false;
-            return false;
-        }
-
-        return true;
+        return $file_checker->project_checker->hasFullyQualifiedClassName($fq_class_name);
     }
 
     /**
      * Determine whether or not a class has the correct casing
      *
      * @param  string       $fq_class_name
+     * @param  FileChecker  $file_checker
      * @return bool
      */
-    public static function hasCorrectCasing($fq_class_name)
+    public static function hasCorrectCasing($fq_class_name, FileChecker $file_checker)
     {
-        if (!isset(self::$existing_classes_ci[strtolower($fq_class_name)])) {
-            throw new \InvalidArgumentException('Cannot check casing on nonexistent class ' . $fq_class_name);
+        if ($fq_class_name === 'Generator') {
+            return true;
         }
 
-        return isset(self::$existing_classes[$fq_class_name]);
+        return isset($file_checker->project_checker->existing_classes[$fq_class_name]);
     }
 
     /**
@@ -111,6 +109,8 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function classExtends($fq_class_name, $possible_parent)
     {
+        $fq_class_name = strtolower($fq_class_name);
+
         if (!isset(self::$storage[$fq_class_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
         }
@@ -126,7 +126,7 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function getInterfacesForClass($fq_class_name)
     {
-        return self::$storage[$fq_class_name]->class_implements;
+        return self::$storage[strtolower($fq_class_name)]->class_implements;
     }
 
     /**
@@ -148,7 +148,7 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        $storage = self::$storage[$fq_class_name];
+        $storage = self::$storage[strtolower($fq_class_name)];
 
         return isset($storage->class_implements[$interface_id]);
     }

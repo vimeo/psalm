@@ -384,9 +384,10 @@ class FileChecker extends SourceChecker implements StatementsSource
      * When evaluating a file, we wait until a class is actually used to evaluate its contents
      *
      * @param  string $fq_class_name
+     * @param  bool   $visit_file
      * @return null|false
      */
-    public function evaluateClassLike($fq_class_name)
+    public function evaluateClassLike($fq_class_name, $visit_file)
     {
         if (!$this->context) {
             throw new \UnexpectedValueException('Not expecting $this->context to be empty');

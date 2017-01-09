@@ -38,13 +38,15 @@ class TraitChecker extends ClassLikeChecker
         $this->class = $class;
         $this->fq_class_name = $fq_class_name;
 
-        if (!isset(self::$storage[$fq_class_name])) {
-            self::$storage[$fq_class_name] = new ClassLikeStorage();
-            self::$storage[$fq_class_name]->file_name = $this->source->getFileName();
-            self::$storage[$fq_class_name]->file_path = $this->source->getFilePath();
+        $fq_class_name_lower = strtolower($fq_class_name);
+
+        if (!isset(self::$storage[$fq_class_name_lower])) {
+            self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
+            $storage->file_name = $this->source->getFileName();
+            $storage->file_path = $this->source->getFilePath();
         }
 
-        self::$trait_names[strtolower($fq_class_name)] = $fq_class_name;
+        self::$trait_names[$fq_class_name_lower] = $fq_class_name;
 
         self::$trait_checkers[$fq_class_name] = $this;
     }
@@ -102,7 +104,7 @@ class TraitChecker extends ClassLikeChecker
             return self::$existing_traits[strtolower($trait_name)];
         }
 
-        if ($file_checker->evaluateClassLike($trait_name) === false) {
+        if ($file_checker->evaluateClassLike($trait_name, false) === false) {
             self::$existing_traits[strtolower($trait_name)] = false;
             return false;
         }
