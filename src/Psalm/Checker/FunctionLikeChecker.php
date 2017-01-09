@@ -352,7 +352,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $file_storage = FileChecker::$storage[$source->getFilePath()];
 
             if (isset($file_storage->functions[$function_id])) {
-                throw new \InvalidArgumentException('Cannot re-register ' . $function_id);
+                return $file_storage->functions[$function_id];
             }
 
             $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();

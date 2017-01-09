@@ -257,6 +257,10 @@ class CallChecker
     ) {
         $fq_class_name = null;
 
+        $file_checker = $statements_checker->getFileChecker();
+
+        $class_checked = false;
+
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
@@ -271,13 +275,15 @@ class CallChecker
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
-                        $statements_checker->getFileChecker(),
+                        $file_checker,
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues(),
                         true
                     ) === false) {
                         return false;
                     }
+
+                    $class_checked = true;
                 }
             } else {
                 switch ($stmt->class->parts[0]) {
@@ -306,11 +312,10 @@ class CallChecker
             $stmt->inferredType = new Type\Union([new Type\Atomic($fq_class_name)]);
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
+                ($class_checked || ClassChecker::classExists($fq_class_name, $file_checker)) &&
                 MethodChecker::methodExists($fq_class_name . '::__construct')
             ) {
                 $method_id = $fq_class_name . '::__construct';
-
-                $file_checker = $statements_checker->getFileChecker();
 
                 $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
 
