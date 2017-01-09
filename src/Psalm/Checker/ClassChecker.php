@@ -140,15 +140,17 @@ class ClassChecker extends ClassLikeChecker
     {
         $interface_id = strtolower($interface);
 
-        if ($interface_id === 'callable' && $fq_class_name === 'Closure') {
+        $fq_class_name = strtolower($fq_class_name);
+
+        if ($interface_id === 'callable' && $fq_class_name === 'closure') {
             return true;
         }
 
-        if (in_array($interface_id, self::$SPECIAL_TYPES) || in_array($fq_class_name, self::$SPECIAL_TYPES)) {
+        if (isset(self::$SPECIAL_TYPES[$interface_id]) || isset(self::$SPECIAL_TYPES[$fq_class_name])) {
             return false;
         }
 
-        $storage = self::$storage[strtolower($fq_class_name)];
+        $storage = self::$storage[$fq_class_name];
 
         return isset($storage->class_implements[$interface_id]);
     }

@@ -1196,8 +1196,8 @@ class TypeChecker
                         break;
                     }
 
-                    if (isset(ClassLikeChecker::$SPECIAL_TYPES[$simple_declared_type]) ||
-                        isset(ClassLikeChecker::$SPECIAL_TYPES[$differing_type])
+                    if (isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($simple_declared_type)]) ||
+                        isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($differing_type)])
                     ) {
                         if (in_array($differing_type, ['float', 'int']) &&
                             in_array($simple_declared_type, ['float', 'int'])

@@ -48,7 +48,7 @@ class InterfaceChecker extends ClassLikeChecker
      */
     public static function interfaceExists($fq_interface_name, FileChecker $file_checker, $visit_file = false)
     {
-        if (isset(self::$SPECIAL_TYPES[$fq_interface_name])) {
+        if (isset(self::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
 
