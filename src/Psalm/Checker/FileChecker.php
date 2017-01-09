@@ -1010,6 +1010,11 @@ class FileChecker extends SourceChecker implements StatementsSource
         return null;
     }
 
+    public function getClassName()
+    {
+        return null;
+    }
+
     public function isStatic()
     {
         return false;
