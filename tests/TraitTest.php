@@ -264,7 +264,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
-    public function testRedefinedTraitMethod()
+    public function testRedefinedTraitMethodWithoutAlias()
     {
         $stmts = self::$parser->parse('<?php
         trait T {

@@ -206,7 +206,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  array<string>   $suppressed_issues
      * @return bool
      */
-    public static function analyzetatic(
+    public static function checkStatic(
         $method_id,
         $self_call,
         CodeLocation $code_location,
@@ -488,9 +488,11 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getDeclaringMethodId($method_id)
     {
+        $method_id = strtolower($method_id);
+
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $fq_class_name = strtolower($fq_class_name);
+        $fq_class_name = $fq_class_name;
 
         if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
@@ -509,9 +511,9 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getAppearingMethodId($method_id)
     {
-        list($fq_class_name, $method_name) = explode('::', $method_id);
+        $method_id = strtolower($method_id);
 
-        $fq_class_name = strtolower($fq_class_name);
+        list($fq_class_name, $method_name) = explode('::', $method_id);
 
         if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);

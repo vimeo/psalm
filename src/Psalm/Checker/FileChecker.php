@@ -289,9 +289,10 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  boolean $update_docblocks
+     * @param  boolean $preserve_checkers
      * @return void
      */
-    public function analyze($update_docblocks = false)
+    public function analyze($update_docblocks = false, $preserve_checkers = false)
     {
         $config = Config::getInstance();
 
@@ -334,11 +335,13 @@ class FileChecker extends SourceChecker implements StatementsSource
             }
         }
 
-        $this->namespace_checkers = [];
+        if (!$preserve_checkers) {
+            $this->namespace_checkers = [];
 
-        $this->class_checkers = [];
+            $this->class_checkers = [];
 
-        $this->function_checkers = [];
+            $this->function_checkers = [];
+        }
 
         if ($update_docblocks && isset(self::$docblock_return_types[$this->file_name])) {
             $line_upset = 0;
@@ -354,6 +357,60 @@ class FileChecker extends SourceChecker implements StatementsSource
             file_put_contents($this->file_path, implode(PHP_EOL, $file_lines));
 
             echo 'Added/updated ' . count($file_docblock_updates) . ' docblocks in ' . $this->file_name . PHP_EOL;
+        }
+    }
+
+    /**
+     * @param  string   $original_method_id
+     * @param  Context  $this_context
+     * @return void
+     */
+    public function getMethodMutations($original_method_id, Context &$this_context)
+    {
+        list($fq_class_name, $method_name) = explode('::', $original_method_id);
+        $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($original_method_id);
+        list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+
+        if (!isset(ClassLikeChecker::$storage[strtolower($fq_class_name)])) {
+            throw new \UnexpectedValueException('Cannot locate class storage for ' . $fq_class_name);
+        }
+
+        $this_context->collect_mutations = true;
+
+        if (!$this_context->self) {
+            $this_context->self = $fq_class_name;
+            $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+        }
+
+        $call_context = new Context($this->file_name, (string) $this_context->vars_in_scope['$this']);
+        $call_context->collect_mutations = true;
+
+        foreach ($this_context->vars_possibly_in_scope as $var => $type) {
+            if (strpos($var, '$this->') === 0) {
+                $call_context->vars_possibly_in_scope[$var] = true;
+            }
+        }
+
+        foreach ($this_context->vars_in_scope as $var => $type) {
+            if (strpos($var, '$this->') === 0) {
+                $call_context->vars_in_scope[$var] = $type;
+            }
+        }
+
+        $call_context->vars_in_scope['$this'] = $this_context->vars_in_scope['$this'];
+
+        foreach ($this->class_checkers as $class_checker) {
+            if (strtolower($class_checker->getFQCLN()) === strtolower($declaring_fq_class_name)) {
+                $class_checker->getMethodMutations($declaring_method_name, $call_context);
+            }
+        }
+
+        foreach ($call_context->vars_in_scope as $var => $type) {
+            $this_context->vars_possibly_in_scope[$var] = true;
+        }
+
+        foreach ($call_context->vars_in_scope as $var => $type) {
+            $this_context->vars_in_scope[$var] = $type;
         }
     }
 
@@ -427,7 +484,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         return $this->preloaded_statements
             ? $this->preloaded_statements
-            : $this->getStatementsForFile($this->file_path, $this->project_checker->debug_output);
+            : self::getStatementsForFile($this->file_path, $this->project_checker->debug_output);
     }
 
     /**

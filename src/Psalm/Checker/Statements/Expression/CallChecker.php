@@ -459,19 +459,21 @@ class CallChecker
 
             $fq_class_name = (string)$statements_checker->getFQCLN();
 
-            if (($this_class = ClassLikeChecker::getThisClass()) &&
+            if ($context->collect_mutations &&
+                $context->self &&
                 (
-                    $this_class === $fq_class_name ||
+                    $context->self === $fq_class_name ||
                     ClassChecker::classExtends(
-                        $this_class,
+                        $context->self,
                         $fq_class_name
-                    ) ||
-                    TraitChecker::traitExists($fq_class_name, $statements_checker->getFileChecker())
+                    )
                 )
             ) {
+                $file_checker = $source->getFileChecker();
+
                 $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
 
-                if ($statements_checker->checkInsideMethod($method_id, $context) === false) {
+                if ($file_checker->getMethodMutations($method_id, $context) === false) {
                     return false;
                 }
             }
@@ -703,6 +705,16 @@ class CallChecker
 
                         return;
                     }
+
+                    if (is_string($stmt->name)) {
+                        if ($context->collect_mutations) {
+                            $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+
+                            if ($file_checker->getMethodMutations($method_id, $context) === false) {
+                                return false;
+                            }
+                        }
+                    }
                 } else {
                     $namespace = $statements_checker->getNamespace()
                         ? $statements_checker->getNamespace() . '\\'
@@ -734,16 +746,6 @@ class CallChecker
 
                 if (!$does_class_exist) {
                     return $does_class_exist;
-                }
-            }
-
-            if ($stmt->class->parts === ['parent'] && is_string($stmt->name)) {
-                if (ClassLikeChecker::getThisClass()) {
-                    $method_id = $fq_class_name . '::' . strtolower($stmt->name);
-
-                    if ($statements_checker->checkInsideMethod($method_id, $context) === false) {
-                        return false;
-                    }
                 }
             }
 
@@ -806,7 +808,7 @@ class CallChecker
                         || !ClassChecker::classExtends($context->self, $fq_class_name)
                     )
                 ) {
-                    if (MethodChecker::analyzetatic(
+                    if (MethodChecker::checkStatic(
                         $method_id,
                         $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
                         new CodeLocation($statements_checker->getSource(), $stmt),

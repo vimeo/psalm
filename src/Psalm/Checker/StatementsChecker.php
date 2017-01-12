@@ -397,49 +397,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  string  $method_id
-     * @param  Context $context
-     * @return void
-     */
-    public function checkInsideMethod($method_id, Context $context)
-    {
-        /**
-        $method_checker = ClassLikeChecker::getMethodChecker($method_id);
-
-        if ($method_checker &&
-            $this->source instanceof FunctionLikeChecker &&
-            $method_checker->getMethodId() !== $this->source->getMethodId()
-        ) {
-            $this_context = new Context($this->file_name, (string) $context->vars_in_scope['$this']);
-
-            foreach ($context->vars_possibly_in_scope as $var => $type) {
-                if (strpos($var, '$this->') === 0) {
-                    $this_context->vars_possibly_in_scope[$var] = true;
-                }
-            }
-
-            foreach ($context->vars_in_scope as $var => $type) {
-                if (strpos($var, '$this->') === 0) {
-                    $this_context->vars_in_scope[$var] = $type;
-                }
-            }
-
-            $this_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
-
-            $method_checker->analyze($this_context);
-
-            foreach ($this_context->vars_in_scope as $var => $type) {
-                $context->vars_possibly_in_scope[$var] = true;
-            }
-
-            foreach ($this_context->vars_in_scope as $var => $type) {
-                $context->vars_in_scope[$var] = $type;
-            }
-        }
-        **/
-    }
-
-    /**
      * @param   PhpParser\Node\Stmt\Const_  $stmt
      * @param   Context                     $context
      * @return  void
@@ -549,6 +506,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         } else {
             $stmt->inferredType = Type::getVoid();
         }
+
+
 
         if ($this->source instanceof FunctionLikeChecker) {
             $this->source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);

@@ -86,9 +86,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param Context       $context
      * @param Context|null  $global_context
+     * @param bool          $add_mutations  whether or not to add mutations to this method
      * @return false|null
      */
-    public function analyze(Context $context, Context $global_context = null)
+    public function analyze(Context $context, Context $global_context = null, $add_mutations = false)
     {
         /** @var array<PhpParser\Node\Expr|PhpParser\Node\Stmt> */
         $function_stmts = $this->function->getStmts() ?: [];
@@ -98,7 +99,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $cased_method_id = null;
 
         if ($this->function instanceof ClassMethod) {
-            if (ClassLikeChecker::getThisClass()) {
+            if ($add_mutations) {
                 $hash = $this->getMethodId() . json_encode([
                     $context->vars_in_scope,
                         $context->vars_possibly_in_scope
@@ -297,38 +298,39 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-
-        if (isset($this->return_vars_in_scope[''])) {
-            $context->vars_in_scope = TypeChecker::combineKeyedTypes(
-                $context->vars_in_scope,
-                $this->return_vars_in_scope['']
-            );
-        }
-
-        if (isset($this->return_vars_possibly_in_scope[''])) {
-            $context->vars_possibly_in_scope = array_merge(
-                $context->vars_possibly_in_scope,
-                $this->return_vars_possibly_in_scope['']
-            );
-        }
-
-        foreach ($context->vars_in_scope as $var => $type) {
-            if (strpos($var, '$this->') !== 0) {
-                unset($context->vars_in_scope[$var]);
+        if ($add_mutations) {
+            if (isset($this->return_vars_in_scope[''])) {
+                $context->vars_in_scope = TypeChecker::combineKeyedTypes(
+                    $context->vars_in_scope,
+                    $this->return_vars_in_scope['']
+                );
             }
-        }
 
-        foreach ($context->vars_possibly_in_scope as $var => $type) {
-            if (strpos($var, '$this->') !== 0) {
-                unset($context->vars_possibly_in_scope[$var]);
+            if (isset($this->return_vars_possibly_in_scope[''])) {
+                $context->vars_possibly_in_scope = array_merge(
+                    $context->vars_possibly_in_scope,
+                    $this->return_vars_possibly_in_scope['']
+                );
             }
-        }
 
-        if ($hash && ClassLikeChecker::getThisClass() && $this instanceof MethodChecker) {
-            self::$no_effects_hashes[$hash] = [
-                $context->vars_in_scope,
-                $context->vars_possibly_in_scope
-            ];
+            foreach ($context->vars_in_scope as $var => $type) {
+                if (strpos($var, '$this->') !== 0) {
+                    unset($context->vars_in_scope[$var]);
+                }
+            }
+
+            foreach ($context->vars_possibly_in_scope as $var => $type) {
+                if (strpos($var, '$this->') !== 0) {
+                    unset($context->vars_possibly_in_scope[$var]);
+                }
+            }
+
+            if ($hash && $this instanceof MethodChecker) {
+                self::$no_effects_hashes[$hash] = [
+                    $context->vars_in_scope,
+                    $context->vars_possibly_in_scope
+                ];
+            }
         }
 
         return null;

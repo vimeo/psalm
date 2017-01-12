@@ -330,16 +330,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         Context $global_context = null,
         $update_docblocks = false
     ) {
-        $config = Config::getInstance();
-
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
 
         $storage = self::$storage[strtolower($fq_class_name)];
 
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
-            foreach (ClassChecker::getInterfacesForClass(
-                $this->fq_class_name
-            ) as $interface_id => $interface_name) {
+            $class_interfaces = ClassChecker::getInterfacesForClass($this->fq_class_name);
+
+            foreach ($class_interfaces as $interface_id => $interface_name) {
                 $interface_storage = self::$storage[strtolower($interface_name)];
 
                 $storage->public_class_constants += $interface_storage->public_class_constants;
@@ -408,43 +406,126 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_checker = new MethodChecker($stmt, $this);
-
-                $method_checker->analyze(clone $class_context, clone $global_context);
-
-                $actual_method_id = (string)$method_checker->getMethodId();
-                $analyzed_method_id = (string)$method_checker->getMethodId((string)$class_context->self);
-
-                $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
-
-                if ($actual_method_id === $declaring_method_id &&
-                    !$config->excludeIssueInFile('InvalidReturnType', $this->source->getFileName())
-                ) {
-                    $secondary_return_type_location = null;
-
-                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                        $actual_method_id,
-                        $secondary_return_type_location
-                    );
-
-                    $method_checker->verifyReturnType(
-                        $update_docblocks,
-                        MethodChecker::getMethodReturnType($actual_method_id),
-                        $class_context->self,
-                        $return_type_location,
-                        $secondary_return_type_location
-                    );
-                }
+                $this->analyzeClassMethod($stmt, $this, $class_context, $global_context, $update_docblocks);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
-                    $trait_name = self::getFQCLNFromNameObject(
+                    $fq_trait_name = self::getFQCLNFromNameObject(
                         $trait,
                         $this->source
                     );
 
-                    $trait_checker = self::$trait_checkers[$trait_name];
+                    $trait_checker = self::$trait_checkers[$fq_trait_name];
 
-                    $trait_checker->analyze($class_context, $global_context, $update_docblocks);
+                    foreach ($trait_checker->class->stmts as $trait_stmt) {
+                        if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                            $this->analyzeClassMethod($trait_stmt, $trait_checker, $class_context, $global_context);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  PhpParser\Node\Stmt\ClassMethod $stmt
+     * @param  StatementsSource                $source
+     * @param  Context                         $class_context
+     * @param  Context|null                    $global_context
+     * @param  boolean                         $update_docblocks
+     * @return void
+     */
+    protected function analyzeClassMethod(
+        PhpParser\Node\Stmt\ClassMethod $stmt,
+        StatementsSource $source,
+        Context $class_context,
+        Context $global_context = null,
+        $update_docblocks = false
+    ) {
+        $config = Config::getInstance();
+
+        $method_checker = new MethodChecker($stmt, $source);
+
+        $actual_method_id = (string)$method_checker->getMethodId();
+
+        if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
+            $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
+
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
+
+            if ($actual_method_id !== $declaring_method_id) {
+                return;
+            }
+        }
+
+        $method_checker->analyze(
+            clone $class_context,
+            $global_context ? clone $global_context : null
+        );
+
+        if (!$config->excludeIssueInFile('InvalidReturnType', $source->getFileName())) {
+            $secondary_return_type_location = null;
+
+            $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                $actual_method_id,
+                $secondary_return_type_location
+            );
+
+            $method_checker->verifyReturnType(
+                $update_docblocks,
+                MethodChecker::getMethodReturnType($actual_method_id),
+                $class_context->self,
+                $return_type_location,
+                $secondary_return_type_location
+            );
+        }
+    }
+
+    /**
+     * @param  string       $method_name
+     * @param  Context      $context
+     * @return void
+     */
+    public function getMethodMutations(
+        $method_name,
+        Context $context
+    ) {
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
+                strtolower($stmt->name) === strtolower($method_name)
+            ) {
+                $method_checker = new MethodChecker($stmt, $this);
+
+                $method_checker->analyze($context, null, true);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                foreach ($stmt->traits as $trait) {
+                    $fq_trait_name = self::getFQCLNFromNameObject(
+                        $trait,
+                        $this->source
+                    );
+
+                    $trait_checker = self::$trait_checkers[$fq_trait_name];
+
+                    foreach ($trait_checker->class->stmts as $trait_stmt) {
+                        if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
+                            strtolower($trait_stmt->name) === strtolower($method_name)
+                        ) {
+                            $method_checker = new MethodChecker($trait_stmt, $trait_checker);
+
+                            $actual_method_id = (string)$method_checker->getMethodId();
+
+                            if ($context->self && $context->self !== $this->fq_class_name) {
+                                $analyzed_method_id = (string)$method_checker->getMethodId($context->self);
+
+                                $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
+
+                                if ($actual_method_id !== $declaring_method_id) {
+                                    break;
+                                }
+                            }
+
+                            $method_checker->analyze($context, null, true);
+                        }
+                    }
                 }
             }
         }
