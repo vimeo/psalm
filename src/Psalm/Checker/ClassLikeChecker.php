@@ -329,6 +329,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_interfaces = ClassChecker::getInterfacesForClass($this->fq_class_name);
 
             foreach ($class_interfaces as $interface_id => $interface_name) {
+                if (!isset(self::$storage[strtolower($interface_name)])) {
+                    continue;
+                }
+
                 $interface_storage = self::$storage[strtolower($interface_name)];
 
                 $storage->public_class_constants += $interface_storage->public_class_constants;

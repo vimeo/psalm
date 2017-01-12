@@ -365,4 +365,21 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedClass
+     */
+    public function testInvalidImplements()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+        class C2 implements A {
+        }
+        ');
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
