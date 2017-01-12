@@ -1,7 +1,9 @@
 <?php
 namespace Psalm;
 
+use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
@@ -77,7 +79,7 @@ class Config
      *
      * @var boolean
      */
-    public $use_property_default_for_type = true;
+    public $use_property_default_for_type = false;
 
     /**
      * Path to the autoader
@@ -341,9 +343,6 @@ class Config
      * @param  array<\SimpleXMLElement> $extensions
      * @return void
      * @throws ConfigException If a Config file could not be found.
-     * @psalm-suppress MixedArrayAccess
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
      */
     protected function loadFileExtensions($extensions)
     {
@@ -358,25 +357,42 @@ class Config
                     throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
-                $declared_classes = FileChecker::getDeclaredClassesInFile($path);
-
-                if (count($declared_classes) !== 1) {
-                    throw new \InvalidArgumentException(
-                        'Filetype handlers must have exactly one class in the file - ' . $path . ' has ' .
-                            count($declared_classes)
-                    );
-                }
-
-                require_once($path);
-
-                if (!is_subclass_of($declared_classes[0], 'Psalm\\Checker\\FileChecker')) {
-                    throw new \InvalidArgumentException(
-                        'Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not'
-                    );
-                }
-
-                $this->filetype_handlers[$extension_name] = $declared_classes[0];
+                $this->filetype_handlers[$extension_name] = $path;
             }
+        }
+    }
+
+    /**
+     * Initialises all the plugins (done once the config is fully loaded)
+     * @return void
+     * @psalm-suppress MixedArrayAccess
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedOperand
+     */
+    public function initializePlugins(ProjectChecker $project_checker)
+    {
+        foreach ($this->filetype_handlers as $extension_name => &$path) {
+            $plugin_file_checker = new FileChecker($path, $project_checker);
+            $plugin_file_checker->visit();
+
+            $declared_classes = ClassLikeChecker::getClassesForFile($path);
+
+            if (count($declared_classes) !== 1) {
+                throw new \InvalidArgumentException(
+                    'Filetype handlers must have exactly one class in the file - ' . $path . ' has ' .
+                        count($declared_classes)
+                );
+            }
+
+            require_once($path);
+
+            if (!\Psalm\Checker\ClassChecker::classExtends($declared_classes[0], 'Psalm\\Checker\\FileChecker')) {
+                throw new \InvalidArgumentException(
+                    'Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not'
+                );
+            }
+
+            $path = $declared_classes[0];
         }
     }
 
@@ -416,12 +432,12 @@ class Config
     }
 
     /**
-     * @param   string $file_name
+     * @param   string $file_path
      * @return  bool
      */
-    public function isInProjectDirs($file_name)
+    public function isInProjectDirs($file_path)
     {
-        return $this->project_files && $this->project_files->allows($file_name);
+        return $this->project_files && $this->project_files->allows($file_path);
     }
 
     /**

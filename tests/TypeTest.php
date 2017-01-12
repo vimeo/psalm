@@ -12,6 +12,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -23,6 +26,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     /**
@@ -41,8 +45,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithTernaryGuard()
@@ -60,8 +64,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithTernaryIfNullGuard()
@@ -79,8 +83,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithTernaryEmptyGuard()
@@ -98,8 +102,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithTernaryIsNullGuard()
@@ -117,8 +121,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithIfGuard()
@@ -138,8 +142,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -161,8 +165,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithTernaryGuardWithThis()
@@ -184,8 +188,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithTernaryIfNullGuardWithThis()
@@ -207,8 +211,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithIfGuardWithThis()
@@ -233,8 +237,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -262,8 +266,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithExceptionThrown()
@@ -285,8 +289,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithRedefinitionAndElse()
@@ -314,8 +318,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -343,8 +347,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithBooleanIfGuard()
@@ -369,8 +373,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithNonNullBooleanIfGuard()
@@ -395,8 +399,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithNonNullBooleanIfGuardAndBooleanAnd()
@@ -421,8 +425,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
 
@@ -455,8 +459,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -486,8 +490,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithBooleanIfGuardBefore()
@@ -514,8 +518,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -545,8 +549,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedRedefinition()
@@ -568,8 +572,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedRedefinitionInElse()
@@ -594,8 +598,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -620,8 +624,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -655,8 +659,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinition()
@@ -690,8 +694,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedSwitchRedefinition()
@@ -723,8 +727,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -755,8 +759,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -790,8 +794,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedSwitchRedefinitionDueToException()
@@ -824,8 +828,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedSwitchThatAlwaysReturns()
@@ -855,8 +859,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinitionWithReturn()
@@ -886,8 +890,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinitionWithElseReturn()
@@ -917,8 +921,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -954,8 +958,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedNestedRedefinitionWithElseifReturn()
@@ -988,8 +992,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedSwitchBreak()
@@ -1017,8 +1021,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullableMethodWithGuardedRedefinitionOnThis()
@@ -1045,8 +1049,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         }');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testArrayUnionTypeAssertion()
@@ -1060,9 +1064,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
 
@@ -1077,9 +1081,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
             }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
 
@@ -1104,8 +1108,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testVariableReassignmentInIf()
@@ -1131,8 +1135,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -1163,8 +1167,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testUnionTypeFlow()
@@ -1201,8 +1205,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testUnionTypeFlowWithThrow()
@@ -1225,8 +1229,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testUnionTypeFlowWithElseif()
@@ -1251,8 +1255,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -1272,8 +1276,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -1297,8 +1301,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testTypeAdjustment()
@@ -1312,9 +1316,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         echo $var;
         ');
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
 
@@ -1331,9 +1335,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
         echo $var;
         ');
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
 
@@ -1349,9 +1353,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
             $var = new B;
         }
         ');
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('A|B', (string) $context->vars_in_scope['$var']);
     }
 
@@ -1375,8 +1379,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -1396,8 +1400,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->barBar(5);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testPassingParam()
@@ -1414,8 +1418,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->barBar(new A);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullToNullableParam()
@@ -1432,8 +1436,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->barBar(null);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -1453,8 +1457,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->barBar(5);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testObjectToNullableObjectParam()
@@ -1471,8 +1475,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b->barBar(new A);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
@@ -1497,8 +1501,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testParamCoercion()
@@ -1520,8 +1524,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testParamElseifCoercion()
@@ -1550,8 +1554,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testAssignInsideForeach()
@@ -1566,9 +1570,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
     }
@@ -1586,9 +1590,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
     }
@@ -1622,9 +1626,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testNullCheckInsideForeachWithContinue()
@@ -1652,9 +1656,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testTypeRefinementWithIsNumeric()
@@ -1667,9 +1671,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     public function testPlusPlus()
@@ -1679,10 +1683,29 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $b = $a++;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertSame('int', (string) $context->vars_in_scope['$a']);
+    }
+
+    public function testTypedValueAssertion()
+    {
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param array|string $a
+         */
+        function fooFoo($a) : void {
+            $b = "aadad";
+
+            if ($a === $b) {
+                echo substr($a, 1);
+            }
+        }');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

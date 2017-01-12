@@ -12,6 +12,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -21,6 +24,7 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     {
         $config = new TestConfig();
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     /**
@@ -34,9 +38,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         fooFoo("string");
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -54,9 +58,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         fooFoo($a);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -70,9 +74,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         fooFoo(null);
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -86,9 +90,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         fooFoo();
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -102,9 +106,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         fooFoo(5, "dfd");
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -121,9 +125,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         fooFoo(new A());
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testTypedArrayWithDefault()
@@ -137,9 +141,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -152,8 +156,37 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         function f($p, $p) {}
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    public function testByRef()
+    {
+        $stmts = self::$parser->parse('<?php
+        function fooFoo(string &$v) : void {}
+        fooFoo($a);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPassByReference
+     */
+    public function testBadByRef()
+    {
+        $this->markTestIncomplete('Does not throw an error');
+        $stmts = self::$parser->parse('<?php
+        function fooFoo(string &$v) : void {}
+        fooFoo("a");
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

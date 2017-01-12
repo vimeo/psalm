@@ -4,6 +4,9 @@ namespace Psalm\Type;
 use Psalm\Type;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\FileChecker;
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 
 class Atomic extends Type
 {
@@ -36,7 +39,7 @@ class Atomic extends Type
 
     /**
      * @param  array<string> $aliased_classes
-     * @param  string        $this_class
+     * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      * @return string
      */
@@ -63,16 +66,17 @@ class Atomic extends Type
     }
 
     /**
-     * @param   Union   $parent
+     * @param   Union        $parent
+     * @param   FileChecker  $file_checker
      * @return  bool
      */
-    public function isIn(Union $parent)
+    public function isIn(Union $parent, FileChecker $file_checker)
     {
         if ($parent->isMixed()) {
             return true;
         }
 
-        if ($parent->hasType('object') && ClassLikeChecker::classOrInterfaceExists($this->value)) {
+        if ($parent->hasType('object') && ClassLikeChecker::classOrInterfaceExists($this->value, $file_checker)) {
             return true;
         }
 
@@ -94,7 +98,7 @@ class Atomic extends Type
         }
 
         // last check to see if class is subclass
-        if (ClassChecker::classExists($this->value)) {
+        if (ClassChecker::classExists($this->value, $file_checker)) {
             $this_is_subclass = false;
 
             foreach ($parent->types as $parent_type) {
@@ -296,5 +300,32 @@ class Atomic extends Type
     public function isEmpty()
     {
         return $this->value === 'empty';
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @return false|null
+     */
+    public function check(StatementsSource $source, CodeLocation $code_location, array $suppressed_issues)
+    {
+        if ($this->isObjectType()
+            && !$this->isObject()
+            && ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                $this->value,
+                $source->getFileChecker(),
+                $code_location,
+                $suppressed_issues
+            ) === false
+        ) {
+            return false;
+        }
+
+        if ($this instanceof Type\Generic) {
+            foreach ($this->type_params as $type_param) {
+                $type_param->check($source, $code_location, $suppressed_issues);
+            }
+        }
     }
 }

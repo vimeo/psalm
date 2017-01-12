@@ -12,6 +12,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -21,6 +24,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
     {
         $config = new TestConfig();
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testFunctionTypeHints()
@@ -40,9 +44,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = indexof("arr", "a");
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
@@ -65,9 +69,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = Foo::indexof("arr", "a");
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
@@ -79,9 +83,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = $_GET["bar"] ?? "nobody";
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
     }
 
@@ -91,9 +95,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = 1 <=> 1;
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
@@ -109,9 +113,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $a = ANIMALS[1];
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
     }
 
@@ -141,9 +145,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         });
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testGeneratorWithReturn()
@@ -162,9 +166,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testGeneratorDelegation()
@@ -216,9 +220,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $gen2 = $gen->getReturn();
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('Generator<int, int>', (string) $context->vars_in_scope['$gen']);
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$gen2']);
     }
@@ -247,8 +251,8 @@ class Php70Test extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

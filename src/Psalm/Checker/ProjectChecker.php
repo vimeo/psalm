@@ -2,8 +2,11 @@
 namespace Psalm\Checker;
 
 use Psalm\Config;
+use Psalm\Context;
 use Psalm\Exception;
 use Psalm\IssueBuffer;
+use Psalm\Storage\PropertyStorage;
+use Psalm\Type;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -41,6 +44,96 @@ class ProjectChecker
     public $output_format;
 
     /**
+     * @var bool
+     */
+    public $debug_output = false;
+
+    /**
+     * @var boolean
+     */
+    public $cache = false;
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_classlikes_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_classlikes = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_classes_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    public $existing_classes = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_interfaces_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    public $existing_interfaces = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $existing_traits_ci = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    public $existing_traits = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $classlike_files = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $files_to_visit = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $files_to_analyze = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $scanned_files = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $visited_files = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $visited_classes = [];
+
+    /**
+     * @var array<string, FileChecker>
+     */
+    protected $file_checkers = [];
+
+    /**
+     * @var array<string, MethodChecker>
+     */
+    public $method_checkers = [];
+
+    /**
      * @var array<string, string>
      */
     public $fake_files = [];
@@ -51,12 +144,18 @@ class ProjectChecker
     /**
      * @param boolean $use_color
      * @param boolean $show_info
+     * @param boolean $debug_output
      * @param string  $output_format
      */
-    public function __construct($use_color = true, $show_info = true, $output_format = self::TYPE_CONSOLE)
-    {
+    public function __construct(
+        $use_color = true,
+        $show_info = true,
+        $output_format = self::TYPE_CONSOLE,
+        $debug_output = false
+    ) {
         $this->use_color = $use_color;
         $this->show_info = $show_info;
+        $this->debug_output = $debug_output;
 
         if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON])) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
@@ -75,12 +174,11 @@ class ProjectChecker
     }
 
     /**
-     * @param  boolean $debug
      * @param  boolean $is_diff
      * @param  boolean $update_docblocks
      * @return void
      */
-    public function check($debug = false, $is_diff = false, $update_docblocks = false)
+    public function check($is_diff = false, $update_docblocks = false)
     {
         $cwd = getcwd();
 
@@ -91,7 +189,7 @@ class ProjectChecker
         }
 
         if (!$this->config) {
-            $this->config = self::getConfigForPath($cwd);
+            $this->config = $this->getConfigForPath($cwd);
         }
 
         $diff_files = null;
@@ -110,10 +208,13 @@ class ProjectChecker
 
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
             foreach ($this->config->getProjectDirectories() as $dir_name) {
-                $this->checkDirWithConfig($dir_name, $this->config, $debug, $update_docblocks);
+                $this->checkDirWithConfig($dir_name, $this->config, $update_docblocks);
             }
+
+            $this->visitFiles();
+            $this->analyzeFiles();
         } else {
-            if ($debug) {
+            if ($this->debug_output) {
                 echo count($diff_files) . ' changed files' . PHP_EOL;
             }
 
@@ -121,14 +222,17 @@ class ProjectChecker
 
             // strip out deleted files
             $file_list = array_diff($file_list, $deleted_files);
-            $this->checkDiffFilesWithConfig($this->config, $debug, $file_list);
+            $this->checkDiffFilesWithConfig($this->config, $file_list);
+
+            $this->visitFiles();
+            $this->analyzeFiles();
         }
 
         $removed_parser_files = FileChecker::deleteOldParserCaches(
             $is_diff ? FileChecker::getLastGoodRun() : $start_checks
         );
 
-        if ($debug && $removed_parser_files) {
+        if ($this->debug_output && $removed_parser_files) {
             echo 'Removed ' . $removed_parser_files . ' old parser caches' . PHP_EOL;
         }
 
@@ -136,42 +240,82 @@ class ProjectChecker
             FileChecker::touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
-        IssueBuffer::finish(true, (int)$start_checks, $debug);
+        IssueBuffer::finish(true, (int)$start_checks, $this->debug_output);
+    }
+
+    /**
+     * @return void
+     */
+    protected function visitFiles()
+    {
+        if (!$this->config) {
+            throw new \UnexpectedValueException('$this->config cannot be null');
+        }
+
+        $filetype_handlers = $this->config->getFiletypeHandlers();
+
+        foreach ($this->files_to_analyze as $file_path => $_) {
+            $this->visitFile($file_path, $filetype_handlers);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    protected function analyzeFiles()
+    {
+        if (!$this->config) {
+            throw new \UnexpectedValueException('$this->config cannot be null');
+        }
+
+        $filetype_handlers = $this->config->getFiletypeHandlers();
+
+        foreach ($this->files_to_analyze as $file_path => $_) {
+            $file_checker = $this->visitFile($file_path, $filetype_handlers);
+
+            if ($this->debug_output) {
+                echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
+            }
+
+            $file_checker->analyze();
+        }
     }
 
     /**
      * @param  string  $dir_name
-     * @param  boolean $debug
      * @param  boolean $update_docblocks
      * @return void
      */
-    public function checkDir($dir_name, $debug = false, $update_docblocks = false)
+    public function checkDir($dir_name, $update_docblocks = false)
     {
         if (!$this->config) {
-            $this->config = self::getConfigForPath($dir_name);
+            $this->config = $this->getConfigForPath($dir_name);
             $this->config->hide_external_errors = $this->config->isInProjectDirs(
-                $this->config->shortenFileName($dir_name)
+                $this->config->shortenFileName($dir_name . '/')
             );
         }
 
         FileChecker::loadReferenceCache();
 
-        $this->checkDirWithConfig($dir_name, $this->config, $debug, $update_docblocks);
+        $start_checks = (int)microtime(true);
 
-        IssueBuffer::finish();
+        $this->checkDirWithConfig($dir_name, $this->config, $update_docblocks);
+
+        $this->visitFiles();
+        $this->analyzeFiles();
+
+        IssueBuffer::finish(false, $start_checks, $this->debug_output);
     }
 
     /**
      * @param  string $dir_name
      * @param  Config $config
-     * @param  bool   $debug
      * @param  bool   $update_docblocks
      * @return void
      */
-    protected function checkDirWithConfig($dir_name, Config $config, $debug, $update_docblocks)
+    protected function checkDirWithConfig($dir_name, Config $config, $update_docblocks)
     {
         $file_extensions = $config->getFileExtensions();
-        $filetype_handlers = $config->getFiletypeHandlers();
 
         /** @var RecursiveDirectoryIterator */
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
@@ -181,21 +325,10 @@ class ProjectChecker
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
                 if (in_array($extension, $file_extensions)) {
-                    $file_name = (string)$iterator->getRealPath();
+                    $file_path = (string)$iterator->getRealPath();
 
-                    if ($config->isInProjectDirs($config->shortenFileName($file_name))) {
-                        if ($debug) {
-                            echo 'Checking ' . $file_name . PHP_EOL;
-                        }
-
-                        if (isset($filetype_handlers[$extension])) {
-                            /** @var FileChecker */
-                            $file_checker = new $filetype_handlers[$extension]($file_name);
-                        } else {
-                            $file_checker = new FileChecker($file_name);
-                        }
-
-                        $file_checker->check(true, true, null, true, $update_docblocks);
+                    if ($config->isInProjectDirs($config->shortenFileName($file_path))) {
+                        $this->files_to_analyze[$file_path] = $file_path;
                     }
                 }
             }
@@ -271,62 +404,47 @@ class ProjectChecker
 
     /**
      * @param  Config           $config
-     * @param  bool             $debug
      * @param  array<string>    $file_list
      * @return void
      */
-    protected function checkDiffFilesWithConfig(Config $config, $debug, array $file_list = [])
+    protected function checkDiffFilesWithConfig(Config $config, array $file_list = [])
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
 
-        foreach ($file_list as $file_name) {
-            if (!file_exists($file_name)) {
+        foreach ($file_list as $file_path) {
+            if (!file_exists($file_path)) {
                 continue;
             }
 
-            if (!$config->isInProjectDirs(
-                preg_replace('/^' . preg_quote($config->getBaseDir(), '/') . '/', '', $file_name)
-            )) {
-                if ($debug) {
-                    echo('skipping ' . $file_name . PHP_EOL);
+            if (!$config->isInProjectDirs($config->shortenFileName($file_path))) {
+                if ($this->debug_output) {
+                    echo('skipping ' . $file_path . PHP_EOL);
                 }
 
                 continue;
             }
 
-            $extension = pathinfo($file_name, PATHINFO_EXTENSION);
-
-            if ($debug) {
-                echo 'Checking affected file ' . $file_name . PHP_EOL;
-            }
-
-            if (isset($filetype_handlers[$extension])) {
-                /** @var FileChecker */
-                $file_checker = new $filetype_handlers[$extension]($file_name);
-            } else {
-                $file_checker = new FileChecker($file_name);
-            }
-
-            $file_checker->check(true);
+            $this->files_to_analyze[$file_path] = $file_path;
         }
     }
 
     /**
      * @param  string  $file_name
-     * @param  bool    $debug
      * @param  bool    $update_docblocks
      * @return void
      */
-    public function checkFile($file_name, $debug = false, $update_docblocks = false)
+    public function checkFile($file_name, $update_docblocks = false)
     {
-        if ($debug) {
+        if ($this->debug_output) {
             echo 'Checking ' . $file_name . PHP_EOL;
         }
 
         if (!$this->config) {
-            $this->config = self::getConfigForPath($file_name);
+            $this->config = $this->getConfigForPath($file_name);
         }
+
+        $start_checks = (int)microtime(true);
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs(
             $this->config->shortenFileName($file_name)
@@ -340,16 +458,269 @@ class ProjectChecker
 
         FileChecker::loadReferenceCache();
 
-        if (isset($filetype_handlers[$extension])) {
-            /** @var FileChecker */
-            $file_checker = new $filetype_handlers[$extension]($file_name);
-        } else {
-            $file_checker = new FileChecker($file_name);
+        $file_checker = $this->visitFile($file_name, $filetype_handlers);
+
+        if ($this->debug_output) {
+            echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
         }
 
-        $file_checker->check(true, true, null, true, $update_docblocks);
+        $file_checker->analyze();
 
-        IssueBuffer::finish();
+        IssueBuffer::finish(false, $start_checks, $this->debug_output);
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  array  $filetype_handlers
+     * @return FileChecker
+     */
+    public function getFileChecker($file_path, array $filetype_handlers)
+    {
+        $extension = (string)pathinfo($file_path)['extension'];
+
+        if (isset($filetype_handlers[$extension])) {
+            /** @var FileChecker */
+            return new $filetype_handlers[$extension]($file_path, $this);
+        }
+
+        return new FileChecker($file_path, $this);
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  array  $filetype_handlers
+     * @return FileChecker
+     */
+    public function visitFile($file_path, array $filetype_handlers)
+    {
+        $file_checker = $this->getFileChecker($file_path, $filetype_handlers);
+
+        if ($this->debug_output) {
+            echo (isset($this->visited_files[$file_path]) ? 'Rev' : 'V') . 'isiting ' . $file_path . PHP_EOL;
+        }
+
+        $this->visited_files[$file_path] = true;
+
+        $file_checker->visit();
+
+        return $file_checker;
+    }
+
+    /**
+     * Checks whether a class exists, and if it does then records what file it's in
+     * for later checking
+     *
+     * @param  string $fq_class_name
+     * @return boolean
+     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
+     */
+    public function fileExistsForClassLike($fq_class_name)
+    {
+        if (isset($this->existing_classlikes_ci[strtolower($fq_class_name)])) {
+            return $this->existing_classlikes_ci[strtolower($fq_class_name)];
+        }
+
+        $old_level = error_reporting();
+        error_reporting(0);
+
+        try {
+            $reflected_class = new \ReflectionClass($fq_class_name);
+        } catch (\ReflectionException $e) {
+            error_reporting($old_level);
+
+            $this->visited_classes[$fq_class_name] = false;
+
+            return false;
+        }
+
+        error_reporting($old_level);
+
+        if ($reflected_class->isUserDefined()) {
+            $fq_class_name = $reflected_class->getName();
+            $this->existing_classlikes_ci[strtolower($fq_class_name)] = true;
+            $this->existing_classlikes[$fq_class_name] = true;
+
+            if ($reflected_class->isInterface()) {
+                $this->addFullyQualifiedInterfaceName($fq_class_name);
+            } elseif ($reflected_class->isTrait()) {
+                $this->addFullyQualifiedTraitName($fq_class_name);
+            } else {
+                $this->addFullyQualifiedClassName($fq_class_name);
+            }
+
+            $this->classlike_files[$fq_class_name] = (string)$reflected_class->getFileName();
+        } else {
+            $this->visited_classes[$fq_class_name] = true;
+            ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  string       $fq_class_name
+     * @return boolean
+     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
+     */
+    public function visitFileForClassLike($fq_class_name)
+    {
+        if (!$fq_class_name || strpos($fq_class_name, '::') !== false) {
+            throw new \InvalidArgumentException('Invalid class name ' . $fq_class_name);
+        }
+
+        if (isset($this->visited_classes[$fq_class_name])) {
+            return $this->visited_classes[$fq_class_name];
+        }
+
+        $this->visited_classes[$fq_class_name] = true;
+
+        // this registers the class if it's not user defined
+        if (!$this->fileExistsForClassLike($fq_class_name)) {
+            return false;
+        }
+
+        if (isset($this->classlike_files[$fq_class_name])) {
+            $file_path = $this->classlike_files[$fq_class_name];
+
+            if (isset($this->visited_files[$file_path])) {
+                return true;
+            }
+
+            $this->visited_files[$file_path] = true;
+
+            $file_checker = new FileChecker($file_path, $this);
+
+            $short_file_name = $file_checker->getFileName();
+
+            ClassLikeChecker::$file_classes[$file_path][] = $fq_class_name;
+
+            $fq_class_name_lower = strtolower($fq_class_name);
+
+            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lower])) {
+                ClassLikeChecker::$storage[$fq_class_name_lower] =
+                    $storage = new \Psalm\Storage\ClassLikeStorage();
+                $storage->file_path = $file_path;
+                $storage->file_name = $short_file_name;
+            } else {
+                $storage = ClassLikeChecker::$storage[$fq_class_name_lower];
+            }
+
+            if ($this->debug_output) {
+                echo 'Visiting ' . $file_path . PHP_EOL;
+            }
+
+            $file_checker->visit();
+
+            if (ClassLikeChecker::inPropertyMap($fq_class_name)) {
+                $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_class_name)];
+
+                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                    $property_type = Type::parseString($public_mapped_property);
+                    $storage->properties[$property_name] = new PropertyStorage();
+                    $storage->properties[$property_name]->type = $property_type;
+                    $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
+
+                    $property_id = $fq_class_name . '::$' . $property_name;
+
+                    $storage->declaring_property_ids[$property_name] = $property_id;
+                    $storage->appearing_property_ids[$property_name] = $property_id;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return void
+     */
+    public function enableCache()
+    {
+        $this->cache = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function disableCache()
+    {
+        $this->cache = false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canCache()
+    {
+        return $this->cache;
+    }
+
+    /**
+     * @param  string   $original_method_id
+     * @param  Context  $this_context
+     * @return void
+     */
+    public function getMethodMutations($original_method_id, Context $this_context)
+    {
+        list($fq_class_name, $method_name) = explode('::', $original_method_id);
+
+        $file_checker = $this->getVisitedFileCheckerForClassLike($fq_class_name);
+
+        $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($original_method_id);
+        list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+
+        if (strtolower($declaring_fq_class_name) !== strtolower($fq_class_name)) {
+            $file_checker = $this->getVisitedFileCheckerForClassLike($declaring_fq_class_name);
+        }
+
+        $file_checker->analyze(false, true);
+
+        if (!$this_context->self) {
+            $this_context->self = $fq_class_name;
+            $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+        }
+
+        $file_checker->getMethodMutations($declaring_method_id, $this_context);
+    }
+
+    /**
+     * @param  string $fq_class_name
+     * @return FileChecker
+     */
+    public function getVisitedFileCheckerForClassLike($fq_class_name)
+    {
+        if (!$this->fake_files) {
+            // this registers the class if it's not user defined
+            if (!$this->fileExistsForClassLike($fq_class_name)) {
+                throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
+            }
+
+            if (!isset($this->classlike_files[$fq_class_name])) {
+                throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
+            }
+
+            $file_path = $this->classlike_files[$fq_class_name];
+        } else {
+            $file_path = array_keys($this->fake_files)[0];
+        }
+
+        if ($this->cache && isset($this->file_checkers[$file_path])) {
+            return $this->file_checkers[$file_path];
+        }
+
+        $file_checker = new FileChecker($file_path, $this);
+
+        $file_checker->visit();
+
+        if ($this->debug_output) {
+            echo 'Visiting ' . $file_path . PHP_EOL;
+        }
+
+        if ($this->cache) {
+            $this->file_checkers[$file_path] = $file_checker;
+        }
+
+        return $file_checker;
     }
 
     /**
@@ -361,7 +732,7 @@ class ProjectChecker
      * @return Config
      * @throws Exception\ConfigException If a config path is not found.
      */
-    protected static function getConfigForPath($path)
+    protected function getConfigForPath($path)
     {
         $dir_path = realpath($path) . '/';
 
@@ -392,6 +763,8 @@ class ProjectChecker
         if (!$config) {
             throw new Exception\ConfigException('Config not found for path ' . $path);
         }
+
+        $config->initializePlugins($this);
 
         return $config;
     }
@@ -467,5 +840,77 @@ class ProjectChecker
         }
 
         return (string)file_get_contents($file_path);
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return void
+     */
+    public function addFullyQualifiedClassName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_classes_ci[$fq_class_name_ci] = true;
+        $this->existing_traits_ci[$fq_class_name_ci] = false;
+        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $this->existing_classes[$fq_class_name] = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return void
+     */
+    public function addFullyQualifiedInterfaceName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_interfaces_ci[$fq_class_name_ci] = true;
+        $this->existing_classes_ci[$fq_class_name_ci] = false;
+        $this->existing_traits_ci[$fq_class_name_ci] = false;
+        $this->existing_interfaces[$fq_class_name] = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return void
+     */
+    public function addFullyQualifiedTraitName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_traits_ci[$fq_class_name_ci] = true;
+        $this->existing_classes_ci[$fq_class_name_ci] = false;
+        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $this->existing_traits[$fq_class_name] = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return bool
+     */
+    public function hasFullyQualifiedClassName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        return isset($this->existing_classes_ci[$fq_class_name_ci]) && $this->existing_classes_ci[$fq_class_name_ci];
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return bool
+     */
+    public function hasFullyQualifiedInterfaceName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        return isset($this->existing_interfaces_ci[$fq_class_name_ci]) && $this->existing_interfaces_ci[$fq_class_name_ci];
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @return bool
+     */
+    public function hasFullyQualifiedTraitName($fq_class_name)
+    {
+        $fq_class_name_ci = strtolower($fq_class_name);
+        return isset($this->existing_traits_ci[$fq_class_name_ci]) && $this->existing_traits_ci[$fq_class_name_ci];
     }
 }

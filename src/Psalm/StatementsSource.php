@@ -1,6 +1,9 @@
 <?php
 namespace Psalm;
 
+use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\FileChecker;
+
 interface StatementsSource
 {
     /**
@@ -33,24 +36,24 @@ interface StatementsSource
     public function getAliasedFunctions();
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getFQCLN();
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getClassName();
 
     /**
-     * @return string
+     * @return FileChecker
      */
-    public function getClassLikeChecker();
+    public function getFileChecker();
 
     /**
      * @return string|null
      */
-    public function getParentClass();
+    public function getParentFQCLN();
 
     /**
      * @return string
@@ -61,16 +64,6 @@ interface StatementsSource
      * @return string
      */
     public function getFilePath();
-
-    /**
-     * @return string|null
-     */
-    public function getIncludeFileName();
-
-    /**
-     * @return string|null
-     */
-    public function getIncludeFilePath();
 
     /**
      * @return string
@@ -86,7 +79,7 @@ interface StatementsSource
      * @param string|null $file_name
      * @param string|null $file_path
      */
-    public function setIncludeFileName($file_name, $file_path);
+    public function setFileName($file_name, $file_path);
 
     /**
      * @return bool

@@ -24,11 +24,6 @@ class TraitChecker extends ClassLikeChecker
     protected static $existing_traits = [];
 
     /**
-     * @var array<MethodChecker>
-     */
-    protected $methods = [];
-
-    /**
      * @param   PhpParser\Node\Stmt\ClassLike   $class
      * @param   StatementsSource                $source
      * @param   string                          $fq_class_name
@@ -39,52 +34,37 @@ class TraitChecker extends ClassLikeChecker
             throw new \InvalidArgumentException('Trait checker must be passed a trait');
         }
 
+        $this->source = $source;
         $this->class = $class;
-        $this->namespace = $source->getNamespace();
-        $this->aliased_classes = $source->getAliasedClasses();
-        $this->file_name = $source->getFileName();
-        $this->file_path = $source->getFilePath();
         $this->fq_class_name = $fq_class_name;
 
-        $this->parent_class = null;
+        $fq_class_name_lower = strtolower($fq_class_name);
 
-        $this->suppressed_issues = $source->getSuppressedIssues();
-
-        if (!isset(self::$storage[$fq_class_name])) {
-            self::$storage[$fq_class_name] = new ClassLikeStorage();
-            self::$storage[$fq_class_name]->file_name = $this->file_name;
-            self::$storage[$fq_class_name]->file_path = $this->file_path;
+        if (!isset(self::$storage[$fq_class_name_lower])) {
+            self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
+            $storage->file_name = $this->source->getFileName();
+            $storage->file_path = $this->source->getFilePath();
         }
 
-        self::$trait_names[strtolower($this->fq_class_name)] = $this->fq_class_name;
+        self::$trait_names[$fq_class_name_lower] = $fq_class_name;
 
-        self::$class_checkers[$fq_class_name] = $this;
+        self::$trait_checkers[$fq_class_name] = $this;
     }
 
     /**
-     * @param   bool            $check_methods
      * @param   Context|null    $class_context
-     * @param   bool            $update_docblocks
+     * @param   Context|null    $global_context
      * @return void
      */
-    public function check($check_methods = true, Context $class_context = null, $update_docblocks = false)
-    {
+    public function visit(
+        Context $class_context = null,
+        Context $global_context = null
+    ) {
         if (!$class_context) {
             throw new \InvalidArgumentException('TraitChecker::check must be called with a $class_context');
         }
 
-        parent::check(false, $class_context);
-    }
-
-    /**
-     * @param   Context    $class_context
-     * @return  void
-     */
-    public function checkMethods(Context $class_context)
-    {
-        foreach ($this->methods as $method_checker) {
-            $method_checker->check($class_context, null);
-        }
+        parent::visit($class_context, $global_context);
     }
 
     /**
@@ -110,10 +90,11 @@ class TraitChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string $trait_name
+     * @param  string       $trait_name
+     * @param  FileChecker  $file_checker
      * @return boolean
      */
-    public static function traitExists($trait_name)
+    public static function traitExists($trait_name, FileChecker $file_checker)
     {
         if (isset(self::$trait_names[strtolower($trait_name)])) {
             return true;
@@ -123,14 +104,14 @@ class TraitChecker extends ClassLikeChecker
             return self::$existing_traits[strtolower($trait_name)];
         }
 
-        $old_level = error_reporting();
-        error_reporting(0);
-        $trait_exists = trait_exists($trait_name);
-        error_reporting($old_level);
+        if ($file_checker->evaluateClassLike($trait_name, false) === false) {
+            self::$existing_traits[strtolower($trait_name)] = false;
+            return false;
+        }
 
-        self::$existing_traits[strtolower($trait_name)] = $trait_exists;
+        self::$existing_traits[strtolower($trait_name)] = true;
 
-        return $trait_exists;
+        return true;
     }
 
     /**

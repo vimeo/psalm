@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Storage;
 
+use PhpParser;
 use Psalm\Type;
 use Psalm\CodeLocation;
 use Psalm\FunctionLikeParameter;
@@ -16,6 +17,11 @@ class FunctionLikeStorage
      * @var array<int, FunctionLikeParameter>
      */
     public $params = [];
+
+    /**
+     * @var array<string, Type\Union>
+     */
+    public $param_types = [];
 
     /**
      * @var string

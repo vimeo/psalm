@@ -13,7 +13,7 @@ class Fn extends Atomic
     /**
      * @var array<int, FunctionLikeParameter>
      */
-    public $parameters = [];
+    public $params = [];
 
     /**
      * @var Union
@@ -24,12 +24,12 @@ class Fn extends Atomic
      * Constructs a new instance of a generic type
      *
      * @param string                            $value
-     * @param array<int, FunctionLikeParameter> $parameters
+     * @param array<int, FunctionLikeParameter> $params
      * @param Union                             $return_type
      */
-    public function __construct($value, array $parameters, Union $return_type)
+    public function __construct($value, array $params, Union $return_type)
     {
-        $this->parameters = $parameters;
+        $this->params = $params;
         $this->return_type = $return_type;
     }
 }

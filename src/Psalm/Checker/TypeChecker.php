@@ -3,42 +3,39 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
-use Psalm\Checker\Statements\Expression\AssertionChecker;
+use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Type;
 
 class TypeChecker
 {
     /**
      * @param  PhpParser\Node\Expr      $conditional
-     * @param  string                   $this_class_name
-     * @param  string                   $namespace
-     * @param  array<string, string>    $aliased_classes
+     * @param  string|null              $this_class_name
+     * @param  StatementsSource         $source
      * @return array<int, Clause>
      */
     public static function getFormula(
         PhpParser\Node\Expr $conditional,
         $this_class_name,
-        $namespace,
-        array $aliased_classes
+        StatementsSource $source
     ) {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
             $left_assertions = self::getFormula(
                 $conditional->left,
                 $this_class_name,
-                $namespace,
-                $aliased_classes
+                $source
             );
 
             $right_assertions = self::getFormula(
                 $conditional->right,
                 $this_class_name,
-                $namespace,
-                $aliased_classes
+                $source
             );
 
             return array_merge(
@@ -54,8 +51,7 @@ class TypeChecker
                 $left_clauses = self::getFormula(
                     $conditional->left,
                     $this_class_name,
-                    $namespace,
-                    $aliased_classes
+                    $source
                 );
             } else {
                 $left_clauses = [new Clause([], true)];
@@ -65,8 +61,7 @@ class TypeChecker
                 $right_clauses = self::getFormula(
                     $conditional->right,
                     $this_class_name,
-                    $namespace,
-                    $aliased_classes
+                    $source
                 );
             } else {
                 $right_clauses = [new Clause([], true)];
@@ -108,11 +103,10 @@ class TypeChecker
             return [new Clause($possibilities, false, $can_reconcile)];
         }
 
-        $assertions = AssertionChecker::getAssertions(
+        $assertions = AssertionFinder::getAssertions(
             $conditional,
             $this_class_name,
-            $namespace,
-            $aliased_classes
+            $source
         );
 
         if ($assertions) {
@@ -416,6 +410,7 @@ class TypeChecker
      * @param  array<string, string>     $new_types
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string>             $changed_types
+     * @param  FileChecker               $file_checker
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues
      * @return array<string, Type\Union>|false
@@ -424,6 +419,7 @@ class TypeChecker
         array $new_types,
         array $existing_types,
         array &$changed_types,
+        FileChecker $file_checker,
         CodeLocation $code_location,
         array $suppressed_issues = []
     ) {
@@ -469,6 +465,7 @@ class TypeChecker
                     (string) $new_type_part,
                     $result_type,
                     $key,
+                    $file_checker,
                     $code_location,
                     $suppressed_issues
                 );
@@ -509,6 +506,7 @@ class TypeChecker
      * @param   string       $new_var_type
      * @param   Type\Union   $existing_var_type
      * @param   string       $key
+     * @param   FileChecker  $file_checker
      * @param   CodeLocation $code_location
      * @param   array        $suppressed_issues
      * @return  Type\Union|null|false
@@ -517,6 +515,7 @@ class TypeChecker
         $new_var_type,
         Type\Union $existing_var_type = null,
         $key = null,
+        FileChecker $file_checker,
         CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
@@ -524,6 +523,10 @@ class TypeChecker
 
         if ($existing_var_type === null) {
             if ($new_var_type[0] !== '!') {
+                if ($new_var_type[0] === '^') {
+                    $new_var_type = substr($new_var_type, 1);
+                }
+
                 return Type::parseString($new_var_type);
             }
 
@@ -535,6 +538,11 @@ class TypeChecker
         }
 
         if ($new_var_type[0] === '!') {
+            // this is a specific value comparison type that cannot be negated
+            if ($new_var_type[1] === '^') {
+                return $existing_var_type;
+            }
+
             if ($new_var_type === '!object' && !$existing_var_type->isMixed()) {
                 $non_object_types = [];
 
@@ -585,6 +593,10 @@ class TypeChecker
             return $existing_var_type;
         }
 
+        if ($new_var_type[0] === '^') {
+            $new_var_type = substr($new_var_type, 1);
+        }
+
         if ($new_var_type === 'empty') {
             if ($existing_var_type->hasType('bool')) {
                 $existing_var_type->removeType('bool');
@@ -631,8 +643,8 @@ class TypeChecker
             return $new_type;
         }
 
-        if (!TypeChecker::isContainedBy($new_type, $existing_var_type) &&
-            !TypeChecker::isContainedBy($existing_var_type, $new_type) &&
+        if (!TypeChecker::isContainedBy($new_type, $existing_var_type, $file_checker) &&
+            !TypeChecker::isContainedBy($existing_var_type, $new_type, $file_checker) &&
             $code_location) {
             if (IssueBuffer::accepts(
                 new TypeDoesNotContainType(
@@ -651,17 +663,19 @@ class TypeChecker
 /**
      * Does the input param type match the given param type
      *
-     * @param  Type\Union $input_type
-     * @param  Type\Union $container_type
-     * @param  bool       $ignore_null
-     * @param  bool       &$has_scalar_match
-     * @param  bool       &$type_coerced    whether or not there was type coercion involved
-     * @param  bool       &$to_string_cast
+     * @param  Type\Union   $input_type
+     * @param  Type\Union   $container_type
+     * @param  FileChecker  $file_checker
+     * @param  bool         $ignore_null
+     * @param  bool         &$has_scalar_match
+     * @param  bool         &$type_coerced    whether or not there was type coercion involved
+     * @param  bool         &$to_string_cast
      * @return bool
      */
     public static function isContainedBy(
         Type\Union $input_type,
         Type\Union $container_type,
+        FileChecker $file_checker,
         $ignore_null = false,
         &$has_scalar_match = null,
         &$type_coerced = null,
@@ -689,9 +703,23 @@ class TypeChecker
                     continue;
                 }
 
-                if ($input_type_part->value === $container_type_part->value ||
-                    ClassChecker::classExtendsOrImplements($input_type_part->value, $container_type_part->value) ||
-                    ExpressionChecker::isMock($input_type_part->value)
+                $input_is_object = $input_type_part->isObjectType();
+                $container_is_object = $container_type_part->isObjectType();
+
+                if (strtolower($input_type_part->value) === strtolower($container_type_part->value) ||
+                    (
+                        $input_is_object &&
+                        $container_is_object &&
+                        !$input_type_part->isObject() &&
+                        ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                        (
+                            ClassChecker::classExtendsOrImplements(
+                                $input_type_part->value,
+                                $container_type_part->value
+                            ) ||
+                            ExpressionChecker::isMock($input_type_part->value)
+                        )
+                    )
                 ) {
                     $all_types_contain = true;
 
@@ -703,12 +731,13 @@ class TypeChecker
                                 !self::isContainedBy(
                                     $input_param,
                                     $container_param,
+                                    $file_checker,
                                     $ignore_null,
                                     $has_scalar_match,
                                     $type_coerced
                                 )
                             ) {
-                                if (self::isContainedBy($container_param, $input_param)) {
+                                if (self::isContainedBy($container_param, $input_param, $file_checker)) {
                                     $type_coerced = true;
                                 }
 
@@ -747,7 +776,10 @@ class TypeChecker
                 if ($container_type_part->isIterable() &&
                     (
                         $input_type_part->isArray() ||
-                        ClassChecker::classExtendsOrImplements($input_type_part->value, 'Traversable')
+                        ClassChecker::classExtendsOrImplements(
+                            $input_type_part->value,
+                            'Traversable'
+                        )
                     )
                 ) {
                     $type_match_found = true;
@@ -757,9 +789,14 @@ class TypeChecker
                     $type_match_found = true;
                 }
 
-                if ($container_type_part->isString() && $input_type_part->isObjectType() && !$input_type_part->isObject()) {
+                if ($container_type_part->isString() &&
+                    $input_type_part->isObjectType() &&
+                    !$input_type_part->isObject()
+                ) {
                     // check whether the object has a __toString method
-                    if (MethodChecker::methodExists($input_type_part->value . '::__toString')) {
+                    if (ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                        MethodChecker::methodExists($input_type_part->value . '::__toString')
+                    ) {
                         $type_match_found = true;
                         $to_string_cast = true;
                     }
@@ -787,11 +824,16 @@ class TypeChecker
                     !$input_type_part->isResource()
                 ) {
                     $type_match_found = true;
-                }
-
-                if (ClassChecker::classExtendsOrImplements($container_type_part->value, $input_type_part->value)) {
+                } elseif ($input_is_object &&
+                    $container_is_object &&
+                    ClassChecker::classExists($container_type_part->value, $file_checker) &&
+                    ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
+                    ClassChecker::classExtendsOrImplements(
+                        $container_type_part->value,
+                        $input_type_part->value
+                    )
+                ) {
                     $type_coerced = true;
-                    $type_match_found = true;
                     break;
                 }
             }
@@ -838,7 +880,10 @@ class TypeChecker
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
                     if ($existing_key_type_part->isNull()) {
                         $class_property_type = Type::getNull();
-                    } elseif ($existing_key_type_part->isMixed()) {
+                    } elseif ($existing_key_type_part->isMixed() ||
+                        $existing_key_type_part->isObject() ||
+                        strtolower($existing_key_type_part->value) === 'stdclass'
+                    ) {
                         $class_property_type = Type::getMixed();
                     } else {
                         $property_id = $existing_key_type_part->value . '::$' . $key_parts[$i];
@@ -849,7 +894,7 @@ class TypeChecker
 
                         $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
 
-                        $class_storage = ClassLikeChecker::$storage[$declaring_property_class];
+                        $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
 
                         $class_property_type = $class_storage->properties[$key_parts[$i]]->type;
 
@@ -1086,12 +1131,16 @@ class TypeChecker
     }
 
     /**
-     * @param  Type\Union $declared_type
-     * @param  Type\Union $inferred_type
+     * @param  Type\Union   $declared_type
+     * @param  Type\Union   $inferred_type
+     * @param  FileChecker  $file_checker
      * @return boolean
      */
-    public static function hasIdenticalTypes(Type\Union $declared_type, Type\Union $inferred_type)
-    {
+    public static function hasIdenticalTypes(
+        Type\Union $declared_type,
+        Type\Union $inferred_type,
+        FileChecker $file_checker
+    ) {
         if ($declared_type->isMixed() || $inferred_type->isEmpty()) {
             return true;
         }
@@ -1137,14 +1186,43 @@ class TypeChecker
                 }
 
                 foreach ($simple_declared_types as $simple_declared_type) {
-                    if ($simple_declared_type === 'mixed'
-                        || ($simple_declared_type === 'object' &&
-                            ClassLikeChecker::classOrInterfaceExists($differing_type))
-                        || ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type)
-                        || (InterfaceChecker::interfaceExists($differing_type) &&
-                            InterfaceChecker::interfaceExtends($differing_type, $simple_declared_type))
-                        || (in_array($differing_type, ['float', 'int']) &&
-                            in_array($simple_declared_type, ['float', 'int']))
+                    if ($simple_declared_type === 'mixed') {
+                        $is_match = true;
+                        break;
+                    }
+
+                    if (strtolower($simple_declared_type) === 'callable' && strtolower($differing_type) === 'closure') {
+                        $is_match = true;
+                        break;
+                    }
+
+                    if (isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($simple_declared_type)]) ||
+                        isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($differing_type)])
+                    ) {
+                        if (in_array($differing_type, ['float', 'int']) &&
+                            in_array($simple_declared_type, ['float', 'int'])
+                        ) {
+                            $is_match = true;
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    if ($simple_declared_type === 'object' &&
+                        ClassLikeChecker::classOrInterfaceExists($differing_type, $file_checker)
+                    ) {
+                        $is_match = true;
+                        break;
+                    }
+
+                    if (ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type)) {
+                        $is_match = true;
+                        break;
+                    }
+
+                    if (InterfaceChecker::interfaceExists($differing_type, $file_checker) &&
+                        InterfaceChecker::interfaceExtends($differing_type, $simple_declared_type)
                     ) {
                         $is_match = true;
                         break;
@@ -1176,7 +1254,8 @@ class TypeChecker
             foreach ($declared_atomic_type->type_params as $offset => $type_param) {
                 if (!self::hasIdenticalTypes(
                     $declared_atomic_type->type_params[$offset],
-                    $inferred_atomic_type->type_params[$offset]
+                    $inferred_atomic_type->type_params[$offset],
+                    $file_checker
                 )) {
                     return false;
                 }
@@ -1206,7 +1285,8 @@ class TypeChecker
 
                 if (!self::hasIdenticalTypes(
                     $type_param,
-                    $inferred_atomic_type->properties[$property_name]
+                    $inferred_atomic_type->properties[$property_name],
+                    $file_checker
                 )) {
                     return false;
                 }

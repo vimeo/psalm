@@ -73,6 +73,13 @@ class Context
     public $clauses = [];
 
     /**
+     * Whether or not to do a deep analysis and collect mutations to this context
+     *
+     * @var boolean
+     */
+    public $collect_mutations = false;
+
+    /**
      * @param string      $file_name
      * @param string|null $self
      */

@@ -43,7 +43,7 @@ class AssignmentChecker
      * @param  string                   $doc_comment
      * @return false|Type\Union
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $assign_var,
         PhpParser\Node\Expr $assign_value = null,
@@ -54,15 +54,13 @@ class AssignmentChecker
         $var_id = ExpressionChecker::getVarId(
             $assign_var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $assign_var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         if ($array_var_id) {
@@ -77,7 +75,7 @@ class AssignmentChecker
             $var_id
         );
 
-        if ($assign_value && ExpressionChecker::check($statements_checker, $assign_value, $context) === false) {
+        if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
             // if we're not exiting immediately, make everything mixed
             $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
 
@@ -125,17 +123,17 @@ class AssignmentChecker
                 || $assign_var instanceof PhpParser\Node\Expr\Array_
         ) {
             foreach ($assign_var->items as $offset => $assign_var_item) {
-                // $var can be null e.g. list($a, ) = ['a', 'b']
-                $var = $assign_var_item->value;
-
-                if (!$var) {
+                // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
+                if (!$assign_var_item) {
                     continue;
                 }
+
+                $var = $assign_var_item->value;
 
                 if ($assign_value instanceof PhpParser\Node\Expr\Array_
                     && isset($assign_value->items[$offset]->value->inferredType)
                 ) {
-                    self::check(
+                    self::analyze(
                         $statements_checker,
                         $var,
                         $assign_value->items[$offset]->value,
@@ -150,8 +148,7 @@ class AssignmentChecker
                 $list_var_id = ExpressionChecker::getVarId(
                     $var,
                     $statements_checker->getFQCLN(),
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($list_var_id) {
@@ -180,11 +177,17 @@ class AssignmentChecker
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            if (self::checkArrayAssignment($statements_checker, $assign_var, $context, $assign_value_type) === false) {
+            if (self::analyzeArrayAssignment(
+                $statements_checker,
+                $assign_var,
+                $context,
+                $assign_value_type
+            ) === false
+            ) {
                 return false;
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch && is_string($assign_var->name)) {
-            self::checkPropertyAssignment(
+            self::analyzePropertyAssignment(
                 $statements_checker,
                 $assign_var,
                 $assign_var->name,
@@ -198,11 +201,11 @@ class AssignmentChecker
             $assign_var->class instanceof PhpParser\Node\Name &&
             is_string($assign_var->name)
         ) {
-            if (ExpressionChecker::check($statements_checker, $assign_var, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $assign_var, $context) === false) {
                 return false;
             }
 
-            self::checkStaticPropertyAssignment(
+            self::analyzeStaticPropertyAssignment(
                 $statements_checker,
                 $assign_var,
                 $assign_value,
@@ -234,24 +237,23 @@ class AssignmentChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkAssignmentOperation(
+    public static function analyzeAssignmentOperation(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
     ) {
-        if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
             return false;
         }
 
-        if (ExpressionChecker::check($statements_checker, $stmt->expr, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->expr, $context) === false) {
             return false;
         }
 
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $var_type = isset($stmt->var->inferredType) ? clone $stmt->var->inferredType : null;
@@ -263,7 +265,7 @@ class AssignmentChecker
             $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul ||
             $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
         ) {
-            ExpressionChecker::checkNonDivArithmenticOp(
+            ExpressionChecker::analyzeNonDivArithmenticOp(
                 $statements_checker,
                 $stmt->var,
                 $stmt->expr,
@@ -283,7 +285,7 @@ class AssignmentChecker
         ) {
             $context->vars_in_scope[$var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
-            ExpressionChecker::checkConcatOp(
+            ExpressionChecker::analyzeConcatOp(
                 $statements_checker,
                 $stmt->var,
                 $stmt->expr,
@@ -308,7 +310,7 @@ class AssignmentChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkPropertyAssignment(
+    public static function analyzePropertyAssignment(
         StatementsChecker $statements_checker,
         $stmt,
         $prop_name,
@@ -317,6 +319,8 @@ class AssignmentChecker
         Context $context
     ) {
         $class_property_types = [];
+
+        $file_checker = $statements_checker->getFileChecker();
 
         if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
@@ -331,7 +335,7 @@ class AssignmentChecker
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
 
-            $class_storage = ClassLikeChecker::$storage[$declaring_property_class];
+            $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
 
             $class_property_type = $class_storage->properties[$prop_name]->type;
 
@@ -343,7 +347,7 @@ class AssignmentChecker
         } else {
             $assignment_var = $stmt;
 
-            if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
                 return false;
             }
 
@@ -356,15 +360,13 @@ class AssignmentChecker
             $lhs_var_id = ExpressionChecker::getVarId(
                 $stmt->var,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             if ($lhs_type->isMixed()) {
@@ -428,17 +430,6 @@ class AssignmentChecker
                     continue;
                 }
 
-                if (!$lhs_type_part->isObject() && MethodChecker::methodExists($lhs_type_part . '::__set')) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                    continue;
-                }
-
-                $has_regular_setter = true;
-
-                if ($lhs_type_part->isObject()) {
-                    continue;
-                }
-
                 // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
                 // but we don't want to throw an error
                 // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
@@ -457,6 +448,17 @@ class AssignmentChecker
                     return null;
                 }
 
+                if (!$lhs_type_part->isObject() && MethodChecker::methodExists($lhs_type_part . '::__set')) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    continue;
+                }
+
+                $has_regular_setter = true;
+
+                if ($lhs_type_part->isObject()) {
+                    continue;
+                }
+
                 if (ExpressionChecker::isMock($lhs_type_part->value)) {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
 
@@ -467,14 +469,16 @@ class AssignmentChecker
                     || $lhs_type_part->value === $context->self
                 ) {
                     $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self && ClassChecker::classExtends($lhs_type_part->value, $context->self)) {
+                } elseif ($context->self &&
+                    ClassChecker::classExtends($lhs_type_part->value, $context->self)
+                ) {
                     $class_visibility = \ReflectionProperty::IS_PROTECTED;
                 } else {
                     $class_visibility = \ReflectionProperty::IS_PUBLIC;
                 }
 
-                if (!ClassChecker::classExists($lhs_type_part->value)) {
-                    if (InterfaceChecker::interfaceExists($lhs_type_part->value)) {
+                if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
+                    if (InterfaceChecker::interfaceExists($lhs_type_part->value, $file_checker)) {
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
@@ -543,7 +547,8 @@ class AssignmentChecker
                     $lhs_type_part->value . '::$' . $prop_name
                 );
 
-                $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+                $property_storage =
+                    ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
                 $class_property_type = $property_storage->type;
 
@@ -607,7 +612,11 @@ class AssignmentChecker
                 continue;
             }
 
-            if (!TypeChecker::isContainedBy($assignment_value_type, $class_property_type)) {
+            if (!TypeChecker::isContainedBy(
+                $assignment_value_type,
+                $class_property_type,
+                $file_checker
+            )) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignment(
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
@@ -635,7 +644,7 @@ class AssignmentChecker
      * @param   Context                                   $context
      * @return  false|null
      */
-    protected static function checkStaticPropertyAssignment(
+    protected static function analyzeStaticPropertyAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         PhpParser\Node\Expr $assignment_value = null,
@@ -647,8 +656,7 @@ class AssignmentChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $fq_class_name = (string)$stmt->class->inferredType;
@@ -657,7 +665,9 @@ class AssignmentChecker
             $fq_class_name === $context->self
         ) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
-        } elseif ($context->self && ClassChecker::classExtends($fq_class_name, $context->self)) {
+        } elseif ($context->self &&
+            ClassChecker::classExtends($fq_class_name, $context->self)
+        ) {
             $class_visibility = \ReflectionProperty::IS_PROTECTED;
         } else {
             $class_visibility = \ReflectionProperty::IS_PUBLIC;
@@ -711,7 +721,8 @@ class AssignmentChecker
             $fq_class_name . '::$' . $prop_name
         );
 
-        $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+        $property_storage =
+            ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
         $context->vars_in_scope[$var_id] = $assignment_value_type;
 
@@ -743,7 +754,11 @@ class AssignmentChecker
 
         $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $fq_class_name);
 
-        if (!TypeChecker::isContainedBy($assignment_value_type, $class_property_type)) {
+        if (!TypeChecker::isContainedBy(
+            $assignment_value_type,
+            $class_property_type,
+            $statements_checker->getFileChecker()
+        )) {
             if (IssueBuffer::accepts(
                 new InvalidPropertyAssignment(
                     $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
@@ -771,13 +786,13 @@ class AssignmentChecker
      * @return  false|null
      * @psalm-suppress MixedMethodCall - some funky logic here
      */
-    protected static function checkArrayAssignment(
+    protected static function analyzeArrayAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         Type\Union $assignment_value_type
     ) {
-        if ($stmt->dim && ExpressionChecker::check($statements_checker, $stmt->dim, $context, false) === false) {
+        if ($stmt->dim && ExpressionChecker::analyze($statements_checker, $stmt->dim, $context, false) === false) {
             return false;
         }
 
@@ -803,8 +818,7 @@ class AssignmentChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses(),
+            $statements_checker,
             $nesting
         );
 
@@ -813,7 +827,7 @@ class AssignmentChecker
             && isset($context->vars_in_scope[$var_id])
             && $context->vars_in_scope[$var_id]->hasObjectType();
 
-        if (ExpressionChecker::check(
+        if (ExpressionChecker::analyze(
             $statements_checker,
             $stmt->var,
             $context,
@@ -828,8 +842,7 @@ class AssignmentChecker
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $is_string = isset($stmt->var->inferredType)

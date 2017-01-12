@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Checker\Statements\ExpressionChecker;
-use Psalm\Checker\Statements\Expression\AssertionChecker;
+use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Type;
@@ -18,22 +18,21 @@ class WhileChecker
      * @param   Context                     $context
      * @return  false|null
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\While_ $stmt,
         Context $context
     ) {
         $while_context = clone $context;
 
-        if (ExpressionChecker::check($statements_checker, $stmt->cond, $while_context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $while_context) === false) {
             return false;
         }
 
-        $while_types = AssertionChecker::getAssertions(
+        $while_types = AssertionFinder::getAssertions(
             $stmt->cond,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         // if the while has an or as the main component, we cannot safely reason about it
@@ -48,6 +47,7 @@ class WhileChecker
                 $while_types,
                 $while_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -59,7 +59,7 @@ class WhileChecker
             $while_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
-        if ($statements_checker->check($stmt->stmts, $while_context, $context) === false) {
+        if ($statements_checker->analyze($stmt->stmts, $while_context, $context) === false) {
             return false;
         }
 

@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\FileChecker;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Type;
@@ -11,6 +12,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
 {
     /** @var \PhpParser\Parser */
     protected static $parser;
+
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
 
     public static function setUpBeforeClass()
     {
@@ -21,6 +25,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     {
         $config = new TestConfig();
         \Psalm\Checker\FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testGenericArrayCreation()
@@ -33,9 +38,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$out']);
     }
 
@@ -49,9 +54,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, array<int, int>>', (string) $context->vars_in_scope['$out']);
     }
 
@@ -76,9 +81,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, array<int, int>>', (string) $context->vars_in_scope['$out']);
     }
 
@@ -94,9 +99,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, B>', (string) $context->vars_in_scope['$out']);
     }
 
@@ -115,9 +120,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$out']);
     }
 
@@ -137,9 +142,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$out']);
     }
 
@@ -162,9 +167,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$out']);
     }
 
@@ -175,9 +180,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo[] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -188,9 +193,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo[][] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, array<int, string>>', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -201,9 +206,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo[][][] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, array<int, array<int, string>>>', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -214,9 +219,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo[][][][] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals(
             'array<int, array<int, array<int, array<int, string>>>>',
             (string) $context->vars_in_scope['$foo']
@@ -240,9 +245,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$bar']);
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$bat']);
@@ -255,9 +260,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["bar"] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{bar:string}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\']']);
     }
@@ -272,9 +277,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         // check array access of baz on foo
         // with some extra data – if we need to create an array for type $foo["bar"],
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{bar:array{baz:string}}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\']']);
     }
@@ -286,9 +291,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["bar"]["baz"]["bat"] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{bar:array{baz:array{bat:string}}}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\'][\'bat\']']);
     }
@@ -300,9 +305,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["bar"]["baz"]["bat"]["bap"] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals(
             'array{bar:array{baz:array{bat:array{bap:string}}}}',
             (string) $context->vars_in_scope['$foo']
@@ -318,9 +323,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["bar"]["baz"] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{bar:array{baz:string}}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\']']);
     }
@@ -332,9 +337,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["bar"]["baz"]["bat"] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{bar:array{baz:array{bat:string}}}', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -347,9 +352,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         ];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{bar:array{a:string}, baz:array<int, int>}', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -362,9 +367,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["baz"] = "a";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{bar:int, baz:string}', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -378,9 +383,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["bar"]["bam"]["baz"] = "hello";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals(
             'array{bar:array{a:string, bam:array{baz:string}}, baz:array<int, int>}',
             (string) $context->vars_in_scope['$foo']
@@ -396,9 +401,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $bar = $foo["a"];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{a:string, b:array<int, string>}', (string) $context->vars_in_scope['$foo']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'a\']']);
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$foo[\'b\']']);
@@ -413,9 +418,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["b"]["c"]["d"] = "goodbye";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{a:string, b:array{c:array{d:string}}}', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -427,9 +432,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $foo["a"]["c"] = 1;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{a:array{b:string, c:int}}', (string) $context->vars_in_scope['$foo']);
     }
 
@@ -445,16 +450,17 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         }
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array{a:string, b:int}', (string) $context->vars_in_scope['$foo']);
     }
 
     public function testIssetKeyedOffset()
     {
-        $file_checker = new \Psalm\Checker\FileChecker(
+        $file_checker = new FileChecker(
             'somefile.php',
+            $this->project_checker,
             self::$parser->parse('<?php
                 if (!isset($foo["a"])) {
                     $foo["a"] = "hello";
@@ -463,14 +469,15 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         );
         $context = new Context('somefile.php');
         $context->vars_in_scope['$foo'] = \Psalm\Type::getArray();
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$foo[\'a\']']);
     }
 
     public function testConditionalAssignment()
     {
-        $file_checker = new \Psalm\Checker\FileChecker(
+        $file_checker = new FileChecker(
             'somefile.php',
+            $this->project_checker,
             self::$parser->parse('<?php
                 if ($b) {
                     $foo["a"] = "hello";
@@ -481,7 +488,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $context->vars_in_scope['$b'] = \Psalm\Type::getBool();
         $context->vars_in_scope['$foo'] = \Psalm\Type::getArray();
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertFalse(isset($context->vars_in_scope['$foo[\'a\']']));
     }
 
@@ -508,17 +515,18 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $a["bar"] = "cool";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
         $this->assertFalse(isset($context->vars_in_scope['$a[\'bar\']']));
     }
 
     public function testConditionalCheck()
     {
-        $file_checker = new \Psalm\Checker\FileChecker(
+        $file_checker = new FileChecker(
             'somefile.php',
+            $this->project_checker,
             self::$parser->parse('<?php
                 /**
                  * @param  array{b:string} $a
@@ -533,13 +541,14 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         );
 
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testArrayKey()
     {
-        $file_checker = new \Psalm\Checker\FileChecker(
+        $file_checker = new FileChecker(
             'somefile.php',
+            $this->project_checker,
             self::$parser->parse('<?php
             $a = ["foo", "bar"];
             $b = $a[0];
@@ -551,7 +560,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         );
 
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string', (string)$context->vars_in_scope['$b']);
         $this->assertEquals('string', (string)$context->vars_in_scope['$e']);
     }
@@ -567,9 +576,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $c[$b][$b][] = "bam";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<string, array<int, string>>', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('array<string, array<string, array<int, string>>>', (string) $context->vars_in_scope['$c']);
     }
@@ -582,9 +591,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $a["foo"] = ["bar" => "baz"];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<string, array<string, string>>', (string) $context->vars_in_scope['$a']);
     }
 
@@ -597,9 +606,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $b = [] + ["bar"];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$b']);
     }
@@ -613,9 +622,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $b = ["bar"] + [1];
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, string|int>', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('array<int, string|int>', (string) $context->vars_in_scope['$b']);
     }
@@ -631,9 +640,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $a[$foo][] = "bat";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     public function testPreset2DArrayTypeWithVarKeys()
@@ -648,9 +657,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $b[$foo][$bar][] = "bat";
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context('somefile.php');
-        $file_checker->check(true, true, $context);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -665,8 +674,8 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $a[0] = 5;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
-        $file_checker->check(true, true, $context);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 
     /**
@@ -684,7 +693,31 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         "hello"[0] = $a;
         ');
 
-        $file_checker = new \Psalm\Checker\FileChecker('somefile.php', $stmts);
-        $file_checker->check(true, true, $context);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeCoercion
+     */
+    public function testMixedArrayArgument()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+
+        $context = new Context('somefile.php');
+        $stmts = self::$parser->parse('<?php
+        /** @param array<mixed, int|string> $foo */
+        function fooFoo(array $foo) : void { }
+
+        function barBar(array $bar) : void {
+            fooFoo($bar);
+        }
+
+        barBar([1, "2"]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods($context);
     }
 }

@@ -45,8 +45,7 @@ class CommentChecker
                 $type_in_comments = FunctionLikeChecker::fixUpLocalType(
                     $line_parts[0],
                     $source->getFQCLN(),
-                    $source->getNamespace(),
-                    $source->getAliasedClasses()
+                    $source
                 );
 
                 // support PHPStorm-style docblocks like

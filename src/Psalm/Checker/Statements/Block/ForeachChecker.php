@@ -24,12 +24,12 @@ class ForeachChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Foreach_ $stmt,
         Context $context
     ) {
-        if (ExpressionChecker::check($statements_checker, $stmt->expr, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->expr, $context) === false) {
             return false;
         }
 
@@ -45,8 +45,7 @@ class ForeachChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->expr,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         if (isset($stmt->expr->inferredType)) {
@@ -132,7 +131,23 @@ class ForeachChecker
                         break;
 
                     default:
-                        if (ClassChecker::classImplements($return_type->value, 'Iterator')) {
+                        if ($return_type->value !== 'Traversable' &&
+                            $return_type->value !== $statements_checker->getClassName()
+                        ) {
+                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                $return_type->value,
+                                $statements_checker->getFileChecker(),
+                                new CodeLocation($statements_checker->getSource(), $stmt->expr),
+                                $statements_checker->getSuppressedIssues()
+                            ) === false) {
+                                return false;
+                            }
+                        }
+
+                        if (ClassChecker::classImplements(
+                            $return_type->value,
+                            'Iterator'
+                        )) {
                             $iterator_method = $return_type->value . '::current';
                             $iterator_class_type = MethodChecker::getMethodReturnType($iterator_method);
 
@@ -153,18 +168,6 @@ class ForeachChecker
                                 $value_type = Type::getMixed();
                             }
                         }
-
-                        if ($return_type->value !== 'Traversable' &&
-                            $return_type->value !== $statements_checker->getClassName()
-                        ) {
-                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                $return_type->value,
-                                new CodeLocation($statements_checker->getSource(), $stmt->expr),
-                                $statements_checker->getSuppressedIssues()
-                            ) === false) {
-                                return false;
-                            }
-                        }
                 }
             }
         }
@@ -175,7 +178,7 @@ class ForeachChecker
             $statements_checker->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
         }
 
-        AssignmentChecker::check(
+        AssignmentChecker::analyze(
             $statements_checker,
             $stmt->valueVar,
             null,
@@ -191,7 +194,7 @@ class ForeachChecker
             null
         );
 
-        $statements_checker->check($stmt->stmts, $foreach_context, $context);
+        $statements_checker->analyze($stmt->stmts, $foreach_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

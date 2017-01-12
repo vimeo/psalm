@@ -10,9 +10,13 @@ class ConfigTest extends PHPUnit_Framework_TestCase
 {
     protected static $file_filter;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public static function getAllIssues()

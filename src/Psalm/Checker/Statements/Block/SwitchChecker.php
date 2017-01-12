@@ -20,7 +20,7 @@ class SwitchChecker
      * @param   Context|null                    $loop_context
      * @return  false|null
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context,
@@ -28,7 +28,7 @@ class SwitchChecker
     ) {
         $type_candidate_var = null;
 
-        if (ExpressionChecker::check($statements_checker, $stmt->cond, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;
         }
 
@@ -80,7 +80,7 @@ class SwitchChecker
             $case_type = null;
 
             if ($case->cond) {
-                if (ExpressionChecker::check($statements_checker, $case->cond, $context) === false) {
+                if (ExpressionChecker::analyze($statements_checker, $case->cond, $context) === false) {
                     return false;
                 }
 
@@ -113,7 +113,7 @@ class SwitchChecker
                 $leftover_statements = [];
             }
 
-            $statements_checker->check($case_stmts, $case_context, $loop_context);
+            $statements_checker->analyze($case_stmts, $case_context, $loop_context);
 
             // has a return/throw at end
             $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);

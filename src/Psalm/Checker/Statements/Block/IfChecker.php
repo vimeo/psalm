@@ -41,7 +41,7 @@ class IfChecker
      * @param  Context|null            $loop_context
      * @return null|false
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\If_ $stmt,
         Context $context,
@@ -56,7 +56,7 @@ class IfChecker
         $first_if_cond_expr = self::getDefinitelyEvaluatedExpression($stmt->cond);
 
         if ($first_if_cond_expr &&
-            ExpressionChecker::check($statements_checker, $first_if_cond_expr, $context) === false
+            ExpressionChecker::analyze($statements_checker, $first_if_cond_expr, $context) === false
         ) {
             return false;
         }
@@ -71,7 +71,7 @@ class IfChecker
         $original_context = clone $context;
 
         if ($first_if_cond_expr !== $stmt->cond &&
-            ExpressionChecker::check($statements_checker, $stmt->cond, $if_context) === false
+            ExpressionChecker::analyze($statements_checker, $stmt->cond, $if_context) === false
         ) {
             return false;
         }
@@ -80,9 +80,8 @@ class IfChecker
 
         $if_clauses = TypeChecker::getFormula(
             $stmt->cond,
-            $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $context->self,
+            $statements_checker
         );
 
         $if_context->clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
@@ -102,6 +101,7 @@ class IfChecker
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
                     $changed_vars,
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->cond),
                     $statements_checker->getSuppressedIssues()
                 );
@@ -136,6 +136,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -152,7 +153,7 @@ class IfChecker
         $pre_assignment_else_redefined_vars = Context::getRedefinedVars($context, $temp_else_context);
 
         // check the if
-        self::checkIfBlock(
+        self::analyzeIfBlock(
             $statements_checker,
             $stmt,
             $if_scope,
@@ -166,7 +167,7 @@ class IfChecker
         foreach ($stmt->elseifs as $elseif) {
             $elseif_context = clone $original_context;
 
-            self::checkElseIfBlock(
+            self::analyzeElseIfBlock(
                 $statements_checker,
                 $elseif,
                 $if_scope,
@@ -180,7 +181,7 @@ class IfChecker
         if ($stmt->else) {
             $else_context = clone $original_context;
 
-            self::checkElseBlock(
+            self::analyzeElseBlock(
                 $statements_checker,
                 $stmt->else,
                 $if_scope,
@@ -251,7 +252,7 @@ class IfChecker
      * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
      * @return false|null
      */
-    protected static function checkIfBlock(
+    protected static function analyzeIfBlock(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\If_ $stmt,
         IfScope $if_scope,
@@ -264,7 +265,7 @@ class IfChecker
 
         $has_leaving_statements = $has_ending_statements || ScopeChecker::doesAlwaysBreakOrContinue($stmt->stmts);
 
-        if ($statements_checker->check($stmt->stmts, $if_context, $if_scope->loop_context) === false) {
+        if ($statements_checker->analyze($stmt->stmts, $if_context, $if_scope->loop_context) === false) {
             return false;
         }
 
@@ -289,6 +290,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $outer_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -354,7 +356,7 @@ class IfChecker
      * @param  array<Clause>               $negated_clauses
      * @return false|null
      */
-    protected static function checkElseIfBlock(
+    protected static function analyzeElseIfBlock(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\ElseIf_ $elseif,
         IfScope $if_scope,
@@ -371,6 +373,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -383,15 +386,14 @@ class IfChecker
         }
 
         // check the elseif
-        if (ExpressionChecker::check($statements_checker, $elseif->cond, $elseif_context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $elseif->cond, $elseif_context) === false) {
             return false;
         }
 
         $elseif_clauses = TypeChecker::getFormula(
             $elseif->cond,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $elseif_context->clauses = TypeChecker::simplifyCNF(
@@ -430,6 +432,7 @@ class IfChecker
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $elseif->cond),
                 $statements_checker->getSuppressedIssues()
             );
@@ -443,7 +446,7 @@ class IfChecker
 
         $old_elseif_context = clone $elseif_context;
 
-        if ($statements_checker->check($elseif->stmts, $elseif_context, $if_scope->loop_context) === false) {
+        if ($statements_checker->analyze($elseif->stmts, $elseif_context, $if_scope->loop_context) === false) {
             return false;
         }
 
@@ -572,7 +575,7 @@ class IfChecker
      * @param  array<Clause>             $negated_clauses
      * @return false|null
      */
-    protected static function checkElseBlock(
+    protected static function analyzeElseBlock(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
@@ -598,6 +601,7 @@ class IfChecker
                 $else_types,
                 $else_context->vars_in_scope,
                 $changed_vars,
+                $statements_checker->getFileChecker(),
                 new CodeLocation($statements_checker->getSource(), $else),
                 $statements_checker->getSuppressedIssues()
             );
@@ -611,7 +615,7 @@ class IfChecker
 
         $old_else_context = clone $else_context;
 
-        if ($statements_checker->check($else->stmts, $else_context, $if_scope->loop_context) === false) {
+        if ($statements_checker->analyze($else->stmts, $else_context, $if_scope->loop_context) === false) {
             return false;
         }
 
@@ -732,14 +736,6 @@ class IfChecker
      */
     protected static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt)
     {
-        if ($stmt instanceof PhpParser\Node\Expr\MethodCall
-            || $stmt instanceof PhpParser\Node\Expr\StaticCall
-            || $stmt instanceof PhpParser\Node\Expr\FuncCall
-            || $stmt instanceof PhpParser\Node\Expr\Assign
-        ) {
-            return $stmt;
-        }
-
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
@@ -758,6 +754,6 @@ class IfChecker
             return self::getDefinitelyEvaluatedExpression($stmt->expr);
         }
 
-        return null;
+        return $stmt;
     }
 }

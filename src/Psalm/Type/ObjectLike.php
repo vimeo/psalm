@@ -53,7 +53,7 @@ class ObjectLike extends Atomic
 
     /**
      * @param  array<string> $aliased_classes
-     * @param  string        $this_class
+     * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      * @return string
      */

@@ -14,6 +14,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var \Psalm\Checker\ProjectChecker */
+    protected $project_checker;
+
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -26,6 +29,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
     public function testJsonOutputForReturnTypeError()
@@ -41,8 +45,8 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             $file_contents
         );
 
-        $file_checker = new FileChecker('somefile.php');
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
@@ -67,8 +71,8 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             $file_contents
         );
 
-        $file_checker = new FileChecker('somefile.php');
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
@@ -93,8 +97,8 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             $file_contents
         );
 
-        $file_checker = new FileChecker('somefile.php');
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
@@ -119,8 +123,8 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             $file_contents
         );
 
-        $file_checker = new FileChecker('somefile.php');
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
@@ -148,8 +152,8 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             $file_contents
         );
 
-        $file_checker = new FileChecker('somefile.php');
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
@@ -175,8 +179,8 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             $file_contents
         );
 
-        $file_checker = new FileChecker('somefile.php');
-        $file_checker->check();
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);

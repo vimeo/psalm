@@ -18,13 +18,13 @@ class TryChecker
      * @param   Context|null                    $loop_context
      * @return  false|null
      */
-    public static function check(
+    public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\TryCatch $stmt,
         Context $context,
         Context $loop_context = null
     ) {
-        $statements_checker->check($stmt->stmts, $context, $loop_context);
+        $statements_checker->analyze($stmt->stmts, $context, $loop_context);
 
         // clone context for catches after running the try block, as
         // we optimistically assume it only failed at the very end
@@ -38,13 +38,13 @@ class TryChecker
             foreach ($catch->types as $catch_type) {
                 $fq_catch_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $catch_type,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($context->check_classes) {
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_catch_class,
+                        $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $catch_type),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
@@ -72,7 +72,7 @@ class TryChecker
 
             $statements_checker->registerVariable('$' . $catch->var, $catch->getLine());
 
-            $statements_checker->check($catch->stmts, $catch_context, $loop_context);
+            $statements_checker->analyze($catch->stmts, $catch_context, $loop_context);
 
             if (!ScopeChecker::doesAlwaysReturnOrThrow($catch->stmts)) {
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {
@@ -95,7 +95,7 @@ class TryChecker
         }
 
         if ($stmt->finally) {
-            $statements_checker->check($stmt->finally->stmts, $context, $loop_context);
+            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_context);
         }
 
         return null;

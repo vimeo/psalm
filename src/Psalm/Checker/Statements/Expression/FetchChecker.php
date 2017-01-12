@@ -41,36 +41,34 @@ class FetchChecker
      * @param   bool                                $array_assignment
      * @return  false|null
      */
-    public static function checkPropertyFetch(
+    public static function analyzePropertyFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
         $array_assignment = false
     ) {
         if (!is_string($stmt->name)) {
-            if (ExpressionChecker::check($statements_checker, $stmt->name, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
                 return false;
             }
         }
 
         $var_id = null;
 
-        if (ExpressionChecker::check($statements_checker, $stmt->var, $context) === false) {
+        if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
             return false;
         }
 
         $stmt_var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $var_id = ExpressionChecker::getVarId(
             $stmt,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $var_name = is_string($stmt->name) ? $stmt->name : null;
@@ -163,8 +161,7 @@ class FetchChecker
                 $stmt_var_id = ExpressionChecker::getVarId(
                     $stmt->var,
                     $statements_checker->getFQCLN(),
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if (IssueBuffer::accepts(
@@ -190,13 +187,10 @@ class FetchChecker
                 continue;
             }
 
-            if (MethodChecker::methodExists($lhs_type_part . '::__get')) {
-                $stmt->inferredType = Type::getMixed();
-                continue;
-            }
+            $file_checker = $statements_checker->getFileChecker();
 
-            if (!ClassChecker::classExists($lhs_type_part->value)) {
-                if (InterfaceChecker::interfaceExists($lhs_type_part->value)) {
+            if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
+                if (InterfaceChecker::interfaceExists($lhs_type_part->value, $file_checker)) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -220,6 +214,11 @@ class FetchChecker
                     return false;
                 }
 
+                continue;
+            }
+
+            if (MethodChecker::methodExists($lhs_type_part . '::__get')) {
+                $stmt->inferredType = Type::getMixed();
                 continue;
             }
 
@@ -263,7 +262,8 @@ class FetchChecker
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
 
-            $property_storage = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+            $property_storage =
+                ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
             $class_property_type = $property_storage->type;
 
@@ -301,7 +301,7 @@ class FetchChecker
      * @param   Context                         $context
      * @return  false|null
      */
-    public static function checkConstFetch(
+    public static function analyzeConstFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
@@ -324,7 +324,8 @@ class FetchChecker
             default:
                 $const_type = $statements_checker->getConstType(
                     $const_name,
-                    $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                    $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
+                    $context
                 );
 
                 if ($const_type) {
@@ -351,7 +352,7 @@ class FetchChecker
      * @param   Context                             $context
      * @return  null|false
      */
-    public static function checkClassConstFetch(
+    public static function analyzeClassConstFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
@@ -361,9 +362,13 @@ class FetchChecker
             $stmt->class->parts !== ['static']
         ) {
             if ($stmt->class->parts === ['self']) {
+                if (!$context->self) {
+                    throw new \UnexpectedValueException('$context->self cannot be null');
+                }
+
                 $fq_class_name = (string)$context->self;
             } elseif ($stmt->class->parts[0] === 'parent') {
-                $fq_class_name = $statements_checker->getParentClass();
+                $fq_class_name = $statements_checker->getParentFQCLN();
 
                 if ($fq_class_name === null) {
                     if (IssueBuffer::accepts(
@@ -381,25 +386,34 @@ class FetchChecker
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
+
+                // edge case when evaluating single files
+                if ($stmt->name === 'class' &&
+                    $statements_checker->getFileChecker()->containsUnEvaluatedClassLike($fq_class_name)
+                ) {
+                    $stmt->inferredType = Type::getString();
+                    return null;
+                }
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_checker->getSuppressedIssues(),
+                    true
                 ) === false) {
                     return false;
                 }
             }
 
-            $const_id = $fq_class_name . '::' . $stmt->name;
-
             if ($stmt->name === 'class') {
                 $stmt->inferredType = Type::getString();
                 return null;
             }
+
+            $const_id = $fq_class_name . '::' . $stmt->name;
 
             if ($fq_class_name === $context->self
                 || (
@@ -408,7 +422,9 @@ class FetchChecker
                 )
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
-            } elseif ($context->self && ClassChecker::classExtends($context->self, $fq_class_name)) {
+            } elseif ($context->self &&
+                ClassChecker::classExtends($context->self, $fq_class_name)
+            ) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {
                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
@@ -451,7 +467,7 @@ class FetchChecker
         }
 
         if ($stmt->class instanceof PhpParser\Node\Expr) {
-            if (ExpressionChecker::check($statements_checker, $stmt->class, $context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->class, $context) === false) {
                 return false;
             }
         }
@@ -465,7 +481,7 @@ class FetchChecker
      * @param   Context                                 $context
      * @return  null|false
      */
-    public static function checkStaticPropertyFetch(
+    public static function analyzeStaticPropertyFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
@@ -483,7 +499,7 @@ class FetchChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if ($stmt->class->parts[0] === 'parent') {
-                    $fq_class_name = $statements_checker->getParentClass();
+                    $fq_class_name = $statements_checker->getParentFQCLN();
 
                     if ($fq_class_name === null) {
                         if (IssueBuffer::accepts(
@@ -510,8 +526,7 @@ class FetchChecker
             } elseif ($context->check_classes) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker->getNamespace(),
-                    $statements_checker->getAliasedClasses()
+                    $statements_checker
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -520,8 +535,10 @@ class FetchChecker
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_checker->getSuppressedIssues(),
+                    true
                 ) === false) {
                     return false;
                 }
@@ -538,8 +555,7 @@ class FetchChecker
             $var_id = ExpressionChecker::getVarId(
                 $stmt,
                 $statements_checker->getFQCLN(),
-                $statements_checker->getNamespace(),
-                $statements_checker->getAliasedClasses()
+                $statements_checker
             );
 
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
@@ -578,7 +594,8 @@ class FetchChecker
                 $fq_class_name . '::$' . $stmt->name
             );
 
-            $property = ClassLikeChecker::$storage[$declaring_property_class]->properties[$stmt->name];
+            $property =
+                ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
             $context->vars_in_scope[$var_id] = $property->type
                 ? clone $property->type
@@ -600,7 +617,7 @@ class FetchChecker
      * @param   string|null                         $assignment_key_value
      * @return  false|null
      */
-    public static function checkArrayAccess(
+    public static function analyzeArrayAccess(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
@@ -617,8 +634,7 @@ class FetchChecker
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses(),
+            $statements_checker,
             $nesting
         );
 
@@ -630,18 +646,16 @@ class FetchChecker
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
         $keyed_array_var_id = ExpressionChecker::getArrayVarId(
             $stmt,
             $statements_checker->getFQCLN(),
-            $statements_checker->getNamespace(),
-            $statements_checker->getAliasedClasses()
+            $statements_checker
         );
 
-        if ($stmt->dim && ExpressionChecker::check($statements_checker, $stmt->dim, $context) === false) {
+        if ($stmt->dim && ExpressionChecker::analyze($statements_checker, $stmt->dim, $context) === false) {
             return false;
         }
 
@@ -734,7 +748,7 @@ class FetchChecker
             }
         }
 
-        if (ExpressionChecker::check(
+        if (ExpressionChecker::analyze(
             $statements_checker,
             $stmt->var,
             $context,
@@ -1008,7 +1022,7 @@ class FetchChecker
                         )) {
                             return false;
                         }
-                    } elseif (!$at->isIn($key_type)) {
+                    } elseif (!$at->isIn($key_type, $statements_checker->getFileChecker())) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
                                 'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
@@ -1062,7 +1076,9 @@ class FetchChecker
             return null;
         }
 
-        if (!$type->isArray() && !ClassChecker::classImplements($type->value, 'ArrayAccess')) {
+        if (!$type->isArray() &&
+            !ClassChecker::classImplements($type->value, 'ArrayAccess')
+        ) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
                     'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type->value . ' that does not ' .
