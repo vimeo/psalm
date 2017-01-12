@@ -223,6 +223,9 @@ class ProjectChecker
             // strip out deleted files
             $file_list = array_diff($file_list, $deleted_files);
             $this->checkDiffFilesWithConfig($this->config, $file_list);
+
+            $this->visitFiles();
+            $this->analyzeFiles();
         }
 
         $removed_parser_files = FileChecker::deleteOldParserCaches(
@@ -409,36 +412,20 @@ class ProjectChecker
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
 
-        foreach ($file_list as $file_name) {
-            if (!file_exists($file_name)) {
+        foreach ($file_list as $file_path) {
+            if (!file_exists($file_path)) {
                 continue;
             }
 
-            if (!$config->isInProjectDirs(
-                preg_replace('/^' . preg_quote($config->getBaseDir(), '/') . '/', '', $file_name)
-            )) {
+            if (!$config->isInProjectDirs($config->shortenFileName($file_path))) {
                 if ($this->debug_output) {
-                    echo('skipping ' . $file_name . PHP_EOL);
+                    echo('skipping ' . $file_path . PHP_EOL);
                 }
 
                 continue;
             }
 
-            $extension = pathinfo($file_name, PATHINFO_EXTENSION);
-
-            if ($this->debug_output) {
-                echo 'Checking affected file ' . $file_name . PHP_EOL;
-            }
-
-            if (isset($filetype_handlers[$extension])) {
-                /** @var FileChecker */
-                $file_checker = new $filetype_handlers[$extension]($file_name);
-            } else {
-                $file_checker = new FileChecker($file_name, $this);
-            }
-
-            $file_checker->visit();
-            $file_checker->analyze();
+            $this->files_to_analyze[$file_path] = $file_path;
         }
     }
 
