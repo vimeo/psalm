@@ -515,7 +515,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                             if ($context->self && $context->self !== $this->fq_class_name) {
                                 $analyzed_method_id = (string)$method_checker->getMethodId($context->self);
-
                                 $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
 
                                 if ($actual_method_id !== $declaring_method_id) {
