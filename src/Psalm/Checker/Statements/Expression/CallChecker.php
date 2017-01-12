@@ -151,19 +151,18 @@ class CallChecker
                 }
 
             } else {
+
                 $method_id = implode('\\', $stmt->name->parts);
 
-                $aliased_functions = $statements_checker->getAliasedFunctions();
+                $in_call_map = FunctionChecker::inCallMap($method_id);
 
-                if (isset($aliased_functions[strtolower($method_id)])) {
-                    $method_id = $aliased_functions[strtolower($method_id)];
+                if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                    $method_id = FunctionChecker::getFQFunctionNameFromString($method_id, $statements_checker);
                 }
 
                 if ($context->self) {
                     //$method_id = $statements_checker->getFQCLN() . '::' . $method_id;
                 }
-
-                $in_call_map = FunctionChecker::inCallMap($method_id);
 
                 if (!$in_call_map &&
                     self::checkFunctionExists($statements_checker, $method_id, $context, $code_location) === false

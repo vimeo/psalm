@@ -189,4 +189,18 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    public function testNamespaced()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace A;
+
+        function f(int $p) : void {}
+        f(5);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

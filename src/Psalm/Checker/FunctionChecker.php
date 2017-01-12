@@ -632,6 +632,39 @@ class FunctionChecker extends FunctionLikeChecker
     }
 
     /**
+     * @param  string                   $function_name
+     * @param  StatementsSource         $source
+     * @return string
+     */
+    public static function getFQFunctionNameFromString($function_name, StatementsSource $source)
+    {
+        if (empty($function_name)) {
+            throw new \InvalidArgumentException('$function_name cannot be empty');
+        }
+
+        if ($function_name[0] === '\\') {
+            return substr($function_name, 1);
+        }
+
+        $imported_namespaces = $source->getAliasedFunctions();
+
+        if (strpos($function_name, '\\') !== false) {
+            $function_name_parts = explode('\\', $function_name);
+            $first_namespace = array_shift($function_name_parts);
+
+            if (isset($imported_namespaces[strtolower($first_namespace)])) {
+                return $imported_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $function_name_parts);
+            }
+        } elseif (isset($imported_namespaces[strtolower($function_name)])) {
+            return $imported_namespaces[strtolower($function_name)];
+        }
+
+        $namespace = $source->getNamespace();
+
+        return ($namespace ? $namespace . '\\' : '') . $function_name;
+    }
+
+    /**
      * @return void
      */
     public static function clearCache()
