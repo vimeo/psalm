@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use Psalm\Config;
+use Psalm\Context;
 use Psalm\Exception;
 use Psalm\IssueBuffer;
 use Psalm\Storage\PropertyStorage;
@@ -46,6 +47,11 @@ class ProjectChecker
      * @var bool
      */
     public $debug_output = false;
+
+    /**
+     * @var boolean
+     */
+    public $cache = false;
 
     /**
      * @var array<string, bool>
@@ -121,6 +127,11 @@ class ProjectChecker
      * @var array<string, FileChecker>
      */
     protected $file_checkers = [];
+
+    /**
+     * @var array<string, MethodChecker>
+     */
+    public $method_checkers = [];
 
     /**
      * @var array<string, string>
@@ -482,7 +493,7 @@ class ProjectChecker
 
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
-            return new $filetype_handlers[$extension]($file_path);
+            return new $filetype_handlers[$extension]($file_path, $this);
         }
 
         return new FileChecker($file_path, $this);
@@ -560,7 +571,7 @@ class ProjectChecker
     }
 
     /**
-     * @param  string $fq_class_name
+     * @param  string       $fq_class_name
      * @return boolean
      * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
@@ -631,6 +642,98 @@ class ProjectChecker
         }
 
         return true;
+    }
+
+    /**
+     * @return void
+     */
+    public function enableCache()
+    {
+        $this->cache = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function disableCache()
+    {
+        $this->cache = false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canCache()
+    {
+        return $this->cache;
+    }
+
+    /**
+     * @param  string   $original_method_id
+     * @param  Context  $this_context
+     * @return void
+     */
+    public function getMethodMutations($original_method_id, Context $this_context)
+    {
+        list($fq_class_name, $method_name) = explode('::', $original_method_id);
+
+        $file_checker = $this->getVisitedFileCheckerForClassLike($fq_class_name);
+
+        $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($original_method_id);
+        list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+
+        if (strtolower($declaring_fq_class_name) !== strtolower($fq_class_name)) {
+            $file_checker = $this->getVisitedFileCheckerForClassLike($declaring_fq_class_name);
+        }
+
+        $file_checker->analyze(false, true);
+
+        if (!$this_context->self) {
+            $this_context->self = $fq_class_name;
+            $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+        }
+
+        $file_checker->getMethodMutations($declaring_method_id, $this_context);
+    }
+
+    /**
+     * @param  string $fq_class_name
+     * @return FileChecker
+     */
+    public function getVisitedFileCheckerForClassLike($fq_class_name)
+    {
+        if (!$this->fake_files) {
+            // this registers the class if it's not user defined
+            if (!$this->fileExistsForClassLike($fq_class_name)) {
+                throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
+            }
+
+            if (!isset($this->classlike_files[$fq_class_name])) {
+                throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
+            }
+
+            $file_path = $this->classlike_files[$fq_class_name];
+        } else {
+            $file_path = array_keys($this->fake_files)[0];
+        }
+
+        if ($this->cache && isset($this->file_checkers[$file_path])) {
+            return $this->file_checkers[$file_path];
+        }
+
+        $file_checker = new FileChecker($file_path, $this);
+
+        $file_checker->visit();
+
+        if ($this->debug_output) {
+            echo 'Visiting ' . $file_path . PHP_EOL;
+        }
+
+        if ($this->cache) {
+            $this->file_checkers[$file_path] = $file_checker;
+        }
+
+        return $file_checker;
     }
 
     /**

@@ -196,17 +196,16 @@ class ExpressionChecker
             $use_context = new Context($statements_checker->getFileName(), $context->self);
 
             if (!$statements_checker->isStatic()) {
-                $this_class = ClassLikeChecker::getThisClass();
-                $this_class = $this_class &&
+                if ($context->collect_mutations &&
+                    $context->self &&
                     ClassChecker::classExtends(
-                        $this_class,
+                        $context->self,
                         (string)$statements_checker->getFQCLN()
                     )
-                        ? $this_class
-                        : $context->self;
-
-                if ($this_class) {
-                    $use_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($this_class)]);
+                ) {
+                    $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
+                } elseif ($context->self) {
+                    $use_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
                 }
             }
 

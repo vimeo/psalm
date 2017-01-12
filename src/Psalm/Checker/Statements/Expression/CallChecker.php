@@ -473,7 +473,7 @@ class CallChecker
 
                 $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
 
-                if ($file_checker->getMethodMutations($method_id, $context) === false) {
+                if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
                     return false;
                 }
             }
@@ -710,7 +710,7 @@ class CallChecker
                         if ($context->collect_mutations) {
                             $method_id = $fq_class_name . '::' . strtolower($stmt->name);
 
-                            if ($file_checker->getMethodMutations($method_id, $context) === false) {
+                            if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
                                 return false;
                             }
                         }

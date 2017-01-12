@@ -99,6 +99,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $cased_method_id = null;
 
         if ($this->function instanceof ClassMethod) {
+            $real_method_id = (string)$this->getMethodId();
+
+            $method_id = (string)$this->getMethodId($context->self);
+
             if ($add_mutations) {
                 $hash = $this->getMethodId() . json_encode([
                     $context->vars_in_scope,
@@ -117,10 +121,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             } elseif ($context->self) {
                 $context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
             }
-
-            $real_method_id = (string)$this->getMethodId();
-
-            $method_id = (string)$this->getMethodId($context->self);
 
             $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($method_id);
 

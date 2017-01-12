@@ -87,11 +87,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected $property_types = [];
 
     /**
-     * @var string|null
-     */
-    protected static $this_class = null;
-
-    /**
      * @var array<string, array<string, string>>|null
      */
     protected static $property_map;
@@ -147,10 +142,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
-
-        if (self::$this_class) {
-            self::$class_checkers[$fq_class_name] = $this;
-        }
     }
 
     /**
@@ -493,7 +484,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name) === strtolower($method_name)
             ) {
-                $method_checker = new MethodChecker($stmt, $this);
+                $project_checker = $this->getFileChecker()->project_checker;
+
+                $method_id = $this->fq_class_name . '::' . $stmt->name;
+
+                if ($project_checker->canCache() && isset($project_checker->method_checkers[$method_id])) {
+                    $method_checker = $project_checker->method_checkers[$method_id];
+                } else {
+                    $method_checker = new MethodChecker($stmt, $this);
+
+                    if ($project_checker->canCache()) {
+                        $project_checker->method_checkers[$method_id] = $method_checker;
+                    }
+                }
 
                 $method_checker->analyze($context, null, true);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
@@ -793,45 +796,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $storage->public_class_constants[$const->name] = $const_type;
             }
         }
-    }
-
-    /**
-     * Used in deep method evaluation, we get method checkers on the current or parent
-     * classes
-     *
-     * @param  string $method_id
-     * @return MethodChecker
-     */
-    public static function getMethodChecker($method_id)
-    {
-        /**
-        if (isset(self::$method_checkers[$method_id])) {
-            return self::$method_checkers[$method_id];
-        }
-
-        MethodChecker::registerClassLikeMethod($method_id);
-
-        $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
-        $declaring_class = explode('::', $declaring_method_id)[0];
-
-        $class_checker = FileChecker::getClassLikeCheckerFromClass($declaring_class);
-
-        if (!$class_checker) {
-            throw new \InvalidArgumentException('Could not get class checker for ' . $declaring_class);
-        }
-
-        foreach ($class_checker->class->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                if ($declaring_method_id === $class_checker->fq_class_name . '::' . strtolower($stmt->name)) {
-                    $method_checker = new MethodChecker($stmt, $class_checker);
-                    self::$method_checkers[$method_id] = $method_checker;
-                    return $method_checker;
-                }
-            }
-        }
-        **/
-
-        throw new \InvalidArgumentException('Method checker not found');
     }
 
     /**
@@ -1553,25 +1517,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param   string|null $this_class
-     * @return  void
-     */
-    public static function setThisClass($this_class)
-    {
-        self::$this_class = $this_class;
-
-        self::$class_checkers = [];
-    }
-
-    /**
-     * @return string|null
-     */
-    public static function getThisClass()
-    {
-        return self::$this_class;
-    }
-
-    /**
      * @param   string $method_name
      * @return  string
      */
@@ -1662,8 +1607,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function clearCache()
     {
-        self::$this_class = null;
-
         self::$file_classes = [];
 
         self::$trait_checkers = [];

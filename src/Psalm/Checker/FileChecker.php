@@ -154,9 +154,9 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $namespace_checkers = [];
 
     /**
-     * @var Context|null
+     * @var Context
      */
-    public $context = null;
+    public $context;
 
     /**
      * @var ProjectChecker
@@ -181,6 +181,8 @@ class FileChecker extends SourceChecker implements StatementsSource
         if ($preloaded_statements) {
             $this->preloaded_statements = $preloaded_statements;
         }
+
+        $this->context = new Context($this->file_name);
     }
 
     /**
@@ -189,7 +191,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function visit(Context $file_context = null)
     {
-        $this->context = $file_context ?: new Context($this->file_name);
+        $this->context = $file_context ?: $this->context;
 
         $config = Config::getInstance();
 
@@ -296,12 +298,8 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         $config = Config::getInstance();
 
-        if ($this->context === null) {
-            throw new \UnexpectedValueException('Cannot check methods without a context');
-        }
-
         foreach ($this->namespace_checkers as $namespace_checker) {
-            $namespace_checker->analyze(clone $this->context);
+            $namespace_checker->analyze(clone $this->context, $preserve_checkers);
         }
 
         foreach ($this->class_checkers as $class_checker) {
@@ -361,27 +359,13 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  string   $original_method_id
+     * @param  string   $method_id
      * @param  Context  $this_context
      * @return void
      */
-    public function getMethodMutations($original_method_id, Context &$this_context)
+    public function getMethodMutations($method_id, Context &$this_context)
     {
-        list($fq_class_name, $method_name) = explode('::', $original_method_id);
-        $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($original_method_id);
-        list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
-
-        if (!isset(ClassLikeChecker::$storage[strtolower($fq_class_name)])) {
-            throw new \UnexpectedValueException('Cannot locate class storage for ' . $fq_class_name);
-        }
-
-        $this_context->collect_mutations = true;
-
-        if (!$this_context->self) {
-            $this_context->self = $fq_class_name;
-            $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
-        }
-
+        list($fq_class_name, $method_name) = explode('::', $method_id);
         $call_context = new Context($this->file_name, (string) $this_context->vars_in_scope['$this']);
         $call_context->collect_mutations = true;
 
@@ -399,10 +383,28 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $call_context->vars_in_scope['$this'] = $this_context->vars_in_scope['$this'];
 
+        $checked = false;
+
         foreach ($this->class_checkers as $class_checker) {
-            if (strtolower($class_checker->getFQCLN()) === strtolower($declaring_fq_class_name)) {
-                $class_checker->getMethodMutations($declaring_method_name, $call_context);
+            if (strtolower($class_checker->getFQCLN()) === strtolower($fq_class_name)) {
+                $class_checker->getMethodMutations($method_name, $call_context);
+                $checked = true;
+                break;
             }
+        }
+
+        foreach ($this->namespace_checkers as $namespace_checker) {
+            foreach ($namespace_checker->class_checkers as $class_checker) {
+                if (strtolower($class_checker->getFQCLN()) === strtolower($fq_class_name)) {
+                    $class_checker->getMethodMutations($method_name, $call_context);
+                    $checked = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$checked) {
+            throw new \UnexpectedValueException('Method ' . $method_id . ' could not be checked');
         }
 
         foreach ($call_context->vars_in_scope as $var => $type) {
@@ -446,10 +448,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function evaluateClassLike($fq_class_name, $visit_file)
     {
-        if (!$this->context) {
-            throw new \UnexpectedValueException('Not expecting $this->context to be empty');
-        }
-
         if (isset($this->interface_checkers_no_methods[$fq_class_name])) {
             $interface_checker = $this->interface_checkers_no_methods[$fq_class_name];
 

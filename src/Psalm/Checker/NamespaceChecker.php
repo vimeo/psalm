@@ -29,7 +29,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     /**
      * @var array<int, ClassChecker>
      */
-    protected $class_checkers = [];
+    public $class_checkers = [];
 
     /**
      * A lookup table for public namespace constants
@@ -100,15 +100,18 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  Context $context
+     * @param  bool    $preserve_checkers
      * @return void
      */
-    public function analyze(Context $context)
+    public function analyze(Context $context, $preserve_checkers = false)
     {
         foreach ($this->class_checkers as $class_checker) {
             $class_checker->analyze(null, $context);
         }
 
-        $this->class_checkers = [];
+        if (!$preserve_checkers) {
+            $this->class_checkers = [];
+        }
     }
 
     /**
