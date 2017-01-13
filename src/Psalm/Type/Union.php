@@ -30,6 +30,9 @@ class Union extends Type
         }
     }
 
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return implode(

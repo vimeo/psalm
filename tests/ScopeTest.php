@@ -14,7 +14,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
-    protected static $file_filter;
 
     /**
      * @return void
@@ -522,8 +521,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         echo $a;
         ');
-
-        Config::getInstance()->setIssueHandler('PossiblyUndefinedVariable', self::$file_filter);
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();

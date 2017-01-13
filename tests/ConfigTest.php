@@ -8,8 +8,6 @@ use Psalm\Config;
 
 class ConfigTest extends PHPUnit_Framework_TestCase
 {
-    protected static $file_filter;
-
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
@@ -30,11 +28,19 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     {
         return array_filter(
             array_map(
+                /**
+                 * @param string $file_name
+                 * @return string
+                 */
                 function ($file_name) {
                     return substr($file_name, 0, -4);
                 },
                 scandir(dirname(__DIR__) . '/src/Psalm/Issue')
             ),
+            /**
+             * @param string $issue_name
+             * @return bool
+             */
             function ($issue_name) {
                 return !empty($issue_name) && $issue_name !== 'CodeError' && $issue_name !== 'CodeIssue';
             }
@@ -138,6 +144,10 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $all_possible_handlers = implode(
             ' ',
             array_map(
+                /**
+                 * @param string $issue_name
+                 * @return string
+                 */
                 function ($issue_name) {
                     return '<' . $issue_name . ' errorLevel="suppress" />' . PHP_EOL;
                 },

@@ -18,24 +18,6 @@
         <MisplacedRequiredParam errorLevel="suppress" />
         <NullOperand errorLevel="suppress" />
 
-        <InvalidArgument>
-            <errorLevel type="suppress">
-                <directory name="tests" />
-            </errorLevel>
-        </InvalidArgument>
-
-        <MissingReturnType>
-            <errorLevel type="suppress">
-                <directory name="tests" />
-            </errorLevel>
-        </MissingReturnType>
-
-        <MissingPropertyType>
-            <errorLevel type="suppress">
-                <directory name="tests" />
-            </errorLevel>
-        </MissingPropertyType>
-
         <MixedArgument>
             <errorLevel type="suppress">
                 <directory name="tests" />

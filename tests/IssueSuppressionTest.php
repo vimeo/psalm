@@ -13,7 +13,6 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
 
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
-    protected static $file_filter;
 
     /**
      * @return void
