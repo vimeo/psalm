@@ -15,5 +15,6 @@
         <MissingReturnType errorLevel="info" />
         <DeprecatedMethod errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
+        <FailedTypeResolution errorLevel="info" />
     </issueHandlers>
 </psalm>
