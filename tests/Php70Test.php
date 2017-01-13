@@ -150,6 +150,27 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    public function testAnonymousClassFunctionReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        $class = new class {
+            public function f() : int {
+                return 42;
+            }
+        };
+
+        function g(int $i) : int {
+            return $i;
+        }
+
+        $x = g($class->f());
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
     public function testGeneratorWithReturn()
     {
         $stmts = self::$parser->parse('<?php

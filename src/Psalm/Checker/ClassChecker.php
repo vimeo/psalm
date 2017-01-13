@@ -29,6 +29,7 @@ class ClassChecker extends ClassLikeChecker
 
         if ($fq_class_name === null) {
             $fq_class_name = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
+            $class->name = $fq_class_name;
         }
 
         parent::__construct($class, $source, $fq_class_name);
