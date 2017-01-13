@@ -30,7 +30,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     public function testRegularAddition()
     {
         $stmts = self::$parser->parse('<?php
-        echo 5 + 4;
+        $a = 5 + 4;
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
@@ -56,7 +56,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     public function testDifferingNumericTypesAdditionInWeakMode()
     {
         $stmts = self::$parser->parse('<?php
-        echo 5 + 4.1;
+        $a = 5 + 4.1;
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
@@ -73,7 +73,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         Config::getInstance()->strict_binary_operands = true;
 
         $stmts = self::$parser->parse('<?php
-        echo 5 + 4.1;
+        $a = 5 + 4.1;
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
@@ -87,7 +87,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         $a = "5";
 
         if (is_numeric($a)) {
-            echo $a + 4;
+            $b = $a + 4;
         }
         ');
 
@@ -99,7 +99,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     public function testConcatenation()
     {
         $stmts = self::$parser->parse('<?php
-        echo "Hey " + "Jude,";
+        $a = "Hey " . "Jude,";
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
@@ -110,7 +110,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     public function testConcatenationWithNumberInWeakMode()
     {
         $stmts = self::$parser->parse('<?php
-        echo "hi" . 5;
+        $a = "hi" . 5;
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
@@ -127,7 +127,24 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         Config::getInstance()->strict_binary_operands = true;
 
         $stmts = self::$parser->parse('<?php
-        echo "hi" . 5;
+        $a = "hi" . 5;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidOperand
+     */
+    public function testAddArrayToNumber()
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $stmts = self::$parser->parse('<?php
+        $a = [1] + 1;
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);

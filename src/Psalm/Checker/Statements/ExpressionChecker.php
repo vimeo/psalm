@@ -926,6 +926,16 @@ class ExpressionChecker
                                 )) {
                                     // fall through
                                 }
+                            } elseif (!$right_type_part->isArray()) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidOperand(
+                                        'Cannot add an array to a non-array',
+                                        new CodeLocation($statements_checker->getSource(), $right)
+                                    ),
+                                    $statements_checker->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
                             }
 
                             $result_type = Type::getArray();
