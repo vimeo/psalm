@@ -216,6 +216,7 @@ class FunctionChecker extends FunctionLikeChecker
             foreach ($call_map_function_args as $arg_name => $arg_type) {
                 $by_reference = false;
                 $optional = false;
+                $variadic = false;
 
                 if ($arg_name[0] === '&') {
                     $arg_name = substr($arg_name, 1);
@@ -227,6 +228,11 @@ class FunctionChecker extends FunctionLikeChecker
                     $optional = true;
                 }
 
+                if (substr($arg_name, 0, 3) === '...') {
+                    $arg_name = substr($arg_name, 3);
+                    $variadic = true;
+                }
+
                 $function_types[] = new FunctionLikeParameter(
                     $arg_name,
                     $by_reference,
@@ -234,7 +240,7 @@ class FunctionChecker extends FunctionLikeChecker
                     null,
                     $optional,
                     false,
-                    $arg_name === '...'
+                    $variadic
                 );
             }
 
