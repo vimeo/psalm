@@ -19,6 +19,7 @@ use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
@@ -450,6 +451,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $required_param_count = 0;
         $i = 0;
+        $has_optional_param = false;
 
         /** @var PhpParser\Node\Param $param */
         foreach ($function->getParams() as $param) {
@@ -472,6 +474,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if (!$param_array->is_optional) {
                 $required_param_count = $i + 1;
+
+                if (!$param->variadic && $has_optional_param) {
+                    if (IssueBuffer::accepts(
+                        new MisplacedRequiredParam(
+                            'Required param $' . $param->name . ' should come before any optional params in ' . $cased_function_id,
+                            new CodeLocation($source, $param, true)
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            } else {
+                $has_optional_param = true;
             }
 
             $i++;

@@ -15,6 +15,7 @@
     </projectFiles>
 
     <issueHandlers>
+        <MisplacedRequiredParam errorLevel="suppress" />
         <NullOperand errorLevel="suppress" />
 
         <InvalidArgument>
