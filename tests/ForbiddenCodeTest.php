@@ -15,6 +15,9 @@ class ForbiddenCodeTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,9 @@ class ForbiddenCodeTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -29,8 +35,9 @@ class ForbiddenCodeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage ForbiddenCode
+     * @return                   void
      */
     public function testVarDump()
     {
@@ -44,8 +51,9 @@ class ForbiddenCodeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage ForbiddenCode
+     * @return                   void
      */
     public function testExecTicks()
     {
@@ -59,8 +67,9 @@ class ForbiddenCodeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage ForbiddenCode
+     * @return                   void
      */
     public function testExec()
     {

@@ -15,6 +15,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,12 +25,18 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testExtendsAndImplements()
     {
         $stmts = self::$parser->parse('<?php
@@ -85,6 +94,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$dee']);
     }
 
+    /**
+     * @return void
+     */
     public function testIsExtendedInterface()
     {
         $stmts = self::$parser->parse('<?php
@@ -133,6 +145,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testExtendsWithMethod()
     {
         $stmts = self::$parser->parse('<?php
@@ -162,8 +177,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NoInterfaceProperties
+     * @return                   void
      */
     public function testNoInterfaceProperties()
     {
@@ -184,8 +200,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UnimplementedInterfaceMethod
+     * @return                   void
      */
     public function testUnimplementedInterfaceMethod()
     {
@@ -204,8 +221,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MethodSignatureMismatch
+     * @return                   void
      */
     public function testMismatchingInterfaceMethodSignature()
     {
@@ -227,6 +245,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testCorrectInterfaceMethodSignature()
     {
         $stmts = self::$parser->parse('<?php
@@ -247,6 +268,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testInterfaceMethodImplementedInParent()
     {
         $stmts = self::$parser->parse('<?php
@@ -270,8 +294,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MethodSignatureMismatch
+     * @return                   void
      */
     public function testMismatchingInterfaceMethodSignatureInTrait()
     {
@@ -296,6 +321,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testInterfaceMethodSignatureInTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -320,8 +348,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MethodSignatureMismatch
+     * @return                   void
      */
     public function testMismatchingInterfaceMethodSignatureInImplementer()
     {
@@ -349,6 +378,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testDelayedInterface()
     {
         $stmts = self::$parser->parse('<?php
@@ -367,8 +399,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedClass
+     * @return                   void
      */
     public function testInvalidImplements()
     {
@@ -383,6 +416,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testTypeDoesNotContainType()
     {
         $stmts = self::$parser->parse('<?php

@@ -13,12 +13,19 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return       string[]
+     * @psalm-return array<mixed, string>
+     */
     public static function getAllIssues()
     {
         return array_filter(
@@ -34,6 +41,9 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testBarebonesConfig()
     {
         $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
@@ -47,6 +57,9 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($config->isInProjectDirs('main.php'));
     }
 
+    /**
+     * @return void
+     */
     public function testIgnoreProjectDirectory()
     {
         $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
@@ -64,6 +77,9 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($config->isInProjectDirs('main.php'));
     }
 
+    /**
+     * @return void
+     */
     public function testIssueHandler()
     {
         $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
@@ -82,6 +98,9 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($config->excludeIssueInFile('MissingReturnType', 'src/somefile.php'));
     }
 
+    /**
+     * @return void
+     */
     public function testIssueHandlerWithCustomErrorLevels()
     {
         $config = Config::loadFromXML('psalm.xml', '<?xml version="1.0"?>
@@ -111,6 +130,9 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->assertSame('error', $config->getReportingLevelForFile('MissingReturnType', 'src/Core/somefile.php'));
     }
 
+    /**
+     * @return void
+     */
     public function testAllPossibleIssues()
     {
         $all_possible_handlers = implode(
@@ -136,8 +158,9 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\ConfigException
+     * @expectedException        \Psalm\Exception\ConfigException
      * @expectedExceptionMessage This element is not expected
+     * @return                   void
      */
     public function testImpossibleIssue()
     {

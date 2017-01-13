@@ -15,11 +15,17 @@ class TraitTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -27,6 +33,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessiblePrivateMethodFromTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -48,6 +57,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedMethodFromTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -69,6 +81,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessiblePublicMethodFromTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -90,6 +105,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessiblePrivatePropertyFromTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -111,6 +129,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedPropertyFromTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -132,6 +153,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessiblePublicPropertyFromTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -154,8 +178,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleMethod
+     * @return                   void
      */
     public function testInccessiblePrivateMethodFromInheritedTrait()
     {
@@ -180,6 +205,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedMethodFromInheritedTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -203,6 +231,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessiblePublicMethodFromInheritedTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -226,6 +257,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testStaticClassMethodFromWithinTrait()
     {
         $stmts = self::$parser->parse('<?php
@@ -249,8 +283,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedTrait
+     * @return                   void
      */
     public function testUndefinedTrait()
     {
@@ -264,6 +299,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testRedefinedTraitMethodWithoutAlias()
     {
         $stmts = self::$parser->parse('<?php
@@ -286,6 +324,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testRedefinedTraitMethodWithAlias()
     {
         $stmts = self::$parser->parse('<?php
@@ -309,6 +350,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testTraitSelf()
     {
         $stmts = self::$parser->parse('<?php
@@ -332,6 +376,9 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testParentTraitSelf()
     {
         $stmts = self::$parser->parse('<?php

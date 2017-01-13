@@ -15,11 +15,17 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
     protected $project_checker;
     protected static $file_filter;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -28,6 +34,9 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testUndefinedClass()
     {
         $stmts = self::$parser->parse('<?php
@@ -48,6 +57,9 @@ class IssueSuppressionTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testExcludeIssue()
     {
         Config::getInstance()->setCustomErrorLevel('UndefinedFunction', Config::REPORT_SUPPRESS);

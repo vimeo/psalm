@@ -15,6 +15,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,12 +25,18 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testReturnTypeAfterUselessNullcheck()
     {
         $stmts = self::$parser->parse('<?php
@@ -53,6 +62,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testReturnTypeNotEmptyCheck()
     {
         $stmts = self::$parser->parse('<?php
@@ -73,6 +85,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testReturnTypeNotEmptyCheckInElseIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -96,6 +111,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testReturnTypeNotEmptyCheckInElse()
     {
         $stmts = self::$parser->parse('<?php
@@ -119,6 +137,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testReturnTypeAfterIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -140,6 +161,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testReturnTypeAfterTwoIfsWithThrow()
     {
         $stmts = self::$parser->parse('<?php
@@ -166,6 +190,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testReturnTypeAfterIfElseIfWithThrow()
     {
         $stmts = self::$parser->parse('<?php
@@ -192,6 +219,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testTryCatchReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -213,6 +243,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSwitchReturnTypeWithFallthrough()
     {
         $stmts = self::$parser->parse('<?php
@@ -232,6 +265,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSwitchReturnTypeWithFallthroughAndStatement()
     {
         $stmts = self::$parser->parse('<?php
@@ -254,6 +290,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testSwitchReturnTypeWithFallthroughAndBreak()
     {
@@ -277,6 +314,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testSwitchReturnTypeWithFallthroughAndConditionalBreak()
     {
@@ -302,6 +340,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testSwitchReturnTypeWithNoDefault()
     {
@@ -322,6 +361,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSwitchReturnTypeWitDefaultException()
     {
         $stmts = self::$parser->parse('<?php
@@ -347,6 +389,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testExtendsStaticCallReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -370,6 +415,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('B', (string) $context->vars_in_scope['$b']);
     }
 
+    /**
+     * @return void
+     */
     public function testExtendsStaticCallArrayReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -393,6 +441,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, B>', (string) $context->vars_in_scope['$bees']);
     }
 
+    /**
+     * @return void
+     */
     public function testIssetReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -410,6 +461,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testThisReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -426,6 +480,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testOverrideReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -452,6 +509,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$blah']);
     }
 
+    /**
+     * @return void
+     */
     public function testInterfaceReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -475,6 +535,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$blah']);
     }
 
+    /**
+     * @return void
+     */
     public function testOverrideReturnTypeInGrandparent()
     {
         $stmts = self::$parser->parse('<?php
@@ -502,8 +565,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
      */
     public function testWrongReturnType1()
     {
@@ -519,8 +583,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
      */
     public function testWrongReturnType2()
     {
@@ -536,8 +601,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
      */
     public function testWrongReturnTypeInNamespace1()
     {
@@ -555,8 +621,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
      */
     public function testWrongReturnTypeInNamespace2()
     {
@@ -574,8 +641,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MissingReturnType
+     * @return                   void
      */
     public function testMissingReturnType()
     {
@@ -591,8 +659,9 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedInferredReturnType
+     * @return                   void
      */
     public function testMixedInferredReturnType()
     {

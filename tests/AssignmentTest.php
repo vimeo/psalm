@@ -15,6 +15,9 @@ class AssignmentTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,9 @@ class AssignmentTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         \Psalm\Checker\FileChecker::clearCache();
@@ -29,8 +35,9 @@ class AssignmentTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedAssignment
+     * @return                   void
      */
     public function testMixedAssignment()
     {

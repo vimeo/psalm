@@ -15,11 +15,17 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -28,8 +34,9 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidStaticInvocation
+     * @return                   void
      */
     public function testInvalidStaticInvocation()
     {
@@ -46,6 +53,9 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testValidNonStaticInvocation()
     {
         $stmts = self::$parser->parse('<?php
@@ -62,8 +72,9 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedMethodCall
+     * @return                   void
      */
     public function testMixedMethodCall()
     {
@@ -86,6 +97,9 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testValidStaticInvocation()
     {
         $stmts = self::$parser->parse('<?php
@@ -106,8 +120,9 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NonStaticSelfCall
+     * @return                   void
      */
     public function testSelfNonStaticInvocation()
     {
@@ -127,8 +142,9 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage ParentNotFound
+     * @return                   void
      */
     public function testNoParent()
     {

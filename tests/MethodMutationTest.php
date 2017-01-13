@@ -16,11 +16,17 @@ class MethodMutationTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -28,6 +34,9 @@ class MethodMutationTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testControllerMutation()
     {
         $this->project_checker->registerFile(

@@ -15,6 +15,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,12 +25,18 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testByRefUseVar()
     {
         $stmts = self::$parser->parse('<?php
@@ -63,8 +72,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
      */
     public function testWrongArg()
     {
@@ -85,8 +95,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
      */
     public function testNoReturn()
     {
@@ -105,6 +116,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testInferredArg()
     {
         $stmts = self::$parser->parse('<?php
@@ -126,6 +140,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testVarReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -143,6 +160,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testCallableToClosure()
     {
         $stmts = self::$parser->parse('<?php
@@ -161,6 +181,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testCallable()
     {
         $stmts = self::$parser->parse('<?php
@@ -175,8 +198,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidFunctionCall
+     * @return                   void
      */
     public function testStringFunctionCall()
     {
@@ -191,6 +215,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testCorrectParamType()
     {
         $stmts = self::$parser->parse('<?php
@@ -204,8 +231,9 @@ class ClosureTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
      */
     public function testWrongParamType()
     {

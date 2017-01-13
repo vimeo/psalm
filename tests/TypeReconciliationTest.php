@@ -22,6 +22,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /** @var FileChecker */
     protected $file_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -29,6 +32,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -40,6 +46,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testNotNull()
     {
         $this->assertEquals(
@@ -63,6 +72,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testNotEmpty()
     {
         $this->assertEquals(
@@ -94,6 +106,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
          */
     }
 
+    /**
+     * @return void
+     */
     public function testNull()
     {
         $this->assertEquals(
@@ -107,6 +122,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testEmpty()
     {
         $this->assertEquals(
@@ -134,6 +152,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Psalm\Type\Atomic', $reconciled->types['false']);
     }
 
+    /**
+     * @return void
+     */
     public function testNotMyObject()
     {
         $this->assertEquals(
@@ -152,6 +173,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testMyObject()
     {
         $this->assertEquals(
@@ -165,6 +189,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayContains()
     {
         $this->assertTrue(
@@ -184,6 +211,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testNumeric()
     {
         $this->assertEquals(
@@ -192,6 +222,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testNegateFormula()
     {
         $formula = [
@@ -235,6 +268,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertSame(['$b' => ['empty']], $negated_formula[2]->possibilities);
     }
 
+    /**
+     * @return void
+     */
     public function testContainsClause()
     {
         $this->assertTrue(
@@ -268,6 +304,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testSimplifyCNF()
     {
         $formula = [
@@ -283,8 +322,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeDoesNotContainType
+     * @return                   void
      */
     public function testMakeNonNullableNull()
     {
@@ -301,8 +341,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeDoesNotContainType
+     * @return                   void
      */
     public function testMakeInstanceOfThingInElseif()
     {
@@ -322,8 +363,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage FailedTypeResolution
+     * @return                   void
      */
     public function testFailedTypeResolution()
     {
@@ -339,6 +381,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNotInstanceOf()
     {
         $stmts = self::$parser->parse('<?php
@@ -363,6 +408,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|A', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testNotInstanceOfProperty()
     {
         $stmts = self::$parser->parse('<?php
@@ -392,6 +440,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testNotInstanceOfPropertyElseif()
     {
         $stmts = self::$parser->parse('<?php
@@ -424,6 +475,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testTypeArguments()
     {
         $stmts = self::$parser->parse('<?php
@@ -441,8 +495,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeDoesNotContainType
+     * @return                   void
      */
     public function testTypeTransformation()
     {

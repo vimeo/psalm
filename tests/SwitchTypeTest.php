@@ -17,6 +17,9 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -24,12 +27,18 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testGetClassArg()
     {
         $stmts = self::$parser->parse('<?php
@@ -70,8 +79,9 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedMethod
+     * @return                   void
      */
     public function testGetClassArgWrongClass()
     {
@@ -104,6 +114,9 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testGetTypeArg()
     {
         $stmts = self::$parser->parse('<?php
@@ -134,8 +147,9 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
      */
     public function testGetTypeArgWrongArgs()
     {

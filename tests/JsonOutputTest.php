@@ -17,6 +17,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -26,12 +29,18 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         $config->stop_on_first_error = false;
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testJsonOutputForReturnTypeError()
     {
         $file_contents = '<?php
@@ -58,6 +67,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testJsonOutputForUndefinedVar()
     {
         $file_contents = '<?php
@@ -84,6 +96,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testJsonOutputForUnknownParamClass()
     {
         $file_contents = '<?php
@@ -110,6 +125,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testJsonOutputForMissingReturnType()
     {
         $file_contents = '<?php
@@ -136,6 +154,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testJsonOutputForWrongMultilineReturnType()
     {
         $file_contents = '<?php
@@ -165,6 +186,9 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testJsonOutputForWrongSingleLineReturnType()
     {
         $file_contents = '<?php

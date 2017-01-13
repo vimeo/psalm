@@ -15,11 +15,17 @@ class ToStringTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -28,8 +34,9 @@ class ToStringTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidArgument
+     * @return                   void
      */
     public function testEchoClass()
     {
@@ -44,8 +51,9 @@ class ToStringTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidToString
+     * @return                   void
      */
     public function testInvalidToStringReturnType()
     {
@@ -61,8 +69,9 @@ class ToStringTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidToString
+     * @return                   void
      */
     public function testInvalidInferredToStringReturnType()
     {
@@ -80,6 +89,9 @@ class ToStringTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testValidToString()
     {
         $stmts = self::$parser->parse('<?php
@@ -96,6 +108,9 @@ class ToStringTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testValidInferredToStringType()
     {
         $stmts = self::$parser->parse('<?php
@@ -116,8 +131,9 @@ class ToStringTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage ImplicitToStringCast
+     * @return                   void
      */
     public function testImplicitCast()
     {

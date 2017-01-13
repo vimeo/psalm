@@ -16,11 +16,17 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -28,6 +34,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testGenericArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -44,6 +53,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testGeneric2DArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -60,6 +72,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, array<int, int>>', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testGeneric2DArrayCreationAddedInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -87,6 +102,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, array<int, int>>', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testGenericArrayCreationWithObjectAddedInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -105,6 +123,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, B>', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testGenericArrayCreationWithElementAddedInSwitch()
     {
         $stmts = self::$parser->parse('<?php
@@ -126,6 +147,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testGenericArrayCreationWithElementsAddedInSwitch()
     {
         $stmts = self::$parser->parse('<?php
@@ -148,6 +172,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testGenericArrayCreationWithElementsAddedInSwitchWithNothing()
     {
         $stmts = self::$parser->parse('<?php
@@ -173,6 +200,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$out']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicitIntArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -186,6 +216,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicit2DIntArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -199,6 +232,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, array<int, string>>', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicit3DIntArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -212,6 +248,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, array<int, array<int, string>>>', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicit4DIntArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -228,6 +267,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testImplicitIndexedIntArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -253,6 +295,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$bat']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicitStringArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -267,6 +312,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\']']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicit2DStringArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -284,6 +332,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\']']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicit3DStringArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -298,6 +349,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\'][\'bat\']']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicit4DStringArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -316,6 +370,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\'][\'bat\'][\'bap\']']);
     }
 
+    /**
+     * @return void
+     */
     public function test2Step2DStringArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -330,6 +387,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$foo[\'bar\'][\'baz\']']);
     }
 
+    /**
+     * @return void
+     */
     public function test2StepImplicit3DStringArrayCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -343,6 +403,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array{bar:array{baz:array{bat:string}}}', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testConflictingTypes()
     {
         $stmts = self::$parser->parse('<?php
@@ -358,6 +421,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array{bar:array{a:string}, baz:array<int, int>}', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testImplicitObjectLikeCreation()
     {
         $stmts = self::$parser->parse('<?php
@@ -373,6 +439,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array{bar:int, baz:string}', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testConflictingTypesWithAssignment()
     {
         $stmts = self::$parser->parse('<?php
@@ -392,6 +461,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testConflictingTypesWithAssignment2()
     {
         $stmts = self::$parser->parse('<?php
@@ -410,6 +482,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$bar']);
     }
 
+    /**
+     * @return void
+     */
     public function testConflictingTypesWithAssignment3()
     {
         $stmts = self::$parser->parse('<?php
@@ -424,6 +499,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array{a:string, b:array{c:array{d:string}}}', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testNestedObjectLikeAssignment()
     {
         $stmts = self::$parser->parse('<?php
@@ -438,6 +516,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array{a:array{b:string, c:int}}', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testConditionalObjectLikeAssignment()
     {
         $stmts = self::$parser->parse('<?php
@@ -456,6 +537,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array{a:string, b:int}', (string) $context->vars_in_scope['$foo']);
     }
 
+    /**
+     * @return void
+     */
     public function testIssetKeyedOffset()
     {
         $file_checker = new FileChecker(
@@ -473,6 +557,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$foo[\'a\']']);
     }
 
+    /**
+     * @return void
+     */
     public function testConditionalAssignment()
     {
         $file_checker = new FileChecker(
@@ -492,6 +579,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(isset($context->vars_in_scope['$foo[\'a\']']));
     }
 
+    /**
+     * @return void
+     */
     public function testImplementsArrayAccess()
     {
         $stmts = self::$parser->parse('<?php
@@ -522,6 +612,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(isset($context->vars_in_scope['$a[\'bar\']']));
     }
 
+    /**
+     * @return void
+     */
     public function testConditionalCheck()
     {
         $file_checker = new FileChecker(
@@ -544,6 +637,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayKey()
     {
         $file_checker = new FileChecker(
@@ -565,6 +661,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string)$context->vars_in_scope['$e']);
     }
 
+    /**
+     * @return void
+     */
     public function testVariableKeyArrayCreate()
     {
         $stmts = self::$parser->parse('<?php
@@ -583,6 +682,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<string, array<string, array<int, string>>>', (string) $context->vars_in_scope['$c']);
     }
 
+    /**
+     * @return void
+     */
     public function testAssignExplicitValueToGeneric()
     {
         $stmts = self::$parser->parse('<?php
@@ -597,6 +699,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<string, array<string, string>>', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testAdditionWithEmpty()
     {
         $stmts = self::$parser->parse('<?php
@@ -613,6 +718,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$b']);
     }
 
+    /**
+     * @return void
+     */
     public function testAdditionDifferentType()
     {
         $stmts = self::$parser->parse('<?php
@@ -629,6 +737,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int, string|int>', (string) $context->vars_in_scope['$b']);
     }
 
+    /**
+     * @return void
+     */
     public function testPreset1DArrayTypeWithVarKeys()
     {
         $stmts = self::$parser->parse('<?php
@@ -645,6 +756,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testPreset2DArrayTypeWithVarKeys()
     {
         $stmts = self::$parser->parse('<?php
@@ -663,8 +777,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidArrayAssignment
+     * @return                   void
      */
     public function testInvalidArrayAccess()
     {
@@ -679,8 +794,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedStringOffsetAssignment
+     * @return                   void
      */
     public function testMixedStringOffsetAssignment()
     {
@@ -698,8 +814,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeCoercion
+     * @return                   void
      */
     public function testMixedArrayArgument()
     {

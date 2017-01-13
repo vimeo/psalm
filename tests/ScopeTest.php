@@ -16,6 +16,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     protected $project_checker;
     protected static $file_filter;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -23,6 +26,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -30,9 +36,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, first seen
-     *  on line 3
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, first seen on line 3
+     * @return                   void
      */
     public function testPossiblyUndefinedVarInIf()
     {
@@ -48,6 +54,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNewVarInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -65,6 +74,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNewVarInIfWithElseReturn()
     {
         $stmts = self::$parser->parse('<?php
@@ -83,9 +95,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first
-     *  seen on line 3
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
+     * @return                   void
      */
     public function testPossiblyUndefinedArrayInIf()
     {
@@ -102,9 +114,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first
-     *  seen on line 3
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable $array, first seen on line 3
+     * @return                   void
      */
     public function testPossiblyUndefinedArrayInForeach()
     {
@@ -121,9 +133,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable $array, first
-     *  seen on line 4
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable $array, first seen on line 4
+     * @return                   void
      */
     public function testPossiblyUndefinedArrayInWhileAndForeach()
     {
@@ -142,9 +154,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $car, first
-     *  seen on line 3
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $car, first seen on line 3
+     * @return                   void
      */
     public function testPossiblyUndefinedVariableInForeach()
     {
@@ -160,6 +172,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSwitchVariableWithContinue()
     {
         $stmts = self::$parser->parse('<?php
@@ -183,6 +198,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSwitchVariableWithContinueAndIfs()
     {
         $stmts = self::$parser->parse('<?php
@@ -212,6 +230,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSwitchVariableWithFallthrough()
     {
         $stmts = self::$parser->parse('<?php
@@ -235,6 +256,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSwitchVariableWithFallthroughStatement()
     {
         $stmts = self::$parser->parse('<?php
@@ -260,6 +284,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testTryCatchVar()
     {
         $stmts = self::$parser->parse('<?php
@@ -278,6 +305,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
+    /**
+     * @return void
+     */
     public function testWhileVar()
     {
         $stmts = self::$parser->parse('<?php
@@ -295,6 +325,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
+    /**
+     * @return void
+     */
     public function testDoWhileVar()
     {
         $stmts = self::$parser->parse('<?php
@@ -312,6 +345,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
+    /**
+     * @return void
+     */
     public function testAssignmentInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -324,6 +360,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNegatedAssignmentInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -340,6 +379,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAssignInElseIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -354,6 +396,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testIfNotEqualsFalse()
     {
         $stmts = self::$parser->parse('<?php
@@ -366,6 +411,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testIfNotEqualsNull()
     {
         $stmts = self::$parser->parse('<?php
@@ -378,6 +426,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testIfNullNotEquals()
     {
         $stmts = self::$parser->parse('<?php
@@ -390,6 +441,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testIfNullEquals()
     {
         $stmts = self::$parser->parse('<?php
@@ -404,6 +458,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testPassByRefInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -416,6 +473,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testPassByRefInIfCheckAfter()
     {
         $stmts = self::$parser->parse('<?php
@@ -429,6 +489,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testPassByRefInIfWithBoolean()
     {
         $stmts = self::$parser->parse('<?php
@@ -443,9 +506,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, first
-     *  seen on line 4
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, first seen on line 4
+     * @return                   void
      */
     public function testPossiblyUndefinedVariableInForeachAndIf()
     {
@@ -466,6 +529,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testFunctionExists()
     {
         $stmts = self::$parser->parse('<?php
@@ -478,6 +544,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNestedPropertyFetchInElseif()
     {
         $stmts = self::$parser->parse('<?php
@@ -504,6 +573,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testGlobalReturn()
     {
         $stmts = self::$parser->parse('<?php
@@ -520,6 +592,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testStatic()
     {
         $stmts = self::$parser->parse('<?php
@@ -535,8 +610,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidGlobal
+     * @return                   void
      */
     public function testInvalidGlobal()
     {
@@ -551,8 +627,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidStaticVariable
+     * @return                   void
      */
     public function testThisInStatic()
     {
@@ -568,6 +645,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testTwoVarLogic()
     {
         $stmts = self::$parser->parse('<?php
@@ -589,6 +669,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testThreeVarLogic()
     {
         $stmts = self::$parser->parse('<?php
@@ -614,8 +697,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullArgument
+     * @return                   void
      */
     public function testThreeVarLogicWithChange()
     {
@@ -644,8 +728,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullArgument
+     * @return                   void
      */
     public function testThreeVarLogicWithException()
     {
@@ -675,6 +760,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNegateAssertionAndOther()
     {
         $stmts = self::$parser->parse('<?php
@@ -691,6 +779,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testRepeatAssertionWithOther()
     {
         $stmts = self::$parser->parse('<?php
@@ -709,6 +800,9 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testRefineORedType()
     {
         $stmts = self::$parser->parse('<?php

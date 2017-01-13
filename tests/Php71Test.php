@@ -15,11 +15,17 @@ class Php71Test extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -29,6 +35,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -46,6 +55,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('string|null', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testNullableArgument()
     {
         $stmts = self::$parser->parse('<?php
@@ -63,6 +75,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testPrivateClassConst()
     {
         $stmts = self::$parser->parse('<?php
@@ -82,8 +97,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleClassConstant
+     * @return                   void
      */
     public function testInvalidPrivateClassConstFetch()
     {
@@ -102,8 +118,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleClassConstant
+     * @return                   void
      */
     public function testInvalidPrivateClassConstFetchFromSubclass()
     {
@@ -126,6 +143,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testProtectedClassConst()
     {
         $stmts = self::$parser->parse('<?php
@@ -148,8 +168,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleClassConstant
+     * @return                   void
      */
     public function testInvalidProtectedClassConstFetch()
     {
@@ -167,6 +188,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testPublicClassConstFetch()
     {
         $stmts = self::$parser->parse('<?php
@@ -193,6 +217,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayDestructuring()
     {
         $stmts = self::$parser->parse('<?php
@@ -217,6 +244,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('string|int', (string) $context->vars_in_scope['$name2']);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayDestructuringInForeach()
     {
         $stmts = self::$parser->parse('<?php
@@ -237,6 +267,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayDestructuringWithKeys()
     {
         $stmts = self::$parser->parse('<?php
@@ -261,6 +294,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$name2']);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayListDestructuringInForeachWithKeys()
     {
         $stmts = self::$parser->parse('<?php
@@ -286,6 +322,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|string', (string) $context->vars_in_scope['$last_name']);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayDestructuringInForeachWithKeys()
     {
         $stmts = self::$parser->parse('<?php
@@ -311,6 +350,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|string', (string) $context->vars_in_scope['$last_name']);
     }
 
+    /**
+     * @return void
+     */
     public function testIterableArg()
     {
         $stmts = self::$parser->parse('<?php
@@ -334,8 +376,9 @@ class Php71Test extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidArgument
+     * @return                   void
      */
     public function testInvalidIterableArg()
     {

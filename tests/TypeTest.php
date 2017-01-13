@@ -15,6 +15,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -23,6 +26,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $config->throw_exception = true;
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -31,6 +37,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodCall()
     {
@@ -49,6 +56,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithTernaryGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -68,6 +78,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithTernaryIfNullGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -87,6 +100,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithTernaryEmptyGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -106,6 +122,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithTernaryIsNullGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -125,6 +144,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithIfGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -148,6 +170,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodCallWithThis()
     {
@@ -169,6 +192,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithTernaryGuardWithThis()
     {
         $stmts = self::$parser->parse('<?php
@@ -192,6 +218,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithTernaryIfNullGuardWithThis()
     {
         $stmts = self::$parser->parse('<?php
@@ -215,6 +244,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithIfGuardWithThis()
     {
         $stmts = self::$parser->parse('<?php
@@ -243,6 +275,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithWrongIfGuard()
     {
@@ -270,6 +303,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithExceptionThrown()
     {
         $stmts = self::$parser->parse('<?php
@@ -293,6 +329,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithRedefinitionAndElse()
     {
         $stmts = self::$parser->parse('<?php
@@ -324,6 +363,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithWrongBooleanIfGuard()
     {
@@ -351,6 +391,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithBooleanIfGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -377,6 +420,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithNonNullBooleanIfGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -403,6 +449,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithNonNullBooleanIfGuardAndBooleanAnd()
     {
         $stmts = self::$parser->parse('<?php
@@ -430,6 +479,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
 
+    /**
+     * @return void
+     */
     public function testNullableMethodInConditionWithIfGuardBefore()
     {
         $stmts = self::$parser->parse('<?php
@@ -465,6 +517,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithWrongIfGuardBefore()
     {
@@ -494,6 +547,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithBooleanIfGuardBefore()
     {
         $stmts = self::$parser->parse('<?php
@@ -524,6 +580,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithWrongBooleanIfGuardBefore()
     {
@@ -553,6 +610,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedRedefinition()
     {
         $stmts = self::$parser->parse('<?php
@@ -576,6 +636,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedRedefinitionInElse()
     {
         $stmts = self::$parser->parse('<?php
@@ -604,6 +667,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testMethodWithMeaninglessCheck()
     {
@@ -630,6 +694,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithGuardedNestedIncompleteRedefinition()
     {
@@ -663,6 +728,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedNestedRedefinition()
     {
         $stmts = self::$parser->parse('<?php
@@ -698,6 +766,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedSwitchRedefinition()
     {
         $stmts = self::$parser->parse('<?php
@@ -733,6 +804,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionNoDefault()
     {
@@ -765,6 +837,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionEmptyDefault()
     {
@@ -798,6 +871,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedSwitchRedefinitionDueToException()
     {
         $stmts = self::$parser->parse('<?php
@@ -832,6 +908,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedSwitchThatAlwaysReturns()
     {
         $stmts = self::$parser->parse('<?php
@@ -863,6 +942,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedNestedRedefinitionWithReturn()
     {
         $stmts = self::$parser->parse('<?php
@@ -894,6 +976,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedNestedRedefinitionWithElseReturn()
     {
         $stmts = self::$parser->parse('<?php
@@ -927,6 +1012,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testNullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn()
     {
@@ -962,6 +1048,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedNestedRedefinitionWithElseifReturn()
     {
         $stmts = self::$parser->parse('<?php
@@ -996,6 +1085,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedSwitchBreak()
     {
         $stmts = self::$parser->parse('<?php
@@ -1025,6 +1117,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullableMethodWithGuardedRedefinitionOnThis()
     {
         $stmts = self::$parser->parse('<?php
@@ -1053,6 +1148,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testArrayUnionTypeAssertion()
     {
         $stmts = self::$parser->parse('<?php
@@ -1070,6 +1168,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayUnionTypeAssertionWithIsArray()
     {
         $stmts = self::$parser->parse('<?php
@@ -1087,6 +1188,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
 
+    /**
+     * @return void
+     */
     public function testVariableReassignment()
     {
         $stmts = self::$parser->parse('<?php
@@ -1112,6 +1216,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testVariableReassignmentInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -1141,6 +1248,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testVariableReassignmentInIfWithOutsideCall()
     {
@@ -1171,6 +1279,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testUnionTypeFlow()
     {
         $stmts = self::$parser->parse('<?php
@@ -1209,6 +1320,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testUnionTypeFlowWithThrow()
     {
         $stmts = self::$parser->parse('<?php
@@ -1233,6 +1347,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testUnionTypeFlowWithElseif()
     {
         $stmts = self::$parser->parse('<?php
@@ -1261,6 +1378,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testUnnecessaryInstanceof()
     {
@@ -1282,6 +1400,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testUnNegatableInstanceof()
     {
@@ -1305,6 +1424,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testTypeAdjustment()
     {
         $stmts = self::$parser->parse('<?php
@@ -1322,6 +1444,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
 
+    /**
+     * @return void
+     */
     public function testTypeMixedAdjustment()
     {
         $stmts = self::$parser->parse('<?php
@@ -1341,6 +1466,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
 
+    /**
+     * @return void
+     */
     public function testTypeAdjustmentIfNull()
     {
         $stmts = self::$parser->parse('<?php
@@ -1359,6 +1487,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('A|B', (string) $context->vars_in_scope['$var']);
     }
 
+    /**
+     * @return void
+     */
     public function testWhileTrue()
     {
         $stmts = self::$parser->parse('<?php
@@ -1385,6 +1516,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testWrongParam()
     {
@@ -1404,6 +1536,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testPassingParam()
     {
         $stmts = self::$parser->parse('<?php
@@ -1422,6 +1557,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullToNullableParam()
     {
         $stmts = self::$parser->parse('<?php
@@ -1442,6 +1580,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testIntToNullableObjectParam()
     {
@@ -1461,6 +1600,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testObjectToNullableObjectParam()
     {
         $stmts = self::$parser->parse('<?php
@@ -1481,6 +1623,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
+     * @return            void
      */
     public function testParamCoercionWithBadArg()
     {
@@ -1505,6 +1648,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testParamCoercion()
     {
         $stmts = self::$parser->parse('<?php
@@ -1528,6 +1674,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testParamElseifCoercion()
     {
         $stmts = self::$parser->parse('<?php
@@ -1558,6 +1707,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAssignInsideForeach()
     {
         $stmts = self::$parser->parse('<?php
@@ -1577,6 +1729,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
     }
 
+    /**
+     * @return void
+     */
     public function testAssignInsideForeachWithBreak()
     {
         $stmts = self::$parser->parse('<?php
@@ -1598,8 +1753,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullReference
+     * @return                   void
      */
     public function testNullCheckInsideForeachWithNoLeaveStatement()
     {
@@ -1631,6 +1787,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNullCheckInsideForeachWithContinue()
     {
         $stmts = self::$parser->parse('<?php
@@ -1661,6 +1820,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testTypeRefinementWithIsNumeric()
     {
         $stmts = self::$parser->parse('<?php
@@ -1676,6 +1838,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testPlusPlus()
     {
         $stmts = self::$parser->parse('<?php
@@ -1690,6 +1855,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $this->assertSame('int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testTypedValueAssertion()
     {
         $context = new Context('somefile.php');

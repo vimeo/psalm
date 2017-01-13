@@ -13,21 +13,33 @@ class TypeParseTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return \Psalm\Type\Atomic
+     */
     private static function getAtomic($string)
     {
         return array_values(Type::parseString($string)->types)[0];
     }
 
+    /**
+     * @return void
+     */
     public function testIntOrString()
     {
         $this->assertEquals('int|string', (string) Type::parseString('int|string'));
     }
 
+    /**
+     * @return void
+     */
     public function testArray()
     {
         $this->assertEquals('array<int, int>', (string) Type::parseString('array<int, int>'));
@@ -36,11 +48,17 @@ class TypeParseTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<int|string, string>', (string) Type::parseString('array<int|string, string>'));
     }
 
+    /**
+     * @return void
+     */
     public function testGeneric()
     {
         $this->assertEquals('B<int>', (string) Type::parseString('B<int>'));
     }
 
+    /**
+     * @return void
+     */
     public function testPhpDocStyle()
     {
         $this->assertEquals('array<mixed, A>', (string) Type::parseString('A[]'));
@@ -51,6 +69,9 @@ class TypeParseTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<mixed, A|B>|C', (string) Type::parseString('A[]|B[]|C'));
     }
 
+    /**
+     * @return void
+     */
     public function testObjectLike()
     {
         $this->assertEquals('array{a:int, b:string}', (string) Type::parseString('array{a:int, b:string}'));

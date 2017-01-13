@@ -15,11 +15,17 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -27,6 +33,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testInstanceOfStringOffset()
     {
         $stmts = self::$parser->parse('<?php
@@ -44,6 +53,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testInstanceOfIntOffset()
     {
         $context = new Context('somefile.php');
@@ -62,6 +74,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNotEmptyStringOffset()
     {
         $context = new Context('somefile.php');
@@ -82,6 +97,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNotEmptyIntOffset()
     {
         $context = new Context('somefile.php');
@@ -103,8 +121,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidArrayAccess
+     * @return                   void
      */
     public function testInvalidArrayAccess()
     {
@@ -119,8 +138,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedArrayAccess
+     * @return                   void
      */
     public function testMixedArrayAccess()
     {
@@ -138,8 +158,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedArrayOffset
+     * @return                   void
      */
     public function testMixedArrayOffset()
     {
@@ -157,8 +178,9 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullArrayAccess
+     * @return                   void
      */
     public function testNullArrayAccess()
     {

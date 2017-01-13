@@ -15,11 +15,17 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -27,6 +33,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function testRegularAddition()
     {
         $stmts = self::$parser->parse('<?php
@@ -39,8 +48,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidOperand
+     * @return                   void
      */
     public function testBadAddition()
     {
@@ -53,6 +63,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testDifferingNumericTypesAdditionInWeakMode()
     {
         $stmts = self::$parser->parse('<?php
@@ -65,8 +78,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidOperand
+     * @return                   void
      */
     public function testDifferingNumericTypesAdditionInStrictMode()
     {
@@ -81,6 +95,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNumericAddition()
     {
         $stmts = self::$parser->parse('<?php
@@ -96,6 +113,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testConcatenation()
     {
         $stmts = self::$parser->parse('<?php
@@ -107,6 +127,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testConcatenationWithNumberInWeakMode()
     {
         $stmts = self::$parser->parse('<?php
@@ -119,8 +142,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidOperand
+     * @return                   void
      */
     public function testConcatenationWithNumberInStrictMode()
     {
@@ -136,8 +160,9 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidOperand
+     * @return                   void
      */
     public function testAddArrayToNumber()
     {

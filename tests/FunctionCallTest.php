@@ -15,11 +15,17 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -28,8 +34,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
      */
     public function testInvalidScalarArgument()
     {
@@ -44,8 +51,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedArgument
+     * @return                   void
      */
     public function testMixedArgument()
     {
@@ -64,8 +72,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullArgument
+     * @return                   void
      */
     public function testNullArgument()
     {
@@ -80,8 +89,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TooFewArguments
+     * @return                   void
      */
     public function testTooFewArguments()
     {
@@ -96,8 +106,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TooManyArguments
+     * @return                   void
      */
     public function testTooManyArguments()
     {
@@ -112,8 +123,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeCoercion
+     * @return                   void
      */
     public function testTypeCoercion()
     {
@@ -130,6 +142,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testTypedArrayWithDefault()
     {
         $stmts = self::$parser->parse('<?php
@@ -147,8 +162,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage DuplicateParam
+     * @return                   void
      */
     public function testDuplicateParam()
     {
@@ -161,6 +177,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testByRef()
     {
         $stmts = self::$parser->parse('<?php
@@ -174,8 +193,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidPassByReference
+     * @return                   void
      */
     public function testBadByRef()
     {
@@ -190,6 +210,9 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNamespaced()
     {
         $stmts = self::$parser->parse('<?php

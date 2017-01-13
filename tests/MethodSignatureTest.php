@@ -15,6 +15,9 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,9 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -29,8 +35,9 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage Method B::fooFoo has more arguments than parent method A::fooFoo
+     * @return                   void
      */
     public function testMoreArguments()
     {
@@ -54,8 +61,9 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage Method B::fooFoo has fewer arguments than parent method A::fooFoo
+     * @return                   void
      */
     public function testFewerArguments()
     {
@@ -79,8 +87,9 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage Argument 1 of B::fooFoo has wrong type 'bool', expecting 'int' as defined by A::foo
+     * @return                   void
      */
     public function testDifferentArguments()
     {

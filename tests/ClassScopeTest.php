@@ -15,6 +15,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -29,8 +35,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleMethod
+     * @return                   void
      */
     public function testInaccessiblePrivateMethod()
     {
@@ -49,8 +56,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleMethod
+     * @return                   void
      */
     public function testInaccessibleProtectedMethod()
     {
@@ -68,6 +76,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessiblePrivateMethodFromSubclass()
     {
         $stmts = self::$parser->parse('<?php
@@ -87,8 +98,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleMethod
+     * @return                   void
      */
     public function testInaccessiblePrivateMethodFromSubclass()
     {
@@ -110,6 +122,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedMethodFromSubclass()
     {
         $stmts = self::$parser->parse('<?php
@@ -129,6 +144,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedMethodFromOtherSubclass()
     {
         $stmts = self::$parser->parse('<?php
@@ -151,8 +169,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleMethod
+     * @return                   void
      */
     public function testInaccessibleProtectedMethodFromOtherSubclass()
     {
@@ -180,8 +199,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleProperty
+     * @return                   void
      */
     public function testInaccessiblePrivateProperty()
     {
@@ -199,8 +219,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleProperty
+     * @return                   void
      */
     public function testInaccessibleProtectedProperty()
     {
@@ -218,8 +239,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleProperty
+     * @return                   void
      */
     public function testInaccessiblePrivatePropertyFromSubclass()
     {
@@ -241,8 +263,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleProperty
+     * @return                   void
      */
     public function testInaccessibleStaticPrivateProperty()
     {
@@ -260,8 +283,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleProperty
+     * @return                   void
      */
     public function testInaccessibleStaticProtectedProperty()
     {
@@ -279,8 +303,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InaccessibleProperty
+     * @return                   void
      */
     public function testInaccessibleStaticPrivatePropertyFromSubclass()
     {
@@ -301,6 +326,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedPropertyFromSubclass()
     {
         $stmts = self::$parser->parse('<?php
@@ -320,6 +348,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedPropertyFromGreatGrandparent()
     {
         $stmts = self::$parser->parse('<?php
@@ -343,6 +374,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleProtectedPropertyFromOtherSubclass()
     {
         $stmts = self::$parser->parse('<?php
@@ -366,6 +400,9 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testAccessibleStaticPropertyFromSubclass()
     {
         $stmts = self::$parser->parse('<?php

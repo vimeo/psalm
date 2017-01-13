@@ -14,11 +14,17 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -34,6 +40,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         return array_values(Type::parseString($string)->types)[0];
     }
 
+    /**
+     * @return void
+     */
     public function testIntOrString()
     {
         $this->assertEquals(
@@ -45,6 +54,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayOfIntOrString()
     {
         $this->assertEquals(
@@ -56,6 +68,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayOfIntOrAlsoString()
     {
         $this->assertEquals(
@@ -67,6 +82,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testEmptyArrays()
     {
         $this->assertEquals(
@@ -78,6 +96,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayStringOrEmptyArray()
     {
         $this->assertEquals(
@@ -89,6 +110,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayMixedOrString()
     {
         $this->assertEquals(
@@ -100,6 +124,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayMixedOrStringKeys()
     {
         $this->assertEquals(
@@ -111,6 +138,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayMixedOrEmpty()
     {
         $this->assertEquals(
@@ -122,6 +152,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testArrayBigCombination()
     {
         $this->assertEquals(
@@ -133,6 +166,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testFalseDestruction()
     {
         $this->assertEquals(
@@ -144,6 +180,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testOnlyFalse()
     {
         $this->assertEquals(
@@ -154,6 +193,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testFalseFalseDestruction()
     {
         $this->assertEquals(
@@ -165,6 +207,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testAAndAOfB()
     {
         $this->assertEquals(
@@ -176,6 +221,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testCombineObjectType()
     {
         $this->assertEquals(
@@ -195,6 +243,9 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testMultipleValuedArray()
     {
         $stmts = self::$parser->parse('<?php

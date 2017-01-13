@@ -15,11 +15,17 @@ class Php56Test extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -27,6 +33,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testConstArray()
     {
         $stmts = self::$parser->parse('<?php
@@ -40,6 +49,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testConstFeatures()
     {
         $stmts = self::$parser->parse('<?php
@@ -75,6 +87,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('float|int', (string) $context->vars_in_scope['$g']);
     }
 
+    /**
+     * @return void
+     */
     public function testVariadic()
     {
         $stmts = self::$parser->parse('<?php
@@ -96,6 +111,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testVariadicArray()
     {
         $stmts = self::$parser->parse('<?php
@@ -124,6 +142,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testArgumentUnpacking()
     {
         $stmts = self::$parser->parse('<?php
@@ -146,6 +167,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testExponentiation()
     {
         $stmts = self::$parser->parse('<?php
@@ -158,6 +182,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testConstantAliasInNamespace()
     {
         $stmts = self::$parser->parse('<?php
@@ -178,6 +205,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testConstantAliasInClass()
     {
         $stmts = self::$parser->parse('<?php
@@ -203,6 +233,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testFunctionAliasInNamespace()
     {
         $stmts = self::$parser->parse('<?php
@@ -226,6 +259,9 @@ class Php56Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testFunctionAliasInClass()
     {
         $stmts = self::$parser->parse('<?php

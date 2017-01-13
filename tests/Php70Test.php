@@ -15,11 +15,17 @@ class Php70Test extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -27,6 +33,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testFunctionTypeHints()
     {
         $stmts = self::$parser->parse('<?php
@@ -50,6 +59,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testMethodTypeHints()
     {
         $stmts = self::$parser->parse('<?php
@@ -75,6 +87,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testNullCoalesce()
     {
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
@@ -89,6 +104,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testSpaceship()
     {
         $stmts = self::$parser->parse('<?php
@@ -101,6 +119,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testDefineArray()
     {
         $stmts = self::$parser->parse('<?php
@@ -119,6 +140,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testAnonymousClass()
     {
         $stmts = self::$parser->parse('<?php
@@ -150,6 +174,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testAnonymousClassFunctionReturnType()
     {
         $stmts = self::$parser->parse('<?php
@@ -171,6 +198,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testGeneratorWithReturn()
     {
         $stmts = self::$parser->parse('<?php
@@ -192,6 +222,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testGeneratorDelegation()
     {
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
@@ -248,6 +281,9 @@ class Php70Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('mixed', (string) $context->vars_in_scope['$gen2']);
     }
 
+    /**
+     * @return void
+     */
     public function testMultipleUse()
     {
         $stmts = self::$parser->parse('<?php

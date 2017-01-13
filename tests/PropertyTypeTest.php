@@ -16,11 +16,17 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     protected $project_checker;
     protected static $file_filter;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -29,6 +35,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testNewVarInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -56,6 +65,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testPropertyWithoutTypeSuppressingIssue()
     {
         Config::getInstance()->setCustomErrorLevel('MissingPropertyType', Config::REPORT_SUPPRESS);
@@ -74,8 +86,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedPropertyAssignment
+     * @return                   void
      */
     public function testUndefinedPropertyAssignment()
     {
@@ -91,8 +104,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedPropertyFetch
+     * @return                   void
      */
     public function testUndefinedPropertyFetch()
     {
@@ -108,8 +122,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedThisPropertyAssignment
+     * @return                   void
      */
     public function testUndefinedThisPropertyAssignment()
     {
@@ -126,8 +141,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedThisPropertyFetch
+     * @return                   void
      */
     public function testUndefinedThisPropertyFetch()
     {
@@ -144,8 +160,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MissingPropertyDeclaration
+     * @return                   void
      */
     public function testMissingPropertyDeclaration()
     {
@@ -164,8 +181,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MissingPropertyType
+     * @return                   void
      */
     public function testMissingPropertyType()
     {
@@ -180,8 +198,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidPropertyAssignment
+     * @return                   void
      */
     public function testBadAssignment()
     {
@@ -202,8 +221,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidPropertyAssignment
+     * @return                   void
      */
     public function testBadAssignmentAsWell()
     {
@@ -217,8 +237,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidPropertyFetch
+     * @return                   void
      */
     public function testBadFetch()
     {
@@ -231,6 +252,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testSharedPropertyInIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -257,6 +281,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
     }
 
+    /**
+     * @return void
+     */
     public function testSharedPropertyInElseIf()
     {
         $stmts = self::$parser->parse('<?php
@@ -287,8 +314,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedPropertyFetch
+     * @return                   void
      */
     public function testMixedPropertyFetch()
     {
@@ -313,8 +341,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MixedPropertyAssignment
+     * @return                   void
      */
     public function testMixedPropertyAssignment()
     {
@@ -339,8 +368,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullPropertyAssignment
+     * @return                   void
      */
     public function testNullablePropertyAssignment()
     {
@@ -361,8 +391,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage NullPropertyFetch
+     * @return                   void
      */
     public function testNullablePropertyFetch()
     {
@@ -382,6 +413,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNullablePropertyCheck()
     {
         $stmts = self::$parser->parse('<?php
@@ -407,6 +441,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNullablePropertyAfterGuard()
     {
         $stmts = self::$parser->parse('<?php
@@ -429,6 +466,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNullableStaticPropertyWithIfCheck()
     {
         $stmts = self::$parser->parse('<?php
@@ -451,6 +491,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testReflectionProperties()
     {
         $stmts = self::$parser->parse('<?php
@@ -467,6 +510,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testGrandparentReflectedProperties()
     {
         $stmts = self::$parser->parse('<?php
@@ -480,6 +526,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('DOMDocument', (string) $context->vars_in_scope['$owner']);
     }
 
+    /**
+     * @return void
+     */
     public function testGoodArrayProperties()
     {
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
@@ -509,8 +558,9 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidPropertyAssignment
+     * @return                   void
      */
     public function testBadArrayProperty()
     {

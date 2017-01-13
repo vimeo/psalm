@@ -15,6 +15,9 @@ class Php55Test extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,12 +25,18 @@ class Php55Test extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testGenerator()
     {
         $stmts = self::$parser->parse('<?php
@@ -60,6 +69,9 @@ class Php55Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('null|int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testFinally()
     {
         $stmts = self::$parser->parse('<?php
@@ -76,6 +88,9 @@ class Php55Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testForeachList()
     {
         $stmts = self::$parser->parse('<?php
@@ -94,6 +109,9 @@ class Php55Test extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayStringDereferencing()
     {
         $stmts = self::$parser->parse('<?php
@@ -108,6 +126,9 @@ class Php55Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$b']);
     }
 
+    /**
+     * @return void
+     */
     public function testClassString()
     {
         $stmts = self::$parser->parse('<?php

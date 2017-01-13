@@ -15,11 +15,17 @@ class IncludeTest extends PHPUnit_Framework_TestCase
     protected $project_checker;
     protected static $file_filter;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         $config = new TestConfig();
@@ -28,6 +34,9 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testBasicRequire()
     {
         $this->project_checker->registerFile(
@@ -55,6 +64,9 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         $file2_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testNestedRequire()
     {
         $this->project_checker->registerFile(
@@ -95,6 +107,9 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         $file2_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testRequireNamespace()
     {
         $this->project_checker->registerFile(
@@ -124,6 +139,9 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         $file2_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testRequireFunction()
     {
         $this->project_checker->registerFile(
@@ -148,6 +166,9 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         $file2_checker->visitAndAnalyzeMethods();
     }
 
+    /**
+     * @return void
+     */
     public function testRequireNamespaceWithUse()
     {
         $this->project_checker->registerFile(

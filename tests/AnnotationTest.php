@@ -15,6 +15,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,12 +25,18 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @return void
+     */
     public function testDeprecatedMethod()
     {
         $stmts = self::$parser->parse('<?php
@@ -46,8 +55,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage DeprecatedMethod
+     * @return                   void
      */
     public function testDeprecatedMethodWithCall()
     {
@@ -69,8 +79,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidDocblock
+     * @return                   void
      */
     public function testInvalidDocblockParam()
     {
@@ -88,8 +99,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the argument list for fooBar
+     * @return                   void
      */
     public function testExtraneousDocblockParam()
     {
@@ -107,8 +119,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidDocblock - somefile.php:2 - Badly-formatted @param in docblock for fooBar
+     * @return                   void
      */
     public function testMissingParamType()
     {
@@ -126,8 +139,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidDocblock - somefile.php:2 - Badly-formatted @param in docblock for fooBar
+     * @return                   void
      */
     public function testMissingParamVar()
     {
@@ -145,8 +159,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidDocblock
+     * @return                   void
      */
     public function testInvalidDocblockReturn()
     {
@@ -163,6 +178,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testValidDocblockReturn()
     {
         $stmts = self::$parser->parse('<?php
@@ -193,6 +211,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testNopType()
     {
         $stmts = self::$parser->parse('<?php
@@ -207,6 +228,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
 
+    /**
+     * @return void
+     */
     public function testGoodDocblock()
     {
         $stmts = self::$parser->parse('<?php
@@ -225,6 +249,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testGoodDocblockInNamespace()
     {
         $stmts = self::$parser->parse('<?php

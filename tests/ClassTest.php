@@ -15,6 +15,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /**
+     * @return void
+     */
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
@@ -22,6 +25,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $config = new TestConfig();
     }
 
+    /**
+     * @return void
+     */
     public function setUp()
     {
         FileChecker::clearCache();
@@ -29,8 +35,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedClass
+     * @return                   void
      */
     public function testUndefinedClass()
     {
@@ -44,8 +51,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidClass
+     * @return                   void
      */
     public function testWrongCaseClass()
     {
@@ -60,8 +68,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScope
+     * @return                   void
      */
     public function testInvalidThisFetch()
     {
@@ -75,8 +84,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScope
+     * @return                   void
      */
     public function testInvalidThisAssignment()
     {
@@ -90,8 +100,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedConstant
+     * @return                   void
      */
     public function testUndefinedConstant()
     {
@@ -105,8 +116,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedConstant
+     * @return                   void
      */
     public function testUndefinedClassConstant()
     {
@@ -120,6 +132,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testSingleFileInheritance()
     {
         $stmts = self::$parser->parse('<?php
@@ -142,8 +157,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidParent
+     * @return                   void
      */
     public function testInheritanceLoopOne()
     {
@@ -158,8 +174,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidParent
+     * @return                   void
      */
     public function testInheritanceLoopTwo()
     {
@@ -175,8 +192,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidParent
+     * @return                   void
      */
     public function testInheritanceLoopThree()
     {
@@ -192,6 +210,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testConstSandwich()
     {
         $stmts = self::$parser->parse('<?php
@@ -204,6 +225,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testDeferredReference()
     {
         $stmts = self::$parser->parse('<?php
@@ -222,8 +246,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedConstant
+     * @return                   void
      */
     public function testInvalidDeferredReference()
     {
@@ -241,6 +266,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testMoreCyclicalReferences()
     {
         $stmts = self::$parser->parse('<?php
@@ -265,6 +293,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testReferenceToSubclassInMethod()
     {
         $stmts = self::$parser->parse('<?php
@@ -289,6 +320,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testReferenceToClassInMethod()
     {
         $stmts = self::$parser->parse('<?php
@@ -304,8 +338,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage OverriddenMethodAccess
+     * @return                   void
      */
     public function testOverridePublicAccessLevelToPrivate()
     {
@@ -324,8 +359,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage OverriddenMethodAccess
+     * @return                   void
      */
     public function testOverridePublicAccessLevelToProtected()
     {
@@ -344,8 +380,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage OverriddenMethodAccess
+     * @return                   void
      */
     public function testOverrideProtectedAccessLevelToPrivate()
     {
@@ -363,6 +400,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testOverrideProtectedAccessLevelToPublic()
     {
         $stmts = self::$parser->parse('<?php
