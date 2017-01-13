@@ -101,12 +101,13 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     /**
      * @param  Context $context
      * @param  bool    $preserve_checkers
+     * @param  bool    $update_docblocks
      * @return void
      */
-    public function analyze(Context $context, $preserve_checkers = false)
+    public function analyze(Context $context, $preserve_checkers = false, $update_docblocks = false)
     {
         foreach ($this->class_checkers as $class_checker) {
-            $class_checker->analyze(null, $context);
+            $class_checker->analyze(null, $context, $update_docblocks);
         }
 
         if (!$preserve_checkers) {

@@ -128,7 +128,7 @@ if ($path_to_config) {
     ProjectChecker::setConfigXML($path_to_config);
 }
 
-$project_checker = new ProjectChecker($use_color, $show_info, $output_format, $debug);
+$project_checker = new ProjectChecker($use_color, $show_info, $output_format, $debug, $update_docblocks);
 
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 
@@ -139,9 +139,9 @@ if (array_key_exists('self-check', $options)) {
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check, $update_docblocks);
+            $project_checker->checkDir($path_to_check);
         } else {
-            $project_checker->checkFile($path_to_check, $update_docblocks);
+            $project_checker->checkFile($path_to_check);
         }
     }
 }

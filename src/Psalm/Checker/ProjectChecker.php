@@ -51,6 +51,11 @@ class ProjectChecker
     /**
      * @var boolean
      */
+    public $update_docblocks = false;
+
+    /**
+     * @var boolean
+     */
     public $cache = false;
 
     /**
@@ -146,16 +151,19 @@ class ProjectChecker
      * @param boolean $show_info
      * @param boolean $debug_output
      * @param string  $output_format
+     * @param bool    $update_docblocks
      */
     public function __construct(
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
-        $debug_output = false
+        $debug_output = false,
+        $update_docblocks = false
     ) {
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
+        $this->update_docblocks = $update_docblocks;
 
         if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON])) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
@@ -175,10 +183,9 @@ class ProjectChecker
 
     /**
      * @param  boolean $is_diff
-     * @param  boolean $update_docblocks
      * @return void
      */
-    public function check($is_diff = false, $update_docblocks = false)
+    public function check($is_diff = false)
     {
         $cwd = getcwd();
 
@@ -208,7 +215,7 @@ class ProjectChecker
 
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
             foreach ($this->config->getProjectDirectories() as $dir_name) {
-                $this->checkDirWithConfig($dir_name, $this->config, $update_docblocks);
+                $this->checkDirWithConfig($dir_name, $this->config);
             }
 
             $this->visitFiles();
@@ -277,16 +284,15 @@ class ProjectChecker
                 echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
             }
 
-            $file_checker->analyze();
+            $file_checker->analyze($this->update_docblocks);
         }
     }
 
     /**
      * @param  string  $dir_name
-     * @param  boolean $update_docblocks
      * @return void
      */
-    public function checkDir($dir_name, $update_docblocks = false)
+    public function checkDir($dir_name)
     {
         if (!$this->config) {
             $this->config = $this->getConfigForPath($dir_name);
@@ -299,7 +305,7 @@ class ProjectChecker
 
         $start_checks = (int)microtime(true);
 
-        $this->checkDirWithConfig($dir_name, $this->config, $update_docblocks);
+        $this->checkDirWithConfig($dir_name, $this->config);
 
         $this->visitFiles();
         $this->analyzeFiles();
@@ -310,10 +316,9 @@ class ProjectChecker
     /**
      * @param  string $dir_name
      * @param  Config $config
-     * @param  bool   $update_docblocks
      * @return void
      */
-    protected function checkDirWithConfig($dir_name, Config $config, $update_docblocks)
+    protected function checkDirWithConfig($dir_name, Config $config)
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -431,10 +436,9 @@ class ProjectChecker
 
     /**
      * @param  string  $file_name
-     * @param  bool    $update_docblocks
      * @return void
      */
-    public function checkFile($file_name, $update_docblocks = false)
+    public function checkFile($file_name)
     {
         if ($this->debug_output) {
             echo 'Checking ' . $file_name . PHP_EOL;
@@ -464,7 +468,7 @@ class ProjectChecker
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
         }
 
-        $file_checker->analyze();
+        $file_checker->analyze($this->update_docblocks);
 
         IssueBuffer::finish(false, $start_checks, $this->debug_output);
     }

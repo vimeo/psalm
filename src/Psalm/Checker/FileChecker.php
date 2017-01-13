@@ -210,10 +210,10 @@ class FileChecker extends SourceChecker implements StatementsSource
         $function_stmts = [];
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Class_
-                || $stmt instanceof PhpParser\Node\Stmt\Interface_
-                || $stmt instanceof PhpParser\Node\Stmt\Trait_
-                || $stmt instanceof PhpParser\Node\Stmt\Namespace_
+            if ($stmt instanceof PhpParser\Node\Stmt\Class_ ||
+                $stmt instanceof PhpParser\Node\Stmt\Interface_ ||
+                $stmt instanceof PhpParser\Node\Stmt\Trait_ ||
+                $stmt instanceof PhpParser\Node\Stmt\Namespace_
             ) {
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_ && $stmt->name) {
                     $class_checker = new ClassChecker($stmt, $this, $stmt->name);
@@ -296,7 +296,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $config = Config::getInstance();
 
         foreach ($this->namespace_checkers as $namespace_checker) {
-            $namespace_checker->analyze(clone $this->context, $preserve_checkers);
+            $namespace_checker->analyze(clone $this->context, $preserve_checkers, $update_docblocks);
         }
 
         foreach ($this->class_checkers as $class_checker) {
