@@ -28,6 +28,10 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
 
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage Method B::fooFoo has more arguments than parent method A::fooFoo
+     */
     public function testMoreArguments()
     {
         $stmts = self::$parser->parse('<?php
@@ -51,7 +55,7 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Psalm\Exception\CodeException
-     * @expectedExceptionMessage Method B::fooFoo has fewer arguments than parent method A::foo
+     * @expectedExceptionMessage Method B::fooFoo has fewer arguments than parent method A::fooFoo
      */
     public function testFewerArguments()
     {

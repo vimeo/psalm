@@ -302,4 +302,80 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage OverriddenMethodAccess
+     */
+    public function testOverridePublicAccessLevelToPrivate()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function fooFoo() : void {}
+        }
+
+        class B extends A {
+            private function fooFoo() : void {}
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage OverriddenMethodAccess
+     */
+    public function testOverridePublicAccessLevelToProtected()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function fooFoo() : void {}
+        }
+
+        class B extends A {
+            protected function fooFoo() : void {}
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage OverriddenMethodAccess
+     */
+    public function testOverrideProtectedAccessLevelToPrivate()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            protected function fooFoo() : void {}
+        }
+
+        class B extends A {
+            private function fooFoo() : void {}
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    public function testOverrideProtectedAccessLevelToPublic()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            protected function fooFoo() : void {}
+        }
+
+        class B extends A {
+            public function fooFoo() : void {}
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

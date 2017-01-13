@@ -181,19 +181,32 @@ class MethodChecker extends FunctionLikeChecker
             ? ClassLikeChecker::VISIBILITY_PRIVATE
             : ($method->isProtected() ? ClassLikeChecker::VISIBILITY_PROTECTED : ClassLikeChecker::VISIBILITY_PUBLIC);
 
-        $params = $method->getParameters();
 
-        $method_param_names = [];
-        $method_param_types = [];
+        $possible_params = FunctionChecker::getParamsFromCallMap($method_id);
 
-        $storage->params = [];
+        if ($possible_params === null) {
+            $params = $method->getParameters();
 
-        /** @var \ReflectionParameter $param */
-        foreach ($params as $param) {
-            $param_array = self::getReflectionParamData($param);
-            $storage->params[] = $param_array;
-            $storage->param_types[$param->name] = $param_array->type;
+            $storage->params = [];
+
+            /** @var \ReflectionParameter $param */
+            foreach ($params as $param) {
+                $param_array = self::getReflectionParamData($param);
+                $storage->params[] = $param_array;
+                $storage->param_types[$param->name] = $param_array->type;
+            }
+        } else {
+            $storage->params = $possible_params[0];
         }
+
+        $storage->required_param_count = 0;
+
+        foreach ($storage->params as $i => $param) {
+            if (!$param->is_optional) {
+                $storage->required_param_count = $i + 1;
+            }
+        }
+
         return null;
     }
 

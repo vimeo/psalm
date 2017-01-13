@@ -21,6 +21,7 @@ use Psalm\Issue\InvalidToString;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
+use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
@@ -149,11 +150,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         continue;
                     }
 
-                    $implemented_params = MethodChecker::getMethodParams($implemented_method_id);
+                    $implemented_storage = MethodChecker::getStorage($implemented_method_id);
 
-                    if ($implemented_params === null) {
+                    if ($implemented_storage->visibility < $storage->visibility) {
+                        $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+                        if (IssueBuffer::accepts(
+                            new OverriddenMethodAccess(
+                                'Method ' . $cased_method_id .' has different access level than ' . $parent_method_id,
+                                new CodeLocation($this, $this->function, true)
+                            )
+                        )) {
+                            return false;
+                        }
+
                         continue;
                     }
+
+                    $implemented_params = $implemented_storage->params;
 
                     foreach ($implemented_params as $i => $implemented_param) {
                         if (!isset($storage->params[$i])) {
@@ -163,7 +176,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                 new MethodSignatureMismatch(
                                     'Method ' . $cased_method_id .' has fewer arguments than parent method ' .
                                         $parent_method_id,
-                                    new CodeLocation($this, $this->function)
+                                    new CodeLocation($this, $this->function, true)
                                 )
                             )) {
                                 return false;
@@ -185,7 +198,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                         $storage->params[$i]->signature_type . '\', expecting \'' .
                                         $implemented_param->signature_type . '\' as defined by ' .
                                         $parent_method_id,
-                                    new CodeLocation($this, $this->function)
+                                    $storage->params[$i]->code_location ?: new CodeLocation($this, $this->function, true)
                                 )
                             )) {
                                 return false;
@@ -194,6 +207,25 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             $have_emitted = true;
                             break;
                         }
+                    }
+
+                    if ($storage->cased_name !== '__construct' &&
+                        $storage->required_param_count > $implemented_storage->required_param_count
+                    ) {
+                        $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+
+                        if (IssueBuffer::accepts(
+                            new MethodSignatureMismatch(
+                                'Method ' . $cased_method_id .' has more arguments than parent method ' .
+                                    $parent_method_id,
+                                new CodeLocation($this, $this->function, true)
+                            )
+                        )) {
+                            return false;
+                        }
+
+                        $have_emitted = true;
+                        break;
                     }
                 }
             }
@@ -416,6 +448,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $storage->file_name = $source->getFileName();
         $storage->namespace = $source->getNamespace();
 
+        $required_param_count = 0;
+        $i = 0;
+
         /** @var PhpParser\Node\Param $param */
         foreach ($function->getParams() as $param) {
             $param_array = self::getTranslatedParam($param, $source);
@@ -434,7 +469,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $storage->param_types[$param_array->name] = $param_array->type;
             $storage->params[] = $param_array;
+
+            if (!$param_array->is_optional) {
+                $required_param_count = $i + 1;
+            }
+
+            $i++;
         }
+
+        $storage->required_param_count = $required_param_count;
 
         $config = Config::getInstance();
 
