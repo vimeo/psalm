@@ -643,7 +643,8 @@ class TypeChecker
             return $new_type;
         }
 
-        if (!TypeChecker::isContainedBy($new_type, $existing_var_type, $file_checker) &&
+        if (!InterfaceChecker::interfaceExists($new_var_type, $file_checker) &&
+            !TypeChecker::isContainedBy($new_type, $existing_var_type, $file_checker) &&
             !TypeChecker::isContainedBy($existing_var_type, $new_type, $file_checker) &&
             $code_location) {
             if (IssueBuffer::accepts(
