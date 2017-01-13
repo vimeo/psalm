@@ -1017,7 +1017,7 @@ class CallChecker
         }
 
         foreach ($args as $argument_offset => $arg) {
-            if ($function_params !== null && $cased_method_id && isset($arg->value->inferredType)) {
+            if ($function_params !== null && isset($arg->value->inferredType)) {
                 if (count($function_params) > $argument_offset) {
                     $param_type = $function_params[$argument_offset]->type;
 
@@ -1257,7 +1257,7 @@ class CallChecker
      * @param   StatementsChecker   $statements_checker
      * @param   Type\Union          $input_type
      * @param   Type\Union          $param_type
-     * @param   string              $cased_method_id
+     * @param   string|null         $cased_method_id
      * @param   int                 $argument_offset
      * @param   CodeLocation        $code_location
      * @return  null|false
@@ -1274,10 +1274,12 @@ class CallChecker
             return null;
         }
 
+        $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
+
         if ($input_type->isMixed()) {
             if (IssueBuffer::accepts(
                 new MixedArgument(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be mixed, expecting ' .
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be mixed, expecting ' .
                         $param_type,
                     $code_location
                 ),
@@ -1292,7 +1294,7 @@ class CallChecker
         if ($input_type->isNullable() && !$param_type->isNullable() && $cased_method_id !== 'echo') {
             if (IssueBuffer::accepts(
                 new NullArgument(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' cannot be null, possibly ' .
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
                         'null value provided',
                     $code_location
                 ),
@@ -1315,7 +1317,7 @@ class CallChecker
         if ($coerced_type) {
             if (IssueBuffer::accepts(
                 new TypeCoercion(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
                         ', parent type ' . $input_type . ' provided',
                     $code_location
                 ),
@@ -1328,7 +1330,7 @@ class CallChecker
         if ($to_string_cast && $cased_method_id !== 'echo') {
             if (IssueBuffer::accepts(
                 new ImplicitToStringCast(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' .
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
                         $param_type . ', ' . $input_type . ' provided with a __toString method',
                     $code_location
                 ),
@@ -1343,7 +1345,7 @@ class CallChecker
                 if ($cased_method_id !== 'echo') {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' .
+                            'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
                                 $param_type . ', ' . $input_type . ' provided',
                             $code_location
                         ),
@@ -1354,7 +1356,7 @@ class CallChecker
                 }
             } elseif (IssueBuffer::accepts(
                 new InvalidArgument(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects ' . $param_type .
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
                         ', ' . $input_type . ' provided',
                     $code_location
                 ),

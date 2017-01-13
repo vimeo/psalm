@@ -190,4 +190,32 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
     }
+
+    public function testCorrectParamType()
+    {
+        $stmts = self::$parser->parse('<?php
+        $take_string = function(string $s) : string { return $s; };
+        $take_string("string");
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     */
+    public function testWrongParamType()
+    {
+        $stmts = self::$parser->parse('<?php
+        $take_string = function(string $s) : string { return $s; };
+        $take_string(42);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
