@@ -11,9 +11,9 @@ class IssueBuffer
     protected static $issue_data = [];
 
     /**
-     * @var array<int, string>
+     * @var int
      */
-    protected static $errors = [];
+    protected static $error_count = 0;
 
     /**
      * @var array<string, bool>
@@ -95,6 +95,7 @@ class IssueBuffer
                         ': ' . $error_message . PHP_EOL;
 
                     echo self::getSnippet($e, $project_checker->use_color) . PHP_EOL . PHP_EOL;
+                    self::$error_count++;
 
                     break;
 
@@ -182,7 +183,7 @@ class IssueBuffer
             echo(' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB' . PHP_EOL);
         }
 
-        if (count(self::$emitted)) {
+        if (self::$error_count) {
             $project_checker = ProjectChecker::getInstance();
             if ($project_checker->output_format === ProjectChecker::TYPE_JSON) {
                 echo json_encode(self::$issue_data) . PHP_EOL;
@@ -229,5 +230,6 @@ class IssueBuffer
     {
         self::$issue_data = [];
         self::$emitted = [];
+        self::$error_count = 0;
     }
 }
