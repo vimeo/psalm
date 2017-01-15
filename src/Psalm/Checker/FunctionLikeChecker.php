@@ -1295,10 +1295,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             foreach ($args as $argument_offset => $arg) {
-                if (count($possible_function_params) <= $argument_offset &&
-                    (!$last_param || substr($last_param->name, 0, 3) !== '...')
-                ) {
-                    $all_args_match = false;
+                if ($argument_offset >= count($possible_function_params)) {
+                    if (!$last_param || !$last_param->is_variadic) {
+                        $all_args_match = false;
+                    }
+
                     break;
                 }
 

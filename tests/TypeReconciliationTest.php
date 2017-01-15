@@ -484,6 +484,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $a = min(0, 1);
         $b = min([0, 1]);
         $c = min("a", "b");
+        $d = min(1, 2, 3, 4);
+        $e = min(1, 2, 3, 4, 5);
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
