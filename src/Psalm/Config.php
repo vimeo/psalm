@@ -72,7 +72,7 @@ class Config
      *
      * @var string
      */
-    public $cache_directory = '/var/tmp/psalm';
+    public $cache_directory;
 
     /**
      * Whether or not to use property defaults to inform type when none is listed
@@ -234,6 +234,8 @@ class Config
 
         if (isset($config_xml['cacheDirectory'])) {
             $config->cache_directory = (string) $config_xml['cacheDirectory'];
+        } else {
+            $config->cache_directory = sys_get_temp_dir() . '/psalm';
         }
 
         if (isset($config_xml['usePropertyDefaultForType'])) {
