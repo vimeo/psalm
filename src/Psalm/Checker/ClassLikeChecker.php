@@ -577,7 +577,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $storage->public_class_constants = $parent_storage->public_class_constants;
         $storage->protected_class_constants = $parent_storage->protected_class_constants;
 
-        $storage->parent_classes = array_merge([$parent_class], $parent_storage->parent_classes);
+        $storage->parent_classes = array_merge([strtolower($parent_class)], $parent_storage->parent_classes);
 
         $storage->used_traits = $parent_storage->used_traits;
 
@@ -1067,6 +1067,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $storage->public_class_constants = $parent_storage->public_class_constants;
             $storage->protected_class_constants = $parent_storage->protected_class_constants;
+            $storage->parent_classes = array_merge([strtolower($parent_class_name)], $parent_storage->parent_classes);
 
             $storage->used_traits = $parent_storage->used_traits;
         }

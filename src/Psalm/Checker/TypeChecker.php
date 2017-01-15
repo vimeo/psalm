@@ -643,18 +643,30 @@ class TypeChecker
             return $new_type;
         }
 
-        if (!InterfaceChecker::interfaceExists($new_var_type, $file_checker) &&
-            !TypeChecker::isContainedBy($new_type, $existing_var_type, $file_checker) &&
-            !TypeChecker::isContainedBy($existing_var_type, $new_type, $file_checker) &&
-            $code_location) {
-            if (IssueBuffer::accepts(
-                new TypeDoesNotContainType(
-                    'Cannot resolve types for ' . $key . ' - ' . $existing_var_type . ' does not contain ' . $new_type,
-                    $code_location
-                ),
-                $suppressed_issues
-            )) {
-                // fall through
+        if (!InterfaceChecker::interfaceExists($new_var_type, $file_checker) && $code_location) {
+            $has_match = false;
+
+            foreach ($existing_var_type->types as $existing_var_type_part) {
+                $dummy_type = new Type\Union([$existing_var_type_part]);
+
+                if (TypeChecker::isContainedBy($new_type, $dummy_type, $file_checker) ||
+                    TypeChecker::isContainedBy($dummy_type, $new_type, $file_checker)) {
+                    $has_match = true;
+                    break;
+                }
+            }
+
+            if (!$has_match) {
+                if (IssueBuffer::accepts(
+                    new TypeDoesNotContainType(
+                        'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
+                        ' does not contain ' . $new_type,
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
             }
         }
 
