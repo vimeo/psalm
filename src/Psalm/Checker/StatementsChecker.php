@@ -473,10 +473,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      */
     public function setConstType($const_name, Type\Union $const_type, Context $context)
     {
+        $context->vars_in_scope[$const_name] = $const_type;
+        $context->constants[$const_name] = $const_type;
+
         if ($this->source instanceof NamespaceChecker) {
             $this->source->setConstType($const_name, $const_type);
         } else {
-            $context->vars_in_scope[$const_name] = $const_type;
             self::$user_constants[$this->getFilePath()][$const_name] = $const_type;
         }
 
