@@ -267,6 +267,10 @@ class Php70Test extends PHPUnit_Framework_TestCase
      */
     public function testGeneratorDelegation()
     {
+        if (!preg_match('/^(5\.[56]|7\.)/', (string)phpversion())) {
+            $this->markTestIncomplete('Requires PHP 5.5+');
+        }
+
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
