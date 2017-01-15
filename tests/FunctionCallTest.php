@@ -218,8 +218,29 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         namespace A;
 
-        function f(int $p) : void {}
+        /** @return void */
+        function f(int $p) {}
         f(5);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testNamespacedRootFunctionCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace {
+            /** @return void */
+            function foo() { }
+        }
+        namespace A\B\C {
+            foo();
+        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);

@@ -41,7 +41,8 @@ class NamespaceTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         namespace A {
-            function foo() : void {
+            /** @return void */
+            function foo() {
 
             }
 

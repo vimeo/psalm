@@ -1407,7 +1407,7 @@ class CallChecker
      */
     protected static function checkFunctionExists(
         StatementsChecker $statements_checker,
-        $function_id,
+        &$function_id,
         Context $context,
         CodeLocation $code_location
     ) {
@@ -1415,16 +1415,25 @@ class CallChecker
         $function_id = strtolower($function_id);
 
         if (!FunctionChecker::functionExists($function_id, $statements_checker->getFilePath())) {
-            if (IssueBuffer::accepts(
-                new UndefinedFunction(
-                    'Function ' . $cased_function_id . ' does not exist',
-                    $code_location
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                // fall through
+            $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+
+            if ($function_id !== $root_function_id &&
+                FunctionChecker::functionExists($root_function_id, $statements_checker->getFilePath())
+            ) {
+                $function_id = $root_function_id;
+            } else {
+                if (IssueBuffer::accepts(
+                    new UndefinedFunction(
+                        'Function ' . $cased_function_id . ' does not exist',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return false;
             }
-            return false;
         }
 
         return true;
