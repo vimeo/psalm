@@ -503,7 +503,6 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
      */
     public function testTypeTransformation()
     {
-        $this->markTestIncomplete('This currently fails');
         $stmts = self::$parser->parse('<?php
         $a = "5";
 
