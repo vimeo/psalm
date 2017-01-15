@@ -159,56 +159,6 @@ class Php70Test extends TestCase
                         yield 1;
                     }',
             ],
-            'generatorDelegation' => [
-                '<?php
-                    /**
-                     * @return Generator<int,int>
-                     * @psalm-generator-return int
-                     */
-                    function count_to_ten() : Generator {
-                        yield 1;
-                        yield 2;
-                        yield from [3, 4];
-                        yield from new ArrayIterator([5, 6]);
-                        yield from seven_eight();
-                        return yield from nine_ten();
-                    }
-
-                    /**
-                     * @return Generator<int,int>
-                     */
-                    function seven_eight() : Generator {
-                        yield 7;
-                        yield from eight();
-                    }
-
-                    /**
-                     * @return Generator<int,int>
-                     */
-                    function eight() : Generator {
-                        yield 8;
-                    }
-
-                    /**
-                     * @return Generator<int,int>
-                     * @psalm-generator-return int
-                     */
-                    function nine_ten() : Generator {
-                        yield 9;
-                        return 10;
-                    }
-
-                    $gen = count_to_ten();
-                    foreach ($gen as $num) {
-                        echo "$num ";
-                    }
-                    $gen2 = $gen->getReturn();',
-                'assertions' => [
-                    '$gen' => 'Generator<int, int>',
-                    '$gen2' => 'mixed',
-                ],
-                'error_levels' => ['MixedAssignment'],
-            ],
             'multipleUse' => [
                 '<?php
                     namespace Name\Space {
