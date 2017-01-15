@@ -81,6 +81,9 @@ abstract class Atomic extends Type
             case 'callable':
                 return new TCallable();
 
+            case 'numeric-string':
+                return new TNumericString();
+
             default:
                 return new TNamedObject($value);
         }
