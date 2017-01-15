@@ -21,6 +21,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
@@ -176,7 +177,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $class_context->vars_possibly_in_scope = $global_context->vars_possibly_in_scope;
             }
 
-            $class_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($this->fq_class_name)]);
+            $class_context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($this->fq_class_name)]);
         }
 
          // set all constants first

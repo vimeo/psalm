@@ -28,6 +28,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 
 abstract class FunctionLikeChecker extends SourceChecker implements StatementsSource
 {
@@ -121,7 +122,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     return null;
                 }
             } elseif ($context->self) {
-                $context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
+                $context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($context->self)]);
             }
 
             $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($method_id);
@@ -239,7 +240,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([
-                new Type\Fn(
+                new Type\Atomic\Fn(
                     'Closure',
                     $storage->params,
                     $storage->return_type ?: Type::getMixed()
@@ -324,7 +325,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 );
 
                 if ($closure_return_types && $this->function->inferredType) {
-                    /** @var Type\Fn */
+                    /** @var Type\Atomic\Fn */
                     $closure_atomic = $this->function->inferredType->types['Closure'];
                     $closure_atomic->return_type = new Type\Union($closure_return_types);
                 }
@@ -1006,7 +1007,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $existing_param_type_nullable = $function_signature_param->is_nullable;
 
                     if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                        $new_param_type->types['null'] = new Type\Atomic('null');
+                        $new_param_type->types['null'] = new Type\Atomic\TNull();
                     }
 
                     $function_signature_param->signature_type = $function_signature_param->type;
@@ -1083,13 +1084,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 if ($param->variadic) {
                     $param_type = new Type\Union([
-                        new Type\GenericArray(
-                            'array',
-                            [
-                                Type::getInt(),
-                                $param_type
-                            ]
-                        )
+                        new Type\Atomic\TArray([
+                            Type::getInt(),
+                            $param_type
+                        ])
                     ]);
                 }
             }

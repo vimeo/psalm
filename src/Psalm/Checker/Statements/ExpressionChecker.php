@@ -28,6 +28,26 @@ use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\Type\Atomic\Generic;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNumericString;
 
 class ExpressionChecker
 {
@@ -205,7 +225,7 @@ class ExpressionChecker
                 ) {
                     $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
                 } elseif ($context->self) {
-                    $use_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($context->self)]);
+                    $use_context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($context->self)]);
                 }
             }
 
@@ -637,18 +657,15 @@ class ExpressionChecker
 
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
-            $stmt->inferredType = new Type\Union([new Type\ObjectLike('array', $property_types)]);
+            $stmt->inferredType = new Type\Union([new Type\Atomic\ObjectLike($property_types)]);
             return null;
         }
 
         $stmt->inferredType = new Type\Union([
-            new Type\Generic(
-                'array',
-                [
-                    $item_key_type ?: new Type\Union([new Type\Atomic('int'), new Type\Atomic('string')]),
-                    $item_value_type ?: Type::getMixed()
-                ]
-            )
+            new Type\Atomic\TArray([
+                $item_key_type ?: new Type\Union([new TInt, new TString]),
+                $item_value_type ?: Type::getMixed()
+            ])
         ]);
 
         return null;
@@ -887,8 +904,8 @@ class ExpressionChecker
         if ($left_type && $right_type) {
             foreach ($left_type->types as $left_type_part) {
                 foreach ($right_type->types as $right_type_part) {
-                    if ($left_type_part->isMixed() || $right_type_part->isMixed()) {
-                        if ($left_type_part->isMixed()) {
+                    if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
+                        if ($left_type_part instanceof TMixed) {
                             if (IssueBuffer::accepts(
                                 new MixedOperand(
                                     'Left operand cannot be mixed',
@@ -914,9 +931,9 @@ class ExpressionChecker
                         return;
                     }
 
-                    if ($left_type_part->isArray() || $right_type_part->isArray()) {
-                        if (!$right_type_part->isArray() || !$left_type_part->isArray()) {
-                            if (!$left_type_part->isArray()) {
+                    if ($left_type_part instanceof TArray || $right_type_part instanceof TArray) {
+                        if (!$right_type_part instanceof TArray || !$left_type_part instanceof TArray) {
+                            if (!$left_type_part instanceof TArray) {
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add an array to a non-array',
@@ -926,7 +943,7 @@ class ExpressionChecker
                                 )) {
                                     // fall through
                                 }
-                            } elseif (!$right_type_part->isArray()) {
+                            } elseif (!$right_type_part instanceof TArray) {
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add an array to a non-array',
@@ -954,9 +971,7 @@ class ExpressionChecker
                     }
 
                     if ($left_type_part->isNumericType() || $right_type_part->isNumericType()) {
-                        if ($left_type_part->isInt() &&
-                            $right_type_part->isInt()
-                        ) {
+                        if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                             if (!$result_type) {
                                 $result_type = Type::getInt();
                             } else {
@@ -966,9 +981,7 @@ class ExpressionChecker
                             continue;
                         }
 
-                        if ($left_type_part->isFloat() &&
-                            $right_type_part->isFloat()
-                        ) {
+                        if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
                             if (!$result_type) {
                                 $result_type = Type::getFloat();
                             } else {
@@ -978,8 +991,8 @@ class ExpressionChecker
                             continue;
                         }
 
-                        if (($left_type_part->isFloat() && $right_type_part->isInt()) ||
-                            ($left_type_part->isInt() && $right_type_part->isFloat())
+                        if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt) ||
+                            ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
                         ) {
                             if ($config->strict_binary_operands) {
                                 if (IssueBuffer::accepts(
@@ -1269,48 +1282,53 @@ class ExpressionChecker
      */
     protected static function fleshOutAtomicType(Type\Atomic $return_type, array $args, $calling_class, $method_id)
     {
-        if ($return_type->value === '$this' || $return_type->value === 'static' || $return_type->value === 'self') {
-            if (!$calling_class) {
-                throw new \InvalidArgumentException(
-                    'Cannot handle ' . $return_type->value . ' when $calling_class is empty'
-                );
-            }
+        if ($return_type instanceof TNamedObject) {
+            if ($return_type->value === '$this' ||
+                $return_type->value === 'static' ||
+                $return_type->value === 'self'
+            ) {
+                if (!$calling_class) {
+                    throw new \InvalidArgumentException(
+                        'Cannot handle ' . $return_type->value . ' when $calling_class is empty'
+                    );
+                }
 
-            if ($return_type->value === 'static' || !$method_id) {
-                $return_type->value = $calling_class;
-            } else {
-                list(, $method_name) = explode('::', $method_id);
+                if ($return_type->value === 'static' || !$method_id) {
+                    $return_type->value = $calling_class;
+                } else {
+                    list(, $method_name) = explode('::', $method_id);
 
-                $appearing_method_id = MethodChecker::getAppearingMethodId($calling_class . '::' . $method_name);
+                    $appearing_method_id = MethodChecker::getAppearingMethodId($calling_class . '::' . $method_name);
 
-                $return_type->value = explode('::', (string)$appearing_method_id)[0];
-            }
-        } elseif ($return_type->value[0] === '$' && $method_id) {
-            $method_params = MethodChecker::getMethodParams($method_id);
+                    $return_type->value = explode('::', (string)$appearing_method_id)[0];
+                }
+            } elseif ($return_type->value[0] === '$' && $method_id) {
+                $method_params = MethodChecker::getMethodParams($method_id);
 
-            if (!$method_params) {
-                throw new \InvalidArgumentException(
-                    'Cannot get method params of ' . $method_id
-                );
-            }
+                if (!$method_params) {
+                    throw new \InvalidArgumentException(
+                        'Cannot get method params of ' . $method_id
+                    );
+                }
 
-            foreach ($args as $i => $arg) {
-                $method_param = $method_params[$i];
+                foreach ($args as $i => $arg) {
+                    $method_param = $method_params[$i];
 
-                if ($return_type->value === '$' . $method_param->name) {
-                    $arg_value = $arg->value;
-                    if ($arg_value instanceof PhpParser\Node\Scalar\String_) {
-                        $return_type->value = preg_replace('/^\\\/', '', $arg_value->value);
+                    if ($return_type->value === '$' . $method_param->name) {
+                        $arg_value = $arg->value;
+                        if ($arg_value instanceof PhpParser\Node\Scalar\String_) {
+                            $return_type->value = preg_replace('/^\\\/', '', $arg_value->value);
+                        }
                     }
                 }
-            }
 
-            if ($return_type->value[0] === '$') {
-                $return_type = new Type\Atomic('mixed');
+                if ($return_type->value[0] === '$') {
+                    $return_type = new TMixed;
+                }
             }
         }
 
-        if ($return_type instanceof Type\Generic) {
+        if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
             foreach ($return_type->type_params as &$type_param) {
                 $type_param = self::fleshOutTypes($type_param, $args, $calling_class, $method_id);
             }

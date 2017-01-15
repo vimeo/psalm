@@ -3,8 +3,26 @@ namespace Psalm;
 
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Type\Atomic;
-use Psalm\Type\Generic;
-use Psalm\Type\ObjectLike;
+use Psalm\Type\Atomic\Generic;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\ParseTree;
 use Psalm\Type\Union;
 
@@ -32,21 +50,17 @@ abstract class Type
         if (count($type_tokens) === 1) {
             $type_tokens[0] = self::fixScalarTerms($type_tokens[0]);
 
-            if ($type_tokens[0] === 'array') {
-                return Type::getArray();
-            }
-
-            return new Union([new Atomic($type_tokens[0])]);
+            return new Union([Atomic::create($type_tokens[0])]);
         }
 
         try {
             $parse_tree = ParseTree::createFromTokens($type_tokens);
-        }
-        catch (TypeParseTreeException $e) {
+            $parsed_type = self::getTypeFromTree($parse_tree);
+        } catch (TypeParseTreeException $e) {
             throw $e;
+        } catch (\Exception $e) {
+            throw new TypeParseTreeException($e->getMessage());
         }
-
-        $parsed_type = self::getTypeFromTree($parse_tree);
 
         if (!($parsed_type instanceof Union)) {
             $parsed_type = new Union([$parsed_type]);
@@ -66,6 +80,7 @@ abstract class Type
             [
                 'numeric',
                 'int',
+                'void',
                 'float',
                 'string',
                 'bool',
@@ -94,7 +109,7 @@ abstract class Type
 
     /**
      * @param   ParseTree $parse_tree
-     * @return  Atomic|Generic|ObjectLike|Union
+     * @return  Atomic|TArray|TGenericObject|ObjectLike|Union
      */
     private static function getTypeFromTree(ParseTree $parse_tree)
     {
@@ -125,7 +140,7 @@ abstract class Type
             if (($generic_type_value === 'array' || $generic_type_value === 'Generator') &&
                 count($generic_params) === 1
             ) {
-                array_unshift($generic_params, Type::getMixed());
+                array_unshift($generic_params, new Union([new TMixed]));
             }
 
             if (!$generic_params) {
@@ -133,10 +148,10 @@ abstract class Type
             }
 
             if ($generic_type_value === 'array') {
-                return new Type\GenericArray($generic_type_value, $generic_params);
+                return new TArray($generic_params);
             }
 
-            return new Generic($generic_type_value, $generic_params);
+            return new TGenericObject($generic_type_value, $generic_params);
         }
 
         if ($parse_tree->value === ParseTree::UNION) {
@@ -174,20 +189,16 @@ abstract class Type
                 $properties[(string)($property_branch->children[0]->value)] = $property_type;
             }
 
-            if (!$type->value) {
-                throw new \InvalidArgumentException('Object-like type must have a value');
+            if ($type->value !== 'array') {
+                throw new \InvalidArgumentException('Object-like type must be array');
             }
 
-            return new ObjectLike($type->value, $properties);
+            return new ObjectLike($properties);
         }
 
         $atomic_type = self::fixScalarTerms($parse_tree->value);
 
-        if ($atomic_type === 'array') {
-            return self::getArray()->types['array'];
-        }
-
-        return new Atomic($atomic_type);
+        return Atomic::create($atomic_type);
     }
 
     /**
@@ -262,7 +273,7 @@ abstract class Type
      */
     public static function getInt()
     {
-        $type = new Atomic('int');
+        $type = new TInt;
 
         return new Union([$type]);
     }
@@ -272,7 +283,7 @@ abstract class Type
      */
     public static function getString()
     {
-        $type = new Atomic('string');
+        $type = new TString;
 
         return new Union([$type]);
     }
@@ -282,7 +293,7 @@ abstract class Type
      */
     public static function getNull()
     {
-        $type = new Atomic('null');
+        $type = new TNull;
 
         return new Union([$type]);
     }
@@ -292,7 +303,7 @@ abstract class Type
      */
     public static function getMixed()
     {
-        $type = new Atomic('mixed');
+        $type = new TMixed;
 
         return new Union([$type]);
     }
@@ -302,7 +313,7 @@ abstract class Type
      */
     public static function getBool()
     {
-        $type = new Atomic('bool');
+        $type = new TBool;
 
         return new Union([$type]);
     }
@@ -312,7 +323,7 @@ abstract class Type
      */
     public static function getFloat()
     {
-        $type = new Atomic('float');
+        $type = new TFloat;
 
         return new Union([$type]);
     }
@@ -322,7 +333,7 @@ abstract class Type
      */
     public static function getObject()
     {
-        $type = new Atomic('object');
+        $type = new TObject;
 
         return new Union([$type]);
     }
@@ -332,7 +343,7 @@ abstract class Type
      */
     public static function getClosure()
     {
-        $type = new Atomic('Closure');
+        $type = new TNamedObject('Closure');
 
         return new Union([$type]);
     }
@@ -342,11 +353,10 @@ abstract class Type
      */
     public static function getArray()
     {
-        $type = new Type\GenericArray(
-            'array',
+        $type = new TArray(
             [
-                Type::getMixed(),
-                Type::getMixed()
+                new Type\Union([new TMixed]),
+                new Type\Union([new TMixed])
             ]
         );
 
@@ -359,11 +369,10 @@ abstract class Type
     public static function getEmptyArray()
     {
         return new Type\Union([
-            new Type\GenericArray(
-                'array',
+            new TArray(
                 [
-                    new Type\Union([new Type\Atomic('empty')]),
-                    new Type\Union([new Type\Atomic('empty')])
+                    new Type\Union([new TEmpty]),
+                    new Type\Union([new TEmpty])
                 ]
             )
         ]);
@@ -374,7 +383,7 @@ abstract class Type
      */
     public static function getVoid()
     {
-        $type = new Atomic('void');
+        $type = new TVoid;
 
         return new Union([$type]);
     }
@@ -384,7 +393,7 @@ abstract class Type
      */
     public static function getFalse()
     {
-        $type = new Atomic('false');
+        $type = new TFalse;
 
         return new Union([$type]);
     }
@@ -399,8 +408,8 @@ abstract class Type
         foreach ($redefined_vars as $var_name => $redefined_union_type) {
             foreach ($redefined_union_type->types as $redefined_atomic_type) {
                 foreach ($context->vars_in_scope[$var_name]->types as $context_type) {
-                    if ($context_type instanceof Type\Generic &&
-                        $redefined_atomic_type instanceof Type\Generic &&
+                    if ($context_type instanceof Type\Atomic\TArray &&
+                        $redefined_atomic_type instanceof Type\Atomic\TArray &&
                         $context_type->value === $redefined_atomic_type->value
                     ) {
                         // index of last param
@@ -463,8 +472,8 @@ abstract class Type
         }
 
         if (count($types) === 1) {
-            if ($types[0]->value === 'false') {
-                $types[0]->value = 'bool';
+            if ($types[0] instanceof TFalse) {
+                $types[0] = new TBool;
             }
 
             return new Union([$types[0]]);
@@ -492,7 +501,7 @@ abstract class Type
 
         if (count($value_types) === 1) {
             if (isset($value_types['false'])) {
-                return self::getBool();
+                return Type::getBool();
             }
         } elseif (isset($value_types['void'])) {
             unset($value_types['void']);
@@ -508,7 +517,7 @@ abstract class Type
             // special case for ObjectLike where $value_type is actually an array of properties
             if ($generic_type === 'object-like') {
                 if (!isset($value_types['array']) || isset($value_types['array']['empty'])) {
-                    $new_types[] = new ObjectLike('array', $value_type);
+                    $new_types[] = new ObjectLike($value_type);
                 }
 
                 continue;
@@ -542,9 +551,16 @@ abstract class Type
                     array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
                 }
 
-                $new_types[] = $value_type_param
-                    ? new Generic($generic_type, $generic_type_params)
-                    : new Atomic($generic_type);
+                if ($value_type_param) {
+                    if ($generic_type === 'array') {
+                        $new_types[] = new TArray($generic_type_params);
+                    } else {
+                        $new_types[] = new TGenericObject($generic_type, $generic_type_params);
+                    }
+                } else {
+                    $new_types[] = Atomic::create($generic_type);
+                }
+
                 continue;
             }
 
@@ -560,7 +576,7 @@ abstract class Type
                         array_values($expandable_value_type->types)
                     );
                 } else {
-                    $expanded_value_types = [Type::getMixed()->types['mixed']];
+                    $expanded_value_types = [new TMixed];
                 }
             }
 
@@ -570,8 +586,11 @@ abstract class Type
                 array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
             }
 
-            // we have a generic type with
-            $new_types[] = new Generic($generic_type, $generic_type_params);
+            if ($generic_type === 'array') {
+                $new_types[] = new TArray($generic_type_params);
+            } else {
+                $new_types[] = new TGenericObject($generic_type, $generic_type_params);
+            }
         }
 
         $new_types = array_values($new_types);
@@ -588,32 +607,35 @@ abstract class Type
     public static function scrapeTypeProperties(Atomic $type, array &$key_types, array &$value_types)
     {
         // if we see the magic empty value and there's more than one type, ignore it
-        if ($type->value === 'empty') {
+        if ($type instanceof TEmpty) {
             return null;
         }
 
-        if ($type->value === 'mixed') {
+        if ($type instanceof TMixed) {
             return Type::getMixed();
         }
 
         // deal with false|bool => bool
-        if ($type->value === 'false' && isset($value_types['bool'])) {
+        if ($type instanceof TFalse && isset($value_types['bool'])) {
             return null;
-        } elseif ($type->value === 'bool' && isset($value_types['false'])) {
+        } elseif ($type instanceof TBool && isset($value_types['false'])) {
             unset($value_types['false']);
         }
 
-        if ($type instanceof Generic) {
-            if (!isset($value_types[$type->value])) {
-                $value_types[$type->value] = [];
+        $type_key = $type->getKey();
+
+        if ($type instanceof TArray || $type instanceof TGenericObject) {
+            if (!isset($value_types[$type_key])) {
+                $value_types[$type_key] = [];
             }
 
             $value_type_param_index = count($type->type_params) - 1;
-            $value_types[$type->value][(string) $type->type_params[$value_type_param_index]] =
+
+            $value_types[$type_key][(string) $type->type_params[$value_type_param_index]] =
                 $type->type_params[$value_type_param_index];
 
             if ($value_type_param_index) {
-                $key_types[$type->value][(string) $type->type_params[0]] = $type->type_params[0];
+                $key_types[$type_key][(string) $type->type_params[0]] = $type->type_params[0];
             }
         } elseif ($type instanceof ObjectLike) {
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
@@ -631,15 +653,15 @@ abstract class Type
                 }
             }
         } else {
-            if (!isset($value_types[$type->value])) {
-                $value_types[$type->value] = [];
+            if (!isset($value_types[$type_key])) {
+                $value_types[$type_key] = [];
             }
 
-            if ($type->value === 'array') {
+            if ($type instanceof TArray) {
                 throw new \InvalidArgumentException('Cannot have a non-generic array');
             }
 
-            $value_types[$type->value][(string) $type] = null;
+            $value_types[$type_key][(string) $type] = null;
         }
     }
 }

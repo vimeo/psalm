@@ -31,6 +31,26 @@ use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\Generic;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNumericString;
 
 class AssignmentChecker
 {
@@ -156,11 +176,11 @@ class AssignmentChecker
                     $statements_checker->registerVariable($list_var_id, $var->getLine());
 
                     if (isset($assign_value_type->types['array'])) {
-                        if ($assign_value_type->types['array'] instanceof Type\Generic) {
+                        if ($assign_value_type->types['array'] instanceof Type\Atomic\TArray) {
                             $context->vars_in_scope[$list_var_id] = clone $assign_value_type->types['array']->type_params[1];
 
                             continue;
-                        } elseif ($assign_value_type->types['array'] instanceof Type\ObjectLike) {
+                        } elseif ($assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike) {
                             if ($assign_var_item->key
                                 && $assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                                 && isset($assign_value_type->types['array']->properties[$assign_var_item->key->value])
@@ -412,14 +432,15 @@ class AssignmentChecker
             $has_regular_setter = false;
 
             foreach ($lhs_type->types as $lhs_type_part) {
-                if ($lhs_type_part->isNull()) {
+                if ($lhs_type_part instanceof TNull) {
                     continue;
                 }
 
-                if (!$lhs_type_part->isObjectType()) {
+                if (!$lhs_type_part instanceof TObject && !$lhs_type_part instanceof TNamedObject) {
                     if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
-                            $lhs_var_id . ' with possible non-object type \'' . $lhs_type_part . '\' cannot treated as an object',
+                            $lhs_var_id . ' with possible non-object type \'' . $lhs_type_part .
+                            '\' cannot treated as an object',
                             new CodeLocation($statements_checker->getSource(), $stmt->var)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -433,13 +454,15 @@ class AssignmentChecker
                 // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
                 // but we don't want to throw an error
                 // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-                if ($lhs_type_part->isObject() ||
-                    in_array(
-                        strtolower($lhs_type_part->value),
-                        ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode']
+                if ($lhs_type_part instanceof TObject ||
+                    ($lhs_type_part instanceof TNamedObject &&
+                        in_array(
+                            strtolower($lhs_type_part->value),
+                            ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode']
+                        )
                     )
                 ) {
-                    if (strtolower($lhs_type_part->value) === 'stdclass') {
+                    if ($lhs_type_part instanceof TNamedObject && strtolower($lhs_type_part->value) === 'stdclass') {
                         $context->vars_in_scope[$var_id] = $assignment_value_type;
                     } else {
                         $context->vars_in_scope[$var_id] = Type::getMixed();
@@ -448,33 +471,11 @@ class AssignmentChecker
                     return null;
                 }
 
-                if (!$lhs_type_part->isObject() && MethodChecker::methodExists($lhs_type_part . '::__set')) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                    continue;
-                }
-
-                $has_regular_setter = true;
-
-                if ($lhs_type_part->isObject()) {
-                    continue;
-                }
-
                 if (ExpressionChecker::isMock($lhs_type_part->value)) {
+                    $has_regular_setter = true;
                     $context->vars_in_scope[$var_id] = Type::getMixed();
 
                     return null;
-                }
-
-                if (($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this')
-                    || $lhs_type_part->value === $context->self
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self &&
-                    ClassChecker::classExtends($lhs_type_part->value, $context->self)
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
-                } else {
-                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
                 }
 
                 if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
@@ -503,6 +504,25 @@ class AssignmentChecker
                     }
 
                     return null;
+                }
+
+                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    continue;
+                }
+
+                $has_regular_setter = true;
+
+                if (($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this')
+                    || $lhs_type_part->value === $context->self
+                ) {
+                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                } elseif ($context->self &&
+                    ClassChecker::classExtends($lhs_type_part->value, $context->self)
+                ) {
+                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                } else {
+                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
                 }
 
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
@@ -862,8 +882,8 @@ class AssignmentChecker
                 // do nothing
             } elseif ($is_string) {
                 foreach ($assignment_value_type->types as $value_type) {
-                    if (!$value_type->isString()) {
-                        if ($value_type->isMixed()) {
+                    if (!$value_type instanceof TString) {
+                        if ($value_type instanceof TMixed) {
                             if (IssueBuffer::accepts(
                                 new MixedStringOffsetAssignment(
                                     'Cannot assign a mixed variable to a string offset for ' . $var_id,
@@ -929,9 +949,9 @@ class AssignmentChecker
                 }
 
                 if (!$nesting) {
-                    /** @var Type\Generic|null */
+                    /** @var Type\Atomic\TArray|null */
                     $array_type = isset($context->vars_in_scope[$var_id]->types['array'])
-                                    && $context->vars_in_scope[$var_id]->types['array'] instanceof Type\Generic
+                                    && $context->vars_in_scope[$var_id]->types['array'] instanceof Type\Atomic\TArray
                                     ? $context->vars_in_scope[$var_id]->types['array']
                                     : null;
 
@@ -942,22 +962,16 @@ class AssignmentChecker
                             || ($array_type && $array_type->type_params[0]->isEmpty()))
                     ) {
                         $assignment_value_type = new Type\Union([
-                            new Type\ObjectLike(
-                                'array',
-                                [
-                                    $assignment_key_value => $assignment_value_type
-                                ]
-                            )
+                            new Type\Atomic\ObjectLike([
+                                $assignment_key_value => $assignment_value_type
+                            ])
                         ]);
                     } else {
                         $assignment_value_type = new Type\Union([
-                            new Type\Generic(
-                                'array',
-                                [
-                                    $assignment_key_type,
-                                    $assignment_value_type
-                                ]
-                            )
+                            new Type\Atomic\TArray([
+                                $assignment_key_type,
+                                $assignment_value_type
+                            ])
                         ]);
                     }
 

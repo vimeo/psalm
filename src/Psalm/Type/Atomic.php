@@ -2,67 +2,88 @@
 namespace Psalm\Type;
 
 use Psalm\Type;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Union;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 
-class Atomic extends Type
+abstract class Atomic extends Type
 {
-    /**
-     * @var string
-     */
-    public $value;
+    const KEY = 'atomic';
 
     /**
-     * Constructs an Atomic instance
-     *
-     * @param string    $value
+     * @param  string $value
+     * @return Atomic
      */
-    public function __construct($value)
+    public static function create($value)
     {
-        $this->value = $value;
-    }
+        switch ($value) {
+            case 'numeric':
+                return new TNumeric();
 
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        if ($this->isNumericString()) {
-            return 'string';
+            case 'int':
+                return new TInt();
+
+            case 'void':
+                return new TVoid();
+
+            case 'float':
+                return new TFloat();
+
+            case 'string':
+                return new TString();
+
+            case 'bool':
+            case 'true':
+                return new TBool();
+
+            case 'false':
+                return new TFalse();
+
+            case 'empty':
+                return new TEmpty();
+
+            case 'null':
+                return new TNull();
+
+            case 'array':
+                return new TArray([new Union([new TMixed]), new Union([new TMixed])]);
+
+            case 'object':
+                return new TObject();
+
+            case 'mixed':
+                return new TMixed();
+
+            case 'resource':
+                return new TResource();
+
+            case 'callable':
+                return new TCallable();
+
+            default:
+                return new TNamedObject($value);
         }
-
-        return $this->value;
-    }
-
-    /**
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
-     * @return string
-     */
-    public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
-        if (!$this->isObjectType()) {
-            if ($this->isNumericString()) {
-                return 'string';
-            }
-
-            return $this->value;
-        }
-
-        if ($this->value === $this_class) {
-            $class_parts = explode('\\', $this_class);
-            return array_pop($class_parts);
-        }
-
-        if (isset($aliased_classes[strtolower($this->value)])) {
-            return $aliased_classes[strtolower($this->value)];
-        }
-
-        return '\\' . $this->value;
     }
 
     /**
@@ -76,7 +97,10 @@ class Atomic extends Type
             return true;
         }
 
-        if ($parent->hasType('object') && ClassLikeChecker::classOrInterfaceExists($this->value, $file_checker)) {
+        if ($parent->hasType('object') &&
+            $this instanceof TNamedObject &&
+            ClassLikeChecker::classOrInterfaceExists($this->value, $file_checker)
+        ) {
             return true;
         }
 
@@ -84,25 +108,27 @@ class Atomic extends Type
             return true;
         }
 
-        if ($parent->hasType('array') && $this->isObjectLike()) {
+        if ($parent->hasType('array') && $this instanceof ObjectLike) {
             return true;
         }
 
-        if ($this->value === 'false' && $parent->hasType('bool')) {
+        if ($this instanceof TFalse && $parent->hasType('bool')) {
             // this is fine
             return true;
         }
 
-        if ($parent->hasType($this->value)) {
+        if ($parent->hasType($this->getKey())) {
             return true;
         }
 
         // last check to see if class is subclass
-        if (ClassChecker::classExists($this->value, $file_checker)) {
+        if ($this instanceof TNamedObject && ClassChecker::classExists($this->value, $file_checker)) {
             $this_is_subclass = false;
 
             foreach ($parent->types as $parent_type) {
-                if (ClassChecker::classExtendsOrImplements($this->value, $parent_type->value)) {
+                if ($parent_type instanceof TNamedObject &&
+                    ClassChecker::classExtendsOrImplements($this->value, $parent_type->value)
+                ) {
                     $this_is_subclass = true;
                     break;
                 }
@@ -117,57 +143,16 @@ class Atomic extends Type
     }
 
     /**
-     * @return bool
+     * @return string
      */
-    public function isArray()
-    {
-        return $this->value === 'array';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isGenericArray()
-    {
-        return $this->value === 'array' && $this instanceof Generic;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isObjectLike()
-    {
-        return $this instanceof ObjectLike;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isObject()
-    {
-        return $this->value === 'object';
-    }
+    abstract public function getKey();
 
     /**
      * @return bool
      */
     public function isNumericType()
     {
-        return $this->value === 'int' || $this->value === 'float' || $this->value === 'numeric-string';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isScalarType()
-    {
-        return $this->value === 'int' ||
-                $this->value === 'string' ||
-                $this->value === 'float' ||
-                $this->value === 'bool' ||
-                $this->value === 'false' ||
-                $this->value === 'numeric' ||
-                $this->value === 'numeric-string';
+        return $this instanceof TInt || $this instanceof TFloat || $this instanceof TNumericString;
     }
 
     /**
@@ -175,131 +160,7 @@ class Atomic extends Type
      */
     public function isObjectType()
     {
-        return $this->isObject()
-                || (
-                    !$this->isScalarType()
-                    && !$this->isCallable()
-                    && !$this->isArray()
-                    && !$this->isMixed()
-                    && !$this->isNull()
-                    && !$this->isVoid()
-                    && !$this->isEmpty()
-                    && !$this->isResource()
-                    && !$this->isIterable()
-                    && !$this->isScalar()
-                );
-    }
-
-    /**
-     * @return bool
-     */
-    public function isString()
-    {
-        return $this->value === 'string' || $this->value === 'numeric-string';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isInt()
-    {
-        return $this->value === 'int';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isFloat()
-    {
-        return $this->value === 'float';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isNumeric()
-    {
-        return $this->value === 'numeric';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isNumericString()
-    {
-        return $this->value === 'numeric-string';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isScalar()
-    {
-        return $this->value === 'scalar';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isResource()
-    {
-        return $this->value === 'resource';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isCallable()
-    {
-        return $this->value === 'callable';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isGenerator()
-    {
-        return $this->value === 'Generator';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isIterable()
-    {
-        return $this->value === 'iterable';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isMixed()
-    {
-        return $this->value === 'mixed';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isNull()
-    {
-        return $this->value === 'null';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isVoid()
-    {
-        return $this->value === 'void';
-    }
-
-    /**
-     * @return bool
-     */
-    public function isEmpty()
-    {
-        return $this->value === 'empty';
+        return $this instanceof TObject || $this instanceof TNamedObject;
     }
 
     /**
@@ -310,8 +171,7 @@ class Atomic extends Type
      */
     public function check(StatementsSource $source, CodeLocation $code_location, array $suppressed_issues)
     {
-        if ($this->isObjectType()
-            && !$this->isObject()
+        if ($this instanceof TNamedObject
             && ClassLikeChecker::checkFullyQualifiedClassLikeName(
                 $this->value,
                 $source->getFileChecker(),
@@ -322,10 +182,38 @@ class Atomic extends Type
             return false;
         }
 
-        if ($this instanceof Type\Generic) {
+        if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
             foreach ($this->type_params as $type_param) {
                 $type_param->check($source, $code_location, $suppressed_issues);
             }
         }
+    }
+
+    /**
+     * @param  Atomic $other
+     * @return bool
+     */
+    public function shallowEquals(Atomic $other)
+    {
+        return $this->getKey() === $other->getKey();
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return '';
+    }
+
+    /**
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  bool          $use_phpdoc_format
+     * @return string
+     */
+    public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
+    {
+        return $this->getKey();
     }
 }

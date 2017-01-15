@@ -32,8 +32,8 @@ class SwitchChecker
             return false;
         }
 
-        if (isset($stmt->cond->inferredType) && array_values($stmt->cond->inferredType->types)[0] instanceof Type\T) {
-            /** @var Type\T */
+        if (isset($stmt->cond->inferredType) && array_values($stmt->cond->inferredType->types)[0] instanceof Type\Atomic\T) {
+            /** @var Type\Atomic\T */
             $type_type = array_values($stmt->cond->inferredType->types)[0];
             $type_candidate_var = $type_type->typeof;
         }

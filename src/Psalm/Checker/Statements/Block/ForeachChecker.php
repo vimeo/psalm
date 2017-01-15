@@ -64,7 +64,7 @@ class ForeachChecker
                     continue;
                 }
 
-                if ($return_type instanceof Type\Generic) {
+                if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
                     $value_index = count($return_type->type_params) - 1;
                     $value_type_part = $return_type->type_params[$value_index];
 
@@ -86,88 +86,66 @@ class ForeachChecker
                     continue;
                 }
 
-                switch ($return_type->value) {
-                    case 'mixed':
-                    case 'empty':
-                    case 'Generator':
-                        $value_type = Type::getMixed();
-                        break;
+                if ($return_type instanceof Type\Atomic\Scalar ||
+                    $return_type instanceof Type\Atomic\TNull ||
+                    $return_type instanceof Type\Atomic\TVoid
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidIterator(
+                            'Cannot iterate over ' . $return_type->getKey(),
+                            new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
 
-                    case 'array':
-                    case 'object':
-                        $value_type = Type::getMixed();
-                        break;
-
-                    case 'null':
-                        if (IssueBuffer::accepts(
-                            new NullReference(
-                                'Cannot iterate over ' . $return_type->value,
-                                new CodeLocation($statements_checker->getSource(), $stmt->expr)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        $value_type = Type::getMixed();
-                        break;
-
-                    case 'string':
-                    case 'void':
-                    case 'int':
-                    case 'bool':
-                    case 'false':
-                        if (IssueBuffer::accepts(
-                            new InvalidIterator(
-                                'Cannot iterate over ' . $return_type->value,
-                                new CodeLocation($statements_checker->getSource(), $stmt->expr)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        $value_type = Type::getMixed();
-                        break;
-
-                    default:
-                        if ($return_type->value !== 'Traversable' &&
-                            $return_type->value !== $statements_checker->getClassName()
-                        ) {
-                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                $return_type->value,
-                                $statements_checker->getFileChecker(),
-                                new CodeLocation($statements_checker->getSource(), $stmt->expr),
-                                $statements_checker->getSuppressedIssues()
-                            ) === false) {
-                                return false;
-                            }
-                        }
-
-                        if (ClassChecker::classImplements(
+                    $value_type = Type::getMixed();
+                } elseif ($return_type instanceof Type\Atomic\TArray ||
+                    $return_type instanceof Type\Atomic\TObject ||
+                    $return_type instanceof Type\Atomic\TMixed ||
+                    $return_type instanceof Type\Atomic\TEmpty ||
+                    ($return_type instanceof Type\Atomic\TNamedObject && $return_type->value === 'Generator')
+                ) {
+                    $value_type = Type::getMixed();
+                } elseif ($return_type instanceof Type\Atomic\TNamedObject) {
+                    if ($return_type->value !== 'Traversable' &&
+                        $return_type->value !== $statements_checker->getClassName()
+                    ) {
+                        if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                             $return_type->value,
-                            'Iterator'
-                        )) {
-                            $iterator_method = $return_type->value . '::current';
-                            $iterator_class_type = MethodChecker::getMethodReturnType($iterator_method);
-
-                            if ($iterator_class_type) {
-                                $value_type_part = ExpressionChecker::fleshOutTypes(
-                                    $iterator_class_type,
-                                    [],
-                                    $return_type->value,
-                                    $iterator_method
-                                );
-
-                                if (!$value_type) {
-                                    $value_type = $value_type_part;
-                                } else {
-                                    $value_type = Type::combineUnionTypes($value_type, $value_type_part);
-                                }
-                            } else {
-                                $value_type = Type::getMixed();
-                            }
+                            $statements_checker->getFileChecker(),
+                            new CodeLocation($statements_checker->getSource(), $stmt->expr),
+                            $statements_checker->getSuppressedIssues()
+                        ) === false) {
+                            return false;
                         }
+                    }
+
+                    if (ClassChecker::classImplements(
+                        $return_type->value,
+                        'Iterator'
+                    )) {
+                        $iterator_method = $return_type->value . '::current';
+                        $iterator_class_type = MethodChecker::getMethodReturnType($iterator_method);
+
+                        if ($iterator_class_type) {
+                            $value_type_part = ExpressionChecker::fleshOutTypes(
+                                $iterator_class_type,
+                                [],
+                                $return_type->value,
+                                $iterator_method
+                            );
+
+                            if (!$value_type) {
+                                $value_type = $value_type_part;
+                            } else {
+                                $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                            }
+                        } else {
+                            $value_type = Type::getMixed();
+                        }
+                    }
                 }
             }
         }

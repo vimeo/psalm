@@ -357,7 +357,7 @@ class Php71Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         /**
-         * @param  iterable<string> $iter
+         * @param  iterable<int> $iter
          */
         function iterator(iterable $iter) : void
         {

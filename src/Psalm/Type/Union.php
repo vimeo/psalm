@@ -8,18 +8,18 @@ use Psalm\Type;
 class Union extends Type
 {
     /**
-     * @var array<string,Atomic>
+     * @var array<string, Atomic>
      */
     public $types = [];
 
     /**
      * Constructs an Union instance
-     * @param array<int,Atomic>     $types
+     * @param array<int, Atomic>     $types
      */
     public function __construct(array $types)
     {
         foreach ($types as $type) {
-            $this->types[$type->value] = $type;
+            $this->types[$type->getKey()] = $type;
         }
     }
 
@@ -43,7 +43,7 @@ class Union extends Type
                  * @return string
                  */
                 function ($type) {
-                    return $type;
+                    return (string)$type;
                 },
                 $this->types
             )
@@ -93,7 +93,7 @@ class Union extends Type
     public function hasGeneric()
     {
         foreach ($this->types as $type) {
-            if ($type instanceof Generic) {
+            if ($type instanceof Atomic\Generic) {
                 return true;
             }
         }
@@ -122,7 +122,7 @@ class Union extends Type
      */
     public function hasObjectLike()
     {
-        return isset($this->types['array']) && $this->types['array'] instanceof ObjectLike;
+        return isset($this->types['array']) && $this->types['array'] instanceof Atomic\ObjectLike;
     }
 
     /**
@@ -297,7 +297,7 @@ class Union extends Type
         }
 
         foreach ($old_type->types as $old_type_part) {
-            $this->removeType($old_type_part->value);
+            $this->removeType($old_type_part->getKey());
         }
 
         if ($new_type) {
@@ -318,7 +318,7 @@ class Union extends Type
 
         $type = array_values($this->types)[0];
 
-        if (!$type instanceof Generic) {
+        if (!$type instanceof Atomic\TArray && !$type instanceof Atomic\TGenericObject) {
             return true;
         }
 

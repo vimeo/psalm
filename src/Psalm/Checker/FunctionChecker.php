@@ -341,11 +341,11 @@ class FunctionChecker extends FunctionLikeChecker
                     if (isset($first_arg->inferredType)) {
                         if ($first_arg->inferredType->hasArray()) {
                             $array_type = $first_arg->inferredType->types['array'];
-                            if ($array_type instanceof Type\ObjectLike) {
+                            if ($array_type instanceof Type\Atomic\ObjectLike) {
                                 return $array_type->getGenericTypeParam();
                             }
 
-                            if ($array_type instanceof Type\Generic) {
+                            if ($array_type instanceof Type\Atomic\TArray) {
                                 return clone $array_type->type_params[1];
                             }
                         } elseif ($first_arg->inferredType->hasScalarType() &&
@@ -389,14 +389,14 @@ class FunctionChecker extends FunctionLikeChecker
         $first_arg_array_generic = $first_arg
                 && isset($first_arg->inferredType)
                 && isset($first_arg->inferredType->types['array'])
-                && $first_arg->inferredType->types['array'] instanceof Type\Generic
+                && $first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
             ? $first_arg->inferredType->types['array']
             : null;
 
         $first_arg_array_objectlike = $first_arg
                 && isset($first_arg->inferredType)
                 && isset($first_arg->inferredType->types['array'])
-                && $first_arg->inferredType->types['array'] instanceof Type\ObjectLike
+                && $first_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike
             ? $first_arg->inferredType->types['array']
             : null;
 
@@ -405,11 +405,16 @@ class FunctionChecker extends FunctionLikeChecker
                 if ($first_arg_array_generic) {
                     $inner_type = clone $first_arg_array_generic->type_params[1];
                 } else {
-                    /** @var Type\ObjectLike $first_arg_array_objectlike */
+                    /** @var Type\Atomic\ObjectLike $first_arg_array_objectlike */
                     $inner_type = $first_arg_array_objectlike->getGenericTypeParam();
                 }
 
-                return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                return new Type\Union([
+                    new Type\Atomic\TArray([
+                        Type::getInt(),
+                        $inner_type
+                    ])
+                ]);
             }
         }
 
@@ -421,7 +426,12 @@ class FunctionChecker extends FunctionLikeChecker
                     $inner_type = Type::getString();
                 }
 
-                return new Type\Union([new Type\Generic('array', [Type::getInt(), $inner_type])]);
+                return new Type\Union([
+                    new Type\Atomic\TArray([
+                        Type::getInt(),
+                        $inner_type
+                    ])
+                ]);
             }
         }
 
@@ -435,7 +445,7 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 foreach ($call_arg->value->inferredType->types as $type_part) {
-                    if (!$type_part instanceof Type\Generic) {
+                    if (!$type_part instanceof Type\Atomic\TArray) {
                         return Type::getArray();
                     }
 
@@ -452,13 +462,10 @@ class FunctionChecker extends FunctionLikeChecker
 
                 if ($inner_value_types) {
                     return new Type\Union([
-                        new Type\Generic(
-                            'array',
-                            [
-                                Type::combineTypes($inner_key_types),
-                                Type::combineTypes($inner_value_types)
-                            ]
-                        )
+                        new Type\Atomic\TArray([
+                            Type::combineTypes($inner_key_types),
+                            Type::combineTypes($inner_value_types)
+                        ])
                     ]);
                 }
             }
@@ -472,13 +479,10 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             return new Type\Union([
-                new Type\Generic(
-                    'array',
-                    [
-                        Type::getInt(),
-                        clone $first_arg_array_generic->type_params[1]
-                    ]
-                )
+                new Type\Atomic\TArray([
+                    Type::getInt(),
+                    clone $first_arg_array_generic->type_params[1]
+                ])
             ]);
         }
 
@@ -497,13 +501,10 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             return new Type\Union([
-                new Type\Generic(
-                    'array',
-                    [
-                        clone $first_arg_array_generic->type_params[0],
-                        $inner_type
-                    ]
-                )
+                new Type\Atomic\TArray([
+                    clone $first_arg_array_generic->type_params[0],
+                    $inner_type
+                ])
             ]);
         }
 
@@ -547,7 +548,7 @@ class FunctionChecker extends FunctionLikeChecker
         $array_arg_type = $array_arg
                 && isset($array_arg->inferredType)
                 && isset($array_arg->inferredType->types['array'])
-                && $array_arg->inferredType->types['array'] instanceof Type\Generic
+                && $array_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
             ? $array_arg->inferredType->types['array']
             : null;
 
@@ -556,7 +557,7 @@ class FunctionChecker extends FunctionLikeChecker
 
             if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure &&
                 isset($function_call_arg->value->inferredType) &&
-                $function_call_arg->value->inferredType->types['Closure'] instanceof Type\Fn
+                $function_call_arg->value->inferredType->types['Closure'] instanceof Type\Atomic\Fn
             ) {
                 $closure_return_type = $function_call_arg->value->inferredType->types['Closure']->return_type;
 
@@ -576,12 +577,22 @@ class FunctionChecker extends FunctionLikeChecker
 
                 if ($call_map_key === 'array_map') {
                     $inner_type = clone $closure_return_type;
-                    return new Type\Union([new Type\Generic('array', [$key_type, $inner_type])]);
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            $key_type,
+                            $inner_type
+                        ])
+                    ]);
                 }
 
                 if ($array_arg_type) {
                     $inner_type = clone $array_arg_type->type_params[1];
-                    return new Type\Union([new Type\Generic('array', [$key_type, $inner_type])]);
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            $key_type,
+                            $inner_type
+                        ])
+                    ]);
                 }
             } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_) {
                 $mapped_function_id = strtolower($function_call_arg->value->value);
@@ -591,7 +602,12 @@ class FunctionChecker extends FunctionLikeChecker
                 if (isset($call_map[$mapped_function_id][0])) {
                     if ($call_map[$mapped_function_id][0]) {
                         $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
-                        return new Type\Union([new Type\Generic('array', [Type::getInt(), $mapped_function_return])]);
+                        return new Type\Union([
+                            new Type\Atomic\TArray([
+                                Type::getInt(),
+                                $mapped_function_return
+                            ])
+                        ]);
                     }
                 } else {
                     // @todo handle array_map('some_custom_function', $arr)

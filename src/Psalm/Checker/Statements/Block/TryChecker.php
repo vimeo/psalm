@@ -8,6 +8,7 @@ use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Context;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 
 class TryChecker
 {
@@ -62,7 +63,7 @@ class TryChecker
                      * @return Type\Atomic
                      */
                     function ($fq_catch_class) {
-                        return new Type\Atomic($fq_catch_class);
+                        return new TNamedObject($fq_catch_class);
                     },
                     $fq_catch_classes
                 )

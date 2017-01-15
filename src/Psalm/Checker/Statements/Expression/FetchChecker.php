@@ -31,6 +31,26 @@ use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\Generic;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNumericString;
 
 class FetchChecker
 {
@@ -153,7 +173,7 @@ class FetchChecker
         }
 
         foreach ($stmt_var_type->types as $lhs_type_part) {
-            if ($lhs_type_part->isNull()) {
+            if ($lhs_type_part instanceof TNull) {
                 continue;
             }
 
@@ -180,14 +200,21 @@ class FetchChecker
             // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
             // but we don't want to throw an error
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-            if ($lhs_type_part->isObject() ||
-                in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'])
+            if ($lhs_type_part instanceof TObject ||
+                ($lhs_type_part instanceof TNamedObject &&
+                    in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'])
+                )
             ) {
                 $stmt->inferredType = Type::getMixed();
                 continue;
             }
 
             $file_checker = $statements_checker->getFileChecker();
+
+            if (!$lhs_type_part instanceof TNamedObject) {
+                // @todo deal with this
+                continue;
+            }
 
             if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
                 if (InterfaceChecker::interfaceExists($lhs_type_part->value, $file_checker)) {
@@ -544,7 +571,7 @@ class FetchChecker
                 }
             }
 
-            $stmt->class->inferredType = $fq_class_name ? new Type\Union([new Type\Atomic($fq_class_name)]) : null;
+            $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
 
         if ($fq_class_name &&
@@ -685,26 +712,23 @@ class FetchChecker
             if (!$keyed_assignment_type || $keyed_assignment_type->isEmpty()) {
                 if (!$assignment_key_type->isMixed() && !$assignment_key_type->hasInt() && $assignment_key_value) {
                     $keyed_assignment_type = new Type\Union([
-                        new Type\ObjectLike(
-                            'array',
-                            [
-                                $assignment_key_value => $assignment_value_type
-                            ]
-                        )
+                        new Type\Atomic\ObjectLike([
+                            $assignment_key_value => $assignment_value_type
+                        ])
                     ]);
                 } else {
                     $keyed_assignment_type = Type::getEmptyArray();
-                    /** @var Type\Generic */
+                    /** @var Type\Atomic\TArray */
                     $keyed_assignment_type_array = $keyed_assignment_type->types['array'];
                     $keyed_assignment_type_array->type_params[0] = $assignment_key_type;
                     $keyed_assignment_type_array->type_params[1] = $assignment_value_type;
                 }
             } else {
                 foreach ($keyed_assignment_type->types as &$type) {
-                    if ($type->isScalarType() && !$type->isString()) {
+                    if ($type instanceof TInt || $type instanceof TFloat || $type instanceof TBool) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAssignment(
-                                'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $type->value,
+                                'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $type->getKey(),
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
@@ -715,7 +739,7 @@ class FetchChecker
                         continue;
                     }
 
-                    if ($type instanceof Type\Generic) {
+                    if ($type instanceof TString || $type instanceof Type\Atomic\TArray) {
                         $refined_type = self::refineArrayType(
                             $statements_checker,
                             $type,
@@ -734,7 +758,7 @@ class FetchChecker
                         }
 
                         $type = $refined_type;
-                    } elseif ($type instanceof Type\ObjectLike && $assignment_key_value) {
+                    } elseif ($type instanceof Type\Atomic\ObjectLike && $assignment_key_value) {
                         if (isset($type->properties[$assignment_key_value])) {
                             $type->properties[$assignment_key_value] = Type::combineUnionTypes(
                                 $type->properties[$assignment_key_value],
@@ -768,10 +792,10 @@ class FetchChecker
             $var_type = $stmt->var->inferredType;
 
             foreach ($var_type->types as &$type) {
-                if ($type instanceof Type\Generic || $type instanceof Type\ObjectLike) {
+                if ($type instanceof Type\Atomic\TArray || $type instanceof Type\Atomic\ObjectLike) {
                     $value_index = null;
 
-                    if ($type instanceof Type\Generic) {
+                    if ($type instanceof Type\Atomic\TArray) {
                         // create a union type to pass back to the statement
                         $value_index = count($type->type_params) - 1;
 
@@ -821,16 +845,17 @@ class FetchChecker
                         }
 
                         if ($array_var_id === $var_id) {
-                            if ($type instanceof Type\ObjectLike ||
-                                ($type->isGenericArray() && !$key_type->hasInt() && $type->type_params[1]->isEmpty())
+                            if ($type instanceof Type\Atomic\ObjectLike ||
+                                (
+                                    $type instanceof TArray &&
+                                    !$key_type->hasInt() &&
+                                    $type->type_params[1]->isEmpty()
+                                )
                             ) {
                                 $properties = $key_value ? [$key_value => $keyed_assignment_type] : [];
 
                                 $assignment_type = new Type\Union([
-                                    new Type\ObjectLike(
-                                        'array',
-                                        $properties
-                                    )
+                                    new Type\Atomic\ObjectLike($properties)
                                 ]);
                             } else {
                                 if (!$keyed_assignment_type) {
@@ -838,13 +863,10 @@ class FetchChecker
                                 }
 
                                 $assignment_type = new Type\Union([
-                                    new Type\Generic(
-                                        'array',
-                                        [
-                                            $key_type,
-                                            $keyed_assignment_type
-                                        ]
-                                    )
+                                    new Type\Atomic\TArray([
+                                        $key_type,
+                                        $keyed_assignment_type
+                                    ])
                                 ]);
                             }
 
@@ -858,7 +880,9 @@ class FetchChecker
                             }
                         }
 
-                        if ($type instanceof Type\Generic && $type->type_params[$value_index]->isEmpty()) {
+                        if ($type instanceof Type\Atomic\TArray &&
+                            $type->type_params[$value_index]->isEmpty()
+                        ) {
                             $empty_type = Type::getEmptyArray();
 
                             if (!isset($stmt->inferredType)) {
@@ -873,14 +897,14 @@ class FetchChecker
 
                             for ($i = 0; $i < $nesting + 1; $i++) {
                                 if (isset($array_type->types['array']) &&
-                                    $array_type->types['array'] instanceof Type\Generic
+                                    $array_type->types['array'] instanceof Type\Atomic\TArray
                                 ) {
                                     $atomic_array = $array_type->types['array'];
 
                                     if ($i < $nesting) {
                                         if ($atomic_array->type_params[1]->isEmpty()) {
                                             $new_empty = clone $empty_type;
-                                            /** @var Type\Generic */
+                                            /** @var Type\Atomic\TArray */
                                             $new_atomic_empty = $new_empty->types['array'];
                                             $new_atomic_empty->type_params[0] = $key_type;
 
@@ -901,9 +925,9 @@ class FetchChecker
 
                             $context->vars_in_scope[$var_id] = $context_type;
                         }
-                    } elseif ($type instanceof Type\Generic && $value_index !== null) {
+                    } elseif ($type instanceof Type\Atomic\TArray && $value_index !== null) {
                         $stmt->inferredType = $type->type_params[$value_index];
-                    } elseif ($type instanceof Type\ObjectLike) {
+                    } elseif ($type instanceof Type\Atomic\ObjectLike) {
                         if ($key_value && isset($type->properties[$key_value])) {
                             $stmt->inferredType = clone $type->properties[$key_value];
                         } elseif ($key_type->hasInt()) {
@@ -932,7 +956,7 @@ class FetchChecker
                             }
                         }
                     }
-                } elseif ($type->isString()) {
+                } elseif ($type instanceof TString) {
                     if ($key_type) {
                         $key_type = Type::combineUnionTypes($key_type, Type::getInt());
                     } else {
@@ -946,7 +970,7 @@ class FetchChecker
                     }
 
                     $stmt->inferredType = Type::getString();
-                } elseif ($type->isNull()) {
+                } elseif ($type instanceof TNull) {
                     if (IssueBuffer::accepts(
                         new NullArrayAccess(
                             'Cannot access array value on possibly null variable ' . $array_var_id . ' of type ' . $var_type,
@@ -961,7 +985,7 @@ class FetchChecker
                         }
                         continue;
                     }
-                } elseif ($type->isMixed() || $type->isEmpty()) {
+                } elseif ($type instanceof TMixed || $type instanceof TEmpty) {
                     if (IssueBuffer::accepts(
                         new MixedArrayAccess(
                             'Cannot access array value on mixed variable ' . $array_var_id,
@@ -972,12 +996,15 @@ class FetchChecker
                         $stmt->inferredType = Type::getMixed();
                         break;
                     }
-                } elseif (strtolower($type->value) !== 'simplexmlelement' &&
-                    !ClassChecker::classImplements($type->value, 'ArrayAccess')
+                } elseif (!$type instanceof TNamedObject ||
+                    (strtolower($type->value) !== 'simplexmlelement' &&
+                        !ClassChecker::classImplements($type->value, 'ArrayAccess')
+                    )
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidArrayAccess(
-                            'Cannot access array value on non-array variable ' . $array_var_id . ' of type ' . $var_type,
+                            'Cannot access array value on non-array variable ' .
+                            $array_var_id . ' of type ' . $var_type,
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -999,15 +1026,15 @@ class FetchChecker
 
         if (!$key_type) {
             $key_type = new Type\Union([
-                new Type\Atomic('int'),
-                new Type\Atomic('string')
+                new TInt,
+                new TString
             ]);
         }
 
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType) && $key_type && !$key_type->isEmpty()) {
                 foreach ($stmt->dim->inferredType->types as $at) {
-                    if (($at->isMixed() || $at->isEmpty()) &&
+                    if (($at instanceof TMixed || $at instanceof TEmpty) &&
                         $inferred_key_type &&
                         !$inferred_key_type->isMixed() &&
                         !$inferred_key_type->isEmpty()
@@ -1058,7 +1085,7 @@ class FetchChecker
         $var_id,
         CodeLocation $code_location
     ) {
-        if ($type->value === 'null') {
+        if ($type instanceof TNull) {
             if (IssueBuffer::accepts(
                 new NullReference(
                     'Cannot assign value on possibly null array' . ($var_id ? ' ' . $var_id : ''),
@@ -1072,16 +1099,16 @@ class FetchChecker
             return $type;
         }
 
-        if ($type->value === 'string' && $assignment_value_type->hasString() && !$assignment_key_type->hasString()) {
+        if ($type instanceof TString && $assignment_value_type->hasString() && !$assignment_key_type->hasString()) {
             return null;
         }
 
-        if (!$type->isArray() &&
-            !ClassChecker::classImplements($type->value, 'ArrayAccess')
+        if (!$type instanceof TArray &&
+            (!$type instanceof TNamedObject || !ClassChecker::classImplements($type->value, 'ArrayAccess'))
         ) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
-                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type->value . ' that does not ' .
+                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type . ' that does not ' .
                         'implement ArrayAccess',
                     $code_location
                 ),
@@ -1093,7 +1120,7 @@ class FetchChecker
             return $type;
         }
 
-        if ($type instanceof Type\Generic && $type->value === 'array') {
+        if ($type instanceof Type\Atomic\Generic && $type instanceof TArray) {
             if ($type->type_params[1]->isEmpty()) {
                 $type->type_params[0] = $assignment_key_type;
                 $type->type_params[1] = $assignment_value_type;

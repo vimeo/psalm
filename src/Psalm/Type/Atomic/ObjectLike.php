@@ -1,15 +1,11 @@
 <?php
-namespace Psalm\Type;
+namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
+use Psalm\Type\Union;
 
-class ObjectLike extends Atomic
+class ObjectLike extends \Psalm\Type\Atomic
 {
-    /**
-     * @var string
-     */
-    public $value = 'array';
-
     /**
      * @var array<string,Union>
      */
@@ -18,10 +14,9 @@ class ObjectLike extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param string            $value
      * @param array<string,Union> $properties
      */
-    public function __construct($value, array $properties)
+    public function __construct(array $properties)
     {
         $this->properties = $properties;
     }
@@ -31,8 +26,7 @@ class ObjectLike extends Atomic
      */
     public function __toString()
     {
-        return $this->value .
-                '{' .
+        return 'array{' .
                 implode(
                     ', ',
                     array_map(
@@ -60,11 +54,10 @@ class ObjectLike extends Atomic
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         if ($use_phpdoc_format) {
-            return $this->value;
+            return 'array';
         }
 
-        return $this->value .
-                '{' .
+        return 'array{' .
                 implode(
                     ', ',
                     array_map(
@@ -102,5 +95,13 @@ class ObjectLike extends Atomic
         foreach ($this->properties as $key => &$property) {
             $property = clone $property;
         }
+    }
+
+    /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return 'array';
     }
 }

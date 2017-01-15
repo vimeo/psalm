@@ -11,6 +11,27 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\Type\Atomic\Generic;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNumericString;
 
 class TypeChecker
 {
@@ -597,7 +618,7 @@ class TypeChecker
         if ($new_var_type === 'empty') {
             if ($existing_var_type->hasType('bool')) {
                 $existing_var_type->removeType('bool');
-                $existing_var_type->types['false'] = new Type\Atomic('false');
+                $existing_var_type->types['false'] = new TFalse;
             }
 
             $existing_var_type->removeObjects();
@@ -625,7 +646,7 @@ class TypeChecker
 
         if ($new_var_type === 'numeric' && $existing_var_type->hasString()) {
             $existing_var_type->removeType('string');
-            $existing_var_type->types['numeric-string'] = new Type\Atomic('numeric-string');
+            $existing_var_type->types['numeric-string'] = new TNumericString;
 
             return $existing_var_type;
         }
@@ -701,7 +722,7 @@ class TypeChecker
         $has_type_mismatch = false;
 
         foreach ($input_type->types as $input_type_part) {
-            if ($input_type_part->isNull() && $ignore_null) {
+            if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
 
@@ -709,18 +730,19 @@ class TypeChecker
             $scalar_type_match_found = false;
 
             foreach ($container_type->types as $container_type_part) {
-                if ($container_type_part->isNull() && $ignore_null) {
+                if ($container_type_part instanceof TNull && $ignore_null) {
                     continue;
                 }
 
                 $input_is_object = $input_type_part->isObjectType();
                 $container_is_object = $container_type_part->isObjectType();
 
-                if (strtolower($input_type_part->value) === strtolower($container_type_part->value) ||
+                if ($input_type_part->shallowEquals($container_type_part) ||
                     (
                         $input_is_object &&
                         $container_is_object &&
-                        !$input_type_part->isObject() &&
+                        $input_type_part instanceof TNamedObject &&
+                        $container_type_part instanceof TNamedObject &&
                         ClassChecker::classExists($input_type_part->value, $file_checker) &&
                         (
                             ClassChecker::classExtendsOrImplements(
@@ -733,7 +755,7 @@ class TypeChecker
                 ) {
                     $all_types_contain = true;
 
-                    if ($input_type_part instanceof Type\Generic && $container_type_part instanceof Type\Generic) {
+                    if ($input_type_part instanceof TArray && $container_type_part instanceof TArray) {
                         foreach ($input_type_part->type_params as $i => $input_param) {
                             $container_param = $container_type_part->type_params[$i];
 
@@ -763,45 +785,50 @@ class TypeChecker
                     break;
                 }
 
-                if ($input_type_part->value === 'false' && $container_type_part->value === 'bool') {
+                if ($input_type_part instanceof TFalse && $container_type_part instanceof TBool) {
                     $type_match_found = true;
                 }
 
-                if ($input_type_part->value === 'int' && $container_type_part->value === 'float') {
+                if ($input_type_part instanceof TInt && $container_type_part instanceof TFloat) {
                     $type_match_found = true;
                 }
 
-                if ($input_type_part->value === 'Closure' && $container_type_part->value === 'callable') {
+                if ($input_type_part instanceof TNamedObject &&
+                    $input_type_part->value === 'Closure' &&
+                    $container_type_part instanceof TCallable
+                ) {
                     $type_match_found = true;
                 }
 
-                if ($container_type_part->isNumeric() && $input_type_part->isNumericType()) {
+                if ($container_type_part instanceof TNumeric && $input_type_part->isNumericType()) {
                     $type_match_found = true;
                 }
 
-                if ($container_type_part->isGenericArray() && $input_type_part->isObjectLike()) {
+                if ($container_type_part instanceof TArray && $input_type_part instanceof ObjectLike) {
                     $type_match_found = true;
                 }
 
-                if ($container_type_part->isIterable() &&
+                if ($container_type_part instanceof TNamedObject &&
+                    strtolower($container_type_part->value) === 'iterable' &&
                     (
-                        $input_type_part->isArray() ||
-                        ClassChecker::classExtendsOrImplements(
-                            $input_type_part->value,
-                            'Traversable'
+                        $input_type_part instanceof TArray ||
+                        ($input_type_part instanceof TNamedObject &&
+                            ClassChecker::classExtendsOrImplements(
+                                $input_type_part->value,
+                                'Traversable'
+                            )
                         )
                     )
                 ) {
                     $type_match_found = true;
                 }
 
-                if ($container_type_part->isScalar() && $input_type_part->isScalarType()) {
+                if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
                     $type_match_found = true;
                 }
 
-                if ($container_type_part->isString() &&
-                    $input_type_part->isObjectType() &&
-                    !$input_type_part->isObject()
+                if ($container_type_part instanceof TString &&
+                    $input_type_part instanceof TNamedObject
                 ) {
                     // check whether the object has a __toString method
                     if (ClassChecker::classExists($input_type_part->value, $file_checker) &&
@@ -812,30 +839,30 @@ class TypeChecker
                     }
                 }
 
-                if ($container_type_part->isCallable() &&
-                    ($input_type_part->value === 'string' || $input_type_part->value === 'array')
+                if ($container_type_part instanceof TCallable &&
+                    ($input_type_part instanceof TString || $input_type_part instanceof TArray)
                 ) {
                     // @todo add value checks if possible here
                     $type_match_found = true;
                 }
 
-                if ($input_type_part->isNumeric()) {
+                if ($input_type_part instanceof TNumeric) {
                     if ($container_type_part->isNumericType()) {
                         $scalar_type_match_found = true;
                     }
                 }
 
-                if ($input_type_part->isScalarType() || $input_type_part->isScalar()) {
-                    if ($container_type_part->isScalarType()) {
+                if ($input_type_part instanceof Scalar || $input_type_part instanceof TScalar) {
+                    if ($container_type_part instanceof Scalar) {
                         $scalar_type_match_found = true;
                     }
-                } elseif ($container_type_part->isObject() &&
-                    !$input_type_part->isArray() &&
-                    !$input_type_part->isResource()
+                } elseif ($container_type_part instanceof TObject &&
+                    !$input_type_part instanceof TArray &&
+                    !$input_type_part instanceof TResource
                 ) {
                     $type_match_found = true;
-                } elseif ($input_is_object &&
-                    $container_is_object &&
+                } elseif ($container_type_part instanceof TNamedObject &&
+                    $input_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($container_type_part->value, $file_checker) &&
                     ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
                     ClassChecker::classExtendsOrImplements(
@@ -888,14 +915,15 @@ class TypeChecker
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
-                    if ($existing_key_type_part->isNull()) {
+                    if ($existing_key_type_part instanceof TNull) {
                         $class_property_type = Type::getNull();
-                    } elseif ($existing_key_type_part->isMixed() ||
-                        $existing_key_type_part->isObject() ||
-                        strtolower($existing_key_type_part->value) === 'stdclass'
+                    } elseif ($existing_key_type_part instanceof TMixed ||
+                        $existing_key_type_part instanceof TObject ||
+                        ($existing_key_type_part instanceof TNamedObject &&
+                            strtolower($existing_key_type_part->value) === 'stdclass')
                     ) {
                         $class_property_type = Type::getMixed();
-                    } else {
+                    } elseif ($existing_key_type_part instanceof TNamedObject) {
                         $property_id = $existing_key_type_part->value . '::$' . $key_parts[$i];
 
                         if (!ClassLikeChecker::propertyExists($property_id)) {
@@ -909,6 +937,9 @@ class TypeChecker
                         $class_property_type = $class_storage->properties[$key_parts[$i]]->type;
 
                         $class_property_type = $class_property_type ? clone $class_property_type : Type::getMixed();
+                    } else {
+                        // @todo handle this
+                        continue;
                     }
 
                     if ($new_base_type instanceof Type\Union) {
@@ -959,9 +990,9 @@ class TypeChecker
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
-                    if ($existing_key_type_part instanceof Type\Generic) {
+                    if ($existing_key_type_part instanceof Type\Atomic\TArray) {
                         $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
-                    } elseif (!$existing_key_type_part instanceof Type\ObjectLike) {
+                    } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                         return null;
                     } else {
                         $array_properties = $existing_key_type_part->properties;
@@ -1252,11 +1283,15 @@ class TypeChecker
 
             $inferred_atomic_type = $inferred_type->types[$key];
 
-            if (!($declared_atomic_type instanceof Type\Generic)) {
+            if (!$declared_atomic_type instanceof Type\Atomic\TArray &&
+                !$declared_atomic_type instanceof Type\Atomic\TGenericObject
+            ) {
                 continue;
             }
 
-            if (!($inferred_atomic_type instanceof Type\Generic)) {
+            if (!$inferred_atomic_type instanceof Type\Atomic\TArray &&
+                !$inferred_atomic_type instanceof Type\Atomic\TGenericObject
+            ) {
                 // @todo handle this better
                 continue;
             }
@@ -1279,11 +1314,11 @@ class TypeChecker
 
             $inferred_atomic_type = $inferred_type->types[$key];
 
-            if (!($declared_atomic_type instanceof Type\ObjectLike)) {
+            if (!($declared_atomic_type instanceof Type\Atomic\ObjectLike)) {
                 continue;
             }
 
-            if (!($inferred_atomic_type instanceof Type\ObjectLike)) {
+            if (!($inferred_atomic_type instanceof Type\Atomic\ObjectLike)) {
                 // @todo handle this better
                 continue;
             }

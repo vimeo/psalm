@@ -1,9 +1,10 @@
 <?php
-namespace Psalm\Type;
+namespace Psalm\Type\Atomic;
 
 use Psalm\FunctionLikeParameter;
+use Psalm\Type\Union;
 
-class Fn extends Atomic
+class Fn extends TNamedObject
 {
     /**
      * @var string
@@ -31,5 +32,13 @@ class Fn extends Atomic
     {
         $this->params = $params;
         $this->return_type = $return_type;
+    }
+
+    /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return 'Closure';
     }
 }
