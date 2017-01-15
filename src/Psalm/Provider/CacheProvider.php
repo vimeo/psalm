@@ -26,7 +26,7 @@ class CacheProvider
      * @param  string   $file_path
      * @param  string   $file_content_hash
      * @param  string   $file_cache_key
-     * @return array<int, PhpParser\Node\Stmt>|null
+     * @return array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>|null
      */
     public static function loadStatementsFromCache($file_path, $file_content_hash, $file_cache_key)
     {
@@ -77,7 +77,7 @@ class CacheProvider
     /**
      * @param  string                           $file_cache_key
      * @param  string                           $file_content_hash
-     * @param  array<int, PhpParser\Node\Stmt>  $stmts
+     * @param  array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>  $stmts
      * @param  bool                             $touch_only
      * @return void
      */
