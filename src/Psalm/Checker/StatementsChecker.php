@@ -264,14 +264,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $const_visibility = \ReflectionProperty::IS_PUBLIC;
 
-                if ($stmt->isProtected()) {
-                    $const_visibility = \ReflectionProperty::IS_PROTECTED;
-                }
-
-                if ($stmt->isPrivate()) {
-                    $const_visibility = \ReflectionProperty::IS_PRIVATE;
-                }
-
                 foreach ($stmt->consts as $const) {
                     ExpressionChecker::analyze($this, $const->value, $context);
 

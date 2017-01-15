@@ -92,7 +92,6 @@ abstract class Type
                 'mixed',
                 'resource',
                 'callable',
-                'iterable',
             ]
         )) {
             return strtolower($type_string);
