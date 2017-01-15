@@ -371,8 +371,88 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         class A { }
-        $a = new A();
-        if ($a instanceof A) {
+
+        /**
+         * @return void
+         */
+        function fooFoo(A $a) {
+            if ($a instanceof A) {
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage FailedTypeResolution
+     * @return                   void
+     */
+    public function testFailedTypeResolutionWithDocblock()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A { }
+
+        /**
+         * @param  A $a
+         * @return void
+         */
+        function fooFoo(A $a) {
+            if ($a instanceof A) {
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testTypeResolutionFromDocblock()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A { }
+
+        /**
+         * @param  A $a
+         * @return void
+         */
+        function fooFoo($a) {
+            if ($a instanceof A) {
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage FailedTypeResolution
+     * @return                   void
+     */
+    public function testTypeResolutionFromDocblockAndInstanceof()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A { }
+
+        /**
+         * @param  A $a
+         * @return void
+         */
+        function fooFoo($a) {
+            if ($a instanceof A) {
+                if ($a instanceof A) {
+                }
+            }
         }
         ');
 

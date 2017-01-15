@@ -1002,6 +1002,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 )
             );
 
+            $new_param_type->from_docblock = true;
+
             if (!$storage->param_types[$param_name]->isMixed()) {
                 if (!TypeChecker::isContainedBy(
                     $new_param_type,
@@ -1033,7 +1035,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
 
                     $function_signature_param->signature_type = $function_signature_param->type;
-                    $function_signature_param->type = $new_param_type;
+
+                    if ((string)$function_signature_param->type !== (string)$new_param_type) {
+                        $function_signature_param->type = $new_param_type;
+                    }
+
                     break;
                 }
             }
