@@ -434,12 +434,10 @@ return [
         'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\trycatch' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>',
+        'finallyStmts' => 'array<int, PhpParser\Node\Stmt|PhpParser\Node\Expr>',
     ],
     'phpparser\\node\\stmt\\catch_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\finally_' => [
         'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\case_' => [

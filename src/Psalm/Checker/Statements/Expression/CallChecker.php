@@ -1320,7 +1320,8 @@ class CallChecker
 
                 if ($stmt->class instanceof PhpParser\Node\Name
                     && ($stmt->class->parts[0] !== 'parent' || $statements_checker->isStatic())
-                    && (!$context->self
+                    && (
+                        !$context->self
                         || $statements_checker->isStatic()
                         || !ClassChecker::classExtends($project_checker, $context->self, $fq_class_name)
                     )

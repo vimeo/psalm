@@ -8,12 +8,10 @@ use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\TraitChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\EmptyArrayAccess;
-use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyFetch;
@@ -189,7 +187,8 @@ class FetchChecker
             // but we don't want to throw an error
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
             if ($lhs_type_part instanceof TObject ||
-                ($lhs_type_part instanceof TNamedObject &&
+                (
+                    $lhs_type_part instanceof TNamedObject &&
                     in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'], true)
                 )
             ) {
@@ -503,52 +502,20 @@ class FetchChecker
 
             $const_id = $fq_class_name . '::' . $stmt->name;
 
-            if ($fq_class_name === $context->self
-                || (
-                    $statements_checker->getSource()->getSource() instanceof TraitChecker &&
-                    $fq_class_name === $statements_checker->getSource()->getFQCLN()
-                )
-            ) {
-                $class_visibility = \ReflectionProperty::IS_PRIVATE;
-            } elseif ($context->self &&
-                ClassChecker::classExtends($project_checker, $context->self, $fq_class_name)
-            ) {
-                $class_visibility = \ReflectionProperty::IS_PROTECTED;
-            } else {
-                $class_visibility = \ReflectionProperty::IS_PUBLIC;
-            }
-
             $class_constants = ClassLikeChecker::getConstantsForClass(
                 $project_checker,
                 $fq_class_name,
-                $class_visibility
+                \ReflectionProperty::IS_PUBLIC
             );
 
             if (!isset($class_constants[$stmt->name])) {
-                $all_class_constants = [];
-
-                if ($fq_class_name !== $context->self) {
-                    $all_class_constants = ClassLikeChecker::getConstantsForClass(
-                        $project_checker,
-                        $fq_class_name,
-                        \ReflectionProperty::IS_PRIVATE
-                    );
-                }
-
-                if ($all_class_constants && isset($all_class_constants[$stmt->name])) {
-                    IssueBuffer::add(
-                        new InaccessibleClassConstant(
-                            'Constant ' . $const_id . ' is not visible in this context',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
-                } else {
-                    IssueBuffer::add(
-                        new UndefinedConstant(
-                            'Constant ' . $const_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
+                if (IssueBuffer::accepts(
+                    new UndefinedConstant(
+                        'Constant ' . $const_id . ' is not defined',
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    )
+                )) {
+                    // fall through
                 }
 
                 return false;
@@ -1167,7 +1134,8 @@ class FetchChecker
                 }
 
                 if (!$type instanceof TNamedObject ||
-                    (strtolower($type->value) !== 'simplexmlelement' &&
+                    (
+                        strtolower($type->value) !== 'simplexmlelement' &&
                         ClassChecker::classExists($project_checker, $type->value) &&
                         !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess')
                     )
