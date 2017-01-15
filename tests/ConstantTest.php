@@ -52,4 +52,50 @@ class ConstantTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testConstantDefinedInFunction()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @return void
+         */
+        function defineConstant() {
+            define("CONSTANT", 1);
+        }
+
+        defineConstant();
+
+        echo CONSTANT;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedConstant
+     * @return                   void
+     */
+    public function testConstantDefinedInFunctionButNotCalled()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @return void
+         */
+        function defineConstant() {
+            define("CONSTANT", 1);
+        }
+
+        echo CONSTANT;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

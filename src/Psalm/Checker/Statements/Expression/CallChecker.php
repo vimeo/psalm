@@ -123,6 +123,8 @@ class CallChecker
 
             $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
 
+            $defined_constants = [];
+
             if ($stmt->name instanceof PhpParser\Node\Expr) {
                 if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
                     return false;
@@ -196,6 +198,13 @@ class CallChecker
                     $statements_checker->getFilePath(),
                     $statements_checker->getFileChecker()
                 );
+
+                if (!$in_call_map) {
+                    $defined_constants = FunctionChecker::getDefinedConstants(
+                        $method_id,
+                        $statements_checker->getFilePath()
+                    );
+                }
             }
 
             if (self::checkFunctionArguments(
@@ -225,6 +234,11 @@ class CallChecker
                 $code_location
             ) === false) {
                 // fall through
+            }
+
+            foreach ($defined_constants as $const_name => $const_type) {
+                $context->constants[$const_name] = clone $const_type;
+                $context->vars_in_scope[$const_name] = clone $const_type;
             }
 
             if ($method_id) {

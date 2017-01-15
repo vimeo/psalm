@@ -36,7 +36,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
-     * @return array<int, \Psalm\FunctionLikeParameter>|null
+     * @return array<int, \Psalm\FunctionLikeParameter>
      */
     public static function getMethodParams($method_id)
     {
@@ -47,6 +47,25 @@ class MethodChecker extends FunctionLikeChecker
                 return $storage->params;
             }
         }
+
+        throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);
+    }
+
+    /**
+     * @param  string $method_id
+     * @return array<string, Type\Union>
+     */
+    public static function getDefinedConstants($method_id)
+    {
+        if ($method_id = self::getDeclaringMethodId($method_id)) {
+            $storage = self::getStorage($method_id);
+
+            if ($storage) {
+                return $storage->defined_constants;
+            }
+        }
+
+        throw new \UnexpectedValueException('Cannot get defined constants for ' . $method_id);
     }
 
     /**
