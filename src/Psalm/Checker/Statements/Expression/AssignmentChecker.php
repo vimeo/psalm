@@ -471,29 +471,11 @@ class AssignmentChecker
                     return null;
                 }
 
-                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                    continue;
-                }
-
-                $has_regular_setter = true;
-
                 if (ExpressionChecker::isMock($lhs_type_part->value)) {
+                    $has_regular_setter = true;
                     $context->vars_in_scope[$var_id] = Type::getMixed();
 
                     return null;
-                }
-
-                if (($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this')
-                    || $lhs_type_part->value === $context->self
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self &&
-                    ClassChecker::classExtends($lhs_type_part->value, $context->self)
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
-                } else {
-                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
                 }
 
                 if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
@@ -522,6 +504,25 @@ class AssignmentChecker
                     }
 
                     return null;
+                }
+
+                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    continue;
+                }
+
+                $has_regular_setter = true;
+
+                if (($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this')
+                    || $lhs_type_part->value === $context->self
+                ) {
+                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                } elseif ($context->self &&
+                    ClassChecker::classExtends($lhs_type_part->value, $context->self)
+                ) {
+                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                } else {
+                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
                 }
 
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
