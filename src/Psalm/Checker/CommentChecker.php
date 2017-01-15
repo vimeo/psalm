@@ -105,6 +105,7 @@ class CommentChecker
             if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
                 && !preg_match('/\[[^\]]+\]/', $line_parts[0])
                 && !strpos($line_parts[0], '::')
+                && $line_parts[0][0] !== '{'
             ) {
                 $info->return_type = $line_parts[0];
                 $info->return_type_line_number = array_keys($return_specials)[0];
@@ -125,6 +126,7 @@ class CommentChecker
                         && !preg_match('/\[[^\]]+\]/', $line_parts[0])
                         && preg_match('/^&?\$[A-Za-z0-9_]+$/', $line_parts[1])
                         && !strpos($line_parts[0], '::')
+                        && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);

@@ -55,11 +55,12 @@ abstract class Type
 
         try {
             $parse_tree = ParseTree::createFromTokens($type_tokens);
+            $parsed_type = self::getTypeFromTree($parse_tree);
         } catch (TypeParseTreeException $e) {
             throw $e;
+        } catch (\Exception $e) {
+            throw new TypeParseTreeException($e->getMessage());
         }
-
-        $parsed_type = self::getTypeFromTree($parse_tree);
 
         if (!($parsed_type instanceof Union)) {
             $parsed_type = new Union([$parsed_type]);
