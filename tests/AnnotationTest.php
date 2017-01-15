@@ -304,8 +304,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
             /**
              * @param A $a
              * @param bool $b
+             * @return void
              */
-            public function g(A $a, $b) : void {
+            public function g(A $a, $b) {
             }
         }
         ');
@@ -327,8 +328,9 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
             /**
              * @param \Foo\A $a
              * @param bool $b
+             * @return void
              */
-            public function g(A $a, $b) : void {
+            public function g(A $a, $b) {
             }
         }
         ');
