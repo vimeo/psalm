@@ -566,45 +566,4 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MoreSpecificReturnType
-     * @return                   void
-     */
-    public function testMoreSpecificReturnType()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A {}
-        class B extends A {}
-
-        function foo(A $a) : B {
-            return $a;
-        }
-        ');
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testNamespacedAliasedClassCall()
-    {
-        $stmts = self::$parser->parse('<?php
-        namespace Aye {
-            class Foo {}
-        }
-        namespace Bee {
-            use Aye as A;
-
-            new A\Foo();
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
 }
