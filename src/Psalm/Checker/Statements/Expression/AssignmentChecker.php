@@ -178,17 +178,12 @@ class AssignmentChecker
             if (!$statements_checker->hasVariable($var_id)) {
                 $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $assign_var));
             }
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
-                || $assign_var instanceof PhpParser\Node\Expr\Array_
-        ) {
-            /** @var int $offset */
-            foreach ($assign_var->items as $offset => $assign_var_item) {
-                // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
-                if (!$assign_var_item) {
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\List_) {
+            foreach ($assign_var->vars as $offset => $var) {
+                // $var can be null e.g. list($a, ) = ['a', 'b']
+                if (!$var) {
                     continue;
                 }
-
-                $var = $assign_var_item->value;
 
                 if ($assign_value instanceof PhpParser\Node\Expr\Array_
                     && isset($assign_value->items[$offset]->value->inferredType)
@@ -205,14 +200,14 @@ class AssignmentChecker
                     continue;
                 } elseif (isset($assign_value_type->types['array']) &&
                     $assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike &&
-                    !$assign_var_item->key &&
-                    isset($assign_value_type->types['array']->properties[$offset]) // if object-like has int offsets
+                    // if object-like has int offsets
+                    isset($assign_value_type->types['array']->properties[(string)$offset])
                 ) {
                     self::analyze(
                         $statements_checker,
                         $var,
                         null,
-                        $assign_value_type->types['array']->properties[$offset],
+                        $assign_value_type->types['array']->properties[(string)$offset],
                         $context,
                         $doc_comment
                     );
@@ -241,14 +236,6 @@ class AssignmentChecker
                     if (isset($assign_value_type->types['array'])) {
                         if ($assign_value_type->types['array'] instanceof Type\Atomic\TArray) {
                             $new_assign_type = clone $assign_value_type->types['array']->type_params[1];
-                        } elseif ($assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike) {
-                            if ($assign_var_item->key
-                                && $assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                                && isset($assign_value_type->types['array']->properties[$assign_var_item->key->value])
-                            ) {
-                                $new_assign_type =
-                                    clone $assign_value_type->types['array']->properties[$assign_var_item->key->value];
-                            }
                         }
                     }
 
@@ -554,7 +541,8 @@ class AssignmentChecker
                 // but we don't want to throw an error
                 // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
                 if ($lhs_type_part instanceof TObject ||
-                    ($lhs_type_part instanceof TNamedObject &&
+                    (
+                        $lhs_type_part instanceof TNamedObject &&
                         in_array(
                             strtolower($lhs_type_part->value),
                             ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'],
@@ -1036,7 +1024,8 @@ class AssignmentChecker
             if ($return_type->hasObjectType()) {
                 foreach ($return_type->types as $left_type_part) {
                     if ($left_type_part instanceof TNamedObject &&
-                        (strtolower($left_type_part->value) !== 'simplexmlelement' &&
+                        (
+                            strtolower($left_type_part->value) !== 'simplexmlelement' &&
                             ClassChecker::classExists($project_checker, $left_type_part->value) &&
                             !ClassChecker::classImplements($project_checker, $left_type_part->value, 'ArrayAccess')
                         )

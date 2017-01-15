@@ -1,7 +1,6 @@
 <?php
 namespace Psalm;
 
-use LSS\Array2XML;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Issue\CodeIssue;
 
@@ -242,9 +241,7 @@ class IssueBuffer
         if ($format === ProjectChecker::TYPE_JSON) {
             return json_encode(self::$issues_data) . PHP_EOL;
         } elseif ($format === ProjectChecker::TYPE_XML) {
-            $xml = Array2XML::createXML('report', ['item' => self::$issues_data]);
-
-            return $xml->saveXML();
+            throw new \InvalidArgumentException('Not supported in PHP 5.4');
         } elseif ($format === ProjectChecker::TYPE_EMACS) {
             $output = '';
             foreach (self::$issues_data as $issue_data) {

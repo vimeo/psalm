@@ -273,12 +273,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
-                foreach ($catch->types as $catch_type) {
-                    $catch_fqcln = ClassLikeChecker::getFQCLNFromNameObject($catch_type, $this->aliases);
+                $catch_fqcln = ClassLikeChecker::getFQCLNFromNameObject($catch->type, $this->aliases);
 
-                    if (!in_array($catch_fqcln, ['self', 'static', 'parent'], true)) {
-                        $this->project_checker->queueClassLikeForScanning($catch_fqcln, $this->file_path);
-                    }
+                if (!in_array($catch_fqcln, ['self', 'static', 'parent'], true)) {
+                    $this->project_checker->queueClassLikeForScanning($catch_fqcln, $this->file_path);
                 }
             }
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
@@ -605,11 +603,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         if ($parser_return_type = $stmt->getReturnType()) {
             $suffix = '';
 
-            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
-                $suffix = '|null';
-                $parser_return_type = $parser_return_type->type;
-            }
-
             if (is_string($parser_return_type)) {
                 $return_type_string = $parser_return_type . $suffix;
             } else {
@@ -796,11 +789,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             strtolower($param->default->name->parts[0]) === 'null';
 
         $param_typehint = $param->type;
-
-        if ($param_typehint instanceof PhpParser\Node\NullableType) {
-            $is_nullable = true;
-            $param_typehint = $param_typehint->type;
-        }
 
         if ($param_typehint) {
             if (is_string($param_typehint)) {
@@ -1108,13 +1096,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $existing_constants[$const->name] = $const_type;
 
-            if ($stmt->isProtected()) {
-                $storage->protected_class_constants[$const->name] = $const_type;
-            } elseif ($stmt->isPrivate()) {
-                $storage->private_class_constants[$const->name] = $const_type;
-            } else {
-                $storage->public_class_constants[$const->name] = $const_type;
-            }
+            $storage->public_class_constants[$const->name] = $const_type;
         }
     }
 
