@@ -107,8 +107,9 @@ class AnnotationTest extends TestCase
                         /**
                          * @param A $a
                          * @param bool $b
+                         * @return void
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b) {
                         }
                     }',
             ],
@@ -120,8 +121,9 @@ class AnnotationTest extends TestCase
                         /**
                          * @param \Foo\A $a
                          * @param bool $b
+                         * @return void
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b) {
                         }
                     }',
             ],
