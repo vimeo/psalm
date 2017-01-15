@@ -89,7 +89,6 @@ abstract class Type
                 'mixed',
                 'resource',
                 'callable',
-                'iterable',
             ],
             true
         )) {

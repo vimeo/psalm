@@ -9,10 +9,20 @@
             "name": "Matthew Brown"
         }
     ],
+    "config": {
+        "platform": {
+            "php": "5.4"
+        },
+        "platform-dev": {
+            "php": "5.6"
+        }
+    },
     "require": {
-        "php": "^5.6 || ^7.0",
-        "nikic/PHP-Parser": "^3.0.4",
-        "composer/composer": "^1.3"
+        "php": "^5.4 || ^7.0",
+        "nikic/PHP-Parser": "^2.1.1",
+        "composer/composer": "^1.3",
+        "symfony/console": "^2.7",
+        "symfony/yaml": "^2.8"
     },
     "bin": ["bin/psalm"],
     "autoload": {
@@ -26,16 +36,11 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^5.7.4",
-        "friendsofphp/php-cs-fixer": "^2.3",
-        "squizlabs/php_codesniffer": "^3.0"
+        "phpunit/phpunit": "^4.8.30"
     },
     "scripts": {
         "psalm": "./bin/psalm",
-        "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",
         "tests": [
-            "php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-            "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes --dry-run",
             "phpunit"
         ]
     }
