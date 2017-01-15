@@ -201,7 +201,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     {
         $this->markTestIncomplete('Does not throw an error');
         $stmts = self::$parser->parse('<?php
-        function fooFoo(string &$v) : void {}
+        /** @return void */
+        function fooFoo(string &$v) {}
         fooFoo("a");
         ');
 
@@ -217,8 +218,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         namespace A;
-
-        function f(int $p) : void {}
+        /** @return void */
+        function f(int $p) {}
         f(5);
         ');
 

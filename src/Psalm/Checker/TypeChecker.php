@@ -455,8 +455,6 @@ class TypeChecker
             }
         }
 
-        $result_types = [];
-
         if (empty($new_types)) {
             return $existing_types;
         }
@@ -805,21 +803,6 @@ class TypeChecker
                 }
 
                 if ($container_type_part instanceof TArray && $input_type_part instanceof ObjectLike) {
-                    $type_match_found = true;
-                }
-
-                if ($container_type_part instanceof TNamedObject &&
-                    strtolower($container_type_part->value) === 'iterable' &&
-                    (
-                        $input_type_part instanceof TArray ||
-                        ($input_type_part instanceof TNamedObject &&
-                            ClassChecker::classExtendsOrImplements(
-                                $input_type_part->value,
-                                'Traversable'
-                            )
-                        )
-                    )
-                ) {
                     $type_match_found = true;
                 }
 
