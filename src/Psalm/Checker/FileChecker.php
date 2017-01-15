@@ -511,7 +511,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache_location = null;
         $name_cache_key = null;
 
-        $version = 'parsercache4';
+        $version = 'parsercache2';
 
         $file_contents = $project_checker->getFileContents($file_path);
         $file_content_hash = md5($version . $file_contents);
