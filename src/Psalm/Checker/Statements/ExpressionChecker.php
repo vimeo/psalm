@@ -132,17 +132,7 @@ class ExpressionChecker
 
             $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
-            foreach ($stmt->vars as $isset_var) {
-                if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch &&
-                    $isset_var->var instanceof PhpParser\Node\Expr\Variable &&
-                    $isset_var->var->name === 'this' &&
-                    is_string($isset_var->name)
-                ) {
-                    $var_id = '$this->' . $isset_var->name;
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                    $context->vars_possibly_in_scope[$var_id] = true;
-                }
-            }
+            self::analyzeIsset($statements_checker, $stmt, $context);
             $stmt->inferredType = Type::getBool();
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             if (FetchChecker::analyzeClassConstFetch($statements_checker, $stmt, $context) === false) {
@@ -1630,6 +1620,52 @@ class ExpressionChecker
 
         $stmt->inferredType = Type::getString();
         return null;
+    }
+
+    /**
+     * @param  StatementsChecker          $statements_checker
+     * @param  PhpParser\Node\Expr\Isset_ $stmt
+     * @param  Context                    $context
+     * @return void
+     */
+    protected static function analyzeIsset(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr\Isset_ $stmt,
+        Context $context
+    ) {
+        foreach ($stmt->vars as $isset_var) {
+            if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch &&
+                $isset_var->var instanceof PhpParser\Node\Expr\Variable &&
+                $isset_var->var->name === 'this' &&
+                is_string($isset_var->name)
+            ) {
+                $var_id = '$this->' . $isset_var->name;
+                $context->vars_in_scope[$var_id] = Type::getMixed();
+                $context->vars_possibly_in_scope[$var_id] = true;
+            }
+
+            self::analyzeIssetVar($statements_checker, $isset_var, $context);
+        }
+    }
+
+    /**
+     * @param  StatementsChecker   $statements_checker
+     * @param  PhpParser\Node\Expr $stmt
+     * @param  Context             $context
+     * @return void
+     */
+    protected static function analyzeIssetVar(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr $stmt,
+        Context $context
+    ) {
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            self::analyzeIssetVar($statements_checker, $stmt->var, $context);
+
+            if (isset($stmt->dim)) {
+                self::analyze($statements_checker, $stmt->dim, $context);
+            }
+        }
     }
 
     /**

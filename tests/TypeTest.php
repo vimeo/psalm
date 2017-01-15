@@ -1876,4 +1876,47 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testIssetWithSimpleAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        $array = [];
+
+        if (isset($array[$a = 5])) {
+            print "hello";
+        }
+
+        print $a;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testIssetWithMultipleAssignments()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (rand(0, 4) > 2) {
+            $arr = [5 => [3 => "hello"]];
+        }
+
+        if (isset($arr[$a = 5][$b = 3])) {
+
+        }
+
+        echo $a;
+        echo $b;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

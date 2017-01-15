@@ -583,4 +583,25 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testIssetPropertyDoesNotExist()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+        }
+
+        $a = new A();
+
+        if (isset($a->bar)) {
+
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
