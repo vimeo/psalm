@@ -940,23 +940,6 @@ class TypeChecker
             return true;
         }
 
-        if ($container_type_part instanceof TNamedObject &&
-            strtolower($container_type_part->value) === 'iterable' &&
-            (
-                $input_type_part instanceof TArray ||
-                ($input_type_part instanceof TNamedObject &&
-                    (strtolower($input_type_part->value) === 'traversable' ||
-                        ClassChecker::classExtendsOrImplements(
-                            $input_type_part->value,
-                            'Traversable'
-                        )
-                    )
-                )
-            )
-        ) {
-            return true;
-        }
-
         if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
             return true;
         }
