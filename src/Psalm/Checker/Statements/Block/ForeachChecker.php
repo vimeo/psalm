@@ -184,14 +184,20 @@ class ForeachChecker
             }
         }
 
-        AssignmentChecker::analyze(
-            $statements_checker,
-            $stmt->valueVar,
-            null,
-            $value_type ?: Type::getMixed(),
-            $foreach_context,
-            (string)$stmt->getDocComment()
-        );
+
+        if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
+            foreach ($stmt->valueVar->vars as $var) {
+                if ($var && $var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
+                    $foreach_context->vars_in_scope['$' . $var->name] = Type::getMixed();
+                    $foreach_context->vars_possibly_in_scope['$' . $var->name] = true;
+                    $statements_checker->registerVariable('$' . $var->name, $var->getLine());
+                }
+            }
+        } elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->valueVar->name)) {
+            $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
+            $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
+            $statements_checker->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());
+        }
 
         $doc_comment_text = (string)$stmt->getDocComment();
 
