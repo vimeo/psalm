@@ -304,22 +304,19 @@ class TypeChecker
                     }
                 } elseif (count($clause->possibilities) === 1) {
                     // if there's only one active clause, return all the non-negation clause members ORed together
-                    $things_that_can_be_said = implode(
-                        '|',
-                        array_filter(
-                            $possible_types,
-                            /**
-                             * @param  string $possible_type
-                             * @return bool
-                             */
-                            function ($possible_type) {
-                                return $possible_type[0] !== '!';
-                            }
-                        )
+                    $things_that_can_be_said = array_filter(
+                        $possible_types,
+                        /**
+                         * @param  string $possible_type
+                         * @return bool
+                         */
+                        function ($possible_type) {
+                            return $possible_type[0] !== '!';
+                        }
                     );
 
-                    if ($things_that_can_be_said) {
-                        $truths[$var] = $things_that_can_be_said;
+                    if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
+                        $truths[$var] = implode('|', $things_that_can_be_said);
                     }
                 }
             }

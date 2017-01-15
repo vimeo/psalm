@@ -821,4 +821,28 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testIntstanceOfSubtraction()
+    {
+        $stmts = self::$parser->parse('<?php
+        class Foo {}
+        class FooBar extends Foo{}
+        class FooBarBat extends FooBar{}
+        class FooMoo extends Foo{}
+
+        $a = new Foo();
+
+        if ($a instanceof FooBar && !$a instanceof FooBarBat) {
+
+        } elseif ($a instanceof FooMoo) {
+
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
