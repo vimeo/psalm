@@ -80,6 +80,11 @@ class Context
     public $collect_mutations = false;
 
     /**
+     * @var array<string, Type\Union>
+     */
+    public $constants = [];
+
+    /**
      * @param string      $file_name
      * @param string|null $self
      */
@@ -102,6 +107,10 @@ class Context
 
         foreach ($this->clauses as &$clause) {
             $clause = clone $clause;
+        }
+
+        foreach ($this->constants as &$constant) {
+            $constant = clone $constant;
         }
     }
 

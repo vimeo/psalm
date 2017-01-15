@@ -101,6 +101,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $cased_method_id = null;
 
+        if ($global_context) {
+            foreach ($global_context->constants as $const_name => $var_type) {
+                if (!isset($context->vars_in_scope[$const_name])) {
+                    $context->vars_in_scope[$const_name] = clone $var_type;
+                }
+            }
+        }
+
         if ($this->function instanceof ClassMethod) {
             $real_method_id = (string)$this->getMethodId();
 
