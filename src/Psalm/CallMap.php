@@ -1114,7 +1114,7 @@ return [
 'date_offset_get' => ['int', 'obj'=>'DateTime'],
 'date_parse' => ['array', 'date'=>'string'],
 'date_parse_from_format' => ['array', 'format'=>'string', 'date'=>'string'],
-'DatePeriod::__construct\'1' => ['DatePeriod', 'start'=>'DateTimeInterface', 'interval'=>'DateInterval', 'end'=>'DateTimeInterface', 'options='=>'int'],
+'DatePeriod::__construct\'1' => ['DatePeriod', 'start'=>'DateTime', 'interval'=>'DateInterval', 'end'=>'DateTime', 'options='=>'int'],
 'DatePeriod::__construct\'2' => ['DatePeriod', 'iso'=>'string', 'options='=>'int'],
 'DatePeriod::__construct' => ['DatePeriod', 'start'=>'DateTimeInterface', 'interval'=>'DateInterval', 'recur'=>'int', 'options='=>'int'],
 'DatePeriod::__wakeup' => ['void'],

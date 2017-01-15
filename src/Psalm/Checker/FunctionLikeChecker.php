@@ -805,7 +805,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         CodeLocation $secondary_return_type_location = null
     ) {
         if (!$this->function->getStmts() &&
-            ($this->function instanceof ClassMethod &&
+            (
+                $this->function instanceof ClassMethod &&
                 ($this->getSource() instanceof InterfaceChecker || $this->function->isAbstract())
             )
         ) {
@@ -1129,8 +1130,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param_type,
             null,
             $is_optional,
-            $is_nullable,
-            $param->isVariadic()
+            $is_nullable
         );
     }
 

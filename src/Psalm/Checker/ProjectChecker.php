@@ -423,7 +423,8 @@ class ProjectChecker
                         $selection_length = $selection_bounds[1] - $selection_bounds[0];
 
                         echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
-                            ($this->use_color
+                            (
+                                $this->use_color
                                 ? substr($snippet, 0, $selection_start) .
                                 "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
                                 "\e[0m" . substr($snippet, $selection_length + $selection_start)
@@ -1691,7 +1692,7 @@ class ProjectChecker
     /**
      * @param  string $file_path
      *
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     public function getStatementsForFile($file_path)
     {
@@ -1796,7 +1797,8 @@ class ProjectChecker
             || !$this->existing_classes_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
-            if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
+            if ((
+                !isset($this->existing_classes_lc[$fq_class_name_lc])
                     || $this->existing_classes_lc[$fq_class_name_lc] === true
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
@@ -1844,7 +1846,8 @@ class ProjectChecker
             || !$this->existing_interfaces_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
-            if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
+            if ((
+                !isset($this->existing_classes_lc[$fq_class_name_lc])
                     || $this->existing_classes_lc[$fq_class_name_lc] === true
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
