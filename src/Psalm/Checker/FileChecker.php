@@ -51,7 +51,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $namespace_aliased_classes_flipped = [];
 
     /**
-     * @var array<int, \PhpParser\Node\Stmt>
+     * @var array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>
      */
     protected $preloaded_statements = [];
 
@@ -115,7 +115,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param string                                $file_path
      * @param ProjectChecker                        $project_checker
-     * @param array<int, PhpParser\Node\Stmt>|null  $preloaded_statements
+     * @param array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>|null  $preloaded_statements
      * @param bool                                  $will_analyze
      * @param array<string, bool>                   $included_file_paths
      */
@@ -460,7 +460,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>
      */
     protected function getStatements()
     {
