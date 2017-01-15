@@ -62,4 +62,9 @@ class FunctionLikeStorage
      * @var int
      */
     public $required_param_count;
+
+    /**
+     * @var array<string, Type\Union>
+     */
+    public $defined_constants = [];
 }

@@ -487,7 +487,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if (!$param->variadic && $has_optional_param) {
                     if (IssueBuffer::accepts(
                         new MisplacedRequiredParam(
-                            'Required param $' . $param->name . ' should come before any optional params in ' . $cased_function_id,
+                            'Required param $' . $param->name . ' should come before any optional params in ' .
+                            $cased_function_id,
                             new CodeLocation($source, $param, true)
                         ),
                         $source->getSuppressedIssues()
@@ -503,6 +504,24 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         $storage->required_param_count = $required_param_count;
+
+        if ($function->stmts) {
+            // look for constant declarations
+            foreach ($function->stmts as $stmt) {
+                if ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
+                    $stmt->name instanceof PhpParser\Node\Name &&
+                    $stmt->name->parts === ['define']
+                ) {
+                    $first_arg_value = isset($stmt->args[0]) ? $stmt->args[0]->value : null;
+                    $second_arg_value = isset($stmt->args[1]) ? $stmt->args[1]->value : null;
+
+                    if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
+                        $storage->defined_constants[$first_arg_value->value] =
+                            StatementsChecker::getSimpleType($second_arg_value) ?: Type::getMixed();
+                    }
+                }
+            }
+        }
 
         $config = Config::getInstance();
 
@@ -1227,10 +1246,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($fq_class_name && ClassLikeChecker::isUserDefined($fq_class_name)) {
             $method_params = MethodChecker::getMethodParams($method_id);
-
-            if ($method_params === null) {
-                throw new \UnexpectedValueException('Not expecting $method_params to be null');
-            }
 
             return $method_params;
         }
