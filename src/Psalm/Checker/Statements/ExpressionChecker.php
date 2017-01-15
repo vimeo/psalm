@@ -534,7 +534,8 @@ class ExpressionChecker
                 '_SESSION',
                 '_REQUEST',
                 '_ENV',
-            ], true
+            ],
+            true
         )
         ) {
             $stmt->inferredType = Type::getArray();

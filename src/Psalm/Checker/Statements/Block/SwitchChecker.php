@@ -102,11 +102,11 @@ class SwitchChecker
 
                     if ($type_type instanceof Type\Atomic\GetClassT) {
                         if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                $file_checker->project_checker,
-                                $fq_classlike_name,
-                                new CodeLocation($file_checker, $case->cond),
-                                $statements_checker->getSuppressedIssues()
-                            ) === false
+                            $file_checker->project_checker,
+                            $fq_classlike_name,
+                            new CodeLocation($file_checker, $case->cond),
+                            $statements_checker->getSuppressedIssues()
+                        ) === false
                         ) {
                             return false;
                         }
