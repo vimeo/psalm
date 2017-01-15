@@ -1,7 +1,7 @@
 <?php
-namespace Psalm\Type;
+namespace Psalm\Type\Atomic;
 
-class T extends Atomic
+class T extends TString
 {
     /**
      * Used to hold information as to what this refers to
@@ -14,8 +14,6 @@ class T extends Atomic
      */
     public function __construct($typeof)
     {
-        $this->value = 'string';
-
         $this->typeof = $typeof;
     }
 }

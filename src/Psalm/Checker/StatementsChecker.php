@@ -552,7 +552,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             if (isset($dim->inferredType)) {
                 return $dim->inferredType;
             } else {
-                return new Type\Union([Type::getInt()->types['int'], Type::getString()->types['string']]);
+                return new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TString()]);
             }
         } else {
             return Type::getInt();

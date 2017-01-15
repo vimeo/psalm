@@ -214,6 +214,7 @@ class CommentChecker
      * @param  string  $docblock
      * @param  int     $line_number
      * @return array Array of the main comment and specials
+     * @psalm-return array{description:string, specials:array<string, array<mixed, string>>}
      */
     public static function parseDocComment($docblock, $line_number = null)
     {

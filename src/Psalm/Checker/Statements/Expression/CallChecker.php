@@ -31,6 +31,26 @@ use Psalm\Issue\TypeCoercion;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\Generic;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNumericString;
 
 class CallChecker
 {
@@ -110,7 +130,7 @@ class CallChecker
 
                 if (isset($stmt->name->inferredType)) {
                     foreach ($stmt->name->inferredType->types as $var_type_part) {
-                        if ($var_type_part instanceof Type\Fn) {
+                        if ($var_type_part instanceof Type\Atomic\Fn) {
                             $function_params = $var_type_part->params;
 
                             if ($var_type_part->return_type) {
@@ -123,9 +143,9 @@ class CallChecker
                                     $stmt->inferredType = $var_type_part->return_type;
                                 }
                             }
-                        } elseif (!$var_type_part->isMixed() &&
-                            $var_type_part->value !== 'Closure' &&
-                            !$var_type_part->isCallable()
+                        } elseif (!$var_type_part instanceof TMixed &&
+                            (!$var_type_part instanceof TNamedObject || $var_type_part->value !== 'Closure') &&
+                            !$var_type_part instanceof TCallable
                         ) {
                             $var_id = ExpressionChecker::getVarId(
                                 $stmt->name,
@@ -236,7 +256,7 @@ class CallChecker
             $var = $stmt->args[0]->value;
 
             if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
-                $stmt->inferredType = new Type\Union([new Type\T('$' . $var->name)]);
+                $stmt->inferredType = new Type\Union([new Type\Atomic\T('$' . $var->name)]);
             }
         }
 
@@ -308,7 +328,7 @@ class CallChecker
         }
 
         if ($fq_class_name) {
-            $stmt->inferredType = new Type\Union([new Type\Atomic($fq_class_name)]);
+            $stmt->inferredType = new Type\Union([new TNamedObject($fq_class_name)]);
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 ($class_checked || ClassChecker::classExists($fq_class_name, $file_checker)) &&
@@ -353,7 +373,7 @@ class CallChecker
                         $value_type = null;
 
                         foreach ($first_arg_type->types as $type) {
-                            if ($type instanceof Type\Generic) {
+                            if ($type instanceof Type\Atomic\TArray) {
                                 $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
                                 $last_type_param = $type->type_params[count($type->type_params) - 1];
 
@@ -380,7 +400,7 @@ class CallChecker
                         }
 
                         $stmt->inferredType = new Type\Union([
-                            new Type\Generic(
+                            new Type\Atomic\TGenericObject(
                                 $fq_class_name,
                                 [
                                     $key_type,
@@ -489,136 +509,140 @@ class CallChecker
             $return_type = null;
 
             foreach ($class_type->types as $type) {
+                if (!$type instanceof TNamedObject) {
+                    switch (get_class($type)) {
+                        case 'Psalm\\Type\\Atomic\\TNull':
+                            if (IssueBuffer::accepts(
+                                new NullReference(
+                                    'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $var_id,
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                            break;
+
+                        case 'Psalm\\Type\\Atomic\\TInt':
+                        case 'Psalm\\Type\\Atomic\\TBool':
+                        case 'Psalm\\Type\\Atomic\\TFalse':
+                        case 'Psalm\\Type\\Atomic\\TArray':
+                        case 'Psalm\\Type\\Atomic\\TString':
+                        case 'Psalm\\Type\\Atomic\\TNumericString':
+                            if (IssueBuffer::accepts(
+                                new InvalidArgument(
+                                    'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable ' . $var_id,
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                            break;
+
+                        case 'Psalm\\Type\\Atomic\\TMixed':
+                        case 'Psalm\\Type\\Atomic\\TObject':
+                            if (IssueBuffer::accepts(
+                                new MixedMethodCall(
+                                    'Cannot call method ' . $stmt->name . ' on a mixed variable ' . $var_id,
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                            break;
+                    }
+
+                    continue;
+                }
+
                 $fq_class_name = $type->value;
 
                 $is_mock = ExpressionChecker::isMock($fq_class_name);
 
                 $has_mock = $has_mock || $is_mock;
 
-                switch ($fq_class_name) {
-                    case 'null':
-                        if (IssueBuffer::accepts(
-                            new NullReference(
-                                'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $var_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                        break;
+                if ($fq_class_name === 'static') {
+                    $fq_class_name = (string) $context->self;
+                }
 
-                    case 'int':
-                    case 'bool':
-                    case 'false':
-                    case 'array':
-                    case 'string':
-                        if (IssueBuffer::accepts(
-                            new InvalidArgument(
-                                'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable ' . $var_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                        break;
+                if ($is_mock ||
+                    $context->isPhantomClass($fq_class_name)
+                ) {
+                    $return_type = Type::getMixed();
+                    continue;
+                }
 
-                    case 'mixed':
-                    case 'object':
-                        if (IssueBuffer::accepts(
-                            new MixedMethodCall(
-                                'Cannot call method ' . $stmt->name . ' on a mixed variable ' . $var_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                        break;
+                $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                    $fq_class_name,
+                    $statements_checker->getFileChecker(),
+                    new CodeLocation($statements_checker->getSource(), $stmt->var),
+                    $statements_checker->getSuppressedIssues(),
+                    true
+                );
 
-                    case 'static':
-                        $fq_class_name = (string) $context->self;
-                        // fall through to default
+                if (!$does_class_exist) {
+                    return $does_class_exist;
+                }
 
-                    default:
-                        if ($is_mock ||
-                            $context->isPhantomClass($fq_class_name)
-                        ) {
-                            $return_type = Type::getMixed();
-                            continue;
-                        }
+                if (MethodChecker::methodExists($fq_class_name . '::__call')) {
+                    $return_type = Type::getMixed();
+                    continue;
+                }
 
-                        $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                            $fq_class_name,
-                            $statements_checker->getFileChecker(),
-                            new CodeLocation($statements_checker->getSource(), $stmt->var),
-                            $statements_checker->getSuppressedIssues(),
-                            true
-                        );
+                $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+                $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
-                        if (!$does_class_exist) {
-                            return $does_class_exist;
-                        }
+                $does_method_exist = MethodChecker::checkMethodExists(
+                    $cased_method_id,
+                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    $statements_checker->getSuppressedIssues()
+                );
 
-                        if (MethodChecker::methodExists($fq_class_name . '::__call')) {
-                            $return_type = Type::getMixed();
-                            continue;
-                        }
+                if (!$does_method_exist) {
+                    return $does_method_exist;
+                }
 
-                        $method_id = $fq_class_name . '::' . strtolower($stmt->name);
-                        $cased_method_id = $fq_class_name . '::' . $stmt->name;
+                if (FunctionChecker::inCallMap($cased_method_id)) {
+                    $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
+                } else {
+                    if (MethodChecker::checkMethodVisibility(
+                        $method_id,
+                        $context->self,
+                        $statements_checker->getSource(),
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues()
+                    ) === false) {
+                        return false;
+                    }
 
-                        $does_method_exist = MethodChecker::checkMethodExists(
-                            $cased_method_id,
-                            new CodeLocation($statements_checker->getSource(), $stmt),
-                            $statements_checker->getSuppressedIssues()
-                        );
+                    if (MethodChecker::checkMethodNotDeprecated(
+                        $method_id,
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues()
+                    ) === false) {
+                        return false;
+                    }
 
-                        if (!$does_method_exist) {
-                            return $does_method_exist;
-                        }
+                    $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
+                }
 
-                        if (FunctionChecker::inCallMap($cased_method_id)) {
-                            $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
-                        } else {
-                            if (MethodChecker::checkMethodVisibility(
-                                $method_id,
-                                $context->self,
-                                $statements_checker->getSource(),
-                                new CodeLocation($statements_checker->getSource(), $stmt),
-                                $statements_checker->getSuppressedIssues()
-                            ) === false) {
-                                return false;
-                            }
+                if ($return_type_candidate) {
+                    $return_type_candidate = ExpressionChecker::fleshOutTypes(
+                        $return_type_candidate,
+                        $stmt->args,
+                        $fq_class_name,
+                        $method_id
+                    );
 
-                            if (MethodChecker::checkMethodNotDeprecated(
-                                $method_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt),
-                                $statements_checker->getSuppressedIssues()
-                            ) === false) {
-                                return false;
-                            }
-
-                            $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
-                        }
-
-                        if ($return_type_candidate) {
-                            $return_type_candidate = ExpressionChecker::fleshOutTypes(
-                                $return_type_candidate,
-                                $stmt->args,
-                                $fq_class_name,
-                                $method_id
-                            );
-
-                            if (!$return_type) {
-                                $return_type = $return_type_candidate;
-                            } else {
-                                $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
-                            }
-                        } else {
-                            $return_type = Type::getMixed();
-                        }
+                    if (!$return_type) {
+                        $return_type = $return_type_candidate;
+                    } else {
+                        $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
+                    }
+                } else {
+                    $return_type = Type::getMixed();
                 }
             }
 
@@ -749,7 +773,7 @@ class CallChecker
             }
 
             if ($fq_class_name) {
-                $lhs_type = new Type\Union([new Type\Atomic($fq_class_name)]);
+                $lhs_type = new Type\Union([new TNamedObject($fq_class_name)]);
             }
         } else {
             ExpressionChecker::analyze($statements_checker, $stmt->class, $context);
@@ -765,6 +789,11 @@ class CallChecker
         $has_mock = false;
 
         foreach ($lhs_type->types as $lhs_type_part) {
+            if (!$lhs_type_part instanceof TNamedObject) {
+                // @todo deal with it
+                continue;
+            }
+
             $fq_class_name = $lhs_type_part->value;
 
             $is_mock = ExpressionChecker::isMock($fq_class_name);
@@ -1134,7 +1163,7 @@ class CallChecker
             $array_arg_types[] = $array_arg
                     && isset($array_arg->inferredType)
                     && isset($array_arg->inferredType->types['array'])
-                    && $array_arg->inferredType->types['array'] instanceof Type\Generic
+                    && $array_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
                 ? $array_arg->inferredType->types['array']
                 : null;
         }
@@ -1151,7 +1180,7 @@ class CallChecker
             $expected_closure_param_count = $method_id === 'array_filter' ? 1 : count($array_arg_types);
 
             foreach ($closure_arg_type->types as $closure_type) {
-                if (!$closure_type instanceof Type\Fn) {
+                if (!$closure_type instanceof Type\Atomic\Fn) {
                     continue;
                 }
 
@@ -1189,7 +1218,7 @@ class CallChecker
                         continue;
                     }
 
-                    /** @var Type\Generic */
+                    /** @var Type\Atomic\TArray */
                     $array_arg_type = $array_arg_types[$i];
 
                     $input_type = $array_arg_type->type_params[1];

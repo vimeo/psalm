@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use PhpParser;
+use Psalm\Type\Atomic;
 
 /**
  * A class for analysing a given method call's effects in relation to $this/self and also looking at return types
@@ -37,7 +38,7 @@ class EffectsAnalyser
                     if (isset($stmt->inferredType)) {
                         $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
                     } else {
-                        $return_types[] = new Type\Atomic('mixed');
+                        $return_types[] = new Atomic\TMixed();
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
@@ -88,7 +89,7 @@ class EffectsAnalyser
                 $value_type = null;
 
                 foreach ($yield_types as $type) {
-                    if ($type instanceof Type\Generic) {
+                    if ($type instanceof Type\Atomic\TArray || $type instanceof Type\Atomic\TGenericObject) {
                         $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
                         $last_type_param = $type->type_params[count($type->type_params) - 1];
 
@@ -107,7 +108,7 @@ class EffectsAnalyser
                 }
 
                 $yield_types = [
-                    new Type\Generic(
+                    new Atomic\TGenericObject(
                         'Generator',
                         [
                             $key_type ?: Type::getMixed(),
@@ -124,8 +125,8 @@ class EffectsAnalyser
             ) {
                 // only add null if we have a return statement elsewhere and it wasn't void
                 foreach ($return_types as $return_type) {
-                    if (!$return_type->isVoid()) {
-                        $return_types[] = new Type\Atomic('null');
+                    if (!$return_type instanceof Atomic\TVoid) {
+                        $return_types[] = new Atomic\TNull();
                         break;
                     }
                 }
@@ -149,7 +150,7 @@ class EffectsAnalyser
             }
 
             if (isset($stmt->inferredType)) {
-                $generator_type = new Type\Generic(
+                $generator_type = new Atomic\TGenericObject(
                     'Generator',
                     [
                         $key_type ?: Type::getInt(),
@@ -159,7 +160,7 @@ class EffectsAnalyser
 
                 return [$generator_type];
             } else {
-                return [new Type\Atomic('mixed')];
+                return [new Atomic\TMixed()];
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             $key_type = null;
@@ -167,7 +168,7 @@ class EffectsAnalyser
             if (isset($stmt->inferredType)) {
                 return [$stmt->inferredType->types];
             } else {
-                return [new Type\Atomic('mixed')];
+                return [new Atomic\TMixed()];
             }
         }
 

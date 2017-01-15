@@ -1,24 +1,14 @@
 <?php
-namespace Psalm\Type;
+namespace Psalm\Type\Atomic;
 
-class Generic extends Atomic
+use Psalm\Type\Union;
+
+trait GenericTrait
 {
     /**
      * @var array<Union>
      */
     public $type_params;
-
-    /**
-     * Constructs a new instance of a generic type
-     *
-     * @param string            $value
-     * @param array<int,Union>  $type_params
-     */
-    public function __construct($value, array $type_params)
-    {
-        $this->value = $value;
-        $this->type_params = $type_params;
-    }
 
     /**
      * @return string
