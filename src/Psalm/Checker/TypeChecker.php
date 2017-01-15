@@ -595,7 +595,7 @@ class TypeChecker
 
             $existing_var_type->removeType($negated_type);
 
-            if (empty($existing_var_type->types)) {
+            if (empty($existing_var_type->types) && !$existing_var_type->from_docblock) {
                 if ($key && $code_location) {
                     if (IssueBuffer::accepts(
                         new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),

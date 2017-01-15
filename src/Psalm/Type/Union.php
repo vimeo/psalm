@@ -13,6 +13,13 @@ class Union extends Type
     public $types = [];
 
     /**
+     * Whether the type originated in a docblock
+     *
+     * @var boolean
+     */
+    public $from_docblock = false;
+
+    /**
      * Constructs an Union instance
      * @param array<int, Atomic>     $types
      */

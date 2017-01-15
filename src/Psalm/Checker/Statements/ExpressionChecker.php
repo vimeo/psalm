@@ -1260,7 +1260,11 @@ class ExpressionChecker
             $new_return_type_parts[] = self::fleshOutAtomicType($return_type_part, $args, $calling_class, $method_id);
         }
 
-        return new Type\Union($new_return_type_parts);
+        $fleshed_out_type = new Type\Union($new_return_type_parts);
+
+        $fleshed_out_type->from_docblock = $return_type->from_docblock;
+
+        return $fleshed_out_type;
     }
 
     /**
