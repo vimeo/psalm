@@ -50,14 +50,14 @@ class AnnotationTest extends TestCase
                     function fooFoo() : string {
                         return "boop";
                     }
-            
+
                     /**
                      * @return array<int, string>
                      */
                     function foo2() : array {
                         return ["hello"];
                     }
-            
+
                     /**
                      * @return array<int, string>
                      */
@@ -104,21 +104,23 @@ class AnnotationTest extends TestCase
                         /**
                          * @param A $a
                          * @param bool $b
+                         * @return void
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b) {
                         }
                     }'
             ],
             'goodDocblockInNamespace' => [
                 '<?php
                     namespace Foo;
-            
+
                     class A {
                         /**
                          * @param \Foo\A $a
                          * @param bool $b
+                         * @return void
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b) {
                         }
                     }'
             ]

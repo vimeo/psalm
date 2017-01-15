@@ -665,11 +665,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if ($parser_return_type = $function->getReturnType()) {
             $suffix = '';
 
-            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
-                $suffix = '|null';
-                $parser_return_type = $parser_return_type->type;
-            }
-
             if (is_string($parser_return_type)) {
                 $return_type_string = $parser_return_type . $suffix;
             } else {
@@ -1383,11 +1378,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             strtolower($param->default->name->parts[0]) === 'null';
 
         $param_typehint = $param->type;
-
-        if ($param_typehint instanceof PhpParser\Node\NullableType) {
-            $is_nullable = true;
-            $param_typehint = $param_typehint->type;
-        }
 
         if ($param_typehint) {
             if (is_string($param_typehint)) {
