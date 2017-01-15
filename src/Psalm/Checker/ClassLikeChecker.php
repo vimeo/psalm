@@ -48,7 +48,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         'empty' => 'empty',
         'callable' => 'callable',
         'array' => 'array',
-        'iterable' => 'iterable',
         'null' => 'null',
         'mixed' => 'mixed',
     ];
@@ -225,13 +224,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 foreach ($stmt->consts as $const) {
-                    if ($stmt->isProtected()) {
-                        $storage->protected_class_constants[$const->name] = Type::getMixed();
-                    } elseif ($stmt->isPrivate()) {
-                        $storage->private_class_constants[$const->name] = Type::getMixed();
-                    } else {
-                        $storage->public_class_constants[$const->name] = Type::getMixed();
-                    }
+                    $storage->public_class_constants[$const->name] = Type::getMixed();
                 }
             }
         }
@@ -766,7 +759,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
             $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
-
             $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
 
             if ($actual_method_id !== $declaring_method_id) {
@@ -919,7 +911,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $storage->class_implements += $parent_storage->class_implements;
 
         $storage->public_class_constants = $parent_storage->public_class_constants;
-        $storage->protected_class_constants = $parent_storage->protected_class_constants;
 
         $storage->parent_classes = array_merge([strtolower($parent_class)], $parent_storage->parent_classes);
 
@@ -1213,13 +1204,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $const_type = $var_comment ? $var_comment->type : Type::getMixed();
 
         foreach ($stmt->consts as $const) {
-            if ($stmt->isProtected()) {
-                $storage->protected_class_constants[$const->name] = $const_type;
-            } elseif ($stmt->isPrivate()) {
-                $storage->private_class_constants[$const->name] = $const_type;
-            } else {
-                $storage->public_class_constants[$const->name] = $const_type;
-            }
+            $storage->public_class_constants[$const->name] = $const_type;
         }
     }
 
@@ -1434,7 +1419,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @return string|null
+     * @return string
      */
     public function getClassName()
     {
@@ -1507,7 +1492,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->class_implements = $parent_storage->class_implements;
 
             $storage->public_class_constants = $parent_storage->public_class_constants;
-            $storage->protected_class_constants = $parent_storage->protected_class_constants;
             $storage->parent_classes = array_merge([strtolower($parent_class_name)], $parent_storage->parent_classes);
 
             $storage->used_traits = $parent_storage->used_traits;
@@ -1760,7 +1744,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function getConstantsForClass($class_name, $visibility)
     {
-        $class_name = strtolower($class_name);
+        // remove for PHP 7.1 support
+        $visibility = ReflectionProperty::IS_PUBLIC;
 
         $class_name = strtolower($class_name);
 
@@ -1772,21 +1757,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
             return $storage->public_class_constants;
-        }
-
-        if ($visibility === ReflectionProperty::IS_PROTECTED) {
-            return array_merge(
-                $storage->public_class_constants,
-                $storage->protected_class_constants
-            );
-        }
-
-        if ($visibility === ReflectionProperty::IS_PRIVATE) {
-            return array_merge(
-                $storage->public_class_constants,
-                $storage->protected_class_constants,
-                $storage->private_class_constants
-            );
         }
 
         throw new \InvalidArgumentException('Must specify $visibility');
@@ -1804,13 +1774,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     {
         $storage = self::$storage[strtolower($class_name)];
 
-        if ($visibility === ReflectionProperty::IS_PUBLIC) {
-            $storage->public_class_constants[$const_name] = $type;
-        } elseif ($visibility === ReflectionProperty::IS_PROTECTED) {
-            $storage->protected_class_constants[$const_name] = $type;
-        } elseif ($visibility === ReflectionProperty::IS_PRIVATE) {
-            $storage->private_class_constants[$const_name] = $type;
-        }
+        $storage->public_class_constants[$const_name] = $type;
     }
 
     /**

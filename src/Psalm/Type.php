@@ -89,8 +89,7 @@ abstract class Type
                 'mixed',
                 'resource',
                 'callable',
-                'iterable',
-            ], true
+            ]
         )) {
             return strtolower($type_string);
         } elseif ($type_string === 'boolean') {

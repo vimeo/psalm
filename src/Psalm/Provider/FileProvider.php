@@ -21,7 +21,7 @@ class FileProvider
      * @param  string           $file_path
      * @param  bool             $debug_output
      *
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     public static function getStatementsForFile(ProjectChecker $project_checker, $file_path, $debug_output = false)
     {
@@ -58,8 +58,12 @@ class FileProvider
 
     /**
      * @param  string   $file_contents
+<<<<<<< 152d1512f16ee9fe91ba4561a43543994873d089
      *
      * @return array<int, \PhpParser\Node\Stmt>
+=======
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
+>>>>>>> Break away from master (again)
      */
     private static function parseStatementsInFile($file_contents)
     {
@@ -71,16 +75,8 @@ class FileProvider
 
         $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
 
-        $error_handler = new \PhpParser\ErrorHandler\Collecting();
-
-        /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = $parser->parse($file_contents, $error_handler);
-
-        if (!$stmts && $error_handler->hasErrors()) {
-            foreach ($error_handler->getErrors() as $error) {
-                throw $error;
-            }
-        }
+        /** @var array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt> */
+        $stmts = $parser->parse($file_contents);
 
         return $stmts;
     }
