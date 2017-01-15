@@ -90,10 +90,10 @@ class EffectsAnalyser
                     );
                 }
 
-                if ($stmt->finally) {
+                if ($stmt->finallyStmts) {
                     $return_types = array_merge(
                         $return_types,
-                        self::getReturnTypes($stmt->finally->stmts, $yield_types, $ignore_nullable_issues)
+                        self::getReturnTypes($stmt->finallyStmts, $yield_types, $ignore_nullable_issues)
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {

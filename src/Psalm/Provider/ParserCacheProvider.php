@@ -31,7 +31,7 @@ class ParserCacheProvider
      * @param  string   $file_cache_key
      * @param mixed $file_modified_time
      *
-     * @return array<int, PhpParser\Node\Stmt>|null
+     * @return array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
@@ -89,7 +89,7 @@ class ParserCacheProvider
     /**
      * @param  string                           $file_cache_key
      * @param  string                           $file_content_hash
-     * @param  array<int, PhpParser\Node\Stmt>  $stmts
+     * @param  array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>  $stmts
      * @param  bool                             $touch_only
      *
      * @return void

@@ -731,7 +731,8 @@ class LoopScopeTest extends TestCase
                       public $bar;
                     }
 
-                    function foo() : ?A {
+                    /** @return ?A */
+                    function foo() {
                       return rand(0, 1) ? new A : null;
                     }
 

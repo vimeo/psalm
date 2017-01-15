@@ -91,43 +91,29 @@ class TryChecker
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
 
-            $fq_catch_classes = [];
+            $catch_class = ClassLikeChecker::getFQCLNFromNameObject(
+                $catch->type,
+                $statements_checker->getAliases()
+            );
 
-            foreach ($catch->types as $catch_type) {
-                $fq_catch_class = ClassLikeChecker::getFQCLNFromNameObject(
-                    $catch_type,
-                    $statements_checker->getAliases()
-                );
+            if ($context->check_classes) {
+                $fq_class_name = $catch_class;
 
-                if ($original_context->check_classes) {
-                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $statements_checker->getFileChecker()->project_checker,
-                        $fq_catch_class,
-                        new CodeLocation($statements_checker->getSource(), $catch_type, $context->include_location),
-                        $statements_checker->getSuppressedIssues()
-                    ) === false) {
-                        return false;
-                    }
+                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                    $statements_checker->getFileChecker()->project_checker,
+                    $fq_class_name,
+                    new CodeLocation($statements_checker->getSource(), $catch, $context->include_location),
+                    $statements_checker->getSuppressedIssues()
+                ) === false) {
+                    return false;
                 }
-
-                $fq_catch_classes[] = $fq_catch_class;
             }
 
             $catch_var_id = '$' . $catch->var;
 
-            $catch_context->vars_in_scope[$catch_var_id] = new Type\Union(
-                array_map(
-                    /**
-                     * @param string $fq_catch_class
-                     *
-                     * @return Type\Atomic
-                     */
-                    function ($fq_catch_class) {
-                        return new TNamedObject($fq_catch_class);
-                    },
-                    $fq_catch_classes
-                )
-            );
+            $catch_context->vars_in_scope[$catch_var_id] = new Type\Union([
+                new TNamedObject($catch_class),
+            ]);
 
             // discard all clauses because crazy stuff may have happened in try block
             $catch_context->clauses = [];
@@ -188,8 +174,8 @@ class TryChecker
             $loop_scope->final_actions[] = ScopeChecker::ACTION_NONE;
         }
 
-        if ($stmt->finally) {
-            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_scope);
+        if ($stmt->finallyStmts) {
+            $statements_checker->analyze($stmt->finallyStmts, $context, $loop_scope);
         }
 
         return null;

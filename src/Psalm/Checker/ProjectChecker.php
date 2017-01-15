@@ -1688,7 +1688,7 @@ class ProjectChecker
     /**
      * @param  string $file_path
      *
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     public function getStatementsForFile($file_path)
     {

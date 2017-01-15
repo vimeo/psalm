@@ -28,6 +28,8 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
      * @param  PhpParser\Node $node
      *
      * @return ?int
+     *
+     * @psalm-suppress ImplementedReturnTypeMismatch
      */
     public function enterNode(PhpParser\Node $node)
     {

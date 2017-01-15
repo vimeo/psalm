@@ -108,22 +108,6 @@ class MethodSignatureTest extends TestCase
                         private function foo(int $arg) : void {}
                     }',
             ],
-            'nullableSubclassParam' => [
-                '<?php
-                    class A {
-                        public function foo(string $s) : ?string {
-                            return rand(0, 1) ? $s : null;
-                        }
-                    }
-
-                    class B extends A {
-                        public function foo(?string $s) : string {
-                            return $s ?: "hello";
-                        }
-                    }
-
-                    echo (new B)->foo(null);',
-            ],
             'nullableSubclassParamWithDefault' => [
                 '<?php
                     class A {
@@ -198,7 +182,7 @@ class MethodSignatureTest extends TestCase
             'nonNullableSubclassParam' => [
                 '<?php
                     class A {
-                        public function foo(?string $s) : string {
+                        public function foo(string $s = null) : string {
                             return $s ?: "hello";
                         }
                     }

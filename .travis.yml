@@ -15,4 +15,3 @@ install:
 script:
   - vendor/bin/phpunit
   - bin/psalm
-  - vendor/bin/phpcs

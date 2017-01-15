@@ -139,7 +139,7 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    $efoo = new Foo(Exception::class)
+                    $efoo = new Foo(Exception::class);
                     $efoo_bar = $efoo->bar();
 
                     $ffoo = new Foo("LogicException");
@@ -328,7 +328,8 @@ class TemplateTest extends TestCase
                         return $x;
                     }
 
-                    function bar(string $a) : void { }
+                    /** @return void */
+                    function bar(string $a) { }
 
                     bar(foo("string"));',
             ],
@@ -347,7 +348,8 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    /** @return void */
+                    function bar(string $a) { }
 
                     bar(A::foo("string"));',
             ],
@@ -366,7 +368,8 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    /** @return void */
+                    function bar(string $a) { }
 
                     bar((new A())->foo("string"));',
             ],
@@ -448,7 +451,8 @@ class TemplateTest extends TestCase
                         return $x;
                     }
 
-                    function bar(string $a) : void { }
+                    /** @return void */
+                    function bar(string $a) { }
 
                     bar(foo(4));',
                 'error_message' => 'InvalidScalarArgument',
@@ -468,7 +472,8 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    /** @return void */
+                    function bar(string $a) { }
 
                     bar(A::foo(4));',
                 'error_message' => 'InvalidScalarArgument',
@@ -488,7 +493,8 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    /** @return void */
+                    function bar(string $a) { }
 
                     bar((new A())->foo(4));',
                 'error_message' => 'InvalidScalarArgument',

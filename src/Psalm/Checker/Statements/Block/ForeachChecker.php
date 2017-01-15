@@ -7,7 +7,6 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\MethodChecker;
-use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
@@ -261,14 +260,33 @@ class ForeachChecker
             }
         }
 
-        AssignmentChecker::analyze(
-            $statements_checker,
-            $stmt->valueVar,
-            null,
-            $value_type ?: Type::getMixed(),
-            $foreach_context,
-            (string)$stmt->getDocComment()
-        );
+        if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
+            foreach ($stmt->valueVar->vars as $var) {
+                if ($var && $var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
+                    $list_var_id = '$' . $var->name;
+                    $foreach_context->vars_in_scope[$list_var_id] = Type::getMixed();
+                    $foreach_context->vars_possibly_in_scope[$list_var_id] = true;
+
+                    if (!$statements_checker->hasVariable($list_var_id)) {
+                        $statements_checker->registerVariable(
+                            $list_var_id,
+                            new CodeLocation($statements_checker, $var)
+                        );
+                    }
+                }
+            }
+        } elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->valueVar->name)) {
+            $value_var_id = '$' . $stmt->valueVar->name;
+            $foreach_context->vars_in_scope[$value_var_id] = $value_type ? $value_type : Type::getMixed();
+            $foreach_context->vars_possibly_in_scope[$value_var_id] = true;
+
+            if (!$statements_checker->hasVariable($value_var_id)) {
+                $statements_checker->registerVariable(
+                    $value_var_id,
+                    new CodeLocation($statements_checker, $stmt->valueVar)
+                );
+            }
+        }
 
         $doc_comment_text = (string)$stmt->getDocComment();
 

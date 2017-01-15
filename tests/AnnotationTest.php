@@ -109,8 +109,9 @@ class AnnotationTest extends TestCase
                         /**
                          * @param A $a
                          * @param bool $b
+                         * @return void
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b) {
                         }
                     }',
             ],
@@ -122,8 +123,9 @@ class AnnotationTest extends TestCase
                         /**
                          * @param \Foo\A $a
                          * @param bool $b
+                         * @return void
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b) {
                         }
                     }',
             ],
@@ -133,8 +135,11 @@ class AnnotationTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                        /** @param string $name */
-                        public function __get($name) : ?string {
+                        /**
+                         * @param string $name
+                         * @return ?string
+                         */
+                        public function __get($name) {
                             if ($name === "foo") {
                                 return "hello";
                             }
@@ -159,7 +164,8 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         /** @return ?string */
+                         public function __get(string $name) {
                               if ($name === "foo") {
                                    return "hello";
                               }
@@ -428,9 +434,14 @@ class AnnotationTest extends TestCase
                 '<?php
                     /**
                      * @property string $foo
+                     * @return ?string
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         /**
+                          * @param string $name
+                          * @return ?string
+                          */
+                         public function __get($name) {
                               if ($name === "foo") {
                                    return "hello";
                               }
@@ -452,7 +463,8 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         /** @return ?string */
+                         public function __get(string $name) {
                               if ($name === "foo") {
                                    return "hello";
                               }
@@ -474,7 +486,8 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         /** @return ?string */
+                         public function __get(string $name) {
                               if ($name === "foo") {
                                    return "hello";
                               }
@@ -496,7 +509,8 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         /** @return ?string */
+                         public function __get(string $name) {
                               if ($name === "foo") {
                                    return "hello";
                               }

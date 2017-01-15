@@ -221,17 +221,13 @@ class AssignmentChecker
             if (!$statements_checker->hasVariable($var_id)) {
                 $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $assign_var));
             }
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
-                || $assign_var instanceof PhpParser\Node\Expr\Array_
-        ) {
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\List_) {
             /** @var int $offset */
-            foreach ($assign_var->items as $offset => $assign_var_item) {
-                // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
-                if (!$assign_var_item) {
+            foreach ($assign_var->vars as $offset => $var) {
+                // $var can be null e.g. list($a, ) = ['a', 'b']
+                if (!$var) {
                     continue;
                 }
-
-                $var = $assign_var_item->value;
 
                 if ($assign_value instanceof PhpParser\Node\Expr\Array_
                     && isset($assign_value->items[$offset]->value->inferredType)
@@ -250,8 +246,8 @@ class AssignmentChecker
 
                 if (isset($assign_value_type->types['array']) &&
                     $assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike &&
-                    !$assign_var_item->key &&
-                    isset($assign_value_type->types['array']->properties[$offset]) // if object-like has int offsets
+                    // if object-like has int offsets
+                    isset($assign_value_type->types['array']->properties[(string)$offset])
                 ) {
                     self::analyze(
                         $statements_checker,
@@ -286,14 +282,6 @@ class AssignmentChecker
                     if (isset($assign_value_type->types['array'])) {
                         if ($assign_value_type->types['array'] instanceof Type\Atomic\TArray) {
                             $new_assign_type = clone $assign_value_type->types['array']->type_params[1];
-                        } elseif ($assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike) {
-                            if ($assign_var_item->key
-                                && $assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                                && isset($assign_value_type->types['array']->properties[$assign_var_item->key->value])
-                            ) {
-                                $new_assign_type =
-                                    clone $assign_value_type->types['array']->properties[$assign_var_item->key->value];
-                            }
                         }
                     }
 

@@ -14,7 +14,7 @@ class StatementsProvider
      * @param  ParserCacheProvider $cache_provider
      * @param  bool    $debug_output
      *
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     public static function getStatementsForFile(
         $file_path,
@@ -26,7 +26,7 @@ class StatementsProvider
 
         $from_cache = false;
 
-        $version = 'parsercache5';
+        $version = 'parsercache3';
 
         $file_contents = $file_provider->getContents($file_path);
         $modified_time = $file_provider->getModifiedTime($file_path);
@@ -83,16 +83,8 @@ class StatementsProvider
             self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
         }
 
-        $error_handler = new \PhpParser\ErrorHandler\Collecting();
-
         /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = self::$parser->parse($file_contents, $error_handler);
-
-        if (!$stmts && $error_handler->hasErrors()) {
-            foreach ($error_handler->getErrors() as $error) {
-                throw $error;
-            }
-        }
+        $stmts = self::$parser->parse($file_contents);
 
         return $stmts;
     }

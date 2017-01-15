@@ -14,7 +14,7 @@ class RedundantConditionTest extends TestCase
         return [
             'ignoreIssueAndAssign' => [
                 '<?php
-                    public function foo() : stdClass {
+                    function foo() : stdClass {
                         return new stdClass;
                     }
 
@@ -199,19 +199,19 @@ class RedundantConditionTest extends TestCase
         return [
             'ifFalse' => [
                 '<?php
-                    $y = false:
+                    $y = false;
                     if ($y) {}',
                 'error_message' => 'RedundantCondition',
             ],
             'ifNotTrue' => [
                 '<?php
-                    $y = true:
+                    $y = true;
                     if (!$y) {}',
                 'error_message' => 'RedundantCondition',
             ],
             'ifTrue' => [
                 '<?php
-                    $y = true:
+                    $y = true;
                     if ($y) {}',
                 'error_message' => 'RedundantCondition',
             ],
@@ -317,7 +317,8 @@ class RedundantConditionTest extends TestCase
             ],
             'SKIPPED-twoVarLogicNotNestedWithElseifNegatedInIf' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : ?string {
+                    /** @return ?string */
+                    function foo(?string $a, ?string $b) {
                         if ($a) {
                             $a = null;
                         } elseif ($b) {
