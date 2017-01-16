@@ -121,6 +121,10 @@ class CommentChecker
                     throw $e;
                 }
 
+                if (count($line_parts) === 1 && $line_parts[0][0] === '$') {
+                    array_unshift($line_parts, 'mixed');
+                }
+
                 if (count($line_parts) > 1) {
                     if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
                         && !preg_match('/\[[^\]]+\]/', $line_parts[0])
