@@ -450,9 +450,6 @@ class Config
      */
     public function isInProjectDirs($file_path)
     {
-        if ($file_path[0] !== '/') {
-            throw new \UnexpectedValueException('eesh');
-        }
         return $this->project_files && $this->project_files->allows($file_path);
     }
 
