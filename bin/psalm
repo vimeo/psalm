@@ -45,15 +45,15 @@ Usage:
     psalm [options] [file...]
 
 Options:
-    -h,  --help                  Display this help message
-         --debug                 Debug information
-    -c,  --config                Path to a psalm.xml configuration file
-    -m,  --monochrome            Enable monochrome output
-         --show-info[=BOOLEAN]   Show non-exception parser findings.
-         --diff                  File to check is a diff
-         --self-check            Psalm checks itself
-         --update-docblocks      Adds correct return types to the given file(s)
-         --output-format=json    Changes the output format
+    -h,  --help                     Display this help message
+         --debug                    Debug information
+    -c,  --config=psalm.xml         Path to a psalm.xml configuration file
+    -m,  --monochrome               Enable monochrome output
+         --show-info[=BOOLEAN]      Show non-exception parser findings.
+         --diff                     File to check is a diff
+         --self-check               Psalm checks itself
+         --update-docblocks         Adds correct return types to the given file(s)
+         --output-format=console    Changes the output format
 
 
 HELP;
@@ -77,13 +77,27 @@ $paths_to_check = null;
 if ($input_paths) {
     $filtered_input_paths = [];
 
-    foreach ($input_paths as $i => $input_path) {
-        if (($input_path[0] === '-' && strlen($input_path) > 1) || realpath($input_path) === __FILE__) {
+    for ($i = 0; $i < count($input_paths); $i++) {
+        $input_path = $input_paths[$i];
+
+        if (realpath($input_path) === __FILE__) {
             continue;
         }
 
-        $filtered_input_paths = array_slice($input_paths, $i);
-        break;
+        if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            $i++;
+            continue;
+        }
+
+        if ($input_path[0] === '-' && $input_path[2] === '=') {
+            continue;
+        }
+
+        if (substr($input_path, 0, 2) === '--' && strlen($input_path) > 2) {
+            continue;
+        }
+
+        $filtered_input_paths[] = $input_path;
     }
 
     stream_set_blocking(STDIN, 0);
