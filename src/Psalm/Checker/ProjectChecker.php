@@ -297,9 +297,7 @@ class ProjectChecker
     {
         if (!$this->config) {
             $this->config = $this->getConfigForPath($dir_name);
-            $this->config->hide_external_errors = $this->config->isInProjectDirs(
-                $this->config->shortenFileName($dir_name . '/')
-            );
+            $this->config->hide_external_errors = $this->config->isInProjectDirs($dir_name . '/');
         }
 
         FileChecker::loadReferenceCache();
@@ -394,7 +392,7 @@ class ProjectChecker
                 if (in_array($extension, $file_extensions)) {
                     $file_name = (string)$iterator->getRealPath();
 
-                    if ($config->isInProjectDirs($config->shortenFileName($file_name))) {
+                    if ($config->isInProjectDirs($file_name)) {
                         if (FileChecker::hasFileChanged($file_name)) {
                             $diff_files[] = $file_name;
                         }
@@ -423,7 +421,7 @@ class ProjectChecker
                 continue;
             }
 
-            if (!$config->isInProjectDirs($config->shortenFileName($file_path))) {
+            if (!$config->isInProjectDirs($file_path)) {
                 if ($this->debug_output) {
                     echo('skipping ' . $file_path . PHP_EOL);
                 }
@@ -451,9 +449,7 @@ class ProjectChecker
 
         $start_checks = (int)microtime(true);
 
-        $this->config->hide_external_errors = $this->config->isInProjectDirs(
-            $this->config->shortenFileName($file_name)
-        );
+        $this->config->hide_external_errors = $this->config->isInProjectDirs($file_name);
 
         $file_name_parts = explode('.', $file_name);
 
