@@ -59,8 +59,8 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     </projectFiles>
 </psalm>');
 
-        $this->assertTrue($config->isInProjectDirs('src/main.php'));
-        $this->assertFalse($config->isInProjectDirs('main.php'));
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringChecker.php')));
     }
 
     /**
@@ -73,14 +73,14 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     <projectFiles>
         <directory name="src" />
         <ignoreFiles>
-            <directory name="src/ignoreme" />
+            <directory name="src/Psalm/Checker" />
         </ignoreFiles>
     </projectFiles>
 </psalm>');
 
-        $this->assertTrue($config->isInProjectDirs('src/main.php'));
-        $this->assertFalse($config->isInProjectDirs('src/ignoreme/main.php'));
-        $this->assertFalse($config->isInProjectDirs('main.php'));
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/FileChecker.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringChecker.php')));
     }
 
     /**
@@ -100,8 +100,8 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     </issueHandlers>
 </psalm>');
 
-        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', 'tests/somefile.php'));
-        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', 'src/somefile.php'));
+        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', realpath('tests/ConfigTest.php')));
+        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
     }
 
     /**
@@ -122,18 +122,18 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                 <directory name="tests" />
             </errorLevel>
             <errorLevel type="error">
-                <directory name="src/Core" />
+                <directory name="src/Psalm/Checker" />
             </errorLevel>
         </MissingReturnType>
     </issueHandlers>
 </psalm>');
 
-        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', 'tests/somefile.php'));
-        $this->assertFalse($config->excludeIssueInFile('MissingReturnType', 'src/somefile.php'));
-        $this->assertFalse($config->excludeIssueInFile('MissingReturnType', 'src/Core/somefile.php'));
+        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', realpath('tests/ConfigTest.php')));
+        $this->assertFalse($config->excludeIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->excludeIssueInFile('MissingReturnType', realpath('src/Psalm/Checker/FileChecker.php')));
 
-        $this->assertSame('info', $config->getReportingLevelForFile('MissingReturnType', 'src/somefile.php'));
-        $this->assertSame('error', $config->getReportingLevelForFile('MissingReturnType', 'src/Core/somefile.php'));
+        $this->assertSame('info', $config->getReportingLevelForFile('MissingReturnType', realpath('src/Psalm/Type.php')));
+        $this->assertSame('error', $config->getReportingLevelForFile('MissingReturnType', realpath('src/Psalm/Checker/FileChecker.php')));
     }
 
     /**

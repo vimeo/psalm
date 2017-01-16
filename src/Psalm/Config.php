@@ -101,6 +101,13 @@ class Config
     protected $base_dir;
 
     /**
+     * The path to this config file
+     *
+     * @var string
+     */
+    public $file_path;
+
+    /**
      * @var array<int, string>
      */
     protected $file_extensions = ['php'];
@@ -185,6 +192,8 @@ class Config
     {
         $config = new self();
 
+        $config->file_path = $file_path;
+
         $config->base_dir = dirname($file_path) . '/';
 
         $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
@@ -262,7 +271,7 @@ class Config
         }
 
         if (isset($config_xml->projectFiles)) {
-            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, true);
+            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $config, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -313,7 +322,8 @@ class Config
             /** @var \SimpleXMLElement $issue_handler */
             foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
                 $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                    $issue_handler
+                    $issue_handler,
+                    $config
                 );
             }
         }

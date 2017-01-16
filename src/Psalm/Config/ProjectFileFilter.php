@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
 use SimpleXMLElement;
 
 class ProjectFileFilter extends FileFilter
@@ -12,14 +13,16 @@ class ProjectFileFilter extends FileFilter
 
     /**
      * @param  SimpleXMLElement $e
+     * @param  Config           $config
      * @param  bool             $inclusive
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
+        Config $config,
         $inclusive
     ) {
-        $filter = parent::loadFromXMLElement($e, $inclusive);
+        $filter = parent::loadFromXMLElement($e, $config, $inclusive);
 
         if (isset($e->ignoreFiles)) {
             if (!$inclusive) {
@@ -27,7 +30,7 @@ class ProjectFileFilter extends FileFilter
             }
 
             /** @var \SimpleXMLElement $e->ignoreFiles */
-            $filter->file_filter = static::loadFromXMLElement($e->ignoreFiles, false);
+            $filter->file_filter = static::loadFromXMLElement($e->ignoreFiles, $config, false);
         }
 
         return $filter;

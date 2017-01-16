@@ -333,7 +333,7 @@ class ProjectChecker
                 if (in_array($extension, $file_extensions)) {
                     $file_path = (string)$iterator->getRealPath();
 
-                    if ($config->isInProjectDirs($config->shortenFileName($file_path))) {
+                    if ($config->isInProjectDirs($file_path)) {
                         $this->files_to_analyze[$file_path] = $file_path;
                     }
                 }

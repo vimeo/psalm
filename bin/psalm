@@ -113,6 +113,10 @@ if ($input_paths) {
 
 $path_to_config = isset($options['c']) ? realpath($options['c']) : null;
 
+if ($path_to_config === false) {
+    die('Could not resolve path to config ' . $options['c'] . PHP_EOL);
+}
+
 $use_color = !array_key_exists('m', $options);
 
 $show_info = isset($options['show-info'])

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
 use SimpleXMLElement;
 
 class IssueHandler
@@ -17,9 +18,10 @@ class IssueHandler
 
     /**
      * @param  SimpleXMLElement $e
+     * @param  Config           $config
      * @return self
      */
-    public static function loadFromXMLElement(SimpleXMLElement $e)
+    public static function loadFromXMLElement(SimpleXMLElement $e, Config $config)
     {
         $handler = new self();
 
@@ -33,7 +35,7 @@ class IssueHandler
 
         /** @var \SimpleXMLElement $error_level */
         foreach ($e->errorLevel as $error_level) {
-            $handler->custom_levels[] = ErrorLevelFileFilter::loadFromXMLElement($error_level, true);
+            $handler->custom_levels[] = ErrorLevelFileFilter::loadFromXMLElement($error_level, $config, true);
         }
 
         return $handler;

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
 use SimpleXMLElement;
 
 class FileFilter
@@ -46,11 +47,13 @@ class FileFilter
 
     /**
      * @param  SimpleXMLElement $e
+     * @param  Config           $config
      * @param  bool             $inclusive
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
+        Config $config,
         $inclusive
     ) {
         $filter = new static($inclusive);
@@ -58,14 +61,28 @@ class FileFilter
         if ($e->directory) {
             /** @var \SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
-                $filter->addDirectory((string)$directory['name']);
+                $directory_path = realpath($config->getBaseDir() . (string)$directory['name']);
+
+                if (!$directory_path) {
+                    die('Could not resolve path to ' . $config->getBaseDir() .
+                        (string)$directory['name'] . ' in ' . $config->file_path . PHP_EOL);
+                }
+
+                $filter->addDirectory($directory_path);
             }
         }
 
         if ($e->file) {
             /** @var \SimpleXMLElement $file */
             foreach ($e->file as $file) {
-                $filter->addFile((string)$file['name']);
+                $file_path = realpath($config->getBaseDir() . (string)$file['name']);
+
+                if (!$file_path) {
+                    die('Could not resolve path to ' . $config->getBaseDir() .
+                        (string)$file['name'] . ' in ' . $config->file_path . PHP_EOL);
+                }
+
+                $filter->addFile($file_path);
             }
         }
 
