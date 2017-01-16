@@ -111,7 +111,7 @@ if ($input_paths) {
     }
 }
 
-$path_to_config = isset($options['config']) ? realpath($options['config']) : null;
+$path_to_config = isset($options['c']) ? realpath($options['c']) : null;
 
 $use_color = !array_key_exists('m', $options);
 
@@ -123,12 +123,12 @@ $is_diff = isset($options['diff']);
 
 $update_docblocks = isset($options['update-docblocks']);
 
+$project_checker = new ProjectChecker($use_color, $show_info, $output_format, $debug, $update_docblocks);
+
 // initialise custom config, if passed
 if ($path_to_config) {
-    ProjectChecker::setConfigXML($path_to_config);
+    $project_checker->setConfigXML($path_to_config);
 }
-
-$project_checker = new ProjectChecker($use_color, $show_info, $output_format, $debug, $update_docblocks);
 
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 
