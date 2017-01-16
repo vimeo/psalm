@@ -17,6 +17,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
@@ -305,13 +306,7 @@ class ExpressionChecker
 
             $stmt->inferredType = Type::getNull();
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
-            if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
-                return false;
-            }
-
-            if (property_exists($stmt->expr, 'inferredType')) {
-                $stmt->inferredType = $stmt->expr->inferredType;
-            }
+            self::analyzeClone($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Instanceof_) {
             if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
                 return false;
@@ -1683,6 +1678,42 @@ class ExpressionChecker
             if (isset($stmt->dim)) {
                 self::analyze($statements_checker, $stmt->dim, $context);
             }
+        }
+    }
+
+    /**
+     * @param  StatementsChecker            $statements_checker
+     * @param  PhpParser\Node\Expr\Clone_   $stmt
+     * @param  Context                      $context
+     * @return false|null
+     */
+    protected static function analyzeClone(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr\Clone_ $stmt,
+        Context $context
+    ) {
+        if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
+            return false;
+        }
+
+        if (isset($stmt->expr->inferredType)) {
+            foreach ($stmt->expr->inferredType->types as $clone_type_part) {
+                if (!$clone_type_part instanceof TNamedObject && !$clone_type_part instanceof TObject) {
+                    if (IssueBuffer::accepts(
+                        new InvalidClone(
+                            'Cannot clone ' . $clone_type_part,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    return;
+                }
+            }
+
+            $stmt->inferredType = $stmt->expr->inferredType;
         }
     }
 

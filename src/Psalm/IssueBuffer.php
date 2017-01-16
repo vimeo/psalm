@@ -41,7 +41,7 @@ class IssueBuffer
             return false;
         }
 
-        if ($config->excludeIssueInFile($issue_type, $e->getFileName())) {
+        if ($config->excludeIssueInFile($issue_type, $e->getFilePath())) {
             return false;
         }
 

@@ -55,13 +55,13 @@ class IssueHandler
     }
 
     /**
-     * @param string $file_name
+     * @param string $file_path
      * @return string
      */
-    public function getReportingLevelForFile($file_name)
+    public function getReportingLevelForFile($file_path)
     {
         foreach ($this->custom_levels as $custom_level) {
-            if ($custom_level->allows($file_name)) {
+            if ($custom_level->allows($file_path)) {
                 return $custom_level->getErrorLevel();
             }
         }

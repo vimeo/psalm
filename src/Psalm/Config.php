@@ -422,24 +422,22 @@ class Config
 
     /**
      * @param   string $issue_type
-     * @param   string $file_name
+     * @param   string $file_path
      * @return  bool
      */
-    public function excludeIssueInFile($issue_type, $file_name)
+    public function excludeIssueInFile($issue_type, $file_path)
     {
         if (!$this->totally_typed && in_array($issue_type, self::$MIXED_ISSUES)) {
             return true;
         }
 
-        $file_name = $this->shortenFileName($file_name);
-
         if ($this->project_files && $this->hide_external_errors) {
-            if (!$this->isInProjectDirs($file_name)) {
+            if (!$this->isInProjectDirs($file_path)) {
                 return true;
             }
         }
 
-        if ($this->getReportingLevelForFile($issue_type, $file_name) === self::REPORT_SUPPRESS) {
+        if ($this->getReportingLevelForFile($issue_type, $file_path) === self::REPORT_SUPPRESS) {
             return true;
         }
 
@@ -452,18 +450,21 @@ class Config
      */
     public function isInProjectDirs($file_path)
     {
+        if ($file_path[0] !== '/') {
+            throw new \UnexpectedValueException('eesh');
+        }
         return $this->project_files && $this->project_files->allows($file_path);
     }
 
     /**
      * @param   string $issue_type
-     * @param   string $file_name
+     * @param   string $file_path
      * @return  string
      */
-    public function getReportingLevelForFile($issue_type, $file_name)
+    public function getReportingLevelForFile($issue_type, $file_path)
     {
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForFile($file_name);
+            return $this->issue_handlers[$issue_type]->getReportingLevelForFile($file_path);
         }
 
         return self::REPORT_ERROR;
