@@ -126,7 +126,7 @@ class ClosureTest extends PHPUnit_Framework_TestCase
 
         $bam = array_map(
             /**
-             * @psalm-suppress MissingReturnType
+             * @psalm-suppress MissingClosureReturnType
              */
             function(string $a) {
                 return $a . "blah";
