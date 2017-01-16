@@ -186,7 +186,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 $config = Config::getInstance();
 
-                if (!$config->excludeIssueInFile('InvalidReturnType', $this->getFileName())) {
+                if (!$config->excludeIssueInFile('InvalidReturnType', $this->getFilePath())) {
                     /** @var string */
                     $method_id = $function_checkers[$stmt->name]->getMethodId();
 

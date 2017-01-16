@@ -307,7 +307,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             $function_context = new Context($this->file_name, $this->context->self);
             $function_checker->analyze($function_context, $this->context);
 
-            if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_name)) {
+            if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_path)) {
                 /** @var string */
                 $method_id = $function_checker->getMethodId();
 

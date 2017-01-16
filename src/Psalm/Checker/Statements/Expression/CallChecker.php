@@ -955,11 +955,11 @@ class CallChecker
                 if ($function_params !== null) {
                     $by_ref = $argument_offset < count($function_params)
                         ? $function_params[$argument_offset]->by_ref
-                        : $last_param->is_variadic && $last_param->by_ref;
+                        : $last_param && $last_param->is_variadic && $last_param->by_ref;
 
                     $by_ref_type = null;
 
-                    if ($by_ref) {
+                    if ($by_ref && $last_param) {
                         $by_ref_type = $argument_offset < count($function_params)
                             ? clone $function_params[$argument_offset]->type
                             : clone $last_param->type;
@@ -992,11 +992,11 @@ class CallChecker
                 if ($function_params !== null) {
                     $by_ref = $argument_offset < count($function_params)
                         ? $function_params[$argument_offset]->by_ref
-                        : $last_param->is_variadic && $last_param->by_ref;
+                        : $last_param && $last_param->is_variadic && $last_param->by_ref;
 
                     $by_ref_type = null;
 
-                    if ($by_ref) {
+                    if ($by_ref && $last_param) {
                         $by_ref_type = $argument_offset < count($function_params)
                             ? clone $function_params[$argument_offset]->type
                             : clone $last_param->type;

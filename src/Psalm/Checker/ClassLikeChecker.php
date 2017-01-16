@@ -472,7 +472,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $global_context ? clone $global_context : null
         );
 
-        if (!$config->excludeIssueInFile('InvalidReturnType', $source->getFileName())) {
+        if (!$config->excludeIssueInFile('InvalidReturnType', $source->getFilePath())) {
             $return_type_location = null;
             $secondary_return_type_location = null;
 
