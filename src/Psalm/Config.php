@@ -245,25 +245,14 @@ class Config
         }
 
         if (isset($config_xml['cacheDirectory'])) {
-            $path = (string)$config_xml['cacheDirectory'];
-
-            if ($path[0] !== '/') {
-                if (realpath(dirname($path)) !== dirname($path)) {
-                    $cache_base_dir = realpath(dirname($config->base_dir . $path));
-
-                    if (!$cache_base_dir) {
-                        die('Could not locate cache parent directory ' . dirname($config->base_dir . $path) . PHP_EOL);
-                    }
-
-                    $path = $cache_base_dir . DIRECTORY_SEPARATOR . basename($path);
-                }
-            } elseif (realpath(dirname($path)) === false) {
-                die('Could not locate cache parent directory ' . dirname($path) . PHP_EOL);
-            }
-
-            $config->cache_directory = $path;
+            $config->cache_directory = (string)$config_xml['cacheDirectory'];
         } else {
             $config->cache_directory = sys_get_temp_dir() . '/psalm';
+        }
+
+        if (@mkdir($config->cache_directory, 0777, true) === false && is_dir($config->cache_directory) === false) {
+            trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
+            exit(255);
         }
 
         if (isset($config_xml['usePropertyDefaultForType'])) {
