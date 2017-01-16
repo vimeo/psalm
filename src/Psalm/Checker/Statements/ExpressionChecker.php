@@ -482,9 +482,23 @@ class ExpressionChecker
             return null;
         }
 
-        if (in_array($stmt->name, [
-            '_SERVER', '_GET', '_POST', '_COOKIE', '_REQUEST', '_FILES', '_ENV', 'GLOBALS', 'argv', 'argc'
-        ])) {
+        if (in_array(
+            $stmt->name,
+            [
+                '_SERVER',
+                '_GET',
+                '_POST',
+                '_COOKIE',
+                '_REQUEST',
+                '_FILES',
+                '_ENV',
+                '_SESSION',
+                'GLOBALS',
+                'argv',
+                'argc',
+            ]
+        )
+        ) {
             return null;
         }
 
