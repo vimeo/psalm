@@ -49,7 +49,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         }
         ');
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -58,7 +58,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testInstanceOfIntOffset()
     {
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         class A {
             public function fooFoo() : void { }
@@ -79,7 +79,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testNotEmptyStringOffset()
     {
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         /**
          * @param  array<string>  $a
@@ -102,7 +102,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testNotEmptyIntOffset()
     {
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         /**
          * @param  array<string>  $a
@@ -127,7 +127,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testInvalidArrayAccess()
     {
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         $a = 5;
         echo $a[0];
@@ -146,7 +146,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     {
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         /** @var mixed */
         $a = [];
@@ -166,7 +166,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
     {
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         /** @var mixed */
         $a = 5;
@@ -184,7 +184,7 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testNullArrayAccess()
     {
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         $a = null;
         echo $a[0];

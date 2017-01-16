@@ -29,11 +29,6 @@ class Context
     public $parent;
 
     /**
-     * @var string
-     */
-    public $file_name;
-
-    /**
      * @var boolean
      */
     public $check_classes = true;
@@ -85,12 +80,10 @@ class Context
     public $constants = [];
 
     /**
-     * @param string      $file_name
      * @param string|null $self
      */
-    public function __construct($file_name, $self = null)
+    public function __construct($self = null)
     {
-        $this->file_name = $file_name;
         $this->self = $self;
     }
 

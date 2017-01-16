@@ -49,7 +49,7 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -67,7 +67,7 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -93,7 +93,7 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -115,7 +115,7 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -137,7 +137,7 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -157,7 +157,7 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 }

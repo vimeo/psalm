@@ -275,7 +275,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
     }
@@ -307,7 +307,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|string|int', (string) $context->vars_in_scope['$b']);
     }
@@ -335,7 +335,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -362,7 +362,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -385,7 +385,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -408,7 +408,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -436,7 +436,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -461,7 +461,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -486,7 +486,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -505,7 +505,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -520,7 +520,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('DOMDocument', (string) $context->vars_in_scope['$owner']);
     }
@@ -532,7 +532,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     {
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
 
         interface I1 {}
@@ -565,7 +565,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     {
         Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
 
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         class A {}
 
@@ -601,7 +601,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 }

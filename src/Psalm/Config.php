@@ -194,7 +194,7 @@ class Config
 
         $config->file_path = $file_path;
 
-        $config->base_dir = dirname($file_path) . '/';
+        $config->base_dir = (string)getcwd() . '/';
 
         $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
 

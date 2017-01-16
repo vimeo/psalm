@@ -60,7 +60,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         $classlike_checkers = [];
 
-        $namespace_context = new Context($this->source->getFileName());
+        $namespace_context = new Context();
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
@@ -93,7 +93,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         if ($leftover_stmts) {
             $statements_checker = new StatementsChecker($this);
-            $context = new Context($this->source->getFileName());
+            $context = new Context();
             $statements_checker->analyze($leftover_stmts, $context);
         }
     }

@@ -165,10 +165,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $leftover_stmts = [];
 
-        $long_file_name = Config::getInstance()->getBaseDir() . $this->source->getFileName();
+        $long_file_name = $this->source->getFilePath();
 
         if (!$class_context) {
-            $class_context = new Context($this->source->getFileName(), $this->fq_class_name);
+            $class_context = new Context($this->fq_class_name);
             $class_context->parent = $this->parent_fq_class_name;
 
             if ($global_context) {
@@ -391,7 +391,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         if (!$class_context) {
-            $class_context = new Context($this->source->getFileName(), $this->fq_class_name);
+            $class_context = new Context($this->fq_class_name);
             $class_context->parent = $this->parent_fq_class_name;
         }
 
@@ -591,7 +591,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $storage->used_traits = $parent_storage->used_traits;
 
         FileChecker::addFileInheritanceToClass(
-            Config::getInstance()->getBaseDir() . $this->source->getFileName(),
+            $this->source->getFilePath(),
             $parent_class
         );
 
@@ -693,7 +693,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 ClassLikeChecker::registerTraitUse($this->fq_class_name, $trait_name);
 
                 FileChecker::addFileInheritanceToClass(
-                    Config::getInstance()->getBaseDir() . $this->source->getFileName(),
+                    $this->source->getFilePath(),
                     $trait_name
                 );
             }
@@ -890,7 +890,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         FileChecker::addFileReferenceToClass(
-            Config::getInstance()->getBaseDir() . $code_location->file_name,
+            $code_location->file_path,
             $fq_class_name
         );
 

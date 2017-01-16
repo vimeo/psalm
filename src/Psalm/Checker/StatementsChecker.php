@@ -181,7 +181,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_context = new Context($this->getFileName(), $context->self);
+                $function_context = new Context($context->self);
                 $function_checkers[$stmt->name]->analyze($function_context, $context);
 
                 $config = Config::getInstance();

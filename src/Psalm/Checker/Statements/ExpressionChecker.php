@@ -204,7 +204,7 @@ class ExpressionChecker
                 return false;
             }
 
-            $use_context = new Context($statements_checker->getFileName(), $context->self);
+            $use_context = new Context($context->self);
 
             if (!$statements_checker->isStatic()) {
                 if ($context->collect_mutations &&

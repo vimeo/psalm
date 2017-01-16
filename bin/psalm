@@ -61,6 +61,10 @@ HELP;
     exit;
 }
 
+if (getcwd() === false) {
+    die('Cannot get current working directory');
+}
+
 // get vars from options
 $debug = array_key_exists('debug', $options);
 
