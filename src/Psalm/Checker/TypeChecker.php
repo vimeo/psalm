@@ -1239,10 +1239,16 @@ class TypeChecker
                         continue;
                     }
 
-                    if ($simple_declared_type === 'object' &&
-                        ClassLikeChecker::classOrInterfaceExists($differing_type, $file_checker)
-                    ) {
+                    if (!ClassLikeChecker::classOrInterfaceExists($differing_type, $file_checker)) {
+                        break;
+                    }
+
+                    if ($simple_declared_type === 'object') {
                         $is_match = true;
+                        break;
+                    }
+
+                    if (!ClassLikeChecker::classOrInterfaceExists($simple_declared_type, $file_checker)) {
                         break;
                     }
 

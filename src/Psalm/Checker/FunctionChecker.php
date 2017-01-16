@@ -86,6 +86,10 @@ class FunctionChecker extends FunctionLikeChecker
 
         $file_storage = FileChecker::$storage[$file_path];
 
+        if (!isset($file_storage->functions[$function_id])) {
+            throw new \UnexpectedValueException('Not expecting ' . $function_id . ' to not have storage in ' . $file_path);
+        }
+
         return $file_storage->functions[$function_id]->params;
     }
 
@@ -97,6 +101,10 @@ class FunctionChecker extends FunctionLikeChecker
     public static function getDefinedConstants($function_id, $file_path)
     {
         $file_storage = FileChecker::$storage[$file_path];
+
+        if (!isset($file_storage->functions[$function_id])) {
+            return [];
+        }
 
         return $file_storage->functions[$function_id]->defined_constants;
     }
