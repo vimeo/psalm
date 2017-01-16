@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
 use SimpleXMLElement;
 
 class ErrorLevelFileFilter extends FileFilter
@@ -17,9 +18,10 @@ class ErrorLevelFileFilter extends FileFilter
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
+        Config $config,
         $inclusive
     ) {
-        $filter = parent::loadFromXMLElement($e, $inclusive);
+        $filter = parent::loadFromXMLElement($e, $config, $inclusive);
 
         if (isset($e['type'])) {
             $filter->error_level = (string) $e['type'];
