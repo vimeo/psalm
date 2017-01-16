@@ -435,6 +435,29 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testTypeResolutionFromDocblockInside()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param int $length
+         * @return void
+         */
+        function foo($length) {
+            if (!is_int($length)) {
+                if (is_numeric($length)) {
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage FailedTypeResolution
      * @return                   void
