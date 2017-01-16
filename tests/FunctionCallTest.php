@@ -344,4 +344,46 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$c']);
         $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$d']);
     }
+
+    /**
+     * @return void
+     */
+    public function testNamespacedRootFunctionCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace {
+            /** @return void */
+            function foo() { }
+        }
+        namespace A\B\C {
+            foo();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testNamespacedAliasedFunctionCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Aye {
+            /** @return void */
+            function foo() { }
+        }
+        namespace Bee {
+            use Aye as A;
+
+            A\foo();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
