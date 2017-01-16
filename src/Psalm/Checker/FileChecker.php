@@ -182,7 +182,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             $this->preloaded_statements = $preloaded_statements;
         }
 
-        $this->context = new Context($this->file_name);
+        $this->context = new Context();
     }
 
     /**
@@ -304,7 +304,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         foreach ($this->function_checkers as $function_checker) {
-            $function_context = new Context($this->file_name, $this->context->self);
+            $function_context = new Context($this->context->self);
             $function_checker->analyze($function_context, $this->context);
 
             if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_path)) {
@@ -363,7 +363,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function getMethodMutations($method_id, Context &$this_context)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
-        $call_context = new Context($this->file_name, (string) $this_context->vars_in_scope['$this']);
+        $call_context = new Context((string) $this_context->vars_in_scope['$this']);
         $call_context->collect_mutations = true;
 
         foreach ($this_context->vars_possibly_in_scope as $var => $type) {

@@ -44,7 +44,7 @@ class ListTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$b']);
@@ -60,7 +60,7 @@ class ListTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
@@ -77,7 +77,7 @@ class ListTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$b']);
@@ -106,7 +106,7 @@ class ListTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -135,7 +135,7 @@ class ListTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 }

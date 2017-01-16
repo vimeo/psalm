@@ -108,10 +108,10 @@ class MethodMutationTest extends PHPUnit_Framework_TestCase
         );
 
         $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visit($context);
         $file_checker->analyze(false, true);
-        $method_context = new Context('somefile.php');
+        $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::barBar', $method_context);
 
         $this->assertEquals('UserViewData', (string)$method_context->vars_in_scope['$this->user_viewdata']);

@@ -1163,7 +1163,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
@@ -1183,7 +1183,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<empty, empty>', (string) $context->vars_in_scope['$ids']);
     }
@@ -1439,7 +1439,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
@@ -1461,7 +1461,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         echo $var;
         ');
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int|string', (string) $context->vars_in_scope['$var']);
     }
@@ -1482,7 +1482,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
         ');
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('A|B', (string) $context->vars_in_scope['$var']);
     }
@@ -1723,7 +1723,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
@@ -1746,7 +1746,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
@@ -1783,7 +1783,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods();
     }
 
@@ -1816,7 +1816,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods();
     }
 
@@ -1834,7 +1834,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods();
     }
 
@@ -1849,7 +1849,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
 
         $this->assertSame('int', (string) $context->vars_in_scope['$a']);
@@ -1860,7 +1860,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
      */
     public function testTypedValueAssertion()
     {
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         /**
          * @param array|string $a
@@ -1893,7 +1893,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -1916,7 +1916,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 }

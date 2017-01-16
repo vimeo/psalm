@@ -41,7 +41,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
 
         $this->file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $this->file_checker->context = new Context('somefile.php');
+        $this->file_checker->context = new Context();
 
         $this->project_checker = new ProjectChecker();
     }
@@ -336,7 +336,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -358,7 +358,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -382,7 +382,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -407,7 +407,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -430,7 +430,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -453,7 +453,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -480,7 +480,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
@@ -505,7 +505,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $context->vars_in_scope['$a'] = Type::parseString('A');
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|A', (string) $context->vars_in_scope['$out']);
@@ -537,7 +537,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $context->vars_in_scope['$a'] = Type::parseString('A');
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
@@ -572,7 +572,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $context->vars_in_scope['$a'] = Type::parseString('A');
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
@@ -593,7 +593,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
@@ -621,7 +621,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context('somefile.php');
+        $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
 }

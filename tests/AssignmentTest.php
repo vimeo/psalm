@@ -41,7 +41,7 @@ class AssignmentTest extends PHPUnit_Framework_TestCase
      */
     public function testMixedAssignment()
     {
-        $context = new Context('somefile.php');
+        $context = new Context();
         $stmts = self::$parser->parse('<?php
         /** @var mixed */
         $a = 5;
