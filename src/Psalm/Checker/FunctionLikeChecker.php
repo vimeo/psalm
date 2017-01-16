@@ -20,6 +20,7 @@ use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MisplacedRequiredParam;
+use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
@@ -780,6 +781,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if (!$return_type && !$update_docblock && !$is_to_string) {
+            if ($this->function instanceof Closure) {
+                if (IssueBuffer::accepts(
+                    new MissingClosureReturnType(
+                        'Closure does not have a return type',
+                        new CodeLocation($this, $this->function, true)
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    // fall through
+                }
+
+                return null;
+            }
+
             if (IssueBuffer::accepts(
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type',
