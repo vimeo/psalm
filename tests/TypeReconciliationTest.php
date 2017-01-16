@@ -566,6 +566,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $c = min("a", "b");
         $d = min(1, 2, 3, 4);
         $e = min(1, 2, 3, 4, 5);
+        sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
@@ -574,6 +575,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
         $this->assertEquals('string', (string) $context->vars_in_scope['$c']);
+        $this->assertEquals('string', (string)$context->vars_in_scope['$hours']);
+        $this->assertEquals('string', (string)$context->vars_in_scope['$minutes']);
+        $this->assertEquals('string', (string)$context->vars_in_scope['$seconds']);
     }
 
     /**

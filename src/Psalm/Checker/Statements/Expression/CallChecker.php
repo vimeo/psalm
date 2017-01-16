@@ -946,15 +946,24 @@ class CallChecker
         array $function_params = null,
         Context $context
     ) {
+        $last_param = $function_params
+            ? $function_params[count($function_params) - 1]
+            : null;
+
         foreach ($args as $argument_offset => $arg) {
             if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch) {
                 if ($function_params !== null) {
-                    $by_ref = $argument_offset < count($function_params) &&
-                        $function_params[$argument_offset]->by_ref;
+                    $by_ref = $argument_offset < count($function_params)
+                        ? $function_params[$argument_offset]->by_ref
+                        : $last_param->is_variadic && $last_param->by_ref;
 
-                    $by_ref_type = $by_ref && $argument_offset < count($function_params)
-                        ? clone $function_params[$argument_offset]->type
-                        : null;
+                    $by_ref_type = null;
+
+                    if ($by_ref) {
+                        $by_ref_type = $argument_offset < count($function_params)
+                            ? clone $function_params[$argument_offset]->type
+                            : clone $last_param->type;
+                    }
 
                     if ($by_ref && $by_ref_type) {
                         ExpressionChecker::assignByRefParam($statements_checker, $arg->value, $by_ref_type, $context);
@@ -981,12 +990,17 @@ class CallChecker
                 }
             } elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                 if ($function_params !== null) {
-                    $by_ref = $argument_offset < count($function_params) &&
-                        $function_params[$argument_offset]->by_ref;
+                    $by_ref = $argument_offset < count($function_params)
+                        ? $function_params[$argument_offset]->by_ref
+                        : $last_param->is_variadic && $last_param->by_ref;
 
-                    $by_ref_type = $by_ref && $argument_offset < count($function_params)
-                        ? clone $function_params[$argument_offset]->type
-                        : null;
+                    $by_ref_type = null;
+
+                    if ($by_ref) {
+                        $by_ref_type = $argument_offset < count($function_params)
+                            ? clone $function_params[$argument_offset]->type
+                            : clone $last_param->type;
+                    }
 
                     if (ExpressionChecker::analyzeVariable(
                         $statements_checker,
