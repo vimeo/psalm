@@ -30,6 +30,11 @@ cat > psalm.xml << EOF
     <projectFiles>
         <directory name="src" />
     </projectFiles>
+    <issueHandlers>
+        <MissingReturnType errorLevel="info" />
+        <MissingClosureReturnType errorLevel="info" />
+        <MissingPropertyType errorLevel="info" />
+    </issueHandlers>
 </psalm>
 EOF
 ```
@@ -40,4 +45,4 @@ Then run Psalm with:
 ./vendor/bin/psalm
 ```
 
-The above config is spartan, and will show you *all* possible errors, including many that are likely irrelevant to you. A more lenient config is provided [here](examples/psalm.default.xml).
+The above config is fairly spartan, and will show you *all* possible errors, including many that might be irrelevant to you. A more lenient config is provided [here](examples/psalm.default.xml), and you can learn about how to suppress certain issues [here](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
