@@ -586,4 +586,25 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testNamespacedAliasedClassCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Aye {
+            class Foo {}
+        }
+        namespace Bee {
+            use Aye as A;
+
+            new A\Foo();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
