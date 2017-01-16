@@ -145,6 +145,7 @@ class ProjectChecker
 
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
+    const TYPE_EMACS = 'emacs';
 
     /**
      * @param boolean $use_color
@@ -165,7 +166,7 @@ class ProjectChecker
         $this->debug_output = $debug_output;
         $this->update_docblocks = $update_docblocks;
 
-        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON])) {
+        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS])) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
         }
 

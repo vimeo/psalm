@@ -33,6 +33,9 @@ class CodeLocation
     /** @var int */
     protected $selection_end = -1;
 
+    /** @var int */
+    protected $column = -1;
+
     /** @var string */
     protected $snippet = '';
 
@@ -162,6 +165,10 @@ class CodeLocation
         $this->selection_start = max($this->preview_start, $this->selection_start);
         $this->selection_end = min($this->preview_end, $this->selection_end);
 
+        // reset preview start to beginning of line
+        $this->column = $this->selection_start -
+            (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+
         $this->snippet = substr($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
     }
 
@@ -181,6 +188,16 @@ class CodeLocation
         $this->calculateRealLocation();
 
         return $this->snippet;
+    }
+
+    /**
+     * @return int
+     */
+    public function getColumn()
+    {
+        $this->calculateRealLocation();
+
+        return $this->column;
     }
 
     /**
