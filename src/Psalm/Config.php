@@ -245,7 +245,23 @@ class Config
         }
 
         if (isset($config_xml['cacheDirectory'])) {
-            $config->cache_directory = (string) $config_xml['cacheDirectory'];
+            $path = (string)$config_xml['cacheDirectory'];
+
+            if ($path[0] !== '/') {
+                if (realpath(dirname($path)) !== dirname($path)) {
+                    $cache_base_dir = realpath(dirname($config->base_dir . $path));
+
+                    if (!$cache_base_dir) {
+                        die('Could not locate cache parent directory ' . dirname($config->base_dir . $path) . PHP_EOL);
+                    }
+
+                    $path = $cache_base_dir . DIRECTORY_SEPARATOR . basename($path);
+                }
+            } elseif (realpath(dirname($path)) === false) {
+                die('Could not locate cache parent directory ' . dirname($path) . PHP_EOL);
+            }
+
+            $config->cache_directory = $path;
         } else {
             $config->cache_directory = sys_get_temp_dir() . '/psalm';
         }
