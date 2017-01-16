@@ -221,7 +221,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $interface_name,
                     $this->getFileChecker(),
                     new CodeLocation($this, $this->class, true),
-                    $this->getSuppressedIssues()
+                    $this->getSuppressedIssues(),
+                    true
                 ) === false) {
                     return false;
                 }
@@ -233,10 +234,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     )
                 );
 
+                $interface_storage = self::$storage[strtolower($interface_name)];
+
+                // copy over any constants
+                $storage->public_class_constants = array_merge(
+                    $storage->public_class_constants,
+                    $interface_storage->public_class_constants
+                );
+
                 FileChecker::addFileInheritanceToClass($long_file_name, $interface_name);
             }
 
             $extra_interfaces = array_unique($extra_interfaces);
+
+            //var_dump(self::$storage);
 
             foreach ($extra_interfaces as $extra_interface_name) {
                 FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
