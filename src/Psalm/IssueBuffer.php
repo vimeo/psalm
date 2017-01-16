@@ -79,6 +79,10 @@ class IssueBuffer
                     case ProjectChecker::TYPE_JSON:
                         self::$issue_data[] = self::getIssueArray($e, Config::REPORT_INFO);
                         break;
+
+                    case ProjectChecker::TYPE_EMACS:
+                        echo self::getEmacsOutput($e, Config::REPORT_INFO) . PHP_EOL;
+                        break;
                 }
             }
             return false;
@@ -101,6 +105,10 @@ class IssueBuffer
 
                 case ProjectChecker::TYPE_JSON:
                     self::$issue_data[] = self::getIssueArray($e);
+                    break;
+
+                case ProjectChecker::TYPE_EMACS:
+                    echo self::getEmacsOutput($e) . PHP_EOL;
                     break;
             }
         }
@@ -132,6 +140,20 @@ class IssueBuffer
             'from' => $selection_bounds[0],
             'to' => $selection_bounds[1],
         ];
+    }
+
+    /**
+     * @param  Issue\CodeIssue $e
+     * @param  string          $severity
+     * @return string
+     */
+    protected static function getEmacsOutput(Issue\CodeIssue $e, $severity = Config::REPORT_ERROR)
+    {
+        $location = $e->getLocation();
+        $selection_bounds = $location->getSelectionBounds();
+
+        return $location->file_path . ':' . $location->getLineNumber() . ':' . $location->getColumn() . ': ' .
+            ($severity === Config::REPORT_ERROR ? 'error' : 'warning') . ' - ' . $e->getMessage();
     }
 
     /**
