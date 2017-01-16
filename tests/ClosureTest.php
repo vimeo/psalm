@@ -187,9 +187,36 @@ class ClosureTest extends PHPUnit_Framework_TestCase
     public function testCallable()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(Callable $c) : void {
+        function foo(callable $c) : void {
             echo (string)$c();
         }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCallableClass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class C {
+            public function __invoke() : string {
+                return "You ran?";
+            }
+        }
+
+        function foo(callable $c) : void {
+            echo (string)$c();
+        }
+
+        foo(new C());
+
+        $c2 = new C();
+        $c2();
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
