@@ -757,6 +757,7 @@ class ProjectChecker
                 }
 
                 $config->collectPredefinedConstants();
+                $config->collectPredefinedFunctions();
 
                 break;
             }
@@ -793,6 +794,7 @@ class ProjectChecker
         }
 
         $this->config->collectPredefinedConstants();
+        $this->config->collectPredefinedFunctions();
     }
 
     /**

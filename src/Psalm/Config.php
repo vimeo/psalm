@@ -144,6 +144,9 @@ class Config
     /** @var array<string, mixed> */
     protected $predefined_constants;
 
+    /** @var array<string, bool> */
+    protected $predefined_functions = [];
+
     protected function __construct()
     {
         self::$config = $this;
@@ -541,5 +544,35 @@ class Config
     public function collectPredefinedConstants()
     {
         $this->predefined_constants = get_defined_constants();
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getPredefinedFunctions()
+    {
+        return $this->predefined_functions;
+    }
+
+    /**
+     * @return void
+     * @psalm-suppress InvalidPropertyAssignment
+     * @psalm-suppress MixedAssignment
+     */
+    public function collectPredefinedFunctions()
+    {
+        $defined_functions = get_defined_functions();
+
+        if (isset($defined_functions['user'])) {
+            foreach ($defined_functions['user'] as $function_name) {
+                $this->predefined_functions[$function_name] = true;
+            }
+        }
+
+        if (isset($defined_functions['internal'])) {
+            foreach ($defined_functions['internal'] as $function_name) {
+                $this->predefined_functions[$function_name] = true;
+            }
+        }
     }
 }

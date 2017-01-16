@@ -12,6 +12,7 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TraitChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\ForbiddenCode;
@@ -178,6 +179,13 @@ class CallChecker
 
                 $in_call_map = FunctionChecker::inCallMap($method_id);
 
+                $is_predefined = true;
+
+                if (!$in_call_map) {
+                    $predefined_functions = Config::getInstance()->getPredefinedFunctions();
+                    $is_predefined = isset($predefined_functions[$method_id]);
+                }
+
                 if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
                     $method_id = FunctionChecker::getFQFunctionNameFromString($method_id, $statements_checker);
                 }
@@ -199,7 +207,7 @@ class CallChecker
                     $statements_checker->getFileChecker()
                 );
 
-                if (!$in_call_map) {
+                if (!$in_call_map && !$is_predefined) {
                     $defined_constants = FunctionChecker::getDefinedConstants(
                         $method_id,
                         $statements_checker->getFilePath()
