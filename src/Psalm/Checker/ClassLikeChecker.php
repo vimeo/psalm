@@ -454,12 +454,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         );
 
         if (!$config->excludeIssueInFile('InvalidReturnType', $source->getFileName())) {
+            $return_type_location = null;
             $secondary_return_type_location = null;
 
-            $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                $actual_method_id,
-                $secondary_return_type_location
-            );
+            if ($actual_method_id) {
+                $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                    $actual_method_id,
+                    $secondary_return_type_location
+                );
+            }
 
             $method_checker->verifyReturnType(
                 $update_docblocks,

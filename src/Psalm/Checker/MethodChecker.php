@@ -89,8 +89,11 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getMethodReturnType($method_id)
     {
-        /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
+
+        if (!$method_id) {
+            return null;
+        }
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
@@ -134,8 +137,11 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getMethodReturnTypeLocation($method_id, CodeLocation &$defined_location = null)
     {
-        /** @var string */
         $method_id = self::getDeclaringMethodId($method_id);
+
+        if ($method_id === null) {
+            return null;
+        }
 
         $storage = self::getStorage($method_id);
 
@@ -355,6 +361,10 @@ class MethodChecker extends FunctionLikeChecker
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
         $fq_class_name_lower = strtolower($fq_class_name);
+
+        if (!isset(ClassLikeChecker::$storage[$fq_class_name_lower])) {
+            throw new \UnexpectedValueException('$class_storage should not be null for ' . $method_id);
+        }
 
         $class_storage = ClassLikeChecker::$storage[$fq_class_name_lower];
 
