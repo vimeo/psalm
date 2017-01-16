@@ -1143,6 +1143,8 @@ return [
 'DateTimeImmutable::setTimezone' => ['DateTimeImmutable', 'timezone'=>'DateTimeZone'],
 'DateTimeImmutable::sub' => ['DateTimeImmutable', 'interval'=>'DateInterval'],
 'DateTimeImmutable::__wakeup' => ['DateTimeImmutable'],
+'DateTimeInterface::getTimeZone' => ['DateTimeZone', 'obj'=>'DateTime'],
+'DateTimeInterface::getTimeStamp' => ['int', 'obj'=>'DateTime'],
 'DateTime::modify' => ['DateTime', 'modify'=>'string'],
 'DateTime::setDate' => ['DateTime', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
 'DateTime::setISODate' => ['DateTime', 'year'=>'int', 'week'=>'int', 'day='=>'int'],
