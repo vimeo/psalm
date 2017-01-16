@@ -329,54 +329,57 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
             $class_interfaces = ClassChecker::getInterfacesForClass($this->fq_class_name);
 
-            foreach ($class_interfaces as $interface_id => $interface_name) {
-                if (!isset(self::$storage[strtolower($interface_name)])) {
-                    continue;
-                }
+            if (!$this->class->isAbstract()) {
+                foreach ($class_interfaces as $interface_id => $interface_name) {
+                    if (!isset(self::$storage[strtolower($interface_name)])) {
+                        continue;
+                    }
 
-                $interface_storage = self::$storage[strtolower($interface_name)];
+                    $interface_storage = self::$storage[strtolower($interface_name)];
 
-                $storage->public_class_constants += $interface_storage->public_class_constants;
+                    $storage->public_class_constants += $interface_storage->public_class_constants;
 
-                foreach ($interface_storage->methods as $method_name => $method) {
-                    if ($method->visibility === self::VISIBILITY_PUBLIC) {
-                        $implemented_method_id = $this->fq_class_name . '::' . $method_name;
-                        $mentioned_method_id = $interface_name . '::' . $method_name;
-                        $declaring_method_id = MethodChecker::getDeclaringMethodId($implemented_method_id);
+                    foreach ($interface_storage->methods as $method_name => $method) {
+                        if ($method->visibility === self::VISIBILITY_PUBLIC) {
+                            $implemented_method_id = $this->fq_class_name . '::' . $method_name;
+                            $mentioned_method_id = $interface_name . '::' . $method_name;
+                            $declaring_method_id = MethodChecker::getDeclaringMethodId($implemented_method_id);
 
-                        $method_storage = $declaring_method_id
-                            ? MethodChecker::getStorage($declaring_method_id)
-                            : null;
+                            $method_storage = $declaring_method_id
+                                ? MethodChecker::getStorage($declaring_method_id)
+                                : null;
 
-                        if (!$method_storage) {
-                            $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
+                            if (!$method_storage) {
+                                $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
 
-                            if (IssueBuffer::accepts(
-                                new UnimplementedInterfaceMethod(
-                                    'Method ' . $cased_method_id . ' is not defined on class ' . $this->fq_class_name,
-                                    new CodeLocation($this, $this->class, true)
-                                ),
-                                $this->source->getSuppressedIssues()
-                            )) {
-                                return false;
+                                if (IssueBuffer::accepts(
+                                    new UnimplementedInterfaceMethod(
+                                        'Method ' . $cased_method_id . ' is not defined on class ' .
+                                        $this->fq_class_name,
+                                        new CodeLocation($this, $this->class, true)
+                                    ),
+                                    $this->source->getSuppressedIssues()
+                                )) {
+                                    return false;
+                                }
+
+                                return null;
+                            } elseif ($method_storage->visibility !== self::VISIBILITY_PUBLIC) {
+                                $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
+
+                                if (IssueBuffer::accepts(
+                                    new InaccessibleMethod(
+                                        'Interface-defined method ' . $cased_method_id .
+                                            ' must be public in ' . $this->fq_class_name,
+                                        new CodeLocation($this, $this->class, true)
+                                    ),
+                                    $this->source->getSuppressedIssues()
+                                )) {
+                                    return false;
+                                }
+
+                                return null;
                             }
-
-                            return null;
-                        } elseif ($method_storage->visibility !== self::VISIBILITY_PUBLIC) {
-                            $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
-
-                            if (IssueBuffer::accepts(
-                                new InaccessibleMethod(
-                                    'Interface-defined method ' . $cased_method_id .
-                                        ' must be public in ' . $this->fq_class_name,
-                                    new CodeLocation($this, $this->class, true)
-                                ),
-                                $this->source->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-
-                            return null;
                         }
                     }
                 }

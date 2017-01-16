@@ -435,4 +435,42 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testAbstractInterfaceImplements()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface I {
+            public function fnc();
+        }
+
+        abstract class A implements I {}
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UnimplementedInterfaceMethod
+     * @return                   void
+     */
+    public function testAbstractInterfaceImplementsWithSubclass()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface I {
+            public function fnc();
+        }
+
+        abstract class A implements I {}
+
+        class B extends A {}
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
