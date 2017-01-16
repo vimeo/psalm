@@ -148,7 +148,10 @@ class CallChecker
                             }
                         } elseif (!$var_type_part instanceof TMixed &&
                             (!$var_type_part instanceof TNamedObject || $var_type_part->value !== 'Closure') &&
-                            !$var_type_part instanceof TCallable
+                            !$var_type_part instanceof TCallable &&
+                            (!$var_type_part instanceof TNamedObject ||
+                                !MethodChecker::methodExists($var_type_part->value . '::__invoke')
+                            )
                         ) {
                             $var_id = ExpressionChecker::getVarId(
                                 $stmt->name,

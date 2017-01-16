@@ -846,7 +846,13 @@ class TypeChecker
                 }
 
                 if ($container_type_part instanceof TCallable &&
-                    ($input_type_part instanceof TString || $input_type_part instanceof TArray)
+                    ($input_type_part instanceof TString ||
+                        $input_type_part instanceof TArray ||
+                        ($input_type_part instanceof TNamedObject &&
+                            ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                            MethodChecker::methodExists($input_type_part->value . '::__invoke')
+                        )
+                    )
                 ) {
                     // @todo add value checks if possible here
                     $type_match_found = true;
