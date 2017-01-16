@@ -247,4 +247,26 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context('somefile.php');
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testNamespacedAliasedFunctionCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Aye {
+            /** @return void */
+            function foo() { }
+        }
+        namespace Bee {
+            use Aye as A;
+
+            A\foo();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context('somefile.php');
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

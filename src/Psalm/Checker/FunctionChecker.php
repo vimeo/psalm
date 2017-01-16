@@ -688,7 +688,8 @@ class FunctionChecker extends FunctionLikeChecker
             return substr($function_name, 1);
         }
 
-        $imported_namespaces = $source->getAliasedFunctions();
+        $imported_function_namespaces = $source->getAliasedFunctions();
+        $imported_namespaces = $source->getAliasedClasses();
 
         if (strpos($function_name, '\\') !== false) {
             $function_name_parts = explode('\\', $function_name);
@@ -697,8 +698,14 @@ class FunctionChecker extends FunctionLikeChecker
             if (isset($imported_namespaces[strtolower($first_namespace)])) {
                 return $imported_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $function_name_parts);
             }
+
+            if (isset($imported_function_namespaces[strtolower($first_namespace)])) {
+                return $imported_function_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $function_name_parts);
+            }
         } elseif (isset($imported_namespaces[strtolower($function_name)])) {
             return $imported_namespaces[strtolower($function_name)];
+        } elseif (isset($imported_function_namespaces[strtolower($function_name)])) {
+            return $imported_function_namespaces[strtolower($function_name)];
         }
 
         $namespace = $source->getNamespace();
