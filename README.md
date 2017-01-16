@@ -46,3 +46,9 @@ Then run Psalm with:
 ```
 
 The above config is fairly spartan, and will show you *all* possible errors, including many that might be irrelevant to you. A more lenient config is provided [here](examples/psalm.default.xml), and you can learn about how to suppress certain issues [here](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
+
+## Acknowledgements
+
+The engineering team [@vimeo](https://github.com/vimeo) for encouragement and patience, especially [@nbeliard](https://github.com/nbeliard), [@erunion](https://github.com/erunion) and [@nickyr](https://github.com/nickyr).
+
+Thanks also to [@nikic](https://github.com/nikic) for creating the excellent [php-parser](https://github.com/nikic/php-parser), on top of which Psalm is built.
