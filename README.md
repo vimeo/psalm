@@ -14,8 +14,7 @@ Check out the [wiki](https://github.com/vimeo/psalm/wiki) or [try a live demo](h
 Install via [Composer](https://getcomposer.org/):
 
 ```bash
-composer require --dev "vimeo/psalm:dev-master"
-composer install
+composer require --dev vimeo/psalm
 ```
 
 Add a `psalm.xml` config:
