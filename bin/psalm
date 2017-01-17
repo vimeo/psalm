@@ -20,7 +20,7 @@ ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
 $options = getopt(
-    'f:m:hc:',
+    'f:mhc:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
@@ -37,6 +37,10 @@ if (array_key_exists('monochrome', $options)) {
 
 if (isset($options['config'])) {
     $options['c'] = $options['config'];
+}
+
+if (isset($options['c']) && is_array($options['c'])) {
+    die('Too many config files provided' . PHP_EOL);
 }
 
 if (array_key_exists('h', $options)) {
@@ -89,7 +93,9 @@ if ($input_paths) {
         }
 
         if ($input_path[0] === '-' && strlen($input_path) === 2) {
-            $i++;
+            if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                $i++;
+            }
             continue;
         }
 
