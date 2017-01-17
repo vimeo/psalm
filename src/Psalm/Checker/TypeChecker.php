@@ -699,7 +699,7 @@ class TypeChecker
         return $new_type;
     }
 
-/**
+    /**
      * Does the input param type match the given param type
      *
      * @param  Type\Union   $input_type
@@ -738,156 +738,18 @@ class TypeChecker
             $scalar_type_match_found = false;
 
             foreach ($container_type->types as $container_type_part) {
-                if ($container_type_part instanceof TNull && $ignore_null) {
-                    continue;
-                }
+                $is_atomic_contained_by = self::isAtomicContainedBy(
+                    $input_type_part,
+                    $container_type_part,
+                    $file_checker,
+                    $ignore_null,
+                    $scalar_type_match_found,
+                    $type_coerced,
+                    $to_string_cast
+                );
 
-                $input_is_object = $input_type_part->isObjectType();
-                $container_is_object = $container_type_part->isObjectType();
-
-                if ($input_type_part->shallowEquals($container_type_part) ||
-                    (
-                        $input_is_object &&
-                        $container_is_object &&
-                        $input_type_part instanceof TNamedObject &&
-                        $container_type_part instanceof TNamedObject &&
-                        ClassChecker::classExists($input_type_part->value, $file_checker) &&
-                        (
-                            ClassChecker::classExtendsOrImplements(
-                                $input_type_part->value,
-                                $container_type_part->value
-                            ) ||
-                            ExpressionChecker::isMock($input_type_part->value)
-                        )
-                    )
-                ) {
-                    $all_types_contain = true;
-
-                    if ($input_type_part instanceof TArray && $container_type_part instanceof TArray) {
-                        foreach ($input_type_part->type_params as $i => $input_param) {
-                            $container_param = $container_type_part->type_params[$i];
-
-                            if (!$input_param->isEmpty() &&
-                                !self::isContainedBy(
-                                    $input_param,
-                                    $container_param,
-                                    $file_checker,
-                                    $ignore_null,
-                                    $has_scalar_match,
-                                    $type_coerced
-                                )
-                            ) {
-                                if (self::isContainedBy($container_param, $input_param, $file_checker)) {
-                                    $type_coerced = true;
-                                }
-
-                                $all_types_contain = false;
-                            }
-                        }
-                    }
-
-                    if ($all_types_contain) {
-                        $type_match_found = true;
-                    }
-
-                    break;
-                }
-
-                if ($input_type_part instanceof TFalse && $container_type_part instanceof TBool) {
+                if ($is_atomic_contained_by === true) {
                     $type_match_found = true;
-                }
-
-                if ($input_type_part instanceof TInt && $container_type_part instanceof TFloat) {
-                    $type_match_found = true;
-                }
-
-                if ($input_type_part instanceof TNamedObject &&
-                    $input_type_part->value === 'Closure' &&
-                    $container_type_part instanceof TCallable
-                ) {
-                    $type_match_found = true;
-                }
-
-                if ($container_type_part instanceof TNumeric && $input_type_part->isNumericType()) {
-                    $type_match_found = true;
-                }
-
-                if ($container_type_part instanceof TArray && $input_type_part instanceof ObjectLike) {
-                    $type_match_found = true;
-                }
-
-                if ($container_type_part instanceof TNamedObject &&
-                    strtolower($container_type_part->value) === 'iterable' &&
-                    (
-                        $input_type_part instanceof TArray ||
-                        ($input_type_part instanceof TNamedObject &&
-                            (strtolower($input_type_part->value) === 'traversable' ||
-                                ClassChecker::classExtendsOrImplements(
-                                    $input_type_part->value,
-                                    'Traversable'
-                                )
-                            )
-                        )
-                    )
-                ) {
-                    $type_match_found = true;
-                }
-
-                if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
-                    $type_match_found = true;
-                }
-
-                if ($container_type_part instanceof TString &&
-                    $input_type_part instanceof TNamedObject
-                ) {
-                    // check whether the object has a __toString method
-                    if (ClassChecker::classExists($input_type_part->value, $file_checker) &&
-                        MethodChecker::methodExists($input_type_part->value . '::__toString')
-                    ) {
-                        $type_match_found = true;
-                        $to_string_cast = true;
-                    }
-                }
-
-                if ($container_type_part instanceof TCallable &&
-                    ($input_type_part instanceof TString ||
-                        $input_type_part instanceof TArray ||
-                        ($input_type_part instanceof TNamedObject &&
-                            ClassChecker::classExists($input_type_part->value, $file_checker) &&
-                            MethodChecker::methodExists($input_type_part->value . '::__invoke')
-                        )
-                    )
-                ) {
-                    // @todo add value checks if possible here
-                    $type_match_found = true;
-                }
-
-                if ($input_type_part instanceof TNumeric) {
-                    if ($container_type_part->isNumericType()) {
-                        $scalar_type_match_found = true;
-                    }
-                }
-
-                if ($input_type_part instanceof Scalar || $input_type_part instanceof TScalar) {
-                    if ($container_type_part instanceof Scalar) {
-                        $scalar_type_match_found = true;
-                    }
-                } elseif ($container_type_part instanceof TObject &&
-                    !$input_type_part instanceof TArray &&
-                    !$input_type_part instanceof TResource
-                ) {
-                    $type_match_found = true;
-                } elseif ($container_type_part instanceof TNamedObject &&
-                    $input_type_part instanceof TNamedObject &&
-                    ClassChecker::classExists($container_type_part->value, $file_checker) &&
-                    ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
-                    ClassChecker::classExtendsOrImplements(
-                        $container_type_part->value,
-                        $input_type_part->value
-                    )
-                ) {
-                    $type_coerced = true;
-                    break;
                 }
             }
 
@@ -901,6 +763,177 @@ class TypeChecker
         }
 
         return true;
+    }
+
+    /**
+     * Does the input param atomic type match the given param atomic type
+     *
+     * @param  Type\Atomic  $input_type_part
+     * @param  Type\Atomic  $container_type_part
+     * @param  FileChecker  $file_checker
+     * @param  bool         $ignore_null
+     * @param  bool         &$has_scalar_match
+     * @param  bool         &$type_coerced    whether or not there was type coercion involved
+     * @param  bool         &$to_string_cast
+     * @return bool
+     */
+    protected static function isAtomicContainedBy(
+        Type\Atomic $input_type_part,
+        Type\Atomic $container_type_part,
+        FileChecker $file_checker,
+        $ignore_null = false,
+        &$has_scalar_match = null,
+        &$type_coerced = null,
+        &$to_string_cast = null
+    ) {
+        $input_is_object = $input_type_part->isObjectType();
+        $container_is_object = $container_type_part->isObjectType();
+
+        if ($input_type_part->shallowEquals($container_type_part) ||
+            (
+                $input_is_object &&
+                $container_is_object &&
+                $input_type_part instanceof TNamedObject &&
+                $container_type_part instanceof TNamedObject &&
+                ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                (
+                    ClassChecker::classExtendsOrImplements(
+                        $input_type_part->value,
+                        $container_type_part->value
+                    ) ||
+                    ExpressionChecker::isMock($input_type_part->value)
+                )
+            )
+        ) {
+            $all_types_contain = true;
+
+            if ($input_type_part instanceof TArray && $container_type_part instanceof TArray) {
+                foreach ($input_type_part->type_params as $i => $input_param) {
+                    $container_param = $container_type_part->type_params[$i];
+
+                    if (!$input_param->isEmpty() &&
+                        !self::isContainedBy(
+                            $input_param,
+                            $container_param,
+                            $file_checker,
+                            $ignore_null,
+                            $has_scalar_match,
+                            $type_coerced
+                        )
+                    ) {
+                        if (self::isContainedBy($container_param, $input_param, $file_checker)) {
+                            $type_coerced = true;
+                        }
+
+                        $all_types_contain = false;
+                    }
+                }
+            }
+
+            if ($all_types_contain) {
+                return true;
+            }
+
+            return false;
+        }
+
+        if ($input_type_part instanceof TFalse && $container_type_part instanceof TBool) {
+            return true;
+        }
+
+        if ($input_type_part instanceof TInt && $container_type_part instanceof TFloat) {
+            return true;
+        }
+
+        if ($input_type_part instanceof TNamedObject &&
+            $input_type_part->value === 'Closure' &&
+            $container_type_part instanceof TCallable
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TNumeric && $input_type_part->isNumericType()) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TArray && $input_type_part instanceof ObjectLike) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TNamedObject &&
+            strtolower($container_type_part->value) === 'iterable' &&
+            (
+                $input_type_part instanceof TArray ||
+                ($input_type_part instanceof TNamedObject &&
+                    (strtolower($input_type_part->value) === 'traversable' ||
+                        ClassChecker::classExtendsOrImplements(
+                            $input_type_part->value,
+                            'Traversable'
+                        )
+                    )
+                )
+            )
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TString &&
+            $input_type_part instanceof TNamedObject
+        ) {
+            // check whether the object has a __toString method
+            if (ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                MethodChecker::methodExists($input_type_part->value . '::__toString')
+            ) {
+                $to_string_cast = true;
+                return true;
+            }
+        }
+
+        if ($container_type_part instanceof TCallable &&
+            ($input_type_part instanceof TString ||
+                $input_type_part instanceof TArray ||
+                ($input_type_part instanceof TNamedObject &&
+                    ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                    MethodChecker::methodExists($input_type_part->value . '::__invoke')
+                )
+            )
+        ) {
+            // @todo add value checks if possible here
+            return true;
+        }
+
+        if ($input_type_part instanceof TNumeric) {
+            if ($container_type_part->isNumericType()) {
+                $has_scalar_match = true;
+            }
+        }
+
+        if ($input_type_part instanceof Scalar || $input_type_part instanceof TScalar) {
+            if ($container_type_part instanceof Scalar) {
+                $has_scalar_match = true;
+            }
+        } elseif ($container_type_part instanceof TObject &&
+            !$input_type_part instanceof TArray &&
+            !$input_type_part instanceof TResource
+        ) {
+            return true;
+        } elseif ($container_type_part instanceof TNamedObject &&
+            $input_type_part instanceof TNamedObject &&
+            ClassChecker::classExists($container_type_part->value, $file_checker) &&
+            ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
+            ClassChecker::classExtendsOrImplements(
+                $container_type_part->value,
+                $input_type_part->value
+            )
+        ) {
+            $type_coerced = true;
+        }
+
+        return false;
     }
 
     /**
@@ -1362,5 +1395,42 @@ class TypeChecker
         }
 
         return true;
+    }
+
+    /**
+     * @param  Type\Union  $union
+     * @param  FileChecker $file_checker
+     * @return Type\Union
+     */
+    public static function simplifyUnionType(Type\Union $union, FileChecker $file_checker)
+    {
+        if (count($union->types) === 1) {
+            return $union;
+        }
+
+        $unique_types = [];
+
+        foreach ($union->types as $type_part) {
+            $is_contained_by_other = false;
+
+            foreach ($union->types as $container_type_part) {
+                if ($type_part !== $container_type_part &&
+                    TypeChecker::isAtomicContainedBy($type_part, $container_type_part, $file_checker)
+                ) {
+                    $is_contained_by_other = true;
+                    break;
+                }
+            }
+
+            if (!$is_contained_by_other) {
+                $unique_types[] = $type_part;
+            }
+        }
+
+        if (count($unique_types) === 0) {
+            throw new \UnexpectedValueException('There must be more than one unique type');
+        }
+
+        return new Type\Union($unique_types);
     }
 }
