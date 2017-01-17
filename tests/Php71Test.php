@@ -58,6 +58,26 @@ class Php71Test extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testNullableReturnTypeInDocblock()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return ?string */
+        function a() {
+            return rand(0, 10) ? "elePHPant" : null;
+        }
+
+        $a = a();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('null|string', (string) $context->vars_in_scope['$a']);
+    }
+
+    /**
+     * @return void
+     */
     public function testNullableArgument()
     {
         $stmts = self::$parser->parse('<?php
