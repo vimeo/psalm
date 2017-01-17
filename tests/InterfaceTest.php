@@ -408,9 +408,9 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $this->project_checker->registerFile(
             getcwd() . '/somefile.php',
             '<?php
-        class C2 implements A {
-        }
-        ');
+        class C2 implements A { }
+        '
+        );
         $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);

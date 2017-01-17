@@ -175,9 +175,7 @@ class CallChecker
                 if (!isset($stmt->inferredType)) {
                     $stmt->inferredType = Type::getMixed();
                 }
-
             } else {
-
                 $method_id = implode('\\', $stmt->name->parts);
 
                 $in_call_map = FunctionChecker::inCallMap($method_id);

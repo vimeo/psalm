@@ -898,7 +898,6 @@ class AssignmentChecker
                     }
                 }
             } elseif ($has_scalar) {
-
                 if (IssueBuffer::accepts(
                     new InvalidArrayAssignment(
                         'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $context->vars_in_scope[$var_id],

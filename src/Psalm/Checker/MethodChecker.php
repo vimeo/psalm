@@ -617,12 +617,4 @@ class MethodChecker extends FunctionLikeChecker
 
         return $fq_class_name . '::' .$storage->cased_name;
     }
-
-    /**
-     * @return void
-     */
-    public static function clearCache()
-    {
-
-    }
 }

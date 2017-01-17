@@ -11,7 +11,7 @@
 
     <issueHandlers>
         <InvalidDocblock errorLevel="info" />
-        <MissingClosurePropertyType errorLevel="suppress" />
+        <MissingClosureReturnType errorLevel="suppress" />
         <MissingPropertyType errorLevel="info" />
         <MissingReturnType errorLevel="info" />
         <DeprecatedMethod errorLevel="info" />

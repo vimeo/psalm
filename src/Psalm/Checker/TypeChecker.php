@@ -519,18 +519,18 @@ class TypeChecker
      *  - notEmpty(Object|null) => Object,
      *  - notEmpty(Object|false) => Object
      *
-     * @param   string       $new_var_type
-     * @param   Type\Union   $existing_var_type
-     * @param   string       $key
-     * @param   FileChecker  $file_checker
-     * @param   CodeLocation $code_location
-     * @param   array        $suppressed_issues
+     * @param   string              $new_var_type
+     * @param   Type\Union|null     $existing_var_type
+     * @param   string|null         $key
+     * @param   FileChecker         $file_checker
+     * @param   CodeLocation        $code_location
+     * @param   array               $suppressed_issues
      * @return  Type\Union|null|false
      */
     public static function reconcileTypes(
         $new_var_type,
-        Type\Union $existing_var_type = null,
-        $key = null,
+        $existing_var_type,
+        $key,
         FileChecker $file_checker,
         CodeLocation $code_location = null,
         array $suppressed_issues = []

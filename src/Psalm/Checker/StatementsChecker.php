@@ -473,7 +473,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         } else {
             self::$user_constants[$this->getFilePath()][$const_name] = $const_type;
         }
-
     }
 
     /**
