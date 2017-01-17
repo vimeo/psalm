@@ -917,11 +917,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
-            $inferred_return_type = ExpressionChecker::fleshOutTypes(
-                $inferred_return_type,
-                [],
-                $this->source->getFQCLN(),
-                ''
+            $inferred_return_type = TypeChecker::simplifyUnionType(
+                ExpressionChecker::fleshOutTypes(
+                    $inferred_return_type,
+                    [],
+                    $this->source->getFQCLN(),
+                    ''
+                ),
+                $this->getFileChecker()
             );
 
             $return_types_different = false;

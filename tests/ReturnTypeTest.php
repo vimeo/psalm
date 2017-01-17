@@ -675,4 +675,24 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testBackwardsReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {}
+        class B extends A {}
+
+        /** @return B|A */
+        function foo() {
+          return rand(0, 1) ? new A : new B;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
