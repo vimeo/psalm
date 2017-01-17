@@ -25,6 +25,7 @@ class AssertionFinder
      * @param  string|null              $this_class_name
      * @param  StatementsSource         $source
      * @return array<string, string>
+     * @psalm-suppress InvalidReturnType
      */
     public static function getAssertions(
         PhpParser\Node\Expr $conditional,

@@ -1133,6 +1133,7 @@ class TypeChecker
             }
         );
 
+        /** @var array<string, string> */
         $all_types = array_flip($all_types);
 
         if (isset($all_types['array<empty>']) && count($array_types) > 1) {

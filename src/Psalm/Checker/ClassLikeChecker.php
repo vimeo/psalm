@@ -1579,7 +1579,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return self::$property_map;
         }
 
-        /** @var array<string, array> */
+        /** @var array<string, array<string, string>> */
         $property_map = require_once(__DIR__.'/../PropertyMap.php');
 
         self::$property_map = [];
