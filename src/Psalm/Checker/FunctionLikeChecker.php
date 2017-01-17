@@ -978,7 +978,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @param  array<array{type:string,name:string,line_number:int}>  $docblock_params
+     * @param  array<int, array{type:string,name:string,line_number:int}>  $docblock_params
      * @param  FunctionLikeStorage          $storage
      * @param  StatementsSource             $source
      * @param  string|null                  $fq_class_name
@@ -999,7 +999,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $method_id = $base . strtolower($storage->cased_name);
         $cased_method_id = $base . $storage->cased_name;
 
-        foreach ($docblock_params as $docblock_param) {
+        foreach ($docblock_params as $i => $docblock_param) {
             $param_name = $docblock_param['name'];
             $line_number = $docblock_param['line_number'];
 
@@ -1031,6 +1031,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $new_param_type->from_docblock = true;
 
             if (!$storage->param_types[$param_name]->isMixed()) {
+                if ($storage->params[$i]->is_variadic) {
+                    $new_param_type = new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getInt(),
+                            $new_param_type
+                        ])
+                    ]);
+                }
+
                 if (!TypeChecker::isContainedBy(
                     $new_param_type,
                     $storage->param_types[$param_name],

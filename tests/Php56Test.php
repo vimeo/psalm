@@ -118,6 +118,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         /**
+         * @param int $a_list
          * @return array<int>
          */
         function f(int ...$a_list) {
@@ -151,6 +152,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         /**
+         * @param int $a_list
          * @return void
          */
         function f(int ...$a_list) {
