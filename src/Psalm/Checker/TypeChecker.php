@@ -821,9 +821,11 @@ class TypeChecker
                     (
                         $input_type_part instanceof TArray ||
                         ($input_type_part instanceof TNamedObject &&
-                            ClassChecker::classExtendsOrImplements(
-                                $input_type_part->value,
-                                'Traversable'
+                            (strtolower($input_type_part->value) === 'traversable' ||
+                                ClassChecker::classExtendsOrImplements(
+                                    $input_type_part->value,
+                                    'Traversable'
+                                )
                             )
                         )
                     )
