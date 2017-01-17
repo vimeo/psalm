@@ -980,16 +980,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         return false;
                     }
                 }
-
-
-            }
-
-            if (!TypeChecker::hasIdenticalTypes(
-                $declared_return_type,
-                $inferred_return_type,
-                $this->source->getFileChecker()
-            )) {
-
             }
         }
 
