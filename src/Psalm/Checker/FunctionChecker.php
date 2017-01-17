@@ -641,9 +641,10 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * Gets the method/function call map
      *
-     * @return array<array<string, string>>
+     * @return array<string, array<string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
+     * @psalm-suppress InvalidReturnType
      */
     protected static function getCallMap()
     {
@@ -651,7 +652,7 @@ class FunctionChecker extends FunctionLikeChecker
             return self::$call_map;
         }
 
-        /** @var array<string, array> */
+        /** @var array<string, array<string, string>> */
         $call_map = require_once(__DIR__.'/../CallMap.php');
 
         self::$call_map = [];

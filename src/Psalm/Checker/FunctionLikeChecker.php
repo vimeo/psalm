@@ -923,11 +923,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 ''
             );
 
-            if (!TypeChecker::hasIdenticalTypes(
-                $declared_return_type,
-                $inferred_return_type,
-                $this->source->getFileChecker()
-            )) {
+            $return_types_different = false;
+
+            if (!TypeChecker::isContainedBy($inferred_return_type, $declared_return_type, $this->getFileChecker())) {
                 if ($update_docblock) {
                     if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
                         FileChecker::addDocblockReturnType(
@@ -960,6 +958,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 )) {
                     return false;
                 }
+            }
+
+            if (!TypeChecker::hasIdenticalTypes(
+                $declared_return_type,
+                $inferred_return_type,
+                $this->source->getFileChecker()
+            )) {
+
             }
         }
 
