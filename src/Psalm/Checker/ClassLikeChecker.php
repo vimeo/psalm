@@ -247,8 +247,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $extra_interfaces = array_unique($extra_interfaces);
 
-            //var_dump(self::$storage);
-
             foreach ($extra_interfaces as $extra_interface_name) {
                 FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
 
@@ -1163,7 +1161,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($interfaces as $interface) {
             $interface_name = $interface->getName();
             self::registerReflectedClass($interface_name, $interface, $project_checker);
-            $storage->class_implements[strtolower($interface_name)] = $interface_name;
+
+            if ($reflected_class->isInterface()) {
+                $storage->parent_interfaces[] = $interface_name;
+            } else {
+                $storage->class_implements[strtolower($interface_name)] = $interface_name;
+            }
         }
 
         /** @var \ReflectionMethod $reflection_method */

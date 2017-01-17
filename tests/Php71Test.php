@@ -423,4 +423,30 @@ class Php71Test extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testTraversableObject()
+    {
+        $stmts = self::$parser->parse('<?php
+        class IteratorObj implements Iterator {
+            function rewind() : void {}
+            /** @return mixed */
+            function current() { return null; }
+            function key() : int { return 0; }
+            function next() : void {}
+            function valid() : bool { return false; }
+        }
+
+        function foo(\Traversable $t) : void {
+        }
+
+        foo(new IteratorObj);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
