@@ -799,7 +799,6 @@ class ExpressionChecker
                 return false;
             }
         } else {
-
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
                 if (self::analyzeBinaryOp($statements_checker, $stmt->left, $context, ++$nesting) === false) {
                     return false;

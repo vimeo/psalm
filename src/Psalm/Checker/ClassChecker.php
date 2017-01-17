@@ -162,7 +162,5 @@ class ClassChecker extends ClassLikeChecker
     public static function clearCache()
     {
         self::$anonymous_class_count = 0;
-
-        MethodChecker::clearCache();
     }
 }

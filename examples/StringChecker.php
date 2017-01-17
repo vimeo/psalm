@@ -9,7 +9,7 @@ use Psalm\CodeLocation;
  * Checks all strings to see if they contain references to classes
  * and, if so, checks that those classes exist.
  *
- * You will need to add `"nikic/PHP-Parser": ">=3.0.2"` to your 
+ * You will need to add `"nikic/PHP-Parser": ">=3.0.2"` to your
  * composer.json.
  */
 class StringChecker extends \Psalm\Plugin
