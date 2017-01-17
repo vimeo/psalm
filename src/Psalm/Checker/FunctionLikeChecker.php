@@ -999,9 +999,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $method_id = $base . strtolower($storage->cased_name);
         $cased_method_id = $base . $storage->cased_name;
 
-        foreach ($docblock_params as $i => $docblock_param) {
+        foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
             $line_number = $docblock_param['line_number'];
+            $docblock_param_variadic = false;
+
+            if (substr($param_name, 0, 3) === '...') {
+                $docblock_param_variadic = true;
+                $param_name = substr($param_name, 3);
+            }
+
+            $param_name = substr($param_name, 1);
 
             if (!isset($storage->param_types[$param_name])) {
                 $code_location->setCommentLine($line_number);
@@ -1028,17 +1036,18 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 )
             );
 
+            if ($docblock_param_variadic) {
+                $new_param_type = new Type\Union([
+                    new Type\Atomic\TArray([
+                        Type::getInt(),
+                        $new_param_type
+                    ])
+                ]);
+            }
+
             $new_param_type->from_docblock = true;
 
             if (!$storage->param_types[$param_name]->isMixed()) {
-                if ($storage->params[$i]->is_variadic) {
-                    $new_param_type = new Type\Union([
-                        new Type\Atomic\TArray([
-                            Type::getInt(),
-                            $new_param_type
-                        ])
-                    ]);
-                }
 
                 if (!TypeChecker::isContainedBy(
                     $new_param_type,
