@@ -118,8 +118,8 @@ class Php56Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         /**
-         * @param int $a_list
-         * @return array<int>
+         * @param array<int, int> $a_list
+         * @return array<int, int>
          */
         function f(int ...$a_list) {
             return array_map(
@@ -136,6 +136,13 @@ class Php56Test extends PHPUnit_Framework_TestCase
         f(1);
         f(1, 2);
         f(1, 2, 3);
+
+        /**
+         * @param string ...$a_list
+         * @return void
+         */
+        function g(string ...$a_list) {
+        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
@@ -152,7 +159,7 @@ class Php56Test extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         /**
-         * @param int $a_list
+         * @param array<int, int> $a_list
          * @return void
          */
         function f(int ...$a_list) {
