@@ -23,6 +23,7 @@ use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
+use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -953,16 +954,34 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     return null;
                 }
 
-                if (IssueBuffer::accepts(
-                    new InvalidReturnType(
-                        'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' is incorrect, got \'' . $inferred_return_type . '\'',
-                        $secondary_return_type_location ?: $return_type_location
-                    ),
-                    $this->suppressed_issues
-                )) {
-                    return false;
+                // is the declared return type more specific than the inferred one?
+                if ($declared_return_type->isNullable() === $inferred_return_type->isNullable() &&
+                    TypeChecker::isContainedBy($declared_return_type, $inferred_return_type, $this->getFileChecker())
+                ) {
+                    if (IssueBuffer::accepts(
+                        new MoreSpecificReturnType(
+                            'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                                ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
+                            $secondary_return_type_location ?: $return_type_location
+                        ),
+                        $this->suppressed_issues
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidReturnType(
+                            'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                                ' is incorrect, got \'' . $inferred_return_type . '\'',
+                            $secondary_return_type_location ?: $return_type_location
+                        ),
+                        $this->suppressed_issues
+                    )) {
+                        return false;
+                    }
                 }
+
+
             }
 
             if (!TypeChecker::hasIdenticalTypes(

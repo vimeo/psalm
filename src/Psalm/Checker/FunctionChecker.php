@@ -405,6 +405,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
         $first_arg_array_generic = $first_arg
                 && isset($first_arg->inferredType)
@@ -491,6 +492,49 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             return Type::getArray();
+        }
+
+        if ($call_map_key === 'array_combine') {
+            $second_arg_array_generic = $second_arg
+                    && isset($second_arg->inferredType)
+                    && isset($second_arg->inferredType->types['array'])
+                    && $second_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
+                ? $second_arg->inferredType->types['array']
+                : null;
+
+            $second_arg_array_objectlike = $second_arg
+                    && isset($second_arg->inferredType)
+                    && isset($second_arg->inferredType->types['array'])
+                    && $second_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike
+                ? $second_arg->inferredType->types['array']
+                : null;
+
+            if ($second_arg_array_generic || $second_arg_array_objectlike) {
+                if ($first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
+                    if ($first_arg_array_generic) {
+                        $keys_inner_type = clone $first_arg_array_generic->type_params[1];
+                    } else {
+                        /** @var Type\Atomic\ObjectLike $first_arg_array_objectlike */
+                        $keys_inner_type = $first_arg_array_objectlike->getGenericTypeParam();
+                    }
+                } else {
+                    $keys_inner_type = Type::getMixed();
+                }
+
+                if ($second_arg_array_generic) {
+                    $values_inner_type = clone $second_arg_array_generic->type_params[1];
+                } else {
+                    /** @var Type\Atomic\ObjectLike $second_arg_array_objectlike */
+                    $values_inner_type = $second_arg_array_objectlike->getGenericTypeParam();
+                }
+
+                return new Type\Union([
+                    new Type\Atomic\TArray([
+                        $keys_inner_type,
+                        $values_inner_type
+                    ])
+                ]);
+            }
         }
 
         if ($call_map_key === 'array_diff') {
@@ -644,7 +688,7 @@ class FunctionChecker extends FunctionLikeChecker
      * @return array<string, array<string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress InvalidReturnType
+     * @psalm-suppress MoreSpecificReturnType
      */
     protected static function getCallMap()
     {
