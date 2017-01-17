@@ -143,6 +143,27 @@ class Php56Test extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
+     */
+    public function testVariadicArrayBadParam()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @return void
+         */
+        function f(int ...$a_list) {
+        }
+        f(1, 2, "3");
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @return void
      */
     public function testArgumentUnpacking()

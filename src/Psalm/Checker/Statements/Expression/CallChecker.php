@@ -1082,13 +1082,29 @@ class CallChecker
             $has_packed_var = $has_packed_var || $arg->unpack;
         }
 
+        $last_param = $function_params
+            ? $function_params[count($function_params) - 1]
+            : null;
+
         foreach ($args as $argument_offset => $arg) {
             if ($function_params !== null && isset($arg->value->inferredType)) {
-                if (count($function_params) > $argument_offset) {
-                    $param_type = $function_params[$argument_offset]->type;
+                $function_param = count($function_params) > $argument_offset
+                    ? $function_params[$argument_offset]
+                    : ($last_param && $last_param->is_variadic ? $last_param : null);
 
-                    // for now stop when we encounter a variadic param pr a packed argument
-                    if ($function_params[$argument_offset]->is_variadic || $arg->unpack) {
+                if ($function_param) {
+                    $param_type = $function_param->type;
+
+                    if ($function_param->is_variadic) {
+                        if (!$param_type->hasArray() || !$param_type->types['array'] instanceof TArray) {
+                            break;
+                        }
+
+                        $param_type = clone $param_type->types['array']->type_params[1];
+                    }
+
+                    // for now stop when we encounter a packed argument
+                    if ($arg->unpack) {
                         break;
                     }
 
