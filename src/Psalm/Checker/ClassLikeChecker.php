@@ -888,8 +888,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        if (ClassLikeChecker::isUserDefined($fq_class_name) &&
-            ($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name, $file_checker)) ||
+        if (($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name, $file_checker)) ||
             ($interface_exists && !InterfaceChecker::hasCorrectCasing($fq_class_name, $file_checker))
         ) {
             if (IssueBuffer::accepts(
