@@ -56,7 +56,9 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     {
         $leftover_stmts = [];
 
-        self::$public_namespace_constants[$this->namespace_name] = [];
+        if (!isset(self::$public_namespace_constants[$this->namespace_name])) {
+            self::$public_namespace_constants[$this->namespace_name] = [];
+        }
 
         $classlike_checkers = [];
 
