@@ -735,16 +735,16 @@ class ProjectChecker
      */
     protected function getConfigForPath($path)
     {
-        $dir_path = realpath($path) . DIRECTORY_SEPARATOR;
+        $dir_path = realpath($path);
 
         if (!is_dir($dir_path)) {
-            $dir_path = dirname($dir_path) . DIRECTORY_SEPARATOR;
+            $dir_path = dirname($dir_path);
         }
 
         $config = null;
 
         do {
-            $maybe_path = $dir_path . Config::DEFAULT_FILE_NAME;
+            $maybe_path = $dir_path . DIRECTORY_SEPARATOR . Config::DEFAULT_FILE_NAME;
 
             if (file_exists($maybe_path)) {
                 $config = Config::loadFromXMLFile($maybe_path);
@@ -759,8 +759,8 @@ class ProjectChecker
                 break;
             }
 
-            $dir_path = preg_replace('/[^\/]+\/$/', '', $dir_path);
-        } while ($dir_path !== DIRECTORY_SEPARATOR);
+            $dir_path = dirname($dir_path);
+        } while (dirname($dir_path) !== $dir_path);
 
         if (!$config) {
             throw new Exception\ConfigException('Config not found for path ' . $path);
