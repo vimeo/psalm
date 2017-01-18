@@ -62,4 +62,33 @@ class NamespaceTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testConstantReference()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Aye\Bee {
+            const HELLO = "hello";
+        }
+        namespace Aye\Bee {
+            /** @return void */
+            function foo() {
+                echo \Aye\Bee\HELLO;
+            }
+
+            class Bar {
+                /** @return void */
+                public function foo() {
+                    echo \Aye\Bee\HELLO;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
