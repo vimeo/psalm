@@ -212,13 +212,15 @@ class AssignmentChecker
                 return false;
             }
 
-            self::analyzeStaticPropertyAssignment(
-                $statements_checker,
-                $assign_var,
-                $assign_value,
-                $assign_value_type,
-                $context
-            );
+            if ($context->check_classes) {
+                self::analyzeStaticPropertyAssignment(
+                    $statements_checker,
+                    $assign_var,
+                    $assign_value,
+                    $assign_value_type,
+                    $context
+                );
+            }
 
             $context->vars_possibly_in_scope[$var_id] = true;
         }
