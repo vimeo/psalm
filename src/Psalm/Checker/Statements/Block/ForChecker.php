@@ -35,13 +35,13 @@ class ForChecker
             }
         }
 
+        $statements_checker->analyze($stmt->stmts, $for_context, $context);
+
         foreach ($stmt->loop as $expr) {
             if (ExpressionChecker::analyze($statements_checker, $expr, $for_context) === false) {
                 return false;
             }
         }
-
-        $statements_checker->analyze($stmt->stmts, $for_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
