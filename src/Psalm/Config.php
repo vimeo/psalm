@@ -194,7 +194,7 @@ class Config
 
         $config->file_path = $file_path;
 
-        $config->base_dir = (string)getcwd() . '/';
+        $config->base_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 
         $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
 
@@ -422,7 +422,7 @@ class Config
      */
     public function shortenFileName($file_name)
     {
-        return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
+        return preg_replace('/^' . preg_quote($this->base_dir, DIRECTORY_SEPARATOR) . '/', '', $file_name);
     }
 
     /**

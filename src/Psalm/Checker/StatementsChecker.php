@@ -578,8 +578,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $include_path = self::resolveIncludePath($path_to_file, dirname($this->getCheckedFileName()));
             $path_to_file = $include_path ? $include_path : $path_to_file;
 
-            if ($path_to_file[0] !== '/') {
-                $path_to_file = getcwd() . '/' . $path_to_file;
+            if ($path_to_file[0] !== DIRECTORY_SEPARATOR) {
+                $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
             $path_to_file = self::getPathTo($stmt->expr, $this->getFileName());
@@ -589,7 +589,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $reduce_pattern = '/\/[^\/]+\/\.\.\//';
 
             while (preg_match($reduce_pattern, $path_to_file)) {
-                $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file);
+                $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
             }
 
             // if the file is already included, we can't check much more
@@ -627,8 +627,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      */
     protected static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
     {
-        if ($file_name[0] !== '/') {
-            $file_name = getcwd() . '/' . $file_name;
+        if ($file_name[0] !== DIRECTORY_SEPARATOR) {
+            $file_name = getcwd() . DIRECTORY_SEPARATOR . $file_name;
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_) {

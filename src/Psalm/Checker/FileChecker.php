@@ -503,7 +503,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $project_checker = ProjectChecker::getInstance();
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
         $parser_cache_directory = $root_cache_directory
-            ? $root_cache_directory . '/' . self::PARSER_CACHE_DIRECTORY
+            ? $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY
             : null;
         $from_cache = false;
 
@@ -519,13 +519,13 @@ class FileChecker extends SourceChecker implements StatementsSource
         if (self::$file_content_hashes === null) {
             /** @var array<string, string> */
             self::$file_content_hashes = $root_cache_directory &&
-                is_readable($root_cache_directory . '/' . self::FILE_HASHES)
-                    ? unserialize((string)file_get_contents($root_cache_directory . '/' . self::FILE_HASHES))
+                is_readable($root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES)
+                    ? unserialize((string)file_get_contents($root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES))
                     : [];
         }
 
         if ($parser_cache_directory) {
-            $cache_location = $parser_cache_directory . '/' . $name_cache_key;
+            $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $name_cache_key;
 
             if (isset(self::$file_content_hashes[$name_cache_key]) &&
                 $file_content_hash === self::$file_content_hashes[$name_cache_key] &&
@@ -568,7 +568,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                 self::$file_content_hashes[$name_cache_key] = $file_content_hash;
 
                 file_put_contents(
-                    $root_cache_directory . '/' . self::FILE_HASHES,
+                    $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES,
                     serialize(self::$file_content_hashes)
                 );
             }
@@ -591,7 +591,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
-            $cache_location = $cache_directory . '/' . self::REFERENCE_CACHE_NAME;
+            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
             if (is_readable($cache_location)) {
                 $reference_cache = unserialize((string) file_get_contents($cache_location));
@@ -616,7 +616,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
-            $cache_location = $cache_directory . '/' . self::REFERENCE_CACHE_NAME;
+            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
             foreach (self::$files_checked as $file => $_) {
                 $all_file_references = array_unique(
@@ -767,7 +767,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        return $cache_directory && file_exists($cache_directory . '/' . self::GOOD_RUN_NAME);
+        return $cache_directory && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
     }
 
     /**
@@ -778,7 +778,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         if (self::$last_good_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();
 
-            self::$last_good_run = filemtime($cache_directory . '/' . self::GOOD_RUN_NAME) ?: 0;
+            self::$last_good_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME) ?: 0;
         }
 
         return self::$last_good_run;
@@ -823,7 +823,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
-            $run_cache_location = $cache_directory . '/' . self::GOOD_RUN_NAME;
+            $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
 
             touch($run_cache_location, $start_time);
 
@@ -835,19 +835,19 @@ class FileChecker extends SourceChecker implements StatementsSource
                 }
 
                 file_put_contents(
-                    $cache_directory . '/' . self::REFERENCE_CACHE_NAME,
+                    $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME,
                     serialize(self::$file_references)
                 );
             }
 
-            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
+            $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
             if (is_dir($cache_directory)) {
                 /** @var array<string> */
                 $directory_files = scandir($cache_directory);
 
                 foreach ($directory_files as $directory_file) {
-                    $full_path = $cache_directory . '/' . $directory_file;
+                    $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
 
                     if ($directory_file[0] === '.') {
                         continue;
@@ -885,14 +885,14 @@ class FileChecker extends SourceChecker implements StatementsSource
         $removed_count = 0;
 
         if ($cache_directory) {
-            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
+            $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
             if (is_dir($cache_directory)) {
                 /** @var array<string> */
                 $directory_files = scandir($cache_directory);
 
                 foreach ($directory_files as $directory_file) {
-                    $full_path = $cache_directory . '/' . $directory_file;
+                    $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
 
                     if ($directory_file[0] === '.') {
                         continue;
@@ -919,11 +919,11 @@ class FileChecker extends SourceChecker implements StatementsSource
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
-            $cache_directory .= '/' . self::PARSER_CACHE_DIRECTORY;
+            $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
             if (is_dir($cache_directory)) {
                 foreach ($file_names as $file_name) {
-                    $hash_file_name = $cache_directory . '/' . self::getParserCacheKey($file_name);
+                    $hash_file_name = $cache_directory . DIRECTORY_SEPARATOR . self::getParserCacheKey($file_name);
 
                     if (file_exists($hash_file_name)) {
                         if (filemtime($hash_file_name) < $min_time) {

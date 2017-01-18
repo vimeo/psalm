@@ -219,7 +219,7 @@ class Context
             $vars_to_remove = [];
 
             foreach ($this->vars_in_scope as $var_id => $context_type) {
-                if (preg_match('/^' . preg_quote($remove_var_id, '/') . '[\[\-]/', $var_id)) {
+                if (preg_match('/^' . preg_quote($remove_var_id, DIRECTORY_SEPARATOR) . '[\[\-]/', $var_id)) {
                     $vars_to_remove[] = $var_id;
                 }
             }
