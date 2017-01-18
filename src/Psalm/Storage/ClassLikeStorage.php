@@ -51,7 +51,7 @@ class ClassLikeStorage
      *
      * @var bool
      */
-    public $user_defined;
+    public $user_defined = false;
 
     /**
      * Interfaces this class implements

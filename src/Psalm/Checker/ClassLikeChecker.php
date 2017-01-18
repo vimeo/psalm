@@ -140,6 +140,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
             $storage->file_name = $this->source->getFileName();
             $storage->file_path = $this->source->getFilePath();
+            $storage->user_defined = true;
         }
 
         self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
@@ -891,14 +892,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if (($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name, $file_checker)) ||
             ($interface_exists && !InterfaceChecker::hasCorrectCasing($fq_class_name, $file_checker))
         ) {
-            if (IssueBuffer::accepts(
-                new InvalidClass(
-                    'Class or interface ' . $fq_class_name . ' has wrong casing',
-                    $code_location
-                ),
-                $suppressed_issues
-            )) {
-                return false;
+            $file_checker->evaluateClassLike($fq_class_name, true);
+
+            if (ClassLikeChecker::isUserDefined($fq_class_name)) {
+                if (IssueBuffer::accepts(
+                    new InvalidClass(
+                        'Class or interface ' . $fq_class_name . ' has wrong casing',
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    return false;
+                }
             }
         }
 
