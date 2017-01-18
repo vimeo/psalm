@@ -297,7 +297,7 @@ class ProjectChecker
     {
         if (!$this->config) {
             $this->config = $this->getConfigForPath($dir_name);
-            $this->config->hide_external_errors = $this->config->isInProjectDirs($dir_name . '/');
+            $this->config->hide_external_errors = $this->config->isInProjectDirs($dir_name . DIRECTORY_SEPARATOR);
         }
 
         FileChecker::loadReferenceCache();
@@ -735,10 +735,10 @@ class ProjectChecker
      */
     protected function getConfigForPath($path)
     {
-        $dir_path = realpath($path) . '/';
+        $dir_path = realpath($path) . DIRECTORY_SEPARATOR;
 
         if (!is_dir($dir_path)) {
-            $dir_path = dirname($dir_path) . '/';
+            $dir_path = dirname($dir_path) . DIRECTORY_SEPARATOR;
         }
 
         $config = null;
@@ -760,7 +760,7 @@ class ProjectChecker
             }
 
             $dir_path = preg_replace('/[^\/]+\/$/', '', $dir_path);
-        } while ($dir_path !== '/');
+        } while ($dir_path !== DIRECTORY_SEPARATOR);
 
         if (!$config) {
             throw new Exception\ConfigException('Config not found for path ' . $path);
@@ -782,7 +782,7 @@ class ProjectChecker
             throw new Exception\ConfigException('Config not found at location ' . $path_to_config);
         }
 
-        $dir_path = dirname($path_to_config) . '/';
+        $dir_path = dirname($path_to_config) . DIRECTORY_SEPARATOR;
 
         $this->config = Config::loadFromXMLFile($path_to_config);
 

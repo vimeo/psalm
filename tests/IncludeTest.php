@@ -39,7 +39,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
     public function testBasicRequire()
     {
         $this->project_checker->registerFile(
-            getcwd() . '/file1.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
             '<?php
             class A{
             }
@@ -47,7 +47,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            getcwd() . '/file2.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file1.php");
@@ -69,7 +69,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
     public function testNestedRequire()
     {
         $this->project_checker->registerFile(
-            getcwd() . '/file1.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
             '<?php
             class A{
                 public function fooFoo() : void {
@@ -80,7 +80,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $this->project_checker->registerFile(
-            getcwd() . '/file2.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
             '<?php
             require("file1.php");
 
@@ -90,7 +90,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            getcwd() . '/file3.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file2.php");
@@ -112,7 +112,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
     public function testRequireNamespace()
     {
         $this->project_checker->registerFile(
-            getcwd() . '/file1.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
             '<?php
             namespace Foo;
 
@@ -122,7 +122,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            getcwd() . '/file2.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file1.php");
@@ -144,7 +144,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
     public function testRequireFunction()
     {
         $this->project_checker->registerFile(
-            getcwd() . '/file1.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
             '<?php
             function fooFoo() : void {
 
@@ -153,7 +153,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            getcwd() . '/file2.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file1.php");
@@ -171,7 +171,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
     public function testRequireNamespaceWithUse()
     {
         $this->project_checker->registerFile(
-            getcwd() . '/file1.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
             '<?php
             namespace Foo;
 
@@ -181,7 +181,7 @@ class IncludeTest extends PHPUnit_Framework_TestCase
         );
 
         $file2_checker = new FileChecker(
-            getcwd() . '/file2.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
             $this->project_checker,
             self::$parser->parse('<?php
             require("file1.php");
