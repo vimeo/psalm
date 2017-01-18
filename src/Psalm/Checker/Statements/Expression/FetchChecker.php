@@ -550,7 +550,7 @@ class FetchChecker
                 if ($context->isPhantomClass($fq_class_name)) {
                     return null;
                 }
-            } elseif ($context->check_classes) {
+            } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $statements_checker
@@ -560,14 +560,16 @@ class FetchChecker
                     return null;
                 }
 
-                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $fq_class_name,
-                    $statements_checker->getFileChecker(),
-                    new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues(),
-                    true
-                ) === false) {
-                    return false;
+                if ($context->check_classes) {
+                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $fq_class_name,
+                        $statements_checker->getFileChecker(),
+                        new CodeLocation($statements_checker->getSource(), $stmt->class),
+                        $statements_checker->getSuppressedIssues(),
+                        true
+                    ) === false) {
+                        return false;
+                    }
                 }
             }
 
@@ -575,6 +577,7 @@ class FetchChecker
         }
 
         if ($fq_class_name &&
+            $context->check_classes &&
             $context->check_variables &&
             is_string($stmt->name) &&
             !ExpressionChecker::isMock($fq_class_name)
