@@ -1823,24 +1823,6 @@ class TypeTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
-    public function testTypeRefinementWithIsNumeric()
-    {
-        $stmts = self::$parser->parse('<?php
-        function fooFoo(string $a) : void {
-            if (is_numeric($a)) {
-
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
     public function testPlusPlus()
     {
         $stmts = self::$parser->parse('<?php

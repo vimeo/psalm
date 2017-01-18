@@ -624,4 +624,46 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testTypeRefinementWithIsNumeric()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void */
+        function fooFoo(string $a) {
+            if (is_numeric($a)) {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testTypeRefinementWithIsNumericAndIsString()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param mixed $a
+         * @return void
+         */
+        function foo ($a) {
+            if (is_numeric($a)) {
+                if (is_string($a)) {
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
