@@ -61,10 +61,10 @@ class FileFilter
         if ($e->directory) {
             /** @var \SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
-                $directory_path = realpath(getcwd() . '/' . (string)$directory['name']);
+                $directory_path = realpath(getcwd() . DIRECTORY_SEPARATOR . (string)$directory['name']);
 
                 if (!$directory_path) {
-                    die('Could not resolve path to ' . getcwd() . '/' .
+                    die('Could not resolve path to ' . getcwd() . DIRECTORY_SEPARATOR .
                         (string)$directory['name'] . ' in ' . $config->file_path . PHP_EOL);
                 }
 
@@ -75,10 +75,10 @@ class FileFilter
         if ($e->file) {
             /** @var \SimpleXMLElement $file */
             foreach ($e->file as $file) {
-                $file_path = realpath(getcwd() . '/' . (string)$file['name']);
+                $file_path = realpath(getcwd() . DIRECTORY_SEPARATOR . (string)$file['name']);
 
                 if (!$file_path) {
-                    die('Could not resolve path to ' . getcwd() . '/' .
+                    die('Could not resolve path to ' . getcwd() . DIRECTORY_SEPARATOR .
                         (string)$file['name'] . ' in ' . $config->file_path . PHP_EOL);
                 }
 
@@ -95,7 +95,7 @@ class FileFilter
      */
     protected static function slashify($str)
     {
-        return preg_replace('/\/?$/', '/', $str);
+        return preg_replace('/\/?$/', DIRECTORY_SEPARATOR, $str);
     }
 
     /**
