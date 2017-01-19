@@ -394,7 +394,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_context->parent = $this->parent_fq_class_name;
         }
 
-        foreach ($storage->properties as $property_name => $property) {
+        foreach ($storage->inheritable_property_ids as $property_name => $declaring_property_id) {
+            list($property_class_name) = explode('::', $declaring_property_id);
+
+            $property_class_storage = self::$storage[strtolower($property_class_name)];
+
+            $property = $property_class_storage->properties[$property_name];
+
             if ($property->is_static) {
                 $property_id = $this->fq_class_name . '::$' . $property_name;
 
@@ -775,6 +781,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->appearing_property_ids[$property->name] = $this instanceof TraitChecker
                 ? $implemented_property_id
                 : $property_id;
+
+            if (!$stmt->isPrivate()) {
+                $storage->inheritable_property_ids[$property->name] = $property_id;
+            }
         }
     }
 
@@ -1104,6 +1114,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $storage->declaring_property_ids[$property_name] = $property_id;
             $storage->appearing_property_ids[$property_name] = $property_id;
+
+            if (!$class_property->isPrivate()) {
+                $storage->inheritable_property_ids[$property_name] = $property_id;
+            }
         }
 
         // have to do this separately as there can be new properties here
@@ -1116,6 +1130,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $storage->declaring_property_ids[$property_name] = $property_id;
                 $storage->appearing_property_ids[$property_name] = $property_id;
+                $storage->inheritable_property_ids[$property_name] = $property_id;
             }
 
             $storage->properties[$property_name]->type = Type::parseString($type);
@@ -1229,6 +1244,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         // register where they're declared
         foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
             $storage->declaring_property_ids[$property_name] = $declaring_property_id;
+        }
+
+        // register where they're declared
+        foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
+            $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
         }
     }
 
