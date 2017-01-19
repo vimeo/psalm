@@ -102,6 +102,10 @@ class MethodMutationTest extends PHPUnit_Framework_TestCase
             public function barBar() : Response {
                 $this->setUser();
 
+                if (rand(0, 1)) {
+                    $this->title = "hello";
+                }
+
                 return new Response($this->user_viewdata);
             }
         }'
@@ -116,5 +120,6 @@ class MethodMutationTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('UserViewData', (string)$method_context->vars_in_scope['$this->user_viewdata']);
         $this->assertEquals('string', (string)$method_context->vars_in_scope['$this->user_viewdata->name']);
+        $this->assertEquals(true, (string)$method_context->vars_possibly_in_scope['$this->title']);
     }
 }
