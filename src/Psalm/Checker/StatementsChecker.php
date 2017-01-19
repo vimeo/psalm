@@ -347,7 +347,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public static function getSimpleType(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            if (strtolower($stmt->name->parts[0]) === 'false' || strtolower($stmt->name->parts[0]) === 'true') {
+            if (strtolower($stmt->name->parts[0]) === 'false') {
+                return Type::getFalse();
+            } elseif (strtolower($stmt->name->parts[0]) === 'true') {
                 return Type::getBool();
             } elseif (strtolower($stmt->name->parts[0]) === 'null') {
                 return Type::getNull();
