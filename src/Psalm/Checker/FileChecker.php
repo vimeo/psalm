@@ -786,12 +786,12 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  string  $file
+     * @param  string  $file_path
      * @return boolean
      */
-    public static function hasFileChanged($file)
+    public static function hasFileChanged($file_path)
     {
-        return filemtime($file) > self::getLastGoodRun();
+        return filemtime($file_path) > self::getLastGoodRun();
     }
 
     /**

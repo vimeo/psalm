@@ -969,6 +969,7 @@ class FetchChecker
                     }
                 } elseif (!$type instanceof TNamedObject ||
                     (strtolower($type->value) !== 'simplexmlelement' &&
+                        ClassChecker::classExists($type->value, $statements_checker->getFileChecker()) &&
                         !ClassChecker::classImplements($type->value, 'ArrayAccess')
                     )
                 ) {
