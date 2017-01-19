@@ -1697,7 +1697,10 @@ class ExpressionChecker
 
         if (isset($stmt->expr->inferredType)) {
             foreach ($stmt->expr->inferredType->types as $clone_type_part) {
-                if (!$clone_type_part instanceof TNamedObject && !$clone_type_part instanceof TObject) {
+                if (!$clone_type_part instanceof TNamedObject &&
+                    !$clone_type_part instanceof TObject &&
+                    !$clone_type_part instanceof TMixed
+                ) {
                     if (IssueBuffer::accepts(
                         new InvalidClone(
                             'Cannot clone ' . $clone_type_part,
