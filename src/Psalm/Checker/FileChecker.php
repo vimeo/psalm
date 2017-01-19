@@ -404,7 +404,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             throw new \UnexpectedValueException('Method ' . $method_id . ' could not be checked');
         }
 
-        foreach ($call_context->vars_in_scope as $var => $type) {
+        foreach ($call_context->vars_possibly_in_scope as $var => $_) {
             $this_context->vars_possibly_in_scope[$var] = true;
         }
 
