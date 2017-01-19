@@ -301,8 +301,6 @@ class CallChecker
 
         $file_checker = $statements_checker->getFileChecker();
 
-        $class_checked = false;
-
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
@@ -324,8 +322,6 @@ class CallChecker
                     ) === false) {
                         return false;
                     }
-
-                    $class_checked = true;
                 }
             } else {
                 switch ($stmt->class->parts[0]) {
@@ -354,7 +350,8 @@ class CallChecker
             $stmt->inferredType = new Type\Union([new TNamedObject($fq_class_name)]);
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
-                ($class_checked || ClassChecker::classExists($fq_class_name, $file_checker)) &&
+                $context->check_classes &&
+                ClassChecker::classExists($fq_class_name, $file_checker) &&
                 MethodChecker::methodExists($fq_class_name . '::__construct')
             ) {
                 $method_id = $fq_class_name . '::__construct';
