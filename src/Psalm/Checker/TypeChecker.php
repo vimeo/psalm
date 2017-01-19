@@ -694,6 +694,10 @@ class TypeChecker
             }
         }
 
+        if ($existing_var_type->hasType($new_var_type)) {
+            return new Type\Union([$existing_var_type->types[$new_var_type]]);
+        }
+
         return $new_type;
     }
 
