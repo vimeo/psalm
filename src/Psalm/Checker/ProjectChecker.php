@@ -315,6 +315,7 @@ class ProjectChecker
     /**
      * @param  string $dir_name
      * @param  Config $config
+     * @param  bool   $allow_non_project_files
      * @return void
      */
     protected function checkDirWithConfig($dir_name, Config $config, $allow_non_project_files = false)
