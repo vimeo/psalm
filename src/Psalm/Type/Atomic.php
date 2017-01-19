@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNumericString;
@@ -62,6 +63,9 @@ abstract class Atomic extends Type
 
             case 'empty':
                 return new TEmpty();
+
+            case 'scalar':
+                return new TScalar();
 
             case 'null':
                 return new TNull();
