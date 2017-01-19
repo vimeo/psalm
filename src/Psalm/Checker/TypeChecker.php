@@ -909,7 +909,7 @@ class TypeChecker
             }
         }
 
-        if ($input_type_part instanceof Scalar || $input_type_part instanceof TScalar) {
+        if ($input_type_part instanceof Scalar) {
             if ($container_type_part instanceof Scalar) {
                 $has_scalar_match = true;
             }
