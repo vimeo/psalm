@@ -793,11 +793,12 @@ class TypeChecker
                 $container_is_object &&
                 $input_type_part instanceof TNamedObject &&
                 $container_type_part instanceof TNamedObject &&
-                ClassChecker::classExists($input_type_part->value, $file_checker) &&
                 (
-                    ClassChecker::classExtendsOrImplements(
-                        $input_type_part->value,
-                        $container_type_part->value
+                    (ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                        ClassChecker::classExtendsOrImplements(
+                            $input_type_part->value,
+                            $container_type_part->value
+                        )
                     ) ||
                     ExpressionChecker::isMock($input_type_part->value)
                 )
