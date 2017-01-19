@@ -833,6 +833,15 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
+     * @return void
+     */
+    public function registerVisitedFile($file_path)
+    {
+        $this->visited_files[$file_path] = true;
+    }
+
+    /**
+     * @param  string $file_path
      * @return string
      */
     public function getFileContents($file_path)
@@ -845,7 +854,8 @@ class ProjectChecker
     }
 
     /**
-     * @param string $fq_class_name
+     * @param string        $fq_class_name
+     * @param string|null   $file_path
      * @return void
      */
     public function addFullyQualifiedClassName($fq_class_name, $file_path = null)
@@ -863,7 +873,8 @@ class ProjectChecker
     }
 
     /**
-     * @param string $fq_class_name
+     * @param string        $fq_class_name
+     * @param string|null   $file_path
      * @return void
      */
     public function addFullyQualifiedInterfaceName($fq_class_name, $file_path = null)
@@ -881,7 +892,8 @@ class ProjectChecker
     }
 
     /**
-     * @param string $fq_class_name
+     * @param string        $fq_class_name
+     * @param string|null   $file_path
      * @return void
      */
     public function addFullyQualifiedTraitName($fq_class_name, $file_path = null)
