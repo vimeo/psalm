@@ -40,6 +40,8 @@ class TraitChecker extends ClassLikeChecker
 
         $fq_class_name_lower = strtolower($fq_class_name);
 
+        $project_checker = $source->getFileChecker()->project_checker;
+
         if (!isset(self::$storage[$fq_class_name_lower])) {
             self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
             $storage->file_name = $this->source->getFileName();

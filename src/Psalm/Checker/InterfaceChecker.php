@@ -24,7 +24,7 @@ class InterfaceChecker extends ClassLikeChecker
         $storage = self::$storage[$fq_interface_name_lower];
 
         $project_checker = $source->getFileChecker()->project_checker;
-        $project_checker->addFullyQualifiedInterfaceName($fq_interface_name);
+        $project_checker->addFullyQualifiedInterfaceName($fq_interface_name, $source->getFilePath());
 
         if ($interface->extends) {
             foreach ($interface->extends as $extended_interface) {

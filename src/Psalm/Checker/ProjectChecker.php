@@ -543,14 +543,12 @@ class ProjectChecker
             $this->existing_classlikes[$fq_class_name] = true;
 
             if ($reflected_class->isInterface()) {
-                $this->addFullyQualifiedInterfaceName($fq_class_name);
+                $this->addFullyQualifiedInterfaceName($fq_class_name, (string)$reflected_class->getFileName());
             } elseif ($reflected_class->isTrait()) {
-                $this->addFullyQualifiedTraitName($fq_class_name);
+                $this->addFullyQualifiedTraitName($fq_class_name, (string)$reflected_class->getFileName());
             } else {
-                $this->addFullyQualifiedClassName($fq_class_name);
+                $this->addFullyQualifiedClassName($fq_class_name, (string)$reflected_class->getFileName());
             }
-
-            $this->classlike_files[$fq_class_name] = (string)$reflected_class->getFileName();
         } else {
             $this->visited_classes[$fq_class_name] = true;
             ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
@@ -850,7 +848,7 @@ class ProjectChecker
      * @param string $fq_class_name
      * @return void
      */
-    public function addFullyQualifiedClassName($fq_class_name)
+    public function addFullyQualifiedClassName($fq_class_name, $file_path = null)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
         $this->existing_classlikes_ci[$fq_class_name_ci] = true;
@@ -858,13 +856,17 @@ class ProjectChecker
         $this->existing_traits_ci[$fq_class_name_ci] = false;
         $this->existing_interfaces_ci[$fq_class_name_ci] = false;
         $this->existing_classes[$fq_class_name] = true;
+
+        if ($file_path) {
+            $this->classlike_files[$fq_class_name] = $file_path;
+        }
     }
 
     /**
      * @param string $fq_class_name
      * @return void
      */
-    public function addFullyQualifiedInterfaceName($fq_class_name)
+    public function addFullyQualifiedInterfaceName($fq_class_name, $file_path = null)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
         $this->existing_classlikes_ci[$fq_class_name_ci] = true;
@@ -872,13 +874,17 @@ class ProjectChecker
         $this->existing_classes_ci[$fq_class_name_ci] = false;
         $this->existing_traits_ci[$fq_class_name_ci] = false;
         $this->existing_interfaces[$fq_class_name] = true;
+
+        if ($file_path) {
+            $this->classlike_files[$fq_class_name] = $file_path;
+        }
     }
 
     /**
      * @param string $fq_class_name
      * @return void
      */
-    public function addFullyQualifiedTraitName($fq_class_name)
+    public function addFullyQualifiedTraitName($fq_class_name, $file_path = null)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
         $this->existing_classlikes_ci[$fq_class_name_ci] = true;
@@ -886,6 +892,10 @@ class ProjectChecker
         $this->existing_classes_ci[$fq_class_name_ci] = false;
         $this->existing_interfaces_ci[$fq_class_name_ci] = false;
         $this->existing_traits[$fq_class_name] = true;
+
+        if ($file_path) {
+            $this->classlike_files[$fq_class_name] = $file_path;
+        }
     }
 
     /**
