@@ -39,7 +39,7 @@ class ClassChecker extends ClassLikeChecker
         $storage = self::$storage[$fq_class_name_lower];
 
         $project_checker = $source->getFileChecker()->project_checker;
-        $project_checker->addFullyQualifiedClassName($fq_class_name);
+        $project_checker->addFullyQualifiedClassName($fq_class_name, $source->getFilePath());
 
         self::$class_extends[$this->fq_class_name] = [];
 

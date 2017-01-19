@@ -1053,8 +1053,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $storage = self::$storage[$class_name_lower] = new ClassLikeStorage();
 
-        $project_checker->addFullyQualifiedClassName($class_name);
-
         self::$class_extends[$class_name] = [];
 
         if ($reflected_parent_class) {
