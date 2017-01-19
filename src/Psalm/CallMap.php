@@ -8591,7 +8591,7 @@ return [
 'SplFileObject::fgets' => ['string'],
 'SplFileObject::flock' => ['bool', 'operation'=>'int', '&wouldblock='=>'int'],
 'SplFileObject::fpassthru' => ['int'],
-'SplFileObject::fputcsv' => ['int|false', 'fields'=>'array', 'delimiter'=>'string', 'enclosure'=>'string', 'escape'=>'string'],
+'SplFileObject::fputcsv' => ['int|false', 'fields'=>'array', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
 'SplFileObject::fread' => ['string', 'length'=>'int'],
 'SplFileObject::fscanf' => ['bool', 'format'=>'string', '...='=>'string'],
 'SplFileObject::fseek' => ['int', 'pos'=>'int', 'whence='=>'int'],
