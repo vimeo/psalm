@@ -734,6 +734,8 @@ class TypeChecker
 
             $type_match_found = false;
             $scalar_type_match_found = false;
+            $all_to_string_cast = true;
+            $atomic_to_string_cast = false;
 
             foreach ($container_type->types as $container_type_part) {
                 $is_atomic_contained_by = self::isAtomicContainedBy(
@@ -743,12 +745,23 @@ class TypeChecker
                     $ignore_null,
                     $scalar_type_match_found,
                     $type_coerced,
-                    $to_string_cast
+                    $atomic_to_string_cast
                 );
 
                 if ($is_atomic_contained_by === true) {
                     $type_match_found = true;
                 }
+
+                if ($atomic_to_string_cast !== true) {
+                    $all_to_string_cast = false;
+                }
+            }
+
+            // only set this flag if we're definite that the only
+            // reason the type match has been found is because there
+            // was a __toString cast
+            if ($all_to_string_cast && $type_match_found) {
+                $to_string_cast = true;
             }
 
             if (!$type_match_found) {
