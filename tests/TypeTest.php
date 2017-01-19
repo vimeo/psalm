@@ -1191,6 +1191,29 @@ class TypeTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function test2DArrayUnionTypeAssertionWithIsArray()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return array<array<string>>|null */
+        function foo() {
+            $ids = rand(0, 1) ? [["hello"]] : null;
+
+            if (is_array($ids)) {
+                return $ids;
+            }
+
+            return null;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
     public function testVariableReassignment()
     {
         $stmts = self::$parser->parse('<?php

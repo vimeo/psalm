@@ -192,6 +192,28 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testArray()
+    {
+        $this->assertEquals(
+            'array<mixed, mixed>',
+            (string) TypeChecker::reconcileTypes('array', Type::parseString('array|null'), null, $this->file_checker)
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function test2DArray()
+    {
+        $this->assertEquals(
+            'array<mixed, array<mixed, string>>',
+            (string) TypeChecker::reconcileTypes('array', Type::parseString('array<array<string>>|null'), null, $this->file_checker)
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testArrayContains()
     {
         $this->assertTrue(
