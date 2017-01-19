@@ -480,15 +480,15 @@ class FunctionChecker extends FunctionLikeChecker
                         $inner_value_types
                     );
                 }
+            }
 
-                if ($inner_value_types) {
-                    return new Type\Union([
-                        new Type\Atomic\TArray([
-                            Type::combineTypes($inner_key_types),
-                            Type::combineTypes($inner_value_types)
-                        ])
-                    ]);
-                }
+            if ($inner_value_types) {
+                return new Type\Union([
+                    new Type\Atomic\TArray([
+                        Type::combineTypes($inner_key_types),
+                        Type::combineTypes($inner_value_types)
+                    ])
+                ]);
             }
 
             return Type::getArray();

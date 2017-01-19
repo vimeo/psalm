@@ -20,7 +20,7 @@ class EffectsAnalyser
      */
     public static function getReturnTypes(array $stmts, array &$yield_types, $collapse_types = false)
     {
-        /** @var array<int,Type\Atomic> */
+        /** @var array<int, Type\Atomic> */
         $return_types = [];
 
         $last_stmt = null;
@@ -138,7 +138,7 @@ class EffectsAnalyser
 
     /**
      * @param   PhpParser\Node\Expr $stmt
-     * @return  array|null
+     * @return  array<int, Atomic>
      */
     protected static function getYieldTypeFromExpression($stmt)
     {
@@ -166,12 +166,12 @@ class EffectsAnalyser
             $key_type = null;
 
             if (isset($stmt->inferredType)) {
-                return [$stmt->inferredType->types];
+                return array_values($stmt->inferredType->types);
             } else {
                 return [new Atomic\TMixed()];
             }
         }
 
-        return null;
+        return [];
     }
 }

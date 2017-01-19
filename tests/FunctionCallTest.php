@@ -323,4 +323,25 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testArrayFunctions()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = array_keys(["a" => 1, "b" => 2]);
+        $b = array_values(["a" => 1, "b" => 2]);
+        $c = array_combine(["a", "b", "c"], [1, 2, 3]);
+        $d = array_merge(["a", "b", "c"], [1, 2, 3]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$a']);
+        $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$b']);
+        $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$c']);
+        $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$d']);
+    }
 }
