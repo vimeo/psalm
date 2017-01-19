@@ -214,6 +214,28 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testUnionContains()
+    {
+        $this->assertTrue(
+            TypeChecker::isContainedBy(
+                Type::parseString('string'),
+                Type::parseString('string|false'),
+                $this->file_checker
+            )
+        );
+
+        $this->assertTrue(
+            TypeChecker::isContainedBy(
+                Type::parseString('false'),
+                Type::parseString('string|false'),
+                $this->file_checker
+            )
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testNumeric()
     {
         $this->assertEquals(

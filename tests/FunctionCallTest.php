@@ -178,6 +178,60 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidParamDefault
+     * @return                   void
+     */
+    public function testInvalidParamDefault()
+    {
+        $stmts = self::$parser->parse('<?php
+        function f(int $p = false) {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidParamDefault
+     * @return                   void
+     */
+    public function testInvalidDocblockParamDefault()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param  int $p
+         * @return void
+         */
+        function f($p = false) {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testValidDocblockParamDefault()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param  int|false $p
+         * @return void
+         */
+        function f($p = false) {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @return void
      */
     public function testByRef()
