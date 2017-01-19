@@ -258,7 +258,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ]);
         }
 
-        $this->suppressed_issues = $storage->suppressed_issues;
+        $this->suppressed_issues = array_merge(
+            $this->getSource()->getSuppressedIssues(),
+            $storage->suppressed_issues
+        );
 
         if ($storage instanceof MethodStorage && $storage->is_static) {
             $this->is_static = true;
