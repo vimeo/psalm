@@ -304,7 +304,7 @@ class ProjectChecker
 
         $start_checks = (int)microtime(true);
 
-        $this->checkDirWithConfig($dir_name, $this->config);
+        $this->checkDirWithConfig($dir_name, $this->config, true);
 
         $this->visitFiles();
         $this->analyzeFiles();
@@ -317,7 +317,7 @@ class ProjectChecker
      * @param  Config $config
      * @return void
      */
-    protected function checkDirWithConfig($dir_name, Config $config)
+    protected function checkDirWithConfig($dir_name, Config $config, $allow_non_project_files = false)
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -331,7 +331,7 @@ class ProjectChecker
                 if (in_array($extension, $file_extensions)) {
                     $file_path = (string)$iterator->getRealPath();
 
-                    if ($config->isInProjectDirs($file_path)) {
+                    if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
                         $this->files_to_analyze[$file_path] = $file_path;
                     }
                 }
@@ -750,7 +750,7 @@ class ProjectChecker
                 $config = Config::loadFromXMLFile($maybe_path);
 
                 if ($config->autoloader) {
-                    require_once($dir_path . $config->autoloader);
+                    require_once($dir_path . DIRECTORY_SEPARATOR . $config->autoloader);
                 }
 
                 $config->collectPredefinedConstants();
@@ -787,7 +787,7 @@ class ProjectChecker
         $this->config = Config::loadFromXMLFile($path_to_config);
 
         if ($this->config->autoloader) {
-            require_once($dir_path . $this->config->autoloader);
+            require_once($dir_path . DIRECTORY_SEPARATOR . $this->config->autoloader);
         }
 
         $this->config->collectPredefinedConstants();
