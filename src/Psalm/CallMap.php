@@ -205,7 +205,7 @@ return [
 'ArrayIterator::unserialize' => ['string', 'serialized'=>'string'],
 'ArrayIterator::valid' => ['bool'],
 'array_key_exists' => ['bool', 'key'=>'string|int', 'search'=>'array'],
-'array_keys' => ['int[]|string[]', 'input'=>'array', 'search_value='=>'', 'strict='=>'bool'],
+'array_keys' => ['array', 'input'=>'array', 'search_value='=>'', 'strict='=>'bool'],
 'array_map' => ['array', 'callback'=>'callable|null', 'input1'=>'array', '...='=>'array'],
 'array_merge' => ['array', 'arr1'=>'array', '...='=>'array'],
 'array_merge_recursive' => ['array', 'arr1'=>'array', '...='=>'array'],
