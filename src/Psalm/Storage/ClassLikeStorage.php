@@ -90,6 +90,11 @@ class ClassLikeStorage
     public $line_number;
 
     /**
+     * @var bool
+     */
+    public $abstract = false;
+
+    /**
      * @var array<string, bool>
      */
     public $used_traits = [];

@@ -515,4 +515,21 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage AbstractInstantiation
+     * @return                   void
+     */
+    public function testAbstractClassInstantiation()
+    {
+        $stmts = self::$parser->parse('<?php
+        abstract class A {}
+        new A();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

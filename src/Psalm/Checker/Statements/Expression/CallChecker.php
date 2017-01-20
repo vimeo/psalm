@@ -15,6 +15,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FunctionLikeParameter;
+use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
@@ -301,6 +302,8 @@ class CallChecker
 
         $file_checker = $statements_checker->getFileChecker();
 
+        $late_static = false;
+
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
@@ -336,6 +339,7 @@ class CallChecker
                     case 'static':
                         // @todo maybe we can do better here
                         $fq_class_name = $context->self;
+                        $late_static = true;
                         break;
                 }
             }
@@ -351,83 +355,99 @@ class CallChecker
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $context->check_classes &&
-                ClassChecker::classExists($fq_class_name, $file_checker) &&
-                MethodChecker::methodExists($fq_class_name . '::__construct')
+                ClassChecker::classExists($fq_class_name, $file_checker)
             ) {
-                $method_id = $fq_class_name . '::__construct';
+                $storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
 
-                $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
-
-                if (self::checkFunctionArguments(
-                    $statements_checker,
-                    $stmt->args,
-                    $method_params,
-                    $context
-                ) === false) {
-                    return false;
+                // if we're not calling this constructor via new static()
+                if ($storage->abstract && !$late_static) {
+                    if (IssueBuffer::accepts(
+                        new AbstractInstantiation(
+                            'Unable to instantiate a abstract class ' . $fq_class_name,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
                 }
 
-                // check again after we've processed args
-                $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
+                if (MethodChecker::methodExists($fq_class_name . '::__construct')) {
+                    $method_id = $fq_class_name . '::__construct';
 
-                if (self::checkFunctionArgumentsMatch(
-                    $statements_checker,
-                    $stmt->args,
-                    $method_id,
-                    $method_params,
-                    $context,
-                    new CodeLocation($statements_checker->getSource(), $stmt)
-                ) === false) {
-                    // fall through
-                }
+                    $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
 
-                if ($fq_class_name === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
-                    /** @var Type\Union */
-                    $first_arg_type = $stmt->args[0]->value->inferredType;
+                    if (self::checkFunctionArguments(
+                        $statements_checker,
+                        $stmt->args,
+                        $method_params,
+                        $context
+                    ) === false) {
+                        return false;
+                    }
 
-                    if ($first_arg_type->hasGeneric()) {
-                        /** @var Type\Union|null */
-                        $key_type = null;
+                    // check again after we've processed args
+                    $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
 
-                        /** @var Type\Union|null */
-                        $value_type = null;
+                    if (self::checkFunctionArgumentsMatch(
+                        $statements_checker,
+                        $stmt->args,
+                        $method_id,
+                        $method_params,
+                        $context,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ) === false) {
+                        // fall through
+                    }
 
-                        foreach ($first_arg_type->types as $type) {
-                            if ($type instanceof Type\Atomic\TArray) {
-                                $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
-                                $last_type_param = $type->type_params[count($type->type_params) - 1];
+                    if ($fq_class_name === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
+                        /** @var Type\Union */
+                        $first_arg_type = $stmt->args[0]->value->inferredType;
 
-                                if ($value_type === null) {
-                                    $value_type = clone $last_type_param;
-                                } else {
-                                    $value_type = Type::combineUnionTypes($value_type, $last_type_param);
-                                }
+                        if ($first_arg_type->hasGeneric()) {
+                            /** @var Type\Union|null */
+                            $key_type = null;
 
-                                if (!$key_type || !$first_type_param) {
-                                    $key_type = $first_type_param ? clone $first_type_param : Type::getMixed();
-                                } else {
-                                    $key_type = Type::combineUnionTypes($key_type, $first_type_param);
+                            /** @var Type\Union|null */
+                            $value_type = null;
+
+                            foreach ($first_arg_type->types as $type) {
+                                if ($type instanceof Type\Atomic\TArray) {
+                                    $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
+                                    $last_type_param = $type->type_params[count($type->type_params) - 1];
+
+                                    if ($value_type === null) {
+                                        $value_type = clone $last_type_param;
+                                    } else {
+                                        $value_type = Type::combineUnionTypes($value_type, $last_type_param);
+                                    }
+
+                                    if (!$key_type || !$first_type_param) {
+                                        $key_type = $first_type_param ? clone $first_type_param : Type::getMixed();
+                                    } else {
+                                        $key_type = Type::combineUnionTypes($key_type, $first_type_param);
+                                    }
                                 }
                             }
-                        }
 
-                        if ($key_type === null) {
-                            throw new \UnexpectedValueException('$key_type cannot be null');
-                        }
+                            if ($key_type === null) {
+                                throw new \UnexpectedValueException('$key_type cannot be null');
+                            }
 
-                        if ($value_type === null) {
-                            throw new \UnexpectedValueException('$value_type cannot be null');
-                        }
+                            if ($value_type === null) {
+                                throw new \UnexpectedValueException('$value_type cannot be null');
+                            }
 
-                        $stmt->inferredType = new Type\Union([
-                            new Type\Atomic\TGenericObject(
-                                $fq_class_name,
-                                [
-                                    $key_type,
-                                    $value_type
-                                ]
-                            )
-                        ]);
+                            $stmt->inferredType = new Type\Union([
+                                new Type\Atomic\TGenericObject(
+                                    $fq_class_name,
+                                    [
+                                        $key_type,
+                                        $value_type
+                                    ]
+                                )
+                            ]);
+                        }
                     }
                 }
             }

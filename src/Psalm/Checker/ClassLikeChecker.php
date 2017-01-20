@@ -314,6 +314,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $config = Config::getInstance();
 
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
+            $storage->abstract = (bool)$this->class->isAbstract();
+
             foreach (ClassChecker::getInterfacesForClass(
                 $this->fq_class_name
             ) as $interface_id => $interface_name) {
@@ -1093,6 +1095,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $reflected_parent_class = $reflected_class->getParentClass();
 
         $storage = self::$storage[$class_name_lower] = new ClassLikeStorage();
+        $storage->abstract = $reflected_class->isAbstract();
 
         self::$class_extends[$class_name] = [];
 
