@@ -613,6 +613,23 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidArrayAssignment
+     * @return                   void
+     */
+    public function testObjectAssignment()
+    {
+        $context = new Context();
+        $stmts = self::$parser->parse('<?php
+        class A {}
+        (new A)["b"] = 1;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @return void
      */
     public function testConditionalCheck()

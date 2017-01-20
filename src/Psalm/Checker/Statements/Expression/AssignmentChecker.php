@@ -867,22 +867,35 @@ class AssignmentChecker
             $statements_checker
         );
 
-        $is_string = isset($stmt->var->inferredType)
-            && $stmt->var->inferredType->hasString();
-
-        $has_scalar = isset($stmt->var->inferredType)
-            && $stmt->var->inferredType->hasScalarType();
-
-        $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
-            ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
-            : null;
-
         if (isset($stmt->var->inferredType)) {
             $return_type = $stmt->var->inferredType;
 
-            if ($is_object) {
-                // do nothing
-            } elseif ($is_string) {
+            $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
+                ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
+                : null;
+
+            if ($return_type->hasObjectType()) {
+                foreach ($return_type->types as $left_type_part) {
+                    if ($left_type_part instanceof TNamedObject &&
+                        (strtolower($left_type_part->value) !== 'simplexmlelement' &&
+                            ClassChecker::classExists($left_type_part->value, $statements_checker->getFileChecker()) &&
+                            !ClassChecker::classImplements($left_type_part->value, 'ArrayAccess')
+                        )
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new InvalidArrayAssignment(
+                                'Cannot assign array value on non-array variable ' .
+                                $array_var_id . ' of type ' . $return_type,
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            $stmt->inferredType = Type::getMixed();
+                            break;
+                        }
+                    }
+                }
+            } elseif ($return_type->hasString()) {
                 foreach ($assignment_value_type->types as $value_type) {
                     if (!$value_type instanceof TString) {
                         if ($value_type instanceof TMixed) {
@@ -912,7 +925,7 @@ class AssignmentChecker
                         break;
                     }
                 }
-            } elseif ($has_scalar) {
+            } elseif ($return_type->hasScalarType()) {
                 if (IssueBuffer::accepts(
                     new InvalidArrayAssignment(
                         'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $context->vars_in_scope[$var_id],
