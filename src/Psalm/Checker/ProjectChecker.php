@@ -596,20 +596,13 @@ class ProjectChecker
 
             $fq_class_name_lower = strtolower($fq_class_name);
 
-            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lower])) {
-                ClassLikeChecker::$storage[$fq_class_name_lower] =
-                    $storage = new \Psalm\Storage\ClassLikeStorage();
-                $storage->file_path = $file_path;
-                $storage->file_name = $short_file_name;
-            } else {
-                $storage = ClassLikeChecker::$storage[$fq_class_name_lower];
-            }
-
             if ($this->debug_output) {
                 echo 'Visiting ' . $file_path . PHP_EOL;
             }
 
             $file_checker->visit();
+
+            $storage = ClassLikeChecker::$storage[$fq_class_name_lower];
 
             if (ClassLikeChecker::inPropertyMap($fq_class_name)) {
                 $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_class_name)];

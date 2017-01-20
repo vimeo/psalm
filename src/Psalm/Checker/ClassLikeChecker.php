@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InaccessibleMethod;
@@ -140,7 +141,22 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
             $storage->file_name = $this->source->getFileName();
             $storage->file_path = $this->source->getFilePath();
+            $storage->line_number = $class->getLine();
             $storage->user_defined = true;
+        } else {
+            $storage = self::$storage[$fq_class_name_lower];
+
+            if ($storage->file_path !== $this->source->getFilePath() || $storage->line_number !== $class->getLine()) {
+                if (IssueBuffer::accepts(
+                    new DuplicateClass(
+                        'Class ' . $fq_class_name . ' has already been defined at ' .
+                            $storage->file_path . ':' . $storage->line_number,
+                        new \Psalm\CodeLocation($this, $class, true)
+                    )
+                )) {
+                    // fall through
+                }
+            }
         }
 
         self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;

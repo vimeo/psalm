@@ -458,4 +458,61 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage DuplicateClass
+     * @return                   void
+     */
+    public function testClassRedefinition()
+    {
+        $stmts = self::$parser->parse('<?php
+        class Foo {}
+        class Foo {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage DuplicateClass
+     * @return                   void
+     */
+    public function testClassRedefinitionInNamespace()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Aye {
+            class Foo {}
+            class Foo {}
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage DuplicateClass
+     * @return                   void
+     */
+    public function testClassRedefinitionInSeparateNamespace()
+    {
+        $stmts = self::$parser->parse('<?php
+        namespace Aye {
+            class Foo {}
+        }
+        namespace Aye {
+            class Foo {}
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

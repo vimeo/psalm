@@ -85,6 +85,11 @@ class ClassLikeStorage
     public $file_path;
 
     /**
+     * @var int|null
+     */
+    public $line_number;
+
+    /**
      * @var array<string, bool>
      */
     public $used_traits = [];
