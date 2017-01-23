@@ -945,8 +945,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $this->getFileChecker()
             );
 
-            var_dump($inferred_return_type);
-
             $return_types_different = false;
 
             if (!TypeChecker::isContainedBy($inferred_return_type, $declared_return_type, $this->getFileChecker())) {
