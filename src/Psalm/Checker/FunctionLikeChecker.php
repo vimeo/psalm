@@ -853,6 +853,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if (!$return_type) {
             if ($inferred_return_type && !$inferred_return_type->isMixed()) {
+                $inferred_return_type = TypeChecker::simplifyUnionType(
+                    ExpressionChecker::fleshOutTypes(
+                        $inferred_return_type,
+                        [],
+                        $this->source->getFQCLN(),
+                        ''
+                    ),
+                    $this->getFileChecker()
+                );
+
                 FileChecker::addDocblockReturnType(
                     $this->source->getFileName(),
                     $this->function->getLine(),
@@ -934,6 +944,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 ),
                 $this->getFileChecker()
             );
+
+            var_dump($inferred_return_type);
 
             $return_types_different = false;
 
