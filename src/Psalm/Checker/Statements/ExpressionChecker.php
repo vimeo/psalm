@@ -930,21 +930,22 @@ class ExpressionChecker
                     }
 
                     if ($left_type_part instanceof TArray || $right_type_part instanceof TArray) {
-                        if (!$right_type_part instanceof TArray || !$left_type_part instanceof TArray) {
-                            if (!$left_type_part instanceof TArray) {
+                        if ((!$right_type_part instanceof TArray && !$right_type_part instanceof ObjectLike) ||
+                            (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)) {
+                            if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
-                                        'Cannot add an array to a non-array',
+                                        'Cannot add an array to a non-array ' . $left_type_part,
                                         new CodeLocation($statements_checker->getSource(), $left)
                                     ),
                                     $statements_checker->getSuppressedIssues()
                                 )) {
                                     // fall through
                                 }
-                            } elseif (!$right_type_part instanceof TArray) {
+                            } else {
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
-                                        'Cannot add an array to a non-array',
+                                        'Cannot add an array to a non-array ' . $right_type_part,
                                         new CodeLocation($statements_checker->getSource(), $right)
                                     ),
                                     $statements_checker->getSuppressedIssues()
