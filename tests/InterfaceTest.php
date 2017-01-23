@@ -453,6 +453,38 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+
+    /**
+     * @return void
+     */
+    public function testImplementsPartialInterfaceMethods()
+    {
+        Config::getInstance()->setCustomErrorLevel('MissingReturnType', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        namespace Bat;
+
+        interface I  {
+          public function foo();
+          public function bar();
+        }
+        abstract class A implements I {
+          public function foo() {
+            return "hello";
+          }
+        }
+        class B extends A {
+          public function bar() {
+            return "goodbye";
+          }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
     /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UnimplementedInterfaceMethod
