@@ -554,11 +554,11 @@ class ClassTest extends PHPUnit_Framework_TestCase
     public function testMissingParentWithFunction()
     {
         Config::getInstance()->setCustomErrorLevel('UndefinedClass', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MissingReturnType', Config::REPORT_SUPPRESS);
 
         $stmts = self::$parser->parse('<?php
-        class A extends B {
-            /** @return void */
-            public function foo() { }
+        class B extends C {
+            public function fooA() { }
         }
         ');
 

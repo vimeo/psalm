@@ -354,6 +354,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $storage = self::$storage[strtolower($fq_class_name)];
 
+        if (($this->class instanceof PhpParser\Node\Stmt\Class_ ||
+                $this->class instanceof PhpParser\Node\Stmt\Interface_
+            ) &&
+            $this->parent_fq_class_name &&
+            !ClassLikeChecker::classOrInterfaceExists($this->parent_fq_class_name, $this->getFileChecker())
+        ) {
+            // we should not normally get here
+            return;
+        }
+
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
             $class_interfaces = ClassChecker::getInterfacesForClass($this->fq_class_name);
 
