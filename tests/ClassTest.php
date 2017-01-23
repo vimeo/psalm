@@ -21,8 +21,6 @@ class ClassTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
     }
 
     /**
@@ -30,6 +28,7 @@ class ClassTest extends PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
+        $config = new TestConfig();
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
     }
@@ -526,6 +525,41 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         abstract class A {}
         new A();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedClass
+     * @return                   void
+     */
+    public function testMissingParent()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A extends B { }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testMissingParentWithFunction()
+    {
+        Config::getInstance()->setCustomErrorLevel('UndefinedClass', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        class A extends B {
+            /** @return void */
+            public function foo() { }
+        }
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);

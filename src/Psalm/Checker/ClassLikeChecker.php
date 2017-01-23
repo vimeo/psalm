@@ -603,6 +603,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return false;
         }
 
+        // if we don't care the parent class does not exist, exit now.
+        if (!ClassLikeChecker::classOrInterfaceExists($parent_class, $this->getFileChecker())) {
+            return;
+        }
+
         self::$class_extends[$this->fq_class_name] = self::$class_extends[$this->parent_fq_class_name];
         self::$class_extends[$this->fq_class_name][$this->parent_fq_class_name] = true;
 
