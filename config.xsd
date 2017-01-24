@@ -22,6 +22,7 @@
         <xs:attribute name="allowFileIncludes" type="xs:string" />
         <xs:attribute name="totallyTyped" type="xs:string" />
         <xs:attribute name="strictBinaryOperands" type="xs:string" />
+        <xs:attribute name="addVoidDocblockReturnType" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

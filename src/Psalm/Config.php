@@ -141,6 +141,9 @@ class Config
     /** @var bool */
     public $strict_binary_operands = false;
 
+    /** @var bool */
+    public $add_void_docblocks = true;
+
     /**
      * Psalm plugins
      *
@@ -273,6 +276,11 @@ class Config
         if (isset($config_xml['strictBinaryOperands'])) {
             $attribute_text = (string) $config_xml['strictBinaryOperands'];
             $config->strict_binary_operands = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['addVoidDocblockReturnType'])) {
+            $attribute_text = (string) $config_xml['addVoidDocblockReturnType'];
+            $config->add_void_docblocks = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

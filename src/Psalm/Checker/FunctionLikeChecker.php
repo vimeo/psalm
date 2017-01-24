@@ -824,7 +824,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if ($this->function instanceof Closure) {
                 if (IssueBuffer::accepts(
                     new MissingClosureReturnType(
-                        'Closure does not have a return type',
+                        'Closure does not have a return type, expecting ' . $inferred_return_type,
                         new CodeLocation($this, $this->function, true)
                     ),
                     $this->suppressed_issues
@@ -837,7 +837,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if (IssueBuffer::accepts(
                 new MissingReturnType(
-                    'Method ' . $cased_method_id . ' does not have a return type',
+                    'Method ' . $cased_method_id . ' does not have a return type, expecting ' . $inferred_return_type,
                     new CodeLocation($this, $this->function, true)
                 ),
                 $this->suppressed_issues
@@ -846,23 +846,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             return null;
-        }
-
-        $inferred_yield_types = [];
-        $inferred_return_types = EffectsAnalyser::getReturnTypes(
-            $this->function->getStmts(),
-            $inferred_yield_types,
-            true
-        );
-
-        $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : Type::getVoid();
-        $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
-
-        $inferred_generator_return_type = null;
-
-        if ($inferred_yield_type) {
-            $inferred_generator_return_type = $inferred_return_type;
-            $inferred_return_type = $inferred_yield_type;
         }
 
         if ($is_to_string) {
@@ -955,16 +938,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 return null;
             }
-
-            $inferred_return_type = TypeChecker::simplifyUnionType(
-                ExpressionChecker::fleshOutTypes(
-                    $inferred_return_type,
-                    [],
-                    $this->source->getFQCLN(),
-                    ''
-                ),
-                $this->getFileChecker()
-            );
 
             $return_types_different = false;
 

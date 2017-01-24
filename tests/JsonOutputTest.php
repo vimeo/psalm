@@ -146,7 +146,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('Method fooFoo does not have a return type', $issue_data['message']);
+        $this->assertSame('Method fooFoo does not have a return type, expecting string', $issue_data['message']);
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
             'function fooFoo() {',
