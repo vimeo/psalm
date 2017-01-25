@@ -854,4 +854,26 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testObjectLikeWithIntegerKeys()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @var array{0: string, 1: int} **/
+        $a = ["hello", 5];
+        $b = $a[0]; // string
+        $c = $a[1]; // int
+        list($d, $e) = $a; // $d is string, $e is int
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('string', (string) $context->vars_in_scope['$b']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$c']);
+        $this->assertEquals('string', (string) $context->vars_in_scope['$d']);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$e']);
+    }
 }

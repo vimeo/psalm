@@ -142,6 +142,7 @@ class AssignmentChecker
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
                 || $assign_var instanceof PhpParser\Node\Expr\Array_
         ) {
+            /** @var int $offset */
             foreach ($assign_var->items as $offset => $assign_var_item) {
                 // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
                 if (!$assign_var_item) {
@@ -158,6 +159,21 @@ class AssignmentChecker
                         $var,
                         $assign_value->items[$offset]->value,
                         null,
+                        $context,
+                        $doc_comment
+                    );
+
+                    continue;
+                } elseif (isset($assign_value_type->types['array']) &&
+                    $assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike &&
+                    !$assign_var_item->key &&
+                    isset($assign_value_type->types['array']->properties[$offset]) // if object-like has int offsets
+                ) {
+                    self::analyze(
+                        $statements_checker,
+                        $var,
+                        null,
+                        $assign_value_type->types['array']->properties[$offset],
                         $context,
                         $doc_comment
                     );

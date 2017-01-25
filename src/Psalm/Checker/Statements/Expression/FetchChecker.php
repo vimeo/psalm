@@ -658,7 +658,8 @@ class FetchChecker
     ) {
         $var_type = null;
         $key_type = null;
-        $key_value = null;
+        $string_key_value = null;
+        $int_key_value = null;
 
         $nesting = 0;
         $var_id = ExpressionChecker::getVarId(
@@ -695,7 +696,9 @@ class FetchChecker
                 $key_type = $stmt->dim->inferredType;
 
                 if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-                    $key_value = $stmt->dim->value;
+                    $string_key_value = $stmt->dim->value;
+                } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+                    $int_key_value = $stmt->dim->value;
                 }
             } else {
                 $key_type = Type::getMixed();
@@ -782,7 +785,7 @@ class FetchChecker
             $array_assignment,
             $key_type,
             $keyed_assignment_type,
-            $key_value
+            $string_key_value
         ) === false) {
             return false;
         }
@@ -816,7 +819,10 @@ class FetchChecker
                                 }
 
                                 if ($inferred_key_type) {
-                                    Type::combineUnionTypes($key_type, $type->type_params[0]);
+                                    $inferred_key_type = Type::combineUnionTypes(
+                                        $inferred_key_type,
+                                        $type->type_params[0]
+                                    );
                                 } else {
                                     $inferred_key_type = $type->type_params[0];
                                 }
@@ -855,7 +861,7 @@ class FetchChecker
                                     $type->type_params[1]->isEmpty()
                                 )
                             ) {
-                                $properties = $key_value ? [$key_value => $keyed_assignment_type] : [];
+                                $properties = $string_key_value ? [$string_key_value => $keyed_assignment_type] : [];
 
                                 $assignment_type = new Type\Union([
                                     new Type\Atomic\ObjectLike($properties)
@@ -931,22 +937,24 @@ class FetchChecker
                     } elseif ($type instanceof Type\Atomic\TArray && $value_index !== null) {
                         $stmt->inferredType = $type->type_params[$value_index];
                     } elseif ($type instanceof Type\Atomic\ObjectLike) {
-                        if ($key_value && isset($type->properties[$key_value])) {
-                            $stmt->inferredType = clone $type->properties[$key_value];
-                        } elseif ($key_type->hasInt()) {
-                            $object_like_keys = array_keys($type->properties);
-                            if ($object_like_keys) {
-                                if (count($object_like_keys) === 1) {
-                                    $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
-                                } else {
-                                    $last_key = array_pop($object_like_keys);
-                                    $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) .
-                                        '\' or \'' . $last_key . '\'';
-                                }
+                        $object_like_keys = array_keys($type->properties);
+                        if ($object_like_keys) {
+                            if (count($object_like_keys) === 1) {
+                                $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
                             } else {
-                                $expected_keys_string = 'string';
+                                $last_key = array_pop($object_like_keys);
+                                $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) .
+                                    '\' or \'' . $last_key . '\'';
                             }
+                        } else {
+                            $expected_keys_string = 'string';
+                        }
 
+                        if ($string_key_value && isset($type->properties[$string_key_value])) {
+                            $stmt->inferredType = clone $type->properties[$string_key_value];
+                        } elseif ($int_key_value !== null && isset($type->properties[$int_key_value])) {
+                            $stmt->inferredType = clone $type->properties[$int_key_value];
+                        } elseif ($key_type->hasInt()) {
                             if (IssueBuffer::accepts(
                                 new InvalidArrayAccess(
                                     'Cannot access value on array variable ' . $var_id . ' using int offset - ' .
