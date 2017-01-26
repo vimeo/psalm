@@ -131,14 +131,19 @@ class ExpressionChecker
             if (!isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
             } else {
-                if ($stmt->expr->inferredType->hasInt() || $stmt->expr->inferredType->hasFloat()) {
-                    if (!$stmt->expr->inferredType->hasFloat()) {
-                        $stmt->inferredType = Type::getInt();
-                    } elseif (!$stmt->expr->inferredType->hasInt()) {
-                        $stmt->inferredType = Type::getFloat();
-                    } else {
-                        $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
+                $acceptable_types = [];
+
+                foreach ($stmt->expr->inferredType->types as $type_part) {
+                    if ($type_part instanceof TInt || $type_part instanceof TFloat) {
+                        $acceptable_types[] = $type_part;
+                    } elseif ($type_part instanceof TString) {
+                        $acceptable_types[] = new TInt;
+                        $acceptable_types[] = new TFloat;
                     }
+                }
+
+                if ($acceptable_types) {
+                    $stmt->inferredType = new Type\Union($acceptable_types);
                 } else {
                     $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
                 }
