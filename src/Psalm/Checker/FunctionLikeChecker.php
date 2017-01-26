@@ -789,6 +789,37 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $return_type_location = new CodeLocation($this, $this->function, true);
         }
 
+        $inferred_yield_types = [];
+        $inferred_return_types = EffectsAnalyser::getReturnTypes(
+            $this->function->getStmts(),
+            $inferred_yield_types,
+            true
+        );
+
+        $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : Type::getVoid();
+        $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
+
+        $inferred_generator_return_type = null;
+
+        if ($inferred_yield_type) {
+            $inferred_generator_return_type = $inferred_return_type;
+            $inferred_return_type = $inferred_yield_type;
+        }
+
+        if (!$return_type && !Config::getInstance()->add_void_docblocks && $inferred_return_type->isVoid()) {
+            return null;
+        }
+
+        $inferred_return_type = TypeChecker::simplifyUnionType(
+            ExpressionChecker::fleshOutTypes(
+                $inferred_return_type,
+                [],
+                $this->source->getFQCLN(),
+                ''
+            ),
+            $this->getFileChecker()
+        );
+        
         if (!$return_type && !$update_docblock && !$is_to_string) {
             if ($this->function instanceof Closure) {
                 if (IssueBuffer::accepts(
@@ -853,16 +884,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if (!$return_type) {
             if ($inferred_return_type && !$inferred_return_type->isMixed()) {
-                $inferred_return_type = TypeChecker::simplifyUnionType(
-                    ExpressionChecker::fleshOutTypes(
-                        $inferred_return_type,
-                        [],
-                        $this->source->getFQCLN(),
-                        ''
-                    ),
-                    $this->getFileChecker()
-                );
-
                 FileChecker::addDocblockReturnType(
                     $this->source->getFileName(),
                     $this->function->getLine(),

@@ -1435,7 +1435,16 @@ class TypeChecker
 
             foreach ($union->types as $container_type_part) {
                 if ($type_part !== $container_type_part &&
-                    TypeChecker::isAtomicContainedBy($type_part, $container_type_part, $file_checker)
+                    TypeChecker::isAtomicContainedBy(
+                        $type_part,
+                        $container_type_part,
+                        $file_checker,
+                        false,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $to_string_cast
+                    ) &&
+                    !$to_string_cast
                 ) {
                     $is_contained_by_other = true;
                     break;

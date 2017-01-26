@@ -105,11 +105,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 break;
             }
 
-            /*
-            if (isset($context->vars_in_scope['$storage->return_type_location'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$storage->return_type_location']);
+            ///*
+            if (isset($context->vars_in_scope['$firstStmts'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$firstStmts']);
             }
-            */
+            //*/
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 IfChecker::analyze($this, $stmt, $context, $loop_context);
