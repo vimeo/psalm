@@ -1924,4 +1924,20 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testIsIntOnUnaryPlus()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = +"5";
+        if (!is_int($a)) {
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

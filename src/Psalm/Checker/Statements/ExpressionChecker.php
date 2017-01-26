@@ -121,17 +121,28 @@ class ExpressionChecker
             $stmt->inferredType = Type::getInt();
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             $stmt->inferredType = Type::getFloat();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
-            if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
-                return false;
-            }
-            $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
-        } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||
+            $stmt instanceof PhpParser\Node\Expr\UnaryPlus
+        ) {
             if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
                 return false;
             }
 
-            $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
+            if (!isset($stmt->expr->inferredType)) {
+                $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
+            } else {
+                if ($stmt->expr->inferredType->hasInt() || $stmt->expr->inferredType->hasFloat()) {
+                    if (!$stmt->expr->inferredType->hasFloat()) {
+                        $stmt->inferredType = Type::getInt();
+                    } elseif (!$stmt->expr->inferredType->hasInt()) {
+                        $stmt->inferredType = Type::getFloat();
+                    } else {
+                        $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
+                    }
+                } else {
+                    $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
+                }
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             self::analyzeIsset($statements_checker, $stmt, $context);
             $stmt->inferredType = Type::getBool();
