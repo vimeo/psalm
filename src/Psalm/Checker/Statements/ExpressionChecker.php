@@ -130,6 +130,8 @@ class ExpressionChecker
 
             if (!isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
+            } elseif ($stmt->expr->inferredType->isMixed()) {
+                $stmt->inferredType = Type::getMixed();
             } else {
                 $acceptable_types = [];
 
@@ -139,14 +141,12 @@ class ExpressionChecker
                     } elseif ($type_part instanceof TString) {
                         $acceptable_types[] = new TInt;
                         $acceptable_types[] = new TFloat;
+                    } else {
+                        $acceptable_types[] = new TInt;
                     }
                 }
 
-                if ($acceptable_types) {
-                    $stmt->inferredType = new Type\Union($acceptable_types);
-                } else {
-                    $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
-                }
+                $stmt->inferredType = new Type\Union($acceptable_types);
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             self::analyzeIsset($statements_checker, $stmt, $context);
