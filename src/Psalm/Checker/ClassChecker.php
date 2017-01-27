@@ -111,6 +111,10 @@ class ClassChecker extends ClassLikeChecker
     {
         $fq_class_name = strtolower($fq_class_name);
 
+        if ($fq_class_name === 'generator') {
+            return false;
+        }
+
         if (!isset(self::$storage[$fq_class_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
         }
