@@ -546,7 +546,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                 new PropertyNotSetInConstructor(
                                     'Property ' . $property_id . ' is not defined in constructor of ' .
                                         $this->fq_class_name . ' or in any private methods called in the constructor',
-                                    new CodeLocation($this, $this->class, true)
+                                    new CodeLocation($this, $constructor_checker->getFunctionLike(), true)
                                 ),
                                 $this->source->getSuppressedIssues()
                             )) {

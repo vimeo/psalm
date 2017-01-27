@@ -739,6 +739,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
+     * @return Closure|Function_|ClassMethod
+     */
+    public function getFunctionLike()
+    {
+        return $this->function;
+    }
+
+    /**
      * @return StatementsSource
      */
     public function getSource()
