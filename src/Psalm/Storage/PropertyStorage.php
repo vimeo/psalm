@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Storage;
 
+use Psalm\CodeLocation;
 use Psalm\Type;
 
 class PropertyStorage
@@ -14,6 +15,11 @@ class PropertyStorage
      * @var int
      */
     public $visibility;
+
+    /**
+     * @var CodeLocation|null
+     */
+    public $location;
 
     /**
      * @var Type\Union|false

@@ -501,7 +501,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $config = Config::getInstance();
 
         if (!$config->excludeIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
-            $unitiialized_variable = null;
+            $uninitialized_variable = null;
+            $uninitialized_property = null;
 
             foreach ($storage->properties as $property_name => $property) {
                 if (!$property->has_default &&
@@ -510,12 +511,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     !$property->type->isNullable() &&
                     !$property->is_static
                 ) {
-                    $unitiialized_variable = '$this->' . $property_name;
+                    $uninitialized_variable = '$this->' . $property_name;
+                    $uninitialized_property = $property;
                     break;
                 }
             }
 
-            if ($unitiialized_variable) {
+            if ($uninitialized_variable && $uninitialized_property) {
                 if (isset($storage->methods['__construct']) && $constructor_checker) {
                     $method_context = clone $class_context;
                     $method_context->collect_initializations = true;
@@ -528,7 +530,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             !$property->type ||
                             $property->type->isMixed() ||
                             $property->type->isNullable() ||
-                            $property->is_static
+                            $property->is_static ||
+                            !$property->location
                         ) {
                             continue;
                         }
@@ -546,7 +549,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                 new PropertyNotSetInConstructor(
                                     'Property ' . $property_id . ' is not defined in constructor of ' .
                                         $this->fq_class_name . ' or in any private methods called in the constructor',
-                                    new CodeLocation($this, $constructor_checker->getFunctionLike(), true)
+                                    $property->location
                                 ),
                                 $this->source->getSuppressedIssues()
                             )) {
@@ -554,12 +557,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             }
                         }
                     }
-                } else {
+                } elseif ($uninitialized_property->location) {
                     if (IssueBuffer::accepts(
                         new MissingConstructor(
-                            $fq_class_name . ' has an unitiialized variable ' . $unitiialized_variable .
+                            $fq_class_name . ' has an unitiialized variable ' . $uninitialized_variable .
                                 ', but no constructor',
-                            new CodeLocation($this, $this->class, true)
+                            $uninitialized_property->location
                         ),
                         $this->source->getSuppressedIssues()
                     )) {
@@ -911,6 +914,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->properties[$property->name] = new PropertyStorage();
             $storage->properties[$property->name]->is_static = (bool)$stmt->isStatic();
             $storage->properties[$property->name]->type = $property_type;
+            $storage->properties[$property->name]->location = new CodeLocation($this, $property);
             $storage->properties[$property->name]->has_default = $property->default ? true : false;
 
             if ($stmt->isPublic()) {
