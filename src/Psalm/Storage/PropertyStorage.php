@@ -19,4 +19,9 @@ class PropertyStorage
      * @var Type\Union|false
      */
     public $type;
+
+    /**
+     * @var bool
+     */
+    public $has_default = false;
 }

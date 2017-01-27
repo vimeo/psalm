@@ -46,11 +46,17 @@ class MethodMutationTest extends PHPUnit_Framework_TestCase
             /** @var string */
             public $name;
 
+            /**
+             * @param string $name
+             */
+            protected function __construct($name) {
+                $this->name = $name;
+            }
+
             /** @return User|null */
             public static function loadUser(int $id) {
                 if ($id === 3) {
-                    $user = new User();
-                    $user->name = "Bob";
+                    $user = new User("bob");
                     return $user;
                 }
 

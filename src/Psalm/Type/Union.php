@@ -20,6 +20,13 @@ class Union extends Type
     public $from_docblock = false;
 
     /**
+     * Whether the property that this type has been derived from has been initialized in a constructor
+     *
+     * @var boolean
+     */
+    public $initialized = true;
+
+    /**
      * Constructs an Union instance
      * @param array<int, Atomic>     $types
      */

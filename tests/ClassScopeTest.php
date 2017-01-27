@@ -248,7 +248,7 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
-            private $fooFoo;
+            private $fooFoo = "";
         }
 
         class B extends A {
@@ -334,7 +334,7 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
-            protected $fooFoo;
+            protected $fooFoo = "";
         }
 
         class B extends A {
@@ -356,7 +356,7 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
-            protected $fooFoo;
+            protected $fooFoo = "";
         }
 
         class B extends A { }
@@ -382,7 +382,7 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
-            protected $fooFoo;
+            protected $fooFoo = "";
         }
 
         class B extends A {
@@ -408,7 +408,7 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
-            protected static $fooFoo;
+            protected static $fooFoo = "";
 
             public function barBar() : void {
                 echo self::$fooFoo;

@@ -449,7 +449,13 @@ abstract class Type
      */
     public static function combineUnionTypes(Union $type_1, Union $type_2)
     {
-        return self::combineTypes(array_merge(array_values($type_1->types), array_values($type_2->types)));
+        $combined_type = self::combineTypes(array_merge(array_values($type_1->types), array_values($type_2->types)));
+
+        if (!$type_1->initialized || !$type_2->initialized) {
+            $combined_type->initialized = false;
+        }
+
+        return $combined_type;
     }
 
     /**

@@ -18,11 +18,6 @@ use Psalm\Type;
 class FunctionChecker extends FunctionLikeChecker
 {
     /**
-     * @var PhpParser\Node\Stmt\Function_
-     */
-    protected $function;
-
-    /**
      * @var array<array<string,string>>|null
      */
     protected static $call_map = null;

@@ -91,10 +91,10 @@ class ListTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
-            public $a;
+            public $a = "";
 
             /** @var string */
-            public $b;
+            public $b = "";
 
             public function fooFoo() : string
             {
@@ -120,10 +120,10 @@ class ListTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var int */
-            public $a;
+            public $a = 0;
 
             /** @var string */
-            public $b;
+            public $b = "";
 
             public function fooFoo() : string
             {

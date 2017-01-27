@@ -75,6 +75,13 @@ class Context
     public $collect_mutations = false;
 
     /**
+     * Whether or not to do a deep analysis and collect initializations from private methods
+     *
+     * @var boolean
+     */
+    public $collect_initializations = false;
+
+    /**
      * @var array<string, Type\Union>
      */
     public $constants = [];

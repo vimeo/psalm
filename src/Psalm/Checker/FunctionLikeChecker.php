@@ -819,7 +819,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ),
             $this->getFileChecker()
         );
-        
+
         if (!$return_type && !$update_docblock && !$is_to_string) {
             if ($this->function instanceof Closure) {
                 if (IssueBuffer::accepts(
@@ -1435,5 +1435,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
+    }
+
+    /**
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$no_effects_hashes = [];
     }
 }

@@ -17,6 +17,14 @@
     <issueHandlers>
         <MisplacedRequiredParam errorLevel="suppress" />
         <NullOperand errorLevel="suppress" />
+        <MissingConstructor errorLevel="suppress" />
+
+        <PropertyNotSetInConstructor>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+                <file name="src/Psalm/Config.php" />
+            </errorLevel>
+        </PropertyNotSetInConstructor>
 
         <MixedArgument>
             <errorLevel type="suppress">

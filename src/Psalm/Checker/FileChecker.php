@@ -873,6 +873,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         FunctionChecker::clearCache();
         StatementsChecker::clearCache();
         IssueBuffer::clearCache();
+        FunctionLikeChecker::clearCache();
     }
 
     /**

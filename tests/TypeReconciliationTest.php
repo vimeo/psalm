@@ -568,7 +568,13 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         class A {
             /** @var B */
             public $foo;
+
+            public function __construct() {
+                $this->foo = new B();
+            }
         }
+
+        $a = new A();
 
         $out = null;
 
@@ -599,7 +605,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
         class A {
             /** @var string|B */
-            public $foo;
+            public $foo = "";
         }
 
         $out = null;

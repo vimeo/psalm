@@ -11,7 +11,9 @@ use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InaccessibleProperty;
+use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
+use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\RedefinedTraitMethod;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedTrait;
@@ -436,20 +438,43 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $property = $property_class_storage->properties[$property_name];
 
+            if ($property->type) {
+                $property_type = clone $property->type;
+
+                if (!$property_type->isMixed() &&
+                    !$property->has_default &&
+                    !$property->type->isNullable()
+                ) {
+                    $property_type->initialized = false;
+                }
+            } else {
+                $property_type = Type::getMixed();
+            }
+
             if ($property->is_static) {
                 $property_id = $this->fq_class_name . '::$' . $property_name;
 
-                $class_context->vars_in_scope[$property_id] =
-                    $property->type ? clone $property->type : Type::getMixed();
+                $class_context->vars_in_scope[$property_id] = $property_type;
             } else {
-                $class_context->vars_in_scope['$this->' . $property_name] =
-                    $property->type ? clone $property->type : Type::getMixed();
+                $class_context->vars_in_scope['$this->' . $property_name] = $property_type;
             }
         }
 
+        $constructor_checker = null;
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $this->analyzeClassMethod($stmt, $this, $class_context, $global_context, $update_docblocks);
+                $method_checker = $this->analyzeClassMethod(
+                    $stmt,
+                    $this,
+                    $class_context,
+                    $global_context,
+                    $update_docblocks
+                );
+
+                if ($stmt->name === '__construct') {
+                    $constructor_checker = $method_checker;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -461,12 +486,90 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     foreach ($trait_checker->class->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                            $this->analyzeClassMethod($trait_stmt, $trait_checker, $class_context, $global_context);
+                            $this->analyzeClassMethod(
+                                $trait_stmt,
+                                $trait_checker,
+                                $class_context,
+                                $global_context
+                            );
                         }
                     }
                 }
             }
         }
+
+        $config = Config::getInstance();
+
+        if (!$config->excludeIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
+            $unitiialized_variable = null;
+
+            foreach ($storage->properties as $property_name => $property) {
+                if (!$property->has_default &&
+                    $property->type &&
+                    !$property->type->isMixed() &&
+                    !$property->type->isNullable() &&
+                    !$property->is_static
+                ) {
+                    $unitiialized_variable = '$this->' . $property_name;
+                    break;
+                }
+            }
+
+            if ($unitiialized_variable) {
+                if (isset($storage->methods['__construct']) && $constructor_checker) {
+                    $method_context = clone $class_context;
+                    $method_context->collect_initializations = true;
+                    $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+
+                    $constructor_checker->analyze($method_context, null, true);
+
+                    foreach ($storage->properties as $property_name => $property) {
+                        if ($property->has_default ||
+                            !$property->type ||
+                            $property->type->isMixed() ||
+                            $property->type->isNullable() ||
+                            $property->is_static
+                        ) {
+                            continue;
+                        }
+
+                        if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
+                            throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
+                        }
+
+                        $end_type = $method_context->vars_in_scope['$this->' . $property_name];
+
+                        if (!$end_type->initialized) {
+                            $property_id = $this->fq_class_name . '::$' . $property_name;
+
+                            if (IssueBuffer::accepts(
+                                new PropertyNotSetInConstructor(
+                                    'Property ' . $property_id . ' is not defined in constructor of ' .
+                                        $this->fq_class_name . ' or in any private methods called in the constructor',
+                                    new CodeLocation($this, $this->class, true)
+                                ),
+                                $this->source->getSuppressedIssues()
+                            )) {
+                                continue;
+                            }
+                        }
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new MissingConstructor(
+                            $fq_class_name . ' has an unitiialized variable ' . $unitiialized_variable .
+                                ', but no constructor',
+                            new CodeLocation($this, $this->class, true)
+                        ),
+                        $this->source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
+
+
     }
 
     /**
@@ -475,7 +578,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  Context                         $class_context
      * @param  Context|null                    $global_context
      * @param  boolean                         $update_docblocks
-     * @return void
+     * @return MethodChecker|null
      */
     protected function analyzeClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
@@ -524,6 +627,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $secondary_return_type_location
             );
         }
+
+        return $method_checker;
     }
 
     /**
@@ -806,6 +911,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->properties[$property->name] = new PropertyStorage();
             $storage->properties[$property->name]->is_static = (bool)$stmt->isStatic();
             $storage->properties[$property->name]->type = $property_type;
+            $storage->properties[$property->name]->has_default = $property->default ? true : false;
 
             if ($stmt->isPublic()) {
                 $storage->properties[$property->name]->visibility = self::VISIBILITY_PUBLIC;

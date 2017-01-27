@@ -7,11 +7,6 @@ use Psalm\StatementsSource;
 class ClassChecker extends ClassLikeChecker
 {
     /**
-     * @var PhpParser\Node\Stmt\Class_
-     */
-    protected $class;
-
-    /**
      * @var integer
      */
     protected static $anonymous_class_count = 0;
@@ -42,6 +37,10 @@ class ClassChecker extends ClassLikeChecker
         $project_checker->addFullyQualifiedClassName($fq_class_name, $source->getFilePath());
 
         self::$class_extends[$this->fq_class_name] = [];
+
+        if (!$this->class instanceof PhpParser\Node\Stmt\Class_) {
+            throw new \InvalidArgumentException('Bad');
+        }
 
         if ($this->class->extends) {
             $this->parent_fq_class_name = self::getFQCLNFromNameObject(

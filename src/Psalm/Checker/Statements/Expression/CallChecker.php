@@ -509,35 +509,6 @@ class CallChecker
 
         $source = $statements_checker->getSource();
 
-        if ($stmt->var instanceof PhpParser\Node\Expr\Variable
-            && $stmt->var->name === 'this'
-            && is_string($stmt->name)
-            && $source instanceof FunctionLikeChecker
-        ) {
-            $this_method_id = $source->getMethodId();
-
-            $fq_class_name = (string)$statements_checker->getFQCLN();
-
-            if ($context->collect_mutations &&
-                $context->self &&
-                (
-                    $context->self === $fq_class_name ||
-                    ClassChecker::classExtends(
-                        $context->self,
-                        $fq_class_name
-                    )
-                )
-            ) {
-                $file_checker = $source->getFileChecker();
-
-                $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
-
-                if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
-                    return false;
-                }
-            }
-        }
-
         if (!$context->check_methods || !$context->check_classes) {
             return null;
         }
@@ -666,6 +637,60 @@ class CallChecker
                     }
 
                     $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
+                }
+
+                if ($stmt->var instanceof PhpParser\Node\Expr\Variable
+                    && $stmt->var->name === 'this'
+                    && is_string($stmt->name)
+                    && $source instanceof FunctionLikeChecker
+                ) {
+                    $this_method_id = $source->getMethodId();
+
+                    $fq_class_name = (string)$statements_checker->getFQCLN();
+
+                    if ($context->collect_mutations &&
+                        $context->self &&
+                        (
+                            $context->self === $fq_class_name ||
+                            ClassChecker::classExtends(
+                                $context->self,
+                                $fq_class_name
+                            )
+                        )
+                    ) {
+                        $file_checker = $source->getFileChecker();
+
+                        $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
+
+                        if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
+                            return false;
+                        }
+                    } elseif ($context->collect_initializations &&
+                        $context->self &&
+                        (
+                            $context->self === $fq_class_name ||
+                            ClassChecker::classExtends(
+                                $context->self,
+                                $fq_class_name
+                            )
+                        )
+                    ) {
+                        $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
+
+                        $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+
+                        $method_storage = MethodChecker::getStorage((string)$declaring_method_id);
+
+                        $class_checker = $source->getSource();
+
+                        if ($class_checker instanceof ClassLikeChecker &&
+                            $method_storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                        ) {
+                            if ($class_checker->getMethodMutations(strtolower($stmt->name), $context) === false) {
+                                return false;
+                            }
+                        }
+                    }
                 }
 
                 if ($return_type_candidate) {

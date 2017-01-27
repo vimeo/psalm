@@ -487,7 +487,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class One {
             /** @var string */
-            public $a;
+            public $a = "";
 
             /** @return void */
             public function fooFoo() {}

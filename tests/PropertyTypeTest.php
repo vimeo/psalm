@@ -259,11 +259,11 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var int */
-            public $foo;
+            public $foo = 0;
         }
         class B {
             /** @var string */
-            public $foo;
+            public $foo = "";
         }
 
         $a = rand(0, 10) ? new A() : (rand(0, 10) ? new B() : null);
@@ -288,11 +288,11 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var int */
-            public $foo;
+            public $foo = 0;
         }
         class B {
             /** @var string */
-            public $foo;
+            public $foo = "";
         }
 
         $a = rand(0, 10) ? new A() : new B();
@@ -325,7 +325,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class Foo {
             /** @var string */
-            public $foo;
+            public $foo = "";
         }
 
         /** @var mixed */
@@ -352,7 +352,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class Foo {
             /** @var string */
-            public $foo;
+            public $foo = "";
         }
 
         /** @var mixed */
@@ -376,7 +376,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class Foo {
             /** @var string */
-            public $foo;
+            public $foo = "";
         }
 
         $a = rand(0, 10) ? new Foo() : null;
@@ -399,7 +399,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class Foo {
             /** @var string */
-            public $foo;
+            public $foo = "";
         }
 
         $a = rand(0, 10) ? new Foo() : null;
@@ -420,7 +420,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             /** @var string */
-            public $aa;
+            public $aa = "";
         }
 
         class B {
@@ -543,7 +543,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
         class C1 {
             /** @var array<I1> */
-            public $is;
+            public $is = [];
         }
 
         $c = new C1;
@@ -601,6 +601,253 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PropertyNotSetInConstructor
+     * @return                   void
+     */
+    public function testNotSetInEmptyConstructor()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+
+                public function __construct() { }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingConstructor
+     * @return                   void
+     */
+    public function testNoConstructor()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testNotSetInConstructorButHasDefault()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a = 0;
+
+                public function __construct() { }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PropertyNotSetInConstructor
+     * @return                   void
+     */
+    public function testNotSetInAllBranchesOfIf()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+
+                public function __construct() {
+                    if (rand(0, 1)) {
+                        $this->a = 5;
+                    }
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testPropertySetInPrivateMethod()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+
+                public function __construct() {
+                    $this->foo();
+                }
+
+                private function foo() : void {
+                    $this->a = 5;
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PropertyNotSetInConstructor
+     * @return                   void
+     */
+    public function testPropertySetInProtectedMethod()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+
+                public function __construct() {
+                    $this->foo();
+                }
+
+                protected function foo() : void {
+                    $this->a = 5;
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testPropertySetInNestedPrivateMethod()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+
+                public function __construct() {
+                    $this->foo();
+                }
+
+                private function foo() : void {
+                    $this->bar();
+                }
+
+                private function bar() : void {
+                    $this->a = 5;
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PropertyNotSetInConstructor
+     * @return                   void
+     */
+    public function testPropertySetInPrivateMethodWithIf()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+
+                public function __construct() {
+                    if (rand(0, 1)) {
+                        $this->foo();
+                    }
+                }
+
+                private function foo() : void {
+                    $this->a = 5;
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PropertyNotSetInConstructor
+     * @return                   void
+     */
+    public function testPropertySetInPrivateMethodWithIfAndElse()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            class A {
+                /** @var int */
+                public $a;
+
+                public function __construct() {
+                    if (rand(0, 1)) {
+                        $this->foo();
+                    } else {
+                        $this->bar();
+                    }
+                }
+
+                private function foo() : void {
+                    $this->a = 5;
+                }
+
+                private function bar() : void {
+                    $this->a = 5;
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
