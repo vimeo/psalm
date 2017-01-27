@@ -501,23 +501,33 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $config = Config::getInstance();
 
         if (!$config->excludeIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
-            $uninitialized_variable = null;
-            $uninitialized_property = null;
+            $uninitialized_variables = [];
+            $uninitialized_properties = [];
 
-            foreach ($storage->properties as $property_name => $property) {
+            foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
+                if (explode('::', $appearing_property_id)[0] !== $fq_class_name) {
+                    continue;
+                }
+
+                $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
+                $property_class_storage = self::$storage[strtolower((string)$property_class_name)];
+                $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
+
+                $property = $property_class_storage->properties[$property_name];
+
                 if (!$property->has_default &&
                     $property->type &&
                     !$property->type->isMixed() &&
                     !$property->type->isNullable() &&
                     !$property->is_static
                 ) {
-                    $uninitialized_variable = '$this->' . $property_name;
-                    $uninitialized_property = $property;
+                    $uninitialized_variables[] = '$this->' . $property_name;
+                    $uninitialized_properties[$property_name] = $property;
                     break;
                 }
             }
 
-            if ($uninitialized_variable && $uninitialized_property) {
+            if ($uninitialized_properties) {
                 if (isset($storage->methods['__construct']) && $constructor_checker) {
                     $method_context = clone $class_context;
                     $method_context->collect_initializations = true;
@@ -525,24 +535,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     $constructor_checker->analyze($method_context, null, true);
 
-                    foreach ($storage->properties as $property_name => $property) {
-                        if ($property->has_default ||
-                            !$property->type ||
-                            $property->type->isMixed() ||
-                            $property->type->isNullable() ||
-                            $property->is_static ||
-                            !$property->location
-                        ) {
-                            continue;
-                        }
-
+                    foreach ($uninitialized_properties as $property_name => $property) {
                         if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
                             throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
                         }
 
                         $end_type = $method_context->vars_in_scope['$this->' . $property_name];
 
-                        if (!$end_type->initialized) {
+                        if (!$end_type->initialized && $property->location) {
                             $property_id = $this->fq_class_name . '::$' . $property_name;
 
                             if (IssueBuffer::accepts(
@@ -557,16 +557,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             }
                         }
                     }
-                } elseif ($uninitialized_property->location) {
-                    if (IssueBuffer::accepts(
-                        new MissingConstructor(
-                            $fq_class_name . ' has an unitiialized variable ' . $uninitialized_variable .
-                                ', but no constructor',
-                            $uninitialized_property->location
-                        ),
-                        $this->source->getSuppressedIssues()
-                    )) {
-                        // fall through
+                } elseif (!$this instanceof TraitChecker) {
+                    $first_uninitialized_property = array_shift($uninitialized_properties);
+
+                    if ($first_uninitialized_property->location) {
+                        if (IssueBuffer::accepts(
+                            new MissingConstructor(
+                                $fq_class_name . ' has an unitiialized variable ' . $uninitialized_variables[0] .
+                                    ', but no constructor',
+                                $first_uninitialized_property->location
+                            ),
+                            $this->source->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

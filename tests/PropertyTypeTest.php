@@ -754,6 +754,59 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PropertyNotSetInConstructor
+     * @return                   void
+     */
+    public function testDefinedInTraitNotSetInEmptyConstructor()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            trait A {
+                /** @var string **/
+                public $a;
+            }
+            class B {
+                use A;
+
+                public function __construct() {
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDefinedInTraitSetInConstructor()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            trait A {
+                /** @var string **/
+                public $a;
+            }
+            class B {
+                use A;
+
+                public function __construct() {
+                    $this->a = "hello";
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @return void
      */
     public function testPropertySetInNestedPrivateMethod()

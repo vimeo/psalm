@@ -113,7 +113,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         trait T {
             /** @var string */
-            private $fooFoo;
+            private $fooFoo = "";
         }
 
         class B {
@@ -137,7 +137,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         trait T {
             /** @var string */
-            protected $fooFoo;
+            protected $fooFoo = "";
         }
 
         class B {
@@ -161,7 +161,7 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         trait T {
             /** @var string */
-            public $fooFoo;
+            public $fooFoo = "";
         }
 
         class B {
