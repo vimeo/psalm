@@ -686,8 +686,31 @@ class CallChecker
                         if ($class_checker instanceof ClassLikeChecker &&
                             $method_storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
                         ) {
+                            $local_vars_in_scope = [];
+                            $local_vars_possibly_in_scope = [];
+
+                            foreach ($context->vars_in_scope as $var => $type) {
+                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                    $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                                }
+                            }
+
+                            foreach ($context->vars_possibly_in_scope as $var => $type) {
+                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                    $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                                }
+                            }
+
                             if ($class_checker->getMethodMutations(strtolower($stmt->name), $context) === false) {
                                 return false;
+                            }
+
+                            foreach ($local_vars_in_scope as $var => $type) {
+                                $context->vars_in_scope[$var] = $type;
+                            }
+
+                            foreach ($local_vars_possibly_in_scope as $var => $type) {
+                                $context->vars_possibly_in_scope[$var] = $type;
                             }
                         }
                     }
