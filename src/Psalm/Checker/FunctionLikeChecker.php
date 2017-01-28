@@ -361,13 +361,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             foreach ($context->vars_in_scope as $var => $type) {
-                if (strpos($var, '$this->') !== 0) {
+                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                     unset($context->vars_in_scope[$var]);
                 }
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $type) {
-                if (strpos($var, '$this->') !== 0) {
+                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
             }
