@@ -631,7 +631,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $storage->return_type = $docblock_return_type;
             }
 
-            $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
+            if ($docblock_info->return_type_line_number) {
+                $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
+            }
         }
 
         if ($docblock_info->params) {
@@ -1039,7 +1041,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param_name = substr($param_name, 1);
 
             if (!isset($storage->param_types[$param_name])) {
-                $code_location->setCommentLine($line_number);
+                if ($line_number) {
+                    $code_location->setCommentLine($line_number);
+                }
+
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $param_name .' does not appear in the argument list for ' .
