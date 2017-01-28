@@ -165,6 +165,14 @@ class CodeLocation
         $this->selection_start = max($this->preview_start, $this->selection_start);
         $this->selection_end = min($this->preview_end, $this->selection_end);
 
+        if ($this->preview_end - $this->selection_end > 200) {
+            $this->preview_end = (int)strrpos(
+                $file_contents,
+                "\n",
+                $this->selection_end + 200 - strlen($file_contents)
+            );
+        }
+
         // reset preview start to beginning of line
         $this->column = $this->selection_start -
             (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
