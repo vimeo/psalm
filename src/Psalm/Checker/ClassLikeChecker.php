@@ -433,21 +433,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $available_properties = [];
 
-        foreach ($storage->properties as $property_name => $property) {
-            if ($property->visibility === self::VISIBILITY_PRIVATE) {
-                $available_properties[$property_name] = $property;
+        foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
+            if (explode('::', $appearing_property_id)[0] !== $fq_class_name) {
+                continue;
             }
-        }
 
-        foreach ($storage->inheritable_property_ids as $property_name => $declaring_property_id) {
-            list($property_class_name) = explode('::', $declaring_property_id);
+            $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
+            $property_class_storage = self::$storage[strtolower((string)$property_class_name)];
+            $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
 
-            $property_class_storage = self::$storage[strtolower($property_class_name)];
+            $property = $property_class_storage->properties[$property_name];
 
-            $available_properties[$property_name] = $property_class_storage->properties[$property_name];
-        }
-
-        foreach ($available_properties as $property_name => $property) {
             if ($property->type) {
                 $property_type = clone $property->type;
 
