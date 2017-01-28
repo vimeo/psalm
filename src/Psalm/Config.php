@@ -145,6 +145,13 @@ class Config
     public $add_void_docblocks = true;
 
     /**
+     * If true, assert() calls can be used to check types of variables
+     *
+     * @var boolean
+     */
+    public $use_assert_for_type = false;
+
+    /**
      * Psalm plugins
      *
      * @var array<Plugin>
@@ -281,6 +288,11 @@ class Config
         if (isset($config_xml['addVoidDocblockReturnType'])) {
             $attribute_text = (string) $config_xml['addVoidDocblockReturnType'];
             $config->add_void_docblocks = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['useAssertForType'])) {
+            $attribute_text = (string) $config_xml['useAssertForType'];
+            $config->use_assert_for_type = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

@@ -89,6 +89,8 @@ class CallChecker
                 $context->check_consts = false;
             } elseif ($method->parts === ['extract']) {
                 $context->check_variables = false;
+            } elseif ($method->parts === ['assert']) {
+                $contains_assertion = true;
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['shell_exec']) {
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
@@ -249,6 +251,41 @@ class CallChecker
             foreach ($defined_constants as $const_name => $const_type) {
                 $context->constants[$const_name] = clone $const_type;
                 $context->vars_in_scope[$const_name] = clone $const_type;
+            }
+
+            if (Config::getInstance()->use_assert_for_type &&
+                $method instanceof PhpParser\Node\Name &&
+                $method->parts === ['assert'] &&
+                isset($stmt->args[0])
+            ) {
+                $assert_clauses = TypeChecker::getFormula(
+                    $stmt->args[0]->value,
+                    $statements_checker->getFQCLN(),
+                    $statements_checker
+                );
+
+                $simplified_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $assert_clauses));
+
+                $assert_type_assertions = TypeChecker::getTruthsFromFormula($simplified_clauses);
+
+                $changed_vars = [];
+
+                // while in an and, we allow scope to boil over to support
+                // statements of the form if ($x && $x->foo())
+                $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
+                    $assert_type_assertions,
+                    $context->vars_in_scope,
+                    $changed_vars,
+                    $statements_checker->getFileChecker(),
+                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    $statements_checker->getSuppressedIssues()
+                );
+
+                if ($op_vars_in_scope === false) {
+                    return false;
+                }
+
+                $context->vars_in_scope = $op_vars_in_scope;
             }
 
             if ($method_id) {
