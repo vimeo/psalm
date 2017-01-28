@@ -34,8 +34,8 @@ use Psalm\Type\Atomic\TNamedObject;
 
 abstract class FunctionLikeChecker extends SourceChecker implements StatementsSource
 {
-    const RETURN_TYPE_REGEX = '/\\:\s+(\\??[A-Za-z0-9_\\\\]+)/';
-    const PARAM_TYPE_REGEX = '/^(\\??[A-Za-z0-9_\\\\]+)\s/';
+    const RETURN_TYPE_REGEX = '/\\:\s+(\\??[A-Za-z0-9_\\\\\[\]]+)/';
+    const PARAM_TYPE_REGEX = '/^(\\??[A-Za-z0-9_\\\\\[\]]+)\s/';
 
     /**
      * @var Closure|Function_|ClassMethod

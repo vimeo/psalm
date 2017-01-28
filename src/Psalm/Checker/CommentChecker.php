@@ -108,7 +108,11 @@ class CommentChecker
                 && $line_parts[0][0] !== '{'
             ) {
                 $info->return_type = $line_parts[0];
-                $info->return_type_line_number = array_keys($return_specials)[0];
+                $line_number = array_keys($return_specials)[0];
+
+                if ($line_number) {
+                    $info->return_type_line_number = $line_number;
+                }
             }
         }
 
@@ -243,7 +247,15 @@ class CommentChecker
             } elseif (preg_match('/^\s*$/', $line)) {
                 $last = false;
             } elseif ($last !== false) {
-                $lines[$last] = rtrim($lines[$last]) .' '. trim($line);
+                $old_last_line = $lines[$last];
+                $lines[$last] = rtrim($old_last_line) .' '. trim($line);
+
+                if ($line_number) {
+                    $old_line_number = $line_map[$old_last_line];
+                    unset($line_map[$old_last_line]);
+                    $line_map[$lines[$last]] = $old_line_number;
+                }
+
                 unset($lines[$k]);
             }
 
