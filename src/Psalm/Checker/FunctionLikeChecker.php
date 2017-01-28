@@ -847,7 +847,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if (IssueBuffer::accepts(
                 new MissingReturnType(
-                    'Method ' . $cased_method_id . ' does not have a return type, expecting ' . $inferred_return_type,
+                    'Method ' . $cased_method_id . ' does not have a return type' .
+                      (!$inferred_return_type->isMixed() ? ', expecting ' . $inferred_return_type : ''),
                     new CodeLocation($this, $this->function, true)
                 ),
                 $this->suppressed_issues
