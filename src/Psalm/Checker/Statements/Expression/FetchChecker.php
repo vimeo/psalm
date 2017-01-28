@@ -148,7 +148,7 @@ class FetchChecker
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
-                return false;
+                // fall through
             }
 
             return null;
@@ -162,7 +162,7 @@ class FetchChecker
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
-                return false;
+                // fall through
             }
 
             $stmt->inferredType = Type::getNull();
@@ -191,7 +191,7 @@ class FetchChecker
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
 
                 continue;
