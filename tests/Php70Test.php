@@ -143,7 +143,7 @@ class Php70Test extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
-    public function testAnonymousClass()
+    public function testAnonymousClassLogger()
     {
         $stmts = self::$parser->parse('<?php
         interface Logger {
@@ -167,6 +167,46 @@ class Php70Test extends PHPUnit_Framework_TestCase
                 echo $msg;
             }
         });
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedClass
+     * @return                   void
+     */
+    public function testAnonymousClassWithBadStatement()
+    {
+        $stmts = self::$parser->parse('<?php
+        $foo = new class {
+            public function a() {
+                new B();
+            }
+        };
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
+     */
+    public function testAnonymousClassWithInvalidFunctionReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        $foo = new class {
+            public function a() : string {
+                return 5;
+            }
+        };
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
