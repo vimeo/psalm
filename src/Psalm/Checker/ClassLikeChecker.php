@@ -569,7 +569,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     if ($first_uninitialized_property->location) {
                         if (IssueBuffer::accepts(
                             new MissingConstructor(
-                                $fq_class_name . ' has an unitiialized variable ' . $uninitialized_variables[0] .
+                                $fq_class_name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
                                     ', but no constructor',
                                 $first_uninitialized_property->location
                             ),
