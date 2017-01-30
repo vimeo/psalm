@@ -244,7 +244,7 @@ class FetchChecker
                 continue;
             }
 
-            if (MethodChecker::methodExists($lhs_type_part->value . '::__get')) {
+            if (MethodChecker::methodExists($lhs_type_part->value . '::__get', $file_checker)) {
                 $stmt->inferredType = Type::getMixed();
                 continue;
             }

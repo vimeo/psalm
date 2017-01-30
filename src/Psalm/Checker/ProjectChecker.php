@@ -144,6 +144,11 @@ class ProjectChecker
     public $method_checkers = [];
 
     /**
+     * @var array<string, int>
+     */
+    public $classlike_references = [];
+
+    /**
      * @var array<string, string>
      */
     public $fake_files = [];
@@ -251,6 +256,27 @@ class ProjectChecker
 
         if ($is_diff) {
             FileChecker::touchParserCaches($this->getAllFiles($this->config), $start_checks);
+        }
+
+        if ($this->count_references) {
+            foreach ($this->existing_classlikes_ci as $fq_class_name_ci => $_) {
+                if (isset(ClassLikeChecker::$storage[$fq_class_name_ci]) &&
+                    ClassLikeChecker::$storage[$fq_class_name_ci]->file_path
+                ) {
+                    if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                        echo $fq_class_name_ci . ' is never referenced' . PHP_EOL;
+                    } else {
+                        $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_ci];
+
+                        foreach ($classlike_storage->methods as $method_name => $method_storage) {
+                            if ($method_storage->references === 0) {
+                                echo 'Method ' . $fq_class_name_ci . '::' . $method_name .
+                                    ' is never referenced' . PHP_EOL;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         IssueBuffer::finish(true, (int)$start_checks, $this->debug_output);
@@ -923,7 +949,11 @@ class ProjectChecker
         }
 
         if ($this->count_references) {
-            ClassLikeChecker::$storage[$fq_class_name]->references++;
+            if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                $this->classlike_references[$fq_class_name_ci] = 0;
+            }
+
+            $this->classlike_references[$fq_class_name_ci]++;
         }
 
         return true;
@@ -944,7 +974,11 @@ class ProjectChecker
         }
 
         if ($this->count_references) {
-            ClassLikeChecker::$storage[$fq_class_name]->references++;
+            if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                $this->classlike_references[$fq_class_name_ci] = 0;
+            }
+
+            $this->classlike_references[$fq_class_name_ci]++;
         }
 
         return true;
@@ -965,7 +999,11 @@ class ProjectChecker
         }
 
         if ($this->count_references) {
-            ClassLikeChecker::$storage[$fq_class_name]->references++;
+            if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                $this->classlike_references[$fq_class_name_ci] = 0;
+            }
+
+            $this->classlike_references[$fq_class_name_ci]++;
         }
 
         return true;

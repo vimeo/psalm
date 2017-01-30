@@ -548,23 +548,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  PhpParser\Node\Expr $dim
-     * @return Type\Union
-     */
-    protected static function getArrayTypeFromDim(PhpParser\Node\Expr $dim)
-    {
-        if ($dim) {
-            if (isset($dim->inferredType)) {
-                return $dim->inferredType;
-            } else {
-                return new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TString()]);
-            }
-        } else {
-            return Type::getInt();
-        }
-    }
-
-    /**
      * @param  PhpParser\Node\Expr\Include_ $stmt
      * @param  Context                      $context
      * @return false|null

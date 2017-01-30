@@ -67,4 +67,9 @@ class FunctionLikeStorage
      * @var array<string, Type\Union>
      */
     public $defined_constants = [];
+
+    /**
+     * @var int
+     */
+    public $references = 0;
 }

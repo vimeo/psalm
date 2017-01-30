@@ -553,16 +553,6 @@ class Config
     }
 
     /**
-     * @param string            $issue_name
-     * @param IssueHandler|null $handler
-     * @return void
-     */
-    public function setIssueHandler($issue_name, IssueHandler $handler = null)
-    {
-        $this->issue_handlers[$issue_name] = $handler;
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function getPredefinedConstants()

@@ -28,14 +28,6 @@ abstract class CodeIssue
     }
 
     /**
-     * @return int
-     */
-    public function getLineNumber()
-    {
-        return $this->code_location->getLineNumber();
-    }
-
-    /**
      * @return CodeLocation
      */
     public function getLocation()

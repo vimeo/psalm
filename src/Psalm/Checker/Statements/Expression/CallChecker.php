@@ -153,7 +153,10 @@ class CallChecker
                             (!$var_type_part instanceof TNamedObject || $var_type_part->value !== 'Closure') &&
                             !$var_type_part instanceof TCallable &&
                             (!$var_type_part instanceof TNamedObject ||
-                                !MethodChecker::methodExists($var_type_part->value . '::__invoke')
+                                !MethodChecker::methodExists(
+                                    $var_type_part->value . '::__invoke',
+                                    $statements_checker->getFileChecker()
+                                )
                             )
                         ) {
                             $var_id = ExpressionChecker::getVarId(
@@ -409,7 +412,7 @@ class CallChecker
                     }
                 }
 
-                if (MethodChecker::methodExists($fq_class_name . '::__construct')) {
+                if (MethodChecker::methodExists($fq_class_name . '::__construct', $file_checker)) {
                     $method_id = $fq_class_name . '::__construct';
 
                     $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
@@ -634,7 +637,7 @@ class CallChecker
                     return $does_class_exist;
                 }
 
-                if (MethodChecker::methodExists($fq_class_name . '::__call')) {
+                if (MethodChecker::methodExists($fq_class_name . '::__call', $statements_checker->getFileChecker())) {
                     $return_type = Type::getMixed();
                     continue;
                 }
@@ -644,6 +647,7 @@ class CallChecker
 
                 $does_method_exist = MethodChecker::checkMethodExists(
                     $cased_method_id,
+                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
@@ -928,7 +932,7 @@ class CallChecker
             $method_id = null;
 
             if (is_string($stmt->name) &&
-                !MethodChecker::methodExists($fq_class_name . '::__callStatic') &&
+                !MethodChecker::methodExists($fq_class_name . '::__callStatic', $file_checker) &&
                 !$is_mock
             ) {
                 $method_id = $fq_class_name . '::' . strtolower($stmt->name);
@@ -936,6 +940,7 @@ class CallChecker
 
                 $does_method_exist = MethodChecker::checkMethodExists(
                     $cased_method_id,
+                    $file_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );

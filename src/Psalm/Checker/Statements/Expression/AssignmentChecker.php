@@ -524,7 +524,7 @@ class AssignmentChecker
                     return null;
                 }
 
-                if (MethodChecker::methodExists($lhs_type_part . '::__set')) {
+                if (MethodChecker::methodExists($lhs_type_part . '::__set', $file_checker)) {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
                     continue;
                 }

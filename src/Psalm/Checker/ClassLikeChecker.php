@@ -305,7 +305,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        if (MethodChecker::methodExists($this->fq_class_name . '::__get')) {
+        if (MethodChecker::methodExists($this->fq_class_name . '::__get', $this->getFileChecker())) {
             $this->has_custom_get = true;
         }
 
@@ -833,7 +833,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     return false;
                 }
             } else {
-                if (!TraitChecker::hasCorrectCase($trait_name)) {
+                if (!TraitChecker::hasCorrectCase($trait_name, $this->getFileChecker())) {
                     if (IssueBuffer::accepts(
                         new UndefinedTrait(
                             'Trait ' . $trait_name . ' has wrong casing',
@@ -1178,14 +1178,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public function getParentFQCLN()
     {
         return $this->parent_fq_class_name;
-    }
-
-    /**
-     * @return $this
-     */
-    public function getClassLikeChecker()
-    {
-        return $this;
     }
 
     /**
@@ -1794,18 +1786,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param string $fq_class_name
-     * @param string $fq_trait_name
-     * @return bool
-     */
-    public static function classUsesTrait($fq_class_name, $fq_trait_name)
-    {
-        $storage = self::$storage[strtolower($fq_class_name)];
-
-        return isset($storage->used_traits[$fq_trait_name]);
-    }
-
-    /**
      * @return void
      */
     public static function clearCache()
@@ -1821,6 +1801,5 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         self::$class_extends = [];
 
         ClassChecker::clearCache();
-        TraitChecker::clearCache();
     }
 }

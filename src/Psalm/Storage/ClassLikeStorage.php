@@ -138,9 +138,4 @@ class ClassLikeStorage
      * @var array<string, string>
      */
     public $inheritable_property_ids = [];
-
-    /**
-     * @var int
-     */
-    public $references = 0;
 }

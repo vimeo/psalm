@@ -394,35 +394,6 @@ class TypeChecker
     }
 
     /**
-     * @param   array<string, string>   $left_assertions
-     * @param   array<string, string>   $right_assertions
-     * @return  array
-     */
-    private static function combineTypeAssertions(array $left_assertions, array $right_assertions)
-    {
-        $keys = array_merge(array_keys($left_assertions), array_keys($right_assertions));
-        $keys = array_unique($keys);
-
-        $if_types = [];
-
-        foreach ($keys as $key) {
-            if (isset($left_assertions[$key]) && isset($right_assertions[$key])) {
-                if ($left_assertions[$key][0] !== '!' && $right_assertions[$key][0] !== '!') {
-                    $if_types[$key] = $left_assertions[$key] . '&' . $right_assertions[$key];
-                } else {
-                    $if_types[$key] = $right_assertions[$key];
-                }
-            } elseif (isset($left_assertions[$key])) {
-                $if_types[$key] = $left_assertions[$key];
-            } else {
-                $if_types[$key] = $right_assertions[$key];
-            }
-        }
-
-        return $if_types;
-    }
-
-    /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
      * @param  array<string, string>     $new_types
@@ -906,7 +877,7 @@ class TypeChecker
         ) {
             // check whether the object has a __toString method
             if (ClassChecker::classExists($input_type_part->value, $file_checker) &&
-                MethodChecker::methodExists($input_type_part->value . '::__toString')
+                MethodChecker::methodExists($input_type_part->value . '::__toString', $file_checker)
             ) {
                 $to_string_cast = true;
                 return true;
@@ -918,7 +889,7 @@ class TypeChecker
                 $input_type_part instanceof TArray ||
                 ($input_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($input_type_part->value, $file_checker) &&
-                    MethodChecker::methodExists($input_type_part->value . '::__invoke')
+                    MethodChecker::methodExists($input_type_part->value . '::__invoke', $file_checker)
                 )
             )
         ) {
@@ -1096,32 +1067,6 @@ class TypeChecker
     }
 
     /**
-     * @param   string  $type
-     * @param   string  $existing_type
-     * @return  bool
-     */
-    public static function isNegation($type, $existing_type)
-    {
-        if ($type === 'mixed' || $existing_type === 'mixed') {
-            return false;
-        }
-
-        if ($type === '!' . $existing_type || $existing_type === '!' . $type) {
-            return true;
-        }
-
-        if (in_array($type, ['empty', 'false', 'null']) && !in_array($existing_type, ['empty', 'false', 'null'])) {
-            return true;
-        }
-
-        if (in_array($existing_type, ['empty', 'false', 'null']) && !in_array($type, ['empty', 'false', 'null'])) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Takes two arrays of types and merges them
      *
      * @param  array<string, Type\Union>  $new_types
@@ -1165,43 +1110,6 @@ class TypeChecker
         }
 
         return $result_types;
-    }
-
-    /**
-     * @param  array<string, string>  $all_types
-     * @return array<string>
-     */
-    public static function reduceTypes(array $all_types)
-    {
-        if (in_array('mixed', $all_types)) {
-            return ['mixed'];
-        }
-
-        $array_types = array_filter(
-            $all_types,
-            /**
-             * @param string $type
-             * @return bool
-             */
-            function ($type) {
-                return (bool)preg_match('/^array(\<|$)/', $type);
-            }
-        );
-
-        /** @var array<string, string> */
-        $all_types = array_flip($all_types);
-
-        if (isset($all_types['array<empty>']) && count($array_types) > 1) {
-            unset($all_types['array<empty>']);
-        }
-
-        if (isset($all_types['array<mixed>'])) {
-            unset($all_types['array<mixed>']);
-
-            $all_types['array'] = true;
-        }
-
-        return array_keys($all_types);
     }
 
     /**

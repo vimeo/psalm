@@ -288,13 +288,18 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string       $method_id
+     * @param  FileChecker  $file_checker
      * @param  CodeLocation $code_location
      * @param  array        $suppressed_issues
      * @return bool|null
      */
-    public static function checkMethodExists($method_id, CodeLocation $code_location, array $suppressed_issues)
-    {
-        if (self::methodExists($method_id)) {
+    public static function checkMethodExists(
+        $method_id,
+        FileChecker $file_checker,
+        CodeLocation $code_location,
+        array $suppressed_issues
+    ) {
+        if (self::methodExists($method_id, $file_checker)) {
             return true;
         }
 
@@ -313,10 +318,11 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * Whether or not a given method exists
      *
-     * @param  string $method_id
+     * @param  string       $method_id
+     * @param  FileChecker  $file_checker
      * @return bool
      */
-    public static function methodExists($method_id)
+    public static function methodExists($method_id, FileChecker $file_checker)
     {
         // remove trailing backslash if it exists
         $method_id = preg_replace('/^\\\\/', '', $method_id);
@@ -335,6 +341,15 @@ class MethodChecker extends FunctionLikeChecker
         $class_storage = ClassLikeChecker::$storage[$fq_class_name_lower];
 
         if (isset($class_storage->declaring_method_ids[$method_name])) {
+            if ($file_checker->project_checker->count_references) {
+                $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
+                list($declaring_method_class, $declaring_method_name) = explode('::', $declaring_method_id);
+
+                ClassLikeChecker::$storage[strtolower($declaring_method_class)]
+                    ->methods[strtolower($declaring_method_name)]
+                    ->references++;
+            }
+
             return true;
         }
 
