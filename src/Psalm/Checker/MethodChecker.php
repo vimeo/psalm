@@ -345,9 +345,19 @@ class MethodChecker extends FunctionLikeChecker
                 $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
                 list($declaring_method_class, $declaring_method_name) = explode('::', $declaring_method_id);
 
-                ClassLikeChecker::$storage[strtolower($declaring_method_class)]
-                    ->methods[strtolower($declaring_method_name)]
-                    ->references++;
+                $declaring_class_storage = ClassLikeChecker::$storage[strtolower($declaring_method_class)];
+                $declaring_class_storage->methods[strtolower($declaring_method_name)]->references++;
+
+                if (isset($declaring_class_storage->overridden_method_ids[$declaring_method_name])) {
+                    $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
+
+                    foreach ($overridden_method_ids as $overridden_method_id) {
+                        list($overridden_method_class, $overridden_method_name) = explode('::', $overridden_method_id);
+
+                        $overridden_class_storage = ClassLikeChecker::$storage[strtolower($overridden_method_class)];
+                        $overridden_class_storage->methods[strtolower($overridden_method_name)]->references++;
+                    }
+                }
             }
 
             return true;

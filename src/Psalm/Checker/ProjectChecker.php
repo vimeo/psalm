@@ -260,18 +260,22 @@ class ProjectChecker
 
         if ($this->count_references) {
             foreach ($this->existing_classlikes_ci as $fq_class_name_ci => $_) {
-                if (isset(ClassLikeChecker::$storage[$fq_class_name_ci]) &&
-                    ClassLikeChecker::$storage[$fq_class_name_ci]->file_path
-                ) {
-                    if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                        echo $fq_class_name_ci . ' is never referenced' . PHP_EOL;
-                    } else {
-                        $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_ci];
+                if (isset(ClassLikeChecker::$storage[$fq_class_name_ci])) {
+                    $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_ci];
 
-                        foreach ($classlike_storage->methods as $method_name => $method_storage) {
-                            if ($method_storage->references === 0) {
-                                echo 'Method ' . $fq_class_name_ci . '::' . $method_name .
-                                    ' is never referenced' . PHP_EOL;
+                    if ($classlike_storage->file_path &&
+                        $this->config->isInProjectDirs($classlike_storage->file_path)
+                    ) {
+                        if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                            echo $fq_class_name_ci . ' is never referenced' . PHP_EOL;
+                        } else {
+                            foreach ($classlike_storage->methods as $method_name => $method_storage) {
+                                if ($method_storage->references === 0 &&
+                                    !$classlike_storage->overridden_method_ids[$method_name]
+                                ) {
+                                    echo 'Method ' . $fq_class_name_ci . '::' . $method_name .
+                                        ' is never referenced' . PHP_EOL;
+                                }
                             }
                         }
                     }
@@ -549,8 +553,10 @@ class ProjectChecker
      */
     public function fileExistsForClassLike($fq_class_name)
     {
-        if (isset($this->existing_classlikes_ci[strtolower($fq_class_name)])) {
-            return $this->existing_classlikes_ci[strtolower($fq_class_name)];
+        $fq_class_name_ci = strtolower($fq_class_name);
+
+        if (isset($this->existing_classlikes_ci[$fq_class_name_ci])) {
+            return $this->existing_classlikes_ci[$fq_class_name_ci];
         }
 
         $old_level = error_reporting();
@@ -561,7 +567,7 @@ class ProjectChecker
         } catch (\ReflectionException $e) {
             error_reporting($old_level);
 
-            $this->visited_classes[$fq_class_name] = false;
+            $this->visited_classes[$fq_class_name_ci] = false;
 
             return false;
         }
@@ -570,7 +576,7 @@ class ProjectChecker
 
         if ($reflected_class->isUserDefined()) {
             $fq_class_name = $reflected_class->getName();
-            $this->existing_classlikes_ci[strtolower($fq_class_name)] = true;
+            $this->existing_classlikes_ci[$fq_class_name_ci] = true;
             $this->existing_classlikes[$fq_class_name] = true;
 
             if ($reflected_class->isInterface()) {
@@ -581,7 +587,7 @@ class ProjectChecker
                 $this->addFullyQualifiedClassName($fq_class_name, (string)$reflected_class->getFileName());
             }
         } else {
-            $this->visited_classes[$fq_class_name] = true;
+            $this->visited_classes[$fq_class_name_ci] = true;
             ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
         }
 
@@ -599,19 +605,21 @@ class ProjectChecker
             throw new \InvalidArgumentException('Invalid class name ' . $fq_class_name);
         }
 
-        if (isset($this->visited_classes[$fq_class_name])) {
-            return $this->visited_classes[$fq_class_name];
+        $fq_class_name_ci = strtolower($fq_class_name);
+
+        if (isset($this->visited_classes[$fq_class_name_ci])) {
+            return $this->visited_classes[$fq_class_name_ci];
         }
 
-        $this->visited_classes[$fq_class_name] = true;
+        $this->visited_classes[$fq_class_name_ci] = true;
 
         // this registers the class if it's not user defined
         if (!$this->fileExistsForClassLike($fq_class_name)) {
             return false;
         }
 
-        if (isset($this->classlike_files[$fq_class_name])) {
-            $file_path = $this->classlike_files[$fq_class_name];
+        if (isset($this->classlike_files[$fq_class_name_ci])) {
+            $file_path = $this->classlike_files[$fq_class_name_ci];
 
             if (isset($this->visited_files[$file_path])) {
                 return true;
@@ -713,17 +721,19 @@ class ProjectChecker
      */
     public function getVisitedFileCheckerForClassLike($fq_class_name)
     {
+        $fq_class_name_ci = strtolower($fq_class_name);
+
         if (!$this->fake_files) {
             // this registers the class if it's not user defined
             if (!$this->fileExistsForClassLike($fq_class_name)) {
                 throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
             }
 
-            if (!isset($this->classlike_files[$fq_class_name])) {
+            if (!isset($this->classlike_files[$fq_class_name_ci])) {
                 throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
             }
 
-            $file_path = $this->classlike_files[$fq_class_name];
+            $file_path = $this->classlike_files[$fq_class_name_ci];
         } else {
             $file_path = array_keys($this->fake_files)[0];
         }
@@ -892,7 +902,7 @@ class ProjectChecker
         $this->existing_classes[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name] = $file_path;
+            $this->classlike_files[$fq_class_name_ci] = $file_path;
         }
     }
 
@@ -911,7 +921,7 @@ class ProjectChecker
         $this->existing_interfaces[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name] = $file_path;
+            $this->classlike_files[$fq_class_name_ci] = $file_path;
         }
     }
 
@@ -930,7 +940,7 @@ class ProjectChecker
         $this->existing_traits[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name] = $file_path;
+            $this->classlike_files[$fq_class_name_ci] = $file_path;
         }
     }
 
