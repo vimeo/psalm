@@ -944,7 +944,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $return_types_different = false;
 
-            if (!TypeChecker::isContainedBy($inferred_return_type, $declared_return_type, $this->getFileChecker())) {
+            if (!TypeChecker::isContainedBy(
+                $inferred_return_type,
+                $declared_return_type,
+                $this->getFileChecker(),
+                false,
+                $has_scalar_match,
+                $type_coerced
+            )) {
                 if ($update_docblock) {
                     if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
                         FileChecker::addDocblockReturnType(
@@ -968,9 +975,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
 
                 // is the declared return type more specific than the inferred one?
-                if ($declared_return_type->isNullable() === $inferred_return_type->isNullable() &&
-                    TypeChecker::isContainedBy($declared_return_type, $inferred_return_type, $this->getFileChecker())
-                ) {
+                if ($declared_return_type->isNullable() === $inferred_return_type->isNullable() && $type_coerced) {
                     if (IssueBuffer::accepts(
                         new MoreSpecificReturnType(
                             'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .

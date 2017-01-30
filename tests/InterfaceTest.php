@@ -544,4 +544,42 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testInterfaceExtendsReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A {}
+        interface B extends A {}
+
+        function foo(B $a) : A {
+            return $a;
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MoreSpecificReturnType
+     * @return                   void
+     */
+    public function testMoreSpecificReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface A {}
+        interface B extends A {}
+
+        function foo(A $a) : B {
+            return $a;
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

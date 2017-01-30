@@ -790,6 +790,12 @@ class TypeChecker
                             $container_type_part->value
                         )
                     ) ||
+                    (InterfaceChecker::interfaceExists($input_type_part->value, $file_checker) &&
+                        InterfaceChecker::interfaceExtends(
+                            $input_type_part->value,
+                            $container_type_part->value
+                        )
+                    ) ||
                     ExpressionChecker::isMock($input_type_part->value)
                 )
             )
@@ -914,11 +920,19 @@ class TypeChecker
             return true;
         } elseif ($container_type_part instanceof TNamedObject &&
             $input_type_part instanceof TNamedObject &&
-            ClassChecker::classExists($container_type_part->value, $file_checker) &&
             ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
-            ClassChecker::classExtendsOrImplements(
-                $container_type_part->value,
-                $input_type_part->value
+            ((
+                ClassChecker::classExists($container_type_part->value, $file_checker) &&
+                    ClassChecker::classExtendsOrImplements(
+                        $container_type_part->value,
+                        $input_type_part->value
+                )) ||
+                (InterfaceChecker::interfaceExists($container_type_part->value, $file_checker) &&
+                    InterfaceChecker::interfaceExtends(
+                        $container_type_part->value,
+                        $input_type_part->value
+                    )
+                )
             )
         ) {
             $type_coerced = true;
