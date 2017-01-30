@@ -166,14 +166,6 @@ class FileFilter
     }
 
     /**
-     * @return array
-     */
-    public function getFiles()
-    {
-        return $this->files;
-    }
-
-    /**
      * @param   string $file_name
      * @return  void
      */

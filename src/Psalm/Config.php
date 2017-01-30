@@ -505,14 +505,6 @@ class Config
     }
 
     /**
-     * @return string
-     */
-    public function getBaseDir()
-    {
-        return $this->base_dir;
-    }
-
-    /**
      * @return array<string>
      */
     public function getFileExtensions()

@@ -126,14 +126,6 @@ class Union extends Type
     /**
      * @return boolean
      */
-    public function hasObject()
-    {
-        return isset($this->types['object']);
-    }
-
-    /**
-     * @return boolean
-     */
     public function hasObjectLike()
     {
         return isset($this->types['array']) && $this->types['array'] instanceof Atomic\ObjectLike;
@@ -188,27 +180,11 @@ class Union extends Type
     /**
      * @return boolean
      */
-    public function hasNumeric()
-    {
-        return isset($this->types['numeric']);
-    }
-
-    /**
-     * @return boolean
-     */
     public function hasNumericType()
     {
         return isset($this->types['int']) ||
             isset($this->types['float']) ||
             isset($this->types['string']);
-    }
-
-    /**
-     * @return boolean
-     */
-    public function hasScalar()
-    {
-        return isset($this->types['scalar']);
     }
 
     /**
@@ -223,38 +199,6 @@ class Union extends Type
             isset($this->types['false']) ||
             isset($this->types['numeric']) ||
             isset($this->types['numeric-string']);
-    }
-
-    /**
-     * @return boolean
-     */
-    public function hasResource()
-    {
-        return isset($this->types['resource']);
-    }
-
-    /**
-     * @return boolean
-     */
-    public function hasCallable()
-    {
-        return isset($this->types['callable']);
-    }
-
-    /**
-     * @return boolean
-     */
-    public function hasGenerator()
-    {
-        return isset($this->types['Generator']);
-    }
-
-    /**
-     * @return boolean
-     */
-    public function isInt()
-    {
-        return isset($this->types['int']) && count($this->types) === 1;
     }
 
     /**
