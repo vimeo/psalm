@@ -54,6 +54,56 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidStaticInvocation
+     * @return                   void
+     */
+    public function testInvalidParentStaticCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return void */
+            public function foo(){}
+        }
+
+        class B extends A {
+            /** @return void */
+            public static function bar(){
+                parent::foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testValidParentStaticCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return void */
+            public static function foo(){}
+        }
+
+        class B extends A {
+            /** @return void */
+            public static function bar(){
+                parent::foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @return void
      */
     public function testValidNonStaticInvocation()
