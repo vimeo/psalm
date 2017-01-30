@@ -46,6 +46,11 @@ class ProjectChecker
     /**
      * @var bool
      */
+    public $count_references = false;
+
+    /**
+     * @var bool
+     */
     public $debug_output = false;
 
     /**
@@ -910,7 +915,18 @@ class ProjectChecker
     public function hasFullyQualifiedClassName($fq_class_name)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
-        return isset($this->existing_classes_ci[$fq_class_name_ci]) && $this->existing_classes_ci[$fq_class_name_ci];
+
+        if (!isset($this->existing_classes_ci[$fq_class_name_ci]) ||
+            !$this->existing_classes_ci[$fq_class_name_ci]
+        ) {
+            return false;
+        }
+
+        if ($this->count_references) {
+            ClassLikeChecker::$storage[$fq_class_name]->references++;
+        }
+
+        return true;
     }
 
     /**
@@ -920,7 +936,18 @@ class ProjectChecker
     public function hasFullyQualifiedInterfaceName($fq_class_name)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
-        return isset($this->existing_interfaces_ci[$fq_class_name_ci]) && $this->existing_interfaces_ci[$fq_class_name_ci];
+
+        if (!isset($this->existing_interfaces_ci[$fq_class_name_ci]) ||
+            !$this->existing_interfaces_ci[$fq_class_name_ci]
+        ) {
+            return false;
+        }
+
+        if ($this->count_references) {
+            ClassLikeChecker::$storage[$fq_class_name]->references++;
+        }
+
+        return true;
     }
 
     /**
@@ -930,6 +957,17 @@ class ProjectChecker
     public function hasFullyQualifiedTraitName($fq_class_name)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
-        return isset($this->existing_traits_ci[$fq_class_name_ci]) && $this->existing_traits_ci[$fq_class_name_ci];
+
+        if (!isset($this->existing_traits_ci[$fq_class_name_ci]) ||
+            !$this->existing_traits_ci[$fq_class_name_ci]
+        ) {
+            return false;
+        }
+
+        if ($this->count_references) {
+            ClassLikeChecker::$storage[$fq_class_name]->references++;
+        }
+
+        return true;
     }
 }
