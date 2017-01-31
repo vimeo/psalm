@@ -29,11 +29,17 @@ class WhileChecker
             return false;
         }
 
-        $while_types = AssertionFinder::getAssertions(
+        $while_clauses = TypeChecker::getFormula(
             $stmt->cond,
-            $statements_checker->getFQCLN(),
+            $context->self,
             $statements_checker
         );
+
+        $while_context->clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $while_clauses));
+
+        $negated_clauses = TypeChecker::negateFormula($while_clauses);
+
+        $reconcilable_while_types = TypeChecker::getTruthsFromFormula($while_context->clauses);
 
         // if the while has an or as the main component, we cannot safely reason about it
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp &&
@@ -44,7 +50,7 @@ class WhileChecker
             $changed_vars = [];
 
             $while_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
-                $while_types,
+                $reconcilable_while_types,
                 $while_context->vars_in_scope,
                 $changed_vars,
                 $statements_checker->getFileChecker(),
