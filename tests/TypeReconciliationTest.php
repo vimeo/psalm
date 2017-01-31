@@ -736,4 +736,25 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testUpdateMultipleIssetVarsWithVariableOffset()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function foo(string $s) {}
+
+        $a = rand(0, 1) ? ["hello"] : null;
+        $b = 0;
+        if (isset($a[$b])) {
+            foo($a[$b]);
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }

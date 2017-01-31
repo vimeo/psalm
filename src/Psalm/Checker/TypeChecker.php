@@ -530,6 +530,10 @@ class TypeChecker
         $result_var_types = null;
 
         if ($existing_var_type === null) {
+            if ($new_var_type === '^isset') {
+                return null;
+            }
+
             if ($new_var_type === 'isset') {
                 return Type::getMixed();
             }
@@ -611,6 +615,18 @@ class TypeChecker
             return $existing_var_type;
         }
 
+        if ($new_var_type === '^isset' || $new_var_type === 'isset') {
+            $existing_var_type->removeType('null');
+
+            if (empty($existing_var_type->types)) {
+                // @todo - I think there's a better way to handle this, but for the moment
+                // mixed will have to do.
+                return Type::getMixed();
+            }
+
+            return $existing_var_type;
+        }
+
         if ($new_var_type[0] === '^') {
             $new_var_type = substr($new_var_type, 1);
         }
@@ -655,18 +671,6 @@ class TypeChecker
             if ($existing_var_type->hasType('numeric-string')) {
                 return $existing_var_type;
             }
-        }
-
-        if ($new_var_type === 'isset') {
-            $existing_var_type->removeType('null');
-
-            if (empty($existing_var_type->types)) {
-                // @todo - I think there's a better way to handle this, but for the moment
-                // mixed will have to do.
-                return Type::getMixed();
-            }
-
-            return $existing_var_type;
         }
 
         $new_type = Type::parseString($new_var_type);

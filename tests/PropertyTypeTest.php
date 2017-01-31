@@ -931,4 +931,66 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testPropertyArrayIssetAssertionWithVariableOffset()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            function bar(string $s) : void { }
+
+            class A {
+                /** @var array<string, string> */
+                public $a = [];
+
+                private function foo() : void {
+                    $b = "hello";
+
+                    if (!isset($this->a[$b])) {
+                        return;
+                    }
+
+                    bar($this->a[$b]);
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testStaticPropertyArrayIssetAssertionWithVariableOffset()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            function bar(string $s) : void { }
+
+            class A {
+                /** @var array<string, string> */
+                public static $a = [];
+            }
+
+            function foo() : void {
+                $b = "hello";
+
+                if (!isset(A::$a[$b])) {
+                    return;
+                }
+
+                bar(A::$a[$b]);
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

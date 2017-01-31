@@ -361,6 +361,23 @@ class AssertionFinder
 
                 if ($var_name) {
                     $if_types[$var_name] = 'isset';
+                } else {
+                    // look for any variables we *can* use for an isset assertion
+                    $array_root = $isset_var;
+
+                    while ($array_root instanceof PhpParser\Node\Expr\ArrayDimFetch && !$var_name) {
+                        $array_root = $array_root->var;
+
+                        $var_name = ExpressionChecker::getArrayVarId(
+                            $array_root,
+                            $this_class_name,
+                            $source
+                        );
+                    }
+
+                    if ($var_name) {
+                        $if_types[$var_name] = '^isset';
+                    }
                 }
             }
 
