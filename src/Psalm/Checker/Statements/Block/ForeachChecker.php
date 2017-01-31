@@ -193,6 +193,8 @@ class ForeachChecker
                     $context->vars_in_scope[$var],
                     $foreach_context->vars_in_scope[$var]
                 );
+
+                $context->removeVarFromClauses($var);
             }
         }
 
