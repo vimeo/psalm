@@ -416,7 +416,11 @@ class FunctionChecker extends FunctionLikeChecker
             ? $first_arg->inferredType->types['array']
             : null;
 
-        if ($call_map_key === 'array_values' || $call_map_key === 'array_unique' || $call_map_key === 'array_intersect') {
+        if ($call_map_key === 'array_values' ||
+            $call_map_key === 'array_unique' ||
+            $call_map_key === 'array_intersect' ||
+            $call_map_key === 'array_slice'
+        ) {
             if ($first_arg_array_generic || $first_arg_array_objectlike) {
                 if ($first_arg_array_generic) {
                     $inner_type = clone $first_arg_array_generic->type_params[1];
