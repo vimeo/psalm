@@ -360,7 +360,7 @@ class AssertionFinder
                 );
 
                 if ($var_name) {
-                    $if_types[$var_name] = '!isset';
+                    $if_types[$var_name] = 'isset';
                 }
             }
 

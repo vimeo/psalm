@@ -131,13 +131,31 @@ class TypeChecker
         );
 
         if ($assertions) {
-            $possibilities = [];
+            $clauses = [];
 
             foreach ($assertions as $var => $type) {
-                $possibilities[$var] = [$type];
+                if ($type === 'isset') {
+                    $key_parts = preg_split(
+                        '/(\]|\[)/',
+                        $var,
+                        -1,
+                        PREG_SPLIT_NO_EMPTY
+                    );
+
+                    $base = array_shift($key_parts);
+
+                    $clauses[] = new Clause([$base => ['isset']]);
+
+                    foreach ($key_parts as $key_part_dim) {
+                        $base .= '[' . $key_part_dim . ']';
+                        $clauses[] = new Clause([$base => ['isset']]);
+                    }
+                } else {
+                    $clauses[] = new Clause([$var => [$type]]);
+                }
             }
 
-            return [new Clause($possibilities)];
+            return $clauses;
         }
 
         return [new Clause([], true)];
@@ -337,7 +355,8 @@ class TypeChecker
                     );
 
                     if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
-                        $truths[$var] = implode('|', $things_that_can_be_said);
+                        $things_that_can_be_said = array_unique($things_that_can_be_said);
+                        $truths[$var] = implode('|', array_unique($things_that_can_be_said));
                     }
                 }
             }
@@ -511,6 +530,10 @@ class TypeChecker
         $result_var_types = null;
 
         if ($existing_var_type === null) {
+            if ($new_var_type === 'isset') {
+                return Type::getMixed();
+            }
+
             if ($new_var_type[0] !== '!') {
                 if ($new_var_type[0] === '^') {
                     $new_var_type = substr($new_var_type, 1);
@@ -532,6 +555,10 @@ class TypeChecker
                 return $existing_var_type;
             }
 
+            if ($new_var_type === '!isset') {
+                return Type::getNull();
+            }
+
             if ($new_var_type === '!object' && !$existing_var_type->isMixed()) {
                 $non_object_types = [];
 
@@ -546,7 +573,7 @@ class TypeChecker
                 }
             }
 
-            if (in_array($new_var_type, ['!empty', '!null', '!isset'])) {
+            if (in_array($new_var_type, ['!empty', '!null'])) {
                 $existing_var_type->removeType('null');
 
                 if ($new_var_type === '!empty') {
@@ -631,7 +658,15 @@ class TypeChecker
         }
 
         if ($new_var_type === 'isset') {
-            return Type::getNull();
+            $existing_var_type->removeType('null');
+
+            if (empty($existing_var_type->types)) {
+                // @todo - I think there's a better way to handle this, but for the moment
+                // mixed will have to do.
+                return Type::getMixed();
+            }
+
+            return $existing_var_type;
         }
 
         $new_type = Type::parseString($new_var_type);
@@ -950,6 +985,10 @@ class TypeChecker
      */
     protected static function getValueForKey($key, array &$existing_keys)
     {
+        if (strpos($key, '[') !== false) {
+            return self::getArrayValueForKey($key, $existing_keys);
+        }
+
         $key_parts = explode('->', $key);
 
         $base_type = self::getArrayValueForKey($key_parts[0], $existing_keys);

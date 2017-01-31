@@ -904,4 +904,31 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testPropertyArrayIssetAssertion()
+    {
+        $this->project_checker->registerFile(
+            getcwd() . '/somefile.php',
+            '<?php
+            function bar(string $s) : void { }
+
+            class A {
+                /** @var array<string, string> */
+                public $a = [];
+
+                private function foo() : void {
+                    if (isset($this->a["hello"])) {
+                        bar($this->a["hello"]);
+                    }
+                }
+            }'
+        );
+
+        $file_checker = new FileChecker(getcwd() . '/somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

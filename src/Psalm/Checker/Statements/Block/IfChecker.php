@@ -276,7 +276,7 @@ class IfChecker
 
             // if we have a check like if (!isset($a)) { $a = true; } we want to make sure $a is always set
             foreach ($if_scope->new_vars as $var_id => $type) {
-                if (isset($if_scope->negated_types[$var_id]) && $if_scope->negated_types[$var_id] === '!isset') {
+                if (isset($if_scope->negated_types[$var_id]) && $if_scope->negated_types[$var_id] === 'isset') {
                     $if_scope->forced_new_vars[$var_id] = Type::getMixed();
                 }
             }
