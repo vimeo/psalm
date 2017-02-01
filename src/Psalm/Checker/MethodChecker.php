@@ -22,10 +22,9 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param PhpParser\Node\FunctionLike $function
      * @param StatementsSource            $source
-     * @param array                       $this_vars
      * @psalm-suppress MixedAssignment
      */
-    public function __construct($function, StatementsSource $source, array $this_vars = [])
+    public function __construct($function, StatementsSource $source)
     {
         if (!$function instanceof PhpParser\Node\Stmt\ClassMethod) {
             throw new \InvalidArgumentException('Must be called with a ClassMethod');
@@ -302,8 +301,6 @@ class MethodChecker extends FunctionLikeChecker
         if (self::methodExists($method_id, $file_checker)) {
             return true;
         }
-
-        list($fq_class_name, $method_name) = explode('::', $method_id);
 
         if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $method_id . ' does not exist', $code_location),

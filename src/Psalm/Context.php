@@ -87,6 +87,20 @@ class Context
     public $constants = [];
 
     /**
+     * Whether or not to track how many times a variable is used
+     *
+     * @var boolean
+     */
+    public $count_references = false;
+
+    /**
+     * A list of variables that have been referenced
+     *
+     * @var array<string, bool>
+     */
+    public $referenced_vars = [];
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)
@@ -134,13 +148,13 @@ class Context
         array &$updated_vars
     ) {
         foreach ($this->vars_in_scope as $var => &$context_type) {
-            if (isset($start_context->vars_in_scope[$var])) {
+            if ($start_context->hasVariable($var)) {
                 $old_type = $start_context->vars_in_scope[$var];
 
                 // this is only true if there was some sort of type negation
                 if (in_array($var, $vars_to_update)) {
                     // if we're leaving, we're effectively deleting the possibility of the if types
-                    $new_type = !$has_leaving_statements && isset($end_context->vars_in_scope[$var])
+                    $new_type = !$has_leaving_statements && $end_context->hasVariable($var)
                         ? $end_context->vars_in_scope[$var]
                         : null;
 
@@ -164,7 +178,7 @@ class Context
         $redefined_vars = [];
 
         foreach ($original_context->vars_in_scope as $var => $context_type) {
-            if (isset($new_context->vars_in_scope[$var]) &&
+            if ($new_context->hasVariable($var) &&
                 (string)$new_context->vars_in_scope[$var] !== (string)$context_type
             ) {
                 $redefined_vars[$var] = $new_context->vars_in_scope[$var];
@@ -180,6 +194,8 @@ class Context
      */
     public function remove($remove_var_id)
     {
+        unset($this->referenced_vars[$remove_var_id]);
+
         if (isset($this->vars_in_scope[$remove_var_id])) {
             $type = $this->vars_in_scope[$remove_var_id];
             unset($this->vars_in_scope[$remove_var_id]);
@@ -266,5 +282,28 @@ class Context
     public function addPhantomClass($class_name)
     {
         $this->phantom_classes[$class_name] = true;
+    }
+
+    /**
+     * @param  string|null  $var_name
+     * @return boolean
+     */
+    public function hasVariable($var_name)
+    {
+        if ($this->count_references) {
+            if (!$var_name || !isset($this->vars_in_scope[$var_name])) {
+                return false;
+            }
+
+            $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
+
+            if ($stripped_var[0] === '$' && $stripped_var !== '$this') {
+                $this->referenced_vars[$var_name] = true;
+            }
+
+            return true;
+        }
+
+        return $var_name && isset($this->vars_in_scope[$var_name]);
     }
 }

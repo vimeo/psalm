@@ -87,7 +87,7 @@ class TraitChecker extends ClassLikeChecker
      */
     public static function traitExists($fq_trait_name, FileChecker $file_checker)
     {
-        if ($file_checker->evaluateClassLike($fq_trait_name, false) === false) {
+        if ($file_checker->evaluateClassLike($fq_trait_name) === false) {
             return false;
         }
 

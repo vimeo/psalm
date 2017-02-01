@@ -95,13 +95,13 @@ class FetchChecker
 
         $stmt_var_type = null;
 
-        if ($var_id && isset($context->vars_in_scope[$var_id])) {
+        if ($var_id && $context->hasVariable($var_id)) {
             // we don't need to check anything
             $stmt->inferredType = $context->vars_in_scope[$var_id];
             return null;
         }
 
-        if ($stmt_var_id && isset($context->vars_in_scope[$stmt_var_id])) {
+        if ($stmt_var_id && $context->hasVariable($stmt_var_id)) {
             $stmt_var_type = $context->vars_in_scope[$stmt_var_id];
         } elseif (isset($stmt->var->inferredType)) {
             /** @var Type\Union */
@@ -178,12 +178,6 @@ class FetchChecker
             }
 
             if (!$lhs_type_part->isObjectType()) {
-                $stmt_var_id = ExpressionChecker::getVarId(
-                    $stmt->var,
-                    $statements_checker->getFQCLN(),
-                    $statements_checker
-                );
-
                 if (IssueBuffer::accepts(
                     new InvalidPropertyFetch(
                         'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
@@ -594,7 +588,7 @@ class FetchChecker
                 $statements_checker
             );
 
-            if ($var_id && isset($context->vars_in_scope[$var_id])) {
+            if ($var_id && $context->hasVariable($var_id)) {
                 // we don't need to check anything
                 $stmt->inferredType = $context->vars_in_scope[$var_id];
                 return null;
@@ -677,7 +671,7 @@ class FetchChecker
 
         // checks whether or not the thing we're looking at implements ArrayAccess
         $is_object = $var_id
-            && isset($context->vars_in_scope[$var_id])
+            && $context->hasVariable($var_id)
             && $context->vars_in_scope[$var_id]->hasObjectType();
 
         $array_var_id = ExpressionChecker::getArrayVarId(
@@ -717,7 +711,7 @@ class FetchChecker
 
         if ($array_assignment && $assignment_key_type && $assignment_value_type) {
             $keyed_assignment_type =
-                $keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])
+                $keyed_array_var_id && $context->hasVariable($keyed_array_var_id)
                     ? $context->vars_in_scope[$keyed_array_var_id]
                     : null;
 
@@ -846,7 +840,7 @@ class FetchChecker
                         // (but not $a['b']['c']['d'], which is handled in checkArrayAssignment)
                         if ($keyed_assignment_type) {
                             if ($keyed_array_var_id) {
-                                if (isset($context->vars_in_scope[$keyed_array_var_id])) {
+                                if ($context->hasVariable($keyed_array_var_id)) {
                                     $context->vars_in_scope[$keyed_array_var_id] = Type::combineUnionTypes(
                                         $keyed_assignment_type,
                                         $context->vars_in_scope[$keyed_array_var_id]
@@ -885,12 +879,12 @@ class FetchChecker
                                 ]);
                             }
 
-                            if (isset($context->vars_in_scope[$var_id])) {
+                            if ($context->hasVariable($var_id)) {
                                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                     $context->vars_in_scope[$var_id],
                                     $assignment_type
                                 );
-                            } else {
+                            } elseif ($var_id) {
                                 $context->vars_in_scope[$var_id] = $assignment_type;
                             }
                         }
@@ -1034,7 +1028,7 @@ class FetchChecker
             }
         }
 
-        if ($keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])) {
+        if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id)) {
             $stmt->inferredType = $context->vars_in_scope[$keyed_array_var_id];
         }
 

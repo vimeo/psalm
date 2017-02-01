@@ -51,7 +51,7 @@ class ForeachChecker
         if (isset($stmt->expr->inferredType)) {
             /** @var Type\Union */
             $iterator_type = $stmt->expr->inferredType;
-        } elseif (isset($foreach_context->vars_in_scope[$var_id])) {
+        } elseif ($foreach_context->hasVariable($var_id)) {
             $iterator_type = $foreach_context->vars_in_scope[$var_id];
         } else {
             $iterator_type = null;
@@ -179,7 +179,7 @@ class ForeachChecker
                 continue;
             }
 
-            if (!isset($foreach_context->vars_in_scope[$var])) {
+            if (!$foreach_context->hasVariable($var)) {
                 unset($context->vars_in_scope[$var]);
                 continue;
             }
@@ -202,6 +202,13 @@ class ForeachChecker
             $foreach_context->vars_possibly_in_scope,
             $context->vars_possibly_in_scope
         );
+
+        if ($context->count_references) {
+            $context->referenced_vars = array_merge(
+                $foreach_context->referenced_vars,
+                $context->referenced_vars
+            );
+        }
 
         return null;
     }

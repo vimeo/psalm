@@ -254,7 +254,7 @@ class AssignmentChecker
             $context->vars_possibly_in_scope[$var_id] = true;
         }
 
-        if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
+        if ($var_id && $context->hasVariable($var_id) && $context->vars_in_scope[$var_id]->isVoid()) {
             if (IssueBuffer::accepts(
                 new FailedTypeResolution(
                     'Cannot assign ' . $var_id . ' to type void',
@@ -480,10 +480,14 @@ class AssignmentChecker
                         )
                     )
                 ) {
-                    if ($lhs_type_part instanceof TNamedObject && strtolower($lhs_type_part->value) === 'stdclass') {
-                        $context->vars_in_scope[$var_id] = $assignment_value_type;
-                    } else {
-                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                    if ($var_id) {
+                        if ($lhs_type_part instanceof TNamedObject &&
+                            strtolower($lhs_type_part->value) === 'stdclass'
+                        ) {
+                            $context->vars_in_scope[$var_id] = $assignment_value_type;
+                        } else {
+                            $context->vars_in_scope[$var_id] = Type::getMixed();
+                        }
                     }
 
                     return null;
@@ -491,7 +495,9 @@ class AssignmentChecker
 
                 if (ExpressionChecker::isMock($lhs_type_part->value)) {
                     $has_regular_setter = true;
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    if ($var_id) {
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                    }
 
                     return null;
                 }
@@ -525,7 +531,9 @@ class AssignmentChecker
                 }
 
                 if (MethodChecker::methodExists($lhs_type_part . '::__set', $file_checker)) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    if ($var_id) {
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                    }
                     continue;
                 }
 
@@ -618,8 +626,10 @@ class AssignmentChecker
                 return null;
             }
 
-            // because we don't want to be assigning for property declarations
-            $context->vars_in_scope[$var_id] = $assignment_value_type;
+            if ($var_id) {
+                // because we don't want to be assigning for property declarations
+                $context->vars_in_scope[$var_id] = $assignment_value_type;
+            }
         }
 
         if ($var_id && count($class_property_types) === 1 && isset($class_property_types[0]->types['stdClass'])) {
@@ -862,7 +872,7 @@ class AssignmentChecker
 
         // checks whether or not the thing we're looking at implements ArrayAccess
         $is_object = $var_id
-            && isset($context->vars_in_scope[$var_id])
+            && $context->hasVariable($var_id)
             && $context->vars_in_scope[$var_id]->hasObjectType();
 
         if (ExpressionChecker::analyze(
@@ -987,7 +997,7 @@ class AssignmentChecker
 
                     if ($assignment_key_type->hasString()
                         && $assignment_key_value
-                        && (!isset($context->vars_in_scope[$var_id])
+                        && (!$context->hasVariable($var_id)
                             || $context->vars_in_scope[$var_id]->hasObjectLike()
                             || ($array_type && $array_type->type_params[0]->isEmpty()))
                     ) {
@@ -1005,17 +1015,17 @@ class AssignmentChecker
                         ]);
                     }
 
-                    if (isset($context->vars_in_scope[$var_id])) {
+                    if ($context->hasVariable($var_id)) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
                             $assignment_value_type
                         );
-                    } else {
+                    } elseif ($var_id) {
                         $context->vars_in_scope[$var_id] = $assignment_value_type;
                     }
                 }
             }
-        } else {
+        } elseif ($var_id) {
             $context->vars_in_scope[$var_id] = Type::getMixed();
         }
 

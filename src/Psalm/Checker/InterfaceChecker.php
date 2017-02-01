@@ -33,7 +33,7 @@ class InterfaceChecker extends ClassLikeChecker
                     $this
                 );
 
-                $source->getFileChecker()->evaluateClassLike($extended_interface_name, false);
+                $source->getFileChecker()->evaluateClassLike($extended_interface_name);
 
                 $storage->parent_interfaces[] = $extended_interface_name;
             }
@@ -43,16 +43,15 @@ class InterfaceChecker extends ClassLikeChecker
     /**
      * @param  string       $fq_interface_name
      * @param  FileChecker  $file_checker
-     * @param  bool         $visit_file
      * @return boolean
      */
-    public static function interfaceExists($fq_interface_name, FileChecker $file_checker, $visit_file = false)
+    public static function interfaceExists($fq_interface_name, FileChecker $file_checker)
     {
         if (isset(self::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
 
-        if ($file_checker->evaluateClassLike($fq_interface_name, $visit_file) === false) {
+        if ($file_checker->evaluateClassLike($fq_interface_name) === false) {
             return false;
         }
 

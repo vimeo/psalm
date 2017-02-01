@@ -64,10 +64,9 @@ class ClassChecker extends ClassLikeChecker
      *
      * @param  string       $fq_class_name
      * @param  FileChecker  $file_checker
-     * @param  bool         $visit_file
      * @return bool
      */
-    public static function classExists($fq_class_name, FileChecker $file_checker, $visit_file = false)
+    public static function classExists($fq_class_name, FileChecker $file_checker)
     {
         if (isset(self::$SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -77,7 +76,7 @@ class ClassChecker extends ClassLikeChecker
             return true;
         }
 
-        if ($file_checker->evaluateClassLike($fq_class_name, $visit_file) === false) {
+        if ($file_checker->evaluateClassLike($fq_class_name) === false) {
             return false;
         }
 

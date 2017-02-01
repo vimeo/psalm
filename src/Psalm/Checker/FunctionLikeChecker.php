@@ -105,7 +105,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($global_context) {
             foreach ($global_context->constants as $const_name => $var_type) {
-                if (!isset($context->vars_in_scope[$const_name])) {
+                if (!$context->hasVariable($const_name)) {
                     $context->vars_in_scope[$const_name] = clone $var_type;
                 }
             }
@@ -342,6 +342,21 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $closure_atomic = $this->function->inferredType->types['Closure'];
                     $closure_atomic->return_type = new Type\Union($closure_return_types);
                 }
+            }
+        }
+
+        if ($context->count_references) {
+            foreach ($context->vars_in_scope as $var_name => $_) {
+                if (strpos($var_name, '->') === false &&
+                    $var_name !== '$this' &&
+                    strpos($var_name, '::$') === false &&
+                    strpos($var_name, '[') === false
+                ) {
+                    if (!isset($context->referenced_vars[$var_name])) {
+                        echo 'Variable ' . $var_name . ' is not referenced in ' . $cased_method_id . PHP_EOL;
+                    }
+                }
+
             }
         }
 

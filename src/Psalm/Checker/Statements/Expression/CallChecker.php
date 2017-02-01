@@ -538,7 +538,7 @@ class CallChecker
             $statements_checker
         );
 
-        $class_type = isset($context->vars_in_scope[$var_id]) ? $context->vars_in_scope[$var_id] : null;
+        $class_type = $context->hasVariable($var_id) ? $context->vars_in_scope[$var_id] : null;
 
         if (isset($stmt->var->inferredType)) {
             /** @var Type\Union */
@@ -1085,7 +1085,7 @@ class CallChecker
                     );
 
                     if ($var_id &&
-                        (!isset($context->vars_in_scope[$var_id]) || $context->vars_in_scope[$var_id]->isNull())
+                        (!$context->hasVariable($var_id) || $context->vars_in_scope[$var_id]->isNull())
                     ) {
                         // we don't know if it exists, assume it's passed by reference
                         $context->vars_in_scope[$var_id] = Type::getMixed();

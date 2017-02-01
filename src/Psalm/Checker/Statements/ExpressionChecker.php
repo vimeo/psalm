@@ -221,6 +221,7 @@ class ExpressionChecker
             }
 
             $use_context = new Context($context->self);
+            $use_context->count_references = $statements_checker->getFileChecker()->project_checker->count_references;
 
             if (!$statements_checker->isStatic()) {
                 if ($context->collect_mutations &&
@@ -251,11 +252,11 @@ class ExpressionChecker
             foreach ($stmt->uses as $use) {
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
-                if (!isset($context->vars_in_scope['$' . $use->var]) && $use->byRef) {
+                if (!$context->hasVariable('$' . $use->var) && $use->byRef) {
                     $context->vars_in_scope['$' . $use->var] = Type::getMixed();
                 }
 
-                $use_context->vars_in_scope['$' . $use->var] = isset($context->vars_in_scope['$' . $use->var])
+                $use_context->vars_in_scope['$' . $use->var] = $context->hasVariable('$' . $use->var)
                     ? clone $context->vars_in_scope['$' . $use->var]
                     : Type::getMixed();
 
@@ -485,7 +486,7 @@ class ExpressionChecker
         if (!$context->check_variables) {
             $stmt->inferredType = Type::getMixed();
 
-            if (is_string($stmt->name) && !isset($context->vars_in_scope['$' . $stmt->name])) {
+            if (is_string($stmt->name) && !$context->hasVariable('$' . $stmt->name)) {
                 $context->vars_in_scope['$' . $stmt->name] = Type::getMixed();
                 $context->vars_possibly_in_scope['$' . $stmt->name] = true;
             }
@@ -524,7 +525,7 @@ class ExpressionChecker
 
         $var_name = '$' . $stmt->name;
 
-        if (!isset($context->vars_in_scope[$var_name])) {
+        if (!$context->hasVariable($var_name)) {
             if (!isset($context->vars_possibly_in_scope[$var_name]) ||
                 !$statements_checker->getFirstAppearance($var_name)
             ) {
@@ -586,7 +587,7 @@ class ExpressionChecker
         );
 
         if ($var_id) {
-            if (!isset($context->vars_in_scope[$var_id])) {
+            if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $statements_checker->registerVariable($var_id, $stmt->getLine());
             } else {
@@ -741,7 +742,7 @@ class ExpressionChecker
             }
 
             foreach ($op_context->vars_in_scope as $var => $type) {
-                if (!isset($context->vars_in_scope[$var])) {
+                if (!$context->hasVariable($var)) {
                     $context->vars_in_scope[$var] = $type;
                     continue;
                 }
@@ -1368,7 +1369,7 @@ class ExpressionChecker
         Context $context
     ) {
         foreach ($stmt->uses as $use) {
-            if (!isset($context->vars_in_scope['$' . $use->var])) {
+            if (!$context->hasVariable('$' . $use->var)) {
                 if ($use->byRef) {
                     $context->vars_in_scope['$' . $use->var] = Type::getMixed();
                     $context->vars_possibly_in_scope['$' . $use->var] = true;
@@ -1538,6 +1539,13 @@ class ExpressionChecker
             if (self::analyze($statements_checker, $stmt->if, $t_if_context) === false) {
                 return false;
             }
+
+            if ($context->count_references) {
+                $context->referenced_vars = array_merge(
+                    $context->referenced_vars,
+                    $t_if_context->referenced_vars
+                );
+            }
         }
 
         $t_else_context = clone $context;
@@ -1561,6 +1569,13 @@ class ExpressionChecker
 
         if (self::analyze($statements_checker, $stmt->else, $t_else_context) === false) {
             return false;
+        }
+
+        if ($context->count_references) {
+            $context->referenced_vars = array_merge(
+                $context->referenced_vars,
+                $t_else_context->referenced_vars
+            );
         }
 
         $lhs_type = null;
@@ -1693,6 +1708,12 @@ class ExpressionChecker
 
             if (isset($stmt->dim)) {
                 self::analyze($statements_checker, $stmt->dim, $context);
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
+            self::analyzeIssetVar($statements_checker, $stmt->var, $context);
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Variable) {
+            if ($context->count_references && is_string($stmt->name)) {
+                $context->hasVariable('$' . $stmt->name);
             }
         }
     }

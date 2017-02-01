@@ -74,7 +74,7 @@ class WhileChecker
                 continue;
             }
 
-            if (isset($while_context->vars_in_scope[$var])) {
+            if ($while_context->hasVariable($var)) {
                 if ($while_context->vars_in_scope[$var]->isMixed()) {
                     $context->vars_in_scope[$var] = $while_context->vars_in_scope[$var];
                 }
@@ -89,6 +89,13 @@ class WhileChecker
             $context->vars_possibly_in_scope,
             $while_context->vars_possibly_in_scope
         );
+
+        if ($context->count_references) {
+            $context->referenced_vars = array_merge(
+                $context->referenced_vars,
+                $while_context->referenced_vars
+            );
+        }
 
         return null;
     }

@@ -115,6 +115,13 @@ class SwitchChecker
 
             $statements_checker->analyze($case_stmts, $case_context, $loop_context);
 
+            if ($context->count_references) {
+                $context->referenced_vars = array_merge(
+                    $context->referenced_vars,
+                    $case_context->referenced_vars
+                );
+            }
+
             // has a return/throw at end
             $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
 
@@ -166,7 +173,7 @@ class SwitchChecker
                         );
                     } else {
                         foreach ($new_vars_in_scope as $new_var => $type) {
-                            if (!isset($case_context->vars_in_scope[$new_var])) {
+                            if (!$case_context->hasVariable($new_var)) {
                                 unset($new_vars_in_scope[$new_var]);
                             } else {
                                 $new_vars_in_scope[$new_var] =

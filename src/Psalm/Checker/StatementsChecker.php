@@ -100,14 +100,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
                 !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             ) {
-                echo('Warning: Expressions after return/throw/continue in ' . $this->getCheckedFileName() . ' on line ' .
-                    $stmt->getLine() . PHP_EOL);
+                echo('Warning: Expressions after return/throw/continue in ' .
+                    $this->getCheckedFileName() . ' on line ' . $stmt->getLine() . PHP_EOL);
                 break;
             }
 
             /*
-            if (isset($context->vars_in_scope['$firstStmts'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$firstStmts']);
+            if (isset($context->vars_in_scope['$storage'])) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$storage'], $context->referenced_vars);
             }
             */
 
@@ -182,6 +182,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($context->self);
+                $function_context->count_references = $this->getFileChecker()->project_checker->count_references;
                 $function_checkers[$stmt->name]->analyze($function_context, $context);
 
                 $config = Config::getInstance();
@@ -228,7 +229,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                             if (is_string($var->name)) {
                                 $var_id = '$' . $var->name;
 
-                                $context->vars_in_scope[$var_id] = isset($global_context->vars_in_scope[$var_id])
+                                $context->vars_in_scope[$var_id] = $global_context->hasVariable($var_id)
                                     ? clone $global_context->vars_in_scope[$var_id]
                                     : Type::getMixed();
 
@@ -456,7 +457,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
         }
 
-        if (isset($context->vars_in_scope[$const_name])) {
+        if ($context->hasVariable($const_name)) {
             return $context->vars_in_scope[$const_name];
         }
 

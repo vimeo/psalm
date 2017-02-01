@@ -428,6 +428,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if (!$class_context) {
             $class_context = new Context($this->fq_class_name);
+            $class_context->count_references = $this->getFileChecker()->project_checker->count_references;
             $class_context->parent = $this->parent_fq_class_name;
         }
 
@@ -1055,7 +1056,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if (($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name, $file_checker)) ||
             ($interface_exists && !InterfaceChecker::hasCorrectCasing($fq_class_name, $file_checker))
         ) {
-            $file_checker->evaluateClassLike($fq_class_name, true);
+            $file_checker->evaluateClassLike($fq_class_name);
 
             if (ClassLikeChecker::isUserDefined($fq_class_name)) {
                 if (IssueBuffer::accepts(

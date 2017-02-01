@@ -127,6 +127,13 @@ class IfChecker
             $context->vars_possibly_in_scope
         );
 
+        if ($context->count_references) {
+            $context->referenced_vars = array_merge(
+                $if_context->referenced_vars,
+                $context->referenced_vars
+            );
+        }
+
         $temp_else_context = clone $original_context;
 
         if ($if_scope->negated_types) {
@@ -191,7 +198,10 @@ class IfChecker
             );
         }
 
-        $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $if_scope->new_vars_possibly_in_scope);
+        $context->vars_possibly_in_scope = array_merge(
+            $context->vars_possibly_in_scope,
+            $if_scope->new_vars_possibly_in_scope
+        );
 
         $updated_loop_vars = [];
 
@@ -222,7 +232,7 @@ class IfChecker
 
         if ($if_scope->possibly_redefined_vars) {
             foreach ($if_scope->possibly_redefined_vars as $var => $type) {
-                if (isset($context->vars_in_scope[$var]) && !isset($if_scope->updated_vars[$var])) {
+                if ($context->hasVariable($var) && !isset($if_scope->updated_vars[$var])) {
                     $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $type);
                 }
             }
@@ -230,7 +240,7 @@ class IfChecker
 
         if ($if_scope->possibly_redefined_loop_vars && $loop_context) {
             foreach ($if_scope->possibly_redefined_loop_vars as $var => $type) {
-                if (isset($loop_context->vars_in_scope[$var]) && !isset($updated_loop_vars[$var])) {
+                if ($loop_context->hasVariable($var) && !isset($updated_loop_vars[$var])) {
                     $loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
                         $loop_context->vars_in_scope[$var],
                         $type
@@ -267,6 +277,13 @@ class IfChecker
 
         if ($statements_checker->analyze($stmt->stmts, $if_context, $if_scope->loop_context) === false) {
             return false;
+        }
+
+        if ($outer_context->count_references) {
+            $outer_context->referenced_vars = array_merge(
+                $outer_context->referenced_vars,
+                $if_context->referenced_vars
+            );
         }
 
         $mic_drop = false;
@@ -465,7 +482,7 @@ class IfChecker
                     $if_scope->new_vars = array_diff_key($elseif_context->vars_in_scope, $outer_context->vars_in_scope);
                 } else {
                     foreach ($if_scope->new_vars as $new_var => $type) {
-                        if (!isset($elseif_context->vars_in_scope[$new_var])) {
+                        if (!$elseif_context->hasVariable($new_var)) {
                             unset($if_scope->new_vars[$new_var]);
                         } else {
                             $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
@@ -560,6 +577,13 @@ class IfChecker
             }
         }
 
+        if ($outer_context->count_references) {
+            $outer_context->referenced_vars = array_merge(
+                $outer_context->referenced_vars,
+                $elseif_context->referenced_vars
+            );
+        }
+
         $negated_clauses = array_merge(
             $negated_clauses,
             TypeChecker::negateFormula($elseif_clauses)
@@ -634,7 +658,7 @@ class IfChecker
                     $if_scope->new_vars = array_diff_key($else_context->vars_in_scope, $outer_context->vars_in_scope);
                 } else {
                     foreach ($if_scope->new_vars as $new_var => $type) {
-                        if (!isset($else_context->vars_in_scope[$new_var])) {
+                        if (!$else_context->hasVariable($new_var)) {
                             unset($if_scope->new_vars[$new_var]);
                         } else {
                             $if_scope->new_vars[$new_var] = Type::combineUnionTypes(

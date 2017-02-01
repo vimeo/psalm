@@ -184,6 +184,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         $this->context = new Context();
+        $this->context->count_references = $project_checker->count_references;
     }
 
     /**
@@ -317,6 +318,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         foreach ($this->function_checkers as $function_checker) {
             $function_context = new Context($this->context->self);
+            $function_context->count_references = $this->project_checker->count_references;
             $function_checker->analyze($function_context, $this->context);
 
             if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_path)) {
@@ -453,10 +455,9 @@ class FileChecker extends SourceChecker implements StatementsSource
      * When evaluating a file, we wait until a class is actually used to evaluate its contents
      *
      * @param  string $fq_class_name
-     * @param  bool   $visit_file
      * @return null|false
      */
-    public function evaluateClassLike($fq_class_name, $visit_file)
+    public function evaluateClassLike($fq_class_name)
     {
         if (isset($this->interface_checkers_no_methods[$fq_class_name])) {
             $interface_checker = $this->interface_checkers_no_methods[$fq_class_name];

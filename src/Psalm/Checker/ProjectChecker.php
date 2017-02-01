@@ -705,12 +705,12 @@ class ProjectChecker
      */
     public function getMethodMutations($original_method_id, Context $this_context)
     {
-        list($fq_class_name, $method_name) = explode('::', $original_method_id);
+        list($fq_class_name) = explode('::', $original_method_id);
 
         $file_checker = $this->getVisitedFileCheckerForClassLike($fq_class_name);
 
         $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($original_method_id);
-        list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+        list($declaring_fq_class_name) = explode('::', $declaring_method_id);
 
         if (strtolower($declaring_fq_class_name) !== strtolower($fq_class_name)) {
             $file_checker = $this->getVisitedFileCheckerForClassLike($declaring_fq_class_name);
