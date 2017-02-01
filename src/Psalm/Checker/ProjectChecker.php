@@ -163,18 +163,21 @@ class ProjectChecker
      * @param boolean $debug_output
      * @param string  $output_format
      * @param bool    $update_docblocks
+     * @param bool    $find_dead_code
      */
     public function __construct(
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
         $debug_output = false,
-        $update_docblocks = false
+        $update_docblocks = false,
+        $find_dead_code = false
     ) {
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
         $this->update_docblocks = $update_docblocks;
+        $this->count_references = $find_dead_code;
 
         if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS])) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
@@ -563,10 +566,7 @@ class ProjectChecker
             throw new \UnexpectedValueException('Config should not be null here');
         }
 
-        $predefined_classlikes = array_merge(
-            $this->config->getPredefinedInterfaces(),
-            $this->config->getPredefinedClasses()
-        );
+        $predefined_classlikes = $this->config->getPredefinedClassLikes();
 
         if (isset($predefined_classlikes[$fq_class_name_ci])) {
             $this->visited_classes[$fq_class_name_ci] = true;

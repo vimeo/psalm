@@ -206,10 +206,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $statements_checker = new StatementsChecker($this);
 
-        $predefined_classlikes = array_merge(
-            $config->getPredefinedInterfaces(),
-            $config->getPredefinedClasses()
-        );
+        $predefined_classlikes = $config->getPredefinedClassLikes();
 
         $classes_to_check = [];
         $interfaces_to_check = [];

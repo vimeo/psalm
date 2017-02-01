@@ -164,10 +164,7 @@ class Config
     protected $plugins = [];
 
     /** @var array<string, bool> */
-    protected $predefined_classes = [];
-
-    /** @var array<string, bool> */
-    protected $predefined_interfaces = [];
+    protected $predefined_classlikes = [];
 
     /** @var array<string, mixed> */
     protected $predefined_constants;
@@ -181,8 +178,7 @@ class Config
 
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
-        $this->collectPredefinedClasses();
-        $this->collectPredefinedInterfaces();
+        $this->collectPredefinedClassLikes();
     }
 
     /**
@@ -625,17 +621,9 @@ class Config
     /**
      * @return array<string, bool>
      */
-    public function getPredefinedClasses()
+    public function getPredefinedClassLikes()
     {
-        return $this->predefined_classes;
-    }
-
-    /**
-     * @return array<string, bool>
-     */
-    public function getPredefinedInterfaces()
-    {
-        return $this->predefined_interfaces;
+        return $this->predefined_classlikes;
     }
 
     /**
@@ -663,7 +651,7 @@ class Config
     /**
      * @return void
      */
-    public function collectPredefinedClasses()
+    public function collectPredefinedClassLikes()
     {
         /** @var array<int, string> */
         $predefined_classes = get_declared_classes();
@@ -672,16 +660,10 @@ class Config
             if (strpos($predefined_class, 'Psalm\\') !== 0 &&
                 strpos($predefined_class, 'PhpParser\\') !== 0
             ) {
-                $this->predefined_classes[strtolower($predefined_class)] = true;
+                $this->predefined_classlikes[strtolower($predefined_class)] = true;
             }
         }
-    }
 
-    /**
-     * @return void
-     */
-    public function collectPredefinedInterfaces()
-    {
         /** @var array<int, string> */
         $predefined_interfaces = get_declared_interfaces();
 
@@ -689,7 +671,7 @@ class Config
             if (strpos($predefined_interface, 'Psalm\\') !== 0 &&
                 strpos($predefined_interface, 'PhpParser\\') !== 0
             ) {
-                $this->predefined_interfaces[strtolower($predefined_interface)] = true;
+                $this->predefined_classlikes[strtolower($predefined_interface)] = true;
             }
         }
     }

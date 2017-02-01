@@ -24,6 +24,7 @@ $options = getopt(
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
+        'find-dead-code',
     ]
 );
 
@@ -58,6 +59,7 @@ Options:
          --self-check               Psalm checks itself
          --update-docblocks         Adds correct return types to the given file(s)
          --output-format=console    Changes the output format
+         --find-dead-code           Look for dead code
 
 
 HELP;
@@ -149,9 +151,18 @@ $show_info = isset($options['show-info'])
 
 $is_diff = isset($options['diff']);
 
+$find_dead_code = isset($options['find-dead-code']);
+
 $update_docblocks = isset($options['update-docblocks']);
 
-$project_checker = new ProjectChecker($use_color, $show_info, $output_format, $debug, $update_docblocks);
+$project_checker = new ProjectChecker(
+    $use_color,
+    $show_info,
+    $output_format,
+    $debug,
+    $update_docblocks,
+    $find_dead_code
+);
 
 // initialise custom config, if passed
 if ($path_to_config) {

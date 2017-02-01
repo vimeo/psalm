@@ -135,10 +135,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         $config = \Psalm\Config::getInstance();
 
-        $predefined_classlikes = array_merge(
-            $config->getPredefinedInterfaces(),
-            $config->getPredefinedClasses()
-        );
+        $predefined_classlikes = $config->getPredefinedClassLikes();
 
         $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this);
 
