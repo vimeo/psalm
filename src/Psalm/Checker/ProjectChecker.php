@@ -514,26 +514,16 @@ class ProjectChecker
      * @param  array  $filetype_handlers
      * @return FileChecker
      */
-    public function getFileChecker($file_path, array $filetype_handlers)
+    protected function visitFile($file_path, array $filetype_handlers)
     {
         $extension = (string)pathinfo($file_path)['extension'];
 
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
-            return new $filetype_handlers[$extension]($file_path, $this);
+            $file_checker = new $filetype_handlers[$extension]($file_path, $this);
+        } else {
+            $file_checker = new FileChecker($file_path, $this, null, true);
         }
-
-        return new FileChecker($file_path, $this);
-    }
-
-    /**
-     * @param  string $file_path
-     * @param  array  $filetype_handlers
-     * @return FileChecker
-     */
-    public function visitFile($file_path, array $filetype_handlers)
-    {
-        $file_checker = $this->getFileChecker($file_path, $filetype_handlers);
 
         if ($this->debug_output) {
             echo (isset($this->visited_files[$file_path]) ? 'Rev' : 'V') . 'isiting ' . $file_path . PHP_EOL;
@@ -638,7 +628,7 @@ class ProjectChecker
 
             $this->visited_files[$file_path] = true;
 
-            $file_checker = new FileChecker($file_path, $this);
+            $file_checker = new FileChecker($file_path, $this, null, isset($this->files_to_analyze[$file_path]));
 
             $short_file_name = $file_checker->getFileName();
 
@@ -730,7 +720,7 @@ class ProjectChecker
      * @param  string $fq_class_name
      * @return FileChecker
      */
-    public function getVisitedFileCheckerForClassLike($fq_class_name)
+    private function getVisitedFileCheckerForClassLike($fq_class_name)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
 
@@ -753,7 +743,7 @@ class ProjectChecker
             return $this->file_checkers[$file_path];
         }
 
-        $file_checker = new FileChecker($file_path, $this);
+        $file_checker = new FileChecker($file_path, $this, null, true);
 
         $file_checker->visit();
 

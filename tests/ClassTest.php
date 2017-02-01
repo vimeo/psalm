@@ -586,4 +586,78 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    public function testClassTraversal()
+    {
+
+        $stmts = self::$parser->parse('<?php
+        namespace Foo;
+
+        class A {
+            /** @var string */
+            protected $foo = C::DOPE;
+
+            /** @return string */
+            public function __get() { }
+        }
+
+        class B extends A {
+            /** @return void */
+            public function foo() {
+                echo (string)(new C)->bar;
+            }
+        }
+
+        class C extends B {
+            const DOPE = "dope";
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    public function testClassTraversalViaRequire()
+    {
+        $this->markTestSkipped();
+
+        $this->project_checker->registerFile(
+            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+            '<?php
+            class A {
+                /** @return string */
+                public function __get() { }
+            }
+            '
+        );
+
+        $this->project_checker->registerFile(
+            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+            '<?php
+            require("file1.php");
+
+            class B extends A {
+                /** @return void */
+                public function foo() {
+                    echo (string)(new C)->bar;
+                }
+            }
+            '
+        );
+
+        $file3_checker = new FileChecker(
+            getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
+            $this->project_checker,
+            self::$parser->parse('<?php
+            require("file2.php");
+
+            class C extends B {
+                const DOPE = "dope";
+            }
+            ')
+        );
+
+        $context = new Context();
+        $file3_checker->visitAndAnalyzeMethods($context);
+    }
 }

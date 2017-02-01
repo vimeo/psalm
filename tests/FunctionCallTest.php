@@ -253,7 +253,7 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
      */
     public function testBadByRef()
     {
-        $this->markTestIncomplete('Does not throw an error');
+        $this->markTestSkipped('Does not throw an error');
         $stmts = self::$parser->parse('<?php
         function fooFoo(string &$v) : void {}
         fooFoo("a");
