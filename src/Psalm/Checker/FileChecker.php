@@ -6,6 +6,7 @@ use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
+use Psalm\Issue\DuplicateClass;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -205,45 +206,59 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $statements_checker = new StatementsChecker($this);
 
+        $predefined_classlikes = array_merge(
+            $config->getPredefinedInterfaces(),
+            $config->getPredefinedClasses()
+        );
+
         $classes_to_check = [];
         $interfaces_to_check = [];
         $function_stmts = [];
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Class_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Interface_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Trait_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Namespace_
-            ) {
-                if ($stmt instanceof PhpParser\Node\Stmt\Class_ && $stmt->name) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassLike && $stmt->name) {
+                if (isset($predefined_classlikes[strtolower($stmt->name)])) {
+                    if (IssueBuffer::accepts(
+                        new DuplicateClass(
+                            'Class ' . $stmt->name . ' has already been defined internally',
+                            new \Psalm\CodeLocation($this, $stmt, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    continue;
+                }
+
+                if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                     $class_checker = new ClassChecker($stmt, $this, $stmt->name);
 
                     $fq_class_name = $class_checker->getFQCLN();
 
                     $this->class_checkers_no_methods[$fq_class_name] = $class_checker;
                     $classes_to_check[] = $class_checker;
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $stmt->name) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     $class_checker = new InterfaceChecker($stmt, $this, $stmt->name);
 
                     $fq_class_name = $class_checker->getFQCLN();
 
                     $this->interface_checkers_no_methods[$fq_class_name] = $class_checker;
                     $interfaces_to_check[] = $class_checker;
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_ && $stmt->name) {
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     $trait_checker = new TraitChecker($stmt, $this, $stmt->name);
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
-                    $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
-
-                    $namespace_checker = new NamespaceChecker($stmt, $this);
-
-                    $namespace_checker->visit();
-
-                    $this->namespace_checkers[] = $namespace_checker;
-
-                    $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliasedClasses();
-                    $this->namespace_aliased_classes_flipped[$namespace_name] =
-                        $namespace_checker->getAliasedClassesFlipped();
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
+
+                $namespace_checker = new NamespaceChecker($stmt, $this);
+
+                $namespace_checker->visit();
+
+                $this->namespace_checkers[] = $namespace_checker;
+
+                $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliasedClasses();
+                $this->namespace_aliased_classes_flipped[$namespace_name] =
+                    $namespace_checker->getAliasedClassesFlipped();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_stmts[] = $stmt;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {

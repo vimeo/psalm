@@ -128,6 +128,11 @@ class Config
     protected $mock_classes = [];
 
     /**
+     * @var array<int, string>
+     */
+    protected $stub_files = [];
+
+    /**
      * @var boolean
      */
     public $hide_external_errors = true;
@@ -158,6 +163,12 @@ class Config
      */
     protected $plugins = [];
 
+    /** @var array<string, bool> */
+    protected $predefined_classes = [];
+
+    /** @var array<string, bool> */
+    protected $predefined_interfaces = [];
+
     /** @var array<string, mixed> */
     protected $predefined_constants;
 
@@ -167,12 +178,17 @@ class Config
     protected function __construct()
     {
         self::$config = $this;
+
+        $this->collectPredefinedConstants();
+        $this->collectPredefinedFunctions();
+        $this->collectPredefinedClasses();
+        $this->collectPredefinedInterfaces();
     }
 
     /**
      * Creates a new config object from the file
      *
-     * @param  string $file_path
+     * @param  string           $file_path
      * @return self
      */
     public static function loadFromXMLFile($file_path)
@@ -189,8 +205,8 @@ class Config
     /**
      * Creates a new config object from an XML string
      *
-     * @param  string $file_path
-     * @param  string $file_contents
+     * @param  string           $file_path
+     * @param  string           $file_contents
      * @return self
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
@@ -200,7 +216,7 @@ class Config
      */
     public static function loadFromXML($file_path, $file_contents)
     {
-        $config = new self();
+        $config = new static();
 
         $config->file_path = $file_path;
 
@@ -312,6 +328,19 @@ class Config
             }
         }
 
+        if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
+            /** @var \SimpleXMLElement $stub_file */
+            foreach ($config_xml->stubs->file as $stub_file) {
+                $file_path = realpath($stub_file['name']);
+
+                if (!$file_path) {
+                    throw new Exception\ConfigException('Cannot resolve stubfile path ' . getcwd() . '/' . $stub_file['name']);
+                }
+
+                $config->stub_files[] = $file_path;
+            }
+        }
+
         // this plugin loading system borrows heavily from etsy/phan
         if (isset($config_xml->plugins) && isset($config_xml->plugins->plugin)) {
             /** @var \SimpleXMLElement $plugin */
@@ -351,6 +380,10 @@ class Config
                     $config
                 );
             }
+        }
+
+        if ($config->autoloader) {
+            require_once(getcwd() . DIRECTORY_SEPARATOR . $config->autoloader);
         }
 
         return $config;
@@ -529,6 +562,26 @@ class Config
     }
 
     /**
+     * @param  ProjectChecker $project_checker
+     * @return void
+     */
+    public function visitStubFiles(ProjectChecker $project_checker)
+    {
+        foreach ($this->stub_files as $stub_file) {
+            $stub_checker = new FileChecker($stub_file, $project_checker);
+            $stub_checker->visit();
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getStubFiles()
+    {
+        return $this->stub_files;
+    }
+
+    /**
      * @return string
      */
     public function getCacheDirectory()
@@ -570,6 +623,22 @@ class Config
     }
 
     /**
+     * @return array<string, bool>
+     */
+    public function getPredefinedClasses()
+    {
+        return $this->predefined_classes;
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getPredefinedInterfaces()
+    {
+        return $this->predefined_interfaces;
+    }
+
+    /**
      * @return void
      * @psalm-suppress InvalidPropertyAssignment
      * @psalm-suppress MixedAssignment
@@ -587,6 +656,40 @@ class Config
         if (isset($defined_functions['internal'])) {
             foreach ($defined_functions['internal'] as $function_name) {
                 $this->predefined_functions[$function_name] = true;
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function collectPredefinedClasses()
+    {
+        /** @var array<int, string> */
+        $predefined_classes = get_declared_classes();
+
+        foreach ($predefined_classes as $predefined_class) {
+            if (strpos($predefined_class, 'Psalm\\') !== 0 &&
+                strpos($predefined_class, 'PhpParser\\') !== 0
+            ) {
+                $this->predefined_classes[strtolower($predefined_class)] = true;
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function collectPredefinedInterfaces()
+    {
+        /** @var array<int, string> */
+        $predefined_interfaces = get_declared_interfaces();
+
+        foreach ($predefined_interfaces as $predefined_interface) {
+            if (strpos($predefined_interface, 'Psalm\\') !== 0 &&
+                strpos($predefined_interface, 'PhpParser\\') !== 0
+            ) {
+                $this->predefined_interfaces[strtolower($predefined_interface)] = true;
             }
         }
     }

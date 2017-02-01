@@ -559,6 +559,22 @@ class ProjectChecker
             return $this->existing_classlikes_ci[$fq_class_name_ci];
         }
 
+        if (!$this->config) {
+            throw new \UnexpectedValueException('Config should not be null here');
+        }
+
+        $predefined_classlikes = array_merge(
+            $this->config->getPredefinedInterfaces(),
+            $this->config->getPredefinedClasses()
+        );
+
+        if (isset($predefined_classlikes[$fq_class_name_ci])) {
+            $this->visited_classes[$fq_class_name_ci] = true;
+            $reflected_class = new \ReflectionClass($fq_class_name);
+            ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+            return true;
+        }
+
         $old_level = error_reporting();
         error_reporting(0);
 
@@ -574,21 +590,16 @@ class ProjectChecker
 
         error_reporting($old_level);
 
-        if ($reflected_class->isUserDefined()) {
-            $fq_class_name = $reflected_class->getName();
-            $this->existing_classlikes_ci[$fq_class_name_ci] = true;
-            $this->existing_classlikes[$fq_class_name] = true;
+        $fq_class_name = $reflected_class->getName();
+        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_classlikes[$fq_class_name] = true;
 
-            if ($reflected_class->isInterface()) {
-                $this->addFullyQualifiedInterfaceName($fq_class_name, (string)$reflected_class->getFileName());
-            } elseif ($reflected_class->isTrait()) {
-                $this->addFullyQualifiedTraitName($fq_class_name, (string)$reflected_class->getFileName());
-            } else {
-                $this->addFullyQualifiedClassName($fq_class_name, (string)$reflected_class->getFileName());
-            }
+        if ($reflected_class->isInterface()) {
+            $this->addFullyQualifiedInterfaceName($fq_class_name, (string)$reflected_class->getFileName());
+        } elseif ($reflected_class->isTrait()) {
+            $this->addFullyQualifiedTraitName($fq_class_name, (string)$reflected_class->getFileName());
         } else {
-            $this->visited_classes[$fq_class_name_ci] = true;
-            ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+            $this->addFullyQualifiedClassName($fq_class_name, (string)$reflected_class->getFileName());
         }
 
         return true;
@@ -782,13 +793,6 @@ class ProjectChecker
             if (file_exists($maybe_path)) {
                 $config = Config::loadFromXMLFile($maybe_path);
 
-                if ($config->autoloader) {
-                    require_once($dir_path . DIRECTORY_SEPARATOR . $config->autoloader);
-                }
-
-                $config->collectPredefinedConstants();
-                $config->collectPredefinedFunctions();
-
                 break;
             }
 
@@ -799,9 +803,24 @@ class ProjectChecker
             throw new Exception\ConfigException('Config not found for path ' . $path);
         }
 
+        $this->config = $config;
+
+        $config->visitStubFiles($this);
         $config->initializePlugins($this);
 
         return $config;
+    }
+
+    /**
+     * @param  Config $config
+     * @return void
+     */
+    public function setConfig(Config $config)
+    {
+        $this->config = $config;
+
+        $config->visitStubFiles($this);
+        $config->initializePlugins($this);
     }
 
     /**
@@ -818,13 +837,6 @@ class ProjectChecker
         $dir_path = dirname($path_to_config) . DIRECTORY_SEPARATOR;
 
         $this->config = Config::loadFromXMLFile($path_to_config);
-
-        if ($this->config->autoloader) {
-            require_once($dir_path . DIRECTORY_SEPARATOR . $this->config->autoloader);
-        }
-
-        $this->config->collectPredefinedConstants();
-        $this->config->collectPredefinedFunctions();
     }
 
     /**

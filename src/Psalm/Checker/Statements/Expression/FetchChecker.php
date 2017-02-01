@@ -440,6 +440,12 @@ class FetchChecker
                 return null;
             }
 
+            // if we're ignoring that the class doesn't exist, exit anyway
+            if (!ClassLikeChecker::classOrInterfaceExists($fq_class_name, $statements_checker->getFileChecker())) {
+                $stmt->inferredType = Type::getMixed();
+                return null;
+            }
+
             $const_id = $fq_class_name . '::' . $stmt->name;
 
             if ($fq_class_name === $context->self

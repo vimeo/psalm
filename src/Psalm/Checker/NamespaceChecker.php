@@ -4,6 +4,9 @@ namespace Psalm\Checker;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser;
 use Psalm\Context;
+use Psalm\Exception\RedefinedPredefinedClassException;
+use Psalm\IssueBuffer;
+use Psalm\Issue\DuplicateClass;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -130,7 +133,27 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             throw new \UnexpectedValueException('Did not expect anonymous class here');
         }
 
+        $config = \Psalm\Config::getInstance();
+
+        $predefined_classlikes = array_merge(
+            $config->getPredefinedInterfaces(),
+            $config->getPredefinedClasses()
+        );
+
         $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this);
+
+        if (isset($predefined_classlikes[strtolower($fq_class_name)])) {
+            if (IssueBuffer::accepts(
+                new DuplicateClass(
+                    'Class ' . $fq_class_name . ' has already been defined internally',
+                    new \Psalm\CodeLocation($this, $stmt, true)
+                )
+            )) {
+                // fall through
+            }
+
+            return;
+        }
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             $classlike_checkers[] = new ClassChecker($stmt, $this, $fq_class_name);

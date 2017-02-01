@@ -7,6 +7,7 @@
             <xs:element name="projectFiles" type="ProjectFilesType" minOccurs="1" maxOccurs="1" />
             <xs:element name="fileExtensions" type="FileExtensionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="mockClasses" type="MockClassesType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="stubs" type="StubsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
@@ -59,6 +60,12 @@
     <xs:complexType name="MockClassesType">
         <xs:sequence>
             <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="StubsType">
+        <xs:sequence>
+            <xs:element name="file" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
     </xs:complexType>
 
