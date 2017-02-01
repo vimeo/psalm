@@ -759,4 +759,29 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testRemoveEmptyArray()
+    {
+        $stmts = self::$parser->parse('<?php
+        $arr_or_string = [];
+
+        if (rand(0, 1)) {
+          $arr_or_string = "hello";
+        }
+
+        /** @return void **/
+        function foo(string $s) {}
+
+        if (!empty($arr_or_string)) {
+            foo($arr_or_string);
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }

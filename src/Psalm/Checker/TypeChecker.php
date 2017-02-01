@@ -582,6 +582,12 @@ class TypeChecker
 
                 if ($new_var_type === '!empty') {
                     $existing_var_type->removeType('false');
+
+                    if ($existing_var_type->hasType('array') &&
+                        (string)$existing_var_type->types['array'] === 'array<empty, empty>'
+                    ) {
+                        $existing_var_type->removeType('array');
+                    }
                 }
 
                 if (empty($existing_var_type->types)) {
