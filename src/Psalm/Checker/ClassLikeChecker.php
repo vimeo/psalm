@@ -127,6 +127,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected static $class_extends = [];
 
     /**
+     * @var PhpParser\Node\Stmt[]
+     */
+    protected $leftover_stmts = [];
+
+    /**
      * @param PhpParser\Node\Stmt\ClassLike $class
      * @param StatementsSource              $source
      * @param string                        $fq_class_name
@@ -182,8 +187,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $config = Config::getInstance();
 
         $storage->user_defined = true;
-
-        $leftover_stmts = [];
 
         $long_file_name = $this->source->getFilePath();
 
@@ -277,6 +280,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
+        $const_stmts = [];
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $this->visitClassMethod(
@@ -294,14 +299,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $class_context,
                     $config
                 );
-                $leftover_stmts[] = $stmt;
+                $this->leftover_stmts[] = $stmt;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $this->visitClassConstDeclaration(
                     $stmt,
                     $class_context,
                     $config
                 );
-                $leftover_stmts[] = $stmt;
+                $const_stmts[] = $stmt;
             }
         }
 
@@ -309,8 +314,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $this->has_custom_get = true;
         }
 
-        if ($leftover_stmts) {
-            (new StatementsChecker($this))->analyze($leftover_stmts, $class_context);
+        if ($const_stmts) {
+            (new StatementsChecker($this))->analyze($const_stmts, $class_context);
         }
 
         $config = Config::getInstance();
@@ -430,6 +435,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_context = new Context($this->fq_class_name);
             $class_context->count_references = $this->getFileChecker()->project_checker->count_references;
             $class_context->parent = $this->parent_fq_class_name;
+        }
+
+        if ($this->leftover_stmts) {
+            (new StatementsChecker($this))->analyze($this->leftover_stmts, $class_context);
         }
 
         $available_properties = [];
