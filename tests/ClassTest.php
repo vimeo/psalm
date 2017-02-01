@@ -587,6 +587,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testClassTraversal()
     {
 
@@ -617,6 +620,9 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
     public function testClassTraversalViaRequire()
     {
         $this->markTestSkipped();
