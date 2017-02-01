@@ -11,6 +11,7 @@
         <directory name="tests" />
         <ignoreFiles>
             <file name="src/Psalm/CallMap.php" />
+            <directory name="tests/stubs" />
         </ignoreFiles>
     </projectFiles>
 

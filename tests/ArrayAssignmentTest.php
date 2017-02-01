@@ -29,9 +29,9 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $config = new TestConfig();
         \Psalm\Checker\FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
+        $this->project_checker->setConfig(new TestConfig());
     }
 
     /**

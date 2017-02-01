@@ -23,10 +23,6 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
-        $config->throw_exception = false;
-        $config->stop_on_first_error = false;
     }
 
     /**
@@ -36,6 +32,11 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
+
+        $config = new TestConfig();
+        $config->throw_exception = false;
+        $config->stop_on_first_error = false;
+        $this->project_checker->setConfig($config);
     }
 
     /**

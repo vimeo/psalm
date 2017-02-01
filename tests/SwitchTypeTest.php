@@ -14,6 +14,9 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var TestConfig */
+    protected static $config;
+
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
@@ -23,8 +26,7 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
+        self::$config = new TestConfig();
     }
 
     /**
@@ -34,6 +36,7 @@ class SwitchTypeTest extends PHPUnit_Framework_TestCase
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
+        $this->project_checker->setConfig(self::$config);
     }
 
     /**

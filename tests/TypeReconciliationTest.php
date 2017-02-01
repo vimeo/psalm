@@ -16,6 +16,9 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var TestConfig */
+    protected static $config;
+
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
@@ -28,8 +31,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
+        self::$config = new TestConfig();
     }
 
     /**
@@ -38,12 +40,12 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
+
+        $this->project_checker = new ProjectChecker();
+        $this->project_checker->setConfig(self::$config);
 
         $this->file_checker = new FileChecker('somefile.php', $this->project_checker);
         $this->file_checker->context = new Context();
-
-        $this->project_checker = new ProjectChecker();
     }
 
     /**

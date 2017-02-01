@@ -12,6 +12,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
+    /** @var TestConfig */
+    protected static $config;
+
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
@@ -21,9 +24,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-
-        $config = new TestConfig();
-        $config->throw_exception = true;
+        self::$config = new TestConfig();
     }
 
     /**
@@ -33,6 +34,7 @@ class TypeTest extends PHPUnit_Framework_TestCase
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
+        $this->project_checker->setConfig(self::$config);
     }
 
     /**

@@ -30,7 +30,7 @@ class BinaryOperationTest extends PHPUnit_Framework_TestCase
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $config = new TestConfig();
+        $this->project_checker->setConfig(new TestConfig());
     }
 
     /**
