@@ -23,7 +23,7 @@
         <xs:attribute name="allowFileIncludes" type="xs:string" />
         <xs:attribute name="totallyTyped" type="xs:string" />
         <xs:attribute name="strictBinaryOperands" type="xs:string" />
-        <xs:attribute name="addVoidDocblockReturnType" type="xs:string" />
+        <xs:attribute name="requireVoidReturnType" type="xs:string" />
         <xs:attribute name="useAssertForType" type="xs:string" />
     </xs:complexType>
 

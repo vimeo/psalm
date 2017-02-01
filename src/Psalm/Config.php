@@ -297,8 +297,8 @@ class Config
             $config->strict_binary_operands = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['addVoidDocblockReturnType'])) {
-            $attribute_text = (string) $config_xml['addVoidDocblockReturnType'];
+        if (isset($config_xml['requireVoidReturnType'])) {
+            $attribute_text = (string) $config_xml['requireVoidReturnType'];
             $config->add_void_docblocks = $attribute_text === 'true' || $attribute_text === '1';
         }
 

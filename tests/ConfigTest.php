@@ -305,4 +305,60 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingReturnType
+     * @return                   void
+     */
+    public function testRequireVoidReturnTypeExists()
+    {
+        $this->project_checker->setConfig(
+            TestConfig::loadFromXML(
+                'psalm.xml',
+                '<?xml version="1.0"?>
+                <psalm
+                    requireVoidReturnType="true">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $stmts = self::$parser->parse('<?php
+        function foo() {}
+        ');
+
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDoNotRequireVoidReturnTypeExists()
+    {
+        $this->project_checker->setConfig(
+            TestConfig::loadFromXML(
+                'psalm.xml',
+                '<?xml version="1.0"?>
+                <psalm
+                    requireVoidReturnType="false">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $stmts = self::$parser->parse('<?php
+        function foo() {}
+        ');
+
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
