@@ -750,6 +750,11 @@ class ExpressionChecker
 
             $context->updateChecks($op_context);
 
+            $context->referenced_vars = array_merge(
+                $op_context->referenced_vars,
+                $context->referenced_vars
+            );
+
             $context->vars_possibly_in_scope = array_merge(
                 $op_context->vars_possibly_in_scope,
                 $context->vars_possibly_in_scope
@@ -800,6 +805,11 @@ class ExpressionChecker
             }
 
             $context->updateChecks($op_context);
+
+            $context->referenced_vars = array_merge(
+                $op_context->referenced_vars,
+                $context->referenced_vars
+            );
 
             $context->vars_possibly_in_scope = array_merge(
                 $op_context->vars_possibly_in_scope,
@@ -1282,7 +1292,7 @@ class ExpressionChecker
 
         $new_return_type_parts = [];
 
-        foreach ($return_type->types as $key => $return_type_part) {
+        foreach ($return_type->types as $return_type_part) {
             $new_return_type_parts[] = self::fleshOutAtomicType($return_type_part, $args, $calling_class, $method_id);
         }
 

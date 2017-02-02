@@ -346,11 +346,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($context->count_references) {
-            foreach ($context->vars_in_scope as $var_name => $_) {
+            foreach ($context->vars_possibly_in_scope as $var_name => $_) {
                 if (strpos($var_name, '->') === false &&
                     $var_name !== '$this' &&
                     strpos($var_name, '::$') === false &&
-                    strpos($var_name, '[') === false
+                    strpos($var_name, '[') === false &&
+                    $var_name !== '$_'
                 ) {
                     if (!isset($context->referenced_vars[$var_name])) {
                         echo 'Variable ' . $var_name . ' is not referenced in ' . $cased_method_id . PHP_EOL;

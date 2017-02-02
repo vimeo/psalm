@@ -253,7 +253,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
                     $this->interface_checkers_to_visit[$fq_class_name] = $class_checker;
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                    $trait_checker = new TraitChecker($stmt, $this, $stmt->name);
+                    new TraitChecker($stmt, $this, $stmt->name);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';

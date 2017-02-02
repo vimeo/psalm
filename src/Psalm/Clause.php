@@ -78,7 +78,7 @@ class Clause
     {
         ksort($this->possibilities);
 
-        foreach ($this->possibilities as $var => &$possible_types) {
+        foreach ($this->possibilities as &$possible_types) {
             sort($possible_types);
         }
 

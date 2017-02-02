@@ -643,6 +643,13 @@ class IfChecker
             return false;
         }
 
+        if ($outer_context->count_references) {
+            $outer_context->referenced_vars = array_merge(
+                $outer_context->referenced_vars,
+                $else_context->referenced_vars
+            );
+        }
+
         if (count($else->stmts)) {
             // has a return/throw at end
             $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($else->stmts);

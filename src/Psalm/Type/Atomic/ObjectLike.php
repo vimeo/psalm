@@ -92,7 +92,7 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function __clone()
     {
-        foreach ($this->properties as $key => &$property) {
+        foreach ($this->properties as &$property) {
             $property = clone $property;
         }
     }

@@ -499,8 +499,6 @@ class MethodChecker extends FunctionLikeChecker
                     return null;
                 }
 
-                $file_checker = $source->getFileChecker();
-
                 if (ClassChecker::classExtends($appearing_method_class, $calling_context)) {
                     return null;
                 }

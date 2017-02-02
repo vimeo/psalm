@@ -113,7 +113,7 @@ class Context
      */
     public function __clone()
     {
-        foreach ($this->vars_in_scope as $key => &$type) {
+        foreach ($this->vars_in_scope as &$type) {
             if ($type) {
                 $type = clone $type;
             }
@@ -241,7 +241,7 @@ class Context
         if ($type->hasArray() || $type->isMixed()) {
             $vars_to_remove = [];
 
-            foreach ($this->vars_in_scope as $var_id => $context_type) {
+            foreach ($this->vars_in_scope as $var_id => $_) {
                 if (preg_match('/^' . preg_quote($remove_var_id, DIRECTORY_SEPARATOR) . '[\[\-]/', $var_id)) {
                     $vars_to_remove[] = $var_id;
                 }

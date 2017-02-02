@@ -490,8 +490,6 @@ class ProjectChecker
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_name);
 
-        $file_name_parts = explode('.', $file_name);
-
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileChecker::loadReferenceCache();

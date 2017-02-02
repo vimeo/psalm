@@ -89,8 +89,6 @@ class CallChecker
                 $context->check_consts = false;
             } elseif ($method->parts === ['extract']) {
                 $context->check_variables = false;
-            } elseif ($method->parts === ['assert']) {
-                $contains_assertion = true;
             } elseif ($method->parts === ['var_dump'] || $method->parts === ['shell_exec']) {
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(

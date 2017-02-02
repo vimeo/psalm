@@ -325,7 +325,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             foreach (ClassChecker::getInterfacesForClass(
                 $this->fq_class_name
-            ) as $interface_id => $interface_name) {
+            ) as $_ => $interface_name) {
                 $interface_storage = self::$storage[strtolower($interface_name)];
 
                 $storage->public_class_constants += $interface_storage->public_class_constants;
@@ -787,7 +787,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $class_storage = self::$storage[strtolower($this->fq_class_name)];
 
         if (!isset($class_storage->methods[$method_name])) {
-            $storage = FunctionLikeChecker::register($stmt, $this);
+            FunctionLikeChecker::register($stmt, $this);
         }
 
         if (!$stmt->isAbstract() && $class_context->self) {
@@ -1660,8 +1660,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     return null;
                 }
-
-                $file_checker = $source->getFileChecker();
 
                 if (ClassChecker::classExtends($appearing_property_class, $calling_context)) {
                     return null;
