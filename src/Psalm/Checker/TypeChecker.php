@@ -881,6 +881,9 @@ class TypeChecker
             return true;
         }
 
+        // from https://wiki.php.net/rfc/scalar_type_hints_v5:
+        //
+        // > int types can resolve a parameter type of float
         if ($input_type_part instanceof TInt && $container_type_part instanceof TFloat) {
             return true;
         }
@@ -1406,6 +1409,7 @@ class TypeChecker
 
             foreach ($union->types as $container_type_part) {
                 if ($type_part !== $container_type_part &&
+                    !($type_part instanceof TInt && $container_type_part instanceof TFloat) &&
                     TypeChecker::isAtomicContainedBy(
                         $type_part,
                         $container_type_part,
