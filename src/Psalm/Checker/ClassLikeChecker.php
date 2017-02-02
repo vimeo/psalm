@@ -1561,8 +1561,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
-        $old_property_id = null;
-
         if (!isset(self::$storage[strtolower($fq_class_name)])) {
             throw new \UnexpectedValueException(
                 'Storage not defined for ' . $property_id

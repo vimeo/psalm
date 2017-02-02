@@ -559,9 +559,9 @@ class CallChecker
             /** @var Type\Union|null */
             $return_type = null;
 
-            foreach ($class_type->types as $type) {
-                if (!$type instanceof TNamedObject) {
-                    switch (get_class($type)) {
+            foreach ($class_type->types as $class_type_part) {
+                if (!$class_type_part instanceof TNamedObject) {
+                    switch (get_class($class_type_part)) {
                         case 'Psalm\\Type\\Atomic\\TNull':
                             if (IssueBuffer::accepts(
                                 new NullReference(
@@ -608,7 +608,7 @@ class CallChecker
                     continue;
                 }
 
-                $fq_class_name = $type->value;
+                $fq_class_name = $class_type_part->value;
 
                 $is_mock = ExpressionChecker::isMock($fq_class_name);
 

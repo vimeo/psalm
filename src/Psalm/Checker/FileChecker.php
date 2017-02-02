@@ -1012,8 +1012,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         $function_line = $file_lines[$line_number - 1];
         $left_padding = str_replace(ltrim($function_line), '', $function_line);
 
-        $line_before = $file_lines[$line_number - 2];
-
         $parsed_docblock = [];
         $existing_line_count = $existing_docblock ? substr_count($existing_docblock, PHP_EOL) + 1 : 0;
 

@@ -254,7 +254,7 @@ class AssignmentChecker
             $context->vars_possibly_in_scope[$var_id] = true;
         }
 
-        if ($var_id && $context->hasVariable($var_id) && $context->vars_in_scope[$var_id]->isVoid()) {
+        if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
             if (IssueBuffer::accepts(
                 new FailedTypeResolution(
                     'Cannot assign ' . $var_id . ' to type void',

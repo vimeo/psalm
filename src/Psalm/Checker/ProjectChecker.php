@@ -492,8 +492,6 @@ class ProjectChecker
 
         $file_name_parts = explode('.', $file_name);
 
-        $extension = array_pop($file_name_parts);
-
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileChecker::loadReferenceCache();
@@ -823,8 +821,6 @@ class ProjectChecker
         if (!file_exists($path_to_config)) {
             throw new Exception\ConfigException('Config not found at location ' . $path_to_config);
         }
-
-        $dir_path = dirname($path_to_config) . DIRECTORY_SEPARATOR;
 
         $this->config = Config::loadFromXMLFile($path_to_config);
     }

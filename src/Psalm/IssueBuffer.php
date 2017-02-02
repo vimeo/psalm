@@ -150,7 +150,6 @@ class IssueBuffer
     protected static function getEmacsOutput(Issue\CodeIssue $e, $severity = Config::REPORT_ERROR)
     {
         $location = $e->getLocation();
-        $selection_bounds = $location->getSelectionBounds();
 
         return $location->file_path . ':' . $location->getLineNumber() . ':' . $location->getColumn() . ': ' .
             ($severity === Config::REPORT_ERROR ? 'error' : 'warning') . ' - ' . $e->getMessage();

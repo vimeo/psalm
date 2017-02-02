@@ -556,8 +556,6 @@ class MethodChecker extends FunctionLikeChecker
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $fq_class_name = $fq_class_name;
-
         if (!isset(ClassLikeChecker::$storage[$fq_class_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
         }

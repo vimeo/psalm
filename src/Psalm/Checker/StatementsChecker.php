@@ -46,8 +46,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public function __construct(StatementsSource $source)
     {
         $this->source = $source;
-
-        $config = Config::getInstance();
     }
 
     /**
