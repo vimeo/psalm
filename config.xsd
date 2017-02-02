@@ -25,6 +25,7 @@
         <xs:attribute name="strictBinaryOperands" type="xs:string" />
         <xs:attribute name="requireVoidReturnType" type="xs:string" />
         <xs:attribute name="useAssertForType" type="xs:string" />
+        <xs:attribute name="cacheFileContentHashes" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

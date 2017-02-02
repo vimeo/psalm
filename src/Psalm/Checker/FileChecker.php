@@ -253,7 +253,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
                     $this->interface_checkers_to_visit[$fq_class_name] = $class_checker;
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                    new TraitChecker($stmt, $this, $stmt->name);
+                    $trait_checker = new TraitChecker($stmt, $this, $stmt->name);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
@@ -545,7 +545,9 @@ class FileChecker extends SourceChecker implements StatementsSource
         $file_content_hash = md5($version . $file_contents);
         $name_cache_key = self::getParserCacheKey($file_path);
 
-        if (self::$file_content_hashes === null) {
+        $config = Config::getInstance();
+
+        if (self::$file_content_hashes === null || !$config->cache_file_hashes_during_run) {
             /** @var array<string, string> */
             self::$file_content_hashes = $root_cache_directory &&
                 is_readable($root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES)
@@ -1011,6 +1013,8 @@ class FileChecker extends SourceChecker implements StatementsSource
         $line_number += $line_upset;
         $function_line = $file_lines[$line_number - 1];
         $left_padding = str_replace(ltrim($function_line), '', $function_line);
+
+        $line_before = $file_lines[$line_number - 2];
 
         $parsed_docblock = [];
         $existing_line_count = $existing_docblock ? substr_count($existing_docblock, PHP_EOL) + 1 : 0;

@@ -133,6 +133,11 @@ class Config
     protected $stub_files = [];
 
     /**
+     * @var bool
+     */
+    public $cache_file_hashes_during_run = true;
+
+    /**
      * @var boolean
      */
     public $hide_external_errors = true;
@@ -305,6 +310,11 @@ class Config
             $config->use_assert_for_type = $attribute_text === 'true' || $attribute_text === '1';
         }
 
+        if (isset($config_xml['cacheFileContentHashes'])) {
+            $attribute_text = (string) $config_xml['cacheFileContentHashes'];
+            $config->cache_file_hashes_during_run = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
         if (isset($config_xml->projectFiles)) {
             $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $config, true);
         }
@@ -441,7 +451,7 @@ class Config
      */
     public function initializePlugins(ProjectChecker $project_checker)
     {
-        foreach ($this->filetype_handlers as &$path) {
+        foreach ($this->filetype_handlers as $extension_name => &$path) {
             $plugin_file_checker = new FileChecker($path, $project_checker);
             $plugin_file_checker->visit();
 
