@@ -380,7 +380,8 @@ class FetchChecker
     ) {
         if ($context->check_consts &&
             $stmt->class instanceof PhpParser\Node\Name &&
-            $stmt->class->parts !== ['static']
+            $stmt->class->parts !== ['static'] &&
+            is_string($stmt->name)
         ) {
             if ($stmt->class->parts === ['self']) {
                 if (!$context->self) {
