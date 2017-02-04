@@ -483,6 +483,28 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testArrayTypeResolutionFromDocblock()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param string[] $strs
+         * @return void
+         */
+        function foo(array $strs) {
+            foreach ($strs as $str) {
+                if (is_string($str)) {} // Issue emitted here
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
     public function testTypeResolutionFromDocblockInside()
     {
         $stmts = self::$parser->parse('<?php

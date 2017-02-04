@@ -5,7 +5,7 @@ use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
-class Union extends Type
+class Union
 {
     /**
      * @var array<string, Atomic>
@@ -84,6 +84,18 @@ class Union extends Type
                 $this->types
             )
         );
+    }
+    
+    /**
+     * @return void
+     */
+    public function setFromDocblock()
+    {
+        $this->from_docblock = true;
+
+        foreach ($this->types as $type) {
+            $type->setFromDocblock();
+        }
     }
 
     /** @return void */

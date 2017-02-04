@@ -83,4 +83,14 @@ trait GenericTrait
             $type_param = clone $type_param;
         }
     }
+
+    /**
+     * @return void
+     */
+    public function setFromDocblock()
+    {
+        foreach ($this->type_params as $type_param) {
+            $type_param->setFromDocblock();
+        }
+    }
 }

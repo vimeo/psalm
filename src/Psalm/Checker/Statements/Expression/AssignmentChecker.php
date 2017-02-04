@@ -341,6 +341,51 @@ class AssignmentChecker
 
     /**
      * @param   StatementsChecker               $statements_checker
+     * @param   PhpParser\Node\Expr\AssignRef   $stmt
+     * @param   Context                         $context
+     * @return  false|null
+     */
+    public static function analyzeAssignmentRef(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr\AssignRef $stmt,
+        Context $context
+    ) {
+        $var_id = ExpressionChecker::getVarId(
+            $stmt->var,
+            $statements_checker->getFQCLN(),
+            $statements_checker
+        );
+
+        $type_in_comments = CommentChecker::getTypeFromComment(
+            (string)$stmt->getDocComment(),
+            $context,
+            $statements_checker->getSource(),
+            $var_id
+        );
+
+        if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
+            if (is_string($stmt->var->name)) {
+                $context->vars_in_scope['$' . $stmt->var->name] = $type_in_comments ?: Type::getMixed();
+                $context->vars_possibly_in_scope['$' . $stmt->var->name] = true;
+                $statements_checker->registerVariable('$' . $stmt->var->name, $stmt->var->getLine());
+            } else {
+                if (ExpressionChecker::analyze($statements_checker, $stmt->var->name, $context) === false) {
+                    return false;
+                }
+            }
+        } else {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
+                return false;
+            }
+        }
+
+        if (ExpressionChecker::analyze($statements_checker, $stmt->expr, $context) === false) {
+            return false;
+        }
+    }
+
+    /**
+     * @param   StatementsChecker               $statements_checker
      * @param   PropertyFetch|PropertyProperty  $stmt
      * @param   string                          $prop_name
      * @param   PhpParser\Node\Expr|null        $assignment_value

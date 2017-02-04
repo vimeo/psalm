@@ -104,4 +104,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     {
         return 'array';
     }
+
+    public function setFromDocblock()
+    {
+        foreach ($this->properties as $property_type) {
+            $property_type->setFromDocblock();
+        }
+    }
 }

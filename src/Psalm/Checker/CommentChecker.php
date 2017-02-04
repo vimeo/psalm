@@ -66,6 +66,8 @@ class CommentChecker
             throw new DocblockParseException($type_in_comments . ' is not a valid type');
         }
 
+        $defined_type->setFromDocblock();
+
         if ($context && $type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
             $context->vars_in_scope[$type_in_comments_var_id] = $defined_type;
 

@@ -1091,7 +1091,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 ]);
             }
 
-            $new_param_type->from_docblock = true;
+            $new_param_type->setFromDocblock();
 
             if (!$storage->param_types[$param_name]->isMixed()) {
 

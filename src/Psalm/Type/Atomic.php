@@ -28,7 +28,7 @@ use Psalm\Checker\FileChecker;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 
-abstract class Atomic extends Type
+abstract class Atomic
 {
     const KEY = 'atomic';
 
@@ -222,5 +222,13 @@ abstract class Atomic extends Type
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         return $this->getKey();
+    }
+
+    /**
+     * @return void
+     */
+    public function setFromDocblock()
+    {
+        // do nothing
     }
 }

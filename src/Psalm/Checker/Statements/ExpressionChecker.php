@@ -362,23 +362,7 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
-            if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-                if (is_string($stmt->var->name)) {
-                    $context->vars_in_scope['$' . $stmt->var->name] = Type::getMixed();
-                    $context->vars_possibly_in_scope['$' . $stmt->var->name] = true;
-                    $statements_checker->registerVariable('$' . $stmt->var->name, $stmt->var->getLine());
-                } else {
-                    if (self::analyze($statements_checker, $stmt->var->name, $context) === false) {
-                        return false;
-                    }
-                }
-            } else {
-                if (self::analyze($statements_checker, $stmt->var, $context) === false) {
-                    return false;
-                }
-            }
-
-            if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
+            if (AssignmentChecker::analyzeAssignmentRef($statements_checker, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ErrorSuppress) {
