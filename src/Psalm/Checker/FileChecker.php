@@ -253,7 +253,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
                     $this->interface_checkers_to_visit[$fq_class_name] = $class_checker;
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                    $trait_checker = new TraitChecker($stmt, $this, $stmt->name);
+                    new TraitChecker($stmt, $this, $stmt->name);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
@@ -1013,8 +1013,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         $line_number += $line_upset;
         $function_line = $file_lines[$line_number - 1];
         $left_padding = str_replace(ltrim($function_line), '', $function_line);
-
-        $line_before = $file_lines[$line_number - 2];
 
         $parsed_docblock = [];
         $existing_line_count = $existing_docblock ? substr_count($existing_docblock, PHP_EOL) + 1 : 0;

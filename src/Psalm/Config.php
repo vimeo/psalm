@@ -451,7 +451,7 @@ class Config
      */
     public function initializePlugins(ProjectChecker $project_checker)
     {
-        foreach ($this->filetype_handlers as $extension_name => &$path) {
+        foreach ($this->filetype_handlers as &$path) {
             $plugin_file_checker = new FileChecker($path, $project_checker);
             $plugin_file_checker->visit();
 

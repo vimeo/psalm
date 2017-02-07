@@ -85,7 +85,7 @@ class Union
             )
         );
     }
-    
+
     /**
      * @return void
      */
@@ -251,7 +251,7 @@ class Union
     public function removeObjects()
     {
         foreach ($this->types as $key => $type) {
-            if ($key[0] === strtoupper($key[0])) {
+            if ($type instanceof Atomic\TNamedObject) {
                 unset($this->types[$key]);
             }
         }

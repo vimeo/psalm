@@ -20,6 +20,12 @@
         <NullOperand errorLevel="suppress" />
         <MissingConstructor errorLevel="suppress" />
 
+        <DeadCode>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </DeadCode>
+
         <PropertyNotSetInConstructor>
             <errorLevel type="suppress">
                 <directory name="tests" />
