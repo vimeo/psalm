@@ -313,7 +313,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $statements_checker->registerVariable(
                 $function_param->name,
-                $function_param->code_location->getLineNumber()
+                $function_param->code_location
             );
         }
 

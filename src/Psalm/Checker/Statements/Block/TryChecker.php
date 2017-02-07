@@ -56,7 +56,9 @@ class TryChecker
                 $fq_catch_classes[] = $fq_catch_class;
             }
 
-            $catch_context->vars_in_scope['$' . $catch->var] = new Type\Union(
+            $catch_var_id = '$' . $catch->var;
+
+            $catch_context->vars_in_scope[$catch_var_id] = new Type\Union(
                 array_map(
                     /**
                      * @param string $fq_catch_class
@@ -69,9 +71,15 @@ class TryChecker
                 )
             );
 
-            $catch_context->vars_possibly_in_scope['$' . $catch->var] = true;
+            $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
 
-            $statements_checker->registerVariable('$' . $catch->var, $catch->getLine());
+            if (!$statements_checker->hasVariable($catch_var_id)) {
+                $statements_checker->registerVariable(
+                    $catch_var_id,
+                    new CodeLocation($statements_checker, $catch)
+                );
+            }
+
 
             $statements_checker->analyze($catch->stmts, $catch_context, $loop_context);
 

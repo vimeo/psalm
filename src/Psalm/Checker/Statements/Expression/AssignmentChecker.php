@@ -138,7 +138,10 @@ class AssignmentChecker
         if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
-            $statements_checker->registerVariable($var_id, $assign_var->getLine());
+
+            if (!$statements_checker->hasVariable($var_id)) {
+                $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $assign_var));
+            }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
                 || $assign_var instanceof PhpParser\Node\Expr\Array_
         ) {
@@ -189,7 +192,10 @@ class AssignmentChecker
 
                 if ($list_var_id) {
                     $context->vars_possibly_in_scope[$list_var_id] = true;
-                    $statements_checker->registerVariable($list_var_id, $var->getLine());
+
+                    if (!$statements_checker->hasVariable($list_var_id)) {
+                        $statements_checker->registerVariable($list_var_id, new CodeLocation($statements_checker, $var));
+                    }
 
                     if (isset($assign_value_type->types['array'])) {
                         if ($assign_value_type->types['array'] instanceof Type\Atomic\TArray) {
@@ -365,9 +371,13 @@ class AssignmentChecker
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (is_string($stmt->var->name)) {
-                $context->vars_in_scope['$' . $stmt->var->name] = $type_in_comments ?: Type::getMixed();
-                $context->vars_possibly_in_scope['$' . $stmt->var->name] = true;
-                $statements_checker->registerVariable('$' . $stmt->var->name, $stmt->var->getLine());
+                $var_id = '$' . $stmt->var->name;
+                $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
+                $context->vars_possibly_in_scope[$var_id] = true;
+
+                if (!$statements_checker->hasVariable($var_id)) {
+                    $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $stmt->var));
+                }
             } else {
                 if (ExpressionChecker::analyze($statements_checker, $stmt->var->name, $context) === false) {
                     return false;

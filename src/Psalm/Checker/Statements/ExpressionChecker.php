@@ -519,7 +519,15 @@ class ExpressionChecker
 
                     $context->vars_in_scope[$var_name] = Type::getArray();
                     $context->vars_possibly_in_scope[$var_name] = true;
-                    $statements_checker->registerVariable($var_name, $stmt->getLine());
+
+                    // it might have been defined first in another if/else branch
+                    if (!$statements_checker->hasVariable($var_name)) {
+                        $statements_checker->registerVariable(
+                            $var_name,
+                            new CodeLocation($statements_checker, $stmt)
+                        );
+                    }
+
                 } else {
                     IssueBuffer::add(
                         new UndefinedVariable(
@@ -532,11 +540,13 @@ class ExpressionChecker
                 }
             }
 
-            if ($statements_checker->getFirstAppearance($var_name)) {
+            $first_appearance = $statements_checker->getFirstAppearance($var_name);
+
+            if ($first_appearance) {
                 if (IssueBuffer::accepts(
                     new PossiblyUndefinedVariable(
                         'Possibly undefined variable ' . $var_name .', first seen on line ' .
-                            $statements_checker->getFirstAppearance($var_name),
+                            $first_appearance->getLineNumber(),
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -573,7 +583,10 @@ class ExpressionChecker
         if ($var_id) {
             if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
-                $statements_checker->registerVariable($var_id, $stmt->getLine());
+
+                if (!$statements_checker->hasVariable($var_id)) {
+                    $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $stmt));
+                }
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
                 if (TypeChecker::isContainedBy(
@@ -1363,19 +1376,23 @@ class ExpressionChecker
         Context $context
     ) {
         foreach ($stmt->uses as $use) {
-            if (!$context->hasVariable('$' . $use->var)) {
+            $use_var_id = '$' . $use->var;
+            if (!$context->hasVariable($use_var_id)) {
                 if ($use->byRef) {
-                    $context->vars_in_scope['$' . $use->var] = Type::getMixed();
-                    $context->vars_possibly_in_scope['$' . $use->var] = true;
-                    $statements_checker->registerVariable('$' . $use->var, $use->getLine());
+                    $context->vars_in_scope[$use_var_id] = Type::getMixed();
+                    $context->vars_possibly_in_scope[$use_var_id] = true;
+
+                    if (!$statements_checker->hasVariable($use_var_id)) {
+                        $statements_checker->registerVariable($use_var_id, new CodeLocation($statements_checker, $use));
+                    }
                     return;
                 }
 
-                if (!isset($context->vars_possibly_in_scope['$' . $use->var])) {
+                if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
                     if ($context->check_variables) {
                         IssueBuffer::add(
                             new UndefinedVariable(
-                                'Cannot find referenced variable $' . $use->var,
+                                'Cannot find referenced variable ' . $use_var_id,
                                 new CodeLocation($statements_checker->getSource(), $use)
                             )
                         );
@@ -1384,11 +1401,13 @@ class ExpressionChecker
                     }
                 }
 
-                if ($statements_checker->getFirstAppearance('$' . $use->var)) {
+                $first_appearance = $statements_checker->getFirstAppearance($use_var_id);
+
+                if ($first_appearance) {
                     if (IssueBuffer::accepts(
                         new PossiblyUndefinedVariable(
-                            'Possibly undefined variable $' . $use->var . ', first seen on line ' .
-                                $statements_checker->getFirstAppearance('$' . $use->var),
+                            'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
+                                $first_appearance->getLineNumber(),
                             new CodeLocation($statements_checker->getSource(), $use)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -1402,7 +1421,7 @@ class ExpressionChecker
                 if ($context->check_variables) {
                     IssueBuffer::add(
                         new UndefinedVariable(
-                            'Cannot find referenced variable $' . $use->var,
+                            'Cannot find referenced variable ' . $use_var_id,
                             new CodeLocation($statements_checker->getSource(), $use)
                         )
                     );

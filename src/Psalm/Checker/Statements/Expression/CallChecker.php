@@ -1088,7 +1088,9 @@ class CallChecker
                         // we don't know if it exists, assume it's passed by reference
                         $context->vars_in_scope[$var_id] = Type::getMixed();
                         $context->vars_possibly_in_scope[$var_id] = true;
-                        $statements_checker->registerVariable('$' . $var_id, $arg->value->getLine());
+                        if (!$statements_checker->hasVariable($var_id)) {
+                            $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $arg->value));
+                        }
                     }
                 }
             } elseif ($arg->value instanceof PhpParser\Node\Expr\Variable) {
@@ -1115,14 +1117,20 @@ class CallChecker
                         return false;
                     }
                 } elseif (is_string($arg->value->name)) {
-                    if (false ||
-                        !isset($context->vars_in_scope['$' . $arg->value->name]) ||
-                        $context->vars_in_scope['$' . $arg->value->name]->isNull()
+                    $var_id = '$' . $arg->value->name;
+
+                    if (!isset($context->vars_in_scope[$var_id]) ||
+                        $context->vars_in_scope[$var_id]->isNull()
                     ) {
                         // we don't know if it exists, assume it's passed by reference
-                        $context->vars_in_scope['$' . $arg->value->name] = Type::getMixed();
-                        $context->vars_possibly_in_scope['$' . $arg->value->name] = true;
-                        $statements_checker->registerVariable('$' . $arg->value->name, $arg->value->getLine());
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                        $context->vars_possibly_in_scope[$var_id] = true;
+                        if (!$statements_checker->hasVariable($var_id)) {
+                            $statements_checker->registerVariable(
+                                $var_id,
+                                new CodeLocation($statements_checker, $arg->value)
+                            );
+                        }
                     }
                 }
             } else {

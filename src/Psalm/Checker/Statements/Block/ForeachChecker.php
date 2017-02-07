@@ -151,9 +151,16 @@ class ForeachChecker
         }
 
         if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
-            $foreach_context->vars_in_scope['$' . $stmt->keyVar->name] = $key_type ?: Type::getMixed();
-            $foreach_context->vars_possibly_in_scope['$' . $stmt->keyVar->name] = true;
-            $statements_checker->registerVariable('$' . $stmt->keyVar->name, $stmt->getLine());
+            $key_var_id = '$' . $stmt->keyVar->name;
+            $foreach_context->vars_in_scope[$key_var_id] = $key_type ?: Type::getMixed();
+            $foreach_context->vars_possibly_in_scope[$key_var_id] = true;
+
+            if (!$statements_checker->hasVariable($key_var_id)) {
+                $statements_checker->registerVariable(
+                    $key_var_id,
+                    new CodeLocation($statements_checker, $stmt)
+                );
+            }
         }
 
         AssignmentChecker::analyze(

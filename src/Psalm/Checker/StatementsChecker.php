@@ -31,7 +31,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     protected $source;
 
     /**
-     * @var array<string, int>
+     * @var array<string, CodeLocation>
      */
     protected $all_vars = [];
 
@@ -334,7 +334,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     : Type::getMixed();
 
                 $context->vars_possibly_in_scope['$' . $var->name] = true;
-                $this->registerVariable('$' . $var->name, $var->getLine());
+                $this->registerVariable('$' . $var->name, new CodeLocation($this, $stmt));
             }
         }
 
@@ -535,15 +535,22 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  string $var_name
-     * @param  int    $line_number
+     * @param  string       $var_name
+     * @return bool
+     */
+    public function hasVariable($var_name)
+    {
+        return isset($this->all_vars[$var_name]);
+    }
+
+    /**
+     * @param  string       $var_name
+     * @param  CodeLocation $location
      * @return void
      */
-    public function registerVariable($var_name, $line_number)
+    public function registerVariable($var_name, CodeLocation $location)
     {
-        if (!isset($this->all_vars[$var_name])) {
-            $this->all_vars[$var_name] = $line_number;
-        }
+        $this->all_vars[$var_name] = $location;
     }
 
     /**
@@ -712,7 +719,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * The first appearance of the variable in this set of statements being evaluated
      *
      * @param  string  $var_name
-     * @return int|null
+     * @return CodeLocation|null
      */
     public function getFirstAppearance($var_name)
     {
