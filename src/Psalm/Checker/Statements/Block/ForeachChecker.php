@@ -158,7 +158,7 @@ class ForeachChecker
             if (!$statements_checker->hasVariable($key_var_id)) {
                 $statements_checker->registerVariable(
                     $key_var_id,
-                    new CodeLocation($statements_checker, $stmt)
+                    new CodeLocation($statements_checker, $stmt->keyVar)
                 );
             }
         }

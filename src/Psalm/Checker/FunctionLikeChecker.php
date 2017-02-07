@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
+use Psalm\Issue\DeadCode;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
@@ -353,8 +354,18 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     strpos($var_name, '[') === false &&
                     $var_name !== '$_'
                 ) {
-                    if (!isset($context->referenced_vars[$var_name])) {
-                        echo 'Variable ' . $var_name . ' is not referenced in ' . $cased_method_id . PHP_EOL;
+                    $original_location = $statements_checker->getFirstAppearance($var_name);
+
+                    if (!isset($context->referenced_vars[$var_name]) && $original_location) {
+                        if (IssueBuffer::accepts(
+                            new DeadCode(
+                                'Variable ' . $var_name . ' is never used',
+                                $original_location
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 

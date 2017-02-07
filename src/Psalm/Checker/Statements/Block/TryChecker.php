@@ -76,7 +76,7 @@ class TryChecker
             if (!$statements_checker->hasVariable($catch_var_id)) {
                 $statements_checker->registerVariable(
                     $catch_var_id,
-                    new CodeLocation($statements_checker, $catch)
+                    new CodeLocation($statements_checker, $catch, true)
                 );
             }
 
