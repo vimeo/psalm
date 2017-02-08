@@ -177,6 +177,11 @@ class CodeLocation
                 "\n",
                 $this->selection_end + 200 - strlen($file_contents)
             );
+
+            // if the line is over 200 characters long
+            if ($this->preview_end < $this->selection_end) {
+                $this->preview_end = $this->selection_end + 50;
+            }
         }
 
         // reset preview start to beginning of line
