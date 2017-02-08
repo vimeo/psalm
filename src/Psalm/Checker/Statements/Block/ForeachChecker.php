@@ -167,15 +167,29 @@ class ForeachChecker
         if ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
             foreach ($stmt->valueVar->vars as $var) {
                 if ($var && $var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
-                    $foreach_context->vars_in_scope['$' . $var->name] = Type::getMixed();
-                    $foreach_context->vars_possibly_in_scope['$' . $var->name] = true;
-                    $statements_checker->registerVariable('$' . $var->name, $var->getLine());
+                    $list_var_id = '$' . $var->name;
+                    $foreach_context->vars_in_scope[$list_var_id] = Type::getMixed();
+                    $foreach_context->vars_possibly_in_scope[$list_var_id] = true;
+
+                    if (!$statements_checker->hasVariable($list_var_id)) {
+                        $statements_checker->registerVariable(
+                            $list_var_id,
+                            new CodeLocation($statements_checker, $var)
+                        );
+                    }
                 }
             }
         } elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->valueVar->name)) {
-            $foreach_context->vars_in_scope['$' . $stmt->valueVar->name] = $value_type ? $value_type : Type::getMixed();
-            $foreach_context->vars_possibly_in_scope['$' . $stmt->valueVar->name] = true;
-            $statements_checker->registerVariable('$' . $stmt->valueVar->name, $stmt->getLine());
+            $value_var_id = '$' . $stmt->valueVar->name;
+            $foreach_context->vars_in_scope[$value_var_id] = $value_type ? $value_type : Type::getMixed();
+            $foreach_context->vars_possibly_in_scope[$value_var_id] = true;
+
+            if (!$statements_checker->hasVariable($value_var_id)) {
+                $statements_checker->registerVariable(
+                    $value_var_id,
+                    new CodeLocation($statements_checker, $stmt->valueVar)
+                );
+            }
         }
 
         CommentChecker::getTypeFromComment(
