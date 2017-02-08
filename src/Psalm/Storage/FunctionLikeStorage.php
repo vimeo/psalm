@@ -9,9 +9,9 @@ use Psalm\FunctionLikeParameter;
 class FunctionLikeStorage
 {
     /**
-     * @var string
+     * @var CodeLocation|null
      */
-    public $file_name;
+    public $location;
 
     /**
      * @var array<int, FunctionLikeParameter>

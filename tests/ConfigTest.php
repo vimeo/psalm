@@ -183,7 +183,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $config = Config::loadFromXML(
+        Config::loadFromXML(
             'psalm.xml',
             '<?xml version="1.0"?>
             <psalm>
@@ -205,7 +205,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
      */
     public function testImpossibleIssue()
     {
-        $config = Config::loadFromXML(
+        Config::loadFromXML(
             'psalm.xml',
             '<?xml version="1.0"?>
             <psalm>
@@ -227,7 +227,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
      */
     public function testNonexistentStubFile()
     {
-        $config = Config::loadFromXML(
+        Config::loadFromXML(
             'psalm.xml',
             '<?xml version="1.0"?>
             <psalm>

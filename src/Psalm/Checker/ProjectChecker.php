@@ -5,6 +5,8 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
 use Psalm\IssueBuffer;
+use Psalm\Issue\UnusedClass;
+use Psalm\Issue\UnusedMethod;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use RecursiveDirectoryIterator;
@@ -262,28 +264,7 @@ class ProjectChecker
         }
 
         if ($this->count_references) {
-            foreach ($this->existing_classlikes_ci as $fq_class_name_ci => $_) {
-                if (isset(ClassLikeChecker::$storage[$fq_class_name_ci])) {
-                    $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_ci];
-
-                    if ($classlike_storage->file_path &&
-                        $this->config->isInProjectDirs($classlike_storage->file_path)
-                    ) {
-                        if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                            echo $fq_class_name_ci . ' is never referenced' . PHP_EOL;
-                        } else {
-                            foreach ($classlike_storage->methods as $method_name => $method_storage) {
-                                if ($method_storage->references === 0 &&
-                                    !$classlike_storage->overridden_method_ids[$method_name]
-                                ) {
-                                    echo 'Method ' . $fq_class_name_ci . '::' . $method_name .
-                                        ' is never referenced' . PHP_EOL;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            $this->checkClassReferences();
         }
 
         IssueBuffer::finish(true, (int)$start_checks, $this->debug_output);
@@ -324,6 +305,62 @@ class ProjectChecker
             }
 
             $file_checker->analyze($this->update_docblocks);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function checkClassReferences()
+    {
+        foreach ($this->existing_classlikes_ci as $fq_class_name_ci => $_) {
+            if (isset(ClassLikeChecker::$storage[$fq_class_name_ci])) {
+                $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_ci];
+
+                if ($classlike_storage->location &&
+                    $this->config &&
+                    $this->config->isInProjectDirs($classlike_storage->location->file_path)
+                ) {
+                    if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                        if (IssueBuffer::accepts(
+                            new UnusedClass(
+                                'Class ' . $classlike_storage->name . ' is never used',
+                                $classlike_storage->location
+                            )
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        self::checkMethodReferences($classlike_storage);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  \Psalm\Storage\ClassLikeStorage  $classlike_storage
+     * @return void
+     */
+    protected static function checkMethodReferences($classlike_storage)
+    {
+        foreach ($classlike_storage->methods as $method_name => $method_storage) {
+            if ($method_storage->references === 0 &&
+                $method_storage->visibility !== ClassLikeChecker::VISIBILITY_PUBLIC &&
+                !$classlike_storage->overridden_method_ids[$method_name] &&
+                $classlike_storage->location
+            ) {
+                $method_id = $classlike_storage->name . '::' . $method_name;
+
+                if (IssueBuffer::accepts(
+                    new UnusedMethod(
+                        'Method ' . $method_id . ' is never used',
+                        $classlike_storage->location
+                    )
+                )) {
+                    // fall through
+                }
+            }
         }
     }
 

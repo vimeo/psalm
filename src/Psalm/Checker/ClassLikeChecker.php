@@ -146,18 +146,21 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if (!isset(self::$storage[$fq_class_name_lower])) {
             self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
-            $storage->file_name = $this->source->getFileName();
-            $storage->file_path = $this->source->getFilePath();
-            $storage->line_number = $class->getLine();
+            $storage->name = $fq_class_name;
+            $storage->location = new CodeLocation($this->source, $class, true);
             $storage->user_defined = true;
         } else {
             $storage = self::$storage[$fq_class_name_lower];
 
-            if ($storage->file_path !== $this->source->getFilePath() || $storage->line_number !== $class->getLine()) {
+            if ($storage->location &&
+                ($storage->location->file_path !== $this->source->getFilePath() ||
+                    $storage->location->getLineNumber() !== $class->getLine()
+                )
+            ) {
                 if (IssueBuffer::accepts(
                     new DuplicateClass(
                         'Class ' . $fq_class_name . ' has already been defined at ' .
-                            $storage->file_path . ':' . $storage->line_number,
+                            $storage->location->file_path . ':' . $storage->location->getLineNumber(),
                         new \Psalm\CodeLocation($this, $class, true)
                     )
                 )) {
@@ -1232,6 +1235,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $reflected_parent_class = $reflected_class->getParentClass();
 
         $storage = self::$storage[$class_name_lower] = new ClassLikeStorage();
+        $storage->name = $class_name;
         $storage->abstract = $reflected_class->isAbstract();
 
         self::$class_extends[$class_name] = [];

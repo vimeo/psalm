@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 use PhpParser;
 use Psalm\StatementsSource;
 use Psalm\Context;
+use Psalm\CodeLocation;
 use Psalm\Storage\ClassLikeStorage;
 
 class TraitChecker extends ClassLikeChecker
@@ -35,8 +36,8 @@ class TraitChecker extends ClassLikeChecker
 
         if (!isset(self::$storage[$fq_class_name_lower])) {
             self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
-            $storage->file_name = $this->source->getFileName();
-            $storage->file_path = $this->source->getFilePath();
+            $storage->name = $fq_class_name;
+            $storage->location = new CodeLocation($this->source, $class, true);
         }
 
         self::$trait_checkers[$fq_class_name] = $this;

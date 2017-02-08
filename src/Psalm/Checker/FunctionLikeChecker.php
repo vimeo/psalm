@@ -13,7 +13,7 @@ use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
-use Psalm\Issue\DeadCode;
+use Psalm\Issue\UnusedVariable;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
@@ -358,7 +358,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                     if (!isset($context->referenced_vars[$var_name]) && $original_location) {
                         if (IssueBuffer::accepts(
-                            new DeadCode(
+                            new UnusedVariable(
                                 'Variable ' . $var_name . ' is never used',
                                 $original_location
                             ),
@@ -487,7 +487,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $storage->cased_name = $function->name;
         }
 
-        $storage->file_name = $source->getFileName();
+        $storage->location = new CodeLocation($source, $function, true);
         $storage->namespace = $source->getNamespace();
 
         $required_param_count = 0;

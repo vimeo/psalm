@@ -20,11 +20,11 @@
         <NullOperand errorLevel="suppress" />
         <MissingConstructor errorLevel="suppress" />
 
-        <DeadCode>
+        <UnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
             </errorLevel>
-        </DeadCode>
+        </UnusedMethod>
 
         <PropertyNotSetInConstructor>
             <errorLevel type="suppress">

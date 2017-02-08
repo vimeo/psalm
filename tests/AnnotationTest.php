@@ -143,7 +143,7 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidDocblock - somefile.php:2 - Badly-formatted @param in docblock for fooBar
+     * @expectedExceptionMessage InvalidDocblock - somefile.php:5 - Badly-formatted @param in docblock for fooBar
      * @return                   void
      */
     public function testMissingParamVar()

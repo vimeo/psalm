@@ -98,7 +98,10 @@ class Union
         }
     }
 
-    /** @return void */
+    /**
+     * @param  string $type_string
+     * @return void
+     */
     public function removeType($type_string)
     {
         unset($this->types[$type_string]);

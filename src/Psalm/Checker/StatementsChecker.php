@@ -125,6 +125,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $this->analyzeConstAssignment($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 foreach ($stmt->vars as $var) {
+                    ExpressionChecker::analyze($this, $var, $context);
+
                     $var_id = ExpressionChecker::getArrayVarId(
                         $var,
                         $this->getFQCLN(),

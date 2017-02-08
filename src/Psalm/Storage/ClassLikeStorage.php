@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Storage;
 
+use Psalm\CodeLocation;
 use Psalm\Type;
 
 class ClassLikeStorage
@@ -39,7 +40,7 @@ class ClassLikeStorage
     /**
      * @var string;
      */
-    public $namespace;
+    public $name;
 
     /**
      * @var array<string, string>
@@ -75,19 +76,9 @@ class ClassLikeStorage
     public $parent_classes = [];
 
     /**
-     * @var string
+     * @var CodeLocation|null
      */
-    public $file_name;
-
-    /**
-     * @var string
-     */
-    public $file_path;
-
-    /**
-     * @var int|null
-     */
-    public $line_number;
+    public $location;
 
     /**
      * @var bool

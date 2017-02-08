@@ -40,6 +40,9 @@ class CodeLocation
     protected $snippet = '';
 
     /** @var int|null */
+    protected $docblock_start_line_number;
+
+    /** @var int|null */
     protected $docblock_line_number;
 
     /** @var string|null */
@@ -69,7 +72,8 @@ class CodeLocation
 
         $doc_comment = $stmt->getDocComment();
         $this->preview_start = $doc_comment ? $doc_comment->getFilePos() : $this->file_start;
-        $this->line_number = $doc_comment ? $doc_comment->getLine() : $stmt->getLine();
+        $this->docblock_start_line_number = $doc_comment ? $doc_comment->getLine() : null;
+        $this->line_number = $stmt->getLine();
     }
 
     /**
@@ -78,8 +82,7 @@ class CodeLocation
      */
     public function setCommentLine($line)
     {
-        $this->docblock_line_number = $this->line_number;
-        $this->line_number = $line;
+        $this->docblock_line_number = $line;
     }
 
     /**
@@ -114,7 +117,10 @@ class CodeLocation
 
         $this->preview_end = $preview_end;
 
-        if ($this->docblock_line_number && $this->preview_start < $this->selection_start) {
+        if ($this->docblock_line_number &&
+            $this->docblock_start_line_number &&
+            $this->preview_start < $this->selection_start
+        ) {
             $preview_lines = explode(
                 "\n",
                 substr(
@@ -128,7 +134,7 @@ class CodeLocation
 
             $i = 0;
 
-            $comment_line_offset = $this->line_number - $this->docblock_line_number;
+            $comment_line_offset = $this->docblock_line_number - $this->docblock_start_line_number;
 
             for ($i = 0; $i < $comment_line_offset; $i++) {
                 $preview_offset += strlen($preview_lines[$i]) + 1;
@@ -185,7 +191,7 @@ class CodeLocation
      */
     public function getLineNumber()
     {
-        return $this->line_number;
+        return $this->docblock_line_number ?: $this->line_number;
     }
 
     /**

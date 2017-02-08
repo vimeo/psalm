@@ -80,6 +80,8 @@ class TryChecker
                 );
             }
 
+            // this registers the variable to avoid unfair deadcode issues
+            $catch_context->hasVariable($catch_var_id);
 
             $statements_checker->analyze($catch->stmts, $catch_context, $loop_context);
 
