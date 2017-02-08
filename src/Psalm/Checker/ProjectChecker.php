@@ -348,14 +348,14 @@ class ProjectChecker
             if ($method_storage->references === 0 &&
                 $method_storage->visibility !== ClassLikeChecker::VISIBILITY_PUBLIC &&
                 !$classlike_storage->overridden_method_ids[$method_name] &&
-                $classlike_storage->location
+                $method_storage->location
             ) {
                 $method_id = $classlike_storage->name . '::' . $method_name;
 
                 if (IssueBuffer::accepts(
                     new UnusedMethod(
                         'Method ' . $method_id . ' is never used',
-                        $classlike_storage->location
+                        $method_storage->location
                     )
                 )) {
                     // fall through
