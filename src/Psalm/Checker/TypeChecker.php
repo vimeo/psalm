@@ -610,7 +610,7 @@ class TypeChecker
                             new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),
                             $suppressed_issues
                         )) {
-                            return false;
+                            // fall through
                         }
                     }
                 }

@@ -195,6 +195,7 @@ class Context
     public function remove($remove_var_id)
     {
         unset($this->referenced_vars[$remove_var_id]);
+        unset($this->vars_possibly_in_scope[$remove_var_id]);
 
         if (isset($this->vars_in_scope[$remove_var_id])) {
             $type = $this->vars_in_scope[$remove_var_id];
