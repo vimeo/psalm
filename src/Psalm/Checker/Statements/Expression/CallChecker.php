@@ -1119,7 +1119,7 @@ class CallChecker
                 } elseif (is_string($arg->value->name)) {
                     $var_id = '$' . $arg->value->name;
 
-                    if (!isset($context->vars_in_scope[$var_id]) ||
+                    if (!$context->hasVariable($var_id) ||
                         $context->vars_in_scope[$var_id]->isNull()
                     ) {
                         // we don't know if it exists, assume it's passed by reference

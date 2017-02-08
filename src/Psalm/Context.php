@@ -291,7 +291,7 @@ class Context
     public function hasVariable($var_name)
     {
         if ($this->count_references) {
-            if (!$var_name || !isset($this->vars_in_scope[$var_name])) {
+            if (!$var_name) {
                 return false;
             }
 
@@ -301,7 +301,7 @@ class Context
                 $this->referenced_vars[$var_name] = true;
             }
 
-            return true;
+            return isset($this->vars_in_scope[$var_name]);
         }
 
         return $var_name && isset($this->vars_in_scope[$var_name]);
