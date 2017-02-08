@@ -54,4 +54,29 @@ class DeadCodeTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage DeadCode
+     * @return                   void
+     */
+    public function testIfInFunction()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return int */
+        function foo() {
+            $a = 5;
+            if (rand(0, 1)) {
+                $b = "hello";
+            } else {
+                $b = "goodbye";
+            }
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
