@@ -1220,6 +1220,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     ]);
                 }
             }
+        } elseif ($param->variadic) {
+            $param_type = new Type\Union([
+                new Type\Atomic\TArray([
+                    Type::getInt(),
+                    Type::getMixed(),
+                ])
+            ]);
         }
 
         $is_optional = $param->default !== null;
