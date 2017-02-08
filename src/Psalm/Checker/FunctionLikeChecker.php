@@ -134,6 +134,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             } elseif ($context->self) {
                 $context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($context->self)]);
+                $context->vars_possibly_in_scope['$this'] = true;
             }
 
             $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($method_id);
@@ -311,9 +312,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
 
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
+            $context->vars_possibly_in_scope['$' . $function_param->name] = true;
+
+            if ($function_param->by_ref) {
+                // register by ref params as having been used, to avoid false positives
+                // @todo change the assignment analysis *just* for byref params
+                // so that we don't have to do this
+                $context->hasVariable('$' . $function_param->name);
+            }
 
             $statements_checker->registerVariable(
-                $function_param->name,
+                '$' . $function_param->name,
                 $function_param->code_location
             );
         }
@@ -352,7 +361,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $var_name !== '$this' &&
                     strpos($var_name, '::$') === false &&
                     strpos($var_name, '[') === false &&
-                    $var_name !== '$_'
+                    $var_name !== '$_' &&
+                    (!isset($storage->param_types[substr($var_name, 1)]) ||
+                        !$storage instanceof MethodStorage ||
+                        $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE)
                 ) {
                     $original_location = $statements_checker->getFirstAppearance($var_name);
 

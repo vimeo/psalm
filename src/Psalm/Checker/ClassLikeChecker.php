@@ -203,6 +203,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
 
             $class_context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($this->fq_class_name)]);
+            $class_context->vars_possibly_in_scope['$this'] = true;
         }
 
          // set all constants first
@@ -551,6 +552,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $method_context = clone $class_context;
                     $method_context->collect_initializations = true;
                     $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+                    $method_context->vars_possibly_in_scope['$this'] = true;
 
                     $constructor_checker->analyze($method_context, null, true);
 
