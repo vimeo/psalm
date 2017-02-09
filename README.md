@@ -1,7 +1,7 @@
 <h1><a href="https://getpsalm.org"><img src="PsalmLogo.png" height="64" alt="logo" /></a></h1>
 
 [![Packagist](https://img.shields.io/packagist/v/vimeo/psalm.svg)](https://packagist.org/packages/vimeo/psalm)
-[![Travis CI](http://img.shields.io/travis/vimeo/psalm.svg?branch=master)](https://travis-ci.org/vimeo/psalm)
+[![Travis CI](https://img.shields.io/travis/vimeo/psalm/master.svg)](https://travis-ci.org/vimeo/psalm/branches)
 
 Psalm is a static analysis tool for finding errors in PHP applications.
 
