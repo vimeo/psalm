@@ -160,7 +160,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         break;
                     }
 
-                    if ($implemented_method_id === 'ArrayObject::__construct') {
+                    if ($this->function->name === '__construct') {
                         continue;
                     }
 
