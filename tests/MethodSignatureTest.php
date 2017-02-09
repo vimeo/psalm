@@ -114,4 +114,72 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testExtendDocblockParamType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A extends SoapClient
+        {
+           /**
+             * @param string $function_name
+             * @param array<mixed> $arguments
+             * @param array<mixed> $options default null
+             * @param array<mixed> $input_headers default null
+             * @param array<mixed> $output_headers default null
+             * @return mixed
+             */
+            public function __soapCall(
+                $function_name,
+                $arguments,
+                $options = [],
+                $input_headers = [],
+                &$output_headers = []
+            ) {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MethodSignatureMismatch
+     * @return                   void
+     */
+    public function testExtendDocblockParamTypeWithWrongParam()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A extends SoapClient
+        {
+           /**
+             * @param string $function_name
+             * @param string $arguments
+             * @param array<mixed> $options default null
+             * @param array<mixed> $input_headers default null
+             * @param array<mixed> $output_headers default null
+             * @return mixed
+             */
+            public function __soapCall(
+                $function_name,
+                string $arguments,
+                $options = [],
+                $input_headers = [],
+                &$output_headers = []
+            ) {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

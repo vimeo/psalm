@@ -164,6 +164,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         continue;
                     }
 
+                    list($implemented_fq_class_name) = explode('::', $implemented_method_id);
+
+                    $class_storage = ClassLikeChecker::$storage[strtolower($implemented_fq_class_name)];
+
                     $implemented_storage = MethodChecker::getStorage($implemented_method_id);
 
                     if ($implemented_storage->visibility < $storage->visibility) {
@@ -200,8 +204,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             break;
                         }
 
-                        if ((string)$storage->params[$i]->signature_type !==
-                            (string)$implemented_param->signature_type
+                        if ($class_storage->user_defined &&
+                            (string)$storage->params[$i]->signature_type !== (string)$implemented_param->signature_type
                         ) {
                             $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
                             $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
@@ -211,6 +215,29 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                     'Argument ' . ($i + 1) . ' of ' . $cased_method_id .' has wrong type \'' .
                                         $storage->params[$i]->signature_type . '\', expecting \'' .
                                         $implemented_param->signature_type . '\' as defined by ' .
+                                        $parent_method_id,
+                                    $storage->params[$i]->code_location ?: new CodeLocation($this, $this->function, true)
+                                )
+                            )) {
+                                return false;
+                            }
+
+                            $have_emitted = true;
+                            break;
+                        }
+
+                        if (!$class_storage->user_defined &&
+                            !$implemented_param->type->isMixed() &&
+                            (string)$storage->params[$i]->type !== (string)$implemented_param->type
+                        ) {
+                            $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
+                            $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+
+                            if (IssueBuffer::accepts(
+                                new MethodSignatureMismatch(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_method_id .' has wrong type \'' .
+                                        $storage->params[$i]->type . '\', expecting \'' .
+                                        $implemented_param->type . '\' as defined by ' .
                                         $parent_method_id,
                                     $storage->params[$i]->code_location ?: new CodeLocation($this, $this->function, true)
                                 )
@@ -603,7 +630,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if (!$doc_comment) {
             return $storage;
         }
-
 
         $docblock_info = null;
 
