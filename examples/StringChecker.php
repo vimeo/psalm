@@ -2,6 +2,7 @@
 namespace Psalm\Example\Plugin;
 
 use Psalm\Checker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Context;
 use Psalm\CodeLocation;
 
@@ -17,6 +18,7 @@ class StringChecker extends \Psalm\Plugin
     /**
      * Checks an expression
      *
+     * @param  StatementsChecker     $statements_checker
      * @param  \PhpParser\Node\Expr  $stmt
      * @param  Context               $context
      * @param  CodeLocation          $code_location
@@ -24,6 +26,7 @@ class StringChecker extends \Psalm\Plugin
      * @return null|false
      */
     public function checkExpression(
+        StatementsChecker $statements_checker,
         \PhpParser\Node\Expr $stmt,
         Context $context,
         CodeLocation $code_location,
@@ -36,8 +39,10 @@ class StringChecker extends \Psalm\Plugin
             if (preg_match($class_or_class_method, $stmt->value)) {
                 $fq_class_name = preg_split('/[:]/', $stmt->value)[0];
 
+                $file_checker = $statements_checker->getFileChecker();
                 if (Checker\ClassChecker::checkFullyQualifiedClassLikeName(
                     $fq_class_name,
+                    $file_checker,
                     $code_location,
                     $suppressed_issues
                 ) === false
@@ -48,6 +53,7 @@ class StringChecker extends \Psalm\Plugin
                 if ($fq_class_name !== $stmt->value) {
                     if (Checker\MethodChecker::checkMethodExists(
                         $stmt->value,
+                        $file_checker,
                         $code_location,
                         $suppressed_issues
                     )
