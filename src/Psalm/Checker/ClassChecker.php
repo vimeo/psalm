@@ -149,6 +149,10 @@ class ClassChecker extends ClassLikeChecker
             return true;
         }
 
+        if ($interface_id === 'traversable' && $fq_class_name === 'generator') {
+            return true;
+        }
+
         if (isset(self::$SPECIAL_TYPES[$interface_id]) || isset(self::$SPECIAL_TYPES[$fq_class_name])) {
             return false;
         }
