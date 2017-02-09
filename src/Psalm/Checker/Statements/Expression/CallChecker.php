@@ -286,6 +286,12 @@ class CallChecker
                     return false;
                 }
 
+                foreach ($changed_vars as $changed_var) {
+                    if (isset($op_vars_in_scope[$changed_var])) {
+                        $op_vars_in_scope[$changed_var]->from_docblock = true;
+                    }
+                }
+
                 $context->vars_in_scope = $op_vars_in_scope;
             }
 
