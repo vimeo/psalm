@@ -460,7 +460,7 @@ class TypeChecker
 
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
-                : self::getValueForKey($key, $existing_types);
+                : self::getValueForKey($key, $existing_types, $file_checker);
 
             if ($result_type && empty($result_type->types)) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -994,9 +994,10 @@ class TypeChecker
      *
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
+     * @param  FileChecker               $file_checker
      * @return Type\Union|null
      */
-    protected static function getValueForKey($key, array &$existing_keys)
+    protected static function getValueForKey($key, array &$existing_keys, FileChecker $file_checker)
     {
         if (strpos($key, '[') !== false) {
             return self::getArrayValueForKey($key, $existing_keys);
@@ -1030,6 +1031,13 @@ class TypeChecker
                     ) {
                         $class_property_type = Type::getMixed();
                     } elseif ($existing_key_type_part instanceof TNamedObject) {
+                        if (!ClassLikeChecker::classOrInterfaceExists(
+                            $existing_key_type_part->value,
+                            $file_checker
+                        )) {
+                            continue;
+                        }
+
                         $property_id = $existing_key_type_part->value . '::$' . $key_parts[$i];
 
                         if (!ClassLikeChecker::propertyExists($property_id)) {
