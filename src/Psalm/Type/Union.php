@@ -281,6 +281,31 @@ class Union
     }
 
     /**
+     * @param  array<string, string> $template_types
+     * @return void
+     */
+    public function replaceTemplateTypes(array $template_types)
+    {
+        $keys_to_unset = [];
+        $generic_params = [];
+
+        foreach ($template_types as $template_name => $template_type) {
+            foreach ($this->types as $key => $atomic_type) {
+                if (isset($template_types[$key])) {
+                    $keys_to_unset[] = $key;
+                    $this->types[$template_types[$key]] = Atomic::create($template_types[$key]);
+                } else {
+                    $atomic_type->replaceTemplateTypes($template_types);
+                }
+            }
+        }
+
+        foreach ($keys_to_unset as $key) {
+            unset($this->types[$key]);
+        }
+    }
+
+    /**
      * @return boolean
      */
     public function isSingle()

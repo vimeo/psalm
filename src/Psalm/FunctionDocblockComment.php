@@ -33,4 +33,14 @@ class FunctionDocblockComment
 
     /** @var int */
     public $return_type_line_number;
+
+    /**
+     * @var array<int, array<int, string>>
+     */
+    public $template_types = [];
+
+    /**
+     * @var array<int, array{template_type: string, param_name: string}>
+     */
+    public $template_typeofs = [];
 }

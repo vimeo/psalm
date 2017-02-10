@@ -104,6 +104,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $cased_method_id = null;
 
+        $class_storage = null;
+
         if ($global_context) {
             foreach ($global_context->constants as $const_name => $var_type) {
                 if (!$context->hasVariable($const_name)) {
@@ -145,6 +147,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             $fq_class_name = (string)$context->self;
+
+            $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
 
             $storage = MethodChecker::getStorage($declaring_method_id);
 
@@ -298,6 +302,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $statements_checker = new StatementsChecker($this);
 
+        $template_types = $storage->template_types;
+
+        if ($class_storage && $class_storage->template_types) {
+            $template_types = array_merge($template_types ?: [], $class_storage->template_types);
+        }
+
         foreach ($storage->params as $offset => $function_param) {
             $param_type = ExpressionChecker::fleshOutTypes(
                 clone $function_param->type,
@@ -336,7 +346,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            $param_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
+            if ($template_types) {
+                $substituded_type = clone $param_type;
+                $substituded_type->replaceTemplateTypes($template_types);
+                $substituded_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
+            } else {
+                $param_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
+            }
 
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
@@ -459,6 +475,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         StatementsSource $source
     ) {
         $namespace = $source->getNamespace();
+
+        $class_storage = null;
 
         if ($function instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id = ($namespace ? $namespace . '\\' : '') . $function->name;
@@ -634,7 +652,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $docblock_info = null;
 
         try {
-            $docblock_info = CommentChecker::extractDocblockInfo((string)$doc_comment, $doc_comment->getLine());
+            $docblock_info = CommentChecker::extractFunctionDocblockInfo(
+                (string)$doc_comment,
+                $doc_comment->getLine()
+            );
         } catch (DocblockParseException $e) {
             if (IssueBuffer::accepts(
                 new InvalidDocblock(
@@ -658,6 +679,32 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $storage->variadic = true;
         }
 
+        if ($docblock_info->template_types) {
+            $storage->template_types = [];
+
+            foreach ($docblock_info->template_types as $template_type) {
+                if (count($template_type) === 3) {
+                    $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $source);
+                    $storage->template_types[$template_type[0]] = $as_type_string;
+                } else {
+                    $storage->template_types[$template_type[0]] = 'mixed';
+                }
+            }
+        }
+
+        if ($docblock_info->template_typeofs) {
+            $storage->template_typeof_params = [];
+
+            foreach ($docblock_info->template_typeofs as $template_typeof) {
+                foreach ($storage->params as $i => $param) {
+                    if ($param->name === $template_typeof['param_name']) {
+                        $storage->template_typeof_params[$i] = $template_typeof['template_type'];
+                        break;
+                    }
+                }
+            }
+        }
+
         $storage->suppressed_issues = $docblock_info->suppress;
 
         if (!$config->use_docblock_types) {
@@ -665,11 +712,26 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($docblock_info->return_type) {
+            $template_types = null;
+
+            if ($storage->template_types) {
+                $template_types = $storage->template_types;
+            }
+
+            if ($class_storage && $class_storage->template_types) {
+                $template_types = array_merge($class_storage->template_types, $template_types ?: []);
+            }
+
+            $storage->has_template_return_type =
+                $template_types !== null &&
+                count(array_intersect(Type::tokenize($docblock_info->return_type), array_keys($template_types))) > 0;
+
             $docblock_return_type = Type::parseString(
                 self::fixUpLocalType(
                     (string)$docblock_info->return_type,
                     $source->getFQCLN(),
-                    $source
+                    $source,
+                    $template_types
                 )
             );
 
@@ -1333,13 +1395,18 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @param  string                   $return_type
-     * @param  string|null              $fq_class_name
-     * @param  StatementsSource         $source
+     * @param  string                       $return_type
+     * @param  string|null                  $fq_class_name
+     * @param  StatementsSource             $source
+     * @param  array<string, string>|null   $template_types
      * @return string
      */
-    public static function fixUpLocalType($return_type, $fq_class_name, StatementsSource $source)
-    {
+    public static function fixUpLocalType(
+        $return_type,
+        $fq_class_name,
+        StatementsSource $source,
+        array $template_types = null
+    ) {
         if (strpos($return_type, '[') !== false) {
             $return_type = Type::convertSquareBrackets($return_type);
         }
@@ -1362,7 +1429,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $return_type_token = Type::fixScalarTerms($return_type_token);
 
-            if ($return_type_token[0] === strtoupper($return_type_token[0])) {
+            if ($return_type_token[0] === strtoupper($return_type_token[0]) &&
+                !isset($template_types[$return_type_token])
+            ) {
                 if ($return_type_token[0] === '$') {
                     if ($return_type === '$this') {
                         $return_type_token = 'static';
@@ -1420,23 +1489,18 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  string                           $file_path
      * @param  FileChecker                      $file_checker
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getFunctionParamsById($method_id, array $args, $file_path, FileChecker $file_checker)
+    public static function getFunctionParamsFromCallMapById($method_id, array $args, FileChecker $file_checker)
     {
-        if (FunctionChecker::inCallMap($method_id)) {
-            $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
+        $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
 
-            if ($function_param_options === null) {
-                throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
-            }
-
-            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
+        if ($function_param_options === null) {
+            throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
         }
 
-        return FunctionChecker::getParams(strtolower($method_id), $file_path);
+        return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
     }
 
      /**

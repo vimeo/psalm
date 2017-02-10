@@ -32,6 +32,8 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\TypeCoercion;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\IssueBuffer;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\Generic;
 use Psalm\Type\Atomic\ObjectLike;
@@ -199,23 +201,35 @@ class CallChecker
                     //$method_id = $statements_checker->getFQCLN() . '::' . $method_id;
                 }
 
-                if (!$in_call_map &&
-                    self::checkFunctionExists($statements_checker, $method_id, $context, $code_location) === false
-                ) {
-                    return false;
-                }
-
-                $function_params = FunctionLikeChecker::getFunctionParamsById(
-                    $method_id,
-                    $stmt->args,
-                    $statements_checker->getFilePath(),
-                    $statements_checker->getFileChecker()
-                );
-
-                if (!$in_call_map && !$is_predefined) {
-                    $defined_constants = FunctionChecker::getDefinedConstants(
+                if (!$in_call_map) {
+                    if (self::checkFunctionExists(
+                        $statements_checker,
                         $method_id,
+                        $context,
+                        $code_location
+                    ) === false
+                    ) {
+                        return false;
+                    }
+
+                    $function_storage = FunctionChecker::getStorage(
+                        strtolower($method_id),
                         $statements_checker->getFilePath()
+                    );
+
+                    $function_params = $function_storage->params;
+
+                    if (!$is_predefined) {
+                        $defined_constants = FunctionChecker::getDefinedConstants(
+                            $method_id,
+                            $statements_checker->getFilePath()
+                        );
+                    }
+                } else {
+                    $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
+                        $method_id,
+                        $stmt->args,
+                        $statements_checker->getFileChecker()
                     );
                 }
             }
@@ -229,24 +243,64 @@ class CallChecker
                 // fall through
             }
 
+            $function_storage = null;
+
+            $generic_params = null;
+
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
-                $function_params = FunctionLikeChecker::getFunctionParamsById(
-                    $method_id,
-                    $stmt->args,
-                    $statements_checker->getFilePath(),
-                    $statements_checker->getFileChecker()
-                );
+                if (!$in_call_map) {
+                    $function_storage = FunctionChecker::getStorage(
+                        strtolower($method_id),
+                        $statements_checker->getFilePath()
+                    );
+
+                    $function_params = $function_storage->params;
+                } else {
+                    $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
+                        $method_id,
+                        $stmt->args,
+                        $statements_checker->getFileChecker()
+                    );
+                }
             }
 
-            if (self::checkFunctionArgumentsMatch(
-                $statements_checker,
-                $stmt->args,
-                $method_id,
-                $function_params,
-                $context,
-                $code_location
-            ) === false) {
-                // fall through
+            if ($function_params) {
+                // do this here to allow closure param checks
+                if (self::checkFunctionArgumentsMatch(
+                    $statements_checker,
+                    $stmt->args,
+                    $method_id,
+                    $function_params,
+                    $function_storage,
+                    null,
+                    $generic_params,
+                    $context,
+                    $code_location
+                ) === false) {
+                    // fall through
+                }
+            }
+
+            if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
+                if ($in_call_map) {
+                    $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
+                        $method_id,
+                        $stmt->args,
+                        $code_location,
+                        $statements_checker->getSuppressedIssues()
+                    );
+                } else {
+                    try {
+                        $stmt->inferredType = FunctionChecker::getFunctionReturnType(
+                            $method_id,
+                            $statements_checker->getCheckedFilePath(),
+                            $generic_params
+                        );
+                    } catch (\InvalidArgumentException $e) {
+                        // this can happen when the function was defined in the Config startup script
+                        $stmt->inferredType = Type::getMixed();
+                    }
+                }
             }
 
             foreach ($defined_constants as $const_name => $const_type) {
@@ -293,27 +347,6 @@ class CallChecker
                 }
 
                 $context->vars_in_scope = $op_vars_in_scope;
-            }
-
-            if ($method_id) {
-                if ($in_call_map) {
-                    $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
-                        $method_id,
-                        $stmt->args,
-                        $code_location,
-                        $statements_checker->getSuppressedIssues()
-                    );
-                } else {
-                    try {
-                        $stmt->inferredType = FunctionChecker::getFunctionReturnType(
-                            $method_id,
-                            $statements_checker->getCheckedFilePath()
-                        );
-                    } catch (\InvalidArgumentException $e) {
-                        // this can happen when the function was defined in the Config startup script
-                        $stmt->inferredType = Type::getMixed();
-                    }
-                }
             }
         }
 
@@ -419,29 +452,27 @@ class CallChecker
                 if (MethodChecker::methodExists($fq_class_name . '::__construct', $file_checker)) {
                     $method_id = $fq_class_name . '::__construct';
 
-                    $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
-
-                    if (self::checkFunctionArguments(
-                        $statements_checker,
+                    if (self::checkMethodArgs(
+                        $method_id,
                         $stmt->args,
-                        $method_params,
-                        $context
+                        $found_generic_params,
+                        $context,
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker
                     ) === false) {
                         return false;
                     }
 
-                    // check again after we've processed args
-                    $method_params = FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker);
+                    $generic_params = null;
 
-                    if (self::checkFunctionArgumentsMatch(
-                        $statements_checker,
-                        $stmt->args,
-                        $method_id,
-                        $method_params,
-                        $context,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ) === false) {
-                        // fall through
+                    if ($storage->template_types) {
+                        foreach ($storage->template_types as $template_name => $_) {
+                            if (isset($found_generic_params[$template_name])) {
+                                $generic_params[] = $found_generic_params[$template_name];
+                            } else {
+                                $generic_params[] = Type::getMixed();
+                            }
+                        }
                     }
 
                     if ($fq_class_name === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
@@ -492,6 +523,13 @@ class CallChecker
                                 )
                             ]);
                         }
+                    } elseif ($generic_params) {
+                        $stmt->inferredType = new Type\Union([
+                            new Type\Atomic\TGenericObject(
+                                $fq_class_name,
+                                $generic_params
+                            )
+                        ]);
                     }
                 }
             }
@@ -499,10 +537,6 @@ class CallChecker
 
         return null;
     }
-
-    /**
-     * @return false|null
-     */
 
     /**
      * @param   StatementsChecker               $statements_checker
@@ -660,6 +694,50 @@ class CallChecker
                     return $does_method_exist;
                 }
 
+                $class_template_params = null;
+
+                if ($stmt->var instanceof PhpParser\Node\Expr\Variable &&
+                    ($context->collect_initializations || $context->collect_mutations) &&
+                    $stmt->var->name === 'this' &&
+                    is_string($stmt->name) &&
+                    $source instanceof FunctionLikeChecker
+                ) {
+                    self::collectSpecialInformation($source, $stmt->name, $context);
+                }
+
+                if ($class_type_part instanceof TGenericObject) {
+                    $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+
+                    if ($class_storage->template_types) {
+                        $class_template_params = [];
+
+                        /** @var array<int, string> */
+                        $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
+
+                        $provided_type_param_count = count($class_type_part->type_params);
+
+                        foreach ($reversed_class_template_types as $i => $type_name) {
+                            if (isset($class_type_part->type_params[$provided_type_param_count - 1 - $i])) {
+                                $class_template_params[$type_name] =
+                                    $class_type_part->type_params[$provided_type_param_count - 1 - $i];
+                            } else {
+                                $class_template_params[$type_name] = Type::getMixed();
+                            }
+                        }
+                    }
+                }
+
+                if (self::checkMethodArgs(
+                    $method_id,
+                    $stmt->args,
+                    $class_template_params,
+                    $context,
+                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    $statements_checker
+                ) === false) {
+                    return false;
+                }
+
                 if (FunctionChecker::inCallMap($cased_method_id)) {
                     $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
                 } else {
@@ -681,84 +759,7 @@ class CallChecker
                         return false;
                     }
 
-                    $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
-                }
-
-                if ($stmt->var instanceof PhpParser\Node\Expr\Variable
-                    && $stmt->var->name === 'this'
-                    && is_string($stmt->name)
-                    && $source instanceof FunctionLikeChecker
-                ) {
-                    $this_method_id = $source->getMethodId();
-
-                    $fq_class_name = (string)$statements_checker->getFQCLN();
-
-                    if ($context->collect_mutations &&
-                        $context->self &&
-                        (
-                            $context->self === $fq_class_name ||
-                            ClassChecker::classExtends(
-                                $context->self,
-                                $fq_class_name
-                            )
-                        )
-                    ) {
-                        $file_checker = $source->getFileChecker();
-
-                        $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
-
-                        if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
-                            return false;
-                        }
-                    } elseif ($context->collect_initializations &&
-                        $context->self &&
-                        (
-                            $context->self === $fq_class_name ||
-                            ClassChecker::classExtends(
-                                $context->self,
-                                $fq_class_name
-                            )
-                        )
-                    ) {
-                        $method_id = $statements_checker->getFQCLN() . '::' . strtolower($stmt->name);
-
-                        $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
-
-                        $method_storage = MethodChecker::getStorage((string)$declaring_method_id);
-
-                        $class_checker = $source->getSource();
-
-                        if ($class_checker instanceof ClassLikeChecker &&
-                            $method_storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
-                        ) {
-                            $local_vars_in_scope = [];
-                            $local_vars_possibly_in_scope = [];
-
-                            foreach ($context->vars_in_scope as $var => $type) {
-                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                                    $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
-                                }
-                            }
-
-                            foreach ($context->vars_possibly_in_scope as $var => $type) {
-                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                                    $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
-                                }
-                            }
-
-                            if ($class_checker->getMethodMutations(strtolower($stmt->name), $context) === false) {
-                                return false;
-                            }
-
-                            foreach ($local_vars_in_scope as $var => $type) {
-                                $context->vars_in_scope[$var] = $type;
-                            }
-
-                            foreach ($local_vars_possibly_in_scope as $var => $type) {
-                                $context->vars_possibly_in_scope[$var] = $type;
-                            }
-                        }
-                    }
+                    $return_type_candidate = MethodChecker::getMethodReturnType($method_id, $class_template_params);
                 }
 
                 if ($return_type_candidate) {
@@ -782,37 +783,99 @@ class CallChecker
             $stmt->inferredType = $return_type;
         }
 
-        $method_params = $method_id
-            ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $statements_checker->getFileChecker())
-            : null;
-
-        if (self::checkFunctionArguments(
-            $statements_checker,
-            $stmt->args,
-            $method_params,
-            $context
-        ) === false) {
-            return false;
+        if ($method_id === null) {
+            return self::checkMethodArgs(
+                $method_id,
+                $stmt->args,
+                $found_generic_params,
+                $context,
+                new CodeLocation($statements_checker->getSource(), $stmt),
+                $statements_checker
+            );
         }
+    }
 
-        // check again after we've processed args
-        $method_params = $method_id
-            ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $statements_checker->getFileChecker())
-            : null;
+    /**
+     * @param   FunctionLikeChecker $source
+     * @param   string              $method_name
+     * @param   Context             $context
+     * @return  false|null
+     */
+    public static function collectSpecialInformation(
+        FunctionLikeChecker $source,
+        $method_name,
+        Context $context
+    ) {
+        $this_method_id = $source->getMethodId();
 
-        if (self::checkFunctionArgumentsMatch(
-            $statements_checker,
-            $stmt->args,
-            $method_id,
-            $method_params,
-            $context,
-            new CodeLocation($statements_checker->getSource(), $stmt),
-            $has_mock
-        ) === false) {
-            return false;
+        $fq_class_name = (string)$source->getFQCLN();
+
+        if ($context->collect_mutations &&
+            $context->self &&
+            (
+                $context->self === $fq_class_name ||
+                ClassChecker::classExtends(
+                    $context->self,
+                    $fq_class_name
+                )
+            )
+        ) {
+            $file_checker = $source->getFileChecker();
+
+            $method_id = $fq_class_name . '::' . strtolower($method_name);
+
+            if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
+                return false;
+            }
+        } elseif ($context->collect_initializations &&
+            $context->self &&
+            (
+                $context->self === $fq_class_name ||
+                ClassChecker::classExtends(
+                    $context->self,
+                    $fq_class_name
+                )
+            )
+        ) {
+            $method_id = $fq_class_name . '::' . strtolower($method_name);
+
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+
+            $method_storage = MethodChecker::getStorage((string)$declaring_method_id);
+
+            $class_checker = $source->getSource();
+
+            if ($class_checker instanceof ClassLikeChecker &&
+                $method_storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+            ) {
+                $local_vars_in_scope = [];
+                $local_vars_possibly_in_scope = [];
+
+                foreach ($context->vars_in_scope as $var => $type) {
+                    if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                    }
+                }
+
+                foreach ($context->vars_possibly_in_scope as $var => $type) {
+                    if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                    }
+                }
+
+                if ($class_checker->getMethodMutations(strtolower($method_name), $context) === false) {
+                    return false;
+                }
+
+                foreach ($local_vars_in_scope as $var => $type) {
+                    $context->vars_in_scope[$var] = $type;
+                }
+
+                foreach ($local_vars_possibly_in_scope as $var => $type) {
+                    $context->vars_possibly_in_scope[$var] = $type;
+                }
+            }
         }
-
-        return null;
     }
 
     /**
@@ -988,7 +1051,18 @@ class CallChecker
                     // fall through
                 }
 
-                $return_types = MethodChecker::getMethodReturnType($method_id);
+                if (self::checkMethodArgs(
+                    $method_id,
+                    $stmt->args,
+                    $found_generic_params,
+                    $context,
+                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    $statements_checker
+                ) === false) {
+                    return false;
+                }
+
+                $return_types = MethodChecker::getMethodReturnType($method_id, $found_generic_params);
 
                 if ($return_types) {
                     $return_types = ExpressionChecker::fleshOutTypes(
@@ -1007,36 +1081,84 @@ class CallChecker
                     }
                 }
             }
+        }
 
-            $method_params = $method_id
-                ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker)
-                : null;
-
-            if (self::checkFunctionArguments(
-                $statements_checker,
-                $stmt->args,
-                $method_params,
-                $context
-            ) === false) {
-                return false;
-            }
-
-            // get them again
-            $method_params = $method_id
-                ? FunctionLikeChecker::getMethodParamsById($method_id, $stmt->args, $file_checker)
-                : null;
-
-            if (self::checkFunctionArgumentsMatch(
-                $statements_checker,
-                $stmt->args,
+        if ($method_id === null) {
+            return self::checkMethodArgs(
                 $method_id,
-                $method_params,
+                $stmt->args,
+                $found_generic_params,
                 $context,
                 new CodeLocation($statements_checker->getSource(), $stmt),
-                $has_mock
-            ) === false) {
-                return false;
-            }
+                $statements_checker
+            );
+        }
+    }
+
+    /**
+     * @param  string|null                      $method_id
+     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  array<string, Type\Union>|null   &$generic_params
+     * @param  Context                          $context
+     * @param  CodeLocation                     $code_location
+     * @param  StatementsChecker                $statements_checker
+     * @return false|null
+     */
+    protected static function checkMethodArgs(
+        $method_id,
+        array $args,
+        array &$generic_params = null,
+        Context $context,
+        CodeLocation $code_location,
+        StatementsChecker $statements_checker
+    ) {
+        $file_checker = $statements_checker->getFileChecker();
+
+        $method_params = $method_id
+            ? FunctionLikeChecker::getMethodParamsById($method_id, $args, $file_checker)
+            : null;
+
+        if (self::checkFunctionArguments(
+            $statements_checker,
+            $args,
+            $method_params,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        if (!$method_id || $method_params === null) {
+            return;
+        }
+
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+        $method_storage = isset($class_storage->methods[strtolower($method_name)])
+            ? $class_storage->methods[strtolower($method_name)]
+            : null;
+
+        if (!$class_storage->user_defined) {
+            // check again after we've processed args
+            $method_params = FunctionLikeChecker::getMethodParamsById(
+                $method_id,
+                $args,
+                $file_checker
+            );
+        }
+
+        if (self::checkFunctionArgumentsMatch(
+            $statements_checker,
+            $args,
+            $method_id,
+            $method_params,
+            $method_storage,
+            $class_storage,
+            $generic_params,
+            $context,
+            $code_location
+        ) === false) {
+            return false;
         }
 
         return null;
@@ -1153,20 +1275,24 @@ class CallChecker
      * @param   StatementsChecker                       $statements_checker
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|null                             $method_id
-     * @param   array<int,FunctionLikeParameter>|null   $function_params
+     * @param   array<int,FunctionLikeParameter>        $function_params
+     * @param   FunctionLikeStorage                     $function_storage
+     * @param   ClassLikeStorage                        $class_storage
+     * @param   array<string, Type\Union>|null          $generic_params
      * @param   Context                                 $context
      * @param   CodeLocation                            $code_location
-     * @param   boolean                                 $is_mock
      * @return  false|null
      */
     protected static function checkFunctionArgumentsMatch(
         StatementsChecker $statements_checker,
         array $args,
         $method_id,
-        array $function_params = null,
+        array $function_params,
+        FunctionLikeStorage $function_storage = null,
+        ClassLikeStorage $class_storage = null,
+        array &$generic_params = null,
         Context $context,
-        CodeLocation $code_location,
-        $is_mock = false
+        CodeLocation $code_location
     ) {
         $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
 
@@ -1181,7 +1307,7 @@ class CallChecker
                 $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFilePath());
             } else {
                 $fq_class_name = explode('::', $method_id)[0];
-                $is_variadic = $is_mock || MethodChecker::isVariadic($method_id);
+                $is_variadic = MethodChecker::isVariadic($method_id);
             }
         }
 
@@ -1205,14 +1331,27 @@ class CallChecker
             ? $function_params[count($function_params) - 1]
             : null;
 
+        $template_types = null;
+
+        if ($function_storage) {
+            $template_types = [];
+
+            if ($function_storage->template_types) {
+                $template_types = $function_storage->template_types;
+            }
+            if ($class_storage && $class_storage->template_types) {
+                $template_types = array_merge($template_types, $class_storage->template_types);
+            }
+        }
+
         foreach ($args as $argument_offset => $arg) {
-            if ($function_params !== null && isset($arg->value->inferredType)) {
+            if (isset($arg->value->inferredType)) {
                 $function_param = count($function_params) > $argument_offset
                     ? $function_params[$argument_offset]
                     : ($last_param && $last_param->is_variadic ? $last_param : null);
 
                 if ($function_param) {
-                    $param_type = $function_param->type;
+                    $param_type = clone $function_param->type;
 
                     if ($function_param->is_variadic) {
                         if (!$param_type->hasArray() || !$param_type->types['array'] instanceof TArray) {
@@ -1220,6 +1359,47 @@ class CallChecker
                         }
 
                         $param_type = clone $param_type->types['array']->type_params[1];
+                    }
+
+                    if ($function_storage) {
+                        if (isset($function_storage->template_typeof_params[$argument_offset])) {
+                            $template_type = $function_storage->template_typeof_params[$argument_offset];
+
+                            $offset_value_type = null;
+
+                            if ($arg->value instanceof PhpParser\Node\Expr\ClassConstFetch &&
+                                $arg->value->class instanceof PhpParser\Node\Name &&
+                                is_string($arg->value->name) &&
+                                strtolower($arg->value->name) === 'class'
+                            ) {
+                                $offset_value_type = Type::parseString(
+                                    ClassLikeChecker::getFQCLNFromNameObject(
+                                        $arg->value->class,
+                                        $statements_checker
+                                    )
+                                );
+                            } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_) {
+                                $offset_value_type = Type::parseString($arg->value->value);
+                            }
+
+                            if ($generic_params === null) {
+                                $generic_params = [];
+                            }
+
+                            $generic_params[$template_type] = $offset_value_type ?: Type::getMixed();
+                        } elseif ($template_types) {
+                            // if this is a really simple template parameter
+                            // @todo support generic param inference from nested like @param array<T>
+                            if (isset($template_types[(string)$param_type])) {
+                                if ($generic_params === null) {
+                                    $generic_params = [];
+                                }
+
+                                $generic_params[(string)$param_type] = $arg->value->inferredType;
+                            }
+
+                            $param_type->replaceTemplateTypes($template_types);
+                        }
                     }
 
                     // for now stop when we encounter a packed argument
@@ -1231,7 +1411,7 @@ class CallChecker
                         $statements_checker,
                         $arg->value->inferredType,
                         ExpressionChecker::fleshOutTypes(
-                            clone $param_type,
+                            $param_type,
                             [],
                             $fq_class_name,
                             $method_id
@@ -1246,7 +1426,7 @@ class CallChecker
             }
         }
 
-        if ($function_params !== null && ($method_id === 'array_map' || $method_id === 'array_filter')) {
+        if ($method_id === 'array_map' || $method_id === 'array_filter') {
             if (self::checkArrayFunctionArgumentsMatch(
                 $statements_checker,
                 $args,
@@ -1260,41 +1440,39 @@ class CallChecker
             }
         }
 
-        if ($function_params !== null) {
-            if (!$is_variadic
-                && count($args) > count($function_params)
-                && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
-            ) {
-                if (IssueBuffer::accepts(
-                    new TooManyArguments(
-                        'Too many arguments for method ' . ($cased_method_id ?: $method_id),
-                        $code_location
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-
-                return null;
+        if (!$is_variadic
+            && count($args) > count($function_params)
+            && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
+        ) {
+            if (IssueBuffer::accepts(
+                new TooManyArguments(
+                    'Too many arguments for method ' . ($cased_method_id ?: $method_id),
+                    $code_location
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
             }
 
-            if (!$has_packed_var && count($args) < count($function_params)) {
-                for ($i = count($args); $i < count($function_params); $i++) {
-                    $param = $function_params[$i];
+            return null;
+        }
 
-                    if (!$param->is_optional && !$param->is_variadic) {
-                        if (IssueBuffer::accepts(
-                            new TooFewArguments(
-                                'Too few arguments for method ' . $cased_method_id,
-                                $code_location
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
+        if (!$has_packed_var && count($args) < count($function_params)) {
+            for ($i = count($args); $i < count($function_params); $i++) {
+                $param = $function_params[$i];
 
-                        break;
+                if (!$param->is_optional && !$param->is_variadic) {
+                    if (IssueBuffer::accepts(
+                        new TooFewArguments(
+                            'Too few arguments for method ' . $cased_method_id,
+                            $code_location
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
                     }
+
+                    break;
                 }
             }
         }

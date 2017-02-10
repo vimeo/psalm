@@ -93,4 +93,17 @@ trait GenericTrait
             $type_param->setFromDocblock();
         }
     }
+
+    /**
+     * @param  array<string, string> $template_types
+     * @return void
+     */
+    public function replaceTemplateTypes(array $template_types)
+    {
+        foreach ($template_types as $template_name => $template_type) {
+            foreach ($this->type_params as $type_param) {
+                $type_param->replaceTemplateTypes($template_types);
+            }
+        }
+    }
 }

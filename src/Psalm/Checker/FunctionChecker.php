@@ -71,12 +71,12 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
-     * @return array<int, FunctionLikeParameter>
+     * @return FunctionLikeStorage
      */
-    public static function getParams($function_id, $file_path)
+    public static function getStorage($function_id, $file_path)
     {
         if (isset(self::$builtin_functions[$function_id]) && self::$builtin_functions[$function_id]) {
-            return self::$builtin_functions[$function_id]->params;
+            return self::$builtin_functions[$function_id];
         }
 
         $file_storage = FileChecker::$storage[$file_path];
@@ -85,7 +85,7 @@ class FunctionChecker extends FunctionLikeChecker
             throw new \UnexpectedValueException('Not expecting ' . $function_id . ' to not have storage in ' . $file_path);
         }
 
-        return $file_storage->functions[$function_id]->params;
+        return $file_storage->functions[$function_id];
     }
 
     /**
@@ -142,11 +142,12 @@ class FunctionChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string $function_id
-     * @param  string $file_path
+     * @param  string                     $function_id
+     * @param  string                     $file_path
+     * @param  array<string, string>|null $function_template_types
      * @return Type\Union|null
      */
-    public static function getFunctionReturnType($function_id, $file_path)
+    public static function getFunctionReturnType($function_id, $file_path, array $function_template_types = null)
     {
         if (!isset(FileChecker::$storage[$file_path])) {
             return null;
@@ -160,7 +161,23 @@ class FunctionChecker extends FunctionLikeChecker
 
         $function_return_type = $file_storage->functions[$function_id]->return_type;
 
-        return $function_return_type ? clone $function_return_type : null;
+        if ($function_return_type) {
+            if ($function_template_types) {
+                $type_tokens = Type::tokenize((string)$function_return_type);
+
+                foreach ($type_tokens as &$type_token) {
+                    if (isset($function_template_types[$type_token])) {
+                        $type_token = $function_template_types[$type_token];
+                    }
+                }
+
+                return Type::parseString(implode('', $type_tokens));
+            }
+
+            return clone $function_return_type;
+        }
+
+        return null;
     }
 
     /**
