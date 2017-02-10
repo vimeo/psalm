@@ -574,10 +574,26 @@ class Config
      */
     public function visitStubFiles(ProjectChecker $project_checker)
     {
+        $project_checker->register_global_functions = true;
+
+        $generic_stubs = realpath(__DIR__ . '/Stubs/CoreGenericFunctions.php');
+
+        if ($generic_stubs) {
+            $generic_stub_checker = new FileChecker(
+                $generic_stubs,
+                $project_checker
+            );
+            $generic_stub_checker->visit();
+        } else {
+            throw new \UnexpectedValueException('Cannot locate core generic stubs');
+        }
+
         foreach ($this->stub_files as $stub_file) {
             $stub_checker = new FileChecker($stub_file, $project_checker);
             $stub_checker->visit();
         }
+
+        $project_checker->register_global_functions = false;
     }
 
     /**

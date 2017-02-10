@@ -28,6 +28,11 @@ class FunctionChecker extends FunctionLikeChecker
     protected static $builtin_functions = [];
 
     /**
+     * @var array<string, FunctionLikeStorage>
+     */
+    public static $stubbed_functions = [];
+
+    /**
      * @param mixed                         $function
      * @param StatementsSource              $source
      */
@@ -61,6 +66,10 @@ class FunctionChecker extends FunctionLikeChecker
             return true;
         }
 
+        if (isset(self::$stubbed_functions[$function_id])) {
+            return true;
+        }
+
         if (self::extractReflectionInfo($function_id) === false) {
             return false;
         }
@@ -75,7 +84,11 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function getStorage($function_id, $file_path)
     {
-        if (isset(self::$builtin_functions[$function_id]) && self::$builtin_functions[$function_id]) {
+        if (isset(self::$stubbed_functions[$function_id])) {
+            return self::$stubbed_functions[$function_id];
+        }
+
+        if (isset(self::$builtin_functions[$function_id])) {
             return self::$builtin_functions[$function_id];
         }
 
@@ -149,17 +162,21 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function getFunctionReturnType($function_id, $file_path, array $function_template_types = null)
     {
-        if (!isset(FileChecker::$storage[$file_path])) {
-            return null;
+        if (isset(self::$stubbed_functions[$function_id])) {
+            $function_return_type = self::$stubbed_functions[$function_id]->return_type;
+        } else {
+            if (!isset(FileChecker::$storage[$file_path])) {
+                return null;
+            }
+
+            $file_storage = FileChecker::$storage[$file_path];
+
+            if (!isset($file_storage->functions[$function_id])) {
+                throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
+            }
+
+            $function_return_type = $file_storage->functions[$function_id]->return_type;
         }
-
-        $file_storage = FileChecker::$storage[$file_path];
-
-        if (!isset($file_storage->functions[$function_id])) {
-            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
-        }
-
-        $function_return_type = $file_storage->functions[$function_id]->return_type;
 
         if ($function_return_type) {
             if ($function_template_types) {
@@ -433,45 +450,6 @@ class FunctionChecker extends FunctionLikeChecker
             ? $first_arg->inferredType->types['array']
             : null;
 
-        if ($call_map_key === 'array_values' ||
-            $call_map_key === 'array_unique' ||
-            $call_map_key === 'array_intersect' ||
-            $call_map_key === 'array_slice'
-        ) {
-            if ($first_arg_array_generic || $first_arg_array_objectlike) {
-                if ($first_arg_array_generic) {
-                    $inner_type = clone $first_arg_array_generic->type_params[1];
-                } else {
-                    /** @var Type\Atomic\ObjectLike $first_arg_array_objectlike */
-                    $inner_type = $first_arg_array_objectlike->getGenericTypeParam();
-                }
-
-                return new Type\Union([
-                    new Type\Atomic\TArray([
-                        Type::getInt(),
-                        $inner_type
-                    ])
-                ]);
-            }
-        }
-
-        if ($call_map_key === 'array_keys') {
-            if ($first_arg_array_generic || $first_arg_array_objectlike) {
-                if ($first_arg_array_generic) {
-                    $inner_type = clone $first_arg_array_generic->type_params[0];
-                } else {
-                    $inner_type = Type::getString();
-                }
-
-                return new Type\Union([
-                    new Type\Atomic\TArray([
-                        Type::getInt(),
-                        $inner_type
-                    ])
-                ]);
-            }
-        }
-
         if ($call_map_key === 'array_merge') {
             $inner_value_types = [];
             $inner_key_types = [];
@@ -510,62 +488,6 @@ class FunctionChecker extends FunctionLikeChecker
             return Type::getArray();
         }
 
-        if ($call_map_key === 'array_combine') {
-            $second_arg_array_generic = $second_arg
-                    && isset($second_arg->inferredType)
-                    && isset($second_arg->inferredType->types['array'])
-                    && $second_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
-                ? $second_arg->inferredType->types['array']
-                : null;
-
-            $second_arg_array_objectlike = $second_arg
-                    && isset($second_arg->inferredType)
-                    && isset($second_arg->inferredType->types['array'])
-                    && $second_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike
-                ? $second_arg->inferredType->types['array']
-                : null;
-
-            if ($second_arg_array_generic || $second_arg_array_objectlike) {
-                if ($first_arg && isset($first_arg->inferredType) && $first_arg->inferredType->hasArray()) {
-                    if ($first_arg_array_generic) {
-                        $keys_inner_type = clone $first_arg_array_generic->type_params[1];
-                    } else {
-                        /** @var Type\Atomic\ObjectLike $first_arg_array_objectlike */
-                        $keys_inner_type = $first_arg_array_objectlike->getGenericTypeParam();
-                    }
-                } else {
-                    $keys_inner_type = Type::getMixed();
-                }
-
-                if ($second_arg_array_generic) {
-                    $values_inner_type = clone $second_arg_array_generic->type_params[1];
-                } else {
-                    /** @var Type\Atomic\ObjectLike $second_arg_array_objectlike */
-                    $values_inner_type = $second_arg_array_objectlike->getGenericTypeParam();
-                }
-
-                return new Type\Union([
-                    new Type\Atomic\TArray([
-                        $keys_inner_type,
-                        $values_inner_type
-                    ])
-                ]);
-            }
-        }
-
-        if ($call_map_key === 'array_diff') {
-            if (!$first_arg_array_generic) {
-                return Type::getArray();
-            }
-
-            return new Type\Union([
-                new Type\Atomic\TArray([
-                    Type::getInt(),
-                    clone $first_arg_array_generic->type_params[1]
-                ])
-            ]);
-        }
-
         if ($call_map_key === 'array_filter') {
             if (!$first_arg_array_generic) {
                 return Type::getArray();
@@ -586,22 +508,6 @@ class FunctionChecker extends FunctionLikeChecker
                     $inner_type
                 ])
             ]);
-        }
-
-        if ($call_map_key === 'array_diff_key') {
-            if (!$first_arg_array_generic) {
-                return Type::getArray();
-            }
-
-            return clone $first_arg->inferredType;
-        }
-
-        if ($call_map_key === 'array_shift' || $call_map_key === 'array_pop') {
-            if (!$first_arg_array_generic) {
-                return Type::getMixed();
-            }
-
-            return clone $first_arg_array_generic->type_params[1];
         }
 
         return null;
@@ -780,5 +686,6 @@ class FunctionChecker extends FunctionLikeChecker
     public static function clearCache()
     {
         self::$builtin_functions = [];
+        self::$stubbed_functions = [];
     }
 }

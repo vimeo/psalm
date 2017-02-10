@@ -155,6 +155,13 @@ class ProjectChecker
      */
     public $fake_files = [];
 
+    /**
+     * Whether to log functions just at the file level or globally (for stubs)
+     *
+     * @var boolean
+     */
+    public $register_global_functions = false;
+
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';

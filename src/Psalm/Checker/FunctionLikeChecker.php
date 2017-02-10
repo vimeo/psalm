@@ -485,13 +485,19 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $cased_function_id = ($namespace ? $namespace . '\\' : '') . $function->name;
             $function_id = strtolower($cased_function_id);
 
-            $file_storage = FileChecker::$storage[$source->getFilePath()];
+            $project_checker = $source->getFileChecker()->project_checker;
 
-            if (isset($file_storage->functions[$function_id])) {
-                return $file_storage->functions[$function_id];
+            if ($project_checker->register_global_functions) {
+                $storage = FunctionChecker::$stubbed_functions[$function_id] = new FunctionLikeStorage();
+            } else {
+                $file_storage = FileChecker::$storage[$source->getFilePath()];
+
+                if (isset($file_storage->functions[$function_id])) {
+                    return $file_storage->functions[$function_id];
+                }
+
+                $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
             }
-
-            $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
         } elseif ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
             $fq_class_name = (string)$source->getFQCLN();
 

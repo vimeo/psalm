@@ -58,41 +58,36 @@ class ForeachChecker
         }
 
         if ($iterator_type) {
-            foreach ($iterator_type->types as $return_type) {
+            foreach ($iterator_type->types as $iterator_type) {
                 // if it's an empty array, we cannot iterate over it
-                if ((string) $return_type === 'array<empty, empty>') {
+                if ((string) $iterator_type === 'array<empty, empty>') {
                     continue;
                 }
 
-                if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
-                    $value_index = count($return_type->type_params) - 1;
-                    $value_type_part = $return_type->type_params[$value_index];
-
+                if ($iterator_type instanceof Type\Atomic\TArray) {
                     if (!$value_type) {
-                        $value_type = $value_type_part;
+                        $value_type = $iterator_type->type_params[1];
                     } else {
-                        $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                        $value_type = Type::combineUnionTypes($value_type, $iterator_type->type_params[1]);
                     }
 
-                    if ($value_index) {
-                        $key_type_part = $return_type->type_params[0];
+                    $key_type_part = $iterator_type->type_params[0];
 
-                        if (!$key_type) {
-                            $key_type = $key_type_part;
-                        } else {
-                            $key_type = Type::combineUnionTypes($key_type, $key_type_part);
-                        }
+                    if (!$key_type) {
+                        $key_type = $key_type_part;
+                    } else {
+                        $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                     }
                     continue;
                 }
 
-                if ($return_type instanceof Type\Atomic\Scalar ||
-                    $return_type instanceof Type\Atomic\TNull ||
-                    $return_type instanceof Type\Atomic\TVoid
+                if ($iterator_type instanceof Type\Atomic\Scalar ||
+                    $iterator_type instanceof Type\Atomic\TNull ||
+                    $iterator_type instanceof Type\Atomic\TVoid
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidIterator(
-                            'Cannot iterate over ' . $return_type->getKey(),
+                            'Cannot iterate over ' . $iterator_type->getKey(),
                             new CodeLocation($statements_checker->getSource(), $stmt->expr)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -101,19 +96,18 @@ class ForeachChecker
                     }
 
                     $value_type = Type::getMixed();
-                } elseif ($return_type instanceof Type\Atomic\TArray ||
-                    $return_type instanceof Type\Atomic\TObject ||
-                    $return_type instanceof Type\Atomic\TMixed ||
-                    $return_type instanceof Type\Atomic\TEmpty ||
-                    ($return_type instanceof Type\Atomic\TNamedObject && $return_type->value === 'Generator')
+                } elseif ($iterator_type instanceof Type\Atomic\TArray ||
+                    $iterator_type instanceof Type\Atomic\TObject ||
+                    $iterator_type instanceof Type\Atomic\TMixed ||
+                    $iterator_type instanceof Type\Atomic\TEmpty
                 ) {
                     $value_type = Type::getMixed();
-                } elseif ($return_type instanceof Type\Atomic\TNamedObject) {
-                    if ($return_type->value !== 'Traversable' &&
-                        $return_type->value !== $statements_checker->getClassName()
+                } elseif ($iterator_type instanceof Type\Atomic\TNamedObject) {
+                    if ($iterator_type->value !== 'Traversable' &&
+                        $iterator_type->value !== $statements_checker->getClassName()
                     ) {
                         if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                            $return_type->value,
+                            $iterator_type->value,
                             $statements_checker->getFileChecker(),
                             new CodeLocation($statements_checker->getSource(), $stmt->expr),
                             $statements_checker->getSuppressedIssues()
@@ -122,18 +116,47 @@ class ForeachChecker
                         }
                     }
 
+                    if ($iterator_type instanceof Type\Atomic\TGenericObject &&
+                        (strtolower($iterator_type->value) === 'iterable' ||
+                            strtolower($iterator_type->value) === 'traversable' ||
+                            ClassChecker::classImplements(
+                                $iterator_type->value,
+                                'Traversable'
+                            ))
+                    ) {
+                        $value_index = count($iterator_type->type_params) - 1;
+                        $value_type_part = $iterator_type->type_params[$value_index];
+
+                        if (!$value_type) {
+                            $value_type = $value_type_part;
+                        } else {
+                            $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                        }
+
+                        if ($value_index) {
+                            $key_type_part = $iterator_type->type_params[0];
+
+                            if (!$key_type) {
+                                $key_type = $key_type_part;
+                            } else {
+                                $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                            }
+                        }
+                        continue;
+                    }
+
                     if (ClassChecker::classImplements(
-                        $return_type->value,
+                        $iterator_type->value,
                         'Iterator'
                     )) {
-                        $iterator_method = $return_type->value . '::current';
+                        $iterator_method = $iterator_type->value . '::current';
                         $iterator_class_type = MethodChecker::getMethodReturnType($iterator_method);
 
                         if ($iterator_class_type) {
                             $value_type_part = ExpressionChecker::fleshOutTypes(
                                 $iterator_class_type,
                                 [],
-                                $return_type->value,
+                                $iterator_type->value,
                                 $iterator_method
                             );
 

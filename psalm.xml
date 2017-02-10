@@ -12,6 +12,7 @@
         <directory name="examples" />
         <ignoreFiles>
             <file name="src/Psalm/CallMap.php" />
+            <directory name="src/Psalm/Stubs" />
             <directory name="tests/stubs" />
             <!-- @todo fix this -->
             <file name="examples/TemplateChecker.php" />

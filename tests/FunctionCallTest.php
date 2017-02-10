@@ -327,21 +327,60 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
-    public function testArrayFunctions()
+    public function testArrayKeys()
     {
         $stmts = self::$parser->parse('<?php
         $a = array_keys(["a" => 1, "b" => 2]);
-        $b = array_values(["a" => 1, "b" => 2]);
-        $c = array_combine(["a", "b", "c"], [1, 2, 3]);
-        $d = array_merge(["a", "b", "c"], [1, 2, 3]);
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$a']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testArrayValues()
+    {
+        $stmts = self::$parser->parse('<?php
+        $b = array_values(["a" => 1, "b" => 2]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, int>', (string) $context->vars_in_scope['$b']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testArrayCombine()
+    {
+        $stmts = self::$parser->parse('<?php
+        $c = array_combine(["a", "b", "c"], [1, 2, 3]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$c']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testArrayMerge()
+    {
+        $stmts = self::$parser->parse('<?php
+        $d = array_merge(["a", "b", "c"], [1, 2, 3]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$d']);
     }
 }

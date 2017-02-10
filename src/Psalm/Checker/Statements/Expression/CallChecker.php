@@ -123,6 +123,9 @@ class CallChecker
         if ($context->check_functions) {
             $in_call_map = false;
 
+            $is_stubbed = false;
+
+            $function_storage = null;
             $function_params = null;
 
             $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
@@ -185,6 +188,7 @@ class CallChecker
                 $method_id = implode('\\', $stmt->name->parts);
 
                 $in_call_map = FunctionChecker::inCallMap($method_id);
+                $is_stubbed = isset(FunctionChecker::$stubbed_functions[strtolower($method_id)]);
 
                 $is_predefined = true;
 
@@ -201,7 +205,7 @@ class CallChecker
                     //$method_id = $statements_checker->getFQCLN() . '::' . $method_id;
                 }
 
-                if (!$in_call_map) {
+                if (!$in_call_map && !$is_stubbed) {
                     if (self::checkFunctionExists(
                         $statements_checker,
                         $method_id,
@@ -211,7 +215,9 @@ class CallChecker
                     ) {
                         return false;
                     }
+                }
 
+                if (!$in_call_map || $is_stubbed) {
                     $function_storage = FunctionChecker::getStorage(
                         strtolower($method_id),
                         $statements_checker->getFilePath()
@@ -220,12 +226,11 @@ class CallChecker
                     $function_params = $function_storage->params;
 
                     if (!$is_predefined) {
-                        $defined_constants = FunctionChecker::getDefinedConstants(
-                            $method_id,
-                            $statements_checker->getFilePath()
-                        );
+                        $defined_constants = $function_storage->defined_constants;
                     }
-                } else {
+                }
+
+                if ($in_call_map && !$is_stubbed) {
                     $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
                         $method_id,
                         $stmt->args,
@@ -243,19 +248,10 @@ class CallChecker
                 // fall through
             }
 
-            $function_storage = null;
-
             $generic_params = null;
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
-                if (!$in_call_map) {
-                    $function_storage = FunctionChecker::getStorage(
-                        strtolower($method_id),
-                        $statements_checker->getFilePath()
-                    );
-
-                    $function_params = $function_storage->params;
-                } else {
+                if (!$is_stubbed && $in_call_map) {
                     $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
                         $method_id,
                         $stmt->args,
@@ -282,14 +278,7 @@ class CallChecker
             }
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
-                if ($in_call_map) {
-                    $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
-                        $method_id,
-                        $stmt->args,
-                        $code_location,
-                        $statements_checker->getSuppressedIssues()
-                    );
-                } else {
+                if (!$in_call_map || $is_stubbed) {
                     try {
                         $stmt->inferredType = FunctionChecker::getFunctionReturnType(
                             $method_id,
@@ -300,6 +289,13 @@ class CallChecker
                         // this can happen when the function was defined in the Config startup script
                         $stmt->inferredType = Type::getMixed();
                     }
+                } else {
+                    $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
+                        $method_id,
+                        $stmt->args,
+                        $code_location,
+                        $statements_checker->getSuppressedIssues()
+                    );
                 }
             }
 
@@ -1555,7 +1551,6 @@ class CallChecker
                         return false;
                     }
                 }
-
 
                 $closure_params = $closure_type->params;
                 $closure_return_type = $closure_type->return_type;
