@@ -942,7 +942,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if ($comment && $config->use_docblock_types) {
             try {
-                $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
+                $type_in_comment = CommentChecker::getTypeFromComment(
+                    (string)$comment,
+                    null,
+                    $this,
+                    null,
+                    $storage->template_types
+                );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(

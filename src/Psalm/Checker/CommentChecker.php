@@ -19,6 +19,7 @@ class CommentChecker
      * @param  Context|null     $context
      * @param  StatementsSource $source
      * @param  string           $var_id
+     * @param  array<string, string>|null   $template_types
      * @return Type\Union|null
      * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
@@ -27,7 +28,8 @@ class CommentChecker
         $comment,
         Context $context = null,
         StatementsSource $source,
-        $var_id = null
+        $var_id = null,
+        array $template_types = null
     ) {
         $type_in_comments_var_id = null;
 
@@ -47,7 +49,7 @@ class CommentChecker
                     $line_parts[0],
                     $source->getFQCLN(),
                     $source,
-                    []
+                    $template_types
                 );
 
                 // support PHPStorm-style docblocks like

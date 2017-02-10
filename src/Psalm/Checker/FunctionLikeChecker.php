@@ -309,8 +309,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         foreach ($storage->params as $offset => $function_param) {
+            $param_type = clone $function_param->type;
+
             $param_type = ExpressionChecker::fleshOutTypes(
-                clone $function_param->type,
+                $param_type,
                 [],
                 $context->self,
                 $this->getMethodId()
@@ -347,10 +349,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             if ($template_types) {
-                $substituded_type = clone $param_type;
+                $substituted_type = clone $param_type;
                 $generic_types = [];
-                $substituded_type->replaceTemplateTypes($template_types, $generic_types, null);
-                $substituded_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
+                $substituted_type->replaceTemplateTypes($template_types, $generic_types, null);
+                $substituted_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
             } else {
                 $param_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
             }
@@ -615,9 +617,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $config = Config::getInstance();
 
-        $docblock_info = null;
-        $doc_comment = $function->getDocComment();
-
         if ($parser_return_type = $function->getReturnType()) {
             $suffix = '';
 
@@ -646,11 +645,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             );
         }
 
+        $docblock_info = null;
+        $doc_comment = $function->getDocComment();
+
         if (!$doc_comment) {
             return $storage;
         }
-
-        $docblock_info = null;
 
         try {
             $docblock_info = CommentChecker::extractFunctionDocblockInfo(
@@ -680,49 +680,45 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $storage->variadic = true;
         }
 
-        if ($docblock_info->template_types) {
-            $storage->template_types = [];
-
-            foreach ($docblock_info->template_types as $template_type) {
-                if (count($template_type) === 3) {
-                    $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $source);
-                    $storage->template_types[$template_type[0]] = $as_type_string;
-                } else {
-                    $storage->template_types[$template_type[0]] = 'mixed';
-                }
-            }
-        }
-
-        if ($docblock_info->template_typeofs) {
-            $storage->template_typeof_params = [];
-
-            foreach ($docblock_info->template_typeofs as $template_typeof) {
-                foreach ($storage->params as $i => $param) {
-                    if ($param->name === $template_typeof['param_name']) {
-                        $storage->template_typeof_params[$i] = $template_typeof['template_type'];
-                        break;
-                    }
-                }
-            }
-        }
-
         $storage->suppressed_issues = $docblock_info->suppress;
 
         if (!$config->use_docblock_types) {
             return $storage;
         }
 
+        $template_types = $class_storage && $class_storage->template_types ? $class_storage->template_types : null;
+
+        if ($docblock_info) {
+            if ($docblock_info->template_types) {
+                $storage->template_types = [];
+
+                foreach ($docblock_info->template_types as $template_type) {
+                    if (count($template_type) === 3) {
+                        $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $source);
+                        $storage->template_types[$template_type[0]] = $as_type_string;
+                    } else {
+                        $storage->template_types[$template_type[0]] = 'mixed';
+                    }
+                }
+
+                $template_types = array_merge($template_types ?: [], $storage->template_types);
+            }
+
+            if ($docblock_info->template_typeofs) {
+                $storage->template_typeof_params = [];
+
+                foreach ($docblock_info->template_typeofs as $template_typeof) {
+                    foreach ($storage->params as $i => $param) {
+                        if ($param->name === $template_typeof['param_name']) {
+                            $storage->template_typeof_params[$i] = $template_typeof['template_type'];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         if ($docblock_info->return_type) {
-            $template_types = null;
-
-            if ($storage->template_types) {
-                $template_types = $storage->template_types;
-            }
-
-            if ($class_storage && $class_storage->template_types) {
-                $template_types = array_merge($class_storage->template_types, $template_types ?: []);
-            }
-
             $storage->has_template_return_type =
                 $template_types !== null &&
                 count(array_intersect(Type::tokenize($docblock_info->return_type), array_keys($template_types))) > 0;
@@ -768,6 +764,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             self::improveParamsFromDocblock(
                 $storage,
                 $docblock_info->params,
+                $template_types,
                 $source,
                 $source->getFQCLN(),
                 new CodeLocation($source, $function, true)
@@ -1135,6 +1132,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  array<int, array{type:string,name:string,line_number:int}>  $docblock_params
      * @param  FunctionLikeStorage          $storage
+     * @param  array<string, string>|null   $template_types
      * @param  StatementsSource             $source
      * @param  string|null                  $fq_class_name
      * @param  CodeLocation                 $code_location
@@ -1143,6 +1141,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     protected static function improveParamsFromDocblock(
         FunctionLikeStorage $storage,
         array $docblock_params,
+        $template_types,
         StatementsSource $source,
         $fq_class_name,
         CodeLocation $code_location
@@ -1190,7 +1189,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 self::fixUpLocalType(
                     $docblock_param['type'],
                     null,
-                    $source
+                    $source,
+                    $template_types
                 )
             );
 

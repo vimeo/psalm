@@ -283,8 +283,9 @@ class FetchChecker
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
 
-            $property_storage =
-                ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
+            $declaring_class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
+
+            $property_storage = $declaring_class_storage->properties[$stmt->name];
 
             $class_property_type = $property_storage->type;
 
@@ -302,6 +303,38 @@ class FetchChecker
                 $class_property_type = Type::getMixed();
             } else {
                 $class_property_type = clone $class_property_type;
+
+                if ($lhs_type_part instanceof TGenericObject) {
+                    $class_storage = ClassLikeChecker::$storage[strtolower($lhs_type_part->value)];
+
+                    if ($class_storage->template_types) {
+                        $class_template_params = [];
+
+                        /** @var array<int, string> */
+                        $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
+
+                        $provided_type_param_count = count($lhs_type_part->type_params);
+
+                        foreach ($reversed_class_template_types as $i => $type_name) {
+                            if (isset($lhs_type_part->type_params[$provided_type_param_count - 1 - $i])) {
+                                $class_template_params[$type_name] =
+                                    (string)$lhs_type_part->type_params[$provided_type_param_count - 1 - $i];
+                            } else {
+                                $class_template_params[$type_name] = 'mixed';
+                            }
+                        }
+
+                        $type_tokens = Type::tokenize((string)$class_property_type);
+
+                        foreach ($type_tokens as &$type_token) {
+                            if (isset($class_template_params[$type_token])) {
+                                $type_token = $class_template_params[$type_token];
+                            }
+                        }
+
+                        $class_property_type = Type::parseString(implode('', $type_tokens));
+                    }
+                }
             }
 
             if (isset($stmt->inferredType)) {
