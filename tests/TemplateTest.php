@@ -195,4 +195,167 @@ class TemplateTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testValidTemplatedStaticMethodType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /**
+             * @template T
+             * @param T $x
+             * @return T
+             */
+            public static function foo($x) {
+                return $x;
+            }
+        }
+
+        function bar(string $a) : void { }
+
+        bar(A::foo("string"));
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
+     */
+    public function testInvalidTemplatedStaticMethodType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /**
+             * @template T
+             * @param T $x
+             * @return T
+             */
+            public static function foo($x) {
+                return $x;
+            }
+        }
+
+        function bar(string $a) : void { }
+
+        bar(A::foo(4));
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testValidTemplatedInstanceMethodType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /**
+             * @template T
+             * @param T $x
+             * @return T
+             */
+            public function foo($x) {
+                return $x;
+            }
+        }
+
+        function bar(string $a) : void { }
+
+        bar((new A())->foo("string"));
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
+     */
+    public function testInvalidTemplatedInstanceMethodType()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /**
+             * @template T
+             * @param T $x
+             * @return T
+             */
+            public function foo($x) {
+                return $x;
+            }
+        }
+
+        function bar(string $a) : void { }
+
+        bar((new A())->foo(4));
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGenericArrayKeys()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @template T
+         *
+         * @param array<T, mixed> $arr
+         * @return array<int, T>
+         */
+        function my_array_keys($arr) {
+            return array_keys($arr);
+        }
+
+        $a = my_array_keys(["hello" => 5, "goodbye" => new Exception()]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$a']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGenericArrayReverse()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @template TKey
+         * @template TValue
+         *
+         * @param array<TKey, TValue> $arr
+         * @return array<TValue, TKey>
+         */
+        function my_array_reverse($arr) {
+            return array_reverse($arr);
+        }
+
+        $b = my_array_reverse(["hello" => 5, "goodbye" => 6]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('array<int, string>', (string) $context->vars_in_scope['$b']);
+    }
 }

@@ -348,7 +348,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if ($template_types) {
                 $substituded_type = clone $param_type;
-                $substituded_type->replaceTemplateTypes($template_types);
+                $generic_types = [];
+                $substituded_type->replaceTemplateTypes($template_types, $generic_types, null);
                 $substituded_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
             } else {
                 $param_type->check($this->source, $function_param->code_location, $this->suppressed_issues);

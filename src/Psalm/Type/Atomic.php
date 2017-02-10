@@ -233,10 +233,12 @@ abstract class Atomic
     }
 
     /**
-     * @param  array<string, string> $template_types
+     * @param  array<string, string>     $template_types
+     * @param  array<string, Type\Union> $generic_params
+     * @param  Type\Atomic|null          $input_type
      * @return void
      */
-    public function replaceTemplateTypes(array $template_types)
+    public function replaceTemplateTypes(array $template_types, array &$generic_params, Type\Atomic $input_type = null)
     {
         // do nothing
     }

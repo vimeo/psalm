@@ -1388,17 +1388,15 @@ class CallChecker
 
                             $generic_params[$template_type] = $offset_value_type ?: Type::getMixed();
                         } elseif ($template_types) {
-                            // if this is a really simple template parameter
-                            // @todo support generic param inference from nested like @param array<T>
-                            if (isset($template_types[(string)$param_type])) {
-                                if ($generic_params === null) {
-                                    $generic_params = [];
-                                }
-
-                                $generic_params[(string)$param_type] = $arg->value->inferredType;
+                            if ($generic_params === null) {
+                                $generic_params = [];
                             }
 
-                            $param_type->replaceTemplateTypes($template_types);
+                            $param_type->replaceTemplateTypes(
+                                $template_types,
+                                $generic_params,
+                                $arg->value->inferredType
+                            );
                         }
                     }
 
@@ -1407,15 +1405,17 @@ class CallChecker
                         break;
                     }
 
+                    $fleshed_out_type = ExpressionChecker::fleshOutTypes(
+                        $param_type,
+                        [],
+                        $fq_class_name,
+                        $method_id
+                    );
+
                     if (self::checkFunctionArgumentType(
                         $statements_checker,
                         $arg->value->inferredType,
-                        ExpressionChecker::fleshOutTypes(
-                            $param_type,
-                            [],
-                            $fq_class_name,
-                            $method_id
-                        ),
+                        $fleshed_out_type,
                         $cased_method_id,
                         $argument_offset,
                         new CodeLocation($statements_checker->getSource(), $arg->value)

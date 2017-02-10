@@ -281,21 +281,30 @@ class Union
     }
 
     /**
-     * @param  array<string, string> $template_types
+     * @param  array<string, string>     $template_types
+     * @param  array<string, Type\Union> $generic_params
+     * @param  Type\Union|null           $input_type
      * @return void
      */
-    public function replaceTemplateTypes(array $template_types)
+    public function replaceTemplateTypes(array $template_types, array &$generic_params, Type\Union $input_type = null)
     {
         $keys_to_unset = [];
-        $generic_params = [];
 
         foreach ($template_types as $template_name => $template_type) {
             foreach ($this->types as $key => $atomic_type) {
                 if (isset($template_types[$key])) {
                     $keys_to_unset[] = $key;
                     $this->types[$template_types[$key]] = Atomic::create($template_types[$key]);
+
+                    if ($input_type) {
+                        $generic_params[$key] = $input_type;
+                    }
                 } else {
-                    $atomic_type->replaceTemplateTypes($template_types);
+                    $atomic_type->replaceTemplateTypes(
+                        $template_types,
+                        $generic_params,
+                        isset($input_type->types[$key]) ? $input_type->types[$key] : null
+                    );
                 }
             }
         }
