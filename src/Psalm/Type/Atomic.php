@@ -231,4 +231,13 @@ abstract class Atomic
     {
         // do nothing
     }
+
+    /**
+     * @param  array<string, string> $template_types
+     * @return void
+     */
+    public function replaceTemplateTypes(array $template_types)
+    {
+        // do nothing
+    }
 }

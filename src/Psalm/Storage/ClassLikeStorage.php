@@ -38,7 +38,12 @@ class ClassLikeStorage
     public $reflected = false;
 
     /**
-     * @var string;
+     * @var bool
+     */
+    public $deprecated = false;
+
+    /**
+     * @var string
      */
     public $name;
 
@@ -129,4 +134,9 @@ class ClassLikeStorage
      * @var array<string, string>
      */
     public $inheritable_property_ids = [];
+
+    /**
+     * @var array<string, string>|null
+     */
+    public $template_types;
 }

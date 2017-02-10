@@ -284,6 +284,43 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
+        $doc_comment = $this->class->getDocComment();
+
+        if ($doc_comment) {
+            $docblock_info = null;
+
+            try {
+                $docblock_info = CommentChecker::extractClassLikeDocblockInfo(
+                    (string)$doc_comment,
+                    $doc_comment->getLine()
+                );
+            } catch (DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $this->fq_class_name,
+                        new CodeLocation($this->source, $this->class, true)
+                    )
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($docblock_info) {
+                if ($docblock_info->template_types) {
+                    $storage->template_types = [];
+
+                    foreach ($docblock_info->template_types as $template_type) {
+                        if (count($template_type) === 3) {
+                            $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $this->source);
+                            $storage->template_types[$template_type[0]] = $as_type_string;
+                        } else {
+                            $storage->template_types[$template_type[0]] = 'mixed';
+                        }
+                    }
+                }
+            }
+        }
+
         $const_stmts = [];
 
         foreach ($this->class->stmts as $stmt) {
@@ -640,20 +677,26 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $return_type_location = null;
             $secondary_return_type_location = null;
 
-            if ($actual_method_id) {
-                $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                    $actual_method_id,
+            $actual_method_storage = MethodChecker::getStorage($actual_method_id);
+
+            if (!$actual_method_storage->has_template_return_type) {
+                if ($actual_method_id) {
+                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                        $actual_method_id,
+                        $secondary_return_type_location
+                    );
+                }
+
+                $return_type = MethodChecker::getMethodReturnType($actual_method_id);
+
+                $method_checker->verifyReturnType(
+                    $update_docblocks,
+                    $return_type,
+                    $class_context->self,
+                    $return_type_location,
                     $secondary_return_type_location
                 );
             }
-
-            $method_checker->verifyReturnType(
-                $update_docblocks,
-                MethodChecker::getMethodReturnType($actual_method_id),
-                $class_context->self,
-                $return_type_location,
-                $secondary_return_type_location
-            );
         }
 
         return $method_checker;
@@ -1334,6 +1377,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $reflection_methods = $reflected_class->getMethods(
             ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
         );
+
+        if ($class_name_lower === 'generator') {
+            $storage->template_types = ['TKey' => 'mixed', 'TValue' => 'mixed'];
+        }
 
         $interfaces = $reflected_class->getInterfaces();
 

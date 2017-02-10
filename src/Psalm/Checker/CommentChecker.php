@@ -5,6 +5,7 @@ use Psalm\Context;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionDocblockComment;
+use Psalm\ClassLikeDocblockComment;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -45,7 +46,8 @@ class CommentChecker
                 $type_in_comments = FunctionLikeChecker::fixUpLocalType(
                     $line_parts[0],
                     $source->getFQCLN(),
-                    $source
+                    $source,
+                    []
                 );
 
                 // support PHPStorm-style docblocks like
@@ -84,7 +86,7 @@ class CommentChecker
      * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
      */
-    public static function extractDocblockInfo($comment, $line_number)
+    public static function extractFunctionDocblockInfo($comment, $line_number)
     {
         $comments = self::parseDocComment($comment, $line_number);
 
@@ -167,7 +169,65 @@ class CommentChecker
             }
         }
 
+        if (isset($comments['specials']['template'])) {
+            /** @var string $suppress_entry */
+            foreach ($comments['specials']['template'] as $template_line) {
+                $template_type = preg_split('/[\s]+/', $template_line);
+
+                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'])) {
+                    $info->template_types[] = [$template_type[0], strtolower($template_type[1]), $template_type[2]];
+                } else {
+                    $info->template_types[] = [$template_type[0]];
+                }
+            }
+        }
+
+        if (isset($comments['specials']['template-typeof'])) {
+            /** @var string $suppress_entry */
+            foreach ($comments['specials']['template-typeof'] as $template_typeof) {
+                $typeof_parts = preg_split('/[\s]+/', $template_typeof);
+
+                if (count($typeof_parts) < 2 || $typeof_parts[1][0] !== '$') {
+                    throw new DocblockParseException('Badly-formatted @template-typeof');
+                }
+
+                $info->template_typeofs[] = [
+                    'template_type' => $typeof_parts[0],
+                    'param_name' => substr($typeof_parts[1], 1),
+                ];
+            }
+        }
+
         $info->variadic = isset($comments['specials']['psalm-variadic']);
+
+        return $info;
+    }
+
+    /**
+     * @param  string  $comment
+     * @param  int     $line_number
+     * @return ClassLikeDocblockComment
+     * @throws DocblockParseException If there was a problem parsing the docblock.
+     * @psalm-suppress MixedArrayAccess
+     */
+    public static function extractClassLikeDocblockInfo($comment, $line_number)
+    {
+        $comments = self::parseDocComment($comment, $line_number);
+
+        $info = new ClassLikeDocblockComment();
+
+        if (isset($comments['specials']['template'])) {
+            /** @var string $suppress_entry */
+            foreach ($comments['specials']['template'] as $template_line) {
+                $template_type = preg_split('/[\s]+/', $template_line);
+
+                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'])) {
+                    $info->template_types[] = [$template_type[0], strtolower($template_type[1]), $template_type[2]];
+                } else {
+                    $info->template_types[] = [$template_type[0]];
+                }
+            }
+        }
 
         return $info;
     }
