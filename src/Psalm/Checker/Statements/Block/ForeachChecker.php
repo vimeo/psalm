@@ -209,7 +209,7 @@ class ForeachChecker
                 continue;
             }
 
-            if (!$foreach_context->hasVariable($var)) {
+            if (!isset($foreach_context->vars_in_scope[$var])) {
                 unset($context->vars_in_scope[$var]);
                 continue;
             }

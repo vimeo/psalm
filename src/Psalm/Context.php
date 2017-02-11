@@ -148,7 +148,7 @@ class Context
         array &$updated_vars
     ) {
         foreach ($this->vars_in_scope as $var => &$context_type) {
-            if ($start_context->hasVariable($var)) {
+            if (isset($start_context->vars_in_scope[$var])) {
                 $old_type = $start_context->vars_in_scope[$var];
 
                 // this is only true if there was some sort of type negation
@@ -178,7 +178,7 @@ class Context
         $redefined_vars = [];
 
         foreach ($original_context->vars_in_scope as $var => $context_type) {
-            if ($new_context->hasVariable($var) &&
+            if (isset($new_context->vars_in_scope[$var]) &&
                 (string)$new_context->vars_in_scope[$var] !== (string)$context_type
             ) {
                 $redefined_vars[$var] = $new_context->vars_in_scope[$var];
