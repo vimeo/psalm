@@ -577,8 +577,16 @@ class FileChecker extends SourceChecker implements StatementsSource
 
             $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);
 
+            $error_handler = new \PhpParser\ErrorHandler\Collecting();
+
             /** @var array<int, \PhpParser\Node\Stmt> */
-            $stmts = $parser->parse($file_contents);
+            $stmts = $parser->parse($file_contents, $error_handler);
+
+            if (!$stmts && $error_handler->hasErrors()) {
+                foreach ($error_handler->getErrors() as $error) {
+                    throw $error;
+                }
+            }
         }
 
         if ($parser_cache_directory && $cache_location) {
