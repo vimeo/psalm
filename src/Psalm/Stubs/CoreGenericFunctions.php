@@ -27,6 +27,9 @@ function array_unique(array $arr) {}
  * @template T
  *
  * @param array<mixed, T> $arr
+ * @param int $offset
+ * @param int|null $length
+ * @param bool $preserve_keys
  * @return array<int, T>
  */
 function array_slice(array $arr, int $offset, int $length = null, bool $preserve_keys = false) {}
