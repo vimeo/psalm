@@ -21,7 +21,7 @@
 
     <issueHandlers>
         <MisplacedRequiredParam errorLevel="suppress" />
-        <NullOperand errorLevel="suppress" />
+        <PossiblyNullOperand errorLevel="suppress" />
         <MissingConstructor errorLevel="suppress" />
 
         <UnusedMethod>
