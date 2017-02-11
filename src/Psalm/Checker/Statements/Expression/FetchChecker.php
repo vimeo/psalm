@@ -573,9 +573,7 @@ class FetchChecker
                         return;
                     }
                 } else {
-                    $fq_class_name = ($statements_checker->getNamespace()
-                        ? $statements_checker->getNamespace() . '\\'
-                        : '') . $statements_checker->getClassName();
+                    $fq_class_name = (string)$context->self;
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
