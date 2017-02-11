@@ -279,6 +279,14 @@ class CallChecker
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
                 if (!$in_call_map || $is_stubbed) {
+                    if ($function_storage && $function_storage->template_types) {
+                        foreach ($function_storage->template_types as $template_name => $template_type) {
+                            if (!isset($generic_params[$template_name])) {
+                                $generic_params[$template_name] = Type::getMixed();
+                            }
+                        }
+                    }
+
                     try {
                         $stmt->inferredType = FunctionChecker::getFunctionReturnType(
                             $method_id,

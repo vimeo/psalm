@@ -342,6 +342,25 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testArrayKeysMixed()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedArgument', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        /** @var array */
+        $b = ["a" => 5];
+        $a = array_keys($b);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('array<int, mixed>', (string) $context->vars_in_scope['$a']);
+    }
+
+    /**
+     * @return void
+     */
     public function testArrayValues()
     {
         $stmts = self::$parser->parse('<?php
@@ -382,5 +401,20 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$d']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testArrayDiff()
+    {
+        $stmts = self::$parser->parse('<?php
+        $d = array_diff(["a" => 5, "b" => 12], [5]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$d']);
     }
 }
