@@ -27,6 +27,8 @@ use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\NullArgument;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\PossiblyNullArgument;
+use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\TypeCoercion;
@@ -597,6 +599,32 @@ class CallChecker
 
         $has_mock = false;
 
+        if ($class_type && is_string($stmt->name) && $class_type->isNull()) {
+            if (IssueBuffer::accepts(
+                new NullReference(
+                    'Cannot call method ' . $stmt->name . ' on null variable ' . $var_id,
+                    new CodeLocation($statements_checker->getSource(), $stmt->var)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
+        if ($class_type && is_string($stmt->name) && $class_type->isNullable()) {
+            if (IssueBuffer::accepts(
+                new PossiblyNullReference(
+                    'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $var_id,
+                    new CodeLocation($statements_checker->getSource(), $stmt->var)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                return false;
+            }
+        }
+
         if ($class_type && is_string($stmt->name)) {
             /** @var Type\Union|null */
             $return_type = null;
@@ -605,15 +633,7 @@ class CallChecker
                 if (!$class_type_part instanceof TNamedObject) {
                     switch (get_class($class_type_part)) {
                         case 'Psalm\\Type\\Atomic\\TNull':
-                            if (IssueBuffer::accepts(
-                                new NullReference(
-                                    'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $var_id,
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
+                            // handled above
                             break;
 
                         case 'Psalm\\Type\\Atomic\\TInt':
@@ -1670,16 +1690,33 @@ class CallChecker
             return null;
         }
 
-        if ($input_type->isNullable() && !$param_type->isNullable() && $cased_method_id !== 'echo') {
-            if (IssueBuffer::accepts(
-                new NullArgument(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
-                        'null value provided',
-                    $code_location
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
+        if (!$param_type->isNullable() && $cased_method_id !== 'echo') {
+            if ($input_type->isNull()) {
+                if (IssueBuffer::accepts(
+                    new NullArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
+                            'null value provided',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                return null;
+            }
+
+            if ($input_type->isNullable()) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
+                            'null value provided',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
             }
         }
 

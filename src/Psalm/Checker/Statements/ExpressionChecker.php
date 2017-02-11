@@ -23,6 +23,7 @@ use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
+use Psalm\Issue\PossiblyNullOperand;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\UnrecognizedExpression;
@@ -1140,10 +1141,38 @@ class ExpressionChecker
                 return;
             }
 
-            if ($left_type->isNullable()) {
+            if ($left_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullOperand(
                         'Cannot concatenate with a ' . $left_type,
+                        new CodeLocation($statements_checker->getSource(), $left)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
+            if ($right_type->isNull()) {
+                if (IssueBuffer::accepts(
+                    new NullOperand(
+                        'Cannot concatenate with a ' . $right_type,
+                        new CodeLocation($statements_checker->getSource(), $right)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
+            if ($left_type->isNullable()) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullOperand(
+                        'Cannot concatenate with a possibly null ' . $left_type,
                         new CodeLocation($statements_checker->getSource(), $left)
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -1154,8 +1183,8 @@ class ExpressionChecker
 
             if ($right_type->isNullable()) {
                 if (IssueBuffer::accepts(
-                    new NullOperand(
-                        'Cannot concatenate with a ' . $right_type,
+                    new PossiblyNullOperand(
+                        'Cannot concatenate with a possibly null ' . $right_type,
                         new CodeLocation($statements_checker->getSource(), $right)
                     ),
                     $statements_checker->getSuppressedIssues()

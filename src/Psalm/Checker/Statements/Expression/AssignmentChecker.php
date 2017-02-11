@@ -26,6 +26,7 @@ use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedStringOffsetAssignment;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
+use Psalm\Issue\PossiblyNullPropertyAssignment;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
@@ -488,7 +489,7 @@ class AssignmentChecker
 
             if ($lhs_type->isNullable()) {
                 if (IssueBuffer::accepts(
-                    new NullPropertyAssignment(
+                    new PossiblyNullPropertyAssignment(
                         $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
                         new CodeLocation($statements_checker->getSource(), $stmt->var)
                     ),

@@ -367,10 +367,10 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage NullPropertyAssignment
+     * @expectedExceptionMessage PossiblyNullPropertyAssignment
      * @return                   void
      */
-    public function testNullablePropertyAssignment()
+    public function testPossiblyNullablePropertyAssignment()
     {
         $stmts = self::$parser->parse('<?php
         class Foo {
@@ -390,10 +390,28 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage NullPropertyFetch
+     * @expectedExceptionMessage NullPropertyAssignment
      * @return                   void
      */
-    public function testNullablePropertyFetch()
+    public function testNullablePropertyAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = null;
+
+        $a->foo = "hello";
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyNullPropertyFetch
+     * @return                   void
+     */
+    public function testPossiblyNullablePropertyFetch()
     {
         $stmts = self::$parser->parse('<?php
         class Foo {
@@ -402,6 +420,24 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         }
 
         $a = rand(0, 10) ? new Foo() : null;
+
+        echo $a->foo;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NullPropertyFetch
+     * @return                   void
+     */
+    public function testNullablePropertyFetch()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = null;
 
         echo $a->foo;
         ');

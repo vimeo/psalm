@@ -25,6 +25,9 @@ use Psalm\Issue\NullArrayAccess;
 use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\PossiblyNullArrayAccess;
+use Psalm\Issue\PossiblyNullPropertyFetch;
+use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedPropertyFetch;
@@ -154,7 +157,7 @@ class FetchChecker
 
         if ($stmt_var_type->isNullable()) {
             if (IssueBuffer::accepts(
-                new NullPropertyFetch(
+                new PossiblyNullPropertyFetch(
                     'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
                     new CodeLocation($statements_checker->getSource(), $stmt)
                 ),
@@ -759,6 +762,20 @@ class FetchChecker
                     $keyed_assignment_type_array->type_params[1] = $assignment_value_type;
                 }
             } else {
+                if ($keyed_assignment_type->isNull()) {
+                    if (IssueBuffer::accepts(
+                        new NullReference(
+                            'Cannot assign value on null array' . ($var_id ? ' ' . $var_id : ''),
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    return;
+                }
+
                 foreach ($keyed_assignment_type->types as &$type) {
                     if ($type instanceof TInt || $type instanceof TFloat || $type instanceof TBool) {
                         if (IssueBuffer::accepts(
@@ -826,7 +843,45 @@ class FetchChecker
             /** @var Type\Union */
             $var_type = $stmt->var->inferredType;
 
+            if ($var_type->isNull()) {
+                if (IssueBuffer::accepts(
+                    new NullArrayAccess(
+                        'Cannot access array value on null variable ' . $array_var_id,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                if (isset($stmt->inferredType)) {
+                    $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
+                } else {
+                    $stmt->inferredType = Type::getNull();
+                }
+
+                return;
+            }
+
             foreach ($var_type->types as &$type) {
+                if ($type instanceof TNull) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyNullArrayAccess(
+                            'Cannot access array value on possibly null variable ' . $array_var_id .
+                                ' of type ' . $var_type,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        if (isset($stmt->inferredType)) {
+                            $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
+                        } else {
+                            $stmt->inferredType = Type::getNull();
+                        }
+                        continue;
+                    }
+                }
+
                 if ($type instanceof Type\Atomic\TArray || $type instanceof Type\Atomic\ObjectLike) {
                     $value_index = null;
 
@@ -996,7 +1051,10 @@ class FetchChecker
                             }
                         }
                     }
-                } elseif ($type instanceof TString) {
+                    continue;
+                }
+
+                if ($type instanceof TString) {
                     if ($key_type) {
                         $key_type = Type::combineUnionTypes($key_type, Type::getInt());
                     } else {
@@ -1010,22 +1068,10 @@ class FetchChecker
                     }
 
                     $stmt->inferredType = Type::getString();
-                } elseif ($type instanceof TNull) {
-                    if (IssueBuffer::accepts(
-                        new NullArrayAccess(
-                            'Cannot access array value on possibly null variable ' . $array_var_id . ' of type ' . $var_type,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        if (isset($stmt->inferredType)) {
-                            $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
-                        } else {
-                            $stmt->inferredType = Type::getNull();
-                        }
-                        continue;
-                    }
-                } elseif ($type instanceof TMixed || $type instanceof TEmpty) {
+                    continue;
+                }
+
+                if ($type instanceof TMixed || $type instanceof TEmpty) {
                     if (IssueBuffer::accepts(
                         new MixedArrayAccess(
                             'Cannot access array value on mixed variable ' . $array_var_id,
@@ -1036,7 +1082,10 @@ class FetchChecker
                         $stmt->inferredType = Type::getMixed();
                         break;
                     }
-                } elseif (!$type instanceof TNamedObject ||
+                    continue;
+                }
+
+                if (!$type instanceof TNamedObject ||
                     (strtolower($type->value) !== 'simplexmlelement' &&
                         ClassChecker::classExists($type->value, $statements_checker->getFileChecker()) &&
                         !ClassChecker::classImplements($type->value, 'ArrayAccess')
@@ -1128,7 +1177,7 @@ class FetchChecker
     ) {
         if ($type instanceof TNull) {
             if (IssueBuffer::accepts(
-                new NullReference(
+                new PossiblyNullReference(
                     'Cannot assign value on possibly null array' . ($var_id ? ' ' . $var_id : ''),
                     $code_location
                 ),

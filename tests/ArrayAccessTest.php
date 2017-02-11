@@ -193,4 +193,21 @@ class ArrayAccessTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyNullArrayAccess
+     * @return                   void
+     */
+    public function testPossiblyNullArrayAccess()
+    {
+        $context = new Context();
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 1) ? [1, 2] : null;
+        echo $a[0];
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

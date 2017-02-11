@@ -1779,10 +1779,10 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage NullReference
+     * @expectedExceptionMessage PossiblyNullReference
      * @return                   void
      */
-    public function testNullCheckInsideForeachWithNoLeaveStatement()
+    public function testPossiblyNullCheckInsideForeachWithNoLeaveStatement()
     {
         $stmts = self::$parser->parse('<?php
         class A {
@@ -1805,6 +1805,23 @@ class TypeTest extends PHPUnit_Framework_TestCase
 
             $a->barBar();
         }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NullReference
+     * @return                   void
+     */
+    public function testNullCheckInsideForeachWithNoLeaveStatement()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = null;
+
+        $a->fooBar();
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
