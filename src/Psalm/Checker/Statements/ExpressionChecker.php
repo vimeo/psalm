@@ -632,6 +632,8 @@ class ExpressionChecker
         /** @var array<string,Type\Union> */
         $property_types = [];
 
+        $can_create_objectlike = true;
+
         foreach ($stmt->items as $item) {
             if ($item->key) {
                 if (self::analyze($statements_checker, $item->key, $context) === false) {
@@ -655,9 +657,15 @@ class ExpressionChecker
                 return false;
             }
 
+            if ($item_value_type && $item_value_type->isMixed() && !$can_create_objectlike) {
+                continue;
+            }
+
             if (isset($item->value->inferredType)) {
                 if ($item->key instanceof PhpParser\Node\Scalar\String_) {
                     $property_types[$item->key->value] = $item->value->inferredType;
+                } else {
+                    $can_create_objectlike = false;
                 }
 
                 if ($item_value_type) {
@@ -665,11 +673,18 @@ class ExpressionChecker
                 } else {
                     $item_value_type = $item->value->inferredType;
                 }
+            } else {
+                $item_value_type = Type::getMixed();
             }
         }
 
         // if this array looks like an object-like array, let's return that instead
-        if ($item_value_type && $item_key_type && $item_key_type->hasString() && !$item_key_type->hasInt()) {
+        if ($item_value_type &&
+            $item_key_type &&
+            $item_key_type->hasString() &&
+            !$item_key_type->hasInt() &&
+            $can_create_objectlike
+        ) {
             $stmt->inferredType = new Type\Union([new Type\Atomic\ObjectLike($property_types)]);
             return null;
         }
