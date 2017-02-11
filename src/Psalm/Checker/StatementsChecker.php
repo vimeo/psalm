@@ -33,7 +33,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @var array<string, CodeLocation>
      */
-    protected $all_vars = [];
+    private $all_vars = [];
 
     /**
      * @var array<string, array<string, Type\Union>>
@@ -321,7 +321,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                     $context
      * @return  false|null
      */
-    protected function analyzeStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
+    private function analyzeStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
     {
         foreach ($stmt->vars as $var) {
             if ($var->default) {
@@ -395,7 +395,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                 $context
      * @return  false|null
      */
-    protected function analyzeDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
+    private function analyzeDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
         // do not clone context for do, because it executes in current scope always
         if ($this->analyze($stmt->stmts, $context, $context) === false) {
@@ -410,7 +410,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                     $context
      * @return  void
      */
-    protected function analyzeConstAssignment(PhpParser\Node\Stmt\Const_ $stmt, Context $context)
+    private function analyzeConstAssignment(PhpParser\Node\Stmt\Const_ $stmt, Context $context)
     {
         foreach ($stmt->consts as $const) {
             ExpressionChecker::analyze($this, $const->value, $context);
@@ -493,7 +493,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  Context                     $context
      * @return false|null
      */
-    protected function analyzeReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
+    private function analyzeReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
     {
         $type_in_comments = CommentChecker::getTypeFromComment(
             (string) $stmt->getDocComment(),
@@ -531,7 +531,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   Context                     $context
      * @return  false|null
      */
-    protected function analyzeThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
+    private function analyzeThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
     {
         return ExpressionChecker::analyze($this, $stmt->expr, $context);
     }

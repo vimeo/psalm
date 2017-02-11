@@ -13,7 +13,6 @@ use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
-use Psalm\Issue\UnusedVariable;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
@@ -26,6 +25,8 @@ use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
+use Psalm\Issue\PossiblyUnusedVariable;
+use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
@@ -407,22 +408,34 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $var_name !== '$this' &&
                     strpos($var_name, '::$') === false &&
                     strpos($var_name, '[') === false &&
-                    $var_name !== '$_' &&
-                    (!isset($storage->param_types[substr($var_name, 1)]) ||
-                        !$storage instanceof MethodStorage ||
-                        $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE)
+                    $var_name !== '$_'
                 ) {
                     $original_location = $statements_checker->getFirstAppearance($var_name);
 
                     if (!isset($context->referenced_vars[$var_name]) && $original_location) {
-                        if (IssueBuffer::accepts(
-                            new UnusedVariable(
-                                'Variable ' . $var_name . ' is never used',
-                                $original_location
-                            ),
-                            $this->getSuppressedIssues()
-                        )) {
-                            // fall through
+                        if (!isset($storage->param_types[substr($var_name, 1)]) ||
+                            !$storage instanceof MethodStorage ||
+                            $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new UnusedVariable(
+                                    'Variable ' . $var_name . ' is never referenced',
+                                    $original_location
+                                ),
+                                $this->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new PossiblyUnusedVariable(
+                                    'Variable ' . $var_name . ' is never referenced in this method',
+                                    $original_location
+                                ),
+                                $this->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
                         }
                     }
                 }
@@ -1127,7 +1140,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param Type\Union $inferred_return_type
      * @return void
      */
-    protected function addDocblockReturnType(Type\Union $inferred_return_type)
+    private function addDocblockReturnType(Type\Union $inferred_return_type)
     {
         FileChecker::addDocblockReturnType(
             $this->source->getFileName(),

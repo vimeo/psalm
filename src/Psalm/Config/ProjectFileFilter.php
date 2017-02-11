@@ -9,7 +9,7 @@ class ProjectFileFilter extends FileFilter
     /**
      * @var ProjectFileFilter|null
      */
-    protected $file_filter = null;
+    private $file_filter = null;
 
     /**
      * @param  SimpleXMLElement $e

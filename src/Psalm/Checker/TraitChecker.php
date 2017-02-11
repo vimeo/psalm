@@ -12,7 +12,7 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @var array<string, string>
      */
-    protected $method_map = [];
+    private $method_map = [];
 
     /**
      * @param   PhpParser\Node\Stmt\ClassLike   $class

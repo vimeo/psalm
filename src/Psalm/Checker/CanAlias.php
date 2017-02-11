@@ -12,22 +12,22 @@ trait CanAlias
     /**
      * @var array<string, string>
      */
-    protected $aliased_classes = [];
+    private $aliased_classes = [];
 
     /**
      * @var array<string, string>
      */
-    protected $aliased_classes_flipped = [];
+    private $aliased_classes_flipped = [];
 
     /**
      * @var array<string, string>
      */
-    protected $aliased_functions = [];
+    private $aliased_functions = [];
 
     /**
      * @var array<string, string>
      */
-    protected $aliased_constants = [];
+    private $aliased_constants = [];
 
     /**
      * @param  PhpParser\Node\Stmt\Use_ $stmt

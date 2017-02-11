@@ -22,12 +22,12 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     /**
      * @var Namespace_
      */
-    protected $namespace;
+    private $namespace;
 
     /**
      * @var string
      */
-    protected $namespace_name;
+    private $namespace_name;
 
     /**
      * @var array<int, ClassChecker>

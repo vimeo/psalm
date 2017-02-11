@@ -19,7 +19,7 @@ class ProjectChecker
      *
      * @var Config|null
      */
-    protected $config;
+    private $config;
 
     /**
      * @var self
@@ -68,17 +68,17 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    protected $existing_classlikes_ci = [];
+    private $existing_classlikes_ci = [];
 
     /**
      * @var array<string, bool>
      */
-    protected $existing_classlikes = [];
+    private $existing_classlikes = [];
 
     /**
      * @var array<string, bool>
      */
-    protected $existing_classes_ci = [];
+    private $existing_classes_ci = [];
 
     /**
      * @var array<string, bool>
@@ -88,7 +88,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    protected $existing_interfaces_ci = [];
+    private $existing_interfaces_ci = [];
 
     /**
      * @var array<string, bool>
@@ -98,7 +98,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    protected $existing_traits_ci = [];
+    private $existing_traits_ci = [];
 
     /**
      * @var array<string, bool>
@@ -108,37 +108,37 @@ class ProjectChecker
     /**
      * @var array<string, string>
      */
-    protected $classlike_files = [];
+    private $classlike_files = [];
 
     /**
      * @var array<string, string>
      */
-    protected $files_to_visit = [];
+    private $files_to_visit = [];
 
     /**
      * @var array<string, string>
      */
-    protected $files_to_analyze = [];
+    private $files_to_analyze = [];
 
     /**
      * @var array<string, bool>
      */
-    protected $scanned_files = [];
+    private $scanned_files = [];
 
     /**
      * @var array<string, bool>
      */
-    protected $visited_files = [];
+    private $visited_files = [];
 
     /**
      * @var array<string, bool>
      */
-    protected $visited_classes = [];
+    private $visited_classes = [];
 
     /**
      * @var array<string, FileChecker>
      */
-    protected $file_checkers = [];
+    private $file_checkers = [];
 
     /**
      * @var array<string, MethodChecker>
@@ -278,7 +278,7 @@ class ProjectChecker
     /**
      * @return void
      */
-    protected function visitFiles()
+    private function visitFiles()
     {
         if (!$this->config) {
             throw new \UnexpectedValueException('$this->config cannot be null');
@@ -294,7 +294,7 @@ class ProjectChecker
     /**
      * @return void
      */
-    protected function analyzeFiles()
+    private function analyzeFiles()
     {
         if (!$this->config) {
             throw new \UnexpectedValueException('$this->config cannot be null');
@@ -398,7 +398,7 @@ class ProjectChecker
      * @param  bool   $allow_non_project_files
      * @return void
      */
-    protected function checkDirWithConfig($dir_name, Config $config, $allow_non_project_files = false)
+    private function checkDirWithConfig($dir_name, Config $config, $allow_non_project_files = false)
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -426,7 +426,7 @@ class ProjectChecker
      * @param  Config $config
      * @return array<int, string>
      */
-    protected function getAllFiles(Config $config)
+    private function getAllFiles(Config $config)
     {
         $file_extensions = $config->getFileExtensions();
         $file_names = [];
@@ -492,7 +492,7 @@ class ProjectChecker
      * @param  array<string>    $file_list
      * @return void
      */
-    protected function checkDiffFilesWithConfig(Config $config, array $file_list = [])
+    private function checkDiffFilesWithConfig(Config $config, array $file_list = [])
     {
         foreach ($file_list as $file_path) {
             if (!file_exists($file_path)) {
@@ -549,7 +549,7 @@ class ProjectChecker
      * @param  array  $filetype_handlers
      * @return FileChecker
      */
-    protected function visitFile($file_path, array $filetype_handlers)
+    private function visitFile($file_path, array $filetype_handlers)
     {
         $extension = (string)pathinfo($file_path)['extension'];
 
@@ -800,7 +800,7 @@ class ProjectChecker
      * @return Config
      * @throws Exception\ConfigException If a config path is not found.
      */
-    protected function getConfigForPath($path)
+    private function getConfigForPath($path)
     {
         $dir_path = realpath($path);
 

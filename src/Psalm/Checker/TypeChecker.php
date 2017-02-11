@@ -805,7 +805,7 @@ class TypeChecker
      * @param  bool         &$to_string_cast
      * @return bool
      */
-    protected static function isAtomicContainedBy(
+    private static function isAtomicContainedBy(
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
         FileChecker $file_checker,

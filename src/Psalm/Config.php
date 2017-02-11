@@ -91,14 +91,14 @@ class Config
     /**
      * @var ProjectFileFilter|null
      */
-    protected $project_files;
+    private $project_files;
 
     /**
      * The base directory of this config file
      *
      * @var string
      */
-    protected $base_dir;
+    private $base_dir;
 
     /**
      * The path to this config file
@@ -110,27 +110,27 @@ class Config
     /**
      * @var array<int, string>
      */
-    protected $file_extensions = ['php'];
+    private $file_extensions = ['php'];
 
     /**
      * @var array<int, string>
      */
-    protected $filetype_handlers = [];
+    private $filetype_handlers = [];
 
     /**
      * @var array<string, IssueHandler>
      */
-    protected $issue_handlers = [];
+    private $issue_handlers = [];
 
     /**
      * @var array<int, string>
      */
-    protected $mock_classes = [];
+    private $mock_classes = [];
 
     /**
      * @var array<int, string>
      */
-    protected $stub_files = [];
+    private $stub_files = [];
 
     /**
      * @var bool
@@ -166,16 +166,16 @@ class Config
      *
      * @var array<Plugin>
      */
-    protected $plugins = [];
+    private $plugins = [];
 
     /** @var array<string, bool> */
-    protected $predefined_classlikes = [];
+    private $predefined_classlikes = [];
 
     /** @var array<string, mixed> */
-    protected $predefined_constants;
+    private $predefined_constants;
 
     /** @var array<string, bool> */
-    protected $predefined_functions = [];
+    private $predefined_functions = [];
 
     protected function __construct()
     {
@@ -424,7 +424,7 @@ class Config
      * @return void
      * @throws ConfigException If a Config file could not be found.
      */
-    protected function loadFileExtensions($extensions)
+    private function loadFileExtensions($extensions)
     {
         foreach ($extensions as $extension) {
             $extension_name = preg_replace('/^\.?/', '', (string)$extension['name']);

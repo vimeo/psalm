@@ -58,7 +58,7 @@ class Context
      *
      * @var array<string,bool>
      */
-    protected $phantom_classes = [];
+    private $phantom_classes = [];
 
     /**
      * A list of clauses in Conjunctive Normal Form

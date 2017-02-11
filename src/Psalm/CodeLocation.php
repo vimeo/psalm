@@ -10,43 +10,43 @@ class CodeLocation
     public $file_name;
 
     /** @var int */
-    protected $line_number;
+    private $line_number;
 
     /** @var int */
-    protected $file_start;
+    private $file_start;
 
     /** @var int */
-    protected $file_end;
+    private $file_end;
 
     /** @var bool */
-    protected $single_line;
+    private $single_line;
 
     /** @var int */
-    protected $preview_start;
+    private $preview_start;
 
     /** @var int */
-    protected $preview_end = -1;
+    private $preview_end = -1;
 
     /** @var int */
-    protected $selection_start = -1;
+    private $selection_start = -1;
 
     /** @var int */
-    protected $selection_end = -1;
+    private $selection_end = -1;
 
     /** @var int */
-    protected $column = -1;
+    private $column = -1;
 
     /** @var string */
-    protected $snippet = '';
+    private $snippet = '';
 
     /** @var int|null */
-    protected $docblock_start_line_number;
+    private $docblock_start_line_number;
 
     /** @var int|null */
-    protected $docblock_line_number;
+    private $docblock_line_number;
 
     /** @var string|null */
-    protected $regex;
+    private $regex;
 
     /** @var boolean */
     private $have_recalculated = false;

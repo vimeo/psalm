@@ -9,12 +9,12 @@ class IssueHandler
     /**
      * @var string
      */
-    protected $error_level = \Psalm\Config::REPORT_ERROR;
+    private $error_level = \Psalm\Config::REPORT_ERROR;
 
     /**
      * @var array<ErrorLevelFileFilter>
      */
-    protected $custom_levels = [];
+    private $custom_levels = [];
 
     /**
      * @param  SimpleXMLElement $e

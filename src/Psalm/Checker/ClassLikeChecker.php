@@ -643,7 +643,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  boolean                         $update_docblocks
      * @return MethodChecker|null
      */
-    protected function analyzeClassMethod(
+    private function analyzeClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         StatementsSource $source,
         Context $class_context,
@@ -766,7 +766,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  string  $parent_class
      * @return false|null
      */
-    protected function registerParentClassInfo($parent_class)
+    private function registerParentClassInfo($parent_class)
     {
         if (!$this->class instanceof PhpParser\Node\Stmt\Class_) {
             throw new \UnexpectedValueException('Cannot register parent class where none exists');
@@ -824,7 +824,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   Context                         $class_context
      * @return  void
      */
-    protected function visitClassMethod(
+    private function visitClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         Context $class_context
     ) {
@@ -858,7 +858,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   Context                         $class_context
      * @return  false|null
      */
-    protected function visitTraitUse(
+    private function visitTraitUse(
         PhpParser\Node\Stmt\TraitUse $stmt,
         Context $class_context
     ) {
@@ -929,7 +929,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   Config                          $config
      * @return  void
      */
-    protected function visitPropertyDeclaration(
+    private function visitPropertyDeclaration(
         PhpParser\Node\Stmt\Property $stmt,
         Context $class_context,
         Config $config
@@ -1018,7 +1018,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   Config                          $config
      * @return  void
      */
-    protected function visitClassConstDeclaration(
+    private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         Context $class_context,
         Config $config
