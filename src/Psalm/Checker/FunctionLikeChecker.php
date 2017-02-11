@@ -1000,21 +1000,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if (!$return_type) {
             if ($inferred_return_type && !$inferred_return_type->isMixed()) {
-                FileChecker::addDocblockReturnType(
-                    $this->source->getFileName(),
-                    $this->function->getLine(),
-                    (string)$this->function->getDocComment(),
-                    $inferred_return_type->toNamespacedString(
-                        $this->source->getAliasedClassesFlipped(),
-                        $this->source->getFQCLN(),
-                        false
-                    ),
-                    $inferred_return_type->toNamespacedString(
-                        $this->source->getAliasedClassesFlipped(),
-                        $this->source->getFQCLN(),
-                        true
-                    )
-                );
+                $this->addDocblockReturnType($inferred_return_type);
             }
 
             return null;
@@ -1076,34 +1062,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $inferred_return_type,
                 $declared_return_type,
                 $this->getFileChecker(),
-                false,
+                true,
                 $has_scalar_match,
                 $type_coerced
             )) {
                 if ($update_docblock) {
                     if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
-                        FileChecker::addDocblockReturnType(
-                            $this->source->getFileName(),
-                            $this->function->getLine(),
-                            (string)$this->function->getDocComment(),
-                            $inferred_return_type->toNamespacedString(
-                                $this->source->getAliasedClassesFlipped(),
-                                $this->source->getFQCLN(),
-                                false
-                            ),
-                            $inferred_return_type->toNamespacedString(
-                                $this->source->getAliasedClassesFlipped(),
-                                $this->source->getFQCLN(),
-                                true
-                            )
-                        );
+                        $this->addDocblockReturnType($inferred_return_type);
                     }
 
                     return null;
                 }
 
                 // is the declared return type more specific than the inferred one?
-                if ($declared_return_type->isNullable() === $inferred_return_type->isNullable() && $type_coerced) {
+                if ($type_coerced) {
                     if (IssueBuffer::accepts(
                         new MoreSpecificReturnType(
                             'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
@@ -1126,10 +1098,52 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         return false;
                     }
                 }
+            } elseif ($inferred_return_type->isNullable() !== $declared_return_type->isNullable()) {
+                if ($update_docblock) {
+                    if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
+                        $this->addDocblockReturnType($inferred_return_type);
+                    }
+
+                    return null;
+                }
+
+                if (IssueBuffer::accepts(
+                    new MoreSpecificReturnType(
+                        'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
+                        $secondary_return_type_location ?: $return_type_location
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
             }
         }
 
         return null;
+    }
+
+    /**
+     * @param Type\Union $inferred_return_type
+     * @return void
+     */
+    protected function addDocblockReturnType(Type\Union $inferred_return_type)
+    {
+        FileChecker::addDocblockReturnType(
+            $this->source->getFileName(),
+            $this->function->getLine(),
+            (string)$this->function->getDocComment(),
+            $inferred_return_type->toNamespacedString(
+                $this->source->getAliasedClassesFlipped(),
+                $this->source->getFQCLN(),
+                false
+            ),
+            $inferred_return_type->toNamespacedString(
+                $this->source->getAliasedClassesFlipped(),
+                $this->source->getFQCLN(),
+                true
+            )
+        );
     }
 
     /**

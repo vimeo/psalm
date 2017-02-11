@@ -851,7 +851,7 @@ class TypeChecker
                             $input_param,
                             $container_param,
                             $file_checker,
-                            $ignore_null,
+                            false,
                             $has_scalar_match,
                             $type_coerced
                         )

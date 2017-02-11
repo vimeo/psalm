@@ -945,7 +945,9 @@ class FetchChecker
                                     $type->type_params[1]->isEmpty()
                                 )
                             ) {
-                                $properties = $string_key_value ? [$string_key_value => $keyed_assignment_type] : [];
+                                $properties = $keyed_assignment_type && $string_key_value
+                                    ? [$string_key_value => $keyed_assignment_type]
+                                    : [];
 
                                 $assignment_type = new Type\Union([
                                     new Type\Atomic\ObjectLike($properties)

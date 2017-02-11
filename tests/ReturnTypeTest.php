@@ -587,7 +587,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidReturnType
+     * @expectedExceptionMessage MoreSpecificReturnType
      * @return                   void
      */
     public function testWrongReturnType2()
@@ -625,7 +625,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidReturnType
+     * @expectedExceptionMessage MoreSpecificReturnType
      * @return                   void
      */
     public function testWrongReturnTypeInNamespace2()
