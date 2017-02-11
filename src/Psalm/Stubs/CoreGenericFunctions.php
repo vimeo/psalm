@@ -29,7 +29,7 @@ function array_unique(array $arr) {}
  * @param array<mixed, T> $arr
  * @return array<int, T>
  */
-function array_slice(array $arr) {}
+function array_slice(array $arr, int $offset, int $length = null, bool $preserve_keys = false) {}
 
 /**
  * @template TKey
