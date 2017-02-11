@@ -234,8 +234,6 @@ class ProjectChecker
             }
         }
 
-        $files_checked = [];
-
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
             foreach ($this->config->getProjectDirectories() as $dir_name) {
                 $this->checkDirWithConfig($dir_name, $this->config);
@@ -496,9 +494,6 @@ class ProjectChecker
      */
     protected function checkDiffFilesWithConfig(Config $config, array $file_list = [])
     {
-        $file_extensions = $config->getFileExtensions();
-        $filetype_handlers = $config->getFiletypeHandlers();
-
         foreach ($file_list as $file_path) {
             if (!file_exists($file_path)) {
                 continue;
@@ -669,8 +664,6 @@ class ProjectChecker
             $this->visited_files[$file_path] = true;
 
             $file_checker = new FileChecker($file_path, $this, null, isset($this->files_to_analyze[$file_path]));
-
-            $short_file_name = $file_checker->getFileName();
 
             ClassLikeChecker::$file_classes[$file_path][] = $fq_class_name;
 

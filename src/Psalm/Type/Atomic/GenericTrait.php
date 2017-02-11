@@ -103,30 +103,28 @@ trait GenericTrait
      */
     public function replaceTemplateTypes(array $template_types, array &$generic_params, Atomic $input_type = null)
     {
-        foreach ($template_types as $template_name => $template_type) {
-            foreach ($this->type_params as $offset => $type_param) {
-                $input_type_param = null;
+        foreach ($this->type_params as $offset => $type_param) {
+            $input_type_param = null;
 
-                if (($input_type instanceof Atomic\TGenericObject || $input_type instanceof Atomic\TArray) &&
-                        isset($input_type->type_params[$offset])
-                ) {
-                    $input_type_param = $input_type->type_params[$offset];
-                } elseif ($input_type instanceof Atomic\ObjectLike) {
-                    if ($offset === 0) {
-                        $input_type_param = new Union([new Atomic\TString()]);
-                    } elseif ($offset === 1) {
-                        $input_type_param = $input_type->getGenericTypeParam();
-                    } else {
-                        throw new \UnexpectedValueException('Not expecting offset of ' . $offset);
-                    }
+            if (($input_type instanceof Atomic\TGenericObject || $input_type instanceof Atomic\TArray) &&
+                    isset($input_type->type_params[$offset])
+            ) {
+                $input_type_param = $input_type->type_params[$offset];
+            } elseif ($input_type instanceof Atomic\ObjectLike) {
+                if ($offset === 0) {
+                    $input_type_param = new Union([new Atomic\TString()]);
+                } elseif ($offset === 1) {
+                    $input_type_param = $input_type->getGenericTypeParam();
+                } else {
+                    throw new \UnexpectedValueException('Not expecting offset of ' . $offset);
                 }
-
-                $type_param->replaceTemplateTypes(
-                    $template_types,
-                    $generic_params,
-                    $input_type_param
-                );
             }
+
+            $type_param->replaceTemplateTypes(
+                $template_types,
+                $generic_params,
+                $input_type_param
+            );
         }
     }
 }

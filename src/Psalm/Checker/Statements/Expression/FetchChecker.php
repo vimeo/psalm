@@ -91,8 +91,6 @@ class FetchChecker
             $statements_checker
         );
 
-        $var_name = is_string($stmt->name) ? $stmt->name : null;
-
         $stmt_var_type = null;
 
         if ($var_id && $context->hasVariable($var_id)) {
@@ -554,7 +552,6 @@ class FetchChecker
             return null;
         }
 
-        $method_id = null;
         $fq_class_name = null;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {

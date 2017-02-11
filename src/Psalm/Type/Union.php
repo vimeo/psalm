@@ -290,22 +290,20 @@ class Union
     {
         $keys_to_unset = [];
 
-        foreach ($template_types as $template_name => $template_type) {
-            foreach ($this->types as $key => $atomic_type) {
-                if (isset($template_types[$key])) {
-                    $keys_to_unset[] = $key;
-                    $this->types[$template_types[$key]] = Atomic::create($template_types[$key]);
+        foreach ($this->types as $key => $atomic_type) {
+            if (isset($template_types[$key])) {
+                $keys_to_unset[] = $key;
+                $this->types[$template_types[$key]] = Atomic::create($template_types[$key]);
 
-                    if ($input_type) {
-                        $generic_params[$key] = $input_type;
-                    }
-                } else {
-                    $atomic_type->replaceTemplateTypes(
-                        $template_types,
-                        $generic_params,
-                        isset($input_type->types[$key]) ? $input_type->types[$key] : null
-                    );
+                if ($input_type) {
+                    $generic_params[$key] = $input_type;
                 }
+            } else {
+                $atomic_type->replaceTemplateTypes(
+                    $template_types,
+                    $generic_params,
+                    isset($input_type->types[$key]) ? $input_type->types[$key] : null
+                );
             }
         }
 

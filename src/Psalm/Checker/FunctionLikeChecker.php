@@ -426,7 +426,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         }
                     }
                 }
-
             }
         }
 
@@ -445,13 +444,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 );
             }
 
-            foreach ($context->vars_in_scope as $var => $type) {
+            foreach ($context->vars_in_scope as $var => $_) {
                 if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                     unset($context->vars_in_scope[$var]);
                 }
             }
 
-            foreach ($context->vars_possibly_in_scope as $var => $type) {
+            foreach ($context->vars_possibly_in_scope as $var => $_) {
                 if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
@@ -1073,8 +1072,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
-            $return_types_different = false;
-
             if (!TypeChecker::isContainedBy(
                 $inferred_return_type,
                 $declared_return_type,
@@ -1156,7 +1153,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $base = $fq_class_name ? $fq_class_name . '::' : '';
 
-        $method_id = $base . strtolower($storage->cased_name);
         $cased_method_id = $base . $storage->cased_name;
 
         foreach ($docblock_params as $docblock_param) {

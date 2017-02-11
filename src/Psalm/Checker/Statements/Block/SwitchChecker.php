@@ -98,8 +98,6 @@ class SwitchChecker
             $case_context->vars_in_scope = array_merge($case_context->vars_in_scope, $switch_vars);
             $case_context->vars_possibly_in_scope = array_merge($case_context->vars_possibly_in_scope, $switch_vars);
 
-            $old_case_context = clone $case_context;
-
             $case_stmts = $case->stmts;
 
             // has a return/throw at end

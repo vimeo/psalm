@@ -739,7 +739,7 @@ class ExpressionChecker
             }
 
             foreach ($op_context->vars_in_scope as $var => $type) {
-                if (!$context->hasVariable($var)) {
+                if (!isset($context->vars_in_scope[$var])) {
                     $context->vars_in_scope[$var] = $type;
                     continue;
                 }
@@ -1528,8 +1528,6 @@ class ExpressionChecker
         $negated_if_types = TypeChecker::getTruthsFromFormula($negated_clauses);
 
         $reconcilable_if_types = TypeChecker::getTruthsFromFormula($ternary_clauses);
-
-        $if_return_type = null;
 
         $changed_vars = [];
 

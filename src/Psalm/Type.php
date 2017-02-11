@@ -485,8 +485,6 @@ abstract class Type
             return new Union([$types[0]]);
         }
 
-        $bar = rand(1000, 9999);
-
         if (!$types) {
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }

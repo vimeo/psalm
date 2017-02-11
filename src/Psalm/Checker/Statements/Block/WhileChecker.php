@@ -37,8 +37,6 @@ class WhileChecker
 
         $while_context->clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $while_clauses));
 
-        $negated_clauses = TypeChecker::negateFormula($while_clauses);
-
         $reconcilable_while_types = TypeChecker::getTruthsFromFormula($while_context->clauses);
 
         // if the while has an or as the main component, we cannot safely reason about it

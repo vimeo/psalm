@@ -445,8 +445,6 @@ class TypeChecker
             }
         }
 
-        $result_types = [];
-
         if (empty($new_types)) {
             return $existing_types;
         }
@@ -527,8 +525,6 @@ class TypeChecker
         CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
-        $result_var_types = null;
-
         if ($existing_var_type === null) {
             if ($new_var_type === '^isset') {
                 return null;
@@ -747,7 +743,6 @@ class TypeChecker
         }
 
         $type_match_found = false;
-        $has_type_mismatch = false;
 
         foreach ($input_type->types as $input_type_part) {
             if ($input_type_part instanceof TNull && $ignore_null) {
@@ -1092,7 +1087,6 @@ class TypeChecker
             return null;
         }
 
-        $base_type = $existing_keys[$key_parts[0]];
         $base_key = $key_parts[0];
 
         // for an expression like $obj->key1->key2
@@ -1133,7 +1127,6 @@ class TypeChecker
                 }
             }
 
-            $base_type = $existing_keys[$new_base_key];
             $base_key = $new_base_key;
         }
 
@@ -1269,8 +1262,6 @@ class TypeChecker
 
         if (count($differing_types)) {
             // check whether the differing types are subclasses of declared return types
-            $truly_different = false;
-
             foreach ($differing_types as $differing_type) {
                 $is_match = false;
 

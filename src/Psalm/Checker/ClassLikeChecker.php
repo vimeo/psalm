@@ -416,7 +416,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_interfaces = ClassChecker::getInterfacesForClass($this->fq_class_name);
 
             if (!$this->class->isAbstract()) {
-                foreach ($class_interfaces as $interface_id => $interface_name) {
+                foreach ($class_interfaces as $interface_name) {
                     if (!isset(self::$storage[strtolower($interface_name)])) {
                         continue;
                     }
@@ -481,8 +481,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if ($this->leftover_stmts) {
             (new StatementsChecker($this))->analyze($this->leftover_stmts, $class_context);
         }
-
-        $available_properties = [];
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
             if (explode('::', $appearing_property_id)[0] !== $fq_class_name) {
@@ -1659,7 +1657,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             );
         }
 
-        list($property_class, $property_name) = explode('::$', (string)$property_id);
+        list(, $property_name) = explode('::$', (string)$property_id);
 
         // if the calling class is the same, we know the property exists, so it must be visible
         if ($appearing_property_class === $calling_context) {

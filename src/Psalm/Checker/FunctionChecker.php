@@ -382,8 +382,6 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($call_map_key === 'min' || $call_map_key === 'max') {
-                $minmax_return_type = null;
-
                 if (isset($call_args[0])) {
                     $first_arg = $call_args[0]->value;
 
@@ -436,20 +434,6 @@ class FunctionChecker extends FunctionLikeChecker
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
         $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
-        $first_arg_array_generic = $first_arg
-                && isset($first_arg->inferredType)
-                && isset($first_arg->inferredType->types['array'])
-                && $first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
-            ? $first_arg->inferredType->types['array']
-            : null;
-
-        $first_arg_array_objectlike = $first_arg
-                && isset($first_arg->inferredType)
-                && isset($first_arg->inferredType->types['array'])
-                && $first_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike
-            ? $first_arg->inferredType->types['array']
-            : null;
-
         if ($call_map_key === 'array_merge') {
             $inner_value_types = [];
             $inner_key_types = [];
@@ -489,6 +473,13 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_map_key === 'array_filter') {
+            $first_arg_array_generic = $first_arg
+                && isset($first_arg->inferredType)
+                && isset($first_arg->inferredType->types['array'])
+                && $first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
+            ? $first_arg->inferredType->types['array']
+            : null;
+
             if (!$first_arg_array_generic) {
                 return Type::getArray();
             }

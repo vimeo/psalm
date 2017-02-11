@@ -434,12 +434,8 @@ class AssignmentChecker
 
             $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
 
-            $assignment_var = $stmt->default;
-
             $var_id = '$this->' . $prop_name;
         } else {
-            $assignment_var = $stmt;
-
             if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
                 return false;
             }
@@ -754,8 +750,6 @@ class AssignmentChecker
         Type\Union $assignment_value_type,
         Context $context
     ) {
-        $class_property_types = [];
-
         $var_id = ExpressionChecker::getVarId(
             $stmt,
             $statements_checker->getFQCLN(),

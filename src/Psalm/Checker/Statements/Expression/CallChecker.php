@@ -802,8 +802,6 @@ class CallChecker
         $method_name,
         Context $context
     ) {
-        $this_method_id = $source->getMethodId();
-
         $fq_class_name = (string)$source->getFQCLN();
 
         if ($context->collect_mutations &&
@@ -1504,7 +1502,7 @@ class CallChecker
                 break;
             }
 
-            $array_arg = isset($args[$i]->value) ? $args[$i]->value : null;
+            $array_arg = isset($arg->value) ? $arg->value : null;
 
             $array_arg_types[] = $array_arg
                     && isset($array_arg->inferredType)
@@ -1553,11 +1551,10 @@ class CallChecker
                 }
 
                 $closure_params = $closure_type->params;
-                $closure_return_type = $closure_type->return_type;
 
                 $i = 0;
 
-                foreach ($closure_params as $param_name => $closure_param) {
+                foreach ($closure_params as $closure_param) {
                     if (!$array_arg_types[$i]) {
                         $i++;
                         continue;
