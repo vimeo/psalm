@@ -213,7 +213,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
-                if (!$global_context) {
+                if (!$context->collect_initializations && !$global_context) {
                     if (IssueBuffer::accepts(
                         new InvalidGlobal(
                             'Cannot use global scope here',
@@ -223,20 +223,21 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     )) {
                         // fall through
                     }
-                } else {
-                    foreach ($stmt->vars as $var) {
-                        if ($var instanceof PhpParser\Node\Expr\Variable) {
-                            if (is_string($var->name)) {
-                                $var_id = '$' . $var->name;
+                }
 
-                                $context->vars_in_scope[$var_id] = $global_context->hasVariable($var_id)
+                foreach ($stmt->vars as $var) {
+                    if ($var instanceof PhpParser\Node\Expr\Variable) {
+                        if (is_string($var->name)) {
+                            $var_id = '$' . $var->name;
+
+                            $context->vars_in_scope[$var_id] =
+                                $global_context && $global_context->hasVariable($var_id)
                                     ? clone $global_context->vars_in_scope[$var_id]
                                     : Type::getMixed();
 
-                                $context->vars_possibly_in_scope[$var_id] = true;
-                            } else {
-                                ExpressionChecker::analyze($this, $var, $context);
-                            }
+                            $context->vars_possibly_in_scope[$var_id] = true;
+                        } else {
+                            ExpressionChecker::analyze($this, $var, $context);
                         }
                     }
                 }
@@ -255,7 +256,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                                     $prop->default->inferredType,
                                     $context
                                 ) === false) {
-                                    return false;
+                                    // fall through
                                 }
                             }
                         }
