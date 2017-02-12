@@ -55,11 +55,15 @@ class IfChecker
         // echo $matches[0];
         $first_if_cond_expr = self::getDefinitelyEvaluatedExpression($stmt->cond);
 
+        $context->inside_conditional = true;
+
         if ($first_if_cond_expr &&
             ExpressionChecker::analyze($statements_checker, $first_if_cond_expr, $context) === false
         ) {
             return false;
         }
+
+        $context->inside_conditional = false;
 
         $if_scope = new IfScope();
 
@@ -70,11 +74,15 @@ class IfChecker
         // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
         $original_context = clone $context;
 
+        $if_context->inside_conditional = true;
+
         if ($first_if_cond_expr !== $stmt->cond &&
             ExpressionChecker::analyze($statements_checker, $stmt->cond, $if_context) === false
         ) {
             return false;
         }
+
+        $if_context->inside_conditional = false;
 
         $reconcilable_if_types = null;
 
@@ -402,10 +410,14 @@ class IfChecker
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
         }
 
+        $elseif_context->inside_conditional = true;
+
         // check the elseif
         if (ExpressionChecker::analyze($statements_checker, $elseif->cond, $elseif_context) === false) {
             return false;
         }
+
+        $elseif_context->inside_conditional = false;
 
         $elseif_clauses = TypeChecker::getFormula(
             $elseif->cond,

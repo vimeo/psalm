@@ -84,6 +84,32 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testPropertyWithoutTypeSuppressingIssueAndAssertingNull()
+    {
+        Config::getInstance()->setCustomErrorLevel('UndefinedThisPropertyFetch', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedMethodCall', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedPropertyFetch', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return void */
+            function foo() {
+                $boop = $this->foo === null && rand(0,1);
+
+                echo $this->foo->baz;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedPropertyAssignment
      * @return                   void

@@ -925,9 +925,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $method_id = (string)$this->getMethodId();
 
-        $cased_method_id = $this instanceof MethodChecker
-            ? MethodChecker::getCasedMethodId($method_id)
-            : ($this instanceof FunctionChecker ? $this->function->name : null);
+        $cased_method_id = null;
+
+        if ($this instanceof MethodChecker) {
+            $cased_method_id = MethodChecker::getCasedMethodId($method_id);
+        } elseif ($this->function instanceof Function_) {
+            $cased_method_id = $this->function->name;
+        }
 
         if (!$return_type_location) {
             $return_type_location = new CodeLocation($this, $this->function, true);

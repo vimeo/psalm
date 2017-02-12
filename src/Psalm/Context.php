@@ -101,6 +101,15 @@ class Context
     public $referenced_vars = [];
 
     /**
+     * Whether or not we're inside the conditional of an if/where etc.
+     *
+     * This changes whether or not the context is cloned
+     *
+     * @var boolean
+     */
+    public $inside_conditional = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

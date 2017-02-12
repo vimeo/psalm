@@ -169,7 +169,11 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            if (self::analyzeBinaryOp($statements_checker, $stmt, $context) === false) {
+            if (self::analyzeBinaryOp(
+                $statements_checker,
+                $stmt,
+                $context->inside_conditional ? $context : clone $context
+            ) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\PostInc ||
