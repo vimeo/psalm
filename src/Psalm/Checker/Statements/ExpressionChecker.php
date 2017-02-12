@@ -500,12 +500,7 @@ class ExpressionChecker
             ]
         )
         ) {
-            $stmt->inferredType = new Type\Union([
-                new Type\Atomic\TArray([
-                    Type::getMixed(),
-                    Type::getString(),
-                ])
-            ]);
+            $stmt->inferredType = Type::getArray();
             return null;
         }
 
