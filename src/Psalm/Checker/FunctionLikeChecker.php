@@ -997,7 +997,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if (!$inferred_return_type->isMixed() && (string)$inferred_return_type !== 'string') {
                 if (IssueBuffer::accepts(
                     new InvalidToString(
-                        '__toString methods must return a string',
+                        '__toString methods must return a string, ' . $inferred_return_type . ' returned',
                         $secondary_return_type_location ?: $return_type_location
                     )
                 )) {
