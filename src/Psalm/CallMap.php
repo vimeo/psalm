@@ -2187,7 +2187,7 @@ return [
 'fgetcsv' => ['array|false|null', 'fp'=>'', 'length='=>'int', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
 'fgetss' => ['string|false', 'fp'=>'', 'length='=>'int', 'allowable_tags='=>'string'],
 'fgets' => ['string|false', 'fp'=>'', 'length='=>'int'],
-'file' => ['array|false', 'filename'=>'string', 'flags='=>'int', 'context='=>''],
+'file' => ['string[]|false', 'filename'=>'string', 'flags='=>'int', 'context='=>''],
 'fileatime' => ['int|false', 'filename'=>'string'],
 'filectime' => ['int|false', 'filename'=>'string'],
 'file_exists' => ['bool', 'filename'=>'string'],
