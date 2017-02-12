@@ -143,6 +143,30 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeCoercion
+     * @return                   void
+     */
+    public function testArrayTypeCoercion()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {}
+        class B extends A{}
+
+        /**
+         * @param  B[]  $b
+         * @return void
+         */
+        function fooFoo(array $b) {}
+        fooFoo([new A()]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @return void
      */
     public function testTypedArrayWithDefault()

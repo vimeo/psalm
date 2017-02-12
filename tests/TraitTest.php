@@ -412,4 +412,29 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
     }
+
+    /**
+     * @return void
+     */
+    public function testDirectStaticCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            /** @return void */
+            public static function foo() {}
+        }
+        class A {
+            use T;
+
+            /** @return void */
+            public function bar() {
+                T::foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

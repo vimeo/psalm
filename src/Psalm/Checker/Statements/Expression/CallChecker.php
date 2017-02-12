@@ -973,12 +973,24 @@ class CallChecker
                     return null;
                 }
 
-                $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $fq_class_name,
-                    $file_checker,
-                    new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues()
-                );
+                $does_class_exist = false;
+
+                if ($context->self &&
+                    isset(ClassLikeChecker::$storage[strtolower($context->self)]->used_traits[$fq_class_name])
+                ) {
+                    $fq_class_name = $context->self;
+                    $does_class_exist = true;
+                }
+
+                if (!$does_class_exist) {
+                    $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $fq_class_name,
+                        $file_checker,
+                        new CodeLocation($statements_checker->getSource(), $stmt->class),
+                        $statements_checker->getSuppressedIssues()
+                    );
+                }
+
 
                 if (!$does_class_exist) {
                     return $does_class_exist;
