@@ -489,8 +489,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_context->parent = $this->parent_fq_class_name;
         }
 
-
-
         if ($this->leftover_stmts) {
             (new StatementsChecker($this))->analyze($this->leftover_stmts, $class_context);
         }
@@ -514,6 +512,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     !$property->type->isNullable()
                 ) {
                     $property_type->initialized = false;
+                }
+
+                if ($storage->template_types) {
+                    $generic_types = [];
+                    $property_type->replaceTemplateTypes($storage->template_types, $generic_types);
                 }
             } else {
                 $property_type = Type::getMixed();
