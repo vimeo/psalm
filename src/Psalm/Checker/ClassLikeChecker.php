@@ -588,7 +588,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
                     $method_context->vars_possibly_in_scope['$this'] = true;
 
-                    $constructor_checker->analyze($method_context, null, true);
+                    $constructor_checker->analyze($method_context, $global_context, true);
 
                     foreach ($uninitialized_properties as $property_name => $property) {
                         if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
