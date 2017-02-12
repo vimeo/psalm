@@ -599,6 +599,7 @@ class ExpressionChecker
                     $by_ref_type,
                     $statements_checker->getFileChecker()
                 ) &&
+                    !$existing_type->isNull() &&
                     (string)$existing_type !== 'array<empty, empty>'
                 ) {
                     $stmt->inferredType = $context->vars_in_scope[$var_id];
