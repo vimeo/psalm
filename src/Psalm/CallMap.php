@@ -5434,7 +5434,7 @@ return [
 'msgfmt_set_pattern' => ['bool', 'fmt'=>'messageformatter', 'pattern'=>'string'],
 'msg_get_queue' => ['resource', 'key'=>'int', 'perms='=>'int'],
 'msg_queue_exists' => ['bool', 'key'=>'int'],
-'msg_receive' => ['', 'queue'=>'', 'desiredmsgtype'=>'int', '&msgtype'=>'int', 'maxsize'=>'int', 'message'=>'', 'unserialize='=>'bool', 'flags='=>'int', 'errorcode='=>'int'],
+'msg_receive' => ['', 'queue'=>'', 'desiredmsgtype'=>'int', '&msgtype'=>'int', '&maxsize'=>'int', '&message'=>'', 'unserialize='=>'bool', 'flags='=>'int', 'errorcode='=>'int'],
 'msg_remove_queue' => ['bool', 'queue'=>''],
 'msg_send' => ['bool', 'queue'=>'', 'msgtype'=>'int', 'message'=>'', 'serialize='=>'bool', 'blocking='=>'bool', 'errorcode='=>'int'],
 'msg_set_queue' => ['bool', 'queue'=>'', 'data'=>'array'],
