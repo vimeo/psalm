@@ -221,7 +221,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         ),
                         $this->source->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 } else {
                     foreach ($stmt->vars as $var) {
