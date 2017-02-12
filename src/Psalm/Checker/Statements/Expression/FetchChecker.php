@@ -869,13 +869,16 @@ class FetchChecker
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        if (isset($stmt->inferredType)) {
-                            $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
-                        } else {
-                            $stmt->inferredType = Type::getNull();
-                        }
-                        continue;
+                        // fall through
                     }
+
+                    if (isset($stmt->inferredType)) {
+                        $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
+                    } else {
+                        $stmt->inferredType = Type::getNull();
+                    }
+
+                    continue;
                 }
 
                 if ($type instanceof Type\Atomic\TArray || $type instanceof Type\Atomic\ObjectLike) {
