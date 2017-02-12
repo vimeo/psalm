@@ -18,6 +18,7 @@ use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\InvalidNamespace;
+use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -98,8 +99,17 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
                 !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             ) {
-                echo('Warning: Expressions after return/throw/continue in ' .
-                    $this->getCheckedFileName() . ' on line ' . $stmt->getLine() . PHP_EOL);
+                if ($context->count_references) {
+                    if (IssueBuffer::accepts(
+                        new UnevaluatedCode(
+                            'Expressions after return/throw/continue',
+                            new CodeLocation($this->source, $stmt)
+                        ),
+                        $this->source->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
                 break;
             }
 
