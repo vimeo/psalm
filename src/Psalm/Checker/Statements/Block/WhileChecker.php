@@ -25,9 +25,11 @@ class WhileChecker
     ) {
         $while_context = clone $context;
 
+        $while_context->inside_conditional = true;
         if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $while_context) === false) {
             return false;
         }
+        $while_context->inside_conditional = false;
 
         $while_clauses = TypeChecker::getFormula(
             $stmt->cond,

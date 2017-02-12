@@ -30,9 +30,11 @@ class ForChecker
         }
 
         foreach ($stmt->cond as $condition) {
+            $for_context->inside_conditional = true;
             if (ExpressionChecker::analyze($statements_checker, $condition, $for_context) === false) {
                 return false;
             }
+            $for_context->inside_conditional = false;
         }
 
         $statements_checker->analyze($stmt->stmts, $for_context, $context);

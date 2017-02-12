@@ -1560,9 +1560,11 @@ class ExpressionChecker
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
     ) {
+        $context->inside_conditional = true;
         if (self::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;
         }
+        $context->inside_conditional = false;
 
         $t_if_context = clone $context;
 
