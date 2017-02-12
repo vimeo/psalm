@@ -352,7 +352,11 @@ class ExpressionChecker
 
             $stmt->inferredType = Type::getBool();
         } elseif ($stmt instanceof PhpParser\Node\Expr\Exit_) {
-            // do nothing
+            if ($stmt->expr) {
+                if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
+                    return false;
+                }
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
             $statements_checker->analyzeInclude($stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Eval_) {

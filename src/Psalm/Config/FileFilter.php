@@ -62,8 +62,8 @@ class FileFilter
                 $directory_path = realpath(getcwd() . DIRECTORY_SEPARATOR . (string)$directory['name']);
 
                 if (!$directory_path) {
-                    die('Could not resolve path to ' . getcwd() . DIRECTORY_SEPARATOR .
-                        (string)$directory['name'] . ' in ' . $config->file_path . PHP_EOL);
+                    die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
+                        (string)$directory['name'] . PHP_EOL);
                 }
 
                 $filter->addDirectory($directory_path);
@@ -76,8 +76,8 @@ class FileFilter
                 $file_path = realpath(getcwd() . DIRECTORY_SEPARATOR . (string)$file['name']);
 
                 if (!$file_path) {
-                    die('Could not resolve path to ' . getcwd() . DIRECTORY_SEPARATOR .
-                        (string)$file['name'] . ' in ' . $config->file_path . PHP_EOL);
+                    die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
+                        (string)$file['name'] . PHP_EOL);
                 }
 
                 $filter->addFile($file_path);
