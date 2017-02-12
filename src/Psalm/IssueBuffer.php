@@ -63,7 +63,7 @@ class IssueBuffer
 
         $error_message = $issue_type . ' - ' . $e->getShortLocation() . ' - ' . $e->getMessage();
 
-        $reporting_level = $config->getReportingLevelForFile($issue_type, $e->getFileName());
+        $reporting_level = $config->getReportingLevelForFile($issue_type, $e->getFilePath());
 
         if ($reporting_level === Config::REPORT_SUPPRESS) {
             return false;
