@@ -210,4 +210,43 @@ class MethodCallTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MoreSpecificReturnType
+     * @return                   void
+     */
+    public function testCoercedClass()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedInferredReturnType', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        class NullableClass {
+        }
+
+        class NullableBug {
+            /**
+             * @param string $className
+             * @return object|null
+             */
+            public static function mock($className) {
+                if (!$className) { return null; }
+                return new $className();
+            }
+
+            /**
+             * @return NullableClass
+             */
+            public function returns_nullable_class() {
+                return self::mock("NullableClass");
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+
 }

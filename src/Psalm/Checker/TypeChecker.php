@@ -958,6 +958,8 @@ class TypeChecker
             !$input_type_part instanceof TResource
         ) {
             return true;
+        } elseif ($input_type_part instanceof TObject && $container_type_part instanceof TNamedObject) {
+            $type_coerced = true;
         } elseif ($container_type_part instanceof TNamedObject &&
             $input_type_part instanceof TNamedObject &&
             ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
