@@ -570,7 +570,18 @@ class TypeChecker
 
                 if ($non_object_types) {
                     return new Type\Union($non_object_types);
+                } elseif (!$existing_var_type->from_docblock) {
+                    if ($key && $code_location) {
+                        if (IssueBuffer::accepts(
+                            new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    }
                 }
+
+                return Type::getMixed();
             }
 
             if (in_array($new_var_type, ['!empty', '!null'])) {
