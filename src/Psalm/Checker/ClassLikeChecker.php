@@ -247,8 +247,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $interface_name,
                     $this->getFileChecker(),
                     new CodeLocation($this, $this->class, true),
-                    $this->getSuppressedIssues(),
-                    true
+                    $this->getSuppressedIssues()
                 ) === false) {
                     return false;
                 }
@@ -780,8 +779,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $parent_class,
             $this->getFileChecker(),
             new CodeLocation($this, $this->class->extends, true),
-            $this->getSuppressedIssues(),
-            true
+            $this->getSuppressedIssues()
         ) === false
         ) {
             return false;
@@ -1077,15 +1075,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  FileChecker      $file_checker
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
-     * @param  bool             $visit_file
      * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
         $fq_class_name,
         FileChecker $file_checker,
         CodeLocation $code_location,
-        array $suppressed_issues,
-        $visit_file = false
+        array $suppressed_issues
     ) {
         if (empty($fq_class_name)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -1484,10 +1480,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param  string $class_name
      * @param  mixed  $visibility
-     * @param  bool   $is_static
      * @return array<string, PropertyStorage>
      */
-    public static function getPropertiesForClass($class_name, $visibility, $is_static)
+    public static function getPropertiesForClass($class_name, $visibility)
     {
         $class_name = strtolower($class_name);
 

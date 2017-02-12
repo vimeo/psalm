@@ -211,7 +211,6 @@ class CallChecker
                     if (self::checkFunctionExists(
                         $statements_checker,
                         $method_id,
-                        $context,
                         $code_location
                     ) === false
                     ) {
@@ -272,7 +271,6 @@ class CallChecker
                     $function_storage,
                     null,
                     $generic_params,
-                    $context,
                     $code_location
                 ) === false) {
                     // fall through
@@ -282,7 +280,7 @@ class CallChecker
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
                 if (!$in_call_map || $is_stubbed) {
                     if ($function_storage && $function_storage->template_types) {
-                        foreach ($function_storage->template_types as $template_name => $template_type) {
+                        foreach ($function_storage->template_types as $template_name => $_) {
                             if (!isset($generic_params[$template_name])) {
                                 $generic_params[$template_name] = Type::getMixed();
                             }
@@ -403,8 +401,7 @@ class CallChecker
                         $fq_class_name,
                         $file_checker,
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues(),
-                        true
+                        $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
                     }
@@ -691,8 +688,7 @@ class CallChecker
                     $fq_class_name,
                     $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->var),
-                    $statements_checker->getSuppressedIssues(),
-                    true
+                    $statements_checker->getSuppressedIssues()
                 );
 
                 if (!$does_class_exist) {
@@ -981,8 +977,7 @@ class CallChecker
                     $fq_class_name,
                     $file_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues(),
-                    true
+                    $statements_checker->getSuppressedIssues()
                 );
 
                 if (!$does_class_exist) {
@@ -1177,7 +1172,6 @@ class CallChecker
             $method_storage,
             $class_storage,
             $generic_params,
-            $context,
             $code_location
         ) === false) {
             return false;
@@ -1301,7 +1295,6 @@ class CallChecker
      * @param   FunctionLikeStorage                     $function_storage
      * @param   ClassLikeStorage                        $class_storage
      * @param   array<string, Type\Union>|null          $generic_params
-     * @param   Context                                 $context
      * @param   CodeLocation                            $code_location
      * @return  false|null
      */
@@ -1313,7 +1306,6 @@ class CallChecker
         FunctionLikeStorage $function_storage = null,
         ClassLikeStorage $class_storage = null,
         array &$generic_params = null,
-        Context $context,
         CodeLocation $code_location
     ) {
         $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
@@ -1452,10 +1444,7 @@ class CallChecker
             if (self::checkArrayFunctionArgumentsMatch(
                 $statements_checker,
                 $args,
-                $method_id,
-                $function_params,
-                $context,
-                $code_location
+                $method_id
             ) === false
             ) {
                 return false;
@@ -1504,18 +1493,12 @@ class CallChecker
      * @param   StatementsChecker                       $statements_checker
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|null                             $method_id
-     * @param   array<int,FunctionLikeParameter>        $function_params
-     * @param   Context                                 $context
-     * @param   CodeLocation                            $code_location
      * @return  false|null
      */
     protected static function checkArrayFunctionArgumentsMatch(
         StatementsChecker $statements_checker,
         array $args,
-        $method_id,
-        array $function_params,
-        Context $context,
-        CodeLocation $code_location
+        $method_id
     ) {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
 
@@ -1788,14 +1771,12 @@ class CallChecker
     /**
      * @param  StatementsChecker    $statements_checker
      * @param  string               $function_id
-     * @param  Context              $context
      * @param  CodeLocation         $code_location
      * @return bool
      */
     protected static function checkFunctionExists(
         StatementsChecker $statements_checker,
         &$function_id,
-        Context $context,
         CodeLocation $code_location
     ) {
         $cased_function_id = $function_id;

@@ -759,7 +759,6 @@ class TypeChecker
                     $input_type_part,
                     $container_type_part,
                     $file_checker,
-                    $ignore_null,
                     $scalar_type_match_found,
                     $type_coerced,
                     $atomic_to_string_cast
@@ -799,7 +798,6 @@ class TypeChecker
      * @param  Type\Atomic  $input_type_part
      * @param  Type\Atomic  $container_type_part
      * @param  FileChecker  $file_checker
-     * @param  bool         $ignore_null
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
      * @param  bool         &$to_string_cast
@@ -809,7 +807,6 @@ class TypeChecker
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
         FileChecker $file_checker,
-        $ignore_null = false,
         &$has_scalar_match = null,
         &$type_coerced = null,
         &$to_string_cast = null
@@ -1413,7 +1410,6 @@ class TypeChecker
                         $type_part,
                         $container_type_part,
                         $file_checker,
-                        false,
                         $has_scalar_match,
                         $type_coerced,
                         $to_string_cast

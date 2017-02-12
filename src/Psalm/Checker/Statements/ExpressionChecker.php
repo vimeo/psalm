@@ -157,7 +157,7 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if (FetchChecker::analyzePropertyFetch($statements_checker, $stmt, $context, $array_assignment) === false) {
+            if (FetchChecker::analyzePropertyFetch($statements_checker, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
@@ -889,7 +889,6 @@ class ExpressionChecker
                     $statements_checker,
                     $stmt->left,
                     $stmt->right,
-                    $stmt,
                     $result_type
                 );
 
@@ -1097,15 +1096,13 @@ class ExpressionChecker
      * @param  StatementsChecker     $statements_checker
      * @param  PhpParser\Node\Expr   $left
      * @param  PhpParser\Node\Expr   $right
-     * @param  PhpParser\Node        $parent
-     * @param  Type\Union|null   &$result_type
+     * @param  Type\Union|null       &$result_type
      * @return void
      */
     public static function analyzeConcatOp(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
-        PhpParser\Node $parent,
         Type\Union &$result_type = null
     ) {
         $left_type = isset($left->inferredType) ? $left->inferredType : null;

@@ -24,6 +24,12 @@
         <PossiblyNullOperand errorLevel="suppress" />
         <MissingConstructor errorLevel="suppress" />
 
+        <PossiblyUnusedVariable>
+            <errorLevel type="suppress">
+                <file name="src/Psalm/Plugin.php" />
+            </errorLevel>
+        </PossiblyUnusedVariable>
+
         <UnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />

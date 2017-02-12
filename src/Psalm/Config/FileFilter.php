@@ -47,13 +47,11 @@ class FileFilter
 
     /**
      * @param  SimpleXMLElement $e
-     * @param  Config           $config
      * @param  bool             $inclusive
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
-        Config $config,
         $inclusive
     ) {
         $filter = new static($inclusive);

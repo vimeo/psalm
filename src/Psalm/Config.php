@@ -316,7 +316,7 @@ class Config
         }
 
         if (isset($config_xml->projectFiles)) {
-            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $config, true);
+            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -379,10 +379,7 @@ class Config
         if (isset($config_xml->issueHandlers)) {
             /** @var \SimpleXMLElement $issue_handler */
             foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
-                $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                    $issue_handler,
-                    $config
-                );
+                $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement($issue_handler);
             }
         }
 

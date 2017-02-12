@@ -61,14 +61,12 @@ class FetchChecker
      * @param   StatementsChecker                   $statements_checker
      * @param   PhpParser\Node\Expr\PropertyFetch   $stmt
      * @param   Context                             $context
-     * @param   bool                                $array_assignment
      * @return  false|null
      */
     public static function analyzePropertyFetch(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        Context $context,
-        $array_assignment = false
+        Context $context
     ) {
         if (!is_string($stmt->name)) {
             if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
@@ -457,8 +455,7 @@ class FetchChecker
                     $fq_class_name,
                     $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues(),
-                    true
+                    $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
                 }
@@ -597,8 +594,7 @@ class FetchChecker
                         $fq_class_name,
                         $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues(),
-                        true
+                        $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
                     }

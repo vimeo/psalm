@@ -47,7 +47,6 @@ class CommentChecker
             if ($line_parts && $line_parts[0]) {
                 $type_in_comments = FunctionLikeChecker::fixUpLocalType(
                     $line_parts[0],
-                    $source->getFQCLN(),
                     $source,
                     $template_types
                 );

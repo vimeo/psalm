@@ -192,10 +192,9 @@ class IssueBuffer
     /**
      * @param  bool     $is_full
      * @param  int|null $start_time
-     * @param  bool     $debug
      * @return void
      */
-    public static function finish($is_full = false, $start_time = null, $debug = false)
+    public static function finish($is_full = false, $start_time = null)
     {
         Checker\FileChecker::updateReferenceCache();
 

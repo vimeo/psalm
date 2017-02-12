@@ -272,7 +272,7 @@ class ProjectChecker
             $this->checkClassReferences();
         }
 
-        IssueBuffer::finish(true, (int)$start_checks, $this->debug_output);
+        IssueBuffer::finish(true, (int)$start_checks);
     }
 
     /**
@@ -389,7 +389,7 @@ class ProjectChecker
         $this->visitFiles();
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks, $this->debug_output);
+        IssueBuffer::finish(false, $start_checks);
     }
 
     /**
@@ -541,7 +541,7 @@ class ProjectChecker
 
         $file_checker->analyze($this->update_docblocks);
 
-        IssueBuffer::finish(false, $start_checks, $this->debug_output);
+        IssueBuffer::finish(false, $start_checks);
     }
 
     /**

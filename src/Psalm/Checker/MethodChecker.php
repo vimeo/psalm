@@ -84,14 +84,12 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string                       $method_id
-     * @param  array<string, string>|null   $class_template_types
-     * @param  array<string, string>|null   $function_template_types
+     * @param  array<string, string>|null   $template_types
      * @return Type\Union|null
      */
     public static function getMethodReturnType(
         $method_id,
-        array $class_template_types = null,
-        array $function_template_types = null
+        array $template_types = null
     ) {
         $method_id = self::getDeclaringMethodId($method_id);
 
@@ -112,12 +110,12 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         if ($storage->return_type) {
-            if ($class_template_types !== null) {
+            if ($template_types !== null) {
                 $type_tokens = Type::tokenize((string)$storage->return_type);
 
                 foreach ($type_tokens as &$type_token) {
-                    if (isset($class_template_types[$type_token])) {
-                        $type_token = $class_template_types[$type_token];
+                    if (isset($template_types[$type_token])) {
+                        $type_token = $template_types[$type_token];
                     }
                 }
 

@@ -744,7 +744,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $docblock_return_type = Type::parseString(
                 self::fixUpLocalType(
                     (string)$docblock_info->return_type,
-                    $source->getFQCLN(),
                     $source,
                     $template_types
                 )
@@ -1217,7 +1216,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $new_param_type = Type::parseString(
                 self::fixUpLocalType(
                     $docblock_param['type'],
-                    null,
                     $source,
                     $template_types
                 )
@@ -1426,14 +1424,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
     /**
      * @param  string                       $return_type
-     * @param  string|null                  $fq_class_name
      * @param  StatementsSource             $source
      * @param  array<string, string>|null   $template_types
      * @return string
      */
     public static function fixUpLocalType(
         $return_type,
-        $fq_class_name,
         StatementsSource $source,
         array $template_types = null
     ) {

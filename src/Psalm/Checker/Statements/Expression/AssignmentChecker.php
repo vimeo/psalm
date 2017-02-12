@@ -334,7 +334,6 @@ class AssignmentChecker
                 $statements_checker,
                 $stmt->var,
                 $stmt->expr,
-                $stmt,
                 $result_type
             );
 
