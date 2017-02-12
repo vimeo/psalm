@@ -183,10 +183,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     ) {
         $storage = self::$storage[strtolower($class_context ? (string)$class_context->self : $this->fq_class_name)];
 
-        if (!($this instanceof TraitChecker) && $storage->registered) {
-            return null;
-        }
-
         $config = Config::getInstance();
 
         $storage->user_defined = true;
@@ -204,6 +200,22 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $class_context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($this->fq_class_name)]);
             $class_context->vars_possibly_in_scope['$this'] = true;
+        }
+
+        if (!($this instanceof TraitChecker) && $storage->registered) {
+            // get leftover statements from properties to analyze
+            foreach ($this->class->stmts as $stmt) {
+                if ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                    $this->visitPropertyDeclaration(
+                        $stmt,
+                        $class_context,
+                        $config
+                    );
+                    $this->leftover_stmts[] = $stmt;
+                }
+            }
+
+            return null;
         }
 
          // set all constants first
@@ -476,6 +488,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_context->count_references = $this->getFileChecker()->project_checker->count_references;
             $class_context->parent = $this->parent_fq_class_name;
         }
+
+
 
         if ($this->leftover_stmts) {
             (new StatementsChecker($this))->analyze($this->leftover_stmts, $class_context);
