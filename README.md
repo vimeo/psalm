@@ -18,7 +18,7 @@ Install via [Composer](https://getcomposer.org/):
 composer require --dev vimeo/psalm
 ```
 
-Add a `psalm.xml` config:
+Add a config:
 
 ```bash
 ./vendor/bin/psalm --init
@@ -30,7 +30,13 @@ Then run Psalm:
 ./vendor/bin/psalm
 ```
 
-The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level in `psalm --init`. You can also learn about how to suppress certain issues [here](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
+The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level with 
+
+```bash
+./vendor/bin/psalm --init [source_dir] [level]
+```
+
+You can also learn about how to suppress certain issues [here](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
 
 ## Acknowledgements
 
