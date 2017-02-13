@@ -121,12 +121,17 @@ if (isset($options['i'])) {
             $level = (int)$args[1];
         }
 
-        if (!file_exists($args[0])) {
-            $bad_dir_path = getcwd() . DIRECTORY_SEPARATOR . $args[0];
-            die('The given path ' . $bad_dir_path . ' does not appear to be a directory' . PHP_EOL);
+        $source_dir = $args[0];
+    }
+
+    if (!is_dir($source_dir)) {
+        $bad_dir_path = getcwd() . DIRECTORY_SEPARATOR . $source_dir;
+
+        if (!isset($args[0])) {
+            die('Please specify a directory - the default, "src", was not found in this project.' . PHP_EOL);
         }
 
-        $source_dir = $args[0];
+        die('The given path "' . $bad_dir_path . '" does not appear to be a directory' . PHP_EOL);
     }
 
     $template_file_name = 'assets/config_levels/' . $level . '.xml';
