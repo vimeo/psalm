@@ -36,7 +36,7 @@ The config created above will show you all issues in your code, but will emit `I
 ./vendor/bin/psalm --init [source_dir] [level]
 ```
 
-You can also learn how to suppress certain issues [here](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
+You can also [learn how to suppress certain issues](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
 
 ## Acknowledgements
 
