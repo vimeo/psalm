@@ -196,6 +196,13 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $this->context = new Context();
         $this->context->count_references = $project_checker->count_references;
+        $this->context->vars_in_scope['$argc'] = Type::getInt();
+        $this->context->vars_in_scope['$argv'] = new Type\Union([
+            new Type\Atomic\TArray([
+                Type::getInt(),
+                Type::getString(),
+            ])
+        ]);
     }
 
     /**

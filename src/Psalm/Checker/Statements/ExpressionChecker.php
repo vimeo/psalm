@@ -490,17 +490,15 @@ class ExpressionChecker
         if (in_array(
             $stmt->name,
             [
+                'GLOBALS',
                 '_SERVER',
                 '_GET',
                 '_POST',
-                '_COOKIE',
-                '_REQUEST',
                 '_FILES',
-                '_ENV',
+                '_COOKIE',
                 '_SESSION',
-                'GLOBALS',
-                'argv',
-                'argc',
+                '_REQUEST',
+                '_ENV',
             ]
         )
         ) {
