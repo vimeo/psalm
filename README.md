@@ -21,31 +21,16 @@ composer require --dev vimeo/psalm
 Add a `psalm.xml` config:
 
 ```bash
-cat > psalm.xml << EOF
-<?xml version="1.0"?>
-<psalm
-  stopOnFirstError="false"
-  useDocblockTypes="true"
->
-    <projectFiles>
-        <directory name="src" />
-    </projectFiles>
-    <issueHandlers>
-        <MissingReturnType errorLevel="info" />
-        <MissingClosureReturnType errorLevel="info" />
-        <MissingPropertyType errorLevel="info" />
-    </issueHandlers>
-</psalm>
-EOF
+./vendor/bin/psalm --init
 ```
 
-Then run Psalm with:
+Then run Psalm:
 
 ```bash
 ./vendor/bin/psalm
 ```
 
-The above config is fairly spartan, and will show you *all* possible errors, including many that might be irrelevant to you. A more lenient config is provided [here](examples/psalm.default.xml), and you can learn about how to suppress certain issues [here](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
+The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level in `psalm --init`. You can also learn about how to suppress certain issues [here](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
 
 ## Acknowledgements
 
