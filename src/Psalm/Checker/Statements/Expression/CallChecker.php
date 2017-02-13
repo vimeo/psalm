@@ -725,24 +725,24 @@ class CallChecker
                     self::collectSpecialInformation($source, $stmt->name, $context);
                 }
 
-                if ($class_type_part instanceof TGenericObject) {
-                    $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+                $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
 
-                    if ($class_storage->template_types) {
-                        $class_template_params = [];
+                if ($class_storage->template_types) {
+                    $class_template_params = [];
 
-                        /** @var array<int, string> */
-                        $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
+                    /** @var array<int, string> */
+                    $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
 
-                        $provided_type_param_count = count($class_type_part->type_params);
+                    $provided_type_param_count = $class_type_part instanceof TGenericObject
+                        ? count($class_type_part->type_params)
+                        : 0;
 
-                        foreach ($reversed_class_template_types as $i => $type_name) {
-                            if (isset($class_type_part->type_params[$provided_type_param_count - 1 - $i])) {
-                                $class_template_params[$type_name] =
-                                    $class_type_part->type_params[$provided_type_param_count - 1 - $i];
-                            } else {
-                                $class_template_params[$type_name] = Type::getMixed();
-                            }
+                    foreach ($reversed_class_template_types as $i => $type_name) {
+                        if (isset($class_type_part->type_params[$provided_type_param_count - 1 - $i])) {
+                            $class_template_params[$type_name] =
+                                $class_type_part->type_params[$provided_type_param_count - 1 - $i];
+                        } else {
+                            $class_template_params[$type_name] = Type::getMixed();
                         }
                     }
                 }
