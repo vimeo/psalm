@@ -38,17 +38,20 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodCall()
     {
         $stmts = self::$parser->parse('<?php
         class A {
+            /** @return void */
             public function fooFoo() {}
         }
 
         class B {
+            /** @return void */
             public function barBar(A $a = null) {
                 $a->fooFoo();
             }
@@ -171,7 +174,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodCallWithThis()
@@ -183,6 +187,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
         }
 
         class B {
+            /** @var A|null */
+            protected $a;
+
             /** @return void */
             public function barBar(A $a = null) {
                 $this->a = $a;
@@ -276,7 +283,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithWrongIfGuard()
@@ -364,7 +372,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithWrongBooleanIfGuard()
@@ -518,7 +527,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithWrongIfGuardBefore()
@@ -581,7 +591,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithWrongBooleanIfGuardBefore()
@@ -668,7 +679,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testMethodWithMeaninglessCheck()
@@ -695,7 +707,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithGuardedNestedIncompleteRedefinition()
@@ -805,7 +818,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionNoDefault()
@@ -838,7 +852,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithGuardedSwitchRedefinitionEmptyDefault()
@@ -1013,7 +1028,8 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    PossiblyNullReference
      * @return            void
      */
     public function testNullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn()
@@ -1272,8 +1288,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @return            void
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    UndefinedMethod
+     * @return                      void
      */
     public function testVariableReassignmentInIfWithOutsideCall()
     {
@@ -1402,8 +1419,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @return            void
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    FailedTypeResolution
+     * @return                      void
      */
     public function testUnnecessaryInstanceof()
     {
@@ -1540,8 +1558,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @return            void
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    InvalidArgument
+     * @return                      void
      */
     public function testWrongParam()
     {
@@ -1604,8 +1623,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @return            void
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    InvalidArgument
+     * @return                      void
      */
     public function testIntToNullableObjectParam()
     {
@@ -1647,8 +1667,9 @@ class TypeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\CodeException
-     * @return            void
+     * @expectedException           \Psalm\Exception\CodeException
+     * @expectedExceptionMessage    UndefinedMethod
+     * @return                      void
      */
     public function testParamCoercionWithBadArg()
     {
