@@ -508,6 +508,22 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testPassByRefInIVarWithBoolean()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = preg_match("/bad/", "badger", $matches) > 0;
+        if ($a) {
+            echo (string)$matches[1];
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, first seen on line 4
      * @return                   void

@@ -172,7 +172,7 @@ class ExpressionChecker
             if (self::analyzeBinaryOp(
                 $statements_checker,
                 $stmt,
-                $context->inside_conditional ? $context : clone $context
+                $context
             ) === false) {
                 return false;
             }
@@ -764,24 +764,26 @@ class ExpressionChecker
                 return false;
             }
 
-            foreach ($op_context->vars_in_scope as $var => $type) {
-                if (!isset($context->vars_in_scope[$var])) {
-                    $context->vars_in_scope[$var] = $type;
-                    continue;
+            if ($context->inside_conditional) {
+                foreach ($op_context->vars_in_scope as $var => $type) {
+                    if (!isset($context->vars_in_scope[$var])) {
+                        $context->vars_in_scope[$var] = $type;
+                        continue;
+                    }
                 }
+
+                $context->updateChecks($op_context);
+
+                $context->referenced_vars = array_merge(
+                    $op_context->referenced_vars,
+                    $context->referenced_vars
+                );
+
+                $context->vars_possibly_in_scope = array_merge(
+                    $op_context->vars_possibly_in_scope,
+                    $context->vars_possibly_in_scope
+                );
             }
-
-            $context->updateChecks($op_context);
-
-            $context->referenced_vars = array_merge(
-                $op_context->referenced_vars,
-                $context->referenced_vars
-            );
-
-            $context->vars_possibly_in_scope = array_merge(
-                $op_context->vars_possibly_in_scope,
-                $context->vars_possibly_in_scope
-            );
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             $if_clauses = TypeChecker::getFormula(
                 $stmt->left,
@@ -827,17 +829,19 @@ class ExpressionChecker
                 return false;
             }
 
-            $context->updateChecks($op_context);
+            if ($context->inside_conditional) {
+                $context->updateChecks($op_context);
 
-            $context->referenced_vars = array_merge(
-                $op_context->referenced_vars,
-                $context->referenced_vars
-            );
+                $context->referenced_vars = array_merge(
+                    $op_context->referenced_vars,
+                    $context->referenced_vars
+                );
 
-            $context->vars_possibly_in_scope = array_merge(
-                $op_context->vars_possibly_in_scope,
-                $context->vars_possibly_in_scope
-            );
+                $context->vars_possibly_in_scope = array_merge(
+                    $op_context->vars_possibly_in_scope,
+                    $context->vars_possibly_in_scope
+                );
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             $stmt->inferredType = Type::getString();
 
