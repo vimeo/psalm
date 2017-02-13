@@ -823,6 +823,10 @@ class ProjectChecker
         } while (dirname($dir_path) !== $dir_path);
 
         if (!$config) {
+            if ($this->output_format === self::TYPE_CONSOLE) {
+                exit('Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' . PHP_EOL);
+            }
+
             throw new Exception\ConfigException('Config not found for path ' . $path);
         }
 
@@ -858,6 +862,9 @@ class ProjectChecker
         }
 
         $this->config = Config::loadFromXMLFile($path_to_config);
+
+        $this->config->visitStubFiles($this);
+        $this->config->initializePlugins($this);
     }
 
     /**

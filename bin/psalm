@@ -20,16 +20,20 @@ ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
 $options = getopt(
-    'f:mhc:',
+    'f:mhc:i',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
-        'find-dead-code',
+        'find-dead-code', 'init',
     ]
 );
 
 if (array_key_exists('help', $options)) {
     $options['h'] = false;
+}
+
+if (array_key_exists('init', $options)) {
+    $options['i'] = false;
 }
 
 if (array_key_exists('monochrome', $options)) {
@@ -50,16 +54,39 @@ Usage:
     psalm [options] [file...]
 
 Options:
-    -h,  --help                     Display this help message
-         --debug                    Debug information
-    -c,  --config=psalm.xml         Path to a psalm.xml configuration file
-    -m,  --monochrome               Enable monochrome output
-         --show-info[=BOOLEAN]      Show non-exception parser findings.
-         --diff                     File to check is a diff
-         --self-check               Psalm checks itself
-         --update-docblocks         Adds correct return types to the given file(s)
-         --output-format=console    Changes the output format
-         --find-dead-code           Look for dead code
+    -h, --help
+        Display this help message
+
+    -i, --init [source_dir=src] [--level=3]
+        Create a psalm config file in the current directory that points to [source_dir]
+        at the required level, from 1, most strict, to 5, most permissive
+
+    --debug
+        Debug information
+
+    -c, --config=psalm.xml
+        Path to a psalm.xml configuration file. Run psalm --init to create one.
+
+    -m, --monochrome
+        Enable monochrome output
+
+    --show-info[=BOOLEAN]
+        Show non-exception parser findings
+
+    --diff
+        Runs Psalm in diff mode, only checking files that have changed (and their dependents)
+
+    --self-check
+        Psalm checks itself
+
+    --update-docblocks
+        Adds correct return types to the given file(s)
+
+    --output-format=console
+        Changes the output format
+
+    --find-dead-code
+        Look for dead code
 
 
 HELP;
@@ -69,6 +96,58 @@ HELP;
 
 if (getcwd() === false) {
     die('Cannot get current working directory');
+}
+
+if (isset($options['i'])) {
+    $args = array_slice($argv, 2);
+
+    if (file_exists('psalm.xml')) {
+        die('A config file already exists in the current directory' . PHP_EOL);
+    }
+
+    $level = 3;
+    $source_dir = 'src';
+
+    if (count($args)) {
+        if (count($args) > 2) {
+            die('Too many arguments provided for psalm --init' . PHP_EOL);
+        }
+
+        if (isset($args[1])) {
+            if (!preg_match('/^[1-5]$/', $args[1])) {
+                die('Config strictness must be a number between 1 and 5 inclusive' . PHP_EOL);
+            }
+
+            $level = (int)$args[1];
+        }
+
+        if (!file_exists($args[0])) {
+            $bad_dir_path = getcwd() . DIRECTORY_SEPARATOR . $args[0];
+            die('The given path ' . $bad_dir_path . ' does not appear to be a directory' . PHP_EOL);
+        }
+
+        $source_dir = $args[0];
+    }
+
+    $template_file_name = 'assets/config_levels/' . $level . '.xml';
+
+    if (!file_exists($template_file_name)) {
+        die('Could not open config template' . PHP_EOL);
+    }
+
+    $template = (string)file_get_contents($template_file_name);
+
+    $template = str_replace('<projectFiles>
+        <directory name="src" />
+    </projectFiles>', '<projectFiles>
+        <directory name="' . $source_dir . '" />
+    </projectFiles>', $template);
+
+    if (!file_put_contents('psalm.xml', $template)) {
+        die('Could not write to psalm.xml' . PHP_EOL);
+    }
+
+    exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
 }
 
 // get vars from options
