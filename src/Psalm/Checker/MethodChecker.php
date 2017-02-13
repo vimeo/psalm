@@ -115,7 +115,7 @@ class MethodChecker extends FunctionLikeChecker
 
                 foreach ($type_tokens as &$type_token) {
                     if (isset($template_types[$type_token])) {
-                        $type_token = $template_types[$type_token];
+                        $type_token = (string)$template_types[$type_token];
                     }
                 }
 

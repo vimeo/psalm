@@ -1408,7 +1408,7 @@ class CallChecker
                                         $statements_checker
                                     )
                                 );
-                            } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_) {
+                            } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_ && $arg->value->value) {
                                 $offset_value_type = Type::parseString($arg->value->value);
                             }
 
