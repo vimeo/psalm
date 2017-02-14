@@ -473,20 +473,22 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_map_key === 'array_filter') {
-            $first_arg_array_generic = $first_arg
+            $first_arg_array = $first_arg
                 && isset($first_arg->inferredType)
                 && isset($first_arg->inferredType->types['array'])
-                && $first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
+                && ($first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray ||
+                    $first_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike)
             ? $first_arg->inferredType->types['array']
             : null;
 
-            if (!$first_arg_array_generic) {
+            if (!$first_arg_array) {
                 return Type::getArray();
             }
 
             $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
-            $inner_type = clone $first_arg_array_generic->type_params[1];
+            $inner_type = $first_arg_array instanceof Type\Atomic\TArray ? $first_arg_array->type_params[1] : $first_arg_array->getGenericTypeParam();
+            $key_type = $first_arg_array instanceof Type\Atomic\TArray ? clone $first_arg_array->type_params[0] : Type::getString();
 
             if (!$second_arg) {
                 $inner_type->removeType('null');
@@ -495,7 +497,7 @@ class FunctionChecker extends FunctionLikeChecker
 
             return new Type\Union([
                 new Type\Atomic\TArray([
-                    clone $first_arg_array_generic->type_params[0],
+                    $key_type,
                     $inner_type
                 ])
             ]);

@@ -441,4 +441,19 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$d']);
     }
+
+    /**
+     * @return void
+     */
+    public function testArrayFilter()
+    {
+        $stmts = self::$parser->parse('<?php
+        $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$d']);
+    }
 }
