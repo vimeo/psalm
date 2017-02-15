@@ -156,6 +156,11 @@ class ProjectChecker
     public $fake_files = [];
 
     /**
+     * @var boolean
+     */
+    public $server_mode = false;
+
+    /**
      * Whether to log functions just at the file level or globally (for stubs)
      *
      * @var boolean
@@ -240,7 +245,10 @@ class ProjectChecker
             }
 
             $this->visitFiles();
-            $this->analyzeFiles();
+
+            if (!$this->server_mode) {
+                $this->analyzeFiles();
+            }
         } else {
             if ($this->debug_output) {
                 echo count($diff_files) . ' changed files' . PHP_EOL;
@@ -253,7 +261,10 @@ class ProjectChecker
             $this->checkDiffFilesWithConfig($this->config, $file_list);
 
             $this->visitFiles();
-            $this->analyzeFiles();
+
+            if (!$this->server_mode) {
+                $this->analyzeFiles();
+            }
         }
 
         $removed_parser_files = FileChecker::deleteOldParserCaches(
@@ -287,7 +298,9 @@ class ProjectChecker
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         foreach ($this->files_to_analyze as $file_path => $_) {
-            $this->visitFile($file_path, $filetype_handlers);
+            if (!isset($this->visited_files[$file_path])) {
+                $this->visitFile($file_path, $filetype_handlers);
+            }
         }
     }
 
@@ -303,7 +316,7 @@ class ProjectChecker
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         foreach ($this->files_to_analyze as $file_path => $_) {
-            $file_checker = $this->visitFile($file_path, $filetype_handlers);
+            $file_checker = $this->visitFile($file_path, $filetype_handlers, true);
 
             if ($this->debug_output) {
                 echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -533,7 +546,7 @@ class ProjectChecker
 
         FileChecker::loadReferenceCache();
 
-        $file_checker = $this->visitFile($file_name, $filetype_handlers);
+        $file_checker = $this->visitFile($file_name, $filetype_handlers, true);
 
         if ($this->debug_output) {
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -547,9 +560,10 @@ class ProjectChecker
     /**
      * @param  string $file_path
      * @param  array  $filetype_handlers
+     * @param  bool   $will_analyze
      * @return FileChecker
      */
-    private function visitFile($file_path, array $filetype_handlers)
+    private function visitFile($file_path, array $filetype_handlers, $will_analyze = false)
     {
         $extension = (string)pathinfo($file_path)['extension'];
 
@@ -557,7 +571,7 @@ class ProjectChecker
             /** @var FileChecker */
             $file_checker = new $filetype_handlers[$extension]($file_path, $this);
         } else {
-            $file_checker = new FileChecker($file_path, $this, null, true);
+            $file_checker = new FileChecker($file_path, $this, null, $will_analyze);
         }
 
         if ($this->debug_output) {
@@ -663,7 +677,12 @@ class ProjectChecker
 
             $this->visited_files[$file_path] = true;
 
-            $file_checker = new FileChecker($file_path, $this, null, isset($this->files_to_analyze[$file_path]));
+            $file_checker = new FileChecker(
+                $file_path,
+                $this,
+                null,
+                false
+            );
 
             ClassLikeChecker::$file_classes[$file_path][] = $fq_class_name;
 
