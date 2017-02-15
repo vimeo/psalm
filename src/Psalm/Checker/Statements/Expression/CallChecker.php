@@ -121,18 +121,17 @@ class CallChecker
         }
 
         $method_id = null;
+        $function_params = null;
+        $in_call_map = false;
+
+        $is_stubbed = false;
+
+        $function_storage = null;
+
+        $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
+        $defined_constants = [];
 
         if ($context->check_functions) {
-            $in_call_map = false;
-
-            $is_stubbed = false;
-
-            $function_storage = null;
-            $function_params = null;
-
-            $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
-
-            $defined_constants = [];
 
             if ($stmt->name instanceof PhpParser\Node\Expr) {
                 if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
@@ -239,16 +238,18 @@ class CallChecker
                     );
                 }
             }
+        }
 
-            if (self::checkFunctionArguments(
-                $statements_checker,
-                $stmt->args,
-                $function_params,
-                $context
-            ) === false) {
-                // fall through
-            }
+        if (self::checkFunctionArguments(
+            $statements_checker,
+            $stmt->args,
+            $function_params,
+            $context
+        ) === false) {
+            // fall through
+        }
 
+        if ($context->check_functions) {
             $generic_params = null;
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {

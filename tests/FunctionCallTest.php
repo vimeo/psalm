@@ -456,4 +456,29 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$d']);
     }
+
+    /**
+     * @return void
+     */
+    public function testByRefAfterCallable()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedArrayAccess', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param callable $callback
+         * @return void
+         */
+        function route($callback) {
+          if (!is_callable($callback)) {  }
+          $a = preg_match("", "", $b);
+          if ($b[0]) {}
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
