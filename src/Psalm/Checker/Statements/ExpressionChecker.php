@@ -723,7 +723,9 @@ class ExpressionChecker
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
             // ignore deeply-nested string concatenation
-        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
             $if_clauses = TypeChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
@@ -782,7 +784,9 @@ class ExpressionChecker
                     $context->vars_possibly_in_scope
                 );
             }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
+            $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
             $if_clauses = TypeChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
