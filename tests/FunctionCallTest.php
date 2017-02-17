@@ -481,4 +481,32 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     * @return                   void
+     */
+    public function testInvalidArgAfterCallable()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedArrayAccess', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param callable $callback
+         * @return void
+         */
+        function route($callback) {
+          if (!is_callable($callback)) {  }
+          takes_int("string");
+        }
+
+        function takes_int(int $i) {}
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

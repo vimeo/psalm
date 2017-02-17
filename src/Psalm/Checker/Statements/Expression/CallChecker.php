@@ -131,82 +131,81 @@ class CallChecker
         $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
         $defined_constants = [];
 
-        if ($context->check_functions) {
+        $function_exists = false;
 
-            if ($stmt->name instanceof PhpParser\Node\Expr) {
-                if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
-                    return false;
-                }
+        if ($stmt->name instanceof PhpParser\Node\Expr) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
+                return false;
+            }
 
-                if (isset($stmt->name->inferredType)) {
-                    foreach ($stmt->name->inferredType->types as $var_type_part) {
-                        if ($var_type_part instanceof Type\Atomic\Fn) {
-                            $function_params = $var_type_part->params;
+            if (isset($stmt->name->inferredType)) {
+                foreach ($stmt->name->inferredType->types as $var_type_part) {
+                    if ($var_type_part instanceof Type\Atomic\Fn) {
+                        $function_params = $var_type_part->params;
 
-                            if ($var_type_part->return_type) {
-                                if (isset($stmt->inferredType)) {
-                                    $stmt->inferredType = Type::combineUnionTypes(
-                                        $stmt->inferredType,
-                                        $var_type_part->return_type
-                                    );
-                                } else {
-                                    $stmt->inferredType = $var_type_part->return_type;
-                                }
+                        if ($var_type_part->return_type) {
+                            if (isset($stmt->inferredType)) {
+                                $stmt->inferredType = Type::combineUnionTypes(
+                                    $stmt->inferredType,
+                                    $var_type_part->return_type
+                                );
+                            } else {
+                                $stmt->inferredType = $var_type_part->return_type;
                             }
-                        } elseif (!$var_type_part instanceof TMixed &&
-                            (!$var_type_part instanceof TNamedObject || $var_type_part->value !== 'Closure') &&
-                            !$var_type_part instanceof TCallable &&
-                            (!$var_type_part instanceof TNamedObject ||
-                                !MethodChecker::methodExists(
-                                    $var_type_part->value . '::__invoke',
-                                    $statements_checker->getFileChecker()
-                                )
+                        }
+
+                        $function_exists = true;
+                    } elseif (!$var_type_part instanceof TMixed &&
+                        (!$var_type_part instanceof TNamedObject || $var_type_part->value !== 'Closure') &&
+                        !$var_type_part instanceof TCallable &&
+                        (!$var_type_part instanceof TNamedObject ||
+                            !MethodChecker::methodExists(
+                                $var_type_part->value . '::__invoke',
+                                $statements_checker->getFileChecker()
                             )
-                        ) {
-                            $var_id = ExpressionChecker::getVarId(
-                                $stmt->name,
-                                $statements_checker->getFQCLN(),
-                                $statements_checker
-                            );
+                        )
+                    ) {
+                        $var_id = ExpressionChecker::getVarId(
+                            $stmt->name,
+                            $statements_checker->getFQCLN(),
+                            $statements_checker
+                        );
 
-                            if (IssueBuffer::accepts(
-                                new InvalidFunctionCall(
-                                    'Cannot treat ' . $var_id . ' of type ' . $var_type_part . ' as function',
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
+                        if (IssueBuffer::accepts(
+                            new InvalidFunctionCall(
+                                'Cannot treat ' . $var_id . ' of type ' . $var_type_part . ' as function',
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
                         }
                     }
                 }
+            }
 
-                if (!isset($stmt->inferredType)) {
-                    $stmt->inferredType = Type::getMixed();
-                }
-            } else {
-                $method_id = implode('\\', $stmt->name->parts);
+            if (!isset($stmt->inferredType)) {
+                $stmt->inferredType = Type::getMixed();
+            }
+        } else {
+            $method_id = implode('\\', $stmt->name->parts);
 
-                $in_call_map = FunctionChecker::inCallMap($method_id);
-                $is_stubbed = isset(FunctionChecker::$stubbed_functions[strtolower($method_id)]);
+            $in_call_map = FunctionChecker::inCallMap($method_id);
+            $is_stubbed = isset(FunctionChecker::$stubbed_functions[strtolower($method_id)]);
 
-                $is_predefined = true;
+            $is_predefined = true;
 
-                if (!$in_call_map) {
-                    $predefined_functions = Config::getInstance()->getPredefinedFunctions();
-                    $is_predefined = isset($predefined_functions[$method_id]);
-                }
+            if (!$in_call_map) {
+                $predefined_functions = Config::getInstance()->getPredefinedFunctions();
+                $is_predefined = isset($predefined_functions[$method_id]);
+            }
 
-                if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
-                    $method_id = FunctionChecker::getFQFunctionNameFromString($method_id, $statements_checker);
-                }
+            if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                $method_id = FunctionChecker::getFQFunctionNameFromString($method_id, $statements_checker);
+            }
 
-                if ($context->self) {
-                    //$method_id = $statements_checker->getFQCLN() . '::' . $method_id;
-                }
-
-                if (!$in_call_map && !$is_stubbed) {
+            if (!$in_call_map && !$is_stubbed) {
+                if ($context->check_functions) {
                     if (self::checkFunctionExists(
                         $statements_checker,
                         $method_id,
@@ -217,6 +216,15 @@ class CallChecker
                     }
                 }
 
+                $function_exists = FunctionChecker::functionExists(
+                    strtolower($method_id),
+                    $statements_checker->getFilePath()
+                );
+            } else {
+                $function_exists = true;
+            }
+
+            if ($function_exists) {
                 if (!$in_call_map || $is_stubbed) {
                     $function_storage = FunctionChecker::getStorage(
                         strtolower($method_id),
@@ -249,7 +257,7 @@ class CallChecker
             // fall through
         }
 
-        if ($context->check_functions) {
+        if ($function_exists) {
             $generic_params = null;
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
