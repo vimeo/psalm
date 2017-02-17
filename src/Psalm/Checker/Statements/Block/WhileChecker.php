@@ -43,7 +43,8 @@ class WhileChecker
 
         // if the while has an or as the main component, we cannot safely reason about it
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp &&
-            $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
+                $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
         ) {
             // do nothing
         } else {

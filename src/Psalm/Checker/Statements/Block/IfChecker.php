@@ -781,6 +781,7 @@ class IfChecker
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
             ) {
                 return self::getDefinitelyEvaluatedExpression($stmt->left);

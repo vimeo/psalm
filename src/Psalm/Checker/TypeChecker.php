@@ -46,7 +46,9 @@ class TypeChecker
         $this_class_name,
         StatementsSource $source
     ) {
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
             $left_assertions = self::getFormula(
                 $conditional->left,
                 $this_class_name,
@@ -65,10 +67,14 @@ class TypeChecker
             );
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
             // at the moment we only support formulae in CNF
 
-            if (!$conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            if (!$conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd &&
+                !$conditional->left instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            ) {
                 $left_clauses = self::getFormula(
                     $conditional->left,
                     $this_class_name,
@@ -78,7 +84,9 @@ class TypeChecker
                 $left_clauses = [new Clause([], true)];
             }
 
-            if (!$conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            if (!$conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd &&
+                !$conditional->right instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            ) {
                 $right_clauses = self::getFormula(
                     $conditional->right,
                     $this_class_name,
