@@ -253,6 +253,9 @@ if ($path_to_config) {
     $project_checker->setConfigXML($path_to_config);
 }
 
+// If XDebug is enabled, restart without it
+(new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
+
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 
 if (array_key_exists('self-check', $options)) {

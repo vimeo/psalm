@@ -11,7 +11,8 @@
     ],
     "require": {
         "php": "^5.5 || ^7.0",
-        "nikic/PHP-Parser": "^3.0.4"
+        "nikic/PHP-Parser": "^3.0.4",
+        "composer/composer": "^1.3"
     },
     "bin": ["bin/psalm"],
     "autoload": {
