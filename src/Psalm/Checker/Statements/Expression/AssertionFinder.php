@@ -384,6 +384,37 @@ class AssertionFinder
             return $if_types;
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
+            $var_name = ExpressionChecker::getArrayVarId(
+                $conditional->left,
+                $this_class_name,
+                $source
+            );
+
+            if ($var_name) {
+                $if_types[$var_name] = 'isset';
+            } else {
+                // look for any variables we *can* use for an isset assertion
+                $array_root = $conditional->left;
+
+                while ($array_root instanceof PhpParser\Node\Expr\ArrayDimFetch && !$var_name) {
+                    $array_root = $array_root->var;
+
+                    $var_name = ExpressionChecker::getArrayVarId(
+                        $array_root,
+                        $this_class_name,
+                        $source
+                    );
+                }
+
+                if ($var_name) {
+                    $if_types[$var_name] = '^isset';
+                }
+            }
+
+            return $if_types;
+        }
+
         return [];
     }
 

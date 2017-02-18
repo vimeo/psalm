@@ -854,6 +854,92 @@ class ExpressionChecker
             if (self::analyze($statements_checker, $stmt->right, $context) === false) {
                 return false;
             }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
+            $t_if_context = clone $context;
+
+            $if_clauses = TypeChecker::getFormula(
+                $stmt,
+                $statements_checker->getFQCLN(),
+                $statements_checker
+            );
+
+            $ternary_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+
+            $negated_clauses = TypeChecker::negateFormula($if_clauses);
+
+            $negated_if_types = TypeChecker::getTruthsFromFormula($negated_clauses);
+
+            $reconcilable_if_types = TypeChecker::getTruthsFromFormula($ternary_clauses);
+
+            $changed_vars = [];
+
+            $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                $reconcilable_if_types,
+                $t_if_context->vars_in_scope,
+                $changed_vars,
+                $statements_checker->getFileChecker(),
+                new CodeLocation($statements_checker->getSource(), $stmt->left),
+                $statements_checker->getSuppressedIssues()
+            );
+
+            if ($t_if_vars_in_scope_reconciled === false) {
+                return false;
+            }
+
+            $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+
+            if (self::analyze($statements_checker, $stmt->left, $t_if_context) === false) {
+                return false;
+            }
+
+            if ($context->count_references) {
+                $context->referenced_vars = array_merge(
+                    $context->referenced_vars,
+                    $t_if_context->referenced_vars
+                );
+            }
+
+            $t_else_context = clone $context;
+
+            if ($negated_if_types) {
+                $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $negated_if_types,
+                    $t_else_context->vars_in_scope,
+                    $changed_vars,
+                    $statements_checker->getFileChecker(),
+                    new CodeLocation($statements_checker->getSource(), $stmt->right),
+                    $statements_checker->getSuppressedIssues()
+                );
+
+                if ($t_else_vars_in_scope_reconciled === false) {
+                    return false;
+                }
+
+                $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
+            }
+
+            if (self::analyze($statements_checker, $stmt->right, $t_else_context) === false) {
+                return false;
+            }
+
+            if ($context->count_references) {
+                $context->referenced_vars = array_merge(
+                    $context->referenced_vars,
+                    $t_else_context->referenced_vars
+                );
+            }
+
+            $lhs_type = null;
+
+            if (isset($stmt->left->inferredType)) {
+                $lhs_type = $stmt->left->inferredType;
+            }
+
+            if (!$lhs_type || !isset($stmt->right->inferredType)) {
+                $stmt->inferredType = Type::getMixed();
+            } else {
+                $stmt->inferredType = Type::combineUnionTypes($lhs_type, $stmt->right->inferredType);
+            }
         } else {
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
                 if (self::analyzeBinaryOp($statements_checker, $stmt->left, $context, ++$nesting) === false) {

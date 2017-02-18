@@ -537,25 +537,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('array{a:string, b:int}', (string) $context->vars_in_scope['$foo']);
     }
 
-    /**
-     * @return void
-     */
-    public function testIssetKeyedOffset()
-    {
-        $file_checker = new FileChecker(
-            'somefile.php',
-            $this->project_checker,
-            self::$parser->parse('<?php
-                if (!isset($foo["a"])) {
-                    $foo["a"] = "hello";
-                }
-            ')
-        );
-        $context = new Context();
-        $context->vars_in_scope['$foo'] = \Psalm\Type::getArray();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$foo[\'a\']']);
-    }
+
 
     /**
      * @return void
