@@ -408,9 +408,26 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      */
     private function analyzeDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
     {
-        // do not clone context for do, because it executes in current scope always
-        if ($this->analyze($stmt->stmts, $context, $context) === false) {
+        $do_context = clone $context;
+
+        if ($this->analyze($stmt->stmts, $do_context, $context) === false) {
             return false;
+        }
+
+        foreach ($context->vars_in_scope as $var => $type) {
+            if ($type->isMixed()) {
+                continue;
+            }
+
+            if ($do_context->hasVariable($var)) {
+                if ($do_context->vars_in_scope[$var]->isMixed()) {
+                    $context->vars_in_scope[$var] = $do_context->vars_in_scope[$var];
+                }
+
+                if ((string)$do_context->vars_in_scope[$var] !== (string)$type) {
+                    $context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
+                }
+            }
         }
 
         return ExpressionChecker::analyze($this, $stmt->cond, $context);

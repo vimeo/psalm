@@ -4,6 +4,10 @@ namespace Psalm\Provider;
 use Psalm\Config;
 use Psalm\Checker\ClassLikeChecker;
 
+/**
+ * Used to determine which files reference other files, necessary for using the --diff
+ * option from the command line.
+ */
 class FileReferenceProvider
 {
     const REFERENCE_CACHE_NAME = 'references';

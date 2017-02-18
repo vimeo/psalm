@@ -347,6 +347,30 @@ class ScopeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('bool', (string) $context->vars_in_scope['$worked']);
     }
 
+     /**
+     * @return void
+     */
+    public function testDoWhileVarAndBreak()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void */
+        function foo(string $b) {}
+
+        do {
+            if (null === ($a = rand(0, 1) ? "hello" : null)) {
+                break;
+            }
+
+            foo($a);
+        }
+        while (rand(0,100) === 10);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
     /**
      * @return void
      */
