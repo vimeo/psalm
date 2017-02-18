@@ -31,7 +31,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
+        $this->project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
 
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -49,8 +49,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             return $a + 1;
         }';
 
-        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
-        $project_checker->registerFile(
+        $this->project_checker->registerFile(
             'somefile.php',
             $file_contents
         );
@@ -78,8 +77,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             return $b + 1;
         }';
 
-        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
-        $project_checker->registerFile(
+        $this->project_checker->registerFile(
             'somefile.php',
             $file_contents
         );
@@ -107,8 +105,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             return $a;
         }';
 
-        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
-        $project_checker->registerFile(
+        $this->project_checker->registerFile(
             'somefile.php',
             $file_contents
         );
@@ -136,8 +133,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             return "hello";
         }';
 
-        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
-        $project_checker->registerFile(
+        $this->project_checker->registerFile(
             'somefile.php',
             $file_contents
         );
@@ -168,8 +164,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             return "hello";
         }';
 
-        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
-        $project_checker->registerFile(
+        $this->project_checker->registerFile(
             'somefile.php',
             $file_contents
         );
@@ -198,8 +193,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
             return "hello";
         }';
 
-        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
-        $project_checker->registerFile(
+        $this->project_checker->registerFile(
             'somefile.php',
             $file_contents
         );
@@ -238,8 +232,7 @@ if (rand(0, 100) > 10) {
 
 echo $a;';
 
-        $project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
-        $project_checker->registerFile(
+        $this->project_checker->registerFile(
             'somefile.php',
             $file_contents
         );

@@ -7,6 +7,9 @@ use Psalm\Exception;
 use Psalm\IssueBuffer;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
+use Psalm\Provider\CacheProvider;
+use Psalm\Provider\FileProvider;
+use Psalm\Provider\FileReferenceProvider;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use RecursiveDirectoryIterator;
@@ -123,11 +126,6 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $scanned_files = [];
-
-    /**
-     * @var array<string, bool>
-     */
     private $visited_files = [];
 
     /**
@@ -230,8 +228,8 @@ class ProjectChecker
         $diff_files = null;
         $deleted_files = null;
 
-        if ($is_diff && FileChecker::loadReferenceCache() && FileChecker::canDiffFiles()) {
-            $deleted_files = FileChecker::getDeletedReferencedFiles();
+        if ($is_diff && FileReferenceProvider::loadReferenceCache() && CacheProvider::canDiffFiles()) {
+            $deleted_files = FileReferenceProvider::getDeletedReferencedFiles();
             $diff_files = $deleted_files;
 
             foreach ($this->config->getProjectDirectories() as $dir_name) {
@@ -267,8 +265,8 @@ class ProjectChecker
             }
         }
 
-        $removed_parser_files = FileChecker::deleteOldParserCaches(
-            $is_diff ? FileChecker::getLastGoodRun() : $start_checks
+        $removed_parser_files = CacheProvider::deleteOldParserCaches(
+            $is_diff ? CacheProvider::getLastGoodRun() : $start_checks
         );
 
         if ($this->debug_output && $removed_parser_files) {
@@ -276,14 +274,14 @@ class ProjectChecker
         }
 
         if ($is_diff) {
-            FileChecker::touchParserCaches($this->getAllFiles($this->config), $start_checks);
+            CacheProvider::touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
         if ($this->count_references) {
             $this->checkClassReferences();
         }
 
-        IssueBuffer::finish(true, (int)$start_checks);
+        IssueBuffer::finish(true, (int)$start_checks, $this->visited_files);
     }
 
     /**
@@ -393,7 +391,7 @@ class ProjectChecker
             $this->config->hide_external_errors = $this->config->isInProjectDirs($dir_name . DIRECTORY_SEPARATOR);
         }
 
-        FileChecker::loadReferenceCache();
+        FileReferenceProvider::loadReferenceCache();
 
         $start_checks = (int)microtime(true);
 
@@ -402,7 +400,7 @@ class ProjectChecker
         $this->visitFiles();
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks);
+        IssueBuffer::finish(false, $start_checks, $this->visited_files);
     }
 
     /**
@@ -487,7 +485,7 @@ class ProjectChecker
                     $file_name = (string)$iterator->getRealPath();
 
                     if ($config->isInProjectDirs($file_name)) {
-                        if (FileChecker::hasFileChanged($file_name)) {
+                        if (FileProvider::hasFileChanged($file_name)) {
                             $diff_files[] = $file_name;
                         }
                     }
@@ -544,7 +542,7 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        FileChecker::loadReferenceCache();
+        FileReferenceProvider::loadReferenceCache();
 
         $file_checker = $this->visitFile($file_name, $filetype_handlers, true);
 
@@ -554,7 +552,7 @@ class ProjectChecker
 
         $file_checker->analyze($this->update_docblocks);
 
-        IssueBuffer::finish(false, $start_checks);
+        IssueBuffer::finish(false, $start_checks, $this->visited_files);
     }
 
     /**
@@ -897,7 +895,7 @@ class ProjectChecker
         while ($diff_files) {
             $diff_file = array_shift($diff_files);
 
-            $dependent_files = FileChecker::getFilesInheritingFromFile($diff_file);
+            $dependent_files = FileReferenceProvider::getFilesInheritingFromFile($diff_file);
             $new_dependent_files = array_diff($dependent_files, $all_inherited_files_to_check);
 
             $all_inherited_files_to_check += $new_dependent_files;
@@ -907,7 +905,7 @@ class ProjectChecker
         $all_files_to_check = $all_inherited_files_to_check;
 
         foreach ($all_inherited_files_to_check as $file_name) {
-            $dependent_files = FileChecker::getFilesReferencingFile($file_name);
+            $dependent_files = FileReferenceProvider::getFilesReferencingFile($file_name);
             $all_files_to_check = array_merge($dependent_files, $all_files_to_check);
         }
 

@@ -20,6 +20,7 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Provider\FileReferenceProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
@@ -279,13 +280,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $interface_storage->public_class_constants
                 );
 
-                FileChecker::addFileInheritanceToClass($long_file_name, $interface_name);
+                FileReferenceProvider::addFileInheritanceToClass($long_file_name, $interface_name);
             }
 
             $extra_interfaces = array_unique($extra_interfaces);
 
             foreach ($extra_interfaces as $extra_interface_name) {
-                FileChecker::addFileInheritanceToClass($long_file_name, $extra_interface_name);
+                FileReferenceProvider::addFileInheritanceToClass($long_file_name, $extra_interface_name);
 
                 if ($this instanceof ClassChecker) {
                     $storage->class_implements[strtolower($extra_interface_name)] = $extra_interface_name;
@@ -826,7 +827,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $storage->used_traits = $parent_storage->used_traits;
 
-        FileChecker::addFileInheritanceToClass(
+        FileReferenceProvider::addFileInheritanceToClass(
             $this->source->getFilePath(),
             $parent_class
         );
@@ -928,7 +929,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 ClassLikeChecker::registerTraitUse($this->fq_class_name, $trait_name);
 
-                FileChecker::addFileInheritanceToClass(
+                FileReferenceProvider::addFileInheritanceToClass(
                     $this->source->getFilePath(),
                     $trait_name
                 );
@@ -1145,7 +1146,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        FileChecker::addFileReferenceToClass(
+        FileReferenceProvider::addFileReferenceToClass(
             $code_location->file_path,
             $fq_class_name
         );

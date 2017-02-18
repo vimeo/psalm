@@ -190,13 +190,14 @@ class IssueBuffer
     }
 
     /**
-     * @param  bool     $is_full
-     * @param  int|null $start_time
+     * @param  bool                 $is_full
+     * @param  int|null             $start_time
+     * @param  array<string, bool>  $visited_files
      * @return void
      */
-    public static function finish($is_full = false, $start_time = null)
+    public static function finish($is_full, $start_time, array $visited_files)
     {
-        Checker\FileChecker::updateReferenceCache();
+        Provider\FileReferenceProvider::updateReferenceCache($visited_files);
 
         if ($start_time) {
             echo('Checks took ' . ((float)microtime(true) - self::$start_time));
@@ -213,7 +214,7 @@ class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            Checker\FileChecker::goodRun($start_time);
+            Provider\CacheProvider::processSuccessfulRun($start_time);
         }
     }
 

@@ -28,6 +28,7 @@ use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\PossiblyUnusedVariable;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Mutator\FileMutator;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -1145,8 +1146,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     private function addDocblockReturnType(Type\Union $inferred_return_type)
     {
-        FileChecker::addDocblockReturnType(
-            $this->source->getFileName(),
+        FileMutator::addDocblockReturnType(
+            $this->source->getFilePath(),
             $this->function->getLine(),
             (string)$this->function->getDocComment(),
             $inferred_return_type->toNamespacedString(

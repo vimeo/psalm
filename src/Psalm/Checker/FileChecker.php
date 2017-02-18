@@ -7,6 +7,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Issue\DuplicateClass;
+use Psalm\Provider\FileProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -14,11 +15,6 @@ use Psalm\Type;
 class FileChecker extends SourceChecker implements StatementsSource
 {
     use CanAlias;
-
-    const PARSER_CACHE_DIRECTORY = 'php-parser';
-    const FILE_HASHES = 'file_hashes';
-    const REFERENCE_CACHE_NAME = 'references';
-    const GOOD_RUN_NAME = 'good_run';
 
     /**
      * @var string
@@ -61,66 +57,9 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $preloaded_statements = [];
 
     /**
-     * @var array<string, bool>
-     */
-    protected static $files_checked = [];
-
-    /**
      * @var bool
      */
     public static $show_notices = true;
-
-    /**
-     * @var int|null
-     */
-    protected static $last_good_run = null;
-
-    /**
-     * A lookup table used for getting all the files that reference a class
-     *
-     * @var array<string, array<string,bool>>
-     */
-    protected static $file_references_to_class = [];
-
-    /**
-     * A lookup table used for getting all the files referenced by a file
-     *
-     * @var array<string, array{a:array<int, string>, i:array<int, string>}>
-     */
-    protected static $file_references = [];
-
-    /**
-     * A lookup table used for getting all the files that reference any other file
-     *
-     * @var array<string,array<string,bool>>
-     */
-    protected static $referencing_files = [];
-
-    /**
-     * @var array<string, array<int,string>>
-     */
-    protected static $files_inheriting_classes = [];
-
-    /**
-     * A list of all files deleted since the last successful run
-     *
-     * @var array<int, string>|null
-     */
-    protected static $deleted_files = null;
-
-    /**
-     * A list of return types, keyed by file
-     *
-     * @var array<string, array<int, array<string>>>
-     */
-    protected static $docblock_return_types = [];
-
-    /**
-     * A map of filename hashes to contents hashes
-     *
-     * @var array<string, string>|null
-     */
-    protected static $file_content_hashes = null;
 
     /**
      * A list of data useful to analyse files
@@ -308,8 +247,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         $this->interface_checkers_to_visit = [];
 
         $this->function_checkers = $function_checkers;
-
-        self::$files_checked[$this->file_path] = true;
     }
 
     /**
@@ -356,20 +293,8 @@ class FileChecker extends SourceChecker implements StatementsSource
             $this->function_checkers = [];
         }
 
-        if ($update_docblocks && isset(self::$docblock_return_types[$this->file_name])) {
-            $line_upset = 0;
-
-            $file_lines = explode(PHP_EOL, (string)file_get_contents($this->file_path));
-
-            $file_docblock_updates = self::$docblock_return_types[$this->file_name];
-
-            foreach ($file_docblock_updates as $line_number => $type) {
-                self::updateDocblock($file_lines, $line_number, $line_upset, $type[0], $type[1], $type[2]);
-            }
-
-            file_put_contents($this->file_path, implode(PHP_EOL, $file_lines));
-
-            echo 'Added/updated ' . count($file_docblock_updates) . ' docblocks in ' . $this->file_name . PHP_EOL;
+        if ($update_docblocks) {
+            \Psalm\Mutator\FileMutator::updateDocblocks($this->file_path);
         }
     }
 
@@ -510,7 +435,11 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         return $this->preloaded_statements
             ? $this->preloaded_statements
-            : self::getStatementsForFile($this->file_path, $this->project_checker->debug_output);
+            : FileProvider::getStatementsForFile(
+                $this->project_checker,
+                $this->file_path,
+                $this->project_checker->debug_output
+            );
     }
 
     /**
@@ -520,168 +449,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function fileExists($file_path)
     {
         return file_exists($file_path) || isset($this->project_checker->fake_files[$file_path]);
-    }
-
-    /**
-     * @param  string   $file_path
-     * @param  bool     $debug_output
-     * @return array<int, \PhpParser\Node\Stmt>
-     */
-    public static function getStatementsForFile($file_path, $debug_output = false)
-    {
-        $stmts = [];
-
-        $project_checker = ProjectChecker::getInstance();
-        $root_cache_directory = Config::getInstance()->getCacheDirectory();
-        $parser_cache_directory = $root_cache_directory
-            ? $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY
-            : null;
-        $from_cache = false;
-
-        $cache_location = null;
-        $name_cache_key = null;
-
-        $version = 'parsercache4';
-
-        $file_contents = $project_checker->getFileContents($file_path);
-        $file_content_hash = md5($version . $file_contents);
-        $name_cache_key = self::getParserCacheKey($file_path);
-
-        $config = Config::getInstance();
-
-        if (self::$file_content_hashes === null || !$config->cache_file_hashes_during_run) {
-            /** @var array<string, string> */
-            self::$file_content_hashes = $root_cache_directory &&
-                is_readable($root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES)
-                    ? unserialize((string)file_get_contents($root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES))
-                    : [];
-        }
-
-        if ($parser_cache_directory) {
-            $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $name_cache_key;
-
-            if (isset(self::$file_content_hashes[$name_cache_key]) &&
-                $file_content_hash === self::$file_content_hashes[$name_cache_key] &&
-                is_readable($cache_location) &&
-                filemtime($cache_location) > filemtime($file_path)
-            ) {
-                /** @var array<int, \PhpParser\Node\Stmt> */
-                $stmts = unserialize((string)file_get_contents($cache_location));
-                $from_cache = true;
-            }
-        }
-
-        if (!$stmts) {
-            if ($debug_output) {
-                echo 'Parsing ' . $file_path . PHP_EOL;
-            }
-
-            $lexer = new PhpParser\Lexer([
-                'usedAttributes' => [
-                    'comments', 'startLine', 'startFilePos', 'endFilePos'
-                ]
-            ]);
-
-            $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);
-
-            $error_handler = new \PhpParser\ErrorHandler\Collecting();
-
-            /** @var array<int, \PhpParser\Node\Stmt> */
-            $stmts = $parser->parse($file_contents, $error_handler);
-
-            if (!$stmts && $error_handler->hasErrors()) {
-                foreach ($error_handler->getErrors() as $error) {
-                    throw $error;
-                }
-            }
-        }
-
-        if ($parser_cache_directory && $cache_location) {
-            if ($from_cache) {
-                touch($cache_location);
-            } else {
-                if (!is_dir($parser_cache_directory)) {
-                    mkdir($parser_cache_directory, 0777, true);
-                }
-
-                file_put_contents($cache_location, serialize($stmts));
-
-                self::$file_content_hashes[$name_cache_key] = $file_content_hash;
-
-                file_put_contents(
-                    $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES,
-                    serialize(self::$file_content_hashes)
-                );
-            }
-        }
-
-        if (!$stmts) {
-            return [];
-        }
-
-        return $stmts;
-    }
-
-    /**
-     * @return bool
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress InvalidPropertyAssignment
-     */
-    public static function loadReferenceCache()
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if ($cache_directory) {
-            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
-
-            if (is_readable($cache_location)) {
-                $reference_cache = unserialize((string) file_get_contents($cache_location));
-
-                if (!is_array($reference_cache)) {
-                    throw new \UnexpectedValueException('The reference cache must be an array');
-                }
-
-                self::$file_references = $reference_cache;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @return void
-     */
-    public static function updateReferenceCache()
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if ($cache_directory) {
-            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
-
-            foreach (self::$files_checked as $file => $_) {
-                $all_file_references = array_unique(
-                    array_merge(
-                        isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [],
-                        self::calculateFilesReferencingFile($file)
-                    )
-                );
-
-                $inheritance_references = array_unique(
-                    array_merge(
-                        isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [],
-                        self::calculateFilesInheritingFile($file)
-                    )
-                );
-
-                self::$file_references[$file] = [
-                    'a' => $all_file_references,
-                    'i' => $inheritance_references
-                ];
-            }
-
-            file_put_contents($cache_location, serialize(self::$file_references));
-        }
     }
 
     /**
@@ -719,194 +486,10 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param string $source_file
-     * @param string $fq_class_name
-     * @return void
-     */
-    public static function addFileReferenceToClass($source_file, $fq_class_name)
-    {
-        self::$referencing_files[$source_file] = true;
-        self::$file_references_to_class[$fq_class_name][$source_file] = true;
-    }
-
-    /**
-     * @param string $source_file
-     * @param string $fq_class_name
-     * @return void
-     */
-    public static function addFileInheritanceToClass($source_file, $fq_class_name)
-    {
-        self::$files_inheriting_classes[$fq_class_name][$source_file] = true;
-    }
-
-    /**
-     * @param   string $file
-     * @return  array
-     */
-    public static function calculateFilesReferencingFile($file)
-    {
-        $referenced_files = [];
-
-        $file_classes = ClassLikeChecker::getClassesForFile($file);
-
-        foreach ($file_classes as $file_class) {
-            if (isset(self::$file_references_to_class[$file_class])) {
-                $referenced_files = array_merge(
-                    $referenced_files,
-                    array_keys(self::$file_references_to_class[$file_class])
-                );
-            }
-        }
-
-        return array_unique($referenced_files);
-    }
-
-    /**
-     * @param   string $file
-     * @return  array
-     */
-    public static function calculateFilesInheritingFile($file)
-    {
-        $referenced_files = [];
-
-        $file_classes = ClassLikeChecker::getClassesForFile($file);
-
-        foreach ($file_classes as $file_class) {
-            if (isset(self::$files_inheriting_classes[$file_class])) {
-                $referenced_files = array_merge(
-                    $referenced_files,
-                    array_keys(self::$files_inheriting_classes[$file_class])
-                );
-            }
-        }
-
-        return array_unique($referenced_files);
-    }
-
-    /**
-     * @param  string $file
-     * @return array<string>
-     */
-    public static function getFilesReferencingFile($file)
-    {
-        return isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [];
-    }
-
-    /**
-     * @param  string $file
-     * @return array<string>
-     */
-    public static function getFilesInheritingFromFile($file)
-    {
-        return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
-    }
-
-    /**
-     * @return bool
-     */
-    public static function canDiffFiles()
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        return $cache_directory && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
-    }
-
-    /**
-     * @return int
-     */
-    public static function getLastGoodRun()
-    {
-        if (self::$last_good_run === null) {
-            $cache_directory = Config::getInstance()->getCacheDirectory();
-
-            self::$last_good_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME) ?: 0;
-        }
-
-        return self::$last_good_run;
-    }
-
-    /**
-     * @param  string  $file_path
-     * @return boolean
-     */
-    public static function hasFileChanged($file_path)
-    {
-        return filemtime($file_path) > self::getLastGoodRun();
-    }
-
-    /**
-     * @return array<string>
-     */
-    public static function getDeletedReferencedFiles()
-    {
-        if (self::$deleted_files === null) {
-            self::$deleted_files = array_filter(
-                array_keys(self::$file_references),
-                /**
-                 * @param  string $file_name
-                 * @return bool
-                 */
-                function ($file_name) {
-                    return !file_exists($file_name);
-                }
-            );
-        }
-
-        return self::$deleted_files;
-    }
-
-    /**
-     * @param int $start_time
-     * @return void
-     */
-    public static function goodRun($start_time)
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if ($cache_directory) {
-            $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
-
-            touch($run_cache_location, $start_time);
-
-            $deleted_files = self::getDeletedReferencedFiles();
-
-            if ($deleted_files) {
-                foreach ($deleted_files as $file) {
-                    unset(self::$file_references[$file]);
-                }
-
-                file_put_contents(
-                    $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME,
-                    serialize(self::$file_references)
-                );
-            }
-
-            $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
-
-            if (is_dir($cache_directory)) {
-                /** @var array<string> */
-                $directory_files = scandir($cache_directory);
-
-                foreach ($directory_files as $directory_file) {
-                    $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
-
-                    if ($directory_file[0] === '.') {
-                        continue;
-                    }
-
-                    touch($full_path);
-                }
-            }
-        }
-    }
-
-    /**
      * @return void
      */
     public static function clearCache()
     {
-        self::$files_checked = [];
-
         self::$storage = [];
 
         ClassLikeChecker::clearCache();
@@ -914,136 +497,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         StatementsChecker::clearCache();
         IssueBuffer::clearCache();
         FunctionLikeChecker::clearCache();
-    }
-
-    /**
-     * @param  float $time_before
-     * @return int
-     */
-    public static function deleteOldParserCaches($time_before)
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        $removed_count = 0;
-
-        if ($cache_directory) {
-            $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
-
-            if (is_dir($cache_directory)) {
-                /** @var array<string> */
-                $directory_files = scandir($cache_directory);
-
-                foreach ($directory_files as $directory_file) {
-                    $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
-
-                    if ($directory_file[0] === '.') {
-                        continue;
-                    }
-
-                    if (filemtime($full_path) < $time_before && is_writable($full_path)) {
-                        unlink($full_path);
-                        $removed_count++;
-                    }
-                }
-            }
-        }
-
-        return $removed_count;
-    }
-
-    /**
-     * @param  array<string>    $file_names
-     * @param  int              $min_time
-     * @return void
-     */
-    public static function touchParserCaches(array $file_names, $min_time)
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if ($cache_directory) {
-            $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
-
-            if (is_dir($cache_directory)) {
-                foreach ($file_names as $file_name) {
-                    $hash_file_name = $cache_directory . DIRECTORY_SEPARATOR . self::getParserCacheKey($file_name);
-
-                    if (file_exists($hash_file_name)) {
-                        if (filemtime($hash_file_name) < $min_time) {
-                            touch($hash_file_name, $min_time);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @param  string $file_name
-     * @return string
-     */
-    protected static function getParserCacheKey($file_name)
-    {
-        return md5($file_name);
-    }
-
-    /**
-     * Adds a docblock to the given file
-     *
-     * @param   string      $file_name
-     * @param   int         $line_number
-     * @param   string      $docblock
-     * @param   string      $new_type
-     * @param   string      $phpdoc_type
-     * @return  void
-     */
-    public static function addDocblockReturnType($file_name, $line_number, $docblock, $new_type, $phpdoc_type)
-    {
-        $new_type = str_replace(['<mixed, mixed>', '<empty, empty>'], '', $new_type);
-
-        self::$docblock_return_types[$file_name][$line_number] = [$docblock, $new_type, $phpdoc_type];
-    }
-
-    /**
-     * @param  array<int, string>   $file_lines
-     * @param  int                  $line_number
-     * @param  int                  $line_upset
-     * @param  string               $existing_docblock
-     * @param  string               $type
-     * @param  string               $phpdoc_type
-     * @return void
-     */
-    public static function updateDocblock(
-        array &$file_lines,
-        $line_number,
-        &$line_upset,
-        $existing_docblock,
-        $type,
-        $phpdoc_type
-    ) {
-        $line_number += $line_upset;
-        $function_line = $file_lines[$line_number - 1];
-        $left_padding = str_replace(ltrim($function_line), '', $function_line);
-
-        $parsed_docblock = [];
-        $existing_line_count = $existing_docblock ? substr_count($existing_docblock, PHP_EOL) + 1 : 0;
-
-        if ($existing_docblock) {
-            $parsed_docblock = CommentChecker::parseDocComment($existing_docblock);
-        } else {
-            $parsed_docblock['description'] = '';
-        }
-
-        $parsed_docblock['specials']['return'] = [$phpdoc_type];
-
-        if ($type !== $phpdoc_type) {
-            $parsed_docblock['specials']['psalm-return'] = [$type];
-        }
-
-        $new_docblock_lines = CommentChecker::renderDocComment($parsed_docblock, $left_padding);
-
-        $line_upset += count($new_docblock_lines) - $existing_line_count;
-
-        array_splice($file_lines, $line_number - $existing_line_count - 1, $existing_line_count, $new_docblock_lines);
     }
 
     /**
