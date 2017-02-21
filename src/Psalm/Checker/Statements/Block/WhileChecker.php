@@ -107,6 +107,10 @@ class WhileChecker
                 }
 
                 $context->vars_in_scope = $vars_in_scope_reconciled;
+
+                foreach ($changed_vars as $changed_var) {
+                    $context->removeVarFromClauses($changed_var);
+                }
             }
         }
 
