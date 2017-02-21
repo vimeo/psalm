@@ -801,4 +801,33 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testInstanceOfSubtypes()
+    {
+        $stmts = self::$parser->parse('<?php
+        abstract class A {}
+        class B extends A {}
+
+        abstract class C {}
+        class D extends C {}
+
+        function makeA(): A {
+          return new B();
+        }
+
+        function makeC(): C {
+          return new D();
+        }
+
+        $a = rand(0, 1) ? makeA() : makeC();
+
+        if ($a instanceof B || $a instanceof D) { }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }

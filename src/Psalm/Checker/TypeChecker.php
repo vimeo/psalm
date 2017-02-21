@@ -701,14 +701,28 @@ class TypeChecker
         }
 
         if (!InterfaceChecker::interfaceExists($new_var_type, $file_checker) && $code_location) {
-            $has_match = false;
+            $has_match = true;
 
-            foreach ($existing_var_type->types as $existing_var_type_part) {
-                $dummy_type = new Type\Union([$existing_var_type_part]);
+            foreach ($new_type->types as $new_type_part) {
+                $has_local_match = false;
 
-                if (TypeChecker::isContainedBy($new_type, $dummy_type, $file_checker) ||
-                    TypeChecker::isContainedBy($dummy_type, $new_type, $file_checker)) {
-                    $has_match = true;
+                foreach ($existing_var_type->types as $existing_var_type_part) {
+                    if (TypeChecker::isAtomicContainedBy(
+                        $new_type_part,
+                        $existing_var_type_part,
+                        $file_checker,
+                        $scalar_type_match_found,
+                        $type_coerced,
+                        $atomic_to_string_cast
+                    ) || $type_coerced
+                    ) {
+                        $has_local_match = true;
+                        break;
+                    }
+                }
+
+                if (!$has_local_match) {
+                    $has_match = false;
                     break;
                 }
             }
