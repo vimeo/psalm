@@ -1509,12 +1509,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
         }
 
-        if ($method_params = MethodChecker::getMethodParams($method_id)) {
-            // fall back to using reflected params anyway
-            return $method_params;
-        }
-
-        throw new \InvalidArgumentException('Cannot get params for ' . $method_id);
+        return MethodChecker::getMethodParams($method_id);
     }
 
     /**
