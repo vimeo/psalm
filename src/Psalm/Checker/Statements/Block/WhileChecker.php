@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Type;
 
@@ -86,10 +87,28 @@ class WhileChecker
             }
         }
 
-        $context->vars_possibly_in_scope = array_merge(
-            $context->vars_possibly_in_scope,
-            $while_context->vars_possibly_in_scope
-        );
+        if (!ScopeChecker::doesEverBreak($stmt->stmts)) {
+            // if the while contains an assertion and there are no break statements, we can negate that assertion
+            // and apply it to the current context
+            $negated_while_types = TypeChecker::getTruthsFromFormula(TypeChecker::negateFormula($while_clauses));
+
+            if ($negated_while_types) {
+                $vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $negated_while_types,
+                    $context->vars_in_scope,
+                    $changed_vars,
+                    $statements_checker->getFileChecker(),
+                    new CodeLocation($statements_checker->getSource(), $stmt->cond),
+                    $statements_checker->getSuppressedIssues()
+                );
+
+                if ($vars_in_scope_reconciled === false) {
+                    return false;
+                }
+
+                $context->vars_in_scope = $vars_in_scope_reconciled;
+            }
+        }
 
         if ($context->count_references) {
             $context->referenced_vars = array_merge(

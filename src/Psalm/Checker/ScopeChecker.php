@@ -89,6 +89,43 @@ class ScopeChecker
 
     /**
      * @param   array<PhpParser\Node>   $stmts
+     * @return  bool
+     */
+    public static function doesEverBreak(array $stmts)
+    {
+        if (empty($stmts)) {
+            return false;
+        }
+
+        for ($i = count($stmts) - 1; $i >= 0; $i--) {
+            $stmt = $stmts[$i];
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
+                return true;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\If_) {
+                if (self::doesEverBreak($stmt->stmts)) {
+                    return true;
+                }
+
+                if ($stmt->else && self::doesEverBreak($stmt->else->stmts)) {
+                    return true;
+                }
+
+                foreach ($stmt->elseifs as $elseif) {
+                    if (self::doesEverBreak($elseif->stmts)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   array<PhpParser\Node>   $stmts
      * @param   bool                    $ignore_break
      * @return  bool
      */

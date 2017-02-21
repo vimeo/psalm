@@ -293,4 +293,37 @@ class LoopScopeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testObjectValue()
+    {
+        $stmts = self::$parser->parse('<?php
+        class B {}
+        class A {
+            /** @var A|B */
+            public $child;
+
+            public function __construct() {
+                $this->child = rand(0, 1) ? new A() : new B();
+            }
+        }
+
+        function makeA() : A {
+            return new A();
+        }
+
+        $a = makeA();
+
+        while ($a instanceof A) {
+            $a = $a->child;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('B', (string) $context->vars_in_scope['$a']);
+    }
 }
