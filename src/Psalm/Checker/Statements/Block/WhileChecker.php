@@ -114,6 +114,11 @@ class WhileChecker
             }
         }
 
+        $context->vars_possibly_in_scope = array_merge(
+            $context->vars_possibly_in_scope,
+            $while_context->vars_possibly_in_scope
+        );
+
         if ($context->count_references) {
             $context->referenced_vars = array_merge(
                 $context->referenced_vars,
