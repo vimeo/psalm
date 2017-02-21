@@ -682,7 +682,9 @@ class Config
 
         foreach ($predefined_classes as $predefined_class) {
             if (strpos($predefined_class, 'Psalm\\') !== 0 &&
-                strpos($predefined_class, 'PhpParser\\') !== 0
+                strpos($predefined_class, 'PhpParser\\') !== 0 &&
+                strpos($predefined_class, 'Symfony\\') !== 0 &&
+                strpos($predefined_class, 'Composer\\') !== 0
             ) {
                 $this->predefined_classlikes[strtolower($predefined_class)] = true;
             }
@@ -693,7 +695,9 @@ class Config
 
         foreach ($predefined_interfaces as $predefined_interface) {
             if (strpos($predefined_interface, 'Psalm\\') !== 0 &&
-                strpos($predefined_interface, 'PhpParser\\') !== 0
+                strpos($predefined_interface, 'PhpParser\\') !== 0 &&
+                strpos($predefined_interface, 'Symfony\\') !== 0 &&
+                strpos($predefined_interface, 'Composer\\') !== 0
             ) {
                 $this->predefined_classlikes[strtolower($predefined_interface)] = true;
             }
