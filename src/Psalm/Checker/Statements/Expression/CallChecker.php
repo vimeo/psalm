@@ -866,7 +866,8 @@ class CallChecker
                     $context->self,
                     $fq_class_name
                 )
-            )
+            ) &&
+            $source->getMethodName() !== $method_name
         ) {
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 

@@ -821,6 +821,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
+     * @return null|string
+     */
+    public function getMethodName()
+    {
+        if ($this->function instanceof ClassMethod) {
+            return (string)$this->function->name;
+        }
+    }
+
+    /**
      * @param string|null $context_self
      * @return null|string
      */
