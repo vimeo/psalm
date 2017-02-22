@@ -38,6 +38,8 @@ class TraitChecker extends ClassLikeChecker
             self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
             $storage->name = $fq_class_name;
             $storage->location = new CodeLocation($this->source, $class, true);
+
+            self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
         }
 
         self::$trait_checkers[$fq_class_name] = $this;

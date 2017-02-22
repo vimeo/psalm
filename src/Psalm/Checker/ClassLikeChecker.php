@@ -143,6 +143,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->name = $fq_class_name;
             $storage->location = new CodeLocation($this->source, $class, true);
             $storage->user_defined = true;
+
+            self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
         } else {
             $storage = self::$storage[$fq_class_name_lower];
 
@@ -162,8 +164,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
         }
-
-        self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
     }
 
     /**
