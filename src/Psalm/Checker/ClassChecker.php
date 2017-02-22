@@ -36,8 +36,6 @@ class ClassChecker extends ClassLikeChecker
         $project_checker = $source->getFileChecker()->project_checker;
         $project_checker->addFullyQualifiedClassName($fq_class_name, $source->getFilePath());
 
-        self::$class_extends[$this->fq_class_name] = [];
-
         if (!$this->class instanceof PhpParser\Node\Stmt\Class_) {
             throw new \InvalidArgumentException('Bad');
         }

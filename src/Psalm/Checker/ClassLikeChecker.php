@@ -121,13 +121,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public static $file_classes = [];
 
     /**
-     * A lookup table used for caching the results of classExtends calls
-     *
-     * @var array<string, array<string, bool>>
-     */
-    protected static $class_extends = [];
-
-    /**
      * @var PhpParser\Node\Stmt[]
      */
     protected $leftover_stmts = [];
@@ -808,9 +801,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return;
         }
 
-        self::$class_extends[$this->fq_class_name] = self::$class_extends[$this->parent_fq_class_name];
-        self::$class_extends[$this->fq_class_name][$this->parent_fq_class_name] = true;
-
         $this->registerInheritedMethods($this->fq_class_name, $parent_class);
         $this->registerInheritedProperties($this->fq_class_name, $parent_class);
 
@@ -1301,16 +1291,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $storage->name = $class_name;
         $storage->abstract = $reflected_class->isAbstract();
 
-        self::$class_extends[$class_name] = [];
-
         if ($reflected_parent_class) {
             $parent_class_name = $reflected_parent_class->getName();
             self::registerReflectedClass($parent_class_name, $reflected_parent_class, $project_checker);
 
             $parent_storage = self::$storage[strtolower($parent_class_name)];
-
-            self::$class_extends[$class_name] = self::$class_extends[$parent_class_name];
-            self::$class_extends[$class_name][$parent_class_name] = true;
 
             self::registerInheritedMethods($class_name, $parent_class_name);
             self::registerInheritedProperties($class_name, $parent_class_name);
@@ -1873,8 +1858,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         self::$class_checkers = [];
 
         self::$storage = [];
-
-        self::$class_extends = [];
 
         ClassChecker::clearCache();
     }
