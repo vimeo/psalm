@@ -533,6 +533,30 @@ class ClassTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testAbstractExtendsAbstract()
+    {
+        $stmts = self::$parser->parse('<?php
+        abstract class A {
+            /** @return void */
+            abstract public function foo();
+        }
+
+        abstract class B extends A {
+            /** @return void */
+            public function bar() {
+                $this->foo();
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedClass
      * @return                   void

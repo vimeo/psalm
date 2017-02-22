@@ -547,6 +547,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $this->source
                     );
 
+                    if (!isset(self::$trait_checkers[$fq_trait_name])) {
+                        throw new \UnexpectedValueException('Expecting trait to be hydrated');
+                    }
+
                     $trait_checker = self::$trait_checkers[$fq_trait_name];
 
                     foreach ($trait_checker->class->stmts as $trait_stmt) {
@@ -842,7 +846,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             FunctionLikeChecker::register($stmt, $this);
         }
 
-        if (!$stmt->isAbstract() && $class_context->self) {
+        if ((!$stmt->isAbstract() || $this instanceof TraitChecker) && $class_context->self) {
             $implemented_method_id =
                 $class_context->self . '::' . strtolower($this->getMappedMethodName(strtolower($stmt->name)));
 
