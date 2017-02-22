@@ -93,6 +93,7 @@ class WhileChecker
             $negated_while_types = TypeChecker::getTruthsFromFormula(TypeChecker::negateFormula($while_clauses));
 
             if ($negated_while_types) {
+                $changed_vars = [];
                 $vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                     $negated_while_types,
                     $context->vars_in_scope,
