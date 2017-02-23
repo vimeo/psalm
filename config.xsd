@@ -84,6 +84,7 @@
         <xs:choice minOccurs="0" maxOccurs="unbounded">
             <xs:element name="AbstractInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
@@ -149,6 +150,7 @@
             <xs:element name="PossiblyNullReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyNotSetInConstructor" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyArguments" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />

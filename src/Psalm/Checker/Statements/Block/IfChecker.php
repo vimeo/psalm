@@ -10,6 +10,8 @@ use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IfScope;
+use Psalm\IssueBuffer;
+use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\Type;
 
 class IfChecker
@@ -287,6 +289,31 @@ class IfChecker
             return false;
         }
 
+        if ($if_context->byref_constraints !== null) {
+            foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
+                if ($outer_context->byref_constraints !== null &&
+                    isset($outer_context->byref_constraints[$var_id]) &&
+                    !TypeChecker::isContainedBy(
+                        $byref_constraint->type,
+                        $outer_context->byref_constraints[$var_id]->type,
+                        $statements_checker->getFileChecker()
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ConflictingReferenceConstraint(
+                            'There is more than one pass-by--reference constraint on ' . $var_id,
+                            new CodeLocation($statements_checker, $stmt, true)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    $outer_context->byref_constraints[$var_id] = $byref_constraint;
+                }
+            }
+        }
+
         if ($outer_context->count_references) {
             $outer_context->referenced_vars = array_merge(
                 $outer_context->referenced_vars,
@@ -479,6 +506,31 @@ class IfChecker
             return false;
         }
 
+        if ($elseif_context->byref_constraints !== null) {
+            foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
+                if ($outer_context->byref_constraints !== null &&
+                    isset($outer_context->byref_constraints[$var_id]) &&
+                    !TypeChecker::isContainedBy(
+                        $byref_constraint->type,
+                        $outer_context->byref_constraints[$var_id]->type,
+                        $statements_checker->getFileChecker()
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ConflictingReferenceConstraint(
+                            'There is more than one pass-by--reference constraint on ' . $var_id,
+                            new CodeLocation($statements_checker, $elseif, true)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    $outer_context->byref_constraints[$var_id] = $byref_constraint;
+                }
+            }
+        }
+
         if (count($elseif->stmts)) {
             // has a return/throw at end
             $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($elseif->stmts);
@@ -653,6 +705,31 @@ class IfChecker
 
         if ($statements_checker->analyze($else->stmts, $else_context, $if_scope->loop_context) === false) {
             return false;
+        }
+
+        if ($else_context->byref_constraints !== null) {
+            foreach ($else_context->byref_constraints as $var_id => $byref_constraint) {
+                if ($outer_context->byref_constraints !== null &&
+                    isset($outer_context->byref_constraints[$var_id]) &&
+                    !TypeChecker::isContainedBy(
+                        $byref_constraint->type,
+                        $outer_context->byref_constraints[$var_id]->type,
+                        $statements_checker->getFileChecker()
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ConflictingReferenceConstraint(
+                            'There is more than one pass-by--reference constraint on ' . $var_id,
+                            new CodeLocation($statements_checker, $else, true)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    $outer_context->byref_constraints[$var_id] = $byref_constraint;
+                }
+            }
         }
 
         if ($outer_context->count_references) {

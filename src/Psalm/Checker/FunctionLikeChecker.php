@@ -362,6 +362,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
 
+            if ($function_param->by_ref && !$param_type->isMixed()) {
+                $context->byref_constraints['$' . $function_param->name] = new \Psalm\ReferenceConstraint($param_type);
+            }
+
             if ($function_param->by_ref) {
                 // register by ref params as having been used, to avoid false positives
                 // @todo change the assignment analysis *just* for byref params

@@ -589,6 +589,10 @@ class ExpressionChecker
         );
 
         if ($var_id) {
+            if (!$by_ref_type->isMixed()) {
+                $context->byref_constraints[$var_id] = new \Psalm\ReferenceConstraint($by_ref_type);
+            }
+
             if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
 
@@ -609,10 +613,11 @@ class ExpressionChecker
                     return;
                 }
             }
+
+            $context->vars_in_scope[$var_id] = $by_ref_type;
         }
 
         $stmt->inferredType = $by_ref_type;
-        $context->vars_in_scope[$var_id] = $by_ref_type;
     }
 
     /**

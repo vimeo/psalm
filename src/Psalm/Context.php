@@ -101,6 +101,13 @@ class Context
     public $referenced_vars = [];
 
     /**
+     * A list of variables that have been passed by reference (where we know their type)
+     *
+     * @var array<string, \Psalm\ReferenceConstraint>|null
+     */
+    public $byref_constraints;
+
+    /**
      * Whether or not we're inside the conditional of an if/where etc.
      *
      * This changes whether or not the context is cloned

@@ -27,6 +27,7 @@ use Psalm\Issue\MixedStringOffsetAssignment;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
+use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
@@ -62,6 +63,7 @@ class AssignmentChecker
      * @param  Type\Union|null          $assign_value_type
      * @param  Context                  $context
      * @param  string                   $doc_comment
+     * @param  bool                     $by_reference
      * @return false|Type\Union
      */
     public static function analyze(
@@ -70,7 +72,8 @@ class AssignmentChecker
         PhpParser\Node\Expr $assign_value = null,
         Type\Union $assign_value_type = null,
         Context $context,
-        $doc_comment
+        $doc_comment,
+        $by_reference = false
     ) {
         $var_id = ExpressionChecker::getVarId(
             $assign_var,
@@ -123,6 +126,24 @@ class AssignmentChecker
                 $statements_checker->getSuppressedIssues()
             )) {
                 // fall through
+            }
+        } elseif ($var_id && isset($context->byref_constraints[$var_id])) {
+            if (!TypeChecker::isContainedBy(
+                $assign_value_type,
+                $context->byref_constraints[$var_id]->type,
+                $statements_checker->getFileChecker()
+            )
+            ) {
+                if (IssueBuffer::accepts(
+                    new ReferenceConstraintViolation(
+                        'Variable ' . $var_id . ' is limited to values of type ' .
+                            $context->byref_constraints[$var_id]->type . ' because it is passed by reference',
+                        new CodeLocation($statements_checker->getSource(), $assign_var)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
@@ -356,40 +377,15 @@ class AssignmentChecker
         PhpParser\Node\Expr\AssignRef $stmt,
         Context $context
     ) {
-        $var_id = ExpressionChecker::getVarId(
+        if (self::analyze(
+            $statements_checker,
             $stmt->var,
-            $statements_checker->getFQCLN(),
-            $statements_checker
-        );
-
-        $type_in_comments = CommentChecker::getTypeFromComment(
-            (string)$stmt->getDocComment(),
+            $stmt->expr,
+            null,
             $context,
-            $statements_checker->getSource(),
-            $var_id
-        );
-
-        if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            if (is_string($stmt->var->name)) {
-                $var_id = '$' . $stmt->var->name;
-                $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
-                $context->vars_possibly_in_scope[$var_id] = true;
-
-                if (!$statements_checker->hasVariable($var_id)) {
-                    $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $stmt->var));
-                }
-            } else {
-                if (ExpressionChecker::analyze($statements_checker, $stmt->var->name, $context) === false) {
-                    return false;
-                }
-            }
-        } else {
-            if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
-                return false;
-            }
-        }
-
-        if (ExpressionChecker::analyze($statements_checker, $stmt->expr, $context) === false) {
+            (string)$stmt->getDocComment(),
+            true
+        ) === false) {
             return false;
         }
     }
