@@ -5,6 +5,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
 use Psalm\IssueBuffer;
+use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Provider\CacheProvider;
@@ -362,19 +363,29 @@ class ProjectChecker
     {
         foreach ($classlike_storage->methods as $method_name => $method_storage) {
             if ($method_storage->references === 0 &&
-                $method_storage->visibility !== ClassLikeChecker::VISIBILITY_PUBLIC &&
                 !$classlike_storage->overridden_method_ids[$method_name] &&
                 $method_storage->location
             ) {
-                $method_id = $classlike_storage->name . '::' . $method_name;
+                $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
 
-                if (IssueBuffer::accepts(
-                    new UnusedMethod(
-                        'Method ' . $method_id . ' is never used',
-                        $method_storage->location
-                    )
-                )) {
-                    // fall through
+                if ($method_storage->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUnusedMethod(
+                            'Cannot find public calls to method ' . $method_id,
+                            $method_storage->location
+                        )
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new UnusedMethod(
+                            'Method ' . $method_id . ' is never used',
+                            $method_storage->location
+                        )
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }

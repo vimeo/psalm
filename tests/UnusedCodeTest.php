@@ -136,7 +136,9 @@ class UnusedCodeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return void
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyUnusedMethod
+     * @return                   void
      */
     public function testPublicUnusedMethod()
     {

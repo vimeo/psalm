@@ -149,6 +149,7 @@
             <xs:element name="PossiblyNullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUnusedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyNotSetInConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />
