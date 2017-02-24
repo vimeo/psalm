@@ -858,4 +858,52 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('string', (string) $context->vars_in_scope['$d']);
         $this->assertEquals('int', (string) $context->vars_in_scope['$e']);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyAssignment
+     * @return                   void
+     */
+    public function testArrayPropertyAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string[] */
+            public $strs = ["a", "b", "c"];
+
+            /** @return void */
+            public function bar() {
+                $this->strs = [new stdClass()]; // no issue emitted
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyAssignment
+     * @return                   void
+     */
+    public function testIncrementalArrayPropertyAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var string[] */
+            public $strs = ["a", "b", "c"];
+
+            /** @return void */
+            public function bar() {
+                $this->strs[] = new stdClass(); // no issue emitted
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

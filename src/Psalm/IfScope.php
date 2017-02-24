@@ -39,7 +39,7 @@ class IfScope
     public $possibly_redefined_loop_vars = [];
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, bool>
      */
     public $updated_vars = [];
 

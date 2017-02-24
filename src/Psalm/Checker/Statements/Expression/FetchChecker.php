@@ -655,11 +655,15 @@ class FetchChecker
             $property =
                 ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
-            $context->vars_in_scope[$var_id] = $property->type
-                ? clone $property->type
-                : Type::getMixed();
+            if ($var_id) {
+                $context->vars_in_scope[$var_id] = $property->type
+                    ? clone $property->type
+                    : Type::getMixed();
 
-            $stmt->inferredType = clone $context->vars_in_scope[$var_id];
+                $stmt->inferredType = clone $context->vars_in_scope[$var_id];
+            } else {
+                $stmt->inferredType = Type::getMixed();
+            }
         }
 
         return null;
@@ -964,13 +968,15 @@ class FetchChecker
                                 ]);
                             }
 
-                            if ($context->hasVariable($var_id)) {
-                                $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                    $context->vars_in_scope[$var_id],
-                                    $assignment_type
-                                );
-                            } elseif ($var_id) {
-                                $context->vars_in_scope[$var_id] = $assignment_type;
+                            if ($var_id) {
+                                if ($context->hasVariable($var_id)) {
+                                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                        $context->vars_in_scope[$var_id],
+                                        $assignment_type
+                                    );
+                                } else {
+                                    $context->vars_in_scope[$var_id] = $assignment_type;
+                                }
                             }
                         }
 
@@ -1017,7 +1023,9 @@ class FetchChecker
                                 }
                             }
 
-                            $context->vars_in_scope[$var_id] = $context_type;
+                            if ($var_id) {
+                                $context->vars_in_scope[$var_id] = $context_type;
+                            }
                         }
                     } elseif ($type instanceof Type\Atomic\TArray && $value_index !== null) {
                         $stmt->inferredType = $type->type_params[$value_index];

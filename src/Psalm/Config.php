@@ -113,7 +113,7 @@ class Config
     private $file_extensions = ['php'];
 
     /**
-     * @var array<int, string>
+     * @var array<string, string>
      */
     private $filetype_handlers = [];
 
@@ -212,6 +212,7 @@ class Config
      * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedOperand
+     * @psalm-suppress MixedPropertyAssignment
      */
     public static function loadFromXML($file_path, $file_contents)
     {
@@ -328,6 +329,7 @@ class Config
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
             /** @var \SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
+                /** @var string */
                 $config->mock_classes[] = $mock_class['name'];
             }
         }
@@ -372,6 +374,7 @@ class Config
                     );
                 }
 
+
                 $config->plugins[] = $loaded_plugin;
             }
         }
@@ -379,6 +382,7 @@ class Config
         if (isset($config_xml->issueHandlers)) {
             /** @var \SimpleXMLElement $issue_handler */
             foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
+                /** @var string $key */
                 $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement($issue_handler);
             }
         }
@@ -550,7 +554,7 @@ class Config
     }
 
     /**
-     * @return array
+     * @return array<string, string>
      */
     public function getFiletypeHandlers()
     {

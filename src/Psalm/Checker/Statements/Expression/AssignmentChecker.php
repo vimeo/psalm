@@ -100,8 +100,10 @@ class AssignmentChecker
         );
 
         if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
-            // if we're not exiting immediately, make everything mixed
-            $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
+            if ($var_id) {
+                // if we're not exiting immediately, make everything mixed
+                $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
+            }
 
             return false;
         }
@@ -260,7 +262,9 @@ class AssignmentChecker
                 $context
             );
 
-            $context->vars_possibly_in_scope[$var_id] = true;
+            if ($var_id) {
+                $context->vars_possibly_in_scope[$var_id] = true;
+            }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
             $assign_var->class instanceof PhpParser\Node\Name &&
             is_string($assign_var->name)
@@ -279,7 +283,9 @@ class AssignmentChecker
                 );
             }
 
-            $context->vars_possibly_in_scope[$var_id] = true;
+            if ($var_id) {
+                $context->vars_possibly_in_scope[$var_id] = true;
+            }
         }
 
         if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
@@ -817,7 +823,9 @@ class AssignmentChecker
         $property_storage =
             ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
 
-        $context->vars_in_scope[$var_id] = $assignment_value_type;
+        if ($var_id) {
+            $context->vars_in_scope[$var_id] = $assignment_value_type;
+        }
 
         $class_property_type = $property_storage->type;
 
@@ -867,7 +875,10 @@ class AssignmentChecker
             }
         }
 
-        $context->vars_in_scope[$var_id] = $assignment_value_type;
+        if ($var_id) {
+            $context->vars_in_scope[$var_id] = $assignment_value_type;
+        }
+
         return null;
     }
 
@@ -1060,14 +1071,26 @@ class AssignmentChecker
                         ]);
                     }
 
-                    if ($context->hasVariable($var_id)) {
-                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $context->vars_in_scope[$var_id],
-                            $assignment_value_type
+                    if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->var->name)) {
+                        self::analyzePropertyAssignment(
+                            $statements_checker,
+                            $stmt->var,
+                            $stmt->var->name,
+                            null,
+                            $assignment_value_type,
+                            $context
                         );
                     } elseif ($var_id) {
-                        $context->vars_in_scope[$var_id] = $assignment_value_type;
+                        if ($context->hasVariable($var_id)) {
+                            $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $context->vars_in_scope[$var_id],
+                                $assignment_value_type
+                            );
+                        } else {
+                            $context->vars_in_scope[$var_id] = $assignment_value_type;
+                        }
                     }
+
                 }
             }
         } elseif ($var_id) {
