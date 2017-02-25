@@ -477,11 +477,18 @@ class ExpressionChecker
         }
 
         if (!$context->check_variables) {
-            $stmt->inferredType = Type::getMixed();
+            if (is_string($stmt->name)) {
+                $var_name = '$' . $stmt->name;
 
-            if (is_string($stmt->name) && !$context->hasVariable('$' . $stmt->name)) {
-                $context->vars_in_scope['$' . $stmt->name] = Type::getMixed();
-                $context->vars_possibly_in_scope['$' . $stmt->name] = true;
+                if (!$context->hasVariable($var_name)) {
+                    $context->vars_in_scope[$var_name] = Type::getMixed();
+                    $context->vars_possibly_in_scope[$var_name] = true;
+                    $stmt->inferredType = Type::getMixed();
+                } else {
+                    $stmt->inferredType = $context->vars_in_scope[$var_name];
+                }
+            } else {
+                $stmt->inferredType = Type::getMixed();
             }
 
             return null;
