@@ -1713,7 +1713,7 @@ class CallChecker
             if ($input_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
                             'null value provided',
                         $code_location
                     ),
