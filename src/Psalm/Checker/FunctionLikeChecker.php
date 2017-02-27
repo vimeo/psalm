@@ -407,7 +407,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-        if ($context->count_references && $context->check_variables) {
+        if ($context->collect_references && $context->check_variables) {
             foreach ($context->vars_possibly_in_scope as $var_name => $_) {
                 if (strpos($var_name, '->') === false &&
                     $var_name !== '$this' &&

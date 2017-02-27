@@ -226,7 +226,7 @@ class ExpressionChecker
             }
 
             $use_context = new Context($context->self);
-            $use_context->count_references = $statements_checker->getFileChecker()->project_checker->count_references;
+            $use_context->collect_references = $statements_checker->getFileChecker()->project_checker->collect_references;
 
             if (!$statements_checker->isStatic()) {
                 if ($context->collect_mutations &&
@@ -776,6 +776,11 @@ class ExpressionChecker
                 return false;
             }
 
+            $context->referenced_vars = array_merge(
+                $op_context->referenced_vars,
+                $context->referenced_vars
+            );
+
             if ($context->inside_conditional) {
                 foreach ($op_context->vars_in_scope as $var => $type) {
                     if (!isset($context->vars_in_scope[$var])) {
@@ -785,11 +790,6 @@ class ExpressionChecker
                 }
 
                 $context->updateChecks($op_context);
-
-                $context->referenced_vars = array_merge(
-                    $op_context->referenced_vars,
-                    $context->referenced_vars
-                );
 
                 $context->vars_possibly_in_scope = array_merge(
                     $op_context->vars_possibly_in_scope,
@@ -904,7 +904,7 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($context->count_references) {
+            if ($context->collect_references) {
                 $context->referenced_vars = array_merge(
                     $context->referenced_vars,
                     $t_if_context->referenced_vars
@@ -934,7 +934,7 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($context->count_references) {
+            if ($context->collect_references) {
                 $context->referenced_vars = array_merge(
                     $context->referenced_vars,
                     $t_else_context->referenced_vars
@@ -1710,7 +1710,7 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($context->count_references) {
+            if ($context->collect_references) {
                 $context->referenced_vars = array_merge(
                     $context->referenced_vars,
                     $t_if_context->referenced_vars
@@ -1741,7 +1741,7 @@ class ExpressionChecker
             return false;
         }
 
-        if ($context->count_references) {
+        if ($context->collect_references) {
             $context->referenced_vars = array_merge(
                 $context->referenced_vars,
                 $t_else_context->referenced_vars
@@ -1882,7 +1882,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
             self::analyzeIssetVar($statements_checker, $stmt->var, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            if ($context->count_references && is_string($stmt->name)) {
+            if ($context->collect_references && is_string($stmt->name)) {
                 $context->hasVariable('$' . $stmt->name);
             }
         }

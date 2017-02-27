@@ -69,11 +69,6 @@ class FunctionLikeStorage
     public $defined_constants = [];
 
     /**
-     * @var int
-     */
-    public $references = 0;
-
-    /**
      * @var array<string, string>|null
      */
     public $template_types;
@@ -87,4 +82,9 @@ class FunctionLikeStorage
      * @var bool
      */
     public $has_template_return_type;
+
+    /**
+     * @var array<int, CodeLocation>|null
+     */
+    public $referencing_locations;
 }

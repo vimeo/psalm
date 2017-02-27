@@ -104,22 +104,6 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
-     * @return array<string, Type\Union>
-     */
-    public static function getDefinedConstants($function_id, $file_path)
-    {
-        $file_storage = FileChecker::$storage[$file_path];
-
-        if (!isset($file_storage->functions[$function_id])) {
-            return [];
-        }
-
-        return $file_storage->functions[$function_id]->defined_constants;
-    }
-
-    /**
-     * @param  string $function_id
-     * @param  string $file_path
      * @return boolean
      */
     public static function isVariadic($function_id, $file_path)

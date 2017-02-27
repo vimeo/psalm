@@ -598,14 +598,6 @@ class Config
     }
 
     /**
-     * @return array<int, string>
-     */
-    public function getStubFiles()
-    {
-        return $this->stub_files;
-    }
-
-    /**
      * @return string
      */
     public function getCacheDirectory()

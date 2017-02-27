@@ -44,8 +44,8 @@ class CacheProvider
 
         $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
 
-        if (isset(self::$file_content_hashes[$file_cache_key]) &&
-            $file_content_hash === self::$file_content_hashes[$file_cache_key] &&
+        if (isset($file_content_hashes[$file_cache_key]) &&
+            $file_content_hash === $file_content_hashes[$file_cache_key] &&
             is_readable($cache_location) &&
             filemtime($cache_location) > filemtime($file_path)
         ) {

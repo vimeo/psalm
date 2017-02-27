@@ -233,7 +233,7 @@ class ForeachChecker
             $context->vars_possibly_in_scope
         );
 
-        if ($context->count_references) {
+        if ($context->collect_references) {
             $context->referenced_vars = array_merge(
                 $foreach_context->referenced_vars,
                 $context->referenced_vars

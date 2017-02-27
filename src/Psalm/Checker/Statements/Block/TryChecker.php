@@ -85,7 +85,7 @@ class TryChecker
 
             $statements_checker->analyze($catch->stmts, $catch_context, $loop_context);
 
-            if ($context->count_references) {
+            if ($context->collect_references) {
                 $context->referenced_vars = array_merge(
                     $catch_context->referenced_vars,
                     $context->referenced_vars

@@ -99,7 +99,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
                 !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             ) {
-                if ($context->count_references) {
+                if ($context->collect_references) {
                     if (IssueBuffer::accepts(
                         new UnevaluatedCode(
                             'Expressions after return/throw/continue',
@@ -192,7 +192,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_context = new Context($context->self);
-                $function_context->count_references = $this->getFileChecker()->project_checker->count_references;
+                $function_context->collect_references = $this->getFileChecker()->project_checker->collect_references;
                 $function_checkers[$stmt->name]->analyze($function_context, $context);
 
                 $config = Config::getInstance();
@@ -434,6 +434,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $context->vars_possibly_in_scope,
             $do_context->vars_possibly_in_scope
         );
+
+        if ($context->collect_references) {
+            $context->referenced_vars = array_merge(
+                $context->referenced_vars,
+                $do_context->referenced_vars
+            );
+        }
 
         return ExpressionChecker::analyze($this, $stmt->cond, $context);
     }

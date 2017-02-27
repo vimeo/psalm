@@ -52,23 +52,6 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
-     * @return array<string, Type\Union>
-     */
-    public static function getDefinedConstants($method_id)
-    {
-        if ($method_id = self::getDeclaringMethodId($method_id)) {
-            $storage = self::getStorage($method_id);
-
-            if ($storage) {
-                return $storage->defined_constants;
-            }
-        }
-
-        throw new \UnexpectedValueException('Cannot get defined constants for ' . $method_id);
-    }
-
-    /**
-     * @param  string $method_id
      * @return boolean
      */
     public static function isVariadic($method_id)
@@ -312,7 +295,7 @@ class MethodChecker extends FunctionLikeChecker
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        if (self::methodExists($method_id, $file_checker)) {
+        if (self::methodExists($method_id, $file_checker, $code_location)) {
             return true;
         }
 
@@ -331,10 +314,14 @@ class MethodChecker extends FunctionLikeChecker
      *
      * @param  string       $method_id
      * @param  FileChecker  $file_checker
+     * @param  CodeLocation|null $code_location
      * @return bool
      */
-    public static function methodExists($method_id, FileChecker $file_checker)
-    {
+    public static function methodExists(
+        $method_id,
+        FileChecker $file_checker,
+        CodeLocation $code_location = null
+    ) {
         // remove trailing backslash if it exists
         $method_id = preg_replace('/^\\\\/', '', $method_id);
         list($fq_class_name, $method_name) = explode('::', $method_id);
@@ -352,12 +339,13 @@ class MethodChecker extends FunctionLikeChecker
         $class_storage = ClassLikeChecker::$storage[$fq_class_name_lower];
 
         if (isset($class_storage->declaring_method_ids[$method_name])) {
-            if ($file_checker->project_checker->count_references) {
+            if ($file_checker->project_checker->collect_references && $code_location) {
                 $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
                 list($declaring_method_class, $declaring_method_name) = explode('::', $declaring_method_id);
 
                 $declaring_class_storage = ClassLikeChecker::$storage[strtolower($declaring_method_class)];
-                $declaring_class_storage->methods[strtolower($declaring_method_name)]->references++;
+                $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
+                $declaring_method_storage->referencing_locations[] = $code_location;
 
                 if (isset($declaring_class_storage->overridden_method_ids[$declaring_method_name])) {
                     $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
@@ -365,8 +353,9 @@ class MethodChecker extends FunctionLikeChecker
                     foreach ($overridden_method_ids as $overridden_method_id) {
                         list($overridden_method_class, $overridden_method_name) = explode('::', $overridden_method_id);
 
-                        $overridden_class_storage = ClassLikeChecker::$storage[strtolower($overridden_method_class)];
-                        $overridden_class_storage->methods[strtolower($overridden_method_name)]->references++;
+                        $class_storage = ClassLikeChecker::$storage[strtolower($overridden_method_class)];
+                        $method_storage = $class_storage->methods[strtolower($overridden_method_name)];
+                        $method_storage->referencing_locations[] = $code_location;
                     }
                 }
             }

@@ -91,7 +91,7 @@ class Context
      *
      * @var boolean
      */
-    public $count_references = false;
+    public $collect_references = false;
 
     /**
      * A list of variables that have been referenced
@@ -307,7 +307,7 @@ class Context
      */
     public function hasVariable($var_name)
     {
-        if ($this->count_references) {
+        if ($this->collect_references) {
             if (!$var_name ||
                 (!isset($this->vars_possibly_in_scope[$var_name]) &&
                     !isset($this->vars_in_scope[$var_name]))

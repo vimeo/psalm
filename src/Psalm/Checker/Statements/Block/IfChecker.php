@@ -137,7 +137,7 @@ class IfChecker
             $context->vars_possibly_in_scope
         );
 
-        if ($context->count_references) {
+        if ($context->collect_references) {
             $context->referenced_vars = array_merge(
                 $if_context->referenced_vars,
                 $context->referenced_vars
@@ -314,7 +314,7 @@ class IfChecker
             }
         }
 
-        if ($outer_context->count_references) {
+        if ($outer_context->collect_references) {
             $outer_context->referenced_vars = array_merge(
                 $outer_context->referenced_vars,
                 $if_context->referenced_vars
@@ -641,7 +641,7 @@ class IfChecker
             }
         }
 
-        if ($outer_context->count_references) {
+        if ($outer_context->collect_references) {
             $outer_context->referenced_vars = array_merge(
                 $outer_context->referenced_vars,
                 $elseif_context->referenced_vars
@@ -732,7 +732,7 @@ class IfChecker
             }
         }
 
-        if ($outer_context->count_references) {
+        if ($outer_context->collect_references) {
             $outer_context->referenced_vars = array_merge(
                 $outer_context->referenced_vars,
                 $else_context->referenced_vars

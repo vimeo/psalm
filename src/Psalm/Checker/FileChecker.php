@@ -134,7 +134,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         $this->context = new Context();
-        $this->context->count_references = $project_checker->count_references;
+        $this->context->collect_references = $project_checker->collect_references;
         $this->context->vars_in_scope['$argc'] = Type::getInt();
         $this->context->vars_in_scope['$argv'] = new Type\Union([
             new Type\Atomic\TArray([
@@ -264,7 +264,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         foreach ($this->function_checkers as $function_checker) {
             $function_context = new Context($this->context->self);
-            $function_context->count_references = $this->project_checker->count_references;
+            $function_context->collect_references = $this->project_checker->collect_references;
             $function_checker->analyze($function_context, $this->context);
 
             if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_path)) {

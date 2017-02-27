@@ -139,4 +139,9 @@ class ClassLikeStorage
      * @var array<string, string>|null
      */
     public $template_types;
+
+    /**
+     * @var array<int, CodeLocation>|null
+     */
+    public $referencing_locations;
 }

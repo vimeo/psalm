@@ -120,7 +120,7 @@ class WhileChecker
             $while_context->vars_possibly_in_scope
         );
 
-        if ($context->count_references) {
+        if ($context->collect_references) {
             $context->referenced_vars = array_merge(
                 $context->referenced_vars,
                 $while_context->referenced_vars

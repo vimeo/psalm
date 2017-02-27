@@ -52,7 +52,7 @@ class ProjectChecker
     /**
      * @var bool
      */
-    public $count_references = false;
+    public $collect_references = false;
 
     /**
      * @var bool
@@ -190,7 +190,7 @@ class ProjectChecker
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
         $this->update_docblocks = $update_docblocks;
-        $this->count_references = $find_dead_code;
+        $this->collect_references = $find_dead_code;
 
         if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS])) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
@@ -278,7 +278,7 @@ class ProjectChecker
             CacheProvider::touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
-        if ($this->count_references) {
+        if ($this->collect_references) {
             $this->checkClassReferences();
         }
 
@@ -362,8 +362,9 @@ class ProjectChecker
     protected static function checkMethodReferences($classlike_storage)
     {
         foreach ($classlike_storage->methods as $method_name => $method_storage) {
-            if ($method_storage->references === 0 &&
+            if (count($method_storage->referencing_locations) === 0 &&
                 !$classlike_storage->overridden_method_ids[$method_name] &&
+                (substr($method_name, 0, 2) !== '__' || $method_name === '__construct') &&
                 $method_storage->location
             ) {
                 $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
@@ -1026,7 +1027,7 @@ class ProjectChecker
             return false;
         }
 
-        if ($this->count_references) {
+        if ($this->collect_references) {
             if (!isset($this->classlike_references[$fq_class_name_ci])) {
                 $this->classlike_references[$fq_class_name_ci] = 0;
             }
@@ -1051,7 +1052,7 @@ class ProjectChecker
             return false;
         }
 
-        if ($this->count_references) {
+        if ($this->collect_references) {
             if (!isset($this->classlike_references[$fq_class_name_ci])) {
                 $this->classlike_references[$fq_class_name_ci] = 0;
             }
@@ -1076,7 +1077,7 @@ class ProjectChecker
             return false;
         }
 
-        if ($this->count_references) {
+        if ($this->collect_references) {
             if (!isset($this->classlike_references[$fq_class_name_ci])) {
                 $this->classlike_references[$fq_class_name_ci] = 0;
             }

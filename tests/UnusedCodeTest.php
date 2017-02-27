@@ -47,7 +47,7 @@ class UnusedCodeTest extends PHPUnit_Framework_TestCase
                 </projectFiles>
             </psalm>'
         ));
-        $this->project_checker->count_references = true;
+        $this->project_checker->collect_references = true;
     }
 
     /**
