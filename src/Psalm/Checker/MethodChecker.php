@@ -345,7 +345,10 @@ class MethodChecker extends FunctionLikeChecker
 
                 $declaring_class_storage = ClassLikeChecker::$storage[strtolower($declaring_method_class)];
                 $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
-                $declaring_method_storage->referencing_locations[] = $code_location;
+                if ($declaring_method_storage->referencing_locations === null) {
+                    $declaring_method_storage->referencing_locations = [];
+                }
+                $declaring_method_storage->referencing_locations[$file_checker->getFilePath()][] = $code_location;
 
                 if (isset($declaring_class_storage->overridden_method_ids[$declaring_method_name])) {
                     $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
@@ -355,7 +358,10 @@ class MethodChecker extends FunctionLikeChecker
 
                         $class_storage = ClassLikeChecker::$storage[strtolower($overridden_method_class)];
                         $method_storage = $class_storage->methods[strtolower($overridden_method_name)];
-                        $method_storage->referencing_locations[] = $code_location;
+                        if ($method_storage->referencing_locations === null) {
+                            $method_storage->referencing_locations = [];
+                        }
+                        $method_storage->referencing_locations[$file_checker->getFilePath()][] = $code_location;
                     }
                 }
             }

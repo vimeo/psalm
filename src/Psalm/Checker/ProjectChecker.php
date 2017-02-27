@@ -155,6 +155,13 @@ class ProjectChecker
     public $classlike_references = [];
 
     /**
+     * A map of fully-qualified use declarations to the files
+     * that reference them (keyed by filename)
+     * @var array<string, array<string, array<int, CodeLocation>>>
+     */
+    public $use_referencing_locations = [];
+
+    /**
      * @var array<string, string>
      */
     public $fake_files = [];
@@ -289,27 +296,29 @@ class ProjectChecker
         if ($this->collect_references) {
             if ($this->find_references_to) {
                 if (strpos($this->find_references_to, '::') !== false) {
-                    $locations = $this->findReferencesToMethod($this->find_references_to);
+                    $locations_by_files = $this->findReferencesToMethod($this->find_references_to);
                 } else {
-                    $locations = $this->findReferencesToClassLike($this->find_references_to);
+                    $locations_by_files = $this->findReferencesToClassLike($this->find_references_to);
                 }
 
-                foreach ($locations as $location) {
-                    $snippet = $location->getSnippet();
+                foreach ($locations_by_files as $locations) {
+                    foreach ($locations as $location) {
+                        $snippet = $location->getSnippet();
 
-                    $snippet_bounds = $location->getSnippetBounds();
-                    $selection_bounds = $location->getSelectionBounds();
+                        $snippet_bounds = $location->getSnippetBounds();
+                        $selection_bounds = $location->getSelectionBounds();
 
-                    $selection_start = $selection_bounds[0] - $snippet_bounds[0];
-                    $selection_length = $selection_bounds[1] - $selection_bounds[0];
+                        $selection_start = $selection_bounds[0] - $snippet_bounds[0];
+                        $selection_length = $selection_bounds[1] - $selection_bounds[0];
 
-                    echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
-                        ($this->use_color
-                            ? substr($snippet, 0, $selection_start) .
-                            "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
-                            "\e[0m" . substr($snippet, $selection_length + $selection_start)
-                            : $snippet
-                        ) . PHP_EOL . PHP_EOL;
+                        echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
+                            ($this->use_color
+                                ? substr($snippet, 0, $selection_start) .
+                                "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
+                                "\e[0m" . substr($snippet, $selection_length + $selection_start)
+                                : $snippet
+                            ) . PHP_EOL . PHP_EOL;
+                    }
                 }
             }
         }
@@ -359,7 +368,7 @@ class ProjectChecker
 
     /**
      * @param  string $method_id
-     * @return \Psalm\CodeLocation[]
+     * @return array<string, \Psalm\CodeLocation[]>
      */
     public function findReferencesToMethod($method_id)
     {
@@ -386,7 +395,7 @@ class ProjectChecker
 
     /**
      * @param  string $fq_class_name
-     * @return \Psalm\CodeLocation[]
+     * @return array<string, \Psalm\CodeLocation[]>
      */
     public function findReferencesToClassLike($fq_class_name)
     {

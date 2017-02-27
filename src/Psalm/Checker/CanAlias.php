@@ -48,7 +48,14 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    // register classlike use, if it exists
+                    if ($this->getFileChecker()->project_checker->collect_references) {
+                        // register the path
+                        $project_checker = $this->getFileChecker()->project_checker;
+
+                        $project_checker->use_referencing_locations[$use_path][$this->getFilePath()] =
+                            new \Psalm\CodeLocation($this, $use);
+                    }
+
                     $this->aliased_classes[strtolower($use->alias)] = $use_path;
                     $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
                     break;
@@ -77,6 +84,14 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
+                    if ($this->getFileChecker()->project_checker->collect_references) {
+                        // register the path
+                        $project_checker = $this->getFileChecker()->project_checker;
+
+                        $project_checker->use_referencing_locations[$use_path][$this->getFilePath()] =
+                            new \Psalm\CodeLocation($this, $use);
+                    }
+
                     $this->aliased_classes[strtolower($use->alias)] = $use_path;
                     $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
                     break;

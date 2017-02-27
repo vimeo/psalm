@@ -84,7 +84,7 @@ class FunctionLikeStorage
     public $has_template_return_type;
 
     /**
-     * @var array<int, CodeLocation>|null
+     * @var array<string, array<int, CodeLocation>>|null
      */
     public $referencing_locations;
 }

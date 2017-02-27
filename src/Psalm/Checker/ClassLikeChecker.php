@@ -1083,7 +1083,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if ($file_checker->project_checker->collect_references && $code_location) {
             $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
-            $class_storage->referencing_locations[] = $code_location;
+            if ($class_storage->referencing_locations === null) {
+                $class_storage->referencing_locations = [];
+            }
+            $class_storage->referencing_locations[$file_checker->getFilePath()][] = $code_location;
         }
 
         return true;
@@ -1144,7 +1147,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if ($file_checker->project_checker->collect_references) {
             $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
-            $class_storage->referencing_locations[] = $code_location;
+            if ($class_storage->referencing_locations === null) {
+                $class_storage->referencing_locations = [];
+            }
+            $class_storage->referencing_locations[$file_checker->getFilePath()][] = $code_location;
         }
 
         if (($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name, $file_checker)) ||
