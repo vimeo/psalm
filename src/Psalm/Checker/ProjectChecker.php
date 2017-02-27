@@ -55,6 +55,11 @@ class ProjectChecker
     public $collect_references = false;
 
     /**
+     * @var string|null
+     */
+    public $find_references_to;
+
+    /**
      * @var bool
      */
     public $debug_output = false;
@@ -176,7 +181,8 @@ class ProjectChecker
      * @param boolean $debug_output
      * @param string  $output_format
      * @param bool    $update_docblocks
-     * @param bool    $find_dead_code
+     * @param bool    $collect_references
+     * @param string  $find_references_to
      */
     public function __construct(
         $use_color = true,
@@ -184,13 +190,15 @@ class ProjectChecker
         $output_format = self::TYPE_CONSOLE,
         $debug_output = false,
         $update_docblocks = false,
-        $find_dead_code = false
+        $collect_references = false,
+        $find_references_to = null
     ) {
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
         $this->update_docblocks = $update_docblocks;
-        $this->collect_references = $find_dead_code;
+        $this->collect_references = $collect_references;
+        $this->find_references_to = $find_references_to;
 
         if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS])) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
@@ -279,7 +287,31 @@ class ProjectChecker
         }
 
         if ($this->collect_references) {
-            $this->checkClassReferences();
+            if ($this->find_references_to) {
+                if (strpos($this->find_references_to, '::') !== false) {
+                    $locations = $this->findReferencesToMethod($this->find_references_to);
+                } else {
+                    $locations = $this->findReferencesToClassLike($this->find_references_to);
+                }
+
+                foreach ($locations as $location) {
+                    $snippet = $location->getSnippet();
+
+                    $snippet_bounds = $location->getSnippetBounds();
+                    $selection_bounds = $location->getSelectionBounds();
+
+                    $selection_start = $selection_bounds[0] - $snippet_bounds[0];
+                    $selection_length = $selection_bounds[1] - $selection_bounds[0];
+
+                    echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
+                        ($this->use_color
+                            ? substr($snippet, 0, $selection_start) .
+                            "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
+                            "\e[0m" . substr($snippet, $selection_length + $selection_start)
+                            : $snippet
+                        ) . PHP_EOL . PHP_EOL;
+                }
+            }
         }
 
         IssueBuffer::finish(true, (int)$start_checks, $this->visited_files);
@@ -323,6 +355,52 @@ class ProjectChecker
 
             $file_checker->analyze($this->update_docblocks);
         }
+    }
+
+    /**
+     * @param  string $method_id
+     * @return \Psalm\CodeLocation[]
+     */
+    public function findReferencesToMethod($method_id)
+    {
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        if (!isset(ClassLikeChecker::$storage[strtolower($fq_class_name)])) {
+            die('Class ' . $fq_class_name . ' cannot be found' . PHP_EOL);
+        }
+
+        $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+
+        if (!isset($class_storage->methods[strtolower($method_name)])) {
+            die('Method ' . $method_id . ' cannot be found' . PHP_EOL);
+        }
+
+        $method_storage = $class_storage->methods[strtolower($method_name)];
+
+        if ($method_storage->referencing_locations === null) {
+            die('No references found for ' . $method_id . PHP_EOL);
+        }
+
+        return $method_storage->referencing_locations;
+    }
+
+    /**
+     * @param  string $fq_class_name
+     * @return \Psalm\CodeLocation[]
+     */
+    public function findReferencesToClassLike($fq_class_name)
+    {
+        if (!isset(ClassLikeChecker::$storage[strtolower($fq_class_name)])) {
+            die('Class ' . $fq_class_name . ' cannot be found' . PHP_EOL);
+        }
+
+        $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+
+        if ($class_storage->referencing_locations === null) {
+            die('No references found for ' . $fq_class_name . PHP_EOL);
+        }
+
+        return $class_storage->referencing_locations;
     }
 
     /**

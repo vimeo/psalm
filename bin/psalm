@@ -24,7 +24,7 @@ $options = getopt(
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
-        'find-dead-code', 'init',
+        'find-dead-code', 'init', 'find-references-to:',
     ]
 );
 
@@ -88,6 +88,9 @@ Options:
     --find-dead-code
         Look for dead code
 
+    --find-references-to=[class|method]
+        Searches the codebase for references to the given fully-qualified class or method,
+        where method is in the format class::methodName
 
 HELP;
 
@@ -237,6 +240,8 @@ $is_diff = isset($options['diff']);
 
 $find_dead_code = isset($options['find-dead-code']);
 
+$find_references_to = isset($options['find-references-to']) ? $options['find-references-to'] : null;
+
 $update_docblocks = isset($options['update-docblocks']);
 
 $project_checker = new ProjectChecker(
@@ -245,7 +250,8 @@ $project_checker = new ProjectChecker(
     $output_format,
     $debug,
     $update_docblocks,
-    $find_dead_code
+    $find_dead_code || $find_references_to !== null,
+    $find_references_to
 );
 
 // initialise custom config, if passed

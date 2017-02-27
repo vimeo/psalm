@@ -697,12 +697,16 @@ class CallChecker
                     continue;
                 }
 
-                $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $fq_class_name,
-                    $statements_checker->getFileChecker(),
-                    new CodeLocation($statements_checker->getSource(), $stmt->var),
-                    $statements_checker->getSuppressedIssues()
-                );
+                if ($var_id === '$this') {
+                    $does_class_exist = true;
+                } else {
+                    $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $fq_class_name,
+                        $statements_checker->getFileChecker(),
+                        new CodeLocation($statements_checker->getSource(), $stmt->var),
+                        $statements_checker->getSuppressedIssues()
+                    );
+                }
 
                 if (!$does_class_exist) {
                     return $does_class_exist;
