@@ -1434,14 +1434,18 @@ class CallChecker
                                 $offset_value_type = Type::parseString($arg->value->value);
                             }
 
-                            // register class if the class exists
-                            if ($offset_value_type instanceof TNamedObject) {
-                                ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                    $offset_value_type->value,
-                                    $statements_checker->getFileChecker(),
-                                    new CodeLocation($statements_checker->getSource(), $arg->value),
-                                    $statements_checker->getSuppressedIssues()
-                                );
+                            if ($offset_value_type) {
+                                foreach ($offset_value_type->types as $offset_value_type_part) {
+                                    // register class if the class exists
+                                    if ($offset_value_type_part instanceof TNamedObject) {
+                                        ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                            $offset_value_type_part->value,
+                                            $statements_checker->getFileChecker(),
+                                            new CodeLocation($statements_checker->getSource(), $arg->value),
+                                            $statements_checker->getSuppressedIssues()
+                                        );
+                                    }
+                                }
                             }
 
                             if ($generic_params === null) {
