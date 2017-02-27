@@ -82,6 +82,13 @@ class Config
     public $use_property_default_for_type = false;
 
     /**
+     * Whether or not to care about casing of file names
+     *
+     * @var boolean
+     */
+    public $use_case_sensitive_file_names = false;
+
+    /**
      * Path to the autoader
      *
      * @var string|null
