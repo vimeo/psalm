@@ -270,7 +270,7 @@ class CallChecker
                 }
             }
 
-            if ($function_params) {
+            if ($function_params && $context->check_variables) {
                 // do this here to allow closure param checks
                 if (self::checkFunctionArgumentsMatch(
                     $statements_checker,
@@ -1198,17 +1198,19 @@ class CallChecker
             );
         }
 
-        if (self::checkFunctionArgumentsMatch(
-            $statements_checker,
-            $args,
-            $method_id,
-            $method_params,
-            $method_storage,
-            $class_storage,
-            $generic_params,
-            $code_location
-        ) === false) {
-            return false;
+        if ($context->check_variables) {
+            if (self::checkFunctionArgumentsMatch(
+                $statements_checker,
+                $args,
+                $method_id,
+                $method_params,
+                $method_storage,
+                $class_storage,
+                $generic_params,
+                $code_location
+            ) === false) {
+                return false;
+            }
         }
 
         return null;

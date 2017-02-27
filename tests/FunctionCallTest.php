@@ -509,4 +509,26 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testExtractVarCheck()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MixedArrayAccess', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        function takesString(string $str) : void {}
+
+        $foo = null;
+        $a = ["$foo" => "bar"];
+        extract($a);
+        takesString($foo);
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
