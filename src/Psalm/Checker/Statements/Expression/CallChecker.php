@@ -270,7 +270,7 @@ class CallChecker
                 }
             }
 
-            if ($function_params && $context->check_variables) {
+            if ($function_params) {
                 // do this here to allow closure param checks
                 if (self::checkFunctionArgumentsMatch(
                     $statements_checker,
@@ -280,7 +280,8 @@ class CallChecker
                     $function_storage,
                     null,
                     $generic_params,
-                    $code_location
+                    $code_location,
+                    $context->check_variables
                 ) === false) {
                     // fall through
                 }
@@ -1198,19 +1199,18 @@ class CallChecker
             );
         }
 
-        if ($context->check_variables) {
-            if (self::checkFunctionArgumentsMatch(
-                $statements_checker,
-                $args,
-                $method_id,
-                $method_params,
-                $method_storage,
-                $class_storage,
-                $generic_params,
-                $code_location
-            ) === false) {
-                return false;
-            }
+        if (self::checkFunctionArgumentsMatch(
+            $statements_checker,
+            $args,
+            $method_id,
+            $method_params,
+            $method_storage,
+            $class_storage,
+            $generic_params,
+            $code_location,
+            $context->check_variables
+        ) === false) {
+            return false;
         }
 
         return null;
@@ -1332,6 +1332,7 @@ class CallChecker
      * @param   ClassLikeStorage                        $class_storage
      * @param   array<string, Type\Union>|null          $generic_params
      * @param   CodeLocation                            $code_location
+     * @param   bool                                    $check_variables
      * @return  false|null
      */
     protected static function checkFunctionArgumentsMatch(
@@ -1342,7 +1343,8 @@ class CallChecker
         FunctionLikeStorage $function_storage = null,
         ClassLikeStorage $class_storage = null,
         array &$generic_params = null,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        $check_variables
     ) {
         $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
 
@@ -1462,15 +1464,17 @@ class CallChecker
                         $method_id
                     );
 
-                    if (self::checkFunctionArgumentType(
-                        $statements_checker,
-                        $arg->value->inferredType,
-                        $fleshed_out_type,
-                        $cased_method_id,
-                        $argument_offset,
-                        new CodeLocation($statements_checker->getSource(), $arg->value)
-                    ) === false) {
-                        return false;
+                    if ($check_variables) {
+                        if (self::checkFunctionArgumentType(
+                            $statements_checker,
+                            $arg->value->inferredType,
+                            $fleshed_out_type,
+                            $cased_method_id,
+                            $argument_offset,
+                            new CodeLocation($statements_checker->getSource(), $arg->value)
+                        ) === false) {
+                            return false;
+                        }
                     }
                 }
             }
