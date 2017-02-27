@@ -36,6 +36,12 @@
             </errorLevel>
         </UnusedMethod>
 
+        <PossiblyUnusedMethod>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </PossiblyUnusedMethod>
+
         <PropertyNotSetInConstructor>
             <errorLevel type="suppress">
                 <directory name="tests" />
