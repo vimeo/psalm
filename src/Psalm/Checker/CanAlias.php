@@ -48,6 +48,7 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
+                    // register classlike use, if it exists
                     $this->aliased_classes[strtolower($use->alias)] = $use_path;
                     $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
                     break;

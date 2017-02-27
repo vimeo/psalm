@@ -1073,8 +1073,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $fq_class_name,
         FileChecker $file_checker
     ) {
-        return ClassChecker::classExists($fq_class_name, $file_checker) ||
-            InterfaceChecker::interfaceExists($fq_class_name, $file_checker);
+        if (!ClassChecker::classExists($fq_class_name, $file_checker) &&
+            !InterfaceChecker::interfaceExists($fq_class_name, $file_checker)
+        ) {
+            return false;
+        }
+
+        if ($file_checker->project_checker->collect_references) {
+            $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+            $class_storage->referencing_locations[] = $code_location;
+        }
+
+        return true;
     }
 
     /**
