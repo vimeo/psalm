@@ -157,7 +157,7 @@ class ProjectChecker
     /**
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
-     * @var array<string, array<string, array<int, CodeLocation>>>
+     * @var array<string, array<string, array<int, \Psalm\CodeLocation>>>
      */
     public $use_referencing_locations = [];
 
@@ -409,7 +409,22 @@ class ProjectChecker
             die('No references found for ' . $fq_class_name . PHP_EOL);
         }
 
-        return $class_storage->referencing_locations;
+        $classlike_references_by_file = $class_storage->referencing_locations;
+
+        if (isset($this->use_referencing_locations[strtolower($fq_class_name)])) {
+            foreach ($this->use_referencing_locations[strtolower($fq_class_name)] as $file_path => $locations) {
+                if (!isset($classlike_references_by_file[$file_path])) {
+                    $classlike_references_by_file[$file_path] = $locations;
+                } else {
+                    $classlike_references_by_file[$file_path] = array_merge(
+                        $locations,
+                        $classlike_references_by_file[$file_path]
+                    );
+                }
+            }
+        }
+
+        return $classlike_references_by_file;
     }
 
     /**

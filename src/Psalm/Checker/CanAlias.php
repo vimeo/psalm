@@ -52,7 +52,7 @@ trait CanAlias
                         // register the path
                         $project_checker = $this->getFileChecker()->project_checker;
 
-                        $project_checker->use_referencing_locations[$use_path][$this->getFilePath()] =
+                        $project_checker->use_referencing_locations[strtolower($use_path)][$this->getFilePath()][] =
                             new \Psalm\CodeLocation($this, $use);
                     }
 
