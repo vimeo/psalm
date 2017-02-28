@@ -701,11 +701,9 @@ class CallChecker
                 if ($var_id === '$this') {
                     $does_class_exist = true;
                 } else {
-                    $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                    $does_class_exist = ClassLikeChecker::classOrInterfaceExists(
                         $fq_class_name,
-                        $statements_checker->getFileChecker(),
-                        new CodeLocation($statements_checker->getSource(), $stmt->var),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_checker->getFileChecker()
                     );
                 }
 
