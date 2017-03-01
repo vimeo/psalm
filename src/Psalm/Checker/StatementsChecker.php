@@ -201,15 +201,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     /** @var string */
                     $method_id = $function_checkers[$stmt->name]->getMethodId();
 
-                    $return_type = FunctionChecker::getFunctionReturnType(
-                        $method_id,
-                        $this->getFilePath()
-                    );
+                    $function_storage = FunctionChecker::getStorage($method_id, $this->getFilePath());
 
-                    $return_type_location = FunctionChecker::getFunctionReturnTypeLocation(
-                        $method_id,
-                        $this->getFilePath()
-                    );
+                    $return_type = $function_storage->return_type;
+                    $return_type_location = $function_storage->return_type_location;
 
                     $function_checkers[$stmt->name]->verifyReturnType(
                         false,

@@ -711,7 +711,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $method_checker->verifyReturnType(
                     $update_docblocks,
-                    $return_type,
+                    $return_type ? clone $return_type : null,
                     $class_context->self,
                     $return_type_location,
                     $secondary_return_type_location

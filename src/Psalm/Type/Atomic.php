@@ -33,6 +33,13 @@ abstract class Atomic
     const KEY = 'atomic';
 
     /**
+     * Whether or not the type has been checked yet
+     *
+     * @var boolean
+     */
+    protected $checked = false;
+
+    /**
      * @param  string $value
      * @return Atomic
      */
@@ -174,12 +181,22 @@ abstract class Atomic
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
      * @return false|null
      */
-    public function check(StatementsSource $source, CodeLocation $code_location, array $suppressed_issues)
-    {
-        if ($this instanceof TNamedObject
-            && ClassLikeChecker::checkFullyQualifiedClassLikeName(
+    public function check(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = []
+    ) {
+        if ($this->checked) {
+            return;
+        }
+
+        if ($this instanceof TNamedObject &&
+            !isset($phantom_classes[strtolower($this->value)]) &&
+            ClassLikeChecker::checkFullyQualifiedClassLikeName(
                 $this->value,
                 $source->getFileChecker(),
                 $code_location,
@@ -191,9 +208,11 @@ abstract class Atomic
 
         if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
             foreach ($this->type_params as $type_param) {
-                $type_param->check($source, $code_location, $suppressed_issues);
+                $type_param->check($source, $code_location, $suppressed_issues, $phantom_classes);
             }
         }
+
+        $this->checked = true;
     }
 
     /**

@@ -12,9 +12,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
-    /** @var TestConfig */
-    protected static $config;
-
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
@@ -24,7 +21,6 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
     }
 
     /**
@@ -34,7 +30,7 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
     {
         FileChecker::clearCache();
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $this->project_checker->setConfig(self::$config);
+        $this->project_checker->setConfig(new TestConfig());
     }
 
     /**
@@ -692,6 +688,50 @@ class ReturnTypeTest extends PHPUnit_Framework_TestCase
         function foo() {
           return rand(0, 1) ? new A : new B;
         }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedClass
+     * @return                   void
+     */
+    public function testInvalidReturnTypeClass()
+    {
+        Config::getInstance()->setCustomErrorLevel('MixedInferredReturnType', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        function fooFoo() : A {
+            return array_pop([]);
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedClass
+     * @return                   void
+     */
+    public function testInvalidClassOnCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @psalm-suppress UndefinedClass
+         * @psalm-suppress MixedInferredReturnType
+         */
+        function fooFoo() : A {
+            return array_pop([]);
+        }
+
+        fooFoo()->bar();
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);

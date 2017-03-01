@@ -154,7 +154,7 @@ class ForeachChecker
 
                         if ($iterator_class_type) {
                             $value_type_part = ExpressionChecker::fleshOutTypes(
-                                $iterator_class_type,
+                                clone $iterator_class_type,
                                 [],
                                 $iterator_type->value,
                                 $iterator_method

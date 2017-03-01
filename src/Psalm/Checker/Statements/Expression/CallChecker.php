@@ -287,6 +287,8 @@ class CallChecker
                 }
             }
 
+            $config = Config::getInstance();
+
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
                 if (!$in_call_map || $is_stubbed) {
                     if ($function_storage && $function_storage->template_types) {
@@ -298,11 +300,35 @@ class CallChecker
                     }
 
                     try {
-                        $stmt->inferredType = FunctionChecker::getFunctionReturnType(
+                        $function_storage = FunctionChecker::getStorage(
                             $method_id,
-                            $statements_checker->getCheckedFilePath(),
-                            $generic_params
+                            $statements_checker->getCheckedFilePath()
                         );
+
+                        if ($function_storage->return_type) {
+                            if ($generic_params) {
+                                $return_type = FunctionChecker::replaceTemplateTypes($function_storage->return_type, $generic_params);
+                            } else {
+                                $return_type = clone $function_storage->return_type;
+                            }
+
+                            $return_type_location = $function_storage->return_type_location;
+
+                            $stmt->inferredType = $return_type;
+
+                            // only check the type locally if it's defined externally
+                            if ($return_type_location &&
+                                !$is_stubbed && // makes lookups or array_* functions quicker
+                                !$config->isInProjectDirs($return_type_location->file_path)
+                            ) {
+                                $return_type->check(
+                                    $statements_checker,
+                                    new CodeLocation($statements_checker->getSource(), $stmt),
+                                    $statements_checker->getSuppressedIssues(),
+                                    $context->getPhantomClasses()
+                                );
+                            }
+                        }
                     } catch (\InvalidArgumentException $e) {
                         // this can happen when the function was defined in the Config startup script
                         $stmt->inferredType = Type::getMixed();
@@ -636,6 +662,8 @@ class CallChecker
             }
         }
 
+        $config = Config::getInstance();
+
         if ($class_type && is_string($stmt->name)) {
             /** @var Type\Union|null */
             $return_type = null;
@@ -772,11 +800,14 @@ class CallChecker
                     $stmt->args,
                     $class_template_params,
                     $context,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($source, $stmt),
                     $statements_checker
                 ) === false) {
                     return false;
                 }
+
+                $return_type_location = null;
+                $file_checker = $source->getFileChecker();
 
                 if (FunctionChecker::inCallMap($cased_method_id)) {
                     $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
@@ -785,7 +816,7 @@ class CallChecker
                         $method_id,
                         $context->self,
                         $statements_checker->getSource(),
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
@@ -793,23 +824,47 @@ class CallChecker
 
                     if (MethodChecker::checkMethodNotDeprecated(
                         $method_id,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
                     }
 
-                    $return_type_candidate = MethodChecker::getMethodReturnType($method_id, $class_template_params);
+                    $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
+
+                    if ($return_type_candidate) {
+                        if ($class_template_params) {
+                            $return_type_candidate = FunctionChecker::replaceTemplateTypes($return_type_candidate, $class_template_params);
+                        } else {
+                            $return_type_candidate = clone $return_type_candidate;
+                        }
+
+                        $return_type_candidate = ExpressionChecker::fleshOutTypes(
+                            $return_type_candidate,
+                            $stmt->args,
+                            $fq_class_name,
+                            $method_id
+                        );
+
+                        $return_type_location = MethodChecker::getMethodReturnTypeLocation($method_id, $secondary_return_type_location);
+
+                        if ($secondary_return_type_location) {
+                            $return_type_location = $secondary_return_type_location;
+                        }
+
+                        // only check the type locally if it's defined externally
+                        if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                            $return_type_candidate->check(
+                                $statements_checker,
+                                new CodeLocation($source, $stmt),
+                                $statements_checker->getSuppressedIssues(),
+                                $context->getPhantomClasses()
+                            );
+                        }
+                    }
                 }
 
                 if ($return_type_candidate) {
-                    $return_type_candidate = ExpressionChecker::fleshOutTypes(
-                        $return_type_candidate,
-                        $stmt->args,
-                        $fq_class_name,
-                        $method_id
-                    );
-
                     if (!$return_type) {
                         $return_type = $return_type_candidate;
                     } else {
@@ -942,6 +997,7 @@ class CallChecker
         $lhs_type = null;
 
         $file_checker = $statements_checker->getFileChecker();
+        $source = $statements_checker->getSource();
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
@@ -1007,7 +1063,7 @@ class CallChecker
                     $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
                         $file_checker,
-                        new CodeLocation($statements_checker->getSource(), $stmt->class),
+                        new CodeLocation($source, $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     );
                 }
@@ -1034,6 +1090,8 @@ class CallChecker
 
         $has_mock = false;
 
+        $config = Config::getInstance();
+
         foreach ($lhs_type->types as $lhs_type_part) {
             if (!$lhs_type_part instanceof TNamedObject) {
                 // @todo deal with it
@@ -1058,7 +1116,7 @@ class CallChecker
                 $does_method_exist = MethodChecker::checkMethodExists(
                     $cased_method_id,
                     $file_checker,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($source, $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -1070,7 +1128,7 @@ class CallChecker
                     $method_id,
                     $context->self,
                     $statements_checker->getSource(),
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($source, $stmt),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -1086,7 +1144,7 @@ class CallChecker
                     if (MethodChecker::checkStatic(
                         $method_id,
                         $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         // fall through
@@ -1112,22 +1170,50 @@ class CallChecker
                     return false;
                 }
 
-                $return_types = MethodChecker::getMethodReturnType($method_id, $found_generic_params);
+                $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
+                    ? $statements_checker->getFQCLN()
+                    : $fq_class_name;
 
-                if ($return_types) {
-                    $return_types = ExpressionChecker::fleshOutTypes(
-                        $return_types,
+                $class_template_params = [];
+
+                $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
+
+                if ($return_type_candidate) {
+                    if ($found_generic_params) {
+                        $return_type_candidate = FunctionChecker::replaceTemplateTypes($return_type_candidate, $found_generic_params);
+                    } else {
+                        $return_type_candidate = clone $return_type_candidate;
+                    }
+
+                    $return_type_candidate = ExpressionChecker::fleshOutTypes(
+                        $return_type_candidate,
                         $stmt->args,
-                        $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
-                            ? $statements_checker->getFQCLN()
-                            : $fq_class_name,
+                        $fq_class_name,
                         $method_id
                     );
 
+                    $return_type_location = MethodChecker::getMethodReturnTypeLocation($method_id, $secondary_return_type_location);
+
+                    if ($secondary_return_type_location) {
+                        $return_type_location = $secondary_return_type_location;
+                    }
+
+                    // only check the type locally if it's defined externally
+                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                        $return_type_candidate->check(
+                            $statements_checker,
+                            new CodeLocation($source, $stmt),
+                            $statements_checker->getSuppressedIssues(),
+                            $context->getPhantomClasses()
+                        );
+                    }
+                }
+
+                if ($return_type_candidate) {
                     if (isset($stmt->inferredType)) {
-                        $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, $return_types);
+                        $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, $return_type_candidate);
                     } else {
-                        $stmt->inferredType = $return_types;
+                        $stmt->inferredType = $return_type_candidate;
                     }
                 }
             }

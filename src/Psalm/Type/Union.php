@@ -27,6 +27,13 @@ class Union
     public $initialized = true;
 
     /**
+     * Whether or not the type has been checked yet
+     *
+     * @var boolean
+     */
+    protected $checked = false;
+
+    /**
      * Constructs an Union instance
      * @param array<int, Atomic>     $types
      */
@@ -334,12 +341,23 @@ class Union
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
      * @return void
      */
-    public function check(StatementsSource $source, CodeLocation $code_location, array $suppressed_issues)
-    {
-        foreach ($this->types as $atomic_type) {
-            $atomic_type->check($source, $code_location, $suppressed_issues);
+    public function check(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = []
+    ) {
+        if ($this->checked) {
+            return;
         }
+
+        foreach ($this->types as $atomic_type) {
+            $atomic_type->check($source, $code_location, $suppressed_issues, $phantom_classes);
+        }
+
+        $this->checked = true;
     }
 }

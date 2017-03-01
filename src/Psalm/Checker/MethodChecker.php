@@ -67,13 +67,9 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string                       $method_id
-     * @param  array<string, string>|null   $template_types
      * @return Type\Union|null
      */
-    public static function getMethodReturnType(
-        $method_id,
-        array $template_types = null
-    ) {
+    public static function getMethodReturnType($method_id) {
         $method_id = self::getDeclaringMethodId($method_id);
 
         if (!$method_id) {
@@ -93,19 +89,7 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         if ($storage->return_type) {
-            if ($template_types !== null) {
-                $type_tokens = Type::tokenize((string)$storage->return_type);
-
-                foreach ($type_tokens as &$type_token) {
-                    if (isset($template_types[$type_token])) {
-                        $type_token = (string)$template_types[$type_token];
-                    }
-                }
-
-                return Type::parseString(implode('', $type_tokens));
-            }
-
-            return clone $storage->return_type;
+            return $storage->return_type;
         }
 
         $fq_class_name = strtolower($fq_class_name);
@@ -120,7 +104,7 @@ class MethodChecker extends FunctionLikeChecker
                     return Type::getVoid();
                 }
 
-                return clone $overridden_storage->return_type;
+                return $overridden_storage->return_type;
             }
         }
 

@@ -289,7 +289,7 @@ class Context
      */
     public function isPhantomClass($class_name)
     {
-        return isset($this->phantom_classes[$class_name]);
+        return isset($this->phantom_classes[strtolower($class_name)]);
     }
 
     /**
@@ -298,7 +298,15 @@ class Context
      */
     public function addPhantomClass($class_name)
     {
-        $this->phantom_classes[$class_name] = true;
+        $this->phantom_classes[strtolower($class_name)] = true;
+    }
+
+    /**
+     * @return  array<string, bool>
+     */
+    public function getPhantomClasses()
+    {
+        return $this->phantom_classes;
     }
 
     /**

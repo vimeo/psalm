@@ -1072,6 +1072,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return null;
         }
 
+        if (!$declared_return_type->isMixed()) {
+            $declared_return_type->check(
+                $this,
+                $secondary_return_type_location ?: $return_type_location,
+                $this->getSuppressedIssues()
+            );
+        }
+
         if ($inferred_return_type && !$declared_return_type->isMixed()) {
             if ($inferred_return_type->isVoid() && $declared_return_type->isVoid()) {
                 return null;

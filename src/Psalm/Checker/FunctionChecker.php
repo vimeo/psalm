@@ -139,65 +139,6 @@ class FunctionChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string                     $function_id
-     * @param  string                     $file_path
-     * @param  array<string, string>|null $function_template_types
-     * @return Type\Union|null
-     */
-    public static function getFunctionReturnType($function_id, $file_path, array $function_template_types = null)
-    {
-        if (isset(self::$stubbed_functions[$function_id])) {
-            $function_return_type = self::$stubbed_functions[$function_id]->return_type;
-        } else {
-            if (!isset(FileChecker::$storage[$file_path])) {
-                return null;
-            }
-
-            $file_storage = FileChecker::$storage[$file_path];
-
-            if (!isset($file_storage->functions[$function_id])) {
-                throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
-            }
-
-            $function_return_type = $file_storage->functions[$function_id]->return_type;
-        }
-
-        if ($function_return_type) {
-            if ($function_template_types) {
-                $type_tokens = Type::tokenize((string)$function_return_type);
-
-                foreach ($type_tokens as &$type_token) {
-                    if (isset($function_template_types[$type_token])) {
-                        $type_token = $function_template_types[$type_token];
-                    }
-                }
-
-                return Type::parseString(implode('', $type_tokens));
-            }
-
-            return clone $function_return_type;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  string $function_id
-     * @param  string $file_path
-     * @return CodeLocation|null
-     */
-    public static function getFunctionReturnTypeLocation($function_id, $file_path)
-    {
-        $file_storage = FileChecker::$storage[$file_path];
-
-        if (!isset($file_storage->functions[$function_id])) {
-            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
-        }
-
-        return $file_storage->functions[$function_id]->return_type_location;
-    }
-
-    /**
      * @param  string $function_id
      * @param  string $file_path
      * @return string
@@ -211,6 +152,24 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         return $file_storage->functions[$function_id]->cased_name;
+    }
+
+    /**
+     * @param  Type\Union               $return_type
+     * @param  array<string, string>    $template_types
+     * @return Type\Union
+     */
+    public static function replaceTemplateTypes(Type\Union $return_type, array $template_types)
+    {
+        $type_tokens = Type::tokenize((string)$return_type);
+
+        foreach ($type_tokens as &$type_token) {
+            if (isset($template_types[$type_token])) {
+                $type_token = $template_types[$type_token];
+            }
+        }
+
+        return Type::parseString(implode('', $type_tokens));
     }
 
     /**
