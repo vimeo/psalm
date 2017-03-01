@@ -222,7 +222,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                         $storage->params[$i]->signature_type . '\', expecting \'' .
                                         $implemented_param->signature_type . '\' as defined by ' .
                                         $parent_method_id,
-                                    $storage->params[$i]->code_location ?: new CodeLocation($this, $this->function, true)
+                                    $storage->params[$i]->location ?: new CodeLocation($this, $this->function, true)
                                 )
                             )) {
                                 return false;
@@ -245,7 +245,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                         $storage->params[$i]->type . '\', expecting \'' .
                                         $implemented_param->type . '\' as defined by ' .
                                         $parent_method_id,
-                                    $storage->params[$i]->code_location ?: new CodeLocation($this, $this->function, true)
+                                    $storage->params[$i]->location ?: new CodeLocation($this, $this->function, true)
                                 )
                             )) {
                                 return false;
@@ -320,7 +320,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $this->getMethodId()
             );
 
-            if (!$function_param->code_location) {
+            if (!$function_param->location) {
                 throw new \UnexpectedValueException('We should know where this code is');
             }
 
@@ -342,7 +342,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         new InvalidParamDefault(
                             'Default value for argument ' . ($offset + 1) . ' of method ' . $cased_method_id .
                                 ' does not match the given type ' . $param_type,
-                            $function_param->code_location
+                            $function_param->location
                         )
                     )) {
                         // fall through
@@ -354,9 +354,22 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $substituted_type = clone $param_type;
                 $generic_types = [];
                 $substituted_type->replaceTemplateTypes($template_types, $generic_types, null);
-                $substituted_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
+                $substituted_type->check($this->source, $function_param->location, $this->suppressed_issues);
             } else {
-                $param_type->check($this->source, $function_param->code_location, $this->suppressed_issues);
+                $param_type->check($this->source, $function_param->location, $this->suppressed_issues);
+            }
+
+            if ($this->getFileChecker()->project_checker->collect_references) {
+                if ($function_param->location !== $function_param->signature_location &&
+                    $function_param->signature_location &&
+                    $function_param->signature_type
+                ) {
+                    $function_param->signature_type->check(
+                        $this->source,
+                        $function_param->signature_location,
+                        $this->suppressed_issues
+                    );
+                }
             }
 
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
@@ -375,7 +388,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $statements_checker->registerVariable(
                 '$' . $function_param->name,
-                $function_param->code_location
+                $function_param->location
             );
         }
 
@@ -790,6 +803,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $storage,
                 $docblock_info->params,
                 $template_types,
+                $function,
                 $source,
                 $source->getFQCLN(),
                 new CodeLocation($source, $function, true)
@@ -1192,6 +1206,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  array<int, array{type:string,name:string,line_number:int}>  $docblock_params
      * @param  FunctionLikeStorage          $storage
      * @param  array<string, string>|null   $template_types
+     * @param  Closure|Function_|ClassMethod $function
      * @param  StatementsSource             $source
      * @param  string|null                  $fq_class_name
      * @param  CodeLocation                 $code_location
@@ -1201,6 +1216,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         FunctionLikeStorage $storage,
         array $docblock_params,
         $template_types,
+        $function,
         StatementsSource $source,
         $fq_class_name,
         CodeLocation $code_location
@@ -1210,6 +1226,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $base = $fq_class_name ? $fq_class_name . '::' : '';
 
         $cased_method_id = $base . $storage->cased_name;
+
+        $file_checker = $source->getFileChecker();
 
         foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
@@ -1241,6 +1259,21 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 continue;
             }
 
+            $storage_param = null;
+
+            foreach ($storage->params as $function_signature_param) {
+                if ($function_signature_param->name === $param_name) {
+                    $storage_param = $function_signature_param;
+                    break;
+                }
+            }
+
+            if ($storage_param === null) {
+                throw new \UnexpectedValueException('This should not be possible');
+            }
+
+            $storage_param_type = $storage->param_types[$param_name];
+
             $docblock_param_vars[$param_name] = true;
 
             $new_param_type = Type::parseString(
@@ -1262,8 +1295,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $new_param_type->setFromDocblock();
 
-            if (!$storage->param_types[$param_name]->isMixed()) {
-
+            if (!$storage_param_type->isMixed()) {
                 if (!TypeChecker::isContainedBy(
                     $new_param_type,
                     $storage->param_types[$param_name],
@@ -1274,7 +1306,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             'Parameter $' . $param_name .' has wrong type \'' . $new_param_type . '\', should be \'' .
-                                $storage->param_types[$param_name] . '\'',
+                                $storage_param_type . '\'',
                             $code_location
                         )
                     )) {
@@ -1285,34 +1317,31 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            foreach ($storage->params as $function_signature_param) {
-                if ($function_signature_param->name === $param_name) {
-                    $existing_param_type_nullable = $function_signature_param->is_nullable;
+            $existing_param_type_nullable = $storage_param->is_nullable;
 
-                    if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                        $new_param_type->types['null'] = new Type\Atomic\TNull();
-                    }
+            if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
+                $new_param_type->types['null'] = new Type\Atomic\TNull();
+            }
 
-                    $function_signature_param->signature_type = $function_signature_param->type;
+            if ((string)$storage_param->type !== (string)$new_param_type) {
+                $storage_param->type = $new_param_type;
+            }
 
-                    if ((string)$function_signature_param->type !== (string)$new_param_type) {
-                        $function_signature_param->type = $new_param_type;
-                    }
-
-                    break;
-                }
+            if ($file_checker->project_checker->collect_references) {
+                $storage_param->location = new CodeLocation($source, $function);
+                $storage_param->location->setCommentLine($line_number);
             }
         }
 
         foreach ($storage->params as $function_signature_param) {
             if (!isset($docblock_param_vars[$function_signature_param->name]) &&
-                $function_signature_param->code_location
+                $function_signature_param->location
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         'Parameter $' . $function_signature_param->name .' does not appear in the docbock for ' .
                             $cased_method_id,
-                        $function_signature_param->code_location
+                        $function_signature_param->location
                     )
                 )) {
                     return false;
