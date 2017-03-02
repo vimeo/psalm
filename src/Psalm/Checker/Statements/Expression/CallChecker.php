@@ -300,12 +300,7 @@ class CallChecker
                     }
 
                     try {
-                        $function_storage = FunctionChecker::getStorage(
-                            $method_id,
-                            $statements_checker->getCheckedFilePath()
-                        );
-
-                        if ($function_storage->return_type) {
+                        if ($function_storage && $function_storage->return_type) {
                             if ($generic_params) {
                                 $return_type = FunctionChecker::replaceTemplateTypes($function_storage->return_type, $generic_params);
                             } else {
