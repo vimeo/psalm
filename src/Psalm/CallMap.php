@@ -108,7 +108,7 @@ return [
 'apc_sma_info' => ['array', 'limited='=>'bool'],
 'apc_store' => ['bool', 'key'=>'string', 'var'=>'', 'ttl='=>'int'],
 'apc_store\'1' => ['array', 'values'=>'array', 'unused='=>'', 'ttl='=>'int'],
-'apcu_add' => ['bool', 'key'=>'string', 'ttl='=>'int'],
+'apcu_add' => ['bool', 'key'=>'string', 'var'=>'', 'ttl='=>'int'],
 'apcu_add\'1' => ['array', 'values'=>'array', 'unused='=>'', 'ttl='=>'int'],
 'apcu_cache_info' => ['array', 'limited='=>'bool'],
 'apcu_cas' => ['bool', 'key'=>'string', 'old'=>'int', 'new'=>'int'],
