@@ -525,10 +525,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $property_type = Type::getMixed();
             }
 
-            // type_location is only set if collect_references is true
             if ($property->type_location && !$property_type->isMixed()) {
                 $fleshed_out_type = ExpressionChecker::fleshOutTypes(clone $property_type, $this->fq_class_name, null);
-                $fleshed_out_type->check($this, $property->type_location, $this->getSuppressedIssues());
+                $fleshed_out_type->check($this, $property->type_location, $this->getSuppressedIssues(), [], false);
             }
 
             if ($property->is_static) {
@@ -1010,7 +1009,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();
                 }
             } else {
-                if ($this->getFileChecker()->project_checker->collect_references && $property_type_line_number) {
+                if ($property_type_line_number) {
                     $property_type_location = new CodeLocation($this, $stmt);
                     $property_type_location->setCommentLine($property_type_line_number);
                 }
@@ -1128,13 +1127,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  FileChecker      $file_checker
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
+     * @param  bool             $inferred - whether or not the type was inferred
      * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
         $fq_class_name,
         FileChecker $file_checker,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
+        $inferred = true
     ) {
         if (empty($fq_class_name)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -1163,7 +1164,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        if ($file_checker->project_checker->collect_references) {
+        if ($file_checker->project_checker->collect_references && !$inferred) {
             $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
             if ($class_storage->referencing_locations === null) {
                 $class_storage->referencing_locations = [];

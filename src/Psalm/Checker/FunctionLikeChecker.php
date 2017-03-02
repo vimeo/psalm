@@ -353,9 +353,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $substituted_type = clone $param_type;
                 $generic_types = [];
                 $substituted_type->replaceTemplateTypes($template_types, $generic_types, null);
-                $substituted_type->check($this->source, $function_param->location, $this->suppressed_issues);
+                $substituted_type->check($this->source, $function_param->location, $this->suppressed_issues, [], false);
             } else {
-                $param_type->check($this->source, $function_param->location, $this->suppressed_issues);
+                $param_type->check($this->source, $function_param->location, $this->suppressed_issues, [], false);
             }
 
             if ($this->getFileChecker()->project_checker->collect_references) {
@@ -366,7 +366,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $function_param->signature_type->check(
                         $this->source,
                         $function_param->signature_location,
-                        $this->suppressed_issues
+                        $this->suppressed_issues,
+                        [],
+                        false
                     );
                 }
             }
@@ -1087,7 +1089,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $declared_return_type->check(
                 $this,
                 $secondary_return_type_location ?: $return_type_location,
-                $this->getSuppressedIssues()
+                $this->getSuppressedIssues(),
+                [],
+                false
             );
         }
 

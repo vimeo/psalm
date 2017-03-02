@@ -724,9 +724,11 @@ class CallChecker
                 if ($var_id === '$this') {
                     $does_class_exist = true;
                 } else {
-                    $does_class_exist = ClassLikeChecker::classOrInterfaceExists(
+                    $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
-                        $statements_checker->getFileChecker()
+                        $statements_checker->getFileChecker(),
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues()
                     );
                 }
 
@@ -1058,7 +1060,8 @@ class CallChecker
                         $fq_class_name,
                         $file_checker,
                         new CodeLocation($source, $stmt->class),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_checker->getSuppressedIssues(),
+                        false
                     );
                 }
 

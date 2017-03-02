@@ -1054,4 +1054,22 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedClass
+     * @return                   void
+     */
+    public function testUndefinedPropertyClass()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @var B */
+            public $foo;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }

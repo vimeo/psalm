@@ -342,20 +342,22 @@ class Union
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
      * @return void
      */
     public function check(
         StatementsSource $source,
         CodeLocation $code_location,
         array $suppressed_issues,
-        array $phantom_classes = []
+        array $phantom_classes = [],
+        $inferred = true
     ) {
         if ($this->checked) {
             return;
         }
 
         foreach ($this->types as $atomic_type) {
-            $atomic_type->check($source, $code_location, $suppressed_issues, $phantom_classes);
+            $atomic_type->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
         }
 
         $this->checked = true;

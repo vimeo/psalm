@@ -182,13 +182,15 @@ abstract class Atomic
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
      * @return false|null
      */
     public function check(
         StatementsSource $source,
         CodeLocation $code_location,
         array $suppressed_issues,
-        array $phantom_classes = []
+        array $phantom_classes = [],
+        $inferred = true
     ) {
         if ($this->checked) {
             return;
@@ -200,7 +202,8 @@ abstract class Atomic
                 $this->value,
                 $source->getFileChecker(),
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
+                $inferred
             ) === false
         ) {
             return false;
@@ -208,7 +211,7 @@ abstract class Atomic
 
         if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
             foreach ($this->type_params as $type_param) {
-                $type_param->check($source, $code_location, $suppressed_issues, $phantom_classes);
+                $type_param->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
             }
         }
 
