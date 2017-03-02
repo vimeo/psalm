@@ -155,7 +155,6 @@ class ForeachChecker
                         if ($iterator_class_type) {
                             $value_type_part = ExpressionChecker::fleshOutTypes(
                                 clone $iterator_class_type,
-                                [],
                                 $iterator_type->value,
                                 $iterator_method
                             );
@@ -195,12 +194,16 @@ class ForeachChecker
             (string)$stmt->getDocComment()
         );
 
-        CommentChecker::getTypeFromComment(
-            (string) $stmt->getDocComment(),
-            $foreach_context,
-            $statements_checker->getSource(),
-            null
-        );
+        $doc_comment_text = (string)$stmt->getDocComment();
+
+        if ($doc_comment_text) {
+            CommentChecker::getTypeFromComment(
+                $doc_comment_text,
+                $foreach_context,
+                $statements_checker->getSource(),
+                null
+            );
+        }
 
         $statements_checker->analyze($stmt->stmts, $foreach_context, $context);
 

@@ -20,6 +20,7 @@ class CommentChecker
      * @param  StatementsSource $source
      * @param  string           $var_id
      * @param  array<string, string>|null   $template_types
+     * @param  int|null         $var_line_number
      * @return Type\Union|null
      * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
@@ -29,34 +30,53 @@ class CommentChecker
         Context $context = null,
         StatementsSource $source,
         $var_id = null,
-        array $template_types = null
+        array $template_types = null,
+        &$var_line_number = null
     ) {
         $type_in_comments_var_id = null;
 
         $type_in_comments = null;
 
-        $comments = self::parseDocComment($comment);
+        $comments = self::parseDocComment($comment, $var_line_number);
 
-        if ($comments && isset($comments['specials']['var'][0]) && trim((string)$comments['specials']['var'][0])) {
-            try {
-                $line_parts = self::splitDocLine(trim((string)$comments['specials']['var'][0]));
-            } catch (DocblockParseException $e) {
-                throw $e;
-            }
+        if (!isset($comments['specials']['var'])) {
+            return;
+        }
 
-            if ($line_parts && $line_parts[0]) {
-                $type_in_comments = FunctionLikeChecker::fixUpLocalType(
-                    $line_parts[0],
-                    $source,
-                    $template_types
-                );
+        if ($comments) {
+            /** @var int $line_number */
+            foreach ($comments['specials']['var'] as $line_number => $var_line) {
+                $var_line = trim($var_line);
 
-                // support PHPStorm-style docblocks like
-                // @var Type $variable
-                if (count($line_parts) > 1 && $line_parts[1][0] === '$') {
-                    $type_in_comments_var_id = $line_parts[1];
+                if (!$var_line) {
+                    continue;
+                }
+
+                try {
+                    $line_parts = self::splitDocLine($var_line);
+                } catch (DocblockParseException $e) {
+                    throw $e;
+                }
+
+                if ($line_parts && $line_parts[0]) {
+                    $type_in_comments = FunctionLikeChecker::fixUpLocalType(
+                        $line_parts[0],
+                        $source,
+                        $template_types
+                    );
+
+                    $var_line_number = $line_number;
+
+                    // support PHPStorm-style docblocks like
+                    // @var Type $variable
+                    if (count($line_parts) > 1 && $line_parts[1][0] === '$') {
+                        $type_in_comments_var_id = $line_parts[1];
+                    }
+
+                    break;
                 }
             }
+
         }
 
         if (!$type_in_comments) {

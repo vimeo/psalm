@@ -92,12 +92,16 @@ class AssignmentChecker
             $context->removeDescendents($array_var_id);
         }
 
-        $type_in_comments = CommentChecker::getTypeFromComment(
-            $doc_comment,
-            $context,
-            $statements_checker->getSource(),
-            $var_id
-        );
+        if ($doc_comment) {
+            $type_in_comments = CommentChecker::getTypeFromComment(
+                $doc_comment,
+                $context,
+                $statements_checker->getSource(),
+                $var_id
+            );
+        } else {
+            $type_in_comments = null;
+        }
 
         if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
             if ($var_id) {
@@ -667,7 +671,6 @@ class AssignmentChecker
                 } else {
                     $class_property_type = ExpressionChecker::fleshOutTypes(
                         clone $class_property_type,
-                        [],
                         $lhs_type_part->value
                     );
                 }
@@ -853,7 +856,7 @@ class AssignmentChecker
             return null;
         }
 
-        $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, [], $fq_class_name);
+        $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, $fq_class_name);
 
         if (!TypeChecker::isContainedBy(
             $assignment_value_type,

@@ -315,7 +315,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $param_type = ExpressionChecker::fleshOutTypes(
                 $param_type,
-                [],
                 $context->self,
                 $this->getMethodId()
             );
@@ -993,7 +992,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $inferred_return_type = TypeChecker::simplifyUnionType(
             ExpressionChecker::fleshOutTypes(
                 $inferred_return_type,
-                [],
                 $this->source->getFQCLN(),
                 ''
             ),
@@ -1057,7 +1055,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         // passing it through fleshOutTypes eradicates errant $ vars
         $declared_return_type = ExpressionChecker::fleshOutTypes(
             $return_type,
-            [],
             $fq_class_name ?: $this->source->getFQCLN(),
             $method_id
         );

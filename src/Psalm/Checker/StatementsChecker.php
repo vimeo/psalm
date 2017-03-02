@@ -295,11 +295,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $class_checker->visit();
                 $class_checker->analyze(null, $global_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-                CommentChecker::getTypeFromComment(
-                    (string)$stmt->getDocComment(),
-                    $context,
-                    $this->getSource()
-                );
+                if ((string)$stmt->getDocComment()) {
+                    CommentChecker::getTypeFromComment(
+                        (string)$stmt->getDocComment(),
+                        $context,
+                        $this->getSource()
+                    );
+                }
+
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
@@ -530,11 +533,17 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      */
     private function analyzeReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
     {
-        $type_in_comments = CommentChecker::getTypeFromComment(
-            (string) $stmt->getDocComment(),
-            $context,
-            $this->source
-        );
+        $doc_comment_text = (string)$stmt->getDocComment();
+
+        if ($doc_comment_text) {
+            $type_in_comments = CommentChecker::getTypeFromComment(
+                $doc_comment_text,
+                $context,
+                $this->source
+            );
+        } else {
+            $type_in_comments = null;
+        }
 
         if ($stmt->expr) {
             if (ExpressionChecker::analyze($this, $stmt->expr, $context) === false) {

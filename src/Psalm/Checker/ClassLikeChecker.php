@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\InvalidClass;
@@ -524,6 +525,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $property_type = Type::getMixed();
             }
 
+            // type_location is only set if collect_references is true
+            if ($property->type_location && !$property_type->isMixed()) {
+                $fleshed_out_type = ExpressionChecker::fleshOutTypes(clone $property_type, $this->fq_class_name, null);
+                $fleshed_out_type->check($this, $property->type_location, $this->getSuppressedIssues());
+            }
+
             if ($property->is_static) {
                 $property_id = $this->fq_class_name . '::$' . $property_name;
 
@@ -954,16 +961,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     ) {
         $comment = $stmt->getDocComment();
         $type_in_comment = null;
+        $property_type_line_number = null;
         $storage = self::$storage[strtolower($this->fq_class_name)];
 
-        if ($comment && $config->use_docblock_types) {
+        if ($comment && $comment->getText() && $config->use_docblock_types) {
             try {
+                $property_type_line_number = $comment->getLine();
                 $type_in_comment = CommentChecker::getTypeFromComment(
-                    (string)$comment,
+                    $comment->getText(),
                     null,
                     $this,
                     null,
-                    $storage->template_types
+                    $storage->template_types,
+                    $property_type_line_number
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
@@ -975,7 +985,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     // fall through
                 }
             }
-        } elseif (!$comment) {
+        } elseif (!$comment || !$comment->getText()) {
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     'Property ' . $this->fq_class_name . '::$' . $stmt->props[0]->name . ' does not have a ' .
@@ -991,6 +1001,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $property_group_type = $type_in_comment ?: null;
 
         foreach ($stmt->props as $property) {
+            $property_type_location = null;
+
             if (!$property_group_type) {
                 if (!$property->default || !$config->use_property_default_for_type) {
                     $property_type = false;
@@ -998,6 +1010,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();
                 }
             } else {
+                if ($this->getFileChecker()->project_checker->collect_references && $property_type_line_number) {
+                    $property_type_location = new CodeLocation($this, $stmt);
+                    $property_type_location->setCommentLine($property_type_line_number);
+                }
+
                 $property_type = count($stmt->props) === 1 ? $property_group_type : clone $property_group_type;
             }
 
@@ -1005,6 +1022,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->properties[$property->name]->is_static = (bool)$stmt->isStatic();
             $storage->properties[$property->name]->type = $property_type;
             $storage->properties[$property->name]->location = new CodeLocation($this, $property);
+            $storage->properties[$property->name]->type_location = $property_type_location;
             $storage->properties[$property->name]->has_default = $property->default ? true : false;
 
             if ($stmt->isPublic()) {

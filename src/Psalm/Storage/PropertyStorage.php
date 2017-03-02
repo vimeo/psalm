@@ -22,6 +22,11 @@ class PropertyStorage
     public $location;
 
     /**
+     * @var CodeLocation|null
+     */
+    public $type_location;
+
+    /**
      * @var Type\Union|false
      */
     public $type;

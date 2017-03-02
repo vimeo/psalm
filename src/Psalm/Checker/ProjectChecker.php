@@ -302,11 +302,19 @@ class ProjectChecker
                 }
 
                 foreach ($locations_by_files as $locations) {
+                    $snippet_starts = [];
+
                     foreach ($locations as $location) {
                         $snippet = $location->getSnippet();
 
                         $snippet_bounds = $location->getSnippetBounds();
                         $selection_bounds = $location->getSelectionBounds();
+
+                        if (isset($snippet_starts[$snippet_bounds[0]])) {
+                            continue;
+                        }
+
+                        $snippet_starts[$snippet_bounds[0]] = true;
 
                         $selection_start = $selection_bounds[0] - $snippet_bounds[0];
                         $selection_length = $selection_bounds[1] - $selection_bounds[0];

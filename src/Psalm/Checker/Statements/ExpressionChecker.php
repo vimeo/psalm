@@ -1434,20 +1434,19 @@ class ExpressionChecker
     }
 
     /**
-     * @param  Type\Union                       $return_type
-     * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  string|null                      $calling_class
-     * @param  string|null                      $method_id
+     * @param  Type\Union   $return_type
+     * @param  string|null  $calling_class
+     * @param  string|null  $method_id
      * @return Type\Union
      */
-    public static function fleshOutTypes(Type\Union $return_type, array $args, $calling_class = null, $method_id = null)
+    public static function fleshOutTypes(Type\Union $return_type, $calling_class = null, $method_id = null)
     {
         $return_type = clone $return_type;
 
         $new_return_type_parts = [];
 
         foreach ($return_type->types as $return_type_part) {
-            $new_return_type_parts[] = self::fleshOutAtomicType($return_type_part, $args, $calling_class, $method_id);
+            $new_return_type_parts[] = self::fleshOutAtomicType($return_type_part, $calling_class, $method_id);
         }
 
         $fleshed_out_type = new Type\Union($new_return_type_parts);
@@ -1458,13 +1457,12 @@ class ExpressionChecker
     }
 
     /**
-     * @param  Type\Atomic                      &$return_type
-     * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  string|null                      $calling_class
-     * @param  string|null                      $method_id
+     * @param  Type\Atomic  &$return_type
+     * @param  string|null  $calling_class
+     * @param  string|null  $method_id
      * @return Type\Atomic
      */
-    protected static function fleshOutAtomicType(Type\Atomic $return_type, array $args, $calling_class, $method_id)
+    protected static function fleshOutAtomicType(Type\Atomic $return_type, $calling_class, $method_id)
     {
         if ($return_type instanceof TNamedObject) {
             if ($return_type->value === '$this' ||
@@ -1486,35 +1484,12 @@ class ExpressionChecker
 
                     $return_type->value = explode('::', (string)$appearing_method_id)[0];
                 }
-            } elseif ($return_type->value[0] === '$' && $method_id) {
-                $method_params = MethodChecker::getMethodParams($method_id);
-
-                if (!$method_params) {
-                    throw new \InvalidArgumentException(
-                        'Cannot get method params of ' . $method_id
-                    );
-                }
-
-                foreach ($args as $i => $arg) {
-                    $method_param = $method_params[$i];
-
-                    if ($return_type->value === '$' . $method_param->name) {
-                        $arg_value = $arg->value;
-                        if ($arg_value instanceof PhpParser\Node\Scalar\String_) {
-                            $return_type->value = preg_replace('/^\\\/', '', $arg_value->value);
-                        }
-                    }
-                }
-
-                if ($return_type->value[0] === '$') {
-                    $return_type = new TMixed;
-                }
             }
         }
 
         if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
             foreach ($return_type->type_params as &$type_param) {
-                $type_param = self::fleshOutTypes($type_param, $args, $calling_class, $method_id);
+                $type_param = self::fleshOutTypes($type_param, $calling_class, $method_id);
             }
         }
 
@@ -1602,11 +1577,17 @@ class ExpressionChecker
         PhpParser\Node\Expr\Yield_ $stmt,
         Context $context
     ) {
-        $type_in_comments = CommentChecker::getTypeFromComment(
-            (string) $stmt->getDocComment(),
-            $context,
-            $statements_checker->getSource()
-        );
+        $doc_comment_text = (string)$stmt->getDocComment();
+
+        if ($doc_comment_text) {
+            $type_in_comments = CommentChecker::getTypeFromComment(
+                $doc_comment_text,
+                $context,
+                $statements_checker->getSource()
+            );
+        } else {
+            $type_in_comments = null;
+        }
 
         if ($stmt->key) {
             if (self::analyze($statements_checker, $stmt->key, $context) === false) {

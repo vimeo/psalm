@@ -841,7 +841,6 @@ class CallChecker
 
                         $return_type_candidate = ExpressionChecker::fleshOutTypes(
                             $return_type_candidate,
-                            $stmt->args,
                             $fq_class_name,
                             $method_id
                         );
@@ -1187,7 +1186,6 @@ class CallChecker
 
                     $return_type_candidate = ExpressionChecker::fleshOutTypes(
                         $return_type_candidate,
-                        $stmt->args,
                         $fq_class_name,
                         $method_id
                     );
@@ -1557,7 +1555,6 @@ class CallChecker
 
                     $fleshed_out_type = ExpressionChecker::fleshOutTypes(
                         $param_type,
-                        [],
                         $fq_class_name,
                         $method_id
                     );
