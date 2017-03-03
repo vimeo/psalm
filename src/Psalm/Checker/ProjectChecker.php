@@ -328,6 +328,8 @@ class ProjectChecker
                             ) . PHP_EOL . PHP_EOL;
                     }
                 }
+            } else {
+                $this->checkClassReferences();
             }
         }
 
