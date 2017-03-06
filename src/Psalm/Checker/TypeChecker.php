@@ -154,9 +154,19 @@ class TypeChecker
 
                     $clauses[] = new Clause([$base => ['isset']]);
 
-                    foreach ($key_parts as $key_part_dim) {
+                    if (count($key_parts)) {
+                        $clauses[] = new Clause([$base => ['!false']]);
+                        $clauses[] = new Clause([$base => ['!int']]);
+                    }
+
+                    foreach ($key_parts as $i => $key_part_dim) {
                         $base .= '[' . $key_part_dim . ']';
                         $clauses[] = new Clause([$base => ['isset']]);
+
+                        if ($i < count($key_parts) - 1) {
+                            $clauses[] = new Clause([$base => ['!false']]);
+                            $clauses[] = new Clause([$base => ['!int']]);
+                        }
                     }
                 } else {
                     $clauses[] = new Clause([$var => [$type]]);
