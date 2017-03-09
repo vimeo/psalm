@@ -329,7 +329,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function getMethodMutations($method_id, Context &$this_context)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
-        $call_context = new Context((string) $this_context->vars_in_scope['$this']);
+        $call_context = new Context((string)array_values($this_context->vars_in_scope['$this']->types)[0]);
         $call_context->collect_mutations = true;
 
         foreach ($this_context->vars_possibly_in_scope as $var => $type) {
