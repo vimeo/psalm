@@ -830,4 +830,58 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testEmptyArrayReconciliationThenIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param string|string[] $a
+         */
+        function foo($a) : string {
+            if (is_string($a)) {
+                return $a;
+            } elseif (empty($a)) {
+                return "goodbye";
+            }
+
+            if (isset($a[0])) {
+                return $a[0];
+            };
+
+            return "not found";
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testEmptyArrayReconciliationThenElseif()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param string|string[] $a
+         */
+        function foo($a) : string {
+            if (is_string($a)) {
+                return $a;
+            } elseif (empty($a)) {
+                return "goodbye";
+            } elseif (isset($a[0])) {
+                return $a[0];
+            };
+
+            return "not found";
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }

@@ -175,7 +175,8 @@ class Context
                         : null;
 
                     // if the type changed within the block of statements, process the replacement
-                    if ((string)$old_type !== (string)$new_type) {
+                    // also never allow ourselves to remove all types from a union
+                    if ((string)$old_type !== (string)$new_type && ($new_type || count($context_type->types) > 1)) {
                         $context_type->substitute($old_type, $new_type);
                         $updated_vars[$var] = true;
                     }
