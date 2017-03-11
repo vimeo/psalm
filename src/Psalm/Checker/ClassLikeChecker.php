@@ -249,7 +249,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             if ($this instanceof InterfaceChecker) {
                 $parent_interfaces = InterfaceChecker::getParentInterfaces(
-                    $this->fq_class_name
+                    $this->fq_class_name,
+                    $this->getFileChecker()
                 );
 
                 $extra_interfaces = $parent_interfaces;
@@ -270,7 +271,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $extra_interfaces = array_merge(
                     $extra_interfaces,
                     InterfaceChecker::getParentInterfaces(
-                        $interface_name
+                        $interface_name,
+                        $this->getFileChecker()
                     )
                 );
 
@@ -416,14 +418,39 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $storage = self::$storage[strtolower($fq_class_name)];
 
-        if (($this->class instanceof PhpParser\Node\Stmt\Class_ ||
-                $this->class instanceof PhpParser\Node\Stmt\Interface_
-            ) &&
-            $this->parent_fq_class_name &&
-            !ClassLikeChecker::classOrInterfaceExists($this->parent_fq_class_name, $this->getFileChecker())
-        ) {
-            // we should not normally get here
-            return;
+        if ($this->class instanceof PhpParser\Node\Stmt\Class_ && $this->class->extends) {
+            if (!$this->parent_fq_class_name) {
+                throw new \UnexpectedValueException('Parent class should be filled in');
+            }
+
+            $parent_reference_location = new CodeLocation($this, $this->class->extends);
+
+            if (!ClassLikeChecker::classOrInterfaceExists(
+                $this->parent_fq_class_name,
+                $this->getFileChecker(),
+                $parent_reference_location
+            )) {
+                // we should not normally get here
+                return;
+            }
+        } elseif ($this->class instanceof PhpParser\Node\Stmt\Interface_ && $this->class->extends) {
+            foreach ($this->class->extends as $extended_interface) {
+                $extended_interface_name = self::getFQCLNFromNameObject(
+                    $extended_interface,
+                    $this
+                );
+
+                $parent_reference_location = new CodeLocation($this, $extended_interface);
+
+                if (!ClassLikeChecker::classOrInterfaceExists(
+                    $extended_interface_name,
+                    $this->getFileChecker(),
+                    $parent_reference_location
+                )) {
+                    // we should not normally get here
+                    return;
+                }
+            }
         }
 
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {

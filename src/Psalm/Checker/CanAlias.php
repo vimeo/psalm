@@ -3,6 +3,7 @@ namespace Psalm\Checker;
 
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -13,6 +14,11 @@ trait CanAlias
      * @var array<string, string>
      */
     private $aliased_classes = [];
+
+    /**
+     * @var array<string, CodeLocation>
+     */
+    private $aliased_class_locations = [];
 
     /**
      * @var array<string, string>
@@ -54,9 +60,12 @@ trait CanAlias
 
                         $project_checker->use_referencing_locations[strtolower($use_path)][$this->getFilePath()][] =
                             new \Psalm\CodeLocation($this, $use);
+
+                        $project_checker->use_referencing_locations[$this->getFilePath()][strtolower($use_path)] = true;
                     }
 
                     $this->aliased_classes[strtolower($use->alias)] = $use_path;
+                    $this->aliased_class_locations[strtolower($use->alias)] = new CodeLocation($this, $stmt);
                     $this->aliased_classes_flipped[strtolower($use_path)] = $use->alias;
                     break;
             }

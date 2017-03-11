@@ -157,9 +157,18 @@ class ProjectChecker
     /**
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
+     *
      * @var array<string, array<string, array<int, \Psalm\CodeLocation>>>
      */
     public $use_referencing_locations = [];
+
+    /**
+     * A map of file names to the classes that they contain explicit references to
+     * used in collaboration with use_referencing_locations
+     *
+     * @var array<string, array<string, bool>>
+     */
+    public $use_referencing_files = [];
 
     /**
      * @var array<string, string>

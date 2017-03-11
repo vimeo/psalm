@@ -33,8 +33,6 @@ class InterfaceChecker extends ClassLikeChecker
                     $this
                 );
 
-                $source->getFileChecker()->evaluateClassLike($extended_interface_name);
-
                 $storage->parent_interfaces[] = $extended_interface_name;
             }
         }
@@ -71,18 +69,20 @@ class InterfaceChecker extends ClassLikeChecker
     /**
      * @param  string       $interface_name
      * @param  string       $possible_parent
+     * @param  FileChecker  $file_checker
      * @return boolean
      */
-    public static function interfaceExtends($interface_name, $possible_parent)
+    public static function interfaceExtends($interface_name, $possible_parent, FileChecker $file_checker)
     {
-        return in_array($possible_parent, self::getParentInterfaces($interface_name));
+        return in_array($possible_parent, self::getParentInterfaces($interface_name, $file_checker));
     }
 
     /**
      * @param  string       $fq_interface_name
+     * @param  FileChecker  $file_checker
      * @return array<string>   all interfaces extended by $interface_name
      */
-    public static function getParentInterfaces($fq_interface_name)
+    public static function getParentInterfaces($fq_interface_name, FileChecker $file_checker)
     {
         $fq_interface_name = strtolower($fq_interface_name);
 
@@ -97,8 +97,12 @@ class InterfaceChecker extends ClassLikeChecker
         foreach ($storage->parent_interfaces as $extended_interface_name) {
             $extended_interfaces[] = $extended_interface_name;
 
+            if (!self::interfaceExists($extended_interface_name, $file_checker)) {
+                continue;
+            }
+
             $extended_interfaces = array_merge(
-                self::getParentInterfaces($extended_interface_name),
+                self::getParentInterfaces($extended_interface_name, $file_checker),
                 $extended_interfaces
             );
         }

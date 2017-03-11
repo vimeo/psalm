@@ -873,7 +873,8 @@ class TypeChecker
                     (InterfaceChecker::interfaceExists($input_type_part->value, $file_checker) &&
                         InterfaceChecker::interfaceExtends(
                             $input_type_part->value,
-                            $container_type_part->value
+                            $container_type_part->value,
+                            $file_checker
                         )
                     ) ||
                     ExpressionChecker::isMock($input_type_part->value)
@@ -1015,7 +1016,8 @@ class TypeChecker
                 (InterfaceChecker::interfaceExists($container_type_part->value, $file_checker) &&
                     InterfaceChecker::interfaceExtends(
                         $container_type_part->value,
-                        $input_type_part->value
+                        $input_type_part->value,
+                        $file_checker
                     )
                 )
             )
@@ -1354,7 +1356,7 @@ class TypeChecker
                     }
 
                     if (InterfaceChecker::interfaceExists($differing_type, $file_checker) &&
-                        InterfaceChecker::interfaceExtends($differing_type, $simple_declared_type)
+                        InterfaceChecker::interfaceExtends($differing_type, $simple_declared_type, $file_checker)
                     ) {
                         $is_match = true;
                         break;
