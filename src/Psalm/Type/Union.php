@@ -284,6 +284,8 @@ class Union
             foreach ($new_type->types as $key => $new_type_part) {
                 $this->types[$key] = $new_type_part;
             }
+        } elseif (count($this->types) === 0) {
+            $this->types['mixed'] = new Atomic\TMixed();
         }
     }
 

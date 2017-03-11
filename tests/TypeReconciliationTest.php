@@ -862,22 +862,24 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
-    public function testEmptyArrayReconciliationThenElseif()
+    public function testEmptyStringReconciliationThenIf()
     {
         $stmts = self::$parser->parse('<?php
         /**
-         * @param string|string[] $a
+         * @param Exception|string|string[] $a
          */
         function foo($a) : string {
-            if (is_string($a)) {
-                return $a;
+            if (is_array($a)) {
+                return "hello";
             } elseif (empty($a)) {
                 return "goodbye";
-            } elseif (isset($a[0])) {
-                return $a[0];
+            }
+
+            if (is_string($a)) {
+                return $a;
             };
 
-            return "not found";
+            return "an exception";
         }
         ');
 

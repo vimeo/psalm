@@ -588,11 +588,19 @@ class IfChecker
             }
 
             if ($negated_elseif_types) {
+                $negated_keys = [];
+
+                foreach ($negated_elseif_types as $var_id => $type) {
+                    if (!$has_leaving_statements || $type !== '!empty') {
+                        $negated_keys[] = $var_id;
+                    }
+                }
+
                 $outer_context->update(
                     $old_elseif_context,
                     $elseif_context,
                     $has_leaving_statements,
-                    array_keys($negated_elseif_types),
+                    $negated_keys,
                     $if_scope->updated_vars
                 );
             }
