@@ -95,3 +95,12 @@ function array_shift(array $arr) {}
  * @return TValue
  */
 function array_pop(array $arr) {}
+
+/**
+ * @template TKey
+ * @template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return array<TKey, TValue>
+ */
+function array_reverse(array $arr) {}
