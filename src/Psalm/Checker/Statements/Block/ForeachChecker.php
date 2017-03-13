@@ -34,7 +34,7 @@ class ForeachChecker
         }
 
         $foreach_context = clone $context;
-        $foreach_context->in_loop = true;
+        $foreach_context->inside_loop = true;
 
         /** @var Type\Union|null */
         $key_type = null;

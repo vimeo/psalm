@@ -21,7 +21,7 @@ class ForChecker
         Context $context
     ) {
         $for_context = clone $context;
-        $for_context->in_loop = true;
+        $for_context->inside_loop = true;
 
         foreach ($stmt->init as $init) {
             if (ExpressionChecker::analyze($statements_checker, $init, $for_context) === false) {

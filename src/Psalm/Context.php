@@ -16,7 +16,21 @@ class Context
     /**
      * @var boolean
      */
-    public $in_loop = false;
+    public $inside_loop = false;
+
+    /**
+     * @var boolean
+     */
+    public $has_loop_issues = false;
+
+    /**
+     * Whether or not we're inside the conditional of an if/where etc.
+     *
+     * This changes whether or not the context is cloned
+     *
+     * @var boolean
+     */
+    public $inside_conditional = false;
 
     /**
      * @var string|null
@@ -108,15 +122,6 @@ class Context
     public $byref_constraints;
 
     /**
-     * Whether or not we're inside the conditional of an if/where etc.
-     *
-     * This changes whether or not the context is cloned
-     *
-     * @var boolean
-     */
-    public $inside_conditional = false;
-
-    /**
      * @param string|null $self
      */
     public function __construct($self = null)
@@ -142,6 +147,8 @@ class Context
         foreach ($this->constants as &$constant) {
             $constant = clone $constant;
         }
+
+        $this->has_loop_issues = false;
     }
 
     /**
