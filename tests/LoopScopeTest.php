@@ -404,4 +404,31 @@ class LoopScopeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    public function testThirdLoopWithIntCheckAndLoopSet()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+        $b = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if ($b !== null) {
+                takesInt($b);
+            }
+
+            if ($a !== null) {
+                takesInt($a);
+                $b = $a;
+            }
+
+            $a = $i;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
