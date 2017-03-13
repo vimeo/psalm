@@ -608,14 +608,8 @@ class ExpressionChecker
                 }
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
-                if (TypeChecker::isContainedBy(
-                    $existing_type,
-                    $by_ref_type,
-                    $statements_checker->getFileChecker()
-                ) &&
-                    !$existing_type->isNull() &&
-                    (string)$existing_type !== 'array<empty, empty>'
-                ) {
+                if ((string)$existing_type !== 'array<empty, empty>') {
+                    $context->vars_in_scope[$var_id] = $by_ref_type;
                     $stmt->inferredType = $context->vars_in_scope[$var_id];
                     return;
                 }

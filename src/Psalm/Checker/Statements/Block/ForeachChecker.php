@@ -202,7 +202,7 @@ class ForeachChecker
             );
         }
 
-        $statements_checker->analyze($stmt->stmts, $foreach_context, $context);
+        $statements_checker->analyzeLoop($stmt->stmts, $foreach_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

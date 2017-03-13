@@ -449,10 +449,26 @@ abstract class Type
      */
     public static function combineUnionTypes(Union $type_1, Union $type_2)
     {
+        $both_failed_reconciliation = false;
+
+        if ($type_1->failed_reconciliation) {
+            if ($type_2->failed_reconciliation) {
+                $both_failed_reconciliation = true;
+            } else {
+                return $type_2;
+            }
+        } elseif ($type_2->failed_reconciliation) {
+            return $type_1;
+        }
+
         $combined_type = self::combineTypes(array_merge(array_values($type_1->types), array_values($type_2->types)));
 
         if (!$type_1->initialized || !$type_2->initialized) {
             $combined_type->initialized = false;
+        }
+
+        if ($both_failed_reconciliation) {
+            $combined_type->failed_reconciliation = true;
         }
 
         return $combined_type;

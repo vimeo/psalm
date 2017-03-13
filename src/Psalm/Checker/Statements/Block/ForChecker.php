@@ -37,7 +37,7 @@ class ForChecker
             $for_context->inside_conditional = false;
         }
 
-        $statements_checker->analyze($stmt->stmts, $for_context, $context);
+        $statements_checker->analyzeLoop($stmt->stmts, $for_context, $context);
 
         foreach ($stmt->loop as $expr) {
             if (ExpressionChecker::analyze($statements_checker, $expr, $for_context) === false) {

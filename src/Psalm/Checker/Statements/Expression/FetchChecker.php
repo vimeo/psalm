@@ -993,7 +993,7 @@ class FetchChecker
 
                             $array_type = $context_type;
 
-                            for ($i = 0; $i < $nesting + 1; $i++) {
+                            for ($i = 0; $i < (int)$nesting + 1; $i++) {
                                 if (isset($array_type->types['array']) &&
                                     $array_type->types['array'] instanceof Type\Atomic\TArray
                                 ) {

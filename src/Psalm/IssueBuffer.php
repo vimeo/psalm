@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use Psalm\Checker\ProjectChecker;
+use Psalm\Issue\CodeIssue;
 
 class IssueBuffer
 {
@@ -20,17 +21,23 @@ class IssueBuffer
      */
     protected static $emitted = [];
 
+    /** @var int */
+    protected static $recording_level = 0;
+
+    /** @var array<int, array<int, CodeIssue>> */
+    protected static $recorded_issues = [];
+
     /**
      * @var int
      */
     protected static $start_time = 0;
 
     /**
-     * @param   Issue\CodeIssue $e
-     * @param   array           $suppressed_issues
+     * @param   CodeIssue $e
+     * @param   array     $suppressed_issues
      * @return  bool
      */
-    public static function accepts(Issue\CodeIssue $e, array $suppressed_issues = [])
+    public static function accepts(CodeIssue $e, array $suppressed_issues = [])
     {
         $config = Config::getInstance();
 
@@ -45,15 +52,20 @@ class IssueBuffer
             return false;
         }
 
+        if (self::$recording_level > 0) {
+            self::$recorded_issues[self::$recording_level][] = $e;
+            return false;
+        }
+
         return self::add($e);
     }
 
     /**
-     * @param   Issue\CodeIssue $e
+     * @param   CodeIssue $e
      * @return  bool
      * @throws  Exception\CodeException
      */
-    public static function add(Issue\CodeIssue $e)
+    public static function add(CodeIssue $e)
     {
         $config = Config::getInstance();
         $project_checker = ProjectChecker::getInstance();
@@ -121,11 +133,11 @@ class IssueBuffer
     }
 
     /**
-     * @param  Issue\CodeIssue $e
+     * @param  CodeIssue $e
      * @param  string          $severity
      * @return array
      */
-    protected static function getIssueArray(Issue\CodeIssue $e, $severity = Config::REPORT_ERROR)
+    protected static function getIssueArray(CodeIssue $e, $severity = Config::REPORT_ERROR)
     {
         $location = $e->getLocation();
         $selection_bounds = $location->getSelectionBounds();
@@ -143,11 +155,11 @@ class IssueBuffer
     }
 
     /**
-     * @param  Issue\CodeIssue $e
+     * @param  CodeIssue $e
      * @param  string          $severity
      * @return string
      */
-    protected static function getEmacsOutput(Issue\CodeIssue $e, $severity = Config::REPORT_ERROR)
+    protected static function getEmacsOutput(CodeIssue $e, $severity = Config::REPORT_ERROR)
     {
         $location = $e->getLocation();
 
@@ -164,11 +176,11 @@ class IssueBuffer
     }
 
     /**
-     * @param  Issue\CodeIssue $e
+     * @param  CodeIssue $e
      * @param  boolean         $use_color
      * @return string
      */
-    protected static function getSnippet(Issue\CodeIssue $e, $use_color = true)
+    protected static function getSnippet(CodeIssue $e, $use_color = true)
     {
         $location = $e->getLocation();
 
@@ -252,5 +264,57 @@ class IssueBuffer
         self::$issue_data = [];
         self::$emitted = [];
         self::$error_count = 0;
+        self::$recording_level = 0;
+        self::$recorded_issues = [];
+    }
+
+    /**
+     * @return void
+     */
+    public static function startRecording()
+    {
+        self::$recording_level++;
+        self::$recorded_issues[self::$recording_level] = [];
+    }
+
+    /**
+     * @return void
+     */
+    public static function stopRecording()
+    {
+        if (self::$recording_level === 0) {
+            throw new \UnexpectedValueException('Cannot stop recording - already at base level');
+        }
+
+        self::$recording_level--;
+    }
+
+    /**
+     * @return array<int, CodeIssue>
+     */
+    public static function clearRecordingLevel()
+    {
+        if (self::$recording_level === 0) {
+            throw new \UnexpectedValueException('Not currently recording');
+        }
+
+        $recorded_issues = self::$recorded_issues[self::$recording_level];
+
+        self::$recorded_issues[self::$recording_level] = [];
+
+        return $recorded_issues;
+    }
+
+    /**
+     * @return void
+     */
+    public static function bubbleUp(CodeIssue $e)
+    {
+        if (self::$recording_level === 0) {
+            self::add($e);
+            return;
+        }
+
+        self::$recorded_issues[self::$recording_level][] = $e;
     }
 }

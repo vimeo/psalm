@@ -19,11 +19,6 @@ class Context
     public $inside_loop = false;
 
     /**
-     * @var boolean
-     */
-    public $has_loop_issues = false;
-
-    /**
      * Whether or not we're inside the conditional of an if/where etc.
      *
      * This changes whether or not the context is cloned
@@ -147,8 +142,6 @@ class Context
         foreach ($this->constants as &$constant) {
             $constant = clone $constant;
         }
-
-        $this->has_loop_issues = false;
     }
 
     /**
@@ -203,6 +196,7 @@ class Context
 
         foreach ($original_context->vars_in_scope as $var => $context_type) {
             if (isset($new_context->vars_in_scope[$var]) &&
+                !$new_context->vars_in_scope[$var]->failed_reconciliation &&
                 (string)$new_context->vars_in_scope[$var] !== (string)$context_type
             ) {
                 $redefined_vars[$var] = $new_context->vars_in_scope[$var];

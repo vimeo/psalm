@@ -114,8 +114,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             /*
-            if (isset($context->vars_in_scope['$storage'])) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$storage'], $context->referenced_vars);
+            if (isset($context->vars_in_scope['$failed_reconciliation']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$failed_reconciliation']);
             }
             */
 
@@ -326,6 +326,72 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     }
 
     /**
+     * Checks an array of statements in a loop
+     *
+     * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
+     * @param  Context                                          $loop_context
+     * @param  Context                                          $outer_context
+     * @return void
+     */
+    public function analyzeLoop(
+        array $stmts,
+        Context $loop_context,
+        Context $outer_context
+    ) {
+        // record all the vars that existed before we did the first pass through the loop
+        $pre_loop_vars_in_scope = $loop_context->vars_in_scope;
+
+        IssueBuffer::startRecording();
+        $this->analyze($stmts, $loop_context, $outer_context);
+        $recorded_issues = IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        if ($recorded_issues) {
+            do {
+                $vars_to_remove = [];
+
+                // widen the foreach context type with the initial context type
+                foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                    if (isset($pre_loop_vars_in_scope[$var_id])) {
+                        $loop_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $type,
+                            $pre_loop_vars_in_scope[$var_id]
+                        );
+
+                        if (isset($outer_context->vars_in_scope[$var_id])) {
+                            $loop_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $loop_context->vars_in_scope[$var_id],
+                                $outer_context->vars_in_scope[$var_id]
+                            );
+                        }
+                    } else {
+                        $vars_to_remove[] = $var_id;
+                    }
+                }
+
+                // remove vars that were defined in the foreach
+                foreach ($vars_to_remove as $var_id) {
+                    unset($loop_context->vars_in_scope[$var_id]);
+                }
+
+                IssueBuffer::startRecording();
+                $this->analyze($stmts, $loop_context, $outer_context);
+                $last_recorded_issues_count = count($recorded_issues);
+                $recorded_issues = IssueBuffer::clearRecordingLevel();
+
+                IssueBuffer::stopRecording();
+            } while (count($recorded_issues) < $last_recorded_issues_count);
+
+            if ($recorded_issues) {
+                foreach ($recorded_issues as $recorded_issue) {
+                    // if we're not in any loops then this will just result in the issue being emitted
+                    IssueBuffer::bubbleUp($recorded_issue);
+                }
+            }
+        }
+    }
+
+    /**
      * @param   PhpParser\Node\Stmt\Static_ $stmt
      * @param   Context                     $context
      * @return  false|null
@@ -408,7 +474,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        if ($this->analyze($stmt->stmts, $do_context, $context) === false) {
+        if ($this->analyzeLoop($stmt->stmts, $do_context, $context) === false) {
             return false;
         }
 
@@ -425,6 +491,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 if ((string)$do_context->vars_in_scope[$var] !== (string)$type) {
                     $context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
                 }
+            }
+        }
+
+        foreach ($do_context->vars_in_scope as $var_id => $type) {
+            if (!isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = $type;
             }
         }
 
