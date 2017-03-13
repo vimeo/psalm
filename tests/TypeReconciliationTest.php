@@ -16,9 +16,6 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /** @var \PhpParser\Parser */
     protected static $parser;
 
-    /** @var TestConfig */
-    protected static $config;
-
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
@@ -31,7 +28,6 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
     }
 
     /**
@@ -42,7 +38,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         FileChecker::clearCache();
 
         $this->project_checker = new ProjectChecker();
-        $this->project_checker->setConfig(self::$config);
+        $this->project_checker->setConfig(new TestConfig());
 
         $this->file_checker = new FileChecker('somefile.php', $this->project_checker);
         $this->file_checker->context = new Context();
@@ -885,5 +881,41 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testIgnoreNullCheckAndMaintainNullValue()
+    {
+        Config::getInstance()->setCustomErrorLevel('FailedTypeResolution', Config::REPORT_SUPPRESS);
+
+        $stmts = self::$parser->parse('<?php
+        $a = null;
+        if ($a !== null) { }
+        $b = $a;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('null', (string) $context->vars_in_scope['$b']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testIgnoreNullCheckAndMaintainNullableValue()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = rand(0, 1) ? 5 : null;
+        if ($a !== null) { }
+        $b = $a;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('int|null', (string) $context->vars_in_scope['$b']);
     }
 }

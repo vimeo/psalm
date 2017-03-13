@@ -339,7 +339,6 @@ class TypeChecker
      */
     public static function getTruthsFromFormula(array $clauses)
     {
-        /** @var array<string, string> */
         $truths = [];
 
         if (empty($clauses)) {
@@ -484,6 +483,8 @@ class TypeChecker
 
             $before_adjustment = (string)$result_type;
 
+            $failed_reconciliation = false;
+
             foreach ($new_type_parts as $new_type_part) {
                 $result_type = self::reconcileTypes(
                     (string) $new_type_part,
@@ -491,7 +492,8 @@ class TypeChecker
                     $key,
                     $file_checker,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
+                    $failed_reconciliation
                 );
 
                 // special case if result is just a simple array
@@ -510,6 +512,10 @@ class TypeChecker
 
             if ((string)$result_type !== $before_adjustment) {
                 $changed_types[] = $key;
+            }
+
+            if ($failed_reconciliation) {
+                $result_type->failed_reconciliation = true;
             }
 
             $existing_types[$key] = $result_type;
@@ -533,6 +539,7 @@ class TypeChecker
      * @param   FileChecker         $file_checker
      * @param   CodeLocation        $code_location
      * @param   array               $suppressed_issues
+     * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
      * @return  Type\Union|null|false
      */
     public static function reconcileTypes(
@@ -541,7 +548,8 @@ class TypeChecker
         $key,
         FileChecker $file_checker,
         CodeLocation $code_location = null,
-        array $suppressed_issues = []
+        array $suppressed_issues = [],
+        &$failed_reconciliation = false
     ) {
         if ($existing_var_type === null) {
             if ($new_var_type === '^isset') {
@@ -597,6 +605,8 @@ class TypeChecker
                             // fall through
                         }
                     }
+
+                    $failed_reconciliation = true;
                 }
 
                 return Type::getMixed();
@@ -616,8 +626,17 @@ class TypeChecker
                 }
 
                 if (empty($existing_var_type->types)) {
-                    // @todo - I think there's a better way to handle this, but for the moment
-                    // mixed will have to do.
+                    if ($key && $code_location) {
+                        if (IssueBuffer::accepts(
+                            new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    }
+
+                    $failed_reconciliation = true;
+
                     return Type::getMixed();
                 }
 
@@ -640,6 +659,8 @@ class TypeChecker
                     }
                 }
 
+                $failed_reconciliation = true;
+
                 return Type::getMixed();
             }
 
@@ -650,6 +671,8 @@ class TypeChecker
             $existing_var_type->removeType('null');
 
             if (empty($existing_var_type->types)) {
+                $failed_reconciliation = true;
+
                 // @todo - I think there's a better way to handle this, but for the moment
                 // mixed will have to do.
                 return Type::getMixed();
@@ -748,6 +771,8 @@ class TypeChecker
                 )) {
                     // fall through
                 }
+
+                $failed_reconciliation = true;
             }
         }
 
@@ -1057,7 +1082,6 @@ class TypeChecker
             $new_base_key = $base_key . '->' . $key_parts[$i];
 
             if (!isset($existing_keys[$new_base_key])) {
-                /** @var null|Type\Union */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
@@ -1138,7 +1162,6 @@ class TypeChecker
             $new_base_key = $base_key . '[' . $key_parts[$i] . ']';
 
             if (!isset($existing_keys[$new_base_key])) {
-                /** @var Type\Union|null */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {

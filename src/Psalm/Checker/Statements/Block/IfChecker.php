@@ -242,7 +242,10 @@ class IfChecker
 
         if ($if_scope->possibly_redefined_vars) {
             foreach ($if_scope->possibly_redefined_vars as $var => $type) {
-                if ($context->hasVariable($var) && !isset($if_scope->updated_vars[$var])) {
+                if (!$type->failed_reconciliation &&
+                    $context->hasVariable($var) &&
+                    !isset($if_scope->updated_vars[$var])
+                ) {
                     $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $type);
                 }
             }

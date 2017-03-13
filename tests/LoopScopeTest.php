@@ -326,4 +326,259 @@ class LoopScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('B', (string) $context->vars_in_scope['$a']);
     }
+
+    /**
+     * @return void
+     */
+    public function testSecondLoopWithNotNullCheck()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if ($a !== null) takesInt($a);
+            $a = $i;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testSecondLoopWithIntCheck()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if (is_int($a)) takesInt($a);
+            $a = $i;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testSecondLoopWithIntCheckAndConditionalSet()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if (is_int($a)) takesInt($a);
+
+            if (rand(0, 1)) {
+                $a = $i;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testSecondLoopWithIntCheckAndAssignmentsInIfAndElse()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if (is_int($a)) {
+                $a = 6;
+            } else {
+                $a = $i;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testSecondLoopWithIntCheckAndLoopSet()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if (is_int($a)) takesInt($a);
+
+            while (rand(0, 1)) {
+                $a = $i;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testThirdLoopWithIntCheckAndLoopSet()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+        $b = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if ($b !== null) {
+                takesInt($b);
+            }
+
+            if ($a !== null) {
+                takesInt($a);
+                $b = $a;
+            }
+
+            $a = $i;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testAssignInsideForeach()
+    {
+        $stmts = self::$parser->parse('<?php
+        $b = false;
+
+        foreach ([1, 2, 3, 4] as $a) {
+            if ($a === rand(0, 10)) {
+                $b = true;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+
+        $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testAssignInsideForeachWithBreak()
+    {
+        $stmts = self::$parser->parse('<?php
+        $b = false;
+
+        foreach ([1, 2, 3, 4] as $a) {
+            if ($a === rand(0, 10)) {
+                $b = true;
+                break;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+
+        $this->assertSame('bool', (string) $context->vars_in_scope['$b']);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyNullReference
+     * @return                   void
+     */
+    public function testPossiblyNullCheckInsideForeachWithNoLeaveStatement()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return array<A|null> */
+            public static function loadMultiple()
+            {
+                return [new A, null];
+            }
+
+            /** @return void */
+            public function barBar() {
+
+            }
+        }
+
+        foreach (A::loadMultiple() as $a) {
+            if ($a === null) {
+                // do nothing
+            }
+
+            $a->barBar();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testNullCheckInsideForeachWithContinue()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            /** @return array<A|null> */
+            public static function loadMultiple()
+            {
+                return [new A, null];
+            }
+
+            /** @return void */
+            public function barBar() {
+
+            }
+        }
+
+        foreach (A::loadMultiple() as $a) {
+            if ($a === null) {
+                continue;
+            }
+
+            $a->barBar();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }

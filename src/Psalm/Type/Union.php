@@ -34,6 +34,11 @@ class Union
     protected $checked = false;
 
     /**
+     * @var boolean
+     */
+    public $failed_reconciliation = false;
+
+    /**
      * Constructs an Union instance
      * @param array<int, Atomic>     $types
      */

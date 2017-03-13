@@ -40,13 +40,10 @@ class SwitchChecker
 
         $original_context = clone $context;
 
-        /** @var array<string,Type\Union>|null */
         $new_vars_in_scope = null;
 
-        /** @var array<string,bool> */
         $new_vars_possibly_in_scope = [];
 
-        /** @var array<string,Type\Union>|null */
         $redefined_vars = null;
 
         // the last statement always breaks, by default

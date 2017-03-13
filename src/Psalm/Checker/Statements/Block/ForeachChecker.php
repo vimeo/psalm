@@ -34,12 +34,9 @@ class ForeachChecker
         }
 
         $foreach_context = clone $context;
-        $foreach_context->in_loop = true;
+        $foreach_context->inside_loop = true;
 
-        /** @var Type\Union|null */
         $key_type = null;
-
-        /** @var Type\Union|null */
         $value_type = null;
 
         $var_id = ExpressionChecker::getVarId(
@@ -205,7 +202,7 @@ class ForeachChecker
             );
         }
 
-        $statements_checker->analyze($stmt->stmts, $foreach_context, $context);
+        $statements_checker->analyzeLoop($stmt->stmts, $foreach_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

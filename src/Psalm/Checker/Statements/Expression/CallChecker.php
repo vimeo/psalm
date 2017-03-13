@@ -518,10 +518,7 @@ class CallChecker
                         $first_arg_type = $stmt->args[0]->value->inferredType;
 
                         if ($first_arg_type->hasGeneric()) {
-                            /** @var Type\Union|null */
                             $key_type = null;
-
-                            /** @var Type\Union|null */
                             $value_type = null;
 
                             foreach ($first_arg_type->types as $type) {
@@ -660,7 +657,6 @@ class CallChecker
         $config = Config::getInstance();
 
         if ($class_type && is_string($stmt->name)) {
-            /** @var Type\Union|null */
             $return_type = null;
 
             foreach ($class_type->types as $class_type_part) {
@@ -772,7 +768,6 @@ class CallChecker
                     $class_template_params = [];
 
                     if ($class_type_part instanceof TGenericObject) {
-                        /** @var array<int, string> */
                         $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
 
                         $provided_type_param_count = count($class_type_part->type_params);

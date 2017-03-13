@@ -20,7 +20,6 @@ class EffectsAnalyser
      */
     public static function getReturnTypes(array $stmts, array &$yield_types, $collapse_types = false)
     {
-        /** @var array<int, Type\Atomic> */
         $return_types = [];
 
         $last_stmt = null;
@@ -82,10 +81,7 @@ class EffectsAnalyser
         if ($collapse_types) {
             // if it's a generator, boil everything down to a single generator return type
             if ($yield_types) {
-                /** @var Type\Union */
                 $key_type = null;
-
-                /** @var Type\Union|null */
                 $value_type = null;
 
                 foreach ($yield_types as $type) {
