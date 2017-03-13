@@ -96,7 +96,6 @@ class TypeChecker
                 $right_clauses = [new Clause([], true)];
             }
 
-            /** @var array<string, array<string>> */
             $possibilities = [];
 
             if ($left_clauses[0]->wedge && $right_clauses[0]->wedge) {
@@ -339,7 +338,6 @@ class TypeChecker
      */
     public static function getTruthsFromFormula(array $clauses)
     {
-        /** @var array<string, string> */
         $truths = [];
 
         if (empty($clauses)) {
@@ -1057,7 +1055,6 @@ class TypeChecker
             $new_base_key = $base_key . '->' . $key_parts[$i];
 
             if (!isset($existing_keys[$new_base_key])) {
-                /** @var null|Type\Union */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
@@ -1138,7 +1135,6 @@ class TypeChecker
             $new_base_key = $base_key . '[' . $key_parts[$i] . ']';
 
             if (!isset($existing_keys[$new_base_key])) {
-                /** @var Type\Union|null */
                 $new_base_type = null;
 
                 foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {

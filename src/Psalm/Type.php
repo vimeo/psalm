@@ -489,10 +489,7 @@ abstract class Type
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
-        /** @var array<string, array<string, Union>> */
         $key_types = [];
-
-        /** @var array<string, array<string, Union|null>> */
         $value_types = [];
 
         foreach ($types as $type) {

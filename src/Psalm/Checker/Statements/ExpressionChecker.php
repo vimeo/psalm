@@ -644,13 +644,10 @@ class ExpressionChecker
             return null;
         }
 
-        /** @var Type\Union|null */
         $item_key_type = null;
 
-        /** @var Type\Union|null */
         $item_value_type = null;
 
-        /** @var array<string,Type\Union> */
         $property_types = [];
 
         $can_create_objectlike = true;
@@ -663,7 +660,6 @@ class ExpressionChecker
 
                 if (isset($item->key->inferredType)) {
                     if ($item_key_type) {
-                        /** @var Type\Union */
                         $item_key_type = Type::combineUnionTypes($item->key->inferredType, $item_key_type);
                     } else {
                         /** @var Type\Union */

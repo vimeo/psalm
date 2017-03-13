@@ -309,7 +309,6 @@ class FetchChecker
                     if ($class_storage->template_types) {
                         $class_template_params = [];
 
-                        /** @var array<int, string> */
                         $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
 
                         $provided_type_param_count = count($lhs_type_part->type_params);
@@ -836,7 +835,6 @@ class FetchChecker
             return false;
         }
 
-        /** @var Type\Union|null */
         $inferred_key_type = null;
 
         if (isset($stmt->var->inferredType)) {
