@@ -326,4 +326,82 @@ class LoopScopeTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('B', (string) $context->vars_in_scope['$a']);
     }
+
+    public function testSecondLoopWithNotNullCheck()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if ($a !== null) takesInt($a);
+            $a = $i;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    public function testSecondLoopWithIntCheck()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if (is_int($a)) takesInt($a);
+            $a = $i;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    public function testSecondLoopWithIntCheckAndConditionalSet()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if (is_int($a)) takesInt($a);
+
+            if (rand(0, 1)) {
+                $a = $i;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    public function testSecondLoopWithIntCheckAndLoopSet()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void **/
+        function takesInt(int $i) {}
+
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            if (is_int($a)) takesInt($a);
+
+            while (rand(0, 1)) {
+                $a = $i;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
