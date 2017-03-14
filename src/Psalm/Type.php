@@ -409,30 +409,24 @@ abstract class Type
             foreach ($redefined_union_type->types as $redefined_atomic_type) {
                 foreach ($context->vars_in_scope[$var_name]->types as $context_type) {
                     if ($context_type instanceof Type\Atomic\TArray &&
-                        $redefined_atomic_type instanceof Type\Atomic\TArray &&
-                        $context_type->value === $redefined_atomic_type->value
+                        $redefined_atomic_type instanceof Type\Atomic\TArray
                     ) {
-                        // index of last param
-                        $i = count($context_type->type_params) - 1;
-
-                        if ($context_type->type_params[$i]->isEmpty()) {
-                            $context_type->type_params[$i] = $redefined_atomic_type->type_params[$i];
+                        if ($context_type->type_params[1]->isEmpty()) {
+                            $context_type->type_params[1] = $redefined_atomic_type->type_params[1];
                         } else {
-                            $context_type->type_params[$i] = Type::combineUnionTypes(
-                                $redefined_atomic_type->type_params[$i],
-                                $context_type->type_params[$i]
+                            $context_type->type_params[1] = Type::combineUnionTypes(
+                                $redefined_atomic_type->type_params[1],
+                                $context_type->type_params[1]
                             );
                         }
 
-                        if ($i) {
-                            if ($context_type->type_params[0]->isEmpty()) {
-                                $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
-                            } else {
-                                $context_type->type_params[0] = Type::combineUnionTypes(
-                                    $redefined_atomic_type->type_params[0],
-                                    $context_type->type_params[0]
-                                );
-                            }
+                        if ($context_type->type_params[0]->isEmpty()) {
+                            $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
+                        } else {
+                            $context_type->type_params[0] = Type::combineUnionTypes(
+                                $redefined_atomic_type->type_params[0],
+                                $context_type->type_params[0]
+                            );
                         }
                     }
                 }

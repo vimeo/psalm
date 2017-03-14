@@ -169,7 +169,7 @@ class ArrayAssignmentTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('array<int, int|string>', (string) $context->vars_in_scope['$out']);
+        $this->assertEquals('array<int, string|int>', (string) $context->vars_in_scope['$out']);
     }
 
     /**
