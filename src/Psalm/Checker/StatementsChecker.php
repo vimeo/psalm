@@ -339,7 +339,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         Context $outer_context
     ) {
         // record all the vars that existed before we did the first pass through the loop
-        $pre_loop_vars_in_scope = $loop_context->vars_in_scope;
+        $pre_loop_context = clone $loop_context;
 
         IssueBuffer::startRecording();
         $this->analyze($stmts, $loop_context, $outer_context);
@@ -352,10 +352,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 // widen the foreach context type with the initial context type
                 foreach ($loop_context->vars_in_scope as $var_id => $type) {
-                    if (isset($pre_loop_vars_in_scope[$var_id])) {
+                    if (isset($pre_loop_context->vars_in_scope[$var_id])) {
                         $loop_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $pre_loop_vars_in_scope[$var_id]
+                            $pre_loop_context->vars_in_scope[$var_id]
                         );
 
                         if (isset($outer_context->vars_in_scope[$var_id])) {

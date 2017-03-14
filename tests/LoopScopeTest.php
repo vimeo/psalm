@@ -444,6 +444,37 @@ class LoopScopeTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testSecondLoopWithReturnInElseif()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {}
+        class B extends A {}
+        class C extends A {}
+
+        $b = null;
+
+        foreach ([new A, new A] as $a) {
+            if ($a instanceof B) {
+
+            } elseif (!$a instanceof C) {
+                return "goodbye";
+            }
+
+            if ($b instanceof C) {
+                return "hello";
+            }
+
+            $b = $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
     public function testThirdLoopWithIntCheckAndLoopSet()
     {
         $stmts = self::$parser->parse('<?php

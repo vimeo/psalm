@@ -886,6 +886,30 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testEmptyExceptionReconciliationAfterIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+         * @param Exception|null $a
+         */
+        function foo($a) : string {
+            if ($a && $a->getMessage() === "hello") {
+                return "hello";
+            } elseif (empty($a)) {
+                return "goodbye";
+            }
+
+            return $a->getMessage();
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
     public function testIgnoreNullCheckAndMaintainNullValue()
     {
         Config::getInstance()->setCustomErrorLevel('FailedTypeResolution', Config::REPORT_SUPPRESS);

@@ -440,6 +440,8 @@ class IfChecker
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
         }
 
+        $pre_conditional_context = clone $elseif_context;
+
         $elseif_context->inside_conditional = true;
 
         // check the elseif
@@ -591,25 +593,43 @@ class IfChecker
             }
 
             if ($negated_elseif_types) {
-                $negated_keys = [];
+                if ($has_leaving_statements) {
+                    $changed_vars = [];
 
-                foreach ($negated_elseif_types as $var_id => $type) {
-                    if (!$has_leaving_statements ||
-                        $type !== '!empty' ||
-                        !isset($elseif_context->vars_in_scope[$var_id]) ||
-                        $elseif_context->vars_in_scope[$var_id]->hasObjectType()
-                    ) {
-                        $negated_keys[] = $var_id;
+                    $leaving_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                        $negated_elseif_types,
+                        $pre_conditional_context->vars_in_scope,
+                        $changed_vars,
+                        $statements_checker->getFileChecker(),
+                        new CodeLocation($statements_checker->getSource(), $elseif),
+                        $statements_checker->getSuppressedIssues()
+                    );
+
+                    if ($leaving_vars_reconciled === false) {
+                        return false;
                     }
-                }
 
-                $outer_context->update(
-                    $old_elseif_context,
-                    $elseif_context,
-                    $has_leaving_statements,
-                    $negated_keys,
-                    $if_scope->updated_vars
-                );
+                    $implied_outer_context = clone $elseif_context;
+                    $implied_outer_context->vars_in_scope = $leaving_vars_reconciled;
+
+                    $outer_context->update(
+                        $elseif_context,
+                        $implied_outer_context,
+                        false,
+                        array_keys($negated_elseif_types),
+                        $if_scope->updated_vars
+                    );
+                } else {
+                    $negated_keys = [];
+
+                    $outer_context->update(
+                        $old_elseif_context,
+                        $elseif_context,
+                        false,
+                        array_keys($negated_elseif_types),
+                        $if_scope->updated_vars
+                    );
+                }
             }
 
             if (!$has_ending_statements) {
