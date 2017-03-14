@@ -45,6 +45,7 @@ class SwitchChecker
         $new_vars_possibly_in_scope = [];
 
         $redefined_vars = null;
+        $possibly_redefined_vars = null;
 
         // the last statement always breaks, by default
         $last_case_exit_type = 'break';
@@ -148,6 +149,21 @@ class SwitchChecker
 
                     Type::redefineGenericUnionTypes($case_redefined_vars, $context);
 
+                    if ($possibly_redefined_vars === null) {
+                        $possibly_redefined_vars = $case_redefined_vars;
+                    } else {
+                        foreach ($case_redefined_vars as $var_id => $type) {
+                            if (!isset($possibly_redefined_vars[$var_id])) {
+                                $possibly_redefined_vars[$var_id] = $type;
+                            } else {
+                                $possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
+                                    $type,
+                                    $possibly_redefined_vars[$var_id]
+                                );
+                            }
+                        }
+                    }
+
                     if ($redefined_vars === null) {
                         $redefined_vars = $case_redefined_vars;
                     } else {
@@ -206,8 +222,8 @@ class SwitchChecker
             if ($redefined_vars) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $redefined_vars);
             }
-        } elseif ($redefined_vars) {
-            foreach ($redefined_vars as $var_id => $type) {
+        } elseif ($possibly_redefined_vars) {
+            foreach ($possibly_redefined_vars as $var_id => $type) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $context->vars_in_scope[$var_id]);
             }
         }

@@ -594,7 +594,11 @@ class IfChecker
                 $negated_keys = [];
 
                 foreach ($negated_elseif_types as $var_id => $type) {
-                    if (!$has_leaving_statements || $type !== '!empty') {
+                    if (!$has_leaving_statements ||
+                        $type !== '!empty' ||
+                        !isset($elseif_context->vars_in_scope[$var_id]) ||
+                        $elseif_context->vars_in_scope[$var_id]->hasObjectType()
+                    ) {
                         $negated_keys[] = $var_id;
                     }
                 }
