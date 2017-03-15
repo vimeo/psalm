@@ -21,6 +21,7 @@ class ForChecker
         Context $context
     ) {
         $for_context = clone $context;
+        $before_context = clone $context;
         $for_context->inside_loop = true;
 
         foreach ($stmt->init as $init) {
@@ -37,7 +38,9 @@ class ForChecker
             $for_context->inside_conditional = false;
         }
 
-        $statements_checker->analyzeLoop($stmt->stmts, $for_context, $context);
+        $changed_vars = Context::getNewOrUpdatedVarIds($before_context, $for_context);
+
+        $statements_checker->analyzeLoop($stmt->stmts, $changed_vars, $for_context, $context);
 
         foreach ($stmt->loop as $expr) {
             if (ExpressionChecker::analyze($statements_checker, $expr, $for_context) === false) {

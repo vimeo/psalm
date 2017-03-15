@@ -329,36 +329,67 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * Checks an array of statements in a loop
      *
      * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
+     * @param  array<int, string>                               $asserted_vars
      * @param  Context                                          $loop_context
      * @param  Context                                          $outer_context
      * @return void
      */
     public function analyzeLoop(
         array $stmts,
+        array $asserted_vars,
         Context $loop_context,
         Context $outer_context
     ) {
-        // record all the vars that existed before we did the first pass through the loop
-        $pre_loop_context = clone $loop_context;
+        $traverser = new PhpParser\NodeTraverser;
 
-        IssueBuffer::startRecording();
-        $this->analyze($stmts, $loop_context, $outer_context);
-        $recorded_issues = IssueBuffer::clearRecordingLevel();
-        IssueBuffer::stopRecording();
+        $assignment_mapper = new \Psalm\Visitor\AssignmentMapVisitor($loop_context->self);
+        $traverser->addVisitor($assignment_mapper);
 
-        if ($recorded_issues) {
-            do {
+        $traverser->traverse($stmts);
+
+        $assignment_map = $assignment_mapper->getAssignmentMap();
+
+        $assignment_depth = 0;
+
+        if ($assignment_map) {
+            $first_var_id = array_keys($assignment_map)[0];
+
+            $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
+        }
+
+        if ($assignment_depth === 0) {
+            $this->analyze($stmts, $loop_context, $outer_context);
+        } else {
+            // record all the vars that existed before we did the first pass through the loop
+            $pre_loop_context = clone $loop_context;
+            $pre_outer_context = clone $outer_context;
+
+            IssueBuffer::startRecording();
+            $this->analyze($stmts, $loop_context, $outer_context);
+            $recorded_issues = IssueBuffer::clearRecordingLevel();
+            IssueBuffer::stopRecording();
+
+            for ($i = 0; $i < $assignment_depth; $i++) {
                 $vars_to_remove = [];
 
-                // widen the foreach context type with the initial context type
-                foreach ($loop_context->vars_in_scope as $var_id => $type) {
-                    if (isset($pre_loop_context->vars_in_scope[$var_id])) {
-                        $loop_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $type,
-                            $pre_loop_context->vars_in_scope[$var_id]
-                        );
+                $has_changes = false;
 
-                        if (isset($outer_context->vars_in_scope[$var_id])) {
+                foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                    if (in_array($var_id, $asserted_vars)) {
+                        // set the vars to whatever the while/foreach loop expects them to be
+                        if ((string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]) {
+                            $loop_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
+                            $has_changes = true;
+                        }
+                    } elseif (isset($pre_outer_context->vars_in_scope[$var_id])) {
+                        $pre_outer = (string)$pre_outer_context->vars_in_scope[$var_id];
+
+                        if ((string)$type !== $pre_outer ||
+                            (string)$outer_context->vars_in_scope[$var_id] !== $pre_outer
+                        ) {
+                            $has_changes = true;
+
+                            // widen the foreach context type with the initial context type
                             $loop_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $loop_context->vars_in_scope[$var_id],
                                 $outer_context->vars_in_scope[$var_id]
@@ -369,6 +400,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
 
+                // if there are no changes to the types, no need to re-examine
+                if (!$has_changes) {
+                    break;
+                }
+
                 // remove vars that were defined in the foreach
                 foreach ($vars_to_remove as $var_id) {
                     unset($loop_context->vars_in_scope[$var_id]);
@@ -376,11 +412,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 IssueBuffer::startRecording();
                 $this->analyze($stmts, $loop_context, $outer_context);
-                $last_recorded_issues_count = count($recorded_issues);
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
-
                 IssueBuffer::stopRecording();
-            } while (count($recorded_issues) < $last_recorded_issues_count);
+            }
 
             if ($recorded_issues) {
                 foreach ($recorded_issues as $recorded_issue) {
@@ -389,6 +423,33 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             }
         }
+    }
+
+    /**
+     * @param  string                               $first_var_id
+     * @param  array<string, array<string, bool>>   $assignment_map
+     * @return int
+     */
+    private static function getAssignmentMapDepth($first_var_id, array $assignment_map)
+    {
+        $max_depth = 0;
+
+        $assignment_var_ids = $assignment_map[$first_var_id];
+        unset($assignment_map[$first_var_id]);
+
+        foreach ($assignment_var_ids as $assignment_var_id => $_) {
+            $depth = 1;
+
+            if (isset($assignment_map[$assignment_var_id])) {
+                $depth = 1 + self::getAssignmentMapDepth($assignment_var_id, $assignment_map);
+            }
+
+            if ($depth > $max_depth) {
+                $max_depth = $depth;
+            }
+        }
+
+        return $max_depth;
     }
 
     /**
@@ -474,7 +535,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        if ($this->analyzeLoop($stmt->stmts, $do_context, $context) === false) {
+        if ($this->analyzeLoop($stmt->stmts, [], $do_context, $context) === false) {
             return false;
         }
 

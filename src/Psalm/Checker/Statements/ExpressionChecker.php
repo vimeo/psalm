@@ -1341,14 +1341,14 @@ class ExpressionChecker
     /**
      * @param  PhpParser\Node\Expr      $stmt
      * @param  string|null              $this_class_name
-     * @param  StatementsSource         $source
+     * @param  StatementsSource|null    $source
      * @param  int|null                 &$nesting
      * @return string|null
      */
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,
-        StatementsSource $source,
+        StatementsSource $source = null,
         &$nesting = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
@@ -1361,15 +1361,17 @@ class ExpressionChecker
         ) {
             if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
                 if (!$this_class_name) {
-                    throw new \UnexpectedValueException('$this_class_name should not be null');
+                    $fq_class_name = $stmt->class->parts[0];
+                } else {
+                    $fq_class_name = $this_class_name;
                 }
-
-                $fq_class_name = $this_class_name;
             } else {
-                $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
-                    $stmt->class,
-                    $source
-                );
+                $fq_class_name = $source
+                    ? ClassLikeChecker::getFQCLNFromNameObject(
+                        $stmt->class,
+                        $source
+                    )
+                    : implode('\\', $stmt->class->parts);
             }
 
             return $fq_class_name . '::$' . $stmt->name;
@@ -1396,13 +1398,13 @@ class ExpressionChecker
     /**
      * @param  PhpParser\Node\Expr      $stmt
      * @param  string|null              $this_class_name
-     * @param  StatementsSource         $source
+     * @param  StatementsSource|null    $source
      * @return string|null
      */
     public static function getArrayVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,
-        StatementsSource $source
+        StatementsSource $source = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getArrayVarId($stmt->var, $this_class_name, $source);

@@ -207,6 +207,26 @@ class Context
     }
 
     /**
+     * @param  Context $original_context
+     * @param  Context $new_context
+     * @return array<int, string>
+     */
+    public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context)
+    {
+        $redefined_var_ids = [];
+
+        foreach ($new_context->vars_in_scope as $var_id => $context_type) {
+            if (!isset($original_context->vars_in_scope[$var_id]) ||
+                (string)$original_context->vars_in_scope[$var_id] !== (string)$context_type
+            ) {
+                $redefined_var_ids[] = $var_id;
+            }
+        }
+
+        return $redefined_var_ids;
+    }
+
+    /**
      * @param  string $remove_var_id
      * @return void
      */

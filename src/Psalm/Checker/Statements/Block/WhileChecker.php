@@ -67,7 +67,9 @@ class WhileChecker
             $while_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
-        if ($statements_checker->analyzeLoop($stmt->stmts, $while_context, $context) === false) {
+        $while_cond_vars = array_keys($reconcilable_while_types);
+
+        if ($statements_checker->analyzeLoop($stmt->stmts, $while_cond_vars, $while_context, $context) === false) {
             return false;
         }
 

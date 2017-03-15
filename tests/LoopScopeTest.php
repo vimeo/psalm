@@ -505,6 +505,54 @@ class LoopScopeTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testImplicitFourthLoop()
+    {
+        $stmts = self::$parser->parse('<?php
+        function test(): int {
+          $x = 0;
+          $y = 1;
+          $z = 2;
+          for ($i = 0; $i < 3; $i++) {
+            $x = $y;
+            $y = $z;
+            $z = 5;
+          }
+          return $x;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
+     */
+    public function testImplicitFourthLoopWithBadReturnType()
+    {
+        $stmts = self::$parser->parse('<?php
+        function test(): int {
+          $x = 0;
+          $y = 1;
+          $z = 2;
+          for ($i = 0; $i < 3; $i++) {
+            $x = $y;
+            $y = $z;
+            $z = "hello";
+          }
+          return $x;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
     public function testAssignInsideForeach()
     {
         $stmts = self::$parser->parse('<?php

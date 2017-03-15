@@ -500,14 +500,14 @@ class TypeChecker
                 if ((string) $result_type === 'array') {
                     $result_type = Type::getArray();
                 }
+
+                if ($result_type === false) {
+                    return false;
+                }
             }
 
             if ($result_type === null) {
                 continue;
-            }
-
-            if ($result_type === false) {
-                return false;
             }
 
             if ((string)$result_type !== $before_adjustment) {
