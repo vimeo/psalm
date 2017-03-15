@@ -473,10 +473,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($context->check_variables) {
-                $context->vars_in_scope['$' . $var->name] = $var->default && isset($var->default->inferredType)
-                    ? $var->default->inferredType
-                    : Type::getMixed();
-
+                $context->vars_in_scope['$' . $var->name] = Type::getMixed();
                 $context->vars_possibly_in_scope['$' . $var->name] = true;
                 $this->registerVariable('$' . $var->name, new CodeLocation($this, $stmt));
             }

@@ -378,23 +378,6 @@ class ScopeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return void
-     */
-    public function testStatic()
-    {
-        $stmts = self::$parser->parse('<?php
-        function a() : string {
-            static $foo = "foo";
-
-            return $foo;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidGlobal
      * @return                   void
@@ -627,6 +610,47 @@ class ScopeTest extends PHPUnit_Framework_TestCase
 
         } elseif ($a instanceof FooMoo) {
 
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MixedInferredReturnType
+     * @return                   void
+     */
+    public function testStatic()
+    {
+        $stmts = self::$parser->parse('<?php
+        function a() : string {
+            static $foo = "foo";
+
+            return $foo;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testStaticNullRef()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return void */
+        function foo() {
+            static $bar = null;
+
+            if ($bar !== null) {
+                // do something
+            }
+
+            $bar = 5;
         }
         ');
 
