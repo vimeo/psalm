@@ -162,10 +162,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $have_emitted = false;
 
                 foreach ($implemented_method_ids as $implemented_method_id) {
-                    if ($have_emitted) {
-                        break;
-                    }
-
                     if ($this->function->name === '__construct') {
                         continue;
                     }
@@ -207,7 +203,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             }
 
                             $have_emitted = true;
-                            break;
+                            break 2;
                         }
 
                         if ($class_storage->user_defined &&
@@ -229,7 +225,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             }
 
                             $have_emitted = true;
-                            break;
+                            break 2;
                         }
 
                         if (!$class_storage->user_defined &&
@@ -252,7 +248,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             }
 
                             $have_emitted = true;
-                            break;
+                            break 2;
                         }
                     }
 
