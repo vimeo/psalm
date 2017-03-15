@@ -553,6 +553,24 @@ class LoopScopeTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testUnsetInLoop()
+    {
+        $stmts = self::$parser->parse('<?php
+        $a = null;
+
+        foreach ([1, 2, 3] as $i) {
+            $a = $i;
+            unset($i);
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
     public function testAssignInsideForeach()
     {
         $stmts = self::$parser->parse('<?php

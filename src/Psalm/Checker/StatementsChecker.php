@@ -400,6 +400,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
 
+                foreach ($asserted_vars as $var_id) {
+                    if (!isset($loop_context->vars_in_scope[$var_id])) {
+                        $loop_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
+                    }
+                }
+
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes) {
                     break;
