@@ -753,7 +753,7 @@ class ProjectChecker
         } catch (\ReflectionException $e) {
             error_reporting($old_level);
 
-            $this->visited_classes[$fq_class_name_ci] = false;
+            // do not cache any results here (as case-sensitive filenames can screw things up)
 
             return false;
         }
@@ -792,12 +792,12 @@ class ProjectChecker
             return $this->visited_classes[$fq_class_name_ci];
         }
 
-        $this->visited_classes[$fq_class_name_ci] = true;
-
         // this registers the class if it's not user defined
         if (!$this->fileExistsForClassLike($fq_class_name)) {
             return false;
         }
+
+        $this->visited_classes[$fq_class_name_ci] = true;
 
         if (isset($this->classlike_files[$fq_class_name_ci])) {
             $file_path = $this->classlike_files[$fq_class_name_ci];

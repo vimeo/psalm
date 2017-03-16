@@ -6,7 +6,7 @@ use Psalm\Config;
 
 class CacheProvider
 {
-    const FILE_HASHES = 'file_hashes';
+    const FILE_HASHES = 'file_hashes_json';
     const PARSER_CACHE_DIRECTORY = 'php-parser';
     const GOOD_RUN_NAME = 'good_run';
 
@@ -67,7 +67,7 @@ class CacheProvider
             /** @var array<string, string> */
             self::$file_content_hashes =
                 $root_cache_directory && is_readable($file_hashes_path)
-                    ? unserialize((string)file_get_contents($file_hashes_path))
+                    ? json_decode((string)file_get_contents($file_hashes_path), true)
                     : [];
         }
 
@@ -106,7 +106,7 @@ class CacheProvider
 
             file_put_contents(
                 $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES,
-                serialize(self::$file_content_hashes)
+                json_encode(self::$file_content_hashes)
             );
         }
     }
