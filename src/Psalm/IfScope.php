@@ -57,4 +57,19 @@ class IfScope
      * @var Context|null
      */
     public $loop_context;
+
+    /**
+     * @var bool
+     */
+    public $has_elseifs;
+
+    /**
+     * @var array<Clause>
+     */
+    public $negated_clauses;
+
+    /**
+     * @var array<Clause>
+     */
+    public $reasonable_clauses;
 }

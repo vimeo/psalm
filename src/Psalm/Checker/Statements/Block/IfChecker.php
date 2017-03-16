@@ -70,6 +70,7 @@ class IfChecker
         $if_scope = new IfScope();
 
         $if_scope->loop_context = $loop_context;
+        $if_scope->has_elseifs = count($stmt->elseifs) > 0;
 
         $if_context = clone $context;
 
@@ -96,9 +97,9 @@ class IfChecker
 
         $if_context->clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-        $negated_clauses = TypeChecker::negateFormula($if_clauses);
+        $if_scope->negated_clauses = TypeChecker::negateFormula($if_clauses);
 
-        $if_scope->negated_types = TypeChecker::getTruthsFromFormula($negated_clauses);
+        $if_scope->negated_types = TypeChecker::getTruthsFromFormula($if_scope->negated_clauses);
 
         $reconcilable_if_types = TypeChecker::getTruthsFromFormula($if_context->clauses);
 
@@ -177,7 +178,6 @@ class IfChecker
             $if_context,
             $old_if_context,
             $context,
-            $negated_clauses,
             $pre_assignment_else_redefined_vars
         );
 
@@ -190,8 +190,7 @@ class IfChecker
                 $elseif,
                 $if_scope,
                 $elseif_context,
-                $context,
-                $negated_clauses
+                $context
             );
         }
 
@@ -204,8 +203,7 @@ class IfChecker
                 $stmt->else,
                 $if_scope,
                 $else_context,
-                $context,
-                $negated_clauses
+                $context
             );
         }
 
@@ -273,7 +271,6 @@ class IfChecker
      * @param  Context                  $if_context
      * @param  Context                  $old_if_context
      * @param  Context                  $outer_context
-     * @param  array<Clause>            $negated_clauses
      * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
      * @return false|null
      */
@@ -284,7 +281,6 @@ class IfChecker
         Context $if_context,
         Context $old_if_context,
         Context $outer_context,
-        array $negated_clauses,
         array $pre_assignment_else_redefined_vars
     ) {
         $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($stmt->stmts);
@@ -294,6 +290,8 @@ class IfChecker
         if ($statements_checker->analyze($stmt->stmts, $if_context, $if_scope->loop_context) === false) {
             return false;
         }
+
+        $if_scope->reasonable_clauses = $if_context->clauses;
 
         if ($if_context->byref_constraints !== null) {
             foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
@@ -367,7 +365,7 @@ class IfChecker
             }
 
             $outer_context->clauses = TypeChecker::simplifyCNF(
-                array_merge($outer_context->clauses, $negated_clauses)
+                array_merge($outer_context->clauses, $if_scope->negated_clauses)
             );
         }
 
@@ -417,7 +415,6 @@ class IfChecker
      * @param  IfScope                     $if_scope
      * @param  Context                     $elseif_context
      * @param  Context                     $outer_context
-     * @param  array<Clause>               $negated_clauses
      * @return false|null
      */
     protected static function analyzeElseIfBlock(
@@ -425,8 +422,7 @@ class IfChecker
         PhpParser\Node\Stmt\ElseIf_ $elseif,
         IfScope $if_scope,
         Context $elseif_context,
-        Context $outer_context,
-        array &$negated_clauses
+        Context $outer_context
     ) {
         $original_context = clone $elseif_context;
 
@@ -469,7 +465,7 @@ class IfChecker
         $elseif_context->clauses = TypeChecker::simplifyCNF(
             array_merge(
                 $original_context->clauses,
-                $negated_clauses,
+                $if_scope->negated_clauses,
                 $elseif_clauses
             )
         );
@@ -692,8 +688,8 @@ class IfChecker
             );
         }
 
-        $negated_clauses = array_merge(
-            $negated_clauses,
+        $if_scope->negated_clauses = array_merge(
+            $if_scope->negated_clauses,
             TypeChecker::negateFormula($elseif_clauses)
         );
     }
@@ -704,7 +700,6 @@ class IfChecker
      * @param  IfScope                   $if_scope
      * @param  Context                   $else_context
      * @param  Context                   $outer_context
-     * @param  array<Clause>             $negated_clauses
      * @return false|null
      */
     protected static function analyzeElseBlock(
@@ -712,15 +707,14 @@ class IfChecker
         PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
         Context $else_context,
-        Context $outer_context,
-        array $negated_clauses
+        Context $outer_context
     ) {
         $original_context = clone $else_context;
 
         $else_context->clauses = TypeChecker::simplifyCNF(
             array_merge(
                 $outer_context->clauses,
-                $negated_clauses
+                $if_scope->negated_clauses
             )
         );
 
@@ -837,6 +831,13 @@ class IfChecker
                         }
                     }
                 }
+            } elseif (!$if_scope->has_elseifs) {
+                $outer_context->clauses = TypeChecker::simplifyCNF(
+                    array_merge(
+                        $if_scope->reasonable_clauses,
+                        $original_context->clauses
+                    )
+                );
             }
 
             // update the parent context as necessary

@@ -168,4 +168,76 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testInvertedTwoVarLogicNotNested()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a || $b) {
+                // do nothing
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MoreSpecificReturnType
+     * @return                   void
+     */
+    public function testInvertedTwoVarLogicNotNestedWithVarChange()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a || $b) {
+                $b = null;
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MoreSpecificReturnType
+     * @return                   void
+     */
+    public function testInvertedTwoVarLogicNotNestedWithElseif()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if (true) {
+                // do nothing
+            } elseif ($a || $b) {
+                // do nothing here
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
