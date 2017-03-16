@@ -177,6 +177,7 @@ class IfChecker
             $if_context,
             $old_if_context,
             $context,
+            $negated_clauses,
             $pre_assignment_else_redefined_vars
         );
 
@@ -272,6 +273,7 @@ class IfChecker
      * @param  Context                  $if_context
      * @param  Context                  $old_if_context
      * @param  Context                  $outer_context
+     * @param  array<Clause>            $negated_clauses
      * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
      * @return false|null
      */
@@ -282,6 +284,7 @@ class IfChecker
         Context $if_context,
         Context $old_if_context,
         Context $outer_context,
+        array $negated_clauses,
         array $pre_assignment_else_redefined_vars
     ) {
         $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($stmt->stmts);
@@ -338,28 +341,34 @@ class IfChecker
 
             $if_scope->redefined_vars = Context::getRedefinedVars($outer_context, $if_context);
             $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
-        } elseif (!$stmt->else && !$stmt->elseifs && $if_scope->negated_types) {
-            $changed_vars = [];
+        } elseif (!$stmt->else && !$stmt->elseifs) {
+            if ($if_scope->negated_types) {
+                $changed_vars = [];
 
-            $outer_context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
-                $if_scope->negated_types,
-                $outer_context->vars_in_scope,
-                $changed_vars,
-                $statements_checker->getFileChecker(),
-                new CodeLocation($statements_checker->getSource(), $stmt->cond),
-                $statements_checker->getSuppressedIssues()
+                $outer_context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $if_scope->negated_types,
+                    $outer_context->vars_in_scope,
+                    $changed_vars,
+                    $statements_checker->getFileChecker(),
+                    new CodeLocation($statements_checker->getSource(), $stmt->cond),
+                    $statements_checker->getSuppressedIssues()
+                );
+
+                foreach ($changed_vars as $changed_var) {
+                    $outer_context->removeVarFromClauses($changed_var);
+                }
+
+                if ($outer_context_vars_reconciled === false) {
+                    return false;
+                }
+
+                $outer_context->vars_in_scope = $outer_context_vars_reconciled;
+                $mic_drop = true;
+            }
+
+            $outer_context->clauses = TypeChecker::simplifyCNF(
+                array_merge($outer_context->clauses, $negated_clauses)
             );
-
-            foreach ($changed_vars as $changed_var) {
-                $outer_context->removeVarFromClauses($changed_var);
-            }
-
-            if ($outer_context_vars_reconciled === false) {
-                return false;
-            }
-
-            $outer_context->vars_in_scope = $outer_context_vars_reconciled;
-            $mic_drop = true;
         }
 
         // update the parent context as necessary, but only if we can safely reason about type negation.
@@ -900,10 +909,6 @@ class IfChecker
             }
 
             return $stmt;
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            return self::getDefinitelyEvaluatedExpression($stmt->left);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {

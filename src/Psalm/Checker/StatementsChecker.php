@@ -416,6 +416,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     unset($loop_context->vars_in_scope[$var_id]);
                 }
 
+                $loop_context->clauses = $pre_loop_context->clauses;
+
                 IssueBuffer::startRecording();
                 $this->analyze($stmts, $loop_context, $outer_context);
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
