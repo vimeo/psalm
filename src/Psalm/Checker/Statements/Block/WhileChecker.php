@@ -68,9 +68,9 @@ class WhileChecker
             $while_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
-        $while_cond_vars = array_keys($reconcilable_while_types);
+        $asserted_while_vars = array_keys(AlgebraChecker::getTruthsFromFormula($while_clauses));
 
-        if ($statements_checker->analyzeLoop($stmt->stmts, $while_cond_vars, $while_context, $context) === false) {
+        if ($statements_checker->analyzeLoop($stmt->stmts, $asserted_while_vars, $while_context, $context) === false) {
             return false;
         }
 
