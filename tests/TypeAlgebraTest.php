@@ -43,17 +43,18 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     public function testTwoVarLogic()
     {
         $stmts = self::$parser->parse('<?php
-        $a = rand(0, 10) ? "hello" : null;
-        $b = rand(0, 10) ? "goodbye" : null;
+        function takesString(string $s) : void {}
 
-        if ($a !== null || $b !== null) {
-            if ($a !== null) {
-                $c = $a;
-            } else {
-                $c = $b;
+        function foo(?string $a, ?string $b) : void {
+            if ($a !== null || $b !== null) {
+                if ($a !== null) {
+                    $c = $a;
+                } else {
+                    $c = $b;
+                }
+
+                takesString($c);
             }
-
-            echo strpos($c, "e");
         }
         ');
 
@@ -67,20 +68,20 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     public function testThreeVarLogic()
     {
         $stmts = self::$parser->parse('<?php
-        $a = rand(0, 10) ? "hello" : null;
-        $b = rand(0, 10) ? "goodbye" : null;
-        $c = rand(0, 10) ? "hello" : null;
+        function takesString(string $s) : void {}
 
-        if ($a !== null || $b !== null || $c !== null) {
-            if ($a !== null) {
-                $d = $a;
-            } elseif ($b !== null) {
-                $d = $b;
-            } else {
-                $d = $c;
+        function foo(?string $a, ?string $b, ?string $c) : void {
+            if ($a !== null || $b !== null || $c !== null) {
+                if ($a !== null) {
+                    $d = $a;
+                } elseif ($b !== null) {
+                    $d = $b;
+                } else {
+                    $d = $c;
+                }
+
+                takesString($d);
             }
-
-            echo strpos($d, "e");
         }
         ');
 
@@ -96,22 +97,22 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     public function testThreeVarLogicWithChange()
     {
         $stmts = self::$parser->parse('<?php
-        $a = rand(0, 10) ? "hello" : null;
-        $b = rand(0, 10) ? "goodbye" : null;
-        $c = rand(0, 10) ? "hello" : null;
+        function takesString(string $s) : void {}
 
-        if ($a !== null || $b !== null || $c !== null) {
-            $c = null;
+        function foo(?string $a, ?string $b, ?string $c) : void {
+            if ($a !== null || $b !== null || $c !== null) {
+                $c = null;
 
-            if ($a !== null) {
-                $d = $a;
-            } elseif ($b !== null) {
-                $d = $b;
-            } else {
-                $d = $c;
+                if ($a !== null) {
+                    $d = $a;
+                } elseif ($b !== null) {
+                    $d = $b;
+                } else {
+                    $d = $c;
+                }
+
+                takesString($d);
             }
-
-            echo strpos($d, "e");
         }
         ');
 
@@ -127,24 +128,24 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     public function testThreeVarLogicWithException()
     {
         $stmts = self::$parser->parse('<?php
-        $a = rand(0, 10) ? "hello" : null;
-        $b = rand(0, 10) ? "goodbye" : null;
-        $c = rand(0, 10) ? "hello" : null;
+        function takesString(string $s) : void {}
 
-        if ($a !== null || $b !== null || $c !== null) {
-            if ($c !== null) {
-                throw new \Exception("bad");
+        function foo(?string $a, ?string $b, ?string $c) : void {
+            if ($a !== null || $b !== null || $c !== null) {
+                if ($c !== null) {
+                    throw new \Exception("bad");
+                }
+
+                if ($a !== null) {
+                    $d = $a;
+                } elseif ($b !== null) {
+                    $d = $b;
+                } else {
+                    $d = $c;
+                }
+
+                takesString($d);
             }
-
-            if ($a !== null) {
-                $d = $a;
-            } elseif ($b !== null) {
-                $d = $b;
-            } else {
-                $d = $c;
-            }
-
-            echo strpos($d, "e");
         }
         ');
 
@@ -172,6 +173,54 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testTwoVarLogicNotNestedWithAllPathsReturning()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if (!$a && !$b) {
+                return "bad";
+            } else {
+                if (!$a) {
+                    return $b;
+                } else {
+                    return $a;
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testTwoVarLogicNotNestedWithAssignmentBeforeReturn()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if (!$a && !$b) {
+                $a = 5;
+                return "bad";
+            }
+
+            if (!$a) {
+                $a = 7;
+                return $b;
+            }
+
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
     public function testInvertedTwoVarLogicNotNested()
     {
         $stmts = self::$parser->parse('<?php
@@ -179,6 +228,29 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
             if ($a || $b) {
                 // do nothing
             } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testInvertedTwoVarLogicNotNestedWithAssignmentBeforeReturn()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a || $b) {
+                // do nothing
+            } else {
+                $a = 5;
                 return "bad";
             }
 
@@ -224,7 +296,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         function foo(?string $a, ?string $b) : string {
-            if (true) {
+            if (rand(0, 1)) {
                 // do nothing
             } elseif ($a || $b) {
                 // do nothing here
