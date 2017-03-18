@@ -312,4 +312,102 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testTwoVarLogicNotNestedWithElseif()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a) {
+                // do nothing
+            } elseif ($b) {
+                // do nothing here
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
+     */
+    public function testTwoVarLogicNotNestedWithElseifNegatedInIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a) {
+                $a = null;
+            } elseif ($b) {
+                // do nothing here
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testTwoVarLogicNotNestedWithElseifCorrectlyNegatedInElseIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a) {
+                // do nothing here
+            } elseif ($b) {
+                $a = null;
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testTwoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a) {
+                $a = "hello";
+            } elseif ($b) {
+                // do nothing
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
