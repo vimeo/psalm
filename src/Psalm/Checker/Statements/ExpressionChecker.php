@@ -790,7 +790,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
         ) {
-            $if_clauses = AlgebraChecker::getFormula(
+            $left_clauses = AlgebraChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker
@@ -799,7 +799,7 @@ class ExpressionChecker
             $rhs_clauses = AlgebraChecker::simplifyCNF(
                 array_merge(
                     $context->clauses,
-                    AlgebraChecker::negateFormula($if_clauses)
+                    AlgebraChecker::negateFormula($left_clauses)
                 )
             );
 

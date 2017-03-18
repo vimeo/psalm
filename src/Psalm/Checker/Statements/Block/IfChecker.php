@@ -75,6 +75,8 @@ class IfChecker
 
         $if_context = clone $context;
 
+        $if_context->parent_context = $context;
+
         // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
         $original_context = clone $context;
 

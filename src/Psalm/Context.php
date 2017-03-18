@@ -117,6 +117,13 @@ class Context
     public $byref_constraints;
 
     /**
+     * If this context inherits from a context, it is here
+     *
+     * @var Context|null
+     */
+    public $parent_context;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)
@@ -258,6 +265,10 @@ class Context
         }
 
         $this->clauses = $clauses_to_keep;
+
+        if ($this->parent_context) {
+            $this->parent_context->removeVarFromClauses($remove_var_id);
+        }
     }
 
     /**
