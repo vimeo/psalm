@@ -59,7 +59,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
-        $this->assertSame("The given return type 'string' for fooFoo is incorrect, got 'int'", $issue_data['message']);
+        $this->assertSame("The declared return type 'string' for fooFoo is incorrect, got 'int'", $issue_data['message']);
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
             'string',
@@ -174,7 +174,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('The given return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
+        $this->assertSame('The declared return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
         $this->assertSame(3, $issue_data['line_number']);
         $this->assertSame(
             '@return int',
@@ -203,7 +203,7 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
         $issue_data = IssueBuffer::getIssueData()[0];
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('The given return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
+        $this->assertSame('The declared return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
         $this->assertSame(2, $issue_data['line_number']);
         $this->assertSame(
             '@return int',

@@ -18,6 +18,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
+use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Issue\MissingClosureReturnType;
@@ -1115,7 +1116,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $inferred_return_type,
                 $declared_return_type,
                 $this->getFileChecker(),
-                true,
+                false,
                 $has_scalar_match,
                 $type_coerced
             )) {
@@ -1131,7 +1132,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if ($type_coerced) {
                     if (IssueBuffer::accepts(
                         new MoreSpecificReturnType(
-                            'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                                 ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
                             $secondary_return_type_location ?: $return_type_location
                         ),
@@ -1142,7 +1143,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 } else {
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
-                            'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                                 ' is incorrect, got \'' . $inferred_return_type . '\'',
                             $secondary_return_type_location ?: $return_type_location
                         ),
@@ -1151,7 +1152,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         return false;
                     }
                 }
-            } elseif ($inferred_return_type->isNullable() !== $declared_return_type->isNullable()) {
+            } elseif (!$inferred_return_type->isNullable() && $declared_return_type->isNullable()) {
                 if ($update_docblock) {
                     if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
                         $this->addDocblockReturnType($inferred_return_type);
@@ -1161,9 +1162,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
 
                 if (IssueBuffer::accepts(
-                    new MoreSpecificReturnType(
-                        'The given return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
+                    new LessSpecificReturnType(
+                        'The inferred return type \'' . $inferred_return_type . '\' for ' . $cased_method_id .
+                            ' is more specific than the declared return type \'' . $declared_return_type . '\'',
                         $secondary_return_type_location ?: $return_type_location
                     ),
                     $this->suppressed_issues

@@ -265,7 +265,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MoreSpecificReturnType
+     * @expectedExceptionMessage InvalidReturnType
      * @return                   void
      */
     public function testInvertedTwoVarLogicNotNestedWithVarChange()
@@ -289,7 +289,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MoreSpecificReturnType
+     * @expectedExceptionMessage InvalidReturnType
      * @return                   void
      */
     public function testInvertedTwoVarLogicNotNestedWithElseif()
