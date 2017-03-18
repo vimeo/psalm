@@ -72,7 +72,7 @@ class Context
     /**
      * A list of clauses in Conjunctive Normal Form
      *
-     * @var array<Clause>
+     * @var array<int, Clause>
      */
     public $clauses = [];
 

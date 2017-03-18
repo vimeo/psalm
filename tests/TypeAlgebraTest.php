@@ -338,6 +338,85 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testThreeVarLogicNotNested()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b, ?string $c) : string {
+            if ($a) {
+                // do nothing
+            } elseif ($b) {
+                // do nothing here
+            } elseif ($c) {
+                // do nothing here
+            } else {
+                return "bad";
+            }
+
+            if (!$a && !$b) return $c;
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testThreeVarLogicNotNestedAndOr()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b, ?string $c) : string {
+            if ($a) {
+                // do nothing
+            } elseif ($b || $c) {
+                // do nothing here
+            } else {
+                return "bad";
+            }
+
+            if (!$a && !$b) return $c;
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
+     */
+    public function testThreeVarLogicWithElseifAndAnd()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b, ?string $c) : string {
+            if ($a) {
+                // do nothing
+            } elseif ($b && $c) {
+                // do nothing here
+            } else {
+                return "bad";
+            }
+
+            if (!$a && !$b) return $c;
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidReturnType
      * @return                   void
@@ -392,6 +471,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
      */
     public function testTwoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf()
     {
+        $this->markTestSkipped('We don’t currently support reinforcement of vars');
         $stmts = self::$parser->parse('<?php
         function foo(?string $a, ?string $b) : string {
             if ($a) {

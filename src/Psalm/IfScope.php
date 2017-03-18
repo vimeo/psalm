@@ -64,12 +64,12 @@ class IfScope
     public $has_elseifs;
 
     /**
-     * @var array<Clause>
+     * @var array<int, Clause>
      */
     public $negated_clauses;
 
     /**
-     * @var array<Clause>
+     * @var array<int, Clause>
      */
     public $reasonable_clauses = [];
 }

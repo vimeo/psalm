@@ -123,7 +123,7 @@ class IfChecker
             }
 
             foreach ($changed_vars as $changed_var) {
-                $if_context->removeVarFromClauses($changed_var);
+                //$if_context->removeVarFromClauses($changed_var);
             }
 
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
@@ -596,7 +596,16 @@ class IfChecker
                     }
                 }
 
-                //$if_scope->reasonable_clauses = $elseif_clauses;
+                if ($if_scope->reasonable_clauses && $elseif_clauses) {
+                    $if_scope->reasonable_clauses = AlgebraChecker::combineOredClauses(
+                        $if_scope->reasonable_clauses,
+                        $elseif_clauses
+                    );
+                } else {
+                    $if_scope->reasonable_clauses = [];
+                }
+            } else {
+                $if_scope->reasonable_clauses = [];
             }
 
             if ($negated_elseif_types) {
@@ -833,7 +842,7 @@ class IfChecker
                         }
                     }
                 }
-            } elseif (!$if_scope->has_elseifs) {
+            } elseif ($if_scope->reasonable_clauses) {
                 $outer_context->clauses = AlgebraChecker::simplifyCNF(
                     array_merge(
                         $if_scope->reasonable_clauses,

@@ -69,40 +69,7 @@ class AlgebraChecker
                 $right_clauses = [new Clause([], true)];
             }
 
-            /** @var array<string, array<string>> */
-            $possibilities = [];
-
-            if ($left_clauses[0]->wedge && $right_clauses[0]->wedge) {
-                return [new Clause([], true)];
-            }
-
-            $can_reconcile = true;
-
-            if ($left_clauses[0]->wedge ||
-                $right_clauses[0]->wedge ||
-                !$left_clauses[0]->reconcilable ||
-                !$right_clauses[0]->reconcilable
-            ) {
-                $can_reconcile = false;
-            }
-
-            foreach ($left_clauses[0]->possibilities as $var => $possible_types) {
-                if (isset($possibilities[$var])) {
-                    $possibilities[$var] = array_merge($possibilities[$var], $possible_types);
-                } else {
-                    $possibilities[$var] = $possible_types;
-                }
-            }
-
-            foreach ($right_clauses[0]->possibilities as $var => $possible_types) {
-                if (isset($possibilities[$var])) {
-                    $possibilities[$var] = array_merge($possibilities[$var], $possible_types);
-                } else {
-                    $possibilities[$var] = $possible_types;
-                }
-            }
-
-            return [new Clause($possibilities, false, $can_reconcile)];
+            return self::combineOredClauses($left_clauses, $right_clauses);
         }
 
         $assertions = AssertionFinder::getAssertions(
@@ -167,8 +134,8 @@ class AlgebraChecker
      *   (!$a || !$c || !$e) &&
      *   (!$a || !$c || !$f)
      *
-     * @param  array<Clause>  $clauses
-     * @return array<Clause>
+     * @param  array<int, Clause>  $clauses
+     * @return array<int, Clause>
      */
     public static function negateFormula(array $clauses)
     {
@@ -218,8 +185,8 @@ class AlgebraChecker
      *     ($a) && ($a || $b) => $a
      *     (!$a) && (!$b) && ($a || $b || $c) => $c
      *
-     * @param  array<Clause>  $clauses
-     * @return array<Clause>
+     * @param  array<int, Clause>  $clauses
+     * @return array<int, Clause>
      */
     public static function simplifyCNF(array $clauses)
     {
@@ -307,7 +274,7 @@ class AlgebraChecker
     /**
      * Look for clauses with only one possible value
      *
-     * @param  array<Clause>  $clauses
+     * @param  array<int, Clause>  $clauses
      * @return array<string, string>
      */
     public static function getTruthsFromFormula(array $clauses)
@@ -356,8 +323,8 @@ class AlgebraChecker
     }
 
     /**
-     * @param  array<Clause>  $clauses
-     * @return array<Clause>
+     * @param  array<int, Clause>  $clauses
+     * @return array<int, Clause>
      */
     protected static function groupImpossibilities(array $clauses)
     {
@@ -400,5 +367,53 @@ class AlgebraChecker
         }
 
         return $new_clauses;
+    }
+
+    /**
+     * @param  array<int, Clause>  $left_clauses
+     * @param  array<int, Clause>  $right_clauses
+     * @return array<int, Clause>
+     */
+    public static function combineOredClauses(array $left_clauses, array $right_clauses)
+    {
+        // we cannot deal, at the moment, with orring non-CNF clauses
+        if (count($left_clauses) !== 1 || count($right_clauses) !== 1) {
+            return [new Clause([], true)];
+        }
+
+        /** @var array<string, array<string>> */
+        $possibilities = [];
+
+        if ($left_clauses[0]->wedge && $right_clauses[0]->wedge) {
+            return [new Clause([], true)];
+        }
+
+        $can_reconcile = true;
+
+        if ($left_clauses[0]->wedge ||
+            $right_clauses[0]->wedge ||
+            !$left_clauses[0]->reconcilable ||
+            !$right_clauses[0]->reconcilable
+        ) {
+            $can_reconcile = false;
+        }
+
+        foreach ($left_clauses[0]->possibilities as $var => $possible_types) {
+            if (isset($possibilities[$var])) {
+                $possibilities[$var] = array_merge($possibilities[$var], $possible_types);
+            } else {
+                $possibilities[$var] = $possible_types;
+            }
+        }
+
+        foreach ($right_clauses[0]->possibilities as $var => $possible_types) {
+            if (isset($possibilities[$var])) {
+                $possibilities[$var] = array_merge($possibilities[$var], $possible_types);
+            } else {
+                $possibilities[$var] = $possible_types;
+            }
+        }
+
+        return [new Clause($possibilities, false, $can_reconcile)];
     }
 }
