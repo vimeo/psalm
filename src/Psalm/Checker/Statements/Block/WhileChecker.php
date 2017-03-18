@@ -4,6 +4,7 @@ namespace Psalm\Checker\Statements\Block;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Checker\StatementsChecker;
@@ -32,15 +33,15 @@ class WhileChecker
         }
         $while_context->inside_conditional = false;
 
-        $while_clauses = TypeChecker::getFormula(
+        $while_clauses = AlgebraChecker::getFormula(
             $stmt->cond,
             $context->self,
             $statements_checker
         );
 
-        $while_context->clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $while_clauses));
+        $while_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $while_clauses));
 
-        $reconcilable_while_types = TypeChecker::getTruthsFromFormula($while_context->clauses);
+        $reconcilable_while_types = AlgebraChecker::getTruthsFromFormula($while_context->clauses);
 
         // if the while has an or as the main component, we cannot safely reason about it
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp &&
@@ -92,7 +93,7 @@ class WhileChecker
         if (!ScopeChecker::doesEverBreak($stmt->stmts)) {
             // if the while contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
-            $negated_while_types = TypeChecker::getTruthsFromFormula(TypeChecker::negateFormula($while_clauses));
+            $negated_while_types = AlgebraChecker::getTruthsFromFormula(AlgebraChecker::negateFormula($while_clauses));
 
             if ($negated_while_types) {
                 $changed_vars = [];

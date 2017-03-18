@@ -71,5 +71,5 @@ class IfScope
     /**
      * @var array<Clause>
      */
-    public $reasonable_clauses;
+    public $reasonable_clauses = [];
 }

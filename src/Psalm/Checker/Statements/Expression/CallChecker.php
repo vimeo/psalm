@@ -2,6 +2,7 @@
 namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FunctionChecker;
@@ -348,15 +349,15 @@ class CallChecker
                 $method->parts === ['assert'] &&
                 isset($stmt->args[0])
             ) {
-                $assert_clauses = TypeChecker::getFormula(
+                $assert_clauses = AlgebraChecker::getFormula(
                     $stmt->args[0]->value,
                     $statements_checker->getFQCLN(),
                     $statements_checker
                 );
 
-                $simplified_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $assert_clauses));
+                $simplified_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $assert_clauses));
 
-                $assert_type_assertions = TypeChecker::getTruthsFromFormula($simplified_clauses);
+                $assert_type_assertions = AlgebraChecker::getTruthsFromFormula($simplified_clauses);
 
                 $changed_vars = [];
 

@@ -2,6 +2,7 @@
 namespace Psalm\Checker\Statements;
 
 use PhpParser;
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
@@ -728,15 +729,15 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
-            $if_clauses = TypeChecker::getFormula(
+            $if_clauses = AlgebraChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker
             );
 
-            $simplified_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+            $simplified_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-            $left_type_assertions = TypeChecker::getTruthsFromFormula($simplified_clauses);
+            $left_type_assertions = AlgebraChecker::getTruthsFromFormula($simplified_clauses);
 
             if (self::analyze($statements_checker, $stmt->left, $context) === false) {
                 return false;
@@ -789,20 +790,20 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
         ) {
-            $if_clauses = TypeChecker::getFormula(
+            $if_clauses = AlgebraChecker::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker
             );
 
-            $rhs_clauses = TypeChecker::simplifyCNF(
+            $rhs_clauses = AlgebraChecker::simplifyCNF(
                 array_merge(
                     $context->clauses,
-                    TypeChecker::negateFormula($if_clauses)
+                    AlgebraChecker::negateFormula($if_clauses)
                 )
             );
 
-            $negated_type_assertions = TypeChecker::getTruthsFromFormula($rhs_clauses);
+            $negated_type_assertions = AlgebraChecker::getTruthsFromFormula($rhs_clauses);
 
             if (self::analyze($statements_checker, $stmt->left, $context) === false) {
                 return false;
@@ -859,19 +860,19 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
             $t_if_context = clone $context;
 
-            $if_clauses = TypeChecker::getFormula(
+            $if_clauses = AlgebraChecker::getFormula(
                 $stmt,
                 $statements_checker->getFQCLN(),
                 $statements_checker
             );
 
-            $ternary_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+            $ternary_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-            $negated_clauses = TypeChecker::negateFormula($if_clauses);
+            $negated_clauses = AlgebraChecker::negateFormula($if_clauses);
 
-            $negated_if_types = TypeChecker::getTruthsFromFormula($negated_clauses);
+            $negated_if_types = AlgebraChecker::getTruthsFromFormula($negated_clauses);
 
-            $reconcilable_if_types = TypeChecker::getTruthsFromFormula($ternary_clauses);
+            $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($ternary_clauses);
 
             $changed_vars = [];
 
@@ -1647,19 +1648,19 @@ class ExpressionChecker
 
         $t_if_context = clone $context;
 
-        $if_clauses = TypeChecker::getFormula(
+        $if_clauses = AlgebraChecker::getFormula(
             $stmt->cond,
             $statements_checker->getFQCLN(),
             $statements_checker
         );
 
-        $ternary_clauses = TypeChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+        $ternary_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-        $negated_clauses = TypeChecker::negateFormula($if_clauses);
+        $negated_clauses = AlgebraChecker::negateFormula($if_clauses);
 
-        $negated_if_types = TypeChecker::getTruthsFromFormula($negated_clauses);
+        $negated_if_types = AlgebraChecker::getTruthsFromFormula($negated_clauses);
 
-        $reconcilable_if_types = TypeChecker::getTruthsFromFormula($ternary_clauses);
+        $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($ternary_clauses);
 
         $changed_vars = [];
 

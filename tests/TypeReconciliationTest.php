@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\TypeChecker;
@@ -273,7 +274,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
             new Clause(['$a' => ['!empty']])
         ];
 
-        $negated_formula = TypeChecker::negateFormula($formula);
+        $negated_formula = AlgebraChecker::negateFormula($formula);
 
         $this->assertSame(1, count($negated_formula));
         $this->assertSame(['$a' => ['empty']], $negated_formula[0]->possibilities);
@@ -282,7 +283,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
             new Clause(['$a' => ['!empty'], '$b' => ['!empty']])
         ];
 
-        $negated_formula = TypeChecker::negateFormula($formula);
+        $negated_formula = AlgebraChecker::negateFormula($formula);
 
         $this->assertSame(2, count($negated_formula));
         $this->assertSame(['$a' => ['empty']], $negated_formula[0]->possibilities);
@@ -293,7 +294,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
             new Clause(['$b' => ['!empty']]),
         ];
 
-        $negated_formula = TypeChecker::negateFormula($formula);
+        $negated_formula = AlgebraChecker::negateFormula($formula);
 
         $this->assertSame(1, count($negated_formula));
         $this->assertSame(['$a' => ['empty'], '$b' => ['empty']], $negated_formula[0]->possibilities);
@@ -302,7 +303,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
             new Clause(['$a' => ['int', 'string'], '$b' => ['!empty']])
         ];
 
-        $negated_formula = TypeChecker::negateFormula($formula);
+        $negated_formula = AlgebraChecker::negateFormula($formula);
 
         $this->assertSame(3, count($negated_formula));
         $this->assertSame(['$a' => ['!int']], $negated_formula[0]->possibilities);
@@ -356,7 +357,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
             new Clause(['$a' => ['empty'], '$b' => ['empty']])
         ];
 
-        $simplified_formula = TypeChecker::simplifyCNF($formula);
+        $simplified_formula = AlgebraChecker::simplifyCNF($formula);
 
         $this->assertSame(2, count($simplified_formula));
         $this->assertSame(['$a' => ['!empty']], $simplified_formula[0]->possibilities);
