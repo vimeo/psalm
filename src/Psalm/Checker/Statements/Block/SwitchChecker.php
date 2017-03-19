@@ -146,7 +146,7 @@ class SwitchChecker
                         }
                     }
                 } else {
-                    $case_redefined_vars = Context::getRedefinedVars($original_context, $case_context);
+                    $case_redefined_vars = $case_context->getRedefinedVars($original_context);
 
                     Type::redefineGenericUnionTypes($case_redefined_vars, $context);
 

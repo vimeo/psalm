@@ -194,19 +194,18 @@ class Context
 
     /**
      * @param  Context $original_context
-     * @param  Context $new_context
      * @return array<string,Type\Union>
      */
-    public static function getRedefinedVars(Context $original_context, Context $new_context)
+    public function getRedefinedVars(Context $original_context)
     {
         $redefined_vars = [];
 
         foreach ($original_context->vars_in_scope as $var => $context_type) {
-            if (isset($new_context->vars_in_scope[$var]) &&
-                !$new_context->vars_in_scope[$var]->failed_reconciliation &&
-                (string)$new_context->vars_in_scope[$var] !== (string)$context_type
+            if (isset($this->vars_in_scope[$var]) &&
+                !$this->vars_in_scope[$var]->failed_reconciliation &&
+                (string)$this->vars_in_scope[$var] !== (string)$context_type
             ) {
-                $redefined_vars[$var] = $new_context->vars_in_scope[$var];
+                $redefined_vars[$var] = $this->vars_in_scope[$var];
             }
         }
 

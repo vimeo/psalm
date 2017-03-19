@@ -171,7 +171,7 @@ class IfChecker
 
         // we calculate the vars redefined in a hypothetical else statement to determine
         // which vars of the if we can safely change
-        $pre_assignment_else_redefined_vars = Context::getRedefinedVars($context, $temp_else_context);
+        $pre_assignment_else_redefined_vars = $temp_else_context->getRedefinedVars($context);
 
         // check the if
         self::analyzeIfBlock(
@@ -338,7 +338,7 @@ class IfChecker
                 }
             }
 
-            $if_scope->redefined_vars = Context::getRedefinedVars($outer_context, $if_context);
+            $if_scope->redefined_vars = $if_context->getRedefinedVars($outer_context);
             $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
             $if_scope->reasonable_clauses = $if_context->clauses;
         } elseif (!$stmt->else && !$stmt->elseifs) {
@@ -393,7 +393,7 @@ class IfChecker
             $vars = array_diff_key($if_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
 
             if ($has_leaving_statements && $if_scope->loop_context) {
-                $if_scope->redefined_loop_vars = Context::getRedefinedVars($if_scope->loop_context, $if_context);
+                $if_scope->redefined_loop_vars = $if_context->getRedefinedVars($if_scope->loop_context);
                 $if_scope->possibly_redefined_loop_vars = $if_scope->redefined_loop_vars;
             }
 
@@ -551,7 +551,7 @@ class IfChecker
                 ScopeChecker::doesAlwaysBreakOrContinue($elseif->stmts);
 
             // update the parent context as necessary
-            $elseif_redefined_vars = Context::getRedefinedVars($original_context, $elseif_context);
+            $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context);
 
             if (!$has_leaving_statements) {
                 if ($if_scope->new_vars === null) {
@@ -797,7 +797,7 @@ class IfChecker
             $has_leaving_statements = $has_ending_statements ||
                 ScopeChecker::doesAlwaysBreakOrContinue($else->stmts);
 
-            $else_redefined_vars = Context::getRedefinedVars($original_context, $else_context);
+            $else_redefined_vars = $else_context->getRedefinedVars($original_context);
 
             // if it doesn't end in a return
             if (!$has_leaving_statements) {
