@@ -245,8 +245,6 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $this->class_checkers_to_visit = [];
         $this->interface_checkers_to_visit = [];
-
-        $this->function_checkers = $function_checkers;
     }
 
     /**
@@ -319,6 +317,16 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function addNamespacedInterfaceChecker($fq_class_name, InterfaceChecker $interface_checker)
     {
         $this->interface_checkers_to_visit[$fq_class_name] = $interface_checker;
+    }
+
+    /**
+     * @param string            $function_id
+     * @param FunctionChecker   $function_checker
+     * @return  void
+     */
+    public function addNamespacedFunctionChecker($function_id, FunctionChecker $function_checker)
+    {
+        $this->function_checkers[$function_id] = $function_checker;
     }
 
     /**

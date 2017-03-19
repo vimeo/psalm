@@ -279,6 +279,100 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testNamespacedStubClass()
+    {
+        $this->project_checker->setConfig(
+            TestConfig::loadFromXML(
+                'psalm.xml',
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/stubs/namespaced_class.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $stmts = self::$parser->parse('<?php
+        $a = new Foo\SystemClass();
+        echo Foo\SystemClass::HELLO;
+
+        $b = $a->foo(5, "hello");
+        $c = Foo\SystemClass::bar(5, "hello");
+        ');
+
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testStubFunction()
+    {
+        $this->project_checker->setConfig(
+            TestConfig::loadFromXML(
+                'psalm.xml',
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/stubs/custom_functions.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $stmts = self::$parser->parse('<?php
+        echo barBar("hello");
+        ');
+
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testNamespacedStubFunction()
+    {
+        $this->project_checker->setConfig(
+            TestConfig::loadFromXML(
+                'psalm.xml',
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/stubs/namespaced_functions.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $stmts = self::$parser->parse('<?php
+        echo Foo\barBar("hello");
+        ');
+
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
     public function testStubFileWithExistingClassDefinition()
     {
         $this->project_checker->setConfig(
