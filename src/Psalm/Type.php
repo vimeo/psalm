@@ -461,6 +461,10 @@ abstract class Type
             $combined_type->initialized = false;
         }
 
+        if ($type_1->from_docblock || $type_2->from_docblock) {
+            $combined_type->from_docblock = true;
+        }
+
         if ($both_failed_reconciliation) {
             $combined_type->failed_reconciliation = true;
         }

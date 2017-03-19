@@ -234,6 +234,69 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testReassertWithIs()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @param array $a */
+        function foo($a) : void {
+            if (is_array($a)) {
+                // do something
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCheckArrayWithIs()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @param mixed $b */
+        function foo($b) : void {
+            /** @var array */
+            $a = (array)$b;
+            if (is_array($a)) {
+                // do something
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCheckArrayWithIsInsideLoop()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @param array<mixed, array<mixed, mixed>> $data */
+        function foo($data) : void {
+            foreach ($data as $key => $val) {
+                if (!\is_array($data)) {
+                    $data = [$key => null];
+                } else {
+                    $data[$key] = !empty($val);
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
     public function testGoodDocblock()
     {
         $stmts = self::$parser->parse('<?php
