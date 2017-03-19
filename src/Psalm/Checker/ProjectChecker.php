@@ -764,7 +764,6 @@ class ProjectChecker
 
         // if the file was autoloaded but exists in evaled code only, return false
         if (!file_exists($file_path)) {
-            var_dump($file_path);
             return false;
         }
 
