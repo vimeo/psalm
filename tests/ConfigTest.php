@@ -373,6 +373,36 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testConditionalNamespacedStubFunction()
+    {
+        $this->project_checker->setConfig(
+            TestConfig::loadFromXML(
+                'psalm.xml',
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/stubs/conditional_namespaced_functions.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $stmts = self::$parser->parse('<?php
+        echo Foo\barBar("hello");
+        ');
+
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
     public function testStubFileWithExistingClassDefinition()
     {
         $this->project_checker->setConfig(

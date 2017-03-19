@@ -191,27 +191,31 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_context = new Context($context->self);
-                $function_context->collect_references = $this->getFileChecker()->project_checker->collect_references;
-                $function_checkers[$stmt->name]->analyze($function_context, $context);
+                $project_checker = $this->getFileChecker()->project_checker;
 
-                $config = Config::getInstance();
+                if (!$project_checker->register_global_functions) {
+                    $function_context = new Context($context->self);
+                    $function_context->collect_references = $project_checker->collect_references;
+                    $function_checkers[$stmt->name]->analyze($function_context, $context);
 
-                if (!$config->excludeIssueInFile('InvalidReturnType', $this->getFilePath())) {
-                    /** @var string */
-                    $method_id = $function_checkers[$stmt->name]->getMethodId();
+                    $config = Config::getInstance();
 
-                    $function_storage = FunctionChecker::getStorage($method_id, $this->getFilePath());
+                    if (!$config->excludeIssueInFile('InvalidReturnType', $this->getFilePath())) {
+                        /** @var string */
+                        $method_id = $function_checkers[$stmt->name]->getMethodId();
 
-                    $return_type = $function_storage->return_type;
-                    $return_type_location = $function_storage->return_type_location;
+                        $function_storage = FunctionChecker::getStorage($method_id, $this->getFilePath());
 
-                    $function_checkers[$stmt->name]->verifyReturnType(
-                        false,
-                        $return_type,
-                        $this->getFQCLN(),
-                        $return_type_location
-                    );
+                        $return_type = $function_storage->return_type;
+                        $return_type_location = $function_storage->return_type_location;
+
+                        $function_checkers[$stmt->name]->verifyReturnType(
+                            false,
+                            $return_type,
+                            $this->getFQCLN(),
+                            $return_type_location
+                        );
+                    }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
                 ExpressionChecker::analyze($this, $stmt, $context);
