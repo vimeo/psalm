@@ -760,16 +760,24 @@ class ProjectChecker
 
         error_reporting($old_level);
 
+        $file_path = (string)$reflected_class->getFileName();
+
+        // if the file was autoloaded but exists in evaled code only, return false
+        if (!file_exists($file_path)) {
+            var_dump($file_path);
+            return false;
+        }
+
         $fq_class_name = $reflected_class->getName();
         $this->existing_classlikes_ci[$fq_class_name_ci] = true;
         $this->existing_classlikes[$fq_class_name] = true;
 
         if ($reflected_class->isInterface()) {
-            $this->addFullyQualifiedInterfaceName($fq_class_name, (string)$reflected_class->getFileName());
+            $this->addFullyQualifiedInterfaceName($fq_class_name, $file_path);
         } elseif ($reflected_class->isTrait()) {
-            $this->addFullyQualifiedTraitName($fq_class_name, (string)$reflected_class->getFileName());
+            $this->addFullyQualifiedTraitName($fq_class_name, $file_path);
         } else {
-            $this->addFullyQualifiedClassName($fq_class_name, (string)$reflected_class->getFileName());
+            $this->addFullyQualifiedClassName($fq_class_name, $file_path);
         }
 
         return true;

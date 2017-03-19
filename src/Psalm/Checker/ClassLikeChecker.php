@@ -151,7 +151,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             if ($storage->location) {
                 $storage_file_path = $storage->location->file_path;
-                $source_file_path = $this->source->getFilePath();
+                $source_file_path = $this->source->getCheckedFilePath();
 
                 if (!Config::getInstance()->use_case_sensitive_file_names) {
                     $storage_file_path = strtolower($storage_file_path);
@@ -164,7 +164,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     if (IssueBuffer::accepts(
                         new DuplicateClass(
                             'Class ' . $fq_class_name . ' has already been defined at ' .
-                                $storage->location->file_path . ':' . $storage->location->getLineNumber(),
+                                $storage_file_path . ':' . $storage->location->getLineNumber(),
                             new \Psalm\CodeLocation($this, $class, true)
                         )
                     )) {
