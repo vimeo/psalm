@@ -16,21 +16,11 @@ trait GenericTrait
      */
     public function __toString()
     {
-        return $this->value .
-                '<' .
-                implode(
-                    ', ',
-                    array_map(
-                        /**
-                         * @return string
-                         */
-                        function (Union $type_param) {
-                            return (string)$type_param;
-                        },
-                        $this->type_params
-                    )
-                ) .
-                '>';
+        $s = '';
+        foreach ($this->type_params as $type_param) {
+            $s .= $type_param . ', ';
+        }
+        return $this->value . '<' . substr($s, 0, -2) . '>';
     }
 
     /**
