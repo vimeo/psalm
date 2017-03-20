@@ -60,6 +60,10 @@ class Clause
      */
     public function contains(Clause $other_clause)
     {
+        if (count($other_clause->possibilities) > count($this->possibilities)) {
+            return false;
+        }
+
         foreach ($other_clause->possibilities as $var => $possible_types) {
             if (!isset($this->possibilities[$var]) || count(array_diff($possible_types, $this->possibilities[$var]))) {
                 return false;

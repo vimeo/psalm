@@ -61,19 +61,11 @@ class Union
      */
     public function __toString()
     {
-        return implode(
-            '|',
-            array_map(
-                /**
-                 * @param string $type
-                 * @return string
-                 */
-                function ($type) {
-                    return (string)$type;
-                },
-                $this->types
-            )
-        );
+        $s = '';
+        foreach ($this->types as $type) {
+            $s .= $type . '|';
+        }
+        return substr($s, 0, -1);
     }
 
     /**
