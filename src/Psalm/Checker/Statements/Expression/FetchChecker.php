@@ -950,9 +950,18 @@ class FetchChecker
                                     ? [$string_key_value => $keyed_assignment_type]
                                     : [];
 
-                                $assignment_type = new Type\Union([
-                                    new Type\Atomic\ObjectLike($properties)
-                                ]);
+                                if ($properties) {
+                                    $assignment_type = new Type\Union([
+                                        new Type\Atomic\ObjectLike($properties)
+                                    ]);
+                                } else {
+                                    $assignment_type = new Type\Union([
+                                        new Type\Atomic\TArray([
+                                            $key_type,
+                                            $keyed_assignment_type
+                                        ])
+                                    ]);
+                                }
                             } else {
                                 if (!$keyed_assignment_type) {
                                     throw new \UnexpectedValueException('$keyed_assignment_type cannot be null');

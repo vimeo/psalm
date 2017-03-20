@@ -687,6 +687,12 @@ class ExpressionChecker
                 }
             } else {
                 $item_value_type = Type::getMixed();
+
+                if ($item->key instanceof PhpParser\Node\Scalar\String_) {
+                    $property_types[$item->key->value] = Type::getMixed();
+                } else {
+                    $can_create_objectlike = false;
+                }
             }
         }
 
