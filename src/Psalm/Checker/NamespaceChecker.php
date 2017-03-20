@@ -58,6 +58,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     public function __construct(Namespace_ $namespace, FileChecker $source)
     {
         $this->source = $source;
+        $this->file_checker = $source;
         $this->namespace = $namespace;
         $this->namespace_name = $this->namespace->name ? implode('\\', $this->namespace->name->parts) : '';
     }

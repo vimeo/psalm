@@ -89,6 +89,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     {
         $this->function = $function;
         $this->source = $source;
+        $this->file_checker = $source->getFileChecker();
         $this->suppressed_issues = $source->getSuppressedIssues();
     }
 

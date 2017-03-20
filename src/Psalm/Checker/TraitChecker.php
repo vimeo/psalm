@@ -26,6 +26,7 @@ class TraitChecker extends ClassLikeChecker
         }
 
         $this->source = $source;
+        $this->file_checker = $source->getFileChecker();
         $this->class = $class;
         $this->fq_class_name = $fq_class_name;
 

@@ -135,6 +135,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     {
         $this->class = $class;
         $this->source = $source;
+        $this->file_checker = $source->getFileChecker();
         $this->fq_class_name = $fq_class_name;
 
         $fq_class_name_lower = strtolower($fq_class_name);

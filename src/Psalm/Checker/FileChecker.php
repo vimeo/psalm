@@ -572,4 +572,9 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         return false;
     }
+
+    public function getFileChecker()
+    {
+        return $this;
+    }
 }

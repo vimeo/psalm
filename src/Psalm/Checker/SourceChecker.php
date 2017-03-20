@@ -15,6 +15,11 @@ abstract class SourceChecker implements StatementsSource
     protected $source = null;
 
     /**
+     * @var FileChecker|null
+     */
+    protected $file_checker;
+
+    /**
      * @return array<string, string>
      */
     public function getAliasedClasses()
@@ -92,18 +97,11 @@ abstract class SourceChecker implements StatementsSource
 
     /**
      * @return FileChecker
+     * @psalm-suppress InvalidReturnType because it basically always returns a file checker
      */
     public function getFileChecker()
     {
-        if ($this instanceof FileChecker) {
-            return $this;
-        }
-
-        if ($this->source === null) {
-            throw new \UnexpectedValueException('$this->source should not be null');
-        }
-
-        return $this->source->getFileChecker();
+        return $this->file_checker;
     }
 
     /**
