@@ -3,9 +3,11 @@
  * @template T
  *
  * @param array<T, mixed> $arr
+ * @param mixed           $search_value
+ * @param bool            $strict
  * @return array<int, T>
  */
-function array_keys(array $arr) {}
+function array_keys(array $arr, $search_value = null, bool $strict = false) {}
 
 /**
  * @template T
