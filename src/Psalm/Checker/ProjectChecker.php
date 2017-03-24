@@ -125,7 +125,7 @@ class ProjectChecker
     private $files_to_visit = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, bool>
      */
     private $files_to_analyze = [];
 
@@ -557,7 +557,7 @@ class ProjectChecker
                     $file_path = (string)$iterator->getRealPath();
 
                     if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
-                        $this->files_to_analyze[$file_path] = $file_path;
+                        $this->files_to_analyze[$file_path] = true;
                     }
                 }
             }
@@ -651,33 +651,35 @@ class ProjectChecker
                 continue;
             }
 
-            $this->files_to_analyze[$file_path] = $file_path;
+            $this->files_to_analyze[$file_path] = true;
         }
     }
 
     /**
-     * @param  string  $file_name
+     * @param  string  $file_path
      * @return void
      */
-    public function checkFile($file_name)
+    public function checkFile($file_path)
     {
         if ($this->debug_output) {
-            echo 'Checking ' . $file_name . PHP_EOL;
+            echo 'Checking ' . $file_path . PHP_EOL;
         }
 
         if (!$this->config) {
-            $this->config = $this->getConfigForPath($file_name);
+            $this->config = $this->getConfigForPath($file_path);
         }
 
         $start_checks = (int)microtime(true);
 
-        $this->config->hide_external_errors = $this->config->isInProjectDirs($file_name);
+        $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
+
+        $this->files_to_analyze[$file_path] = true;
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileReferenceProvider::loadReferenceCache();
 
-        $file_checker = $this->visitFile($file_name, $filetype_handlers, true);
+        $file_checker = $this->visitFile($file_path, $filetype_handlers, true);
 
         if ($this->debug_output) {
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -1066,9 +1068,10 @@ class ProjectChecker
      * @param  string $file_path
      * @return void
      */
-    public function registerVisitedFile($file_path)
+    public function registerAnalyzableFile($file_path)
     {
         $this->visited_files[$file_path] = true;
+        $this->files_to_analyze[$file_path] = true;
     }
 
     /**
@@ -1214,5 +1217,14 @@ class ProjectChecker
         }
 
         return true;
+    }
+
+    /**
+     * @param  string $file_path
+     * @return bool
+     */
+    public function canReportIssues($file_path)
+    {
+        return isset($this->files_to_analyze[$file_path]);
     }
 }

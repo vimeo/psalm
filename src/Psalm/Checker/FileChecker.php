@@ -265,7 +265,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             $function_context->collect_references = $this->project_checker->collect_references;
             $function_checker->analyze($function_context, $this->context);
 
-            if (!$config->excludeIssueInFile('InvalidReturnType', $this->file_path)) {
+            if ($config->reportIssueInFile('InvalidReturnType', $this->file_path)) {
                 /** @var string */
                 $method_id = $function_checker->getMethodId();
 
@@ -384,7 +384,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
     {
-        $this->project_checker->registerVisitedFile($this->file_path);
+        $this->project_checker->registerAnalyzableFile($this->file_path);
         $this->visit($file_context);
         $this->analyze($update_docblocks);
     }

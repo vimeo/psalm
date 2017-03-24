@@ -125,8 +125,8 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             </psalm>'
         );
 
-        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', realpath('tests/ConfigTest.php')));
-        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('tests/ConfigTest.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
     }
 
     /**
@@ -155,10 +155,6 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                 </issueHandlers>
             </psalm>'
         );
-
-        $this->assertTrue($config->excludeIssueInFile('MissingReturnType', realpath('tests/ConfigTest.php')));
-        $this->assertFalse($config->excludeIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->excludeIssueInFile('MissingReturnType', realpath('src/Psalm/Checker/FileChecker.php')));
 
         $this->assertSame('info', $config->getReportingLevelForFile('MissingReturnType', realpath('src/Psalm/Type.php')));
         $this->assertSame('error', $config->getReportingLevelForFile('MissingReturnType', realpath('src/Psalm/Checker/FileChecker.php')));

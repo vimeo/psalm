@@ -498,23 +498,25 @@ class Config
      * @param   string $file_path
      * @return  bool
      */
-    public function excludeIssueInFile($issue_type, $file_path)
+    public function reportIssueInFile($issue_type, $file_path)
     {
         if (!$this->totally_typed && in_array($issue_type, self::$MIXED_ISSUES)) {
-            return true;
+            return false;
         }
 
-        if ($this->project_files && $this->hide_external_errors) {
-            if (!$this->isInProjectDirs($file_path)) {
-                return true;
+        if ($this->hide_external_errors) {
+            $project_checker = ProjectChecker::getInstance();
+
+            if (!$project_checker->canReportIssues($file_path)) {
+                return false;
             }
         }
 
         if ($this->getReportingLevelForFile($issue_type, $file_path) === self::REPORT_SUPPRESS) {
-            return true;
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     /**

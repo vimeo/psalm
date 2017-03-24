@@ -611,7 +611,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $config = Config::getInstance();
 
-        if (!$config->excludeIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
+        if ($config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             $uninitialized_variables = [];
             $uninitialized_properties = [];
 
@@ -727,7 +727,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $global_context ? clone $global_context : null
         );
 
-        if (!$config->excludeIssueInFile('InvalidReturnType', $source->getFilePath())) {
+        if ($config->reportIssueInFile('InvalidReturnType', $source->getFilePath())) {
             $return_type_location = null;
             $secondary_return_type_location = null;
 
