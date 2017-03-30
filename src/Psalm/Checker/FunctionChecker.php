@@ -22,6 +22,9 @@ class FunctionChecker extends FunctionLikeChecker
      */
     protected static $call_map = null;
 
+    /** @var FileChecker|null */
+    protected static $callmap_file_checker = null;
+
     /**
      * @var array<string, FunctionLikeStorage>
      */
@@ -200,6 +203,10 @@ class FunctionChecker extends FunctionLikeChecker
 
         $function_type_options = [];
 
+        if (!self::$callmap_file_checker) {
+            self::$callmap_file_checker = new FileChecker('callmap.php', \Psalm\Checker\ProjectChecker::getInstance(), [], false);
+        }
+
         foreach ($call_map_functions as $call_map_function_args) {
             array_shift($call_map_function_args);
 
@@ -225,10 +232,14 @@ class FunctionChecker extends FunctionLikeChecker
                     $variadic = true;
                 }
 
+                $param_type = $arg_type
+                    ? TypeChecker::simplifyUnionType(Type::parseString($arg_type), self::$callmap_file_checker)
+                    : Type::getMixed();
+
                 $function_types[] = new FunctionLikeParameter(
                     $arg_name,
                     $by_reference,
-                    $arg_type ? Type::parseString($arg_type) : Type::getMixed(),
+                    $param_type,
                     null,
                     $optional,
                     false,

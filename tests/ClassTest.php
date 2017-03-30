@@ -643,4 +643,59 @@ class ClassTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testSubclassWithSimplerArg()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {}
+        class B extends A {}
+
+        class E1 {
+            /**
+             * @param A|B|null $a
+             */
+            public function __construct($a) {
+            }
+        }
+
+        class E2 extends E1 {
+            /**
+             * @param A|null $a
+             */
+            public function __construct($a) {
+                parent::__construct($a);
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSubclassOfInvalidArgumentExceptionWithSimplerArg()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A extends InvalidArgumentException {
+            /**
+             * @param string $message
+             * @param int $code
+             * @param Throwable|null $previous_exception
+             */
+            public function __construct($message, $code, $previous_exception) {
+                parent::__construct($message, $code, $previous_exception);
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

@@ -1322,6 +1322,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $new_param_type->types['null'] = new Type\Atomic\TNull();
             }
 
+            $new_param_type = TypeChecker::simplifyUnionType($new_param_type, $file_checker);
+
             if ((string)$storage_param->type !== (string)$new_param_type) {
                 $storage_param->type = $new_param_type;
             }

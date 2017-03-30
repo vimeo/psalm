@@ -1070,7 +1070,9 @@ class TypeChecker
      */
     public static function simplifyUnionType(Type\Union $union, FileChecker $file_checker)
     {
-        if (count($union->types) === 1) {
+        $union_type_count = count($union->types);
+
+        if ($union_type_count === 1 || ($union_type_count === 2 && $union->isNullable())) {
             return $union;
         }
 
