@@ -681,6 +681,10 @@ class ClassTest extends PHPUnit_Framework_TestCase
      */
     public function testSubclassOfInvalidArgumentExceptionWithSimplerArg()
     {
+        if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
+            $this->markTestSkipped('Throwable needs PHP 7');
+        }
+
         $stmts = self::$parser->parse('<?php
         class A extends InvalidArgumentException {
             /**
