@@ -21,9 +21,10 @@ function array_values(array $arr) {}
  * @template T
  *
  * @param array<mixed, T> $arr
+ * @param int $sort_flags
  * @return array<int, T>
  */
-function array_unique(array $arr) {}
+function array_unique(array $arr, int $sort_flags = 0) {}
 
 /**
  * @template T
