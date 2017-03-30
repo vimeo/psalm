@@ -9084,7 +9084,7 @@ return [
 'strtok\'1' => ['string|bool', 'token'=>'string'],
 'strtok' => ['string|bool', 'str'=>'string', 'token'=>'string'],
 'strtolower' => ['string', 'str'=>'string'],
-'strtotime' => ['int', 'time'=>'string', 'now='=>'int'],
+'strtotime' => ['int|false', 'time'=>'string', 'now='=>'int'],
 'strtoupper' => ['string', 'str'=>'string'],
 'strtr\'1' => ['string', 'str'=>'string', 'replace_pairs'=>'array'],
 'strtr' => ['string', 'str'=>'string', 'from'=>'string', 'to'=>'string'],
