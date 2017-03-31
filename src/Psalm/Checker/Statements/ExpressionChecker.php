@@ -543,8 +543,7 @@ class ExpressionChecker
                             new CodeLocation($statements_checker, $stmt)
                         );
                     }
-
-                } else {
+                } elseif ($context->check_variables) {
                     IssueBuffer::add(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
