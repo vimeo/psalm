@@ -471,7 +471,6 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
      */
     public function testTwoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf()
     {
-        $this->markTestSkipped('We don’t currently support reinforcement of vars');
         $stmts = self::$parser->parse('<?php
         function foo(?string $a, ?string $b) : string {
             if ($a) {

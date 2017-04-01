@@ -124,10 +124,6 @@ class IfChecker
                 return false;
             }
 
-            foreach ($changed_vars as $changed_var) {
-                //$if_context->removeVarFromClauses($changed_var);
-            }
-
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
             $if_context->vars_possibly_in_scope = array_merge(
                 $reconcilable_if_types,

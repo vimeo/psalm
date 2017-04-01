@@ -87,11 +87,6 @@ class AssignmentChecker
             $statements_checker
         );
 
-        if ($array_var_id) {
-            // removes dependennt vars from $context
-            $context->removeDescendents($array_var_id);
-        }
-
         if ($doc_comment) {
             $type_in_comments = CommentChecker::getTypeFromComment(
                 $doc_comment,
@@ -105,6 +100,10 @@ class AssignmentChecker
 
         if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
             if ($var_id) {
+                if ($array_var_id) {
+                    $context->removeDescendents($array_var_id);
+                }
+
                 // if we're not exiting immediately, make everything mixed
                 $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
             }
@@ -120,6 +119,13 @@ class AssignmentChecker
                 $assign_value_type = $assign_value->inferredType;
             } else {
                 $assign_value_type = Type::getMixed();
+            }
+        }
+
+        if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
+            if ((string)$context->vars_in_scope[$array_var_id] !== (string)$assign_value_type) {
+                // removes dependennt vars from $context
+                $context->removeDescendents($array_var_id);
             }
         }
 
