@@ -495,6 +495,29 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testNestedReassignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a) : void {
+            if ($a === null) {
+                $a = "blah-blah";
+            } else {
+                $a = rand(0, 1) ? "blah" : null;
+
+                if ($a === null) {
+
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
     public function testTwoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf()
     {
         $stmts = self::$parser->parse('<?php

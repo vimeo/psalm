@@ -276,14 +276,20 @@ class Context
                 $clauses_to_keep[] = $clause;
             } elseif ($file_checker &&
                 $new_type &&
-                !$new_type->isMixed() &&
-                !in_array('empty', $clause->possibilities[$remove_var_id]) &&
-                isset($clause->impossibilities[$remove_var_id])
+                !$new_type->isMixed()
             ) {
                 $type_changed = false;
 
                 // if the clause contains any possibilities that would be altered
-                foreach ($clause->impossibilities[$remove_var_id] as $type) {
+                foreach ($clause->possibilities[$remove_var_id] as $type) {
+                    // empty and !empty are not definitive for arrays and scalar types
+                    if (($type === '!empty' || $type === 'empty') &&
+                        ($new_type->hasArray() || $new_type->hasNumericType())
+                    ) {
+                        $type_changed = true;
+                        break;
+                    }
+
                     $result_type = \Psalm\Checker\TypeChecker::reconcileTypes(
                         $type,
                         clone $new_type,
@@ -294,7 +300,7 @@ class Context
                         $failed_reconciliation
                     );
 
-                    if ((string)$result_type === $new_type_string) {
+                    if ((string)$result_type !== $new_type_string) {
                         $type_changed = true;
                         break;
                     }
