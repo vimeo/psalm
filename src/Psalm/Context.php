@@ -274,7 +274,11 @@ class Context
                 $clause->possibilities[$remove_var_id] === [$new_type_string]
             ) {
                 $clauses_to_keep[] = $clause;
-            } elseif ($file_checker && $new_type && !in_array('empty', $clause->possibilities[$remove_var_id])) {
+            } elseif ($file_checker &&
+                $new_type &&
+                !$new_type->isMixed() &&
+                !in_array('empty', $clause->possibilities[$remove_var_id])
+            ) {
                 $type_changed = false;
 
                 // if the clause contains any possibilities that would be altered
