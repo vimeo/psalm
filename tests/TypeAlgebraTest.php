@@ -467,18 +467,47 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidReturnType
+     * @return                   void
+     */
+    public function testTwoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a, ?string $b) : string {
+            if ($a) {
+                $a = "";
+            } elseif ($b) {
+                // do nothing
+            } else {
+                return "bad";
+            }
+
+            if (!$a) return $b;
+            return $a;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
      * @return void
      */
     public function testTwoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf()
     {
         $stmts = self::$parser->parse('<?php
-        function foo(?string $a, ?string $b) : string {
+        class A {}
+        class B extends A {}
+
+        function foo(?A $a, ?A $b) : A {
             if ($a) {
-                $a = "hello";
+                $a = new B;
             } elseif ($b) {
                 // do nothing
             } else {
-                return "bad";
+                return new A;
             }
 
             if (!$a) return $b;
@@ -615,7 +644,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         function foo() : void {
-            $matches = rand(0, 1) ? ["hello"] : null;
+            preg_match("/hello/", "hello molly", $matches);
 
             if (!$matches) {
                 return;
@@ -623,7 +652,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
 
             preg_match("/hello/", "hello dolly", $matches);
 
-            if ($matches) {
+            if (!$matches) {
 
             }
         }

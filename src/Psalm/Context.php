@@ -277,12 +277,13 @@ class Context
             } elseif ($file_checker &&
                 $new_type &&
                 !$new_type->isMixed() &&
-                !in_array('empty', $clause->possibilities[$remove_var_id])
+                !in_array('empty', $clause->possibilities[$remove_var_id]) &&
+                isset($clause->impossibilities[$remove_var_id])
             ) {
                 $type_changed = false;
 
                 // if the clause contains any possibilities that would be altered
-                foreach ($clause->possibilities[$remove_var_id] as $type) {
+                foreach ($clause->impossibilities[$remove_var_id] as $type) {
                     $result_type = \Psalm\Checker\TypeChecker::reconcileTypes(
                         $type,
                         clone $new_type,
@@ -293,7 +294,7 @@ class Context
                         $failed_reconciliation
                     );
 
-                    if ((string)$result_type !== $new_type_string) {
+                    if ((string)$result_type === $new_type_string) {
                         $type_changed = true;
                         break;
                     }
