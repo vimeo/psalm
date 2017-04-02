@@ -333,7 +333,11 @@ class Context
             return;
         }
 
-        $this->removeVarFromConflictingClauses($remove_var_id, $new_type, $file_checker);
+        $this->removeVarFromConflictingClauses(
+            $remove_var_id,
+            $existing_type->isMixed() ? null : $new_type,
+            $file_checker
+        );
 
         if ($existing_type->hasArray() || $existing_type->isMixed()) {
             $vars_to_remove = [];
