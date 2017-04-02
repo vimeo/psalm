@@ -608,6 +608,15 @@ class ExpressionChecker
                 }
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
+
+                // removes dependennt vars from $context
+                $context->removeDescendents(
+                    $var_id,
+                    $existing_type,
+                    $by_ref_type,
+                    $statements_checker->getFileChecker()
+                );
+
                 if ((string)$existing_type !== 'array<empty, empty>') {
                     $context->vars_in_scope[$var_id] = $by_ref_type;
                     $stmt->inferredType = $context->vars_in_scope[$var_id];

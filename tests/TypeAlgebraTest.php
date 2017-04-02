@@ -607,4 +607,29 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testByRefAssignment()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo() : void {
+            $matches = rand(0, 1) ? ["hello"] : null;
+
+            if (!$matches) {
+                return;
+            }
+
+            preg_match("/hello/", "hello dolly", $matches);
+
+            if ($matches) {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
