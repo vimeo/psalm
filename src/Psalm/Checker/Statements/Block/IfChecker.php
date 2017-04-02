@@ -98,6 +98,9 @@ class IfChecker
             $statements_checker
         );
 
+        // this will see whether any of the clauses in set A conflict with the clauses in set B
+        AlgebraChecker::checkForParadox($context->clauses, $if_clauses, $statements_checker, $stmt->cond);
+
         $if_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
         $if_scope->negated_clauses = AlgebraChecker::negateFormula($if_clauses);
@@ -351,7 +354,7 @@ class IfChecker
                 );
 
                 foreach ($changed_vars as $changed_var) {
-                    $outer_context->removeVarFromClauses($changed_var);
+                    $outer_context->removeVarFromConflictingClauses($changed_var);
                 }
 
                 if ($outer_context_vars_reconciled === false) {
@@ -460,10 +463,14 @@ class IfChecker
             $statements_checker
         );
 
+        $entry_clauses = array_merge($original_context->clauses, $if_scope->negated_clauses);
+
+        // this will see whether any of the clauses in set A conflict with the clauses in set B
+        AlgebraChecker::checkForParadox($entry_clauses, $elseif_clauses, $statements_checker, $elseif->cond);
+
         $elseif_context->clauses = AlgebraChecker::simplifyCNF(
             array_merge(
-                $original_context->clauses,
-                $if_scope->negated_clauses,
+                $entry_clauses,
                 $elseif_clauses
             )
         );

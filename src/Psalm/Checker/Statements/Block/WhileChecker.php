@@ -39,6 +39,8 @@ class WhileChecker
             $statements_checker
         );
 
+        $while_context->parent_context = $context;
+
         $while_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $while_clauses));
 
         $reconcilable_while_types = AlgebraChecker::getTruthsFromFormula($while_context->clauses);
@@ -113,7 +115,7 @@ class WhileChecker
                 $context->vars_in_scope = $vars_in_scope_reconciled;
 
                 foreach ($changed_vars as $changed_var) {
-                    $context->removeVarFromClauses($changed_var);
+                    $context->removeVarFromConflictingClauses($changed_var);
                 }
             }
         }

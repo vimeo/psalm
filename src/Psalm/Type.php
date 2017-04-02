@@ -672,10 +672,6 @@ abstract class Type
                 $value_types[$type_key] = [];
             }
 
-            if ($type instanceof TArray) {
-                throw new \InvalidArgumentException('Cannot have a non-generic array');
-            }
-
             $value_types[$type_key][(string) $type] = null;
         }
     }

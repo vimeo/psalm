@@ -63,7 +63,7 @@ class ForChecker
                     $for_context->vars_in_scope[$var]
                 );
 
-                $context->removeVarFromClauses($var);
+                $context->removeVarFromConflictingClauses($var);
             }
         }
 

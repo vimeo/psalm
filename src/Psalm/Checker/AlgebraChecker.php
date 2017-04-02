@@ -4,6 +4,9 @@ namespace Psalm\Checker;
 use PhpParser;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Clause;
+use Psalm\CodeLocation;
+use Psalm\IssueBuffer;
+use Psalm\Issue\ParadoxicalCondition;
 use Psalm\StatementsSource;
 
 class AlgebraChecker
@@ -156,25 +159,73 @@ class AlgebraChecker
             return;
         }
 
-        $clause->impossibilities = array_map(
-            /**
-             * @param array<string> $types
-             * @return array<string>
-             */
-            function (array $types) {
-                return array_map(
-                    /**
-                     * @param string $type
-                     * @return string
-                     */
-                    function ($type) {
-                        return TypeChecker::negateType($type);
-                    },
-                    $types
-                );
-            },
-            $clause->possibilities
-        );
+        $impossibilities = [];
+
+        foreach ($clause->possibilities as $var_id => $possiblity) {
+            $impossibility = [];
+
+            foreach ($possiblity as $type) {
+                if ($type[0] !== '^') {
+                    $impossibility[] = TypeChecker::negateType($type);
+                }
+            }
+
+            if ($impossibility) {
+                $impossibilities[$var_id] = $impossibility;
+            }
+        }
+
+        $clause->impossibilities = $impossibilities;
+    }
+
+    /**
+     * This looks to see if there are any clauses in one formula that contradict
+     * clauses in another formula
+     *
+     * e.g.
+     * if ($a) { }
+     * elseif ($a) { }
+     *
+     * @param  array<int, Clause>   $formula1
+     * @param  array<int, Clause>   $formula2
+     * @param  StatementsChecker    $statements_checker,
+     * @param  PhpParser\Node       $stmt
+     * @return void
+     */
+    public static function checkForParadox(
+        array $formula1,
+        array $formula2,
+        StatementsChecker $statements_checker,
+        PhpParser\Node $stmt
+    ) {
+        // remove impossible types
+        foreach ($formula1 as $clause_a) {
+            if (!$clause_a->reconcilable || $clause_a->wedge) {
+                continue;
+            }
+
+            self::calculateNegation($clause_a);
+
+            foreach ($formula2 as $clause_b) {
+                if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
+                    continue;
+                }
+
+                if ($clause_a->impossibilities == $clause_b->possibilities) {
+                    if (IssueBuffer::accepts(
+                        new ParadoxicalCondition(
+                            'Encountered a paradox when evaluating the conditional',
+                            new CodeLocation($statements_checker, $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    return;
+                }
+            }
+        }
     }
 
     /**

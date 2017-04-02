@@ -101,7 +101,7 @@ class AssignmentChecker
         if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
             if ($var_id) {
                 if ($array_var_id) {
-                    $context->removeDescendents($array_var_id);
+                    $context->removeDescendents($array_var_id, null, $assign_value_type);
                 }
 
                 // if we're not exiting immediately, make everything mixed
@@ -123,10 +123,13 @@ class AssignmentChecker
         }
 
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
-            if ((string)$context->vars_in_scope[$array_var_id] !== (string)$assign_value_type) {
-                // removes dependennt vars from $context
-                $context->removeDescendents($array_var_id);
-            }
+            // removes dependennt vars from $context
+            $context->removeDescendents(
+                $array_var_id,
+                $context->vars_in_scope[$array_var_id],
+                $assign_value_type,
+                $statements_checker->getFileChecker()
+            );
         }
 
         if ($assign_value_type->isMixed()) {

@@ -1,6 +1,9 @@
 <?php
 namespace Psalm;
 
+use Psalm\Type\Union;
+use Psalm\Checker\FileChecker;
+
 class Context
 {
     /**
@@ -242,52 +245,93 @@ class Context
         unset($this->vars_possibly_in_scope[$remove_var_id]);
 
         if (isset($this->vars_in_scope[$remove_var_id])) {
-            $type = $this->vars_in_scope[$remove_var_id];
+            $existing_type = $this->vars_in_scope[$remove_var_id];
             unset($this->vars_in_scope[$remove_var_id]);
 
-            $this->removeDescendents($remove_var_id, $type);
+            $this->removeDescendents($remove_var_id, $existing_type);
         }
     }
 
     /**
-     * @param  string                 $remove_var_id
+     * @param  string               $remove_var_id
+     * @param  Union|null           $new_type
+     * @param  FileChecker|null     $file_checker
      * @return void
      */
-    public function removeVarFromClauses($remove_var_id)
-    {
+    public function removeVarFromConflictingClauses(
+        $remove_var_id,
+        Union $new_type = null,
+        FileChecker $file_checker = null
+    ) {
         $clauses_to_keep = [];
 
+        $new_type_string = (string)$new_type;
+
         foreach ($this->clauses as $clause) {
-            if (!isset($clause->possibilities[$remove_var_id])) {
+            \Psalm\Checker\AlgebraChecker::calculateNegation($clause);
+
+            if (!isset($clause->possibilities[$remove_var_id]) ||
+                $clause->possibilities[$remove_var_id] === [$new_type_string]
+            ) {
                 $clauses_to_keep[] = $clause;
+            } elseif ($file_checker && $new_type && !in_array('empty', $clause->possibilities[$remove_var_id])) {
+                $type_changed = false;
+
+                // if the clause contains any possibilities that would be altered
+                foreach ($clause->possibilities[$remove_var_id] as $type) {
+                    $result_type = \Psalm\Checker\TypeChecker::reconcileTypes(
+                        $type,
+                        clone $new_type,
+                        null,
+                        $file_checker,
+                        null,
+                        [],
+                        $failed_reconciliation
+                    );
+
+                    if ((string)$result_type !== $new_type_string) {
+                        $type_changed = true;
+                        break;
+                    }
+                }
+
+                if (!$type_changed) {
+                    $clauses_to_keep[] = $clause;
+                }
             }
         }
 
         $this->clauses = $clauses_to_keep;
 
         if ($this->parent_context) {
-            $this->parent_context->removeVarFromClauses($remove_var_id);
+            $this->parent_context->removeVarFromConflictingClauses($remove_var_id);
         }
     }
 
     /**
      * @param  string                 $remove_var_id
-     * @param  \Psalm\Type\Union|null $type
+     * @param  \Psalm\Type\Union|null $existing_type
+     * @param  \Psalm\Type\Union|null $new_type
+     * @param  FileChecker|null       $file_checker
      * @return void
      */
-    public function removeDescendents($remove_var_id, \Psalm\Type\Union $type = null)
-    {
-        if (!$type && isset($this->vars_in_scope[$remove_var_id])) {
-            $type = $this->vars_in_scope[$remove_var_id];
+    public function removeDescendents(
+        $remove_var_id,
+        Union $existing_type = null,
+        Union $new_type = null,
+        FileChecker $file_checker = null
+    ) {
+        if (!$existing_type && isset($this->vars_in_scope[$remove_var_id])) {
+            $existing_type = $this->vars_in_scope[$remove_var_id];
         }
 
-        if (!$type) {
+        if (!$existing_type) {
             return;
         }
 
-        $this->removeVarFromClauses($remove_var_id);
+        $this->removeVarFromConflictingClauses($remove_var_id, $new_type, $file_checker);
 
-        if ($type->hasArray() || $type->isMixed()) {
+        if ($existing_type->hasArray() || $existing_type->isMixed()) {
             $vars_to_remove = [];
 
             foreach ($this->vars_in_scope as $var_id => $_) {

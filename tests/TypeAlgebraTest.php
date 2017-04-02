@@ -489,4 +489,122 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage ParadoxicalCondition
+     * @return                   void
+     */
+    public function testRepeatedIfStatements()
+    {
+        $stmts = self::$parser->parse('<?php
+        /** @return string|null */
+        function foo(?string $a) {
+            if ($a) {
+                return $a;
+            }
+
+            if ($a) {
+
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage ParadoxicalCondition
+     * @return                   void
+     */
+    public function testRepeatedConditionals()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(?string $a) : void {
+            if ($a) {
+                // do something
+            } elseif ($a) {
+                // can never get here
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * This shouldn't throw an error
+     *
+     * @return void
+     */
+    public function testDifferentValueChecks()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo(string $a) : void {
+            if ($a === "foo") {
+                // do something
+            } elseif ($a === "bar") {
+                // can never get here
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * This shouldn't throw an error
+     *
+     * @return void
+     */
+    public function testRepeatedSet()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo() : void {
+            if ($a = rand(0, 1) ? "" : null) {
+                return;
+            }
+
+            if (rand(0, 1)) {
+                $a = rand(0, 1) ? "hello" : null;
+
+                if ($a) {
+
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @return void
+     */
+    public function testRepeatedSetInsideWhile()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo() : void {
+            if ($a = rand(0, 1) ? "" : null) {
+                return;
+            } else {
+                while (rand(0, 1)) {
+                    $a = rand(0, 1) ? "hello" : null;
+                }
+
+                if ($a) {
+
+                }
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
