@@ -16,5 +16,8 @@ class TestConfig extends Config
         $this->use_docblock_types = true;
         $this->totally_typed = true;
         $this->cache_directory = null;
+
+        $this->collectPredefinedConstants();
+        $this->collectPredefinedFunctions();
     }
 }

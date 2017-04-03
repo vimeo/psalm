@@ -449,12 +449,18 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
     {
         $stmts = self::$parser->parse('<?php
         $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
+        $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i) : bool { return true; });
+        $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool { return true; }, ARRAY_FILTER_USE_BOTH);
+        $g = array_filter(["a" => 5, "b" => 12, "c" => null], function(string $val) : bool { return true; }, ARRAY_FILTER_USE_KEY);
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$d']);
+        $this->assertEquals('array<string, null|int>', (string) $context->vars_in_scope['$e']);
+        $this->assertEquals('array<string, null|int>', (string) $context->vars_in_scope['$f']);
+        $this->assertEquals('array<string, null|int>', (string) $context->vars_in_scope['$g']);
     }
 
     /**

@@ -1661,14 +1661,18 @@ class CallChecker
                 : null;
 
         if ($closure_arg_type) {
-            $expected_closure_param_count = $method_id === 'array_filter' ? 1 : count($array_arg_types);
+            $min_closure_param_count = $max_closure_param_count = count($array_arg_types);
+
+            if ($method_id === 'array_filter') {
+                $max_closure_param_count = count($args) > 2 ? 2 : 1;
+            }
 
             foreach ($closure_arg_type->types as $closure_type) {
                 if (!$closure_type instanceof Type\Atomic\Fn) {
                     continue;
                 }
 
-                if (count($closure_type->params) > $expected_closure_param_count) {
+                if (count($closure_type->params) > $max_closure_param_count) {
                     if (IssueBuffer::accepts(
                         new TooManyArguments(
                             'Too many arguments in closure for ' . $method_id,
@@ -1678,7 +1682,7 @@ class CallChecker
                     )) {
                         return false;
                     }
-                } elseif (count($closure_type->params) < $expected_closure_param_count) {
+                } elseif (count($closure_type->params) < $min_closure_param_count) {
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
                             'You must supply a param in the closure for ' . $method_id,
@@ -1695,7 +1699,7 @@ class CallChecker
                 $i = 0;
 
                 foreach ($closure_params as $closure_param) {
-                    if (!$array_arg_types[$i]) {
+                    if (!isset($array_arg_types[$i])) {
                         $i++;
                         continue;
                     }
