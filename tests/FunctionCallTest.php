@@ -447,7 +447,7 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
      */
     public function testArrayFilter()
     {
-        if (version_compare(phpversion(), '5.6.0', '>=')) {
+        if (version_compare((string)phpversion(), '5.6.0', '>=')) {
             $stmts = self::$parser->parse('<?php
             $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
             $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i) : bool { return true; });
