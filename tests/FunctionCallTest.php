@@ -448,6 +448,8 @@ class FunctionCallTest extends PHPUnit_Framework_TestCase
      */
     public function testArrayFilter()
     {
+        $this->markTestSkipped('PHP 7.1 syntax');
+
         $stmts = self::$parser->parse('<?php
         $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
         $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i) : bool { return true; });
