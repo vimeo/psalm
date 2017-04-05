@@ -772,7 +772,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
-            $path_to_file = self::getPathTo($stmt->expr, $this->getFileName());
+            $path_to_file = self::getPathTo($stmt->expr, $this->getCheckedFileName());
         }
 
         if ($path_to_file) {
