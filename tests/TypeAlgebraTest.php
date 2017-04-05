@@ -490,6 +490,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
      */
     public function testTwoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf()
     {
+        $this->markTestSkipped('PHP 7.1 annotations');
         $stmts = self::$parser->parse('<?php
         function foo(?string $a, ?string $b) : string {
             if ($a) {
