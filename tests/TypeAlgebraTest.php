@@ -514,6 +514,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
      */
     public function testNestedReassignment()
     {
+        $this->markTestSkipped('PHP 7.1 annotations');
         $stmts = self::$parser->parse('<?php
         function foo(?string $a) : void {
             if ($a === null) {
@@ -537,6 +538,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
      */
     public function testTwoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf()
     {
+        $this->markTestSkipped('PHP 7.1 annotations');
         $stmts = self::$parser->parse('<?php
         class A {}
         class B extends A {}
@@ -566,6 +568,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
      */
     public function testRepeatedIfStatements()
     {
+        $this->markTestSkipped('PHP 7.1 annotations');
         $stmts = self::$parser->parse('<?php
         /** @return string|null */
         function foo(?string $a) {
@@ -590,6 +593,7 @@ class TypeAlgebraTest extends PHPUnit_Framework_TestCase
      */
     public function testRepeatedConditionals()
     {
+        $this->markTestSkipped('PHP 7.1 annotations');
         $stmts = self::$parser->parse('<?php
         function foo(?string $a) : void {
             if ($a) {
