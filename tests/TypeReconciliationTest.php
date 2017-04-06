@@ -451,6 +451,23 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return  void
+     */
+    public function testIntIsMixed()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo($a) : void {
+            $b = 5;
+
+            if ($b === $a) { }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeDoesNotContainType
      * @return                   void

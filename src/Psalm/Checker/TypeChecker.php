@@ -340,7 +340,11 @@ class TypeChecker
             return $new_type;
         }
 
-        if (!InterfaceChecker::interfaceExists($new_var_type, $file_checker) && $code_location) {
+        if (!InterfaceChecker::interfaceExists($new_var_type, $file_checker) &&
+            $code_location &&
+            !$new_type->isMixed() &&
+            !$existing_var_type->from_docblock
+        ) {
             $has_match = true;
 
             foreach ($new_type->types as $new_type_part) {
@@ -499,6 +503,10 @@ class TypeChecker
         &$type_coerced = null,
         &$to_string_cast = null
     ) {
+        if ($container_type_part instanceof TMixed) {
+            return true;
+        }
+
         $input_is_object = $input_type_part->isObjectType();
         $container_is_object = $container_type_part->isObjectType();
 
