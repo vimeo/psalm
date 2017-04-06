@@ -7,6 +7,7 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\CodeLocation;
+use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -134,7 +135,7 @@ class AssertionFinder
                         $source->getFileChecker()
                     )) {
                         if (IssueBuffer::accepts(
-                            new TypeDoesNotContainType(
+                            new TypeDoesNotContainNull(
                                 $var_type . ' does not contain ' . $null_type,
                                 new CodeLocation($source, $conditional)
                             ),

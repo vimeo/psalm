@@ -157,6 +157,7 @@
             <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyArguments" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TypeDoesNotContainNull" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedConstant" type="IssueHandlerType" minOccurs="0" />

@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\FailedTypeResolution;
+use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -367,15 +368,28 @@ class TypeChecker
             }
 
             if (!$has_match) {
-                if (IssueBuffer::accepts(
-                    new TypeDoesNotContainType(
-                        'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
-                        ' does not contain ' . $new_type,
-                        $code_location
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
+                if ($new_var_type === 'null') {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainNull(
+                            'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
+                            ' does not contain null',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainType(
+                            'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
+                            ' does not contain ' . $new_type,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
                 }
 
                 $failed_reconciliation = true;

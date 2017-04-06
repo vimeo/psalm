@@ -366,7 +366,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainType
+     * @expectedExceptionMessage TypeDoesNotContainNull
      * @return                   void
      */
     public function testMakeNonNullableNull()
@@ -437,7 +437,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainType
+     * @expectedExceptionMessage TypeDoesNotContainNull
      * @return                   void
      */
     public function testStringIsNotNull()
