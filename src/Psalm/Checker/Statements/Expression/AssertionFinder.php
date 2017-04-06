@@ -264,8 +264,8 @@ class AssertionFinder
                         $source
                     );
 
-                    $var_type = $conditional->right->inferredType;
-                    $other_type = $conditional->left->inferredType;
+                    $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                     /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionChecker::getArrayVarId(
@@ -274,8 +274,8 @@ class AssertionFinder
                         $source
                     );
 
-                    $var_type = $conditional->left->inferredType;
-                    $other_type = $conditional->right->inferredType;
+                    $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 }
 
                 if ($var_type) {
