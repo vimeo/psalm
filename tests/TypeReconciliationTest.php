@@ -407,6 +407,66 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeDoesNotContainType
+     * @return                   void
+     */
+    public function testFunctionValueIsNotType()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (json_last_error() === "5") { }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeDoesNotContainType
+     * @return                   void
+     */
+    public function testStringIsNotInt()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (5 === "5") { }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeDoesNotContainType
+     * @return                   void
+     */
+    public function testStringIsNotNull()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (5 === null) { }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage TypeDoesNotContainType
+     * @return                   void
+     */
+    public function testStringIsNotFalse()
+    {
+        $stmts = self::$parser->parse('<?php
+        if (5 === false) { }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage FailedTypeResolution
      * @return                   void
      */

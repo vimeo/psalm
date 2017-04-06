@@ -886,7 +886,7 @@ class CallChecker
      * @param   FunctionLikeChecker $source
      * @param   string              $method_name
      * @param   Context             $context
-     * @return  false|null
+     * @return  void
      */
     public static function collectSpecialInformation(
         FunctionLikeChecker $source,
@@ -909,9 +909,7 @@ class CallChecker
 
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-            if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
-                return false;
-            }
+            $file_checker->project_checker->getMethodMutations($method_id, $context);
         } elseif ($context->collect_initializations &&
             $context->self &&
             (
@@ -949,9 +947,7 @@ class CallChecker
                     }
                 }
 
-                if ($class_checker->getMethodMutations(strtolower($method_name), $context) === false) {
-                    return false;
-                }
+                $class_checker->getMethodMutations(strtolower($method_name), $context);
 
                 foreach ($local_vars_in_scope as $var => $type) {
                     $context->vars_in_scope[$var] = $type;
@@ -1016,9 +1012,7 @@ class CallChecker
                         if ($context->collect_mutations) {
                             $method_id = $fq_class_name . '::' . strtolower($stmt->name);
 
-                            if ($file_checker->project_checker->getMethodMutations($method_id, $context) === false) {
-                                return false;
-                            }
+                            $file_checker->project_checker->getMethodMutations($method_id, $context);
                         }
                     }
                 } else {

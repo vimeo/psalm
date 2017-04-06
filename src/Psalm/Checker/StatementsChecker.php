@@ -545,9 +545,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        if ($this->analyzeLoop($stmt->stmts, [], $do_context, $context) === false) {
-            return false;
-        }
+        $this->analyzeLoop($stmt->stmts, [], $do_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

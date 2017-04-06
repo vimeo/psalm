@@ -7,7 +7,6 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\CodeLocation;
-use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -95,6 +94,7 @@ class AssertionFinder
             $typed_value_position = self::hasTypedValueComparison($conditional);
 
             $var_name = null;
+            $var_type = null;
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -103,14 +103,16 @@ class AssertionFinder
                         $this_class_name,
                         $source
                     );
+
+                    $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
                 } elseif ($null_position === self::ASSIGNMENT_TO_LEFT) {
                     $var_name = ExpressionChecker::getArrayVarId(
                         $conditional->right,
                         $this_class_name,
                         $source
                     );
-                } else {
-                    throw new \InvalidArgumentException('Bad null variable position');
+
+                    $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 }
 
                 if ($var_name) {
@@ -118,6 +120,28 @@ class AssertionFinder
                         $if_types[$var_name] = 'null';
                     } else {
                         $if_types[$var_name] = 'empty';
+                    }
+                } elseif ($var_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                    $null_type = Type::getFalse();
+
+                    if (!TypeChecker::isContainedBy(
+                        $var_type,
+                        $null_type,
+                        $source->getFileChecker()
+                    ) && !TypeChecker::isContainedBy(
+                        $null_type,
+                        $var_type,
+                        $source->getFileChecker()
+                    )) {
+                        if (IssueBuffer::accepts(
+                            new TypeDoesNotContainType(
+                                $var_type . ' does not contain ' . $null_type,
+                                new CodeLocation($source, $conditional)
+                            ),
+                            $source->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 
@@ -140,6 +164,8 @@ class AssertionFinder
                             $this_class_name,
                             $source
                         );
+
+                        $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
                     }
                 } elseif ($false_position === self::ASSIGNMENT_TO_LEFT) {
                     if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall) {
@@ -156,9 +182,9 @@ class AssertionFinder
                             $this_class_name,
                             $source
                         );
+
+                        $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                     }
-                } else {
-                    throw new \InvalidArgumentException('Bad null variable position');
                 }
 
                 if ($var_name) {
@@ -166,6 +192,28 @@ class AssertionFinder
                         $if_types[$var_name] = 'false';
                     } else {
                         $if_types[$var_name] = 'empty';
+                    }
+                } elseif ($var_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                    $false_type = Type::getFalse();
+
+                    if (!TypeChecker::isContainedBy(
+                        $var_type,
+                        $false_type,
+                        $source->getFileChecker()
+                    ) && !TypeChecker::isContainedBy(
+                        $false_type,
+                        $var_type,
+                        $source->getFileChecker()
+                    )) {
+                        if (IssueBuffer::accepts(
+                            new TypeDoesNotContainType(
+                                $var_type . ' does not contain ' . $false_type,
+                                new CodeLocation($source, $conditional)
+                            ),
+                            $source->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 
@@ -206,6 +254,7 @@ class AssertionFinder
 
             if ($typed_value_position) {
                 $var_type = null;
+                $other_type = null;
 
                 if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
                     /** @var PhpParser\Node\Expr $conditional->right */
@@ -215,7 +264,8 @@ class AssertionFinder
                         $source
                     );
 
-                    $var_type = '^' . $conditional->right->inferredType;
+                    $var_type = $conditional->right->inferredType;
+                    $other_type = $conditional->left->inferredType;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                     /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionChecker::getArrayVarId(
@@ -224,14 +274,62 @@ class AssertionFinder
                         $source
                     );
 
-                    $var_type = '^' . $conditional->left->inferredType;
+                    $var_type = $conditional->left->inferredType;
+                    $other_type = $conditional->right->inferredType;
                 }
 
-                if ($var_name && $var_type) {
-                    $if_types[$var_name] = $var_type;
+                if ($var_type) {
+                    if ($var_name) {
+                        $if_types[$var_name] = '^' . $var_type;
+                    } elseif ($other_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        if (!TypeChecker::isContainedBy(
+                            $var_type,
+                            $other_type,
+                            $source->getFileChecker()
+                        ) && !TypeChecker::isContainedBy(
+                            $other_type,
+                            $var_type,
+                            $source->getFileChecker()
+                        )) {
+                            if (IssueBuffer::accepts(
+                                new TypeDoesNotContainType(
+                                    $var_type . ' does not contain ' . $other_type,
+                                    new CodeLocation($source, $conditional)
+                                ),
+                                $source->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
                 }
 
                 return $if_types;
+            }
+
+            $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+            $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+
+            if ($var_type && $other_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                if (!TypeChecker::isContainedBy(
+                    $var_type,
+                    $other_type,
+                    $source->getFileChecker()
+                ) && !TypeChecker::isContainedBy(
+                    $other_type,
+                    $var_type,
+                    $source->getFileChecker()
+                )) {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainType(
+                            $var_type . ' does not contain ' . $other_type,
+                            new CodeLocation($source, $conditional)
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
             }
 
             return [];

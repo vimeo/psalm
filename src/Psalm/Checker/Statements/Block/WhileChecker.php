@@ -72,9 +72,7 @@ class WhileChecker
 
         $asserted_while_vars = array_keys(AlgebraChecker::getTruthsFromFormula($while_clauses));
 
-        if ($statements_checker->analyzeLoop($stmt->stmts, $asserted_while_vars, $while_context, $context) === false) {
-            return false;
-        }
+        $statements_checker->analyzeLoop($stmt->stmts, $asserted_while_vars, $while_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
