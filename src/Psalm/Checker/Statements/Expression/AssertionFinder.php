@@ -286,11 +286,13 @@ class AssertionFinder
                         if (!TypeChecker::isContainedBy(
                             $var_type,
                             $other_type,
-                            $source->getFileChecker()
+                            $source->getFileChecker(),
+                            true
                         ) && !TypeChecker::isContainedBy(
                             $other_type,
                             $var_type,
-                            $source->getFileChecker()
+                            $source->getFileChecker(),
+                            true
                         )) {
                             if (IssueBuffer::accepts(
                                 new TypeDoesNotContainType(
