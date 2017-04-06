@@ -781,10 +781,11 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         /** @return void */
         function fooFoo(string $a) {
-            if (is_numeric($a)) {
-
-            }
+            if (is_numeric($a)) { }
         }
+
+        $b = rand(0, 1) ? 5 : false;
+        if (is_numeric($b)) { }
         ');
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);

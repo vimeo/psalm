@@ -325,12 +325,18 @@ class TypeChecker
             if ($existing_var_type->hasString()) {
                 $existing_var_type->removeType('string');
                 $existing_var_type->types['numeric-string'] = new TNumericString;
-
-                return $existing_var_type;
             }
 
-            if ($existing_var_type->hasType('numeric-string')) {
-                return $existing_var_type;
+            $numeric_types = [];
+
+            foreach ($existing_var_type->types as $type) {
+                if ($type->isNumericType()) {
+                    $numeric_types[] = $type;
+                }
+            }
+
+            if ($numeric_types) {
+                return new Type\Union($numeric_types);
             }
         }
 
