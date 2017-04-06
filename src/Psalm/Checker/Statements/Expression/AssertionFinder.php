@@ -122,7 +122,7 @@ class AssertionFinder
                         $if_types[$var_name] = 'empty';
                     }
                 } elseif ($var_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                    $null_type = Type::getFalse();
+                    $null_type = Type::getNull();
 
                     if (!TypeChecker::isContainedBy(
                         $var_type,
