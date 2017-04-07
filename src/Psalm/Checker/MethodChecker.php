@@ -353,6 +353,10 @@ class MethodChecker extends FunctionLikeChecker
             return true;
         }
 
+        if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+            return true;
+        }
+
         // support checking oldstyle constructors
         if ($method_name === '__construct') {
             $method_name_parts = explode('\\', $fq_class_name);
@@ -550,8 +554,14 @@ class MethodChecker extends FunctionLikeChecker
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
         }
 
-        if (isset(ClassLikeChecker::$storage[$fq_class_name]->declaring_method_ids[$method_name])) {
-            return ClassLikeChecker::$storage[$fq_class_name]->declaring_method_ids[$method_name];
+        $class_storage = ClassLikeChecker::$storage[$fq_class_name];
+
+        if (isset($class_storage->declaring_method_ids[$method_name])) {
+            return $class_storage->declaring_method_ids[$method_name];
+        }
+
+        if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+            return $class_storage->overridden_method_ids[$method_name][0];
         }
     }
 

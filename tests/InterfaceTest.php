@@ -452,6 +452,49 @@ class InterfaceTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @return void
+     */
+    public function testAbstractInterfaceImplementsButCallMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface I {
+            public function foo();
+        }
+
+        abstract class A implements I {
+            public function bar() : void {
+                $this->foo();
+            }
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedMethod
+     * @return                   void
+     */
+    public function testAbstractInterfaceImplementsButCallUndefinedMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface I {
+            public function foo();
+        }
+
+        abstract class A implements I {
+            public function bar() : void {
+                $this->foo2();
+            }
+        }
+        ');
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 
     /**
      * @return void
