@@ -1021,4 +1021,25 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertEquals('int|null', (string) $context->vars_in_scope['$b']);
     }
+
+    /**
+     * @return void
+     */
+    public function testTernaryByRefVar()
+    {
+        $stmts = self::$parser->parse('<?php
+        function foo() : void {
+            $b = null;
+            $c = rand(0, 1) ? bar($b) : null;
+            if (is_int($b)) { }
+        }
+        function bar(?int &$a) : void {
+            $a = 5;
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
