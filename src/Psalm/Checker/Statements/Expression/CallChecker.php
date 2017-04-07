@@ -1638,12 +1638,18 @@ class CallChecker
 
             $array_arg = isset($arg->value) ? $arg->value : null;
 
-            $array_arg_types[] = $array_arg
+            /** @var ObjectLike|TArray|null */
+            $array_arg_type = $array_arg
                     && isset($array_arg->inferredType)
                     && isset($array_arg->inferredType->types['array'])
-                    && $array_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
                 ? $array_arg->inferredType->types['array']
                 : null;
+
+            if ($array_arg_type instanceof ObjectLike) {
+                $array_arg_type = new TArray([Type::getString(), $array_arg_type->getGenericTypeParam()]);
+            }
+
+            $array_arg_types[] = $array_arg_type;
         }
 
         /** @var PhpParser\Node\Arg */
@@ -1686,6 +1692,11 @@ class CallChecker
                     )) {
                         return false;
                     }
+                }
+
+                // abandon attempt to validate closure params if we have an extra arg for ARRAY_FILTER
+                if ($method_id === 'array_filter' && count($args) > 2) {
+                    continue;
                 }
 
                 $closure_params = $closure_type->params;
