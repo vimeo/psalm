@@ -237,14 +237,14 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     function foo($a) : void {
                         $b = 5;
-            
+
                         if ($b === $a) { }
                     }'
             ],
             'typeResolutionFromDocblock' => [
                 '<?php
                     class A { }
-            
+
                     /**
                      * @param  A $a
                      * @return void
@@ -282,11 +282,11 @@ class TypeReconciliationTest extends TestCase
             'notInstanceof' => [
                 '<?php
                     class A { }
-            
+
                     class B extends A { }
-            
+
                     $out = null;
-            
+
                     if ($a instanceof B) {
                         // do something
                     }
@@ -304,22 +304,22 @@ class TypeReconciliationTest extends TestCase
             'notInstanceOfProperty' => [
                 '<?php
                     class B { }
-            
+
                     class C extends B { }
-            
+
                     class A {
                         /** @var B */
                         public $foo;
-            
+
                         public function __construct() {
                             $this->foo = new B();
                         }
                     }
-            
+
                     $a = new A();
-            
+
                     $out = null;
-            
+
                     if ($a->foo instanceof C) {
                         // do something
                     }
@@ -337,18 +337,18 @@ class TypeReconciliationTest extends TestCase
             'notInstanceOfPropertyElseif' => [
                 '<?php
                     class B { }
-            
+
                     class C extends B { }
-            
+
                     class A {
                         /** @var string|B */
                         public $foo = "";
                     }
-            
+
                     $out = null;
-            
+
                     if (is_string($a->foo)) {
-            
+
                     }
                     elseif ($a->foo instanceof C) {
                         // do something
@@ -387,7 +387,7 @@ class TypeReconciliationTest extends TestCase
                     function fooFoo(string $a) {
                         if (is_numeric($a)) { }
                     }
-            
+
                     $b = rand(0, 1) ? 5 : false;
                     if (is_numeric($b)) { }'
             ],
@@ -408,7 +408,7 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     /** @return void **/
                     function foo(string $s) {}
-            
+
                     $a = rand(0, 1) ? ["hello"] : null;
                     if (isset($a[0])) {
                         foo($a[0]);
@@ -418,7 +418,7 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     /** @return void **/
                     function foo(string $s) {}
-            
+
                     $a = rand(0, 1) ? ["hello"] : null;
                     $b = 0;
                     if (isset($a[$b])) {
@@ -428,14 +428,14 @@ class TypeReconciliationTest extends TestCase
             'removeEmptyArray' => [
                 '<?php
                     $arr_or_string = [];
-            
+
                     if (rand(0, 1)) {
                       $arr_or_string = "hello";
                     }
-            
+
                     /** @return void **/
                     function foo(string $s) {}
-            
+
                     if (!empty($arr_or_string)) {
                         foo($arr_or_string);
                     }'
@@ -444,20 +444,20 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     abstract class A {}
                     class B extends A {}
-            
+
                     abstract class C {}
                     class D extends C {}
-            
+
                     function makeA(): A {
                       return new B();
                     }
-            
+
                     function makeC(): C {
                       return new D();
                     }
-            
+
                     $a = rand(0, 1) ? makeA() : makeC();
-            
+
                     if ($a instanceof B || $a instanceof D) { }'
             ],
             'emptyArrayReconciliationThenIf' => [
@@ -471,11 +471,11 @@ class TypeReconciliationTest extends TestCase
                         } elseif (empty($a)) {
                             return "goodbye";
                         }
-            
+
                         if (isset($a[0])) {
                             return $a[0];
                         };
-            
+
                         return "not found";
                     }'
             ],
@@ -490,11 +490,11 @@ class TypeReconciliationTest extends TestCase
                         } elseif (empty($a)) {
                             return "goodbye";
                         }
-            
+
                         if (is_string($a)) {
                             return $a;
                         };
-            
+
                         return "an exception";
                     }'
             ],
@@ -509,7 +509,7 @@ class TypeReconciliationTest extends TestCase
                         } elseif (empty($a)) {
                             return "goodbye";
                         }
-            
+
                         return $a->getMessage();
                     }'
             ],
@@ -525,7 +525,7 @@ class TypeReconciliationTest extends TestCase
                         } elseif (is_int($a)) {
                             return $a;
                         }
-            
+
                         throw new \LogicException("Runtime error");
                     }'
             ],
@@ -575,7 +575,7 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     interface I1 {}
                     interface I2 {}
-            
+
                     class A
                     {
                         public function foo() : void {
@@ -588,24 +588,24 @@ class TypeReconciliationTest extends TestCase
                     interface I {
                         public function bat() : void;
                     }
-            
+
                     function takesI(I $i) : void {}
                     function takesA(A $a) : void {}
-            
+
                     class A {
                         public function foo() : void {
                             if ($this instanceof I) {
                                 $this->bar();
                                 $this->bat();
-            
+
                                 takesA($this);
                                 takesI($this);
                             }
                         }
-            
+
                         protected function bar() : void {}
                     }
-            
+
                     class B extends A implements I {
                         public function bat() : void {}
                     }'
@@ -661,7 +661,7 @@ class TypeReconciliationTest extends TestCase
             'failedTypeResolution' => [
                 '<?php
                     class A { }
-            
+
                     /**
                      * @return void
                      */
@@ -674,7 +674,7 @@ class TypeReconciliationTest extends TestCase
             'failedTypeResolutionWithDocblock' => [
                 '<?php
                     class A { }
-            
+
                     /**
                      * @param  A $a
                      * @return void
@@ -688,7 +688,7 @@ class TypeReconciliationTest extends TestCase
             'typeResolutionFromDocblockAndInstanceof' => [
                 '<?php
                     class A { }
-            
+
                     /**
                      * @param  A $a
                      * @return void
@@ -704,7 +704,7 @@ class TypeReconciliationTest extends TestCase
             'typeTransformation' => [
                 '<?php
                     $a = "5";
-            
+
                     if (is_numeric($a)) {
                         if (is_int($a)) {
                             echo $a;
