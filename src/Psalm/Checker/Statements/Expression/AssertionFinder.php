@@ -314,15 +314,7 @@ class AssertionFinder
             $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
 
             if ($var_type && $other_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                if (!TypeChecker::isContainedBy(
-                    $var_type,
-                    $other_type,
-                    $source->getFileChecker()
-                ) && !TypeChecker::isContainedBy(
-                    $other_type,
-                    $var_type,
-                    $source->getFileChecker()
-                )) {
+                if (!TypeChecker::canBeIdenticalTo($var_type, $other_type, $source->getFileChecker())) {
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             $var_type . ' does not contain ' . $other_type,

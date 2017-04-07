@@ -505,6 +505,58 @@ class TypeChecker
     }
 
     /**
+     * Can any part of the $type1 be equal to any part of $type2
+     *
+     * @param  Type\Union   $type1
+     * @param  Type\Union   $type2
+     * @param  FileChecker  $file_checker
+     * @return bool
+     */
+    public static function canBeIdenticalTo(
+        Type\Union $type1,
+        Type\Union $type2,
+        FileChecker $file_checker
+    ) {
+        if ($type1->isMixed() || $type2->isMixed()) {
+            return true;
+        }
+
+        if ($type1->isNullable() && $type2->isNullable()) {
+            return true;
+        }
+
+        $type_match_found = false;
+
+        foreach ($type1->types as $type1_part) {
+            if ($type1_part instanceof TNull) {
+                continue;
+            }
+
+            foreach ($type2->types as $type2_part) {
+                if ($type2_part instanceof TNull) {
+                    continue;
+                }
+
+                $either_contains = self::isAtomicContainedBy(
+                    $type1_part,
+                    $type2_part,
+                    $file_checker
+                ) || self::isAtomicContainedBy(
+                    $type2_part,
+                    $type1_part,
+                    $file_checker
+                );
+
+                if ($either_contains) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Does the input param atomic type match the given param atomic type
      *
      * @param  Type\Atomic  $input_type_part
