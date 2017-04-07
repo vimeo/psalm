@@ -786,6 +786,12 @@ class ExpressionChecker
                 $context->referenced_vars
             );
 
+            foreach ($op_context->vars_in_scope as $var_id => $type) {
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+                }
+            }
+
             if ($context->inside_conditional) {
                 foreach ($op_context->vars_in_scope as $var => $type) {
                     if (!isset($context->vars_in_scope[$var])) {
@@ -846,6 +852,12 @@ class ExpressionChecker
 
             if (self::analyze($statements_checker, $stmt->right, $op_context) === false) {
                 return false;
+            }
+
+            foreach ($op_context->vars_in_scope as $var_id => $type) {
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+                }
             }
 
             if ($context->inside_conditional) {
