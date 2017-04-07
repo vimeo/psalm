@@ -1081,7 +1081,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
                 if (is_int($b)) { }
             }
         }
-        function bar(?int &$a) : void {
+        /** @param ?int $a */
+        function bar(&$a) : void {
             $a = 5;
         }
         ');
