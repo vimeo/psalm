@@ -1058,7 +1058,8 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
             $c = rand(0, 1) ? bar($b) : null;
             if (is_int($b)) { }
         }
-        function bar(?int &$a) : void {
+        /** @param ?int $a */
+        function bar(&$a) : void {
             $a = 5;
         }
         ');
