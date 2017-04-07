@@ -167,7 +167,7 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if ($new_var_type[0] !== '!') {
+            if ($new_var_type[0] !== '!' && $new_var_type !== 'empty') {
                 if ($new_var_type[0] === '^') {
                     $new_var_type = substr($new_var_type, 1);
                 }
