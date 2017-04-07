@@ -340,6 +340,20 @@ class TypeChecker
             }
         }
 
+        if ($new_var_type === 'scalar') {
+            $scalar_types = [];
+
+            foreach ($existing_var_type->types as $type) {
+                if ($type instanceof Scalar) {
+                    $scalar_types[] = $type;
+                }
+            }
+
+            if ($scalar_types) {
+                return new Type\Union($scalar_types);
+            }
+        }
+
         $new_type = Type::parseString($new_var_type);
 
         if ($existing_var_type->isMixed()) {
