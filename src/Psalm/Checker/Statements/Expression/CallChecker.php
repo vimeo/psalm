@@ -162,6 +162,10 @@ class CallChecker
                         (!$var_type_part instanceof TNamedObject || $var_type_part->value !== 'Closure') &&
                         !$var_type_part instanceof TCallable &&
                         (!$var_type_part instanceof TNamedObject ||
+                            !ClassLikeChecker::classOrInterfaceExists(
+                                $var_type_part->value,
+                                $statements_checker->getFileChecker()
+                            ) ||
                             !MethodChecker::methodExists(
                                 $var_type_part->value . '::__invoke',
                                 $statements_checker->getFileChecker()
