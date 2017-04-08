@@ -104,6 +104,7 @@
             <xs:element name="InvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidGlobal" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidIterator" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />

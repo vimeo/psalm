@@ -21,6 +21,7 @@ use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidFunctionCall;
+use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedArgument;
@@ -674,7 +675,7 @@ class CallChecker
                         case 'Psalm\\Type\\Atomic\\TString':
                         case 'Psalm\\Type\\Atomic\\TNumericString':
                             if (IssueBuffer::accepts(
-                                new InvalidArgument(
+                                new InvalidMethodCall(
                                     'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable ' . $var_id,
                                     new CodeLocation($statements_checker->getSource(), $stmt)
                                 ),
