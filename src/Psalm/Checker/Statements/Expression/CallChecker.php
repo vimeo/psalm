@@ -1746,11 +1746,28 @@ class CallChecker
                     }
 
                     if (!$type_match_found) {
+                        $types_can_be_identical = TypeChecker::canBeIdenticalTo(
+                            $input_type,
+                            $closure_param_type,
+                            $statements_checker->getFileChecker()
+                        );
+
                         if ($scalar_type_match_found) {
                             if (IssueBuffer::accepts(
                                 new InvalidScalarArgument(
                                     'First parameter of closure passed to function ' . $method_id . ' expects ' .
                                         $closure_param_type . ', ' . $input_type . ' provided',
+                                    new CodeLocation($statements_checker->getSource(), $closure_arg)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                        } elseif ($types_can_be_identical) {
+                            if (IssueBuffer::accepts(
+                                new PossiblyInvalidArgument(
+                                    'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                                        $closure_param_type . ', possibly different type ' . $input_type . ' provided',
                                     new CodeLocation($statements_checker->getSource(), $closure_arg)
                                 ),
                                 $statements_checker->getSuppressedIssues()
