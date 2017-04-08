@@ -27,10 +27,12 @@ use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\NullArgument;
+use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
+use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
@@ -142,6 +144,32 @@ class CallChecker
             }
 
             if (isset($stmt->name->inferredType)) {
+                if ($stmt->name->inferredType->isNull()) {
+                    if (IssueBuffer::accepts(
+                        new NullFunctionCall(
+                            'Cannot call function on null value',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    return;
+                }
+
+                if ($stmt->name->inferredType->isNullable()) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyNullFunctionCall(
+                            'Cannot call function on possibly null value',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
                 foreach ($stmt->name->inferredType->types as $var_type_part) {
                     if ($var_type_part instanceof Type\Atomic\Fn) {
                         $function_params = $var_type_part->params;
@@ -158,18 +186,22 @@ class CallChecker
                         }
 
                         $function_exists = true;
-                    } elseif (!$var_type_part instanceof TMixed &&
-                        (!$var_type_part instanceof TNamedObject || $var_type_part->value !== 'Closure') &&
-                        !$var_type_part instanceof TCallable &&
-                        (!$var_type_part instanceof TNamedObject ||
-                            !ClassLikeChecker::classOrInterfaceExists(
-                                $var_type_part->value,
-                                $statements_checker->getFileChecker()
-                            ) ||
-                            !MethodChecker::methodExists(
-                                $var_type_part->value . '::__invoke',
-                                $statements_checker->getFileChecker()
-                            )
+                    } elseif ($var_type_part instanceof TMixed) {
+                        // @todo maybe emit issue here
+                    } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure') ||
+                        $var_type_part instanceof TCallable
+                    ) {
+                        // this is fine
+                    } elseif ($var_type_part instanceof TNull) {
+                        // handled above
+                    } elseif (!$var_type_part instanceof TNamedObject ||
+                        !ClassLikeChecker::classOrInterfaceExists(
+                            $var_type_part->value,
+                            $statements_checker->getFileChecker()
+                        ) ||
+                        !MethodChecker::methodExists(
+                            $var_type_part->value . '::__invoke',
+                            $statements_checker->getFileChecker()
                         )
                     ) {
                         $var_id = ExpressionChecker::getVarId(

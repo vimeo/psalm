@@ -251,6 +251,35 @@ class ClosureTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyNullFunctionCall
+     * @return                   void
+     */
+    public function testPossiblyNullFunctionCall()
+    {
+        $stmts = self::$parser->parse('<?php
+        /**
+        * @var Closure|null $foo
+        */
+        $foo = null;
+
+        $foo = function ($bar) use (&$foo) : string
+        {
+            if (is_array($bar)) {
+                return $foo($bar);
+            }
+
+            return $bar;
+        };
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+    }
+
 
 
     /**

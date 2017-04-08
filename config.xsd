@@ -137,6 +137,7 @@
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArrayAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NullFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
@@ -147,6 +148,7 @@
             <xs:element name="PossiblyInvalidArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArrayAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyNullFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
