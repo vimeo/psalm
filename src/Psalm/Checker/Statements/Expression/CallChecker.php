@@ -1880,13 +1880,10 @@ class CallChecker
         }
 
         if (!$type_match_found && !$coerced_type) {
-            $reverse_type_match_found = TypeChecker::isContainedBy(
+            $types_can_be_identical = TypeChecker::canBeIdenticalTo(
                 $param_type,
                 $input_type,
-                $statements_checker->getFileChecker(),
-                true,
-                $reverse_scalar_type_match_found,
-                $reverse_coerced_type
+                $statements_checker->getFileChecker()
             );
 
             if ($scalar_type_match_found) {
@@ -1902,11 +1899,11 @@ class CallChecker
                         return false;
                     }
                 }
-            } elseif ($reverse_type_match_found || $reverse_coerced_type) {
+            } elseif ($types_can_be_identical) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                            ', ' . $input_type . ' provided',
+                            ', possibly different type ' . $input_type . ' provided',
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
