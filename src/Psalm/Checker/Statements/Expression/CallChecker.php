@@ -29,6 +29,7 @@ use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\NullArgument;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\TooFewArguments;
@@ -1879,6 +1880,15 @@ class CallChecker
         }
 
         if (!$type_match_found && !$coerced_type) {
+            $reverse_type_match_found = TypeChecker::isContainedBy(
+                $param_type,
+                $input_type,
+                $statements_checker->getFileChecker(),
+                true,
+                $reverse_scalar_type_match_found,
+                $reverse_coerced_type
+            );
+
             if ($scalar_type_match_found) {
                 if ($cased_method_id !== 'echo') {
                     if (IssueBuffer::accepts(
@@ -1891,6 +1901,17 @@ class CallChecker
                     )) {
                         return false;
                     }
+                }
+            } elseif ($reverse_type_match_found || $reverse_coerced_type) {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
+                            ', ' . $input_type . ' provided',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
                 }
             } elseif (IssueBuffer::accepts(
                 new InvalidArgument(

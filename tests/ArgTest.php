@@ -51,4 +51,30 @@ class ArgTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyInvalidArgument
+     * @return                   void
+     */
+    public function testPossiblyInvalidArgument()
+    {
+        $stmts = self::$parser->parse('<?php
+        $foo = [
+            "a",
+            ["b"],
+        ];
+
+        $a = array_map(
+            function (string $uuid) : string {
+                return $uuid;
+            },
+            $foo[rand(0, 1)]
+        );
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
