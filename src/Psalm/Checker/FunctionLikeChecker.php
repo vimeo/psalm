@@ -553,7 +553,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
 
-            if (strtolower((string)$function->name) === strtolower($class_name)) {
+            if (strtolower((string)$function->name) === strtolower($class_name) &&
+                !isset($class_storage->methods['__construct']) &&
+                strpos($fq_class_name, '\\') === false
+            ) {
                 MethodChecker::setDeclaringMethodId($fq_class_name . '::__construct', $function_id);
                 MethodChecker::setAppearingMethodId($fq_class_name . '::__construct', $function_id);
             }

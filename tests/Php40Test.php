@@ -63,4 +63,24 @@ class Php40Test extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testSameNameMethodWithNewStyleConstructor()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function __construct(string $s) { }
+            /** @return void */
+            public function a(int $i) { }
+        }
+        new A("hello");
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
 }
