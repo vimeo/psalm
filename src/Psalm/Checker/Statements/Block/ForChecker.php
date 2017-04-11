@@ -20,15 +20,15 @@ class ForChecker
         PhpParser\Node\Stmt\For_ $stmt,
         Context $context
     ) {
-        $for_context = clone $context;
-        $before_context = clone $context;
-        $for_context->inside_loop = true;
-
         foreach ($stmt->init as $init) {
-            if (ExpressionChecker::analyze($statements_checker, $init, $for_context) === false) {
+            if (ExpressionChecker::analyze($statements_checker, $init, $context) === false) {
                 return false;
             }
         }
+
+        $for_context = clone $context;
+        $before_context = clone $context;
+        $for_context->inside_loop = true;
 
         foreach ($stmt->cond as $condition) {
             $for_context->inside_conditional = true;

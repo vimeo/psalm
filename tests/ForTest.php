@@ -61,4 +61,19 @@ class ForTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testEchoAfterFor()
+    {
+        $stmts = self::$parser->parse('<?php
+        for ($i = 0; $i < 5; $i++);
+        echo $i;
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }
