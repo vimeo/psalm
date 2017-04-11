@@ -21,6 +21,7 @@ class CommentChecker
      * @param  string           $var_id
      * @param  array<string, string>|null   $template_types
      * @param  int|null         $var_line_number
+     * @param  int|null         $came_from_line_number what line number in $source that $comment came from
      * @return Type\Union|null
      * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
@@ -31,7 +32,8 @@ class CommentChecker
         StatementsSource $source,
         $var_id = null,
         array $template_types = null,
-        &$var_line_number = null
+        &$var_line_number = null,
+        $came_from_line_number = null
     ) {
         $type_in_comments_var_id = null;
 
@@ -86,6 +88,17 @@ class CommentChecker
         try {
             $defined_type = Type::parseString($type_in_comments);
         } catch (TypeParseTreeException $e) {
+            if (is_int($came_from_line_number)) {
+                throw new DocblockParseException(
+                    $type_in_comments .
+                    ' is not a valid type' .
+                    ' (from ' .
+                    $source->getCheckedFilePath() .
+                    ':' .
+                    $came_from_line_number .
+                    ')'
+                );
+            }
             throw new DocblockParseException($type_in_comments . ' is not a valid type');
         }
 

@@ -89,7 +89,9 @@ class ExpressionChecker
                 $stmt->expr,
                 null,
                 $context,
-                (string)$stmt->getDocComment()
+                (string)$stmt->getDocComment(),
+                false,
+                $stmt->getLine()
             );
 
             if ($assignment_type === false) {
