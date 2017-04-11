@@ -64,6 +64,7 @@ class AssignmentChecker
      * @param  Context                  $context
      * @param  string                   $doc_comment
      * @param  bool                     $by_reference
+     * @param  int|null                 $came_from_line_number
      * @return false|Type\Union
      */
     public static function analyze(
@@ -73,7 +74,8 @@ class AssignmentChecker
         Type\Union $assign_value_type = null,
         Context $context,
         $doc_comment,
-        $by_reference = false
+        $by_reference = false,
+        $came_from_line_number = null
     ) {
         $var_id = ExpressionChecker::getVarId(
             $assign_var,
@@ -88,11 +90,15 @@ class AssignmentChecker
         );
 
         if ($doc_comment) {
+            $null = null;
             $type_in_comments = CommentChecker::getTypeFromComment(
                 $doc_comment,
                 $context,
                 $statements_checker->getSource(),
-                $var_id
+                $var_id,
+                null,
+                $null,
+                $came_from_line_number
             );
         } else {
             $type_in_comments = null;
