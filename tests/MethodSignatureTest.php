@@ -120,6 +120,13 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
      */
     public function testExtendDocblockParamType()
     {
+        if (class_exists('SoapClient') === false) {
+            $this->markTestSkipped(
+                'Cannot run test, base class "SoapClient" does not exist!'
+            );
+
+            return;
+        }
         $stmts = self::$parser->parse('<?php
         class A extends SoapClient
         {
@@ -155,6 +162,13 @@ class MethodSignatureTest extends PHPUnit_Framework_TestCase
      */
     public function testExtendDocblockParamTypeWithWrongParam()
     {
+        if (class_exists('SoapClient') === false) {
+            $this->markTestSkipped(
+                'Cannot run test, base class "SoapClient" does not exist!'
+            );
+
+            return;
+        }
         $stmts = self::$parser->parse('<?php
         class A extends SoapClient
         {
