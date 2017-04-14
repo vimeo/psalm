@@ -271,7 +271,7 @@ class ExpressionChecker
                 $use_context->vars_possibly_in_scope['$' . $use->var] = true;
             }
 
-            $closure_checker->analyze($use_context);
+            $closure_checker->analyze($use_context, $context);
 
             if (!isset($stmt->inferredType)) {
                 $stmt->inferredType = Type::getClosure();
