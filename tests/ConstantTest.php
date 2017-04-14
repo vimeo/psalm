@@ -59,6 +59,25 @@ class ConstantTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
+    public function testConstantInClosure()
+    {
+        $stmts = self::$parser->parse('<?php
+        const TEST = 2;
+        
+        $useTest = function() : int {
+            return TEST;
+        };
+        $useTest();
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+    /**
+     * @return void
+     */
     public function testConstantDefinedInFunction()
     {
         $stmts = self::$parser->parse('<?php
