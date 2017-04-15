@@ -605,12 +605,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             );
                         }
                     }
-
-                    foreach ($trait_checker->class->stmts as $trait_stmt) {
-                        if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($trait_stmt);
-                        }
-                    }
                 }
             }
         }
@@ -697,6 +691,25 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 $this->checkForMissingPropertyType($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                foreach ($stmt->traits as $trait) {
+                    $fq_trait_name = self::getFQCLNFromNameObject(
+                        $trait,
+                        $this->source
+                    );
+
+                    if (!isset(self::$trait_checkers[$fq_trait_name])) {
+                        throw new \UnexpectedValueException('Expecting trait to be hydrated');
+                    }
+
+                    $trait_checker = self::$trait_checkers[$fq_trait_name];
+
+                    foreach ($trait_checker->class->stmts as $trait_stmt) {
+                        if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
+                            $this->checkForMissingPropertyType($trait_stmt);
+                        }
+                    }
+                }
             }
         }
     }
@@ -1097,9 +1110,23 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $fq_class_name = $this->fq_class_name;
             $property_name = $stmt->props[0]->name;
 
+            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+                $fq_class_name . '::$' . $property_name
+            );
+
+            if (!$declaring_property_class) {
+                throw new \UnexpectedValueException(
+                    'Cannot get declaring class for ' . $fq_class_name . '::$' . $property_name
+                );
+            }
+
+            $fq_class_name = $declaring_property_class;
+
             $message = 'Property ' . $fq_class_name . '::$' . $property_name . ' does not have a declared type';
 
-            $property_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)]->properties[$property_name];
+            $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+
+            $property_storage = $class_storage->properties[$property_name];
 
             if ($property_storage->suggested_type) {
                 $message .= ' - consider ' . $property_storage->suggested_type;

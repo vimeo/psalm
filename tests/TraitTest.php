@@ -464,5 +464,103 @@ class TraitTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider null|int
+     * @return                   void
+     */
+    public function testMissingPropertyType()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            public $foo;
+        }
+        class A {
+            use T;
 
+            public function assignToFoo() : void {
+                $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider int
+     * @return                   void
+     */
+    public function testMissingPropertyTypeWithConstructorInit()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            public $foo;
+        }
+        class A {
+            use T;
+
+            public function __construct() : void {
+                $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider null|int
+     * @return                   void
+     */
+    public function testMissingPropertyTypeWithConstructorInitAndNull()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            public $foo;
+        }
+        class A {
+            use T;
+
+            public function __construct() : void {
+                $this->foo = 5;
+            }
+
+            public function makeNull() : void {
+                $this->foo = null;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider int|null
+     * @return                   void
+     */
+    public function testMissingPropertyTypeWithConstructorInitAndNullDefault()
+    {
+        $stmts = self::$parser->parse('<?php
+        trait T {
+            public $foo = null;
+        }
+        class A {
+            use T;
+
+            public function __construct() : void {
+                $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
 }
