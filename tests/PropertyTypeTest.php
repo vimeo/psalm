@@ -206,7 +206,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MissingPropertyType
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property A::$foo does not have a declared type - consider int
      * @return                   void
      */
     public function testMissingPropertyType()
@@ -214,6 +214,10 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
         $stmts = self::$parser->parse('<?php
         class A {
             public $foo;
+
+            public function assignToFoo() : void {
+                $this->foo = 5;
+            }
         }
         ');
 

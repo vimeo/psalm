@@ -32,6 +32,11 @@ class PropertyStorage
     public $type;
 
     /**
+     * @var Type\Union|null
+     */
+    public $suggested_type;
+
+    /**
      * @var bool
      */
     public $has_default = false;

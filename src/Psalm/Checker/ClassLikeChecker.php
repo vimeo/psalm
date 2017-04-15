@@ -605,6 +605,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             );
                         }
                     }
+
+                    foreach ($trait_checker->class->stmts as $trait_stmt) {
+                        if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
+                            $this->checkForMissingPropertyType($trait_stmt);
+                        }
+                    }
                 }
             }
         }
@@ -688,7 +694,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                $this->checkForMissingPropertyType($stmt);
+            }
+        }
     }
 
     /**
@@ -1012,17 +1022,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     // fall through
                 }
             }
-        } elseif (!$comment || !$comment->getText()) {
-            if (IssueBuffer::accepts(
-                new MissingPropertyType(
-                    'Property ' . $this->fq_class_name . '::$' . $stmt->props[0]->name . ' does not have a ' .
-                        'declared type',
-                    new CodeLocation($this, $stmt)
-                ),
-                $this->source->getSuppressedIssues()
-            )) {
-                // fall through
-            }
         }
 
         $property_group_type = $type_in_comment ?: null;
@@ -1071,6 +1070,41 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             if (!$stmt->isPrivate()) {
                 $storage->inheritable_property_ids[$property->name] = $property_id;
+            }
+        }
+    }
+
+    /**
+     * @param   PhpParser\Node\Stmt\Property    $stmt
+     * @return  void
+     */
+    private function checkForMissingPropertyType(PhpParser\Node\Stmt\Property $stmt)
+    {
+        $comment = $stmt->getDocComment();
+        $type_in_comment = null;
+        $property_type_line_number = null;
+        $storage = self::$storage[strtolower($this->fq_class_name)];
+
+        if (!$comment || !$comment->getText()) {
+            $fq_class_name = $this->fq_class_name;
+            $property_name = $stmt->props[0]->name;
+
+            $message = 'Property ' . $fq_class_name . '::$' . $property_name . ' does not have a declared type';
+
+            $property_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)]->properties[$property_name];
+
+            if ($property_storage->suggested_type) {
+                $message .= ' - consider ' . $property_storage->suggested_type;
+            }
+
+            if (IssueBuffer::accepts(
+                new MissingPropertyType(
+                    $message,
+                    new CodeLocation($this, $stmt)
+                ),
+                $this->source->getSuppressedIssues()
+            )) {
+                // fall through
             }
         }
     }

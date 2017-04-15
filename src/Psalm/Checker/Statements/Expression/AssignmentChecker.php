@@ -671,18 +671,19 @@ class AssignmentChecker
                 $class_property_type = $property_storage->type;
 
                 if ($class_property_type === false) {
-                    if (IssueBuffer::accepts(
-                        new MissingPropertyType(
-                            'Property ' . $lhs_type_part->value . '::$' . $prop_name . ' does not have a declared ' .
-                                'type',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    $class_property_type = Type::getMixed();
+
+                    if (!$assignment_value_type->isMixed()) {
+                        if ($property_storage->suggested_type) {
+                            $property_storage->suggested_type = Type::combineUnionTypes(
+                                $assignment_value_type,
+                                $property_storage->suggested_type
+                            );
+                        } else {
+                            $property_storage->suggested_type = $assignment_value_type;
+                        }
                     }
 
-                    $class_property_type = Type::getMixed();
                 } else {
                     $class_property_type = ExpressionChecker::fleshOutTypes(
                         clone $class_property_type,
@@ -848,17 +849,18 @@ class AssignmentChecker
         $class_property_type = $property_storage->type;
 
         if ($class_property_type === false) {
-            if (IssueBuffer::accepts(
-                new MissingPropertyType(
-                    'Property ' . $fq_class_name . '::$' . $prop_name . ' does not have a declared type',
-                    new CodeLocation($statements_checker->getSource(), $stmt)
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                // fall through
-            }
-
             $class_property_type = Type::getMixed();
+
+            if (!$assignment_value_type->isMixed()) {
+                if ($property_storage->suggested_type) {
+                    $property_storage->suggested_type = Type::combineUnionTypes(
+                        $assignment_value_type,
+                        $property_storage->suggested_type
+                    );
+                } else {
+                    $property_storage->suggested_type = $assignment_value_type;
+                }
+            }
         } else {
             $class_property_type = clone $class_property_type;
         }
