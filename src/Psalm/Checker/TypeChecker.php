@@ -1170,6 +1170,8 @@ class TypeChecker
             return $union;
         }
 
+        $from_docblock = $union->from_docblock;
+
         $unique_types = [];
 
         foreach ($union->types as $type_part) {
@@ -1202,6 +1204,10 @@ class TypeChecker
             throw new \UnexpectedValueException('There must be more than one unique type');
         }
 
-        return new Type\Union($unique_types);
+        $unique_type = new Type\Union($unique_types);
+
+        $unique_type->from_docblock = $from_docblock;
+
+        return $unique_type;
     }
 }
