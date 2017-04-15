@@ -1128,8 +1128,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $property_storage = $class_storage->properties[$property_name];
 
-            if ($property_storage->suggested_type) {
-                $message .= ' - consider ' . $property_storage->suggested_type;
+            if ($property_storage->suggested_type && !$property_storage->suggested_type->isNull()) {
+                $message .= ' - consider ' . str_replace(
+                    ['<mixed, mixed>', '<empty, empty>'],
+                    '',
+                    (string)$property_storage->suggested_type
+                );
             }
 
             if (IssueBuffer::accepts(
