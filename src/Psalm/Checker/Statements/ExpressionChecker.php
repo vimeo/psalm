@@ -1706,6 +1706,7 @@ class ExpressionChecker
         }
 
         $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+        $t_else_context = clone $context;
 
         if ($stmt->if) {
             if (self::analyze($statements_checker, $stmt->if, $t_if_context) === false) {
@@ -1725,8 +1726,6 @@ class ExpressionChecker
                 );
             }
         }
-
-        $t_else_context = clone $context;
 
         if ($negated_if_types) {
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
