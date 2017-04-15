@@ -362,6 +362,51 @@ class Context
     }
 
     /**
+     * @return void
+     */
+    public function removeAllObjectVars()
+    {
+        $vars_to_remove = [];
+
+        foreach ($this->vars_in_scope as $var_id => $_) {
+            if (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false) {
+                $vars_to_remove[] = $var_id;
+            }
+        }
+
+        if (!$vars_to_remove) {
+            return;
+        }
+
+        foreach ($vars_to_remove as $var_id) {
+            unset($this->vars_in_scope[$var_id]);
+        }
+
+        $clauses_to_keep = [];
+
+        foreach ($this->clauses as $clause) {
+            $abandon_clause = false;
+
+            foreach (array_keys($clause->possibilities) as $key) {
+                if (strpos($key, '->') !== false || strpos($key, '::') !== false) {
+                    $abandon_clause = true;
+                    break;
+                }
+            }
+
+            if (!$abandon_clause) {
+                $clauses_to_keep[] = $clause;
+            }
+        }
+
+        $this->clauses = $clauses_to_keep;
+
+        if ($this->parent_context) {
+            $this->parent_context->removeAllObjectVars();
+        }
+    }
+
+    /**
      * @param   Context $op_context
      * @return  void
      */

@@ -169,6 +169,11 @@ class Config
     public $use_assert_for_type = false;
 
     /**
+     * @var boolean
+     */
+    public $remember_property_assignments_after_call = true;
+
+    /**
      * Psalm plugins
      *
      * @var array<Plugin>
@@ -321,6 +326,11 @@ class Config
         if (isset($config_xml['cacheFileContentHashes'])) {
             $attribute_text = (string) $config_xml['cacheFileContentHashes'];
             $config->cache_file_hashes_during_run = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['rememberPropertyAssignmentsAfterCall'])) {
+            $attribute_text = (string) $config_xml['rememberPropertyAssignmentsAfterCall'];
+            $config->remember_property_assignments_after_call = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

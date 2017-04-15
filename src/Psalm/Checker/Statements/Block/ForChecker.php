@@ -49,7 +49,7 @@ class ForChecker
         }
 
         foreach ($context->vars_in_scope as $var => $type) {
-            if ($type->isMixed()) {
+            if ($type->isMixed() || !isset($for_context->vars_in_scope[$var])) {
                 continue;
             }
 

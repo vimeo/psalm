@@ -5,6 +5,7 @@
     useDocblockTypes="true"
     totallyTyped="true"
     strictBinaryOperands="false"
+    rememberPropertyAssignmentsAfterCall="true"
 >
     <projectFiles>
         <directory name="src" />

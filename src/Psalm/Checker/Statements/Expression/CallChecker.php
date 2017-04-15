@@ -296,6 +296,8 @@ class CallChecker
             // fall through
         }
 
+        $config = Config::getInstance();
+
         if ($function_exists) {
             $generic_params = null;
 
@@ -325,8 +327,6 @@ class CallChecker
                     // fall through
                 }
             }
-
-            $config = Config::getInstance();
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
                 if (!$in_call_map || $is_stubbed) {
@@ -422,6 +422,10 @@ class CallChecker
 
                 $context->vars_in_scope = $op_vars_in_scope;
             }
+        }
+
+        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
+            $context->removeAllObjectVars();
         }
 
         if ($stmt->name instanceof PhpParser\Node\Name &&
@@ -607,6 +611,12 @@ class CallChecker
                     }
                 }
             }
+        }
+
+        $config = Config::getInstance();
+
+        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
+            $context->removeAllObjectVars();
         }
 
         return null;
@@ -917,6 +927,10 @@ class CallChecker
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker
             );
+        }
+
+        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
+            $context->removeAllObjectVars();
         }
     }
 
@@ -1252,6 +1266,10 @@ class CallChecker
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker
             );
+        }
+
+        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
+            $context->removeAllObjectVars();
         }
     }
 
