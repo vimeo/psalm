@@ -273,6 +273,53 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property A::$foo does not have a declared type - consider int
+     * @return                   void
+     */
+    public function testMissingPropertyTypeWithConstructorInitInPrivateMethod()
+    {
+        $this->markTestSkipped('Doesn’t yet work');
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public $foo;
+
+            public function __construct() : void {
+                $this->makeValue();
+            }
+
+            private function makeValue() : void {
+                $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property A::$foo does not have a declared type - consider int|null
+     * @return                   void
+     */
+    public function testMissingPropertyTypeWithConstructorInitAndNullDefault()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public $foo = null;
+
+            public function __construct() : void {
+                $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidPropertyAssignment
      * @return                   void
      */

@@ -1028,12 +1028,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         foreach ($stmt->props as $property) {
             $property_type_location = null;
+            $default_type = null;
 
             if (!$property_group_type) {
-                if (!$property->default || !$config->use_property_default_for_type) {
-                    $property_type = false;
+                if ($property->default) {
+                    $default_type = StatementsChecker::getSimpleType($property->default);
+
+                    if (!$config->use_property_default_for_type) {
+                        $property_type = false;
+                    } else {
+                        $property_type = $default_type ?: Type::getMixed();
+                    }
                 } else {
-                    $property_type = StatementsChecker::getSimpleType($property->default) ?: Type::getMixed();
+                    $property_type = false;
                 }
             } else {
                 if ($property_type_line_number) {
@@ -1050,6 +1057,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $storage->properties[$property->name]->location = new CodeLocation($this, $property);
             $storage->properties[$property->name]->type_location = $property_type_location;
             $storage->properties[$property->name]->has_default = $property->default ? true : false;
+            $storage->properties[$property->name]->suggested_type = $property_group_type ? null : $default_type;
 
             if ($stmt->isPublic()) {
                 $storage->properties[$property->name]->visibility = self::VISIBILITY_PUBLIC;
