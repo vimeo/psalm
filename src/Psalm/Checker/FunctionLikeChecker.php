@@ -160,6 +160,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $implemented_method_ids = MethodChecker::getOverriddenMethodIds($method_id);
 
+            if ($this->function->name === '__construct') {
+                $context->inside_constructor = true;
+            }
+
             if ($implemented_method_ids) {
                 $have_emitted = false;
 

@@ -680,7 +680,11 @@ class AssignmentChecker
                                 $property_storage->suggested_type
                             );
                         } else {
-                            $property_storage->suggested_type = $assignment_value_type;
+                            $property_storage->suggested_type =
+                                $lhs_var_id === '$this' &&
+                                    ($context->inside_constructor || $context->collect_initializations)
+                                    ? $assignment_value_type
+                                    : Type::combineUnionTypes(Type::getNull(), $assignment_value_type);
                         }
                     }
 
@@ -858,7 +862,10 @@ class AssignmentChecker
                         $property_storage->suggested_type
                     );
                 } else {
-                    $property_storage->suggested_type = $assignment_value_type;
+                    $property_storage->suggested_type = Type::combineUnionTypes(
+                        Type::getNull(),
+                        $assignment_value_type
+                    );
                 }
             }
         } else {

@@ -31,6 +31,13 @@ class Context
     public $inside_conditional = false;
 
     /**
+     * Whether or not we're inside a __construct function
+     *
+     * @var boolean
+     */
+    public $inside_constructor = false;
+
+    /**
      * @var string|null
      */
     public $self;

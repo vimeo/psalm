@@ -206,7 +206,7 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property A::$foo does not have a declared type - consider int
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property A::$foo does not have a declared type - consider null|int
      * @return                   void
      */
     public function testMissingPropertyType()
@@ -217,6 +217,52 @@ class PropertyTypeTest extends PHPUnit_Framework_TestCase
 
             public function assignToFoo() : void {
                 $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property A::$foo does not have a declared type - consider int
+     * @return                   void
+     */
+    public function testMissingPropertyTypeWithConstructorInit()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public $foo;
+
+            public function __construct() : void {
+                $this->foo = 5;
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker->visitAndAnalyzeMethods();
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property A::$foo does not have a declared type - consider null|int
+     * @return                   void
+     */
+    public function testMissingPropertyTypeWithConstructorInitAndNull()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public $foo;
+
+            public function __construct() : void {
+                $this->foo = 5;
+            }
+
+            public function makeNull() : void {
+                $this->foo = null;
             }
         }
         ');
