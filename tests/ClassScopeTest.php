@@ -428,4 +428,30 @@ class ClassScopeTest extends PHPUnit_Framework_TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods();
     }
+
+    /**
+     * @return void
+     */
+    public function testDefinedPrivateMethod()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function foo() : void {
+                if ($this instanceof B) {
+                    $this->boop();
+                }
+            }
+
+            private function boop() : void {}
+        }
+
+        class B extends A {
+            private function boop() : void {}
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

@@ -791,6 +791,15 @@ class CallChecker
 
                 $method_id = $fq_class_name . '::' . strtolower($stmt->name);
 
+                if ($var_id === '$this' &&
+                    $context->self &&
+                    $fq_class_name !== $context->self &&
+                    MethodChecker::methodExists($context->self . '::' . strtolower($stmt->name), $file_checker)
+                ) {
+                    $method_id = $context->self . '::' . strtolower($stmt->name);
+                    $fq_class_name = $context->self;
+                }
+
                 if ($intersection_types && !MethodChecker::methodExists($method_id, $file_checker)) {
                     foreach ($intersection_types as $intersection_type) {
                         $method_id = $intersection_type->value . '::' . strtolower($stmt->name);
