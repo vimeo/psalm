@@ -1,12 +1,20 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TNamedObject extends \Psalm\Type\Atomic
+use \Psalm\Type\Atomic;
+use \Psalm\Type\Union;
+
+class TNamedObject extends Atomic
 {
     /**
      * @var string
      */
     public $value;
+
+    /**
+     * @var TNamedObject[]|null
+     */
+    public $extra_types;
 
     /**
      * @param string $value the name of the object
@@ -47,5 +55,22 @@ class TNamedObject extends \Psalm\Type\Atomic
         }
 
         return '\\' . $this->value;
+    }
+
+    /**
+     * @param TNamedObject $type
+     * @return void
+     */
+    public function addIntersectionType(TNamedObject $type)
+    {
+        $this->extra_types[] = $type;
+    }
+
+    /**
+     * @return TNamedObject[]|null
+     */
+    public function getIntersectionTypes()
+    {
+        return $this->extra_types;
     }
 }

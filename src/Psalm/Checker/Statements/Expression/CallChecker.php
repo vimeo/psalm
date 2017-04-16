@@ -704,6 +704,7 @@ class CallChecker
         }
 
         $config = Config::getInstance();
+        $file_checker = $statements_checker->getFileChecker();
 
         if ($class_type && is_string($stmt->name)) {
             $return_type = null;
@@ -751,6 +752,8 @@ class CallChecker
 
                 $fq_class_name = $class_type_part->value;
 
+                $intersection_types = $class_type_part->getIntersectionTypes();
+
                 $is_mock = ExpressionChecker::isMock($fq_class_name);
 
                 $has_mock = $has_mock || $is_mock;
@@ -771,7 +774,7 @@ class CallChecker
                 } else {
                     $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_class_name,
-                        $statements_checker->getFileChecker(),
+                        $file_checker,
                         new CodeLocation($statements_checker->getSource(), $stmt),
                         $statements_checker->getSuppressedIssues()
                     );
@@ -787,6 +790,18 @@ class CallChecker
                 }
 
                 $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+
+                if ($intersection_types && !MethodChecker::methodExists($method_id, $file_checker)) {
+                    foreach ($intersection_types as $intersection_type) {
+                        $method_id = $intersection_type->value . '::' . strtolower($stmt->name);
+                        $fq_class_name = $intersection_type->value;
+
+                        if (MethodChecker::methodExists($method_id, $file_checker)) {
+                            break;
+                        }
+                    }
+                }
+
                 $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
                 $does_method_exist = MethodChecker::checkMethodExists(

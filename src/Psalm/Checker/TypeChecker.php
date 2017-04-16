@@ -360,8 +360,36 @@ class TypeChecker
             return $new_type;
         }
 
-        if (!InterfaceChecker::interfaceExists($new_var_type, $file_checker) &&
-            $code_location &&
+        if (InterfaceChecker::interfaceExists($new_var_type, $file_checker)) {
+            $new_type_part = new TNamedObject($new_var_type);
+
+            $acceptable_atomic_types = [];
+
+            foreach ($existing_var_type->types as $existing_var_type_part) {
+                if (TypeChecker::isAtomicContainedBy(
+                    $existing_var_type_part,
+                    $new_type_part,
+                    $file_checker,
+                    $scalar_type_match_found,
+                    $type_coerced,
+                    $atomic_to_string_cast
+                )) {
+                    $acceptable_atomic_types[] = $existing_var_type_part;
+                    continue;
+                }
+
+                if ($existing_var_type_part instanceof TNamedObject &&
+                    ClassChecker::classExists($existing_var_type_part->value, $file_checker)
+                ) {
+                    $existing_var_type_part->addIntersectionType($new_type_part);
+                    $acceptable_atomic_types[] = $existing_var_type_part;
+                }
+            }
+
+            if ($acceptable_atomic_types) {
+                return new Type\Union($acceptable_atomic_types);
+            }
+        } elseif ($code_location &&
             !$new_type->isMixed() &&
             !$existing_var_type->from_docblock
         ) {
@@ -476,8 +504,27 @@ class TypeChecker
                     $atomic_to_string_cast
                 );
 
-                if ($is_atomic_contained_by === true) {
+                if ($is_atomic_contained_by) {
                     $type_match_found = true;
+                } elseif (!$type_coerced &&
+                    $input_type_part instanceof TNamedObject &&
+                    $intersection_types = $input_type_part->getIntersectionTypes()
+                ) {
+                    foreach ($intersection_types as $intersection_type) {
+                        $is_atomic_contained_by = self::isAtomicContainedBy(
+                            $intersection_type,
+                            $container_type_part,
+                            $file_checker,
+                            $scalar_type_match_found,
+                            $type_coerced,
+                            $atomic_to_string_cast
+                        );
+
+                        if ($is_atomic_contained_by) {
+                            $type_match_found = true;
+                            break;
+                        }
+                    }
                 }
 
                 if ($atomic_to_string_cast !== true) {

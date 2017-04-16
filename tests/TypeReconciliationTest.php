@@ -1068,7 +1068,7 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $file_checker->visitAndAnalyzeMethods($context);
     }
 
-     /**
+    /**
      * @return void
      */
     public function testTernaryByRefVarInConditional()
@@ -1089,4 +1089,68 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testPossibleInstanceof()
+    {
+        $this->markTestSkipped('Currently broken');
+        $stmts = self::$parser->parse('<?php
+        interface I1 {}
+        interface I2 {}
+
+        class A
+        {
+            public function foo() : void {
+                if ($this instanceof I1 || $this instanceof I2) {}
+            }
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+
+
+    /**
+     * @return void
+     */
+    public function testIntersection()
+    {
+        $stmts = self::$parser->parse('<?php
+        interface I {
+            public function bat() : void;
+        }
+
+        function takesI(I $i) : void {}
+        function takesA(A $a) : void {}
+
+        class A {
+            public function foo() : void {
+                if ($this instanceof I) {
+                    $this->bar();
+                    $this->bat();
+
+                    takesA($this);
+                    takesI($this);
+                }
+            }
+
+            protected function bar() : void {}
+        }
+
+        class B extends A implements I {
+            public function bat() : void {}
+        }
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
+
+
 }
