@@ -1095,7 +1095,6 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
      */
     public function testPossibleInstanceof()
     {
-        $this->markTestSkipped('Currently broken');
         $stmts = self::$parser->parse('<?php
         interface I1 {}
         interface I2 {}

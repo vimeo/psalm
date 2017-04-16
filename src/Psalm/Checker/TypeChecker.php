@@ -360,7 +360,20 @@ class TypeChecker
             return $new_type;
         }
 
-        if (InterfaceChecker::interfaceExists($new_var_type, $file_checker)) {
+        $has_interface = false;
+
+        if ($new_type->hasObjectType()) {
+            foreach ($new_type->types as $new_type_part) {
+                if ($new_type_part instanceof TNamedObject &&
+                    InterfaceChecker::interfaceExists($new_type_part->value, $file_checker)
+                ) {
+                    $has_interface = true;
+                    break;
+                }
+            }
+        }
+
+        if ($has_interface) {
             $new_type_part = new TNamedObject($new_var_type);
 
             $acceptable_atomic_types = [];
