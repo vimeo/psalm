@@ -12,7 +12,7 @@ use Psalm\Type;
 class CommentChecker
 {
     const TYPE_REGEX =
-        '(\??\\\?[A-Za-z0-9_\<,\>\[\]\-\{\}:|\\\]+|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
+        '(\??\\\?[\(\)A-Za-z0-9_\<,\>\[\]\-\{\}:|\\\]+|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
 
     /**
      * @param  string           $comment
