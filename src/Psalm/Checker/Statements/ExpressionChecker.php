@@ -323,7 +323,29 @@ class ExpressionChecker
                 return false;
             }
 
-            $stmt->inferredType = Type::getArray();
+            $permissible_atomic_types = [];
+            $all_permissible = true;
+
+            if (isset($stmt->expr->inferredType)) {
+                foreach ($stmt->expr->inferredType->types as $type) {
+                    if ($type instanceof Scalar) {
+                        $permissible_atomic_types[] = new TArray([Type::getInt(), new Type\Union([$type])]);
+                    } elseif ($type instanceof TArray) {
+                        $permissible_atomic_types[] = $type;
+                    } elseif ($type instanceof ObjectLike) {
+                        $permissible_atomic_types[] = new TArray([Type::getString(), $type->getGenericTypeParam()]);
+                    } else {
+                        $all_permissible = false;
+                        break;
+                    }
+                }
+            }
+
+            if ($all_permissible) {
+                $stmt->inferredType = Type::combineTypes($permissible_atomic_types);
+            } else {
+                $stmt->inferredType = Type::getArray();
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_) {
             if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
                 return false;
