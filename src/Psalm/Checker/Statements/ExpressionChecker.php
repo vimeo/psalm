@@ -324,9 +324,11 @@ class ExpressionChecker
             }
 
             $permissible_atomic_types = [];
-            $all_permissible = true;
+            $all_permissible = false;
 
             if (isset($stmt->expr->inferredType)) {
+                $all_permissible = true;
+
                 foreach ($stmt->expr->inferredType->types as $type) {
                     if ($type instanceof Scalar) {
                         $permissible_atomic_types[] = new TArray([Type::getInt(), new Type\Union([$type])]);
