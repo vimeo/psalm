@@ -157,4 +157,32 @@ class ToStringTest extends PHPUnit_Framework_TestCase
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
+
+    /**
+     * @return void
+     */
+    public function testGoodCast()
+    {
+        $stmts = self::$parser->parse('<?php
+        class A {
+            public function __toString() : string
+            {
+                return "hello";
+            }
+        }
+
+        /** @param string|A $b */
+        function fooFoo($b) : void {}
+
+        /** @param A|string $b */
+        function barBar($b) : void {}
+
+        fooFoo(new A());
+        barBar(new A());
+        ');
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $context = new Context();
+        $file_checker->visitAndAnalyzeMethods($context);
+    }
 }

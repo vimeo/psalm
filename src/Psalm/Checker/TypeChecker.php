@@ -692,6 +692,7 @@ class TypeChecker
             }
 
             if ($all_types_contain) {
+                $to_string_cast = false;
                 return true;
             }
 
