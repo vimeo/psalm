@@ -8062,7 +8062,7 @@ return [
 'similar_text' => ['int', 'str1'=>'string', 'str2'=>'string', 'percent='=>'float'],
 'SimpleXMLElement::addAttribute' => ['', 'qname'=>'string', 'value'=>'string', 'ns='=>'string'],
 'SimpleXMLElement::addChild' => ['SimpleXMLElement', 'qname'=>'string', 'value='=>'string', 'ns='=>'string'],
-'SimpleXMLElement::asXML' => ['string', 'filename='=>'string'],
+'SimpleXMLElement::asXML' => ['string|boolean', 'filename='=>'string'],
 'SimpleXMLElement::attributes' => ['array', 'ns='=>'string', 'is_prefix='=>'bool'],
 'SimpleXMLElement::children' => ['SimpleXMLElement', 'ns='=>'string', 'is_prefix='=>'bool'],
 'SimpleXMLElement::__construct' => ['SimpleXMLElement', 'data'=>'string', 'options='=>'int', 'data_is_url='=>'bool', 'ns='=>'string', 'is_prefix='=>'bool'],
