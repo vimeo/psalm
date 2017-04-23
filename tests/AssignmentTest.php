@@ -1,73 +1,40 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
-use Psalm\Checker\FileChecker;
-use Psalm\Context;
-use Psalm\Type;
-
-class AssignmentTest extends PHPUnit_Framework_TestCase
+class AssignmentTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var TestConfig */
-    protected static $config;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
-     * @return void
+     * @return array
      */
-    public static function setUpBeforeClass()
+    public function providerFileCheckerValidCodeParse()
     {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
+        return [
+            'nested-assignment' => [
+                '<?php
+                    $a = $b = $c = 5;',
+                'assertions' => [
+                    ['int' => '$a']
+                ]
+            ]
+        ];
     }
 
     /**
-     * @return void
+     * @return array
      */
-    public function setUp()
+    public function providerFileCheckerInvalidCodeParse()
     {
-        \Psalm\Checker\FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $this->project_checker->setConfig(self::$config);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MixedAssignment
-     * @return                   void
-     */
-    public function testMixedAssignment()
-    {
-        $context = new Context();
-        $stmts = self::$parser->parse('<?php
-        /** @var mixed */
-        $a = 5;
-        $b = $a;
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return  void
-     */
-    public function testNestedAssignment()
-    {
-        $context = new Context();
-        $stmts = self::$parser->parse('<?php
-        $a = $b = $c = 5;
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+        return [
+            'mixed-assignment' => [
+                '<?php
+                    /** @var mixed */
+                    $a = 5;
+                    $b = $a;',
+                'error_message' => 'MixedAssignment'
+            ]
+        ];
     }
 }

@@ -1,38 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
 use Psalm\Type;
 
-class TypeParseTest extends PHPUnit_Framework_TestCase
+class TypeParseTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var TestConfig */
-    protected static $config;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
-
-    /**
-     * @return void
-     */
-    public static function setUpBeforeClass()
-    {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
-    }
-
-    /**
-     * @return \Psalm\Type\Atomic
-     */
-    private static function getAtomic($string)
-    {
-        return array_values(Type::parseString($string)->types)[0];
-    }
-
     /**
      * @return void
      */

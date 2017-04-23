@@ -1,566 +1,362 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
-use Psalm\Checker\FileChecker;
-use Psalm\Config;
-use Psalm\Context;
-
-class TraitTest extends PHPUnit_Framework_TestCase
+class TraitTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var TestConfig */
-    protected static $config;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
-     * @return void
+     * @return array
      */
-    public static function setUpBeforeClass()
+    public function providerFileCheckerValidCodeParse()
     {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
+        return [
+            'accessible-private-method-from-trait' => [
+                '<?php
+                    trait T {
+                        private function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public function doFoo() : void {
+                            $this->fooFoo();
+                        }
+                    }'
+            ],
+            'accessible-protected-method-from-trait' => [
+                '<?php
+                    trait T {
+                        protected function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public function doFoo() : void {
+                            $this->fooFoo();
+                        }
+                    }'
+            ],
+            'accessible-public-method-from-trait' => [
+                '<?php
+                    trait T {
+                        public function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public function doFoo() : void {
+                            $this->fooFoo();
+                        }
+                    }'
+            ],
+            'accessible-private-property-from-trait' => [
+                '<?php
+                    trait T {
+                        /** @var string */
+                        private $fooFoo = "";
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public function doFoo() : void {
+                            echo $this->fooFoo;
+                        }
+                    }'
+            ],
+            'accessible-protected-property-from-trait' => [
+                '<?php
+                    trait T {
+                        /** @var string */
+                        protected $fooFoo = "";
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public function doFoo() : void {
+                            echo $this->fooFoo;
+                        }
+                    }'
+            ],
+            'accessible-public-property-from-trait' => [
+                '<?php
+                    trait T {
+                        /** @var string */
+                        public $fooFoo = "";
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public function doFoo() : void {
+                            echo $this->fooFoo;
+                        }
+                    }'
+            ],
+            'accessible-protected-method-from-inherited-trait' => [
+                '<?php
+                    trait T {
+                        protected function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T;
+                    }
+            
+                    class C extends B {
+                        public function doFoo() : void {
+                            $this->fooFoo();
+                        }
+                    }'
+            ],
+            'accessible-public-method-from-inherited-trait' => [
+                '<?php
+                    trait T {
+                        public function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T;
+                    }
+            
+                    class C extends B {
+                        public function doFoo() : void {
+                            $this->fooFoo();
+                        }
+                    }'
+            ],
+            'static-class-method-from-within-trait' => [
+                '<?php
+                    trait T {
+                        public function fooFoo() : void {
+                            self::barBar();
+                        }
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public static function barBar() : void {
+            
+                        }
+                    }'
+            ],
+            'redefined-trait-method-without-alias' => [
+                '<?php
+                    trait T {
+                        public function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T;
+            
+                        public function fooFoo(string $a) : void {
+                        }
+                    }
+            
+                    (new B)->fooFoo("hello");'
+            ],
+            'redefined-trait-method-with-alias' => [
+                '<?php
+                    trait T {
+                        public function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T {
+                            fooFoo as barBar;
+                        }
+            
+                        public function fooFoo() : void {
+                            $this->barBar();
+                        }
+                    }'
+            ],
+            'trait-self' => [
+                '<?php
+                    trait T {
+                        public function g(): self
+                        {
+                            return $this;
+                        }
+                    }
+            
+                    class A {
+                        use T;
+                    }
+            
+                    $a = (new A)->g();',
+                'assertions' => [
+                    ['A' => '$a']
+                ]
+            ],
+            'parent-trait-self' => [
+                '<?php
+                    trait T {
+                        public function g(): self
+                        {
+                            return $this;
+                        }
+                    }
+            
+                    class A {
+                        use T;
+                    }
+            
+                    class B extends A {
+                    }
+            
+                    class C {
+                        use T;
+                    }
+            
+                    $a = (new B)->g();',
+                'assertions' => [
+                    ['A' => '$a']
+                ]
+            ],
+            'direct-static-call' => [
+                '<?php
+                    trait T {
+                        /** @return void */
+                        public static function foo() {}
+                    }
+                    class A {
+                        use T;
+            
+                        /** @return void */
+                        public function bar() {
+                            T::foo();
+                        }
+                    }'
+            ],
+            'abstract-trait-method' => [
+                '<?php
+                    trait T {
+                        /** @return void */
+                        abstract public function foo();
+                    }
+            
+                    abstract class A {
+                        use T;
+            
+                        /** @return void */
+                        public function bar() {
+                            $this->foo();
+                        }
+                    }'
+            ]
+        ];
     }
 
     /**
-     * @return void
+     * @return array
      */
-    public function setUp()
+    public function providerFileCheckerInvalidCodeParse()
     {
-        FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $this->project_checker->setConfig(self::$config);
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessiblePrivateMethodFromTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            private function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T;
-
-            public function doFoo() : void {
-                $this->fooFoo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessibleProtectedMethodFromTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            protected function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T;
-
-            public function doFoo() : void {
-                $this->fooFoo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessiblePublicMethodFromTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T;
-
-            public function doFoo() : void {
-                $this->fooFoo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessiblePrivatePropertyFromTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            /** @var string */
-            private $fooFoo = "";
-        }
-
-        class B {
-            use T;
-
-            public function doFoo() : void {
-                echo $this->fooFoo;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessibleProtectedPropertyFromTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            /** @var string */
-            protected $fooFoo = "";
-        }
-
-        class B {
-            use T;
-
-            public function doFoo() : void {
-                echo $this->fooFoo;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessiblePublicPropertyFromTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            /** @var string */
-            public $fooFoo = "";
-        }
-
-        class B {
-            use T;
-
-            public function doFoo() : void {
-                echo $this->fooFoo;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InaccessibleMethod
-     * @return                   void
-     */
-    public function testInccessiblePrivateMethodFromInheritedTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            private function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T;
-        }
-
-        class C extends B {
-            public function doFoo() : void {
-                $this->fooFoo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessibleProtectedMethodFromInheritedTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            protected function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T;
-        }
-
-        class C extends B {
-            public function doFoo() : void {
-                $this->fooFoo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testAccessiblePublicMethodFromInheritedTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T;
-        }
-
-        class C extends B {
-            public function doFoo() : void {
-                $this->fooFoo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testStaticClassMethodFromWithinTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public function fooFoo() : void {
-                self::barBar();
-            }
-        }
-
-        class B {
-            use T;
-
-            public static function barBar() : void {
-
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedTrait
-     * @return                   void
-     */
-    public function testUndefinedTrait()
-    {
-        $stmts = self::$parser->parse('<?php
-        class B {
-            use A;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testRedefinedTraitMethodWithoutAlias()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T;
-
-            public function fooFoo(string $a) : void {
-            }
-        }
-
-        (new B)->fooFoo("hello");
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testRedefinedTraitMethodWithAlias()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public function fooFoo() : void {
-            }
-        }
-
-        class B {
-            use T {
-                fooFoo as barBar;
-            }
-
-            public function fooFoo() : void {
-                $this->barBar();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testTraitSelf()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public function g(): self
-            {
-                return $this;
-            }
-        }
-
-        class A {
-            use T;
-        }
-
-        $a = (new A)->g();
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testParentTraitSelf()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public function g(): self
-            {
-                return $this;
-            }
-        }
-
-        class A {
-            use T;
-        }
-
-        class B extends A {
-        }
-
-        class C {
-            use T;
-        }
-
-        $a = (new B)->g();
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('A', (string) $context->vars_in_scope['$a']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testDirectStaticCall()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            /** @return void */
-            public static function foo() {}
-        }
-        class A {
-            use T;
-
-            /** @return void */
-            public function bar() {
-                T::foo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testAbstractTraitMethod()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            /** @return void */
-            abstract public function foo();
-        }
-
-        abstract class A {
-            use T;
-
-            /** @return void */
-            public function bar() {
-                $this->foo();
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider null|int
-     * @return                   void
-     */
-    public function testMissingPropertyType()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public $foo;
-        }
-        class A {
-            use T;
-
-            public function assignToFoo() : void {
-                $this->foo = 5;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider int
-     * @return                   void
-     */
-    public function testMissingPropertyTypeWithConstructorInit()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public $foo;
-        }
-        class A {
-            use T;
-
-            public function __construct() : void {
-                $this->foo = 5;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider null|int
-     * @return                   void
-     */
-    public function testMissingPropertyTypeWithConstructorInitAndNull()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public $foo;
-        }
-        class A {
-            use T;
-
-            public function __construct() : void {
-                $this->foo = 5;
-            }
-
-            public function makeNull() : void {
-                $this->foo = null;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MissingPropertyType - somefile.php:3 - Property T::$foo does not have a declared type - consider int|null
-     * @return                   void
-     */
-    public function testMissingPropertyTypeWithConstructorInitAndNullDefault()
-    {
-        $stmts = self::$parser->parse('<?php
-        trait T {
-            public $foo = null;
-        }
-        class A {
-            use T;
-
-            public function __construct() : void {
-                $this->foo = 5;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
+        return [
+            'inaccessible-private-method-from-inherited-trait' => [
+                '<?php
+                    trait T {
+                        private function fooFoo() : void {
+                        }
+                    }
+            
+                    class B {
+                        use T;
+                    }
+            
+                    class C extends B {
+                        public function doFoo() : void {
+                            $this->fooFoo();
+                        }
+                    }',
+                'error_message' => 'InaccessibleMethod'
+            ],
+            'undefined-trait' => [
+                '<?php
+                    class B {
+                        use A;
+                    }',
+                'error_message' => 'UndefinedTrait'
+            ],
+            'missing-property-type' => [
+                '<?php
+                    trait T {
+                        public $foo;
+                    }
+                    class A {
+                        use T;
+            
+                        public function assignToFoo() : void {
+                            $this->foo = 5;
+                        }
+                    }',
+                'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
+                    'declared type - consider null|int'
+            ],
+            'missing-property-type-with-constructor-init' => [
+                '<?php
+                    trait T {
+                        public $foo;
+                    }
+                    class A {
+                        use T;
+            
+                        public function __construct() : void {
+                            $this->foo = 5;
+                        }
+                    }',
+                'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
+                    'declared type - consider int'
+            ],
+            'missing-property-type-with-constructor-init-and-null' => [
+                '<?php
+                    trait T {
+                        public $foo;
+                    }
+                    class A {
+                        use T;
+            
+                        public function __construct() : void {
+                            $this->foo = 5;
+                        }
+            
+                        public function makeNull() : void {
+                            $this->foo = null;
+                        }
+                    }',
+                'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
+                    'declared type - consider null|int'
+            ],
+            'missing-property-type-with-constructor-init-and-null-default' => [
+                '<?php
+                    trait T {
+                        public $foo = null;
+                    }
+                    class A {
+                        use T;
+            
+                        public function __construct() : void {
+                            $this->foo = 5;
+                        }
+                    }',
+                'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
+                    'declared type - consider int|nul'
+            ]
+        ];
     }
 }

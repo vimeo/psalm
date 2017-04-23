@@ -1,204 +1,129 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
-use Psalm\Config;
 
-class IncludeTest extends PHPUnit_Framework_TestCase
+class IncludeTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var TestConfig */
-    protected static $config;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
-
     /**
+     * @dataProvider providerTestValidIncludes
+     * @param string $file
+     * @param string $code
+     * @param array<string,string> $includes
      * @return void
      */
-    public static function setUpBeforeClass()
+    public function testBasicRequire($file, $code, $includes = [])
     {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
-    }
+        foreach ($includes as $filename => $contents) {
+            $this->project_checker->registerFile($filename, $contents);
+        }
 
-    /**
-     * @return void
-     */
-    public function setUp()
-    {
-        FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $this->project_checker->setConfig(self::$config);
-    }
-
-    /**
-     * @return void
-     */
-    public function testBasicRequire()
-    {
-        $this->project_checker->registerFile(
-            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
-            '<?php
-            class A{
-            }
-            '
-        );
-
-        $file2_checker = new FileChecker(
-            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+        $file_checker = new FileChecker(
+            $file,
             $this->project_checker,
-            self::$parser->parse('<?php
-            require("file1.php");
-
-            class B {
-                public function foo() : void {
-                    (new A);
-                }
-            }
-            ')
+            self::$parser->parse($code)
         );
 
-        $file2_checker->visitAndAnalyzeMethods();
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**
-     * @return void
+     * @return array
      */
-    public function testNestedRequire()
+    public function providerTestValidIncludes()
     {
-        $this->project_checker->registerFile(
-            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
-            '<?php
-            class A{
-                public function fooFoo() : void {
-
-                }
-            }
-            '
-        );
-
-        $this->project_checker->registerFile(
-            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
-            '<?php
-            require("file1.php");
-
-            class B extends A{
-            }
-            '
-        );
-
-        $file2_checker = new FileChecker(
-            getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
-            $this->project_checker,
-            self::$parser->parse('<?php
-            require("file2.php");
-
-            class C extends B {
-                public function doFoo() : void {
-                    $this->fooFoo();
-                }
-            }
-            ')
-        );
-
-        $file2_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testRequireNamespace()
-    {
-        $this->project_checker->registerFile(
-            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
-            '<?php
-            namespace Foo;
-
-            class A{
-            }
-            '
-        );
-
-        $file2_checker = new FileChecker(
-            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
-            $this->project_checker,
-            self::$parser->parse('<?php
-            require("file1.php");
-
-            class B {
-                public function foo() : void {
-                    (new Foo\A);
-                }
-            }
-            ')
-        );
-
-        $file2_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testRequireFunction()
-    {
-        $this->project_checker->registerFile(
-            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
-            '<?php
-            function fooFoo() : void {
-
-            }
-            '
-        );
-
-        $file2_checker = new FileChecker(
-            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
-            $this->project_checker,
-            self::$parser->parse('<?php
-            require("file1.php");
-
-            fooFoo();
-            ')
-        );
-
-        $file2_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testRequireNamespaceWithUse()
-    {
-        $this->project_checker->registerFile(
-            getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
-            '<?php
-            namespace Foo;
-
-            class A{
-            }
-            '
-        );
-
-        $file2_checker = new FileChecker(
-            getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
-            $this->project_checker,
-            self::$parser->parse('<?php
-            require("file1.php");
-
-            use Foo\A;
-
-            class B {
-                public function foo() : void {
-                    (new A);
-                }
-            }
-            ')
-        );
-
-        $file2_checker->visitAndAnalyzeMethods();
+        return [
+            'basic-require' => [
+                'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                'code' => '<?php
+                    require("file1.php");
+                                
+                    class B {
+                        public function foo() : void {
+                            (new A);
+                        }
+                    }',
+                'includes' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        class A{
+                        }'
+                ]
+            ],
+            'nested-require' => [
+                'file' => getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
+                'code' => '<?php
+                    require("file2.php");
+        
+                    class C extends B {
+                        public function doFoo() : void {
+                            $this->fooFoo();
+                        }
+                    }',
+                'includes' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        class A{
+                            public function fooFoo() : void {
+            
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require("file1.php");
+            
+                        class B extends A{
+                        }'
+                ]
+            ],
+            'require-namespace' => [
+                'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                'code' => '<?php
+                    require("file1.php");
+        
+                    class B {
+                        public function foo() : void {
+                            (new Foo\A);
+                        }
+                    }',
+                'includes' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        namespace Foo;
+            
+                        class A{
+                        }'
+                ]
+            ],
+            'require-function' => [
+                'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                'code' => '<?php
+                    require("file1.php");
+        
+                    fooFoo();',
+                'includes' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function fooFoo() : void {
+            
+                        }'
+                ]
+            ],
+            'require-namespaced-with-use' => [
+                'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                'code' => '<?php
+                    require("file1.php");
+        
+                    use Foo\A;
+        
+                    class B {
+                        public function foo() : void {
+                            (new A);
+                        }
+                    }',
+                'includes' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        namespace Foo;
+            
+                        class A{
+                        }'
+                ]
+            ]
+        ];
     }
 }

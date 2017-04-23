@@ -156,8 +156,21 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             </psalm>'
         );
 
-        $this->assertSame('info', $config->getReportingLevelForFile('MissingReturnType', realpath('src/Psalm/Type.php')));
-        $this->assertSame('error', $config->getReportingLevelForFile('MissingReturnType', realpath('src/Psalm/Checker/FileChecker.php')));
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php')
+            )
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Checker/FileChecker.php')
+            )
+        );
     }
 
     /**
@@ -490,6 +503,5 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml'] as $file_name) {
             Config::loadFromXMLFile(realpath(dirname(__DIR__) . '/assets/config_levels/' . $file_name));
         }
-
     }
 }

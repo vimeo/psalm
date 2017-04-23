@@ -1,218 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
-use Psalm\Config;
 use Psalm\Context;
 
-class AnnotationTest extends PHPUnit_Framework_TestCase
+class AnnotationTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var TestConfig */
-    protected static $config;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
-
-    /**
-     * @return void
-     */
-    public static function setUpBeforeClass()
-    {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
-    }
-
-    /**
-     * @return void
-     */
-    public function setUp()
-    {
-        FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $this->project_checker->setConfig(self::$config);
-    }
-
-    /**
-     * @return void
-     */
-    public function testDeprecatedMethod()
-    {
-        $stmts = self::$parser->parse('<?php
-        class Foo {
-            /**
-             * @deprecated
-             */
-            public static function barBar() : void {
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage DeprecatedMethod
-     * @return                   void
-     */
-    public function testDeprecatedMethodWithCall()
-    {
-        $stmts = self::$parser->parse('<?php
-        class Foo {
-            /**
-             * @deprecated
-             */
-            public static function barBar() : void {
-            }
-        }
-
-        Foo::barBar();
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidDocblock
-     * @return                   void
-     */
-    public function testInvalidDocblockParam()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param int $bar
-         */
-        function fooFoo(array $bar) : void {
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the argument list for fooBar
-     * @return                   void
-     */
-    public function testExtraneousDocblockParam()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param int $bar
-         */
-        function fooBar() : void {
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the argument list for fooBar
-     * @return                   void
-     */
-    public function testMissingParamType()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param $bar
-         */
-        function fooBar() : void {
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidDocblock - somefile.php:5 - Badly-formatted @param in docblock for fooBar
-     * @return                   void
-     */
-    public function testMissingParamVar()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param string
-         */
-        function fooBar() : void {
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidDocblock
-     * @return                   void
-     */
-    public function testInvalidDocblockReturn()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @return string
-         */
-        function fooFoo() : void {
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testValidDocblockReturn()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @return string
-         */
-        function fooFoo() : string {
-            return "boop";
-        }
-
-        /**
-         * @return array<int, string>
-         */
-        function foo2() : array {
-            return ["hello"];
-        }
-
-        /**
-         * @return array<int, string>
-         */
-        function foo3() : array {
-            return ["hello"];
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
      * @return void
@@ -232,109 +27,170 @@ class AnnotationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return void
+     * @return array
      */
-    public function testReassertWithIs()
+    public function providerFileCheckerValidCodeParse()
     {
-        $stmts = self::$parser->parse('<?php
-        /** @param array $a */
-        function foo($a) : void {
-            if (is_array($a)) {
-                // do something
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        return [
+            'deprecated-method' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @deprecated
+                         */
+                        public static function barBar() : void {
+                        }
+                    }'
+            ],
+            'valid-docblock-return' => [
+                '<?php
+                    /**
+                     * @return string
+                     */
+                    function fooFoo() : string {
+                        return "boop";
+                    }
+            
+                    /**
+                     * @return array<int, string>
+                     */
+                    function foo2() : array {
+                        return ["hello"];
+                    }
+            
+                    /**
+                     * @return array<int, string>
+                     */
+                    function foo3() : array {
+                        return ["hello"];
+                    }'
+            ],
+            'reassert-with-is' => [
+                '<?php
+                    /** @param array $a */
+                    function foo($a) : void {
+                        if (is_array($a)) {
+                            // do something
+                        }
+                    }'
+            ],
+            'check-array-with-is' => [
+                '<?php
+                    /** @param mixed $b */
+                    function foo($b) : void {
+                        /** @var array */
+                        $a = (array)$b;
+                        if (is_array($a)) {
+                            // do something
+                        }
+                    }'
+            ],
+            'check-array-with-is-inside-loop' => [
+                '<?php
+                    /** @param array<mixed, array<mixed, mixed>> $data */
+                    function foo($data) : void {
+                        foreach ($data as $key => $val) {
+                            if (!\is_array($data)) {
+                                $data = [$key => null];
+                            } else {
+                                $data[$key] = !empty($val);
+                            }
+                        }
+                    }'
+            ],
+            'good-docblock' => [
+                '<?php
+                    class A {
+                        /**
+                         * @param A $a
+                         * @param bool $b
+                         */
+                        public function g(A $a, $b) : void {
+                        }
+                    }'
+            ],
+            'good-docblock-in-namespace' => [
+                '<?php
+                    namespace Foo;
+            
+                    class A {
+                        /**
+                         * @param \Foo\A $a
+                         * @param bool $b
+                         */
+                        public function g(A $a, $b) : void {
+                        }
+                    }'
+            ]
+        ];
     }
 
     /**
-     * @return void
+     * @return array
      */
-    public function testCheckArrayWithIs()
+    public function providerFileCheckerInvalidCodeParse()
     {
-        $stmts = self::$parser->parse('<?php
-        /** @param mixed $b */
-        function foo($b) : void {
-            /** @var array */
-            $a = (array)$b;
-            if (is_array($a)) {
-                // do something
-            }
-        }
-        ');
+        return [
+            'deprecated-method-with-call' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @deprecated
+                         */
+                        public static function barBar() : void {
+                        }
+                    }
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testCheckArrayWithIsInsideLoop()
-    {
-        $stmts = self::$parser->parse('<?php
-        /** @param array<mixed, array<mixed, mixed>> $data */
-        function foo($data) : void {
-            foreach ($data as $key => $val) {
-                if (!\is_array($data)) {
-                    $data = [$key => null];
-                } else {
-                    $data[$key] = !empty($val);
-                }
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testGoodDocblock()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A {
-            /**
-             * @param A $a
-             * @param bool $b
-             */
-            public function g(A $a, $b) : void {
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testGoodDocblockInNamespace()
-    {
-        $stmts = self::$parser->parse('<?php
-        namespace Foo;
-
-        class A {
-            /**
-             * @param \Foo\A $a
-             * @param bool $b
-             */
-            public function g(A $a, $b) : void {
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+                    Foo::barBar();',
+                'error_message' => 'DeprecatedMethod'
+            ],
+            'invalid-docblock-param' => [
+                '<?php
+                    /**
+                     * @param int $bar
+                     */
+                    function fooFoo(array $bar) : void {
+                    }',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'extraneous-docblock-param' => [
+                '<?php
+                    /**
+                     * @param int $bar
+                     */
+                    function fooBar() : void {
+                    }',
+                'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
+                    'argument list for fooBar'
+            ],
+            'missing-param-type' => [
+                '<?php
+                    /**
+                     * @param $bar
+                     */
+                    function fooBar() : void {
+                    }',
+                'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
+                    'argument list for fooBar'
+            ],
+            'missing-param-var' => [
+                '<?php
+                    /**
+                     * @param string
+                     */
+                    function fooBar() : void {
+                    }',
+                'error_message' => 'InvalidDocblock - somefile.php:5 - Badly-formatted @param in docblock for fooBar'
+            ],
+            'invalid-docblock-return' => [
+                '<?php
+                    /**
+                     * @return string
+                     */
+                    function fooFoo() : void {
+                    }',
+                'error_message' => 'InvalidDocblock'
+            ]
+        ];
     }
 }

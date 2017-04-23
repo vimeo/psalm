@@ -1,24 +1,17 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
 use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\Type;
 
-class TypeReconciliationTest extends PHPUnit_Framework_TestCase
+class TypeReconciliationTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\FileCheckerValidCodeParseTestTrait;
 
     /** @var FileChecker */
     protected $file_checker;
@@ -26,242 +19,56 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
-    {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-    }
-
-    /**
-     * @return void
-     */
     public function setUp()
     {
-        FileChecker::clearCache();
-
-        $this->project_checker = new ProjectChecker();
-        $this->project_checker->setConfig(new TestConfig());
+        parent::setUp();
 
         $this->file_checker = new FileChecker('somefile.php', $this->project_checker);
         $this->file_checker->context = new Context();
     }
 
     /**
+     * @dataProvider providerTestReconcilation
+     * @param string $expected
+     * @param string $type
+     * @param string $string
      * @return void
      */
-    public function testNotNull()
+    public function testReconcilation($expected, $type, $string)
     {
-        $this->assertEquals(
-            'MyObject',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject'), null, $this->file_checker)
+        $reconciled = TypeChecker::reconcileTypes(
+            $type,
+            Type::parseString($string),
+            null,
+            $this->file_checker
         );
 
         $this->assertEquals(
-            'MyObject',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|null'), null, $this->file_checker)
+            $expected,
+            (string) $reconciled
         );
 
-        $this->assertEquals(
-            'MyObject|false',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('MyObject|false'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'mixed',
-            (string) TypeChecker::reconcileTypes('!null', Type::parseString('mixed'), null, $this->file_checker)
-        );
+        if ($reconciled && is_array($reconciled->types)) {
+            foreach ($reconciled->types as $type) {
+                $this->assertInstanceOf('Psalm\Type\Atomic', $type);
+            }
+        }
     }
 
     /**
+     * @dataProvider providerTestTypeIsContainedBy
+     * @param string $input
+     * @param string $container
      * @return void
      */
-    public function testNotEmpty()
-    {
-        $this->assertEquals(
-            'MyObject',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'MyObject',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|null'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'MyObject',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|false'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'mixed',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('mixed'), null, $this->file_checker)
-        );
-
-        // @todo in the future this should also work
-        /*
-        $this->assertEquals(
-            'MyObject|true',
-            (string) TypeChecker::reconcileTypes('!empty', Type::parseString('MyObject|bool'))
-        );
-         */
-    }
-
-    /**
-     * @return void
-     */
-    public function testNull()
-    {
-        $this->assertEquals(
-            'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('MyObject|null'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'null',
-            (string) TypeChecker::reconcileTypes('null', Type::parseString('mixed'), null, $this->file_checker)
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testEmpty()
-    {
-        $this->assertEquals(
-            'null',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject'), null, $this->file_checker)
-        );
-        $this->assertEquals(
-            'false',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|false'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'false',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('MyObject|bool'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'mixed',
-            (string) TypeChecker::reconcileTypes('empty', Type::parseString('mixed'), null, $this->file_checker)
-        );
-
-        /** @var Type\Union */
-        $reconciled = TypeChecker::reconcileTypes('empty', Type::parseString('bool'), null, $this->file_checker);
-        $this->assertEquals('false', (string) $reconciled);
-        $this->assertInstanceOf('Psalm\Type\Atomic', $reconciled->types['false']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testNotMyObject()
-    {
-        $this->assertEquals(
-            'bool',
-            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|bool'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'null',
-            (string) TypeChecker::reconcileTypes('!MyObject', Type::parseString('MyObject|null'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'MyObjectB',
-            (string) TypeChecker::reconcileTypes('!MyObjectA', Type::parseString('MyObjectA|MyObjectB'), null, $this->file_checker)
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testMyObject()
-    {
-        $this->assertEquals(
-            'MyObject',
-            (string) TypeChecker::reconcileTypes('MyObject', Type::parseString('MyObject|bool'), null, $this->file_checker)
-        );
-
-        $this->assertEquals(
-            'MyObjectA',
-            (string) TypeChecker::reconcileTypes('MyObjectA', Type::parseString('MyObjectA|MyObjectB'), null, $this->file_checker)
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArray()
-    {
-        $this->assertEquals(
-            'array<mixed, mixed>',
-            (string) TypeChecker::reconcileTypes('array', Type::parseString('array|null'), null, $this->file_checker)
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function test2DArray()
-    {
-        $this->assertEquals(
-            'array<mixed, array<mixed, string>>',
-            (string) TypeChecker::reconcileTypes('array', Type::parseString('array<array<string>>|null'), null, $this->file_checker)
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayContains()
+    public function testTypeIsContainedBy($input, $container)
     {
         $this->assertTrue(
             TypeChecker::isContainedBy(
-                Type::parseString('array<string>'),
-                Type::parseString('array'),
+                Type::parseString($input),
+                Type::parseString($container),
                 $this->file_checker
             )
-        );
-
-        $this->assertTrue(
-            TypeChecker::isContainedBy(
-                Type::parseString('array<Exception>'),
-                Type::parseString('array'),
-                $this->file_checker
-            )
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testUnionContains()
-    {
-        $this->assertTrue(
-            TypeChecker::isContainedBy(
-                Type::parseString('string'),
-                Type::parseString('string|false'),
-                $this->file_checker
-            )
-        );
-
-        $this->assertTrue(
-            TypeChecker::isContainedBy(
-                Type::parseString('false'),
-                Type::parseString('string|false'),
-                $this->file_checker
-            )
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testNumeric()
-    {
-        $this->assertEquals(
-            'string',
-            (string) TypeChecker::reconcileTypes('numeric', Type::parseString('string'), null, $this->file_checker)
         );
     }
 
@@ -365,791 +172,547 @@ class TypeReconciliationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainNull
-     * @return                   void
+     * @return array
      */
-    public function testMakeNonNullableNull()
+    public function providerTestReconcilation()
     {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-        $a = new A();
-        if ($a === null) {
-        }
-        ');
+        return [
+            'not-null.MyObject' => ['MyObject', '!null', 'MyObject'],
+            'not-null.MyObject|null' => ['MyObject', '!null', 'MyObject|null'],
+            'not-null.MyObject|false' => ['MyObject|false', '!null', 'MyObject|false'],
+            'not-null.mixed' => ['mixed', '!null', 'mixed'],
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+            'not-empty.MyObject' => ['MyObject', '!empty', 'MyObject'],
+            'not-empty.MyObject|null' => ['MyObject', '!empty', 'MyObject|null'],
+            'not-empty.MyObject|false' => ['MyObject', '!empty', 'MyObject|false'],
+            'not-empty.mixed' => ['mixed', '!empty', 'mixed'],
+            // @todo in the future this should also work
+            //'not-empty.MyObject|true' => ['MyObject|true', '!empty', 'MyObject|bool'],
+
+            'not-empty.MyObject|null' => ['null', 'null', 'MyObject|null'],
+            'not-empty.MyObject|null' => ['null', 'null', 'mixed'],
+
+            'empty.MyObject' => ['null', 'empty', 'MyObject'],
+            'empty.MyObject|false' => ['false', 'empty', 'MyObject|false'],
+            'empty.MyObject|false' => ['false', 'empty', 'MyObject|false'],
+            'empty.MyObject|bool' => ['false', 'empty', 'MyObject|bool'],
+            'empty.mixed' => ['mixed', 'empty', 'mixed'],
+            'empty.bool' => ['false', 'empty', 'bool'],
+
+            'not-my-object.MyObject|bool' => ['bool', '!MyObject', 'MyObject|bool'],
+            'not-my-object.MyObject|null' => ['null', '!MyObject', 'MyObject|null'],
+            'not-my-object.MyObjectA|MyObjectB' => ['MyObjectB', '!MyObjectA', 'MyObjectA|MyObjectB'],
+
+            'my-object.MyObject|bool' => ['MyObject', 'MyObject', 'MyObject|bool'],
+            'my-object.MyObjectA|MyObjectB' => ['MyObjectA', 'MyObjectA', 'MyObjectA|MyObjectB'],
+
+            'array' => ['array<mixed, mixed>', 'array', 'array|null'],
+
+            '2d-array' => ['array<mixed, array<mixed, string>>', 'array', 'array<array<string>>|null'],
+
+            'numeric' => ['string', 'numeric', 'string']
+        ];
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainType
-     * @return                   void
+     * @return array
      */
-    public function testMakeInstanceOfThingInElseif()
+    public function providerTestTypeIsContainedBy()
     {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-        class B { }
-        class C { }
-        $a = rand(0, 10) > 5 ? new A() : new B();
-        if ($a instanceof A) {
-        } elseif ($a instanceof C) {
-        }
-        ');
+        return [
+            'array-contains.array<string>' => ['array<string>', 'array'],
+            'array-contains.array<Exception>' => ['array<Exception>', 'array'],
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+            'union-contains.string' => ['string', 'string|false'],
+            'union-contains.false' => ['false', 'string|false']
+        ];
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainType
-     * @return                   void
+     * @return array
      */
-    public function testFunctionValueIsNotType()
+    public function providerFileCheckerValidCodeParse()
     {
-        $stmts = self::$parser->parse('<?php
-        if (json_last_error() === "5") { }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
+        return [
+            'int-is-mixed' => [
+                '<?php
+                    function foo($a) : void {
+                        $b = 5;
+            
+                        if ($b === $a) { }
+                    }'
+            ],
+            'type-resolution-from-docblock' => [
+                '<?php
+                    class A { }
+            
+                    /**
+                     * @param  A $a
+                     * @return void
+                     */
+                    function fooFoo($a) {
+                        if ($a instanceof A) {
+                        }
+                    }'
+            ],
+            'array-type-resolution-from-docblock' => [
+                '<?php
+                    /**
+                     * @param string[] $strs
+                     * @return void
+                     */
+                    function foo(array $strs) {
+                        foreach ($strs as $str) {
+                            if (is_string($str)) {} // Issue emitted here
+                        }
+                    }'
+            ],
+            'type-resolution-from-docblock-inside' => [
+                '<?php
+                    /**
+                     * @param int $length
+                     * @return void
+                     */
+                    function foo($length) {
+                        if (!is_int($length)) {
+                            if (is_numeric($length)) {
+                            }
+                        }
+                    }'
+            ],
+            'not-instanceof' => [
+                '<?php
+                    class A { }
+            
+                    class B extends A { }
+            
+                    $out = null;
+            
+                    if ($a instanceof B) {
+                        // do something
+                    }
+                    else {
+                        $out = $a;
+                    }',
+                'assertions' => [
+                    ['null|A' => '$out']
+                ],
+                'error_levels' => [],
+                'scope_vars' => [
+                    '$a' => Type::parseString('A')
+                ]
+            ],
+            'not-instance-of-property' => [
+                '<?php
+                    class B { }
+            
+                    class C extends B { }
+            
+                    class A {
+                        /** @var B */
+                        public $foo;
+            
+                        public function __construct() {
+                            $this->foo = new B();
+                        }
+                    }
+            
+                    $a = new A();
+            
+                    $out = null;
+            
+                    if ($a->foo instanceof C) {
+                        // do something
+                    }
+                    else {
+                        $out = $a->foo;
+                    }',
+                'assertions' => [
+                    ['null|B' => '$out']
+                ],
+                'error_levels' => [],
+                'scope_vars' => [
+                    '$a' => Type::parseString('A')
+                ]
+            ],
+            'not-instance-of-property-elseif' => [
+                '<?php
+                    class B { }
+            
+                    class C extends B { }
+            
+                    class A {
+                        /** @var string|B */
+                        public $foo = "";
+                    }
+            
+                    $out = null;
+            
+                    if (is_string($a->foo)) {
+            
+                    }
+                    elseif ($a->foo instanceof C) {
+                        // do something
+                    }
+                    else {
+                        $out = $a->foo;
+                    }',
+                'assertions' => [
+                    ['null|B' => '$out']
+                ],
+                'error_levels' => [],
+                'scope_vars' => [
+                    '$a' => Type::parseString('A')
+                ]
+            ],
+            'type-arguments' => [
+                '<?php
+                    $a = min(0, 1);
+                    $b = min([0, 1]);
+                    $c = min("a", "b");
+                    $d = min(1, 2, 3, 4);
+                    $e = min(1, 2, 3, 4, 5);
+                    sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
+                'assertions' => [
+                    ['int' => '$a'],
+                    ['int' => '$b'],
+                    ['string' => '$c'],
+                    ['string' => '$hours'],
+                    ['string' => '$minutes'],
+                    ['string' => '$seconds']
+                ]
+            ],
+            'type-refinement-with-is-numeric' => [
+                '<?php
+                    /** @return void */
+                    function fooFoo(string $a) {
+                        if (is_numeric($a)) { }
+                    }
+            
+                    $b = rand(0, 1) ? 5 : false;
+                    if (is_numeric($b)) { }'
+            ],
+            'type-refinement-with-is-numeric-and-is-string' => [
+                '<?php
+                    /**
+                     * @param mixed $a
+                     * @return void
+                     */
+                    function foo ($a) {
+                        if (is_numeric($a)) {
+                            if (is_string($a)) {
+                            }
+                        }
+                    }'
+            ],
+            'update-multiple-isset-vars' => [
+                '<?php
+                    /** @return void **/
+                    function foo(string $s) {}
+            
+                    $a = rand(0, 1) ? ["hello"] : null;
+                    if (isset($a[0])) {
+                        foo($a[0]);
+                    }'
+            ],
+            'update-multiple-isset-vars-with-variable-offset' => [
+                '<?php
+                    /** @return void **/
+                    function foo(string $s) {}
+            
+                    $a = rand(0, 1) ? ["hello"] : null;
+                    $b = 0;
+                    if (isset($a[$b])) {
+                        foo($a[$b]);
+                    }'
+            ],
+            'remove-empty-array' => [
+                '<?php
+                    $arr_or_string = [];
+            
+                    if (rand(0, 1)) {
+                      $arr_or_string = "hello";
+                    }
+            
+                    /** @return void **/
+                    function foo(string $s) {}
+            
+                    if (!empty($arr_or_string)) {
+                        foo($arr_or_string);
+                    }'
+            ],
+            'instance-of-subtypes' => [
+                '<?php
+                    abstract class A {}
+                    class B extends A {}
+            
+                    abstract class C {}
+                    class D extends C {}
+            
+                    function makeA(): A {
+                      return new B();
+                    }
+            
+                    function makeC(): C {
+                      return new D();
+                    }
+            
+                    $a = rand(0, 1) ? makeA() : makeC();
+            
+                    if ($a instanceof B || $a instanceof D) { }'
+            ],
+            'empty-array-reconciliation-then-if' => [
+                '<?php
+                    /**
+                     * @param string|string[] $a
+                     */
+                    function foo($a) : string {
+                        if (is_string($a)) {
+                            return $a;
+                        } elseif (empty($a)) {
+                            return "goodbye";
+                        }
+            
+                        if (isset($a[0])) {
+                            return $a[0];
+                        };
+            
+                        return "not found";
+                    }'
+            ],
+            'empty-string-reconciliation-then-if' => [
+                '<?php
+                    /**
+                     * @param Exception|string|string[] $a
+                     */
+                    function foo($a) : string {
+                        if (is_array($a)) {
+                            return "hello";
+                        } elseif (empty($a)) {
+                            return "goodbye";
+                        }
+            
+                        if (is_string($a)) {
+                            return $a;
+                        };
+            
+                        return "an exception";
+                    }'
+            ],
+            'empty-exception-reconciliation-after-if' => [
+                '<?php
+                    /**
+                     * @param Exception|null $a
+                     */
+                    function foo($a) : string {
+                        if ($a && $a->getMessage() === "hello") {
+                            return "hello";
+                        } elseif (empty($a)) {
+                            return "goodbye";
+                        }
+            
+                        return $a->getMessage();
+                    }'
+            ],
+            'type-reconciliation-after-if-and-return' => [
+                '<?php
+                    /**
+                     * @param string|int $a
+                     * @return string|int
+                     */
+                    function foo($a) {
+                        if (is_string($a)) {
+                            return $a;
+                        } elseif (is_int($a)) {
+                            return $a;
+                        }
+            
+                        throw new \LogicException("Runtime error");
+                    }'
+            ],
+            'ignore-null-check-and-maintain-null-value' => [
+                '<?php
+                    $a = null;
+                    if ($a !== null) { }
+                    $b = $a;',
+                'assertions' => [
+                    ['null' => '$b']
+                ],
+                'error_levels' => ['FailedTypeResolution']
+            ],
+            'ignore-null-check-and-maintain-nullable-value' => [
+                '<?php
+                    $a = rand(0, 1) ? 5 : null;
+                    if ($a !== null) { }
+                    $b = $a;',
+                'assertions' => [
+                    ['int|null' => '$b']
+                ]
+            ],
+            'ternary-by-ref-var' => [
+                '<?php
+                    function foo() : void {
+                        $b = null;
+                        $c = rand(0, 1) ? bar($b) : null;
+                        if (is_int($b)) { }
+                    }
+                    function bar(?int &$a) : void {
+                        $a = 5;
+                    }'
+            ],
+            'ternary-by-ref-var-in-conditional' => [
+                '<?php
+                    function foo() : void {
+                        $b = null;
+                        if (rand(0, 1) || bar($b)) {
+                            if (is_int($b)) { }
+                        }
+                    }
+                    function bar(?int &$a) : void {
+                        $a = 5;
+                    }'
+            ],
+            'possible-instanceof' => [
+                '<?php
+                    interface I1 {}
+                    interface I2 {}
+            
+                    class A
+                    {
+                        public function foo() : void {
+                            if ($this instanceof I1 || $this instanceof I2) {}
+                        }
+                    }'
+            ],
+            'intersection' => [
+                '<?php
+                    interface I {
+                        public function bat() : void;
+                    }
+            
+                    function takesI(I $i) : void {}
+                    function takesA(A $a) : void {}
+            
+                    class A {
+                        public function foo() : void {
+                            if ($this instanceof I) {
+                                $this->bar();
+                                $this->bat();
+            
+                                takesA($this);
+                                takesI($this);
+                            }
+                        }
+            
+                        protected function bar() : void {}
+                    }
+            
+                    class B extends A implements I {
+                        public function bat() : void {}
+                    }'
+            ]
+        ];
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainType
-     * @return                   void
+     * @return array
      */
-    public function testStringIsNotInt()
+    public function providerFileCheckerInvalidCodeParse()
     {
-        $stmts = self::$parser->parse('<?php
-        if (5 === "5") { }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
+        return [
+            'make-non-nullable-null' => [
+                '<?php
+                    class A { }
+                    $a = new A();
+                    if ($a === null) {
+                    }',
+                'error_message' => 'TypeDoesNotContainNull'
+            ],
+            'make-instance-of-thing-in-elseif' => [
+                '<?php
+                    class A { }
+                    class B { }
+                    class C { }
+                    $a = rand(0, 10) > 5 ? new A() : new B();
+                    if ($a instanceof A) {
+                    } elseif ($a instanceof C) {
+                    }',
+                'error_message' => 'TypeDoesNotContainType'
+            ],
+            'function-value-is-not-type' => [
+                '<?php
+                    if (json_last_error() === "5") { }',
+                'error_message' => 'TypeDoesNotContainType'
+            ],
+            'string-is-not-int' => [
+                '<?php
+                    if (5 === "5") { }',
+                'error_message' => 'TypeDoesNotContainType'
+            ],
+            'string-is-not-null' => [
+                '<?php
+                    if (5 === null) { }',
+                'error_message' => 'TypeDoesNotContainNull'
+            ],
+            'string-is-not-false' => [
+                '<?php
+                    if (5 === false) { }',
+                'error_message' => 'TypeDoesNotContainType'
+            ],
+            'failed-type-resolution' => [
+                '<?php
+                    class A { }
+            
+                    /**
+                     * @return void
+                     */
+                    function fooFoo(A $a) {
+                        if ($a instanceof A) {
+                        }
+                    }',
+                'error_message' => 'FailedTypeResolution'
+            ],
+            'failed-type-resolution-with-docblock' => [
+                '<?php
+                    class A { }
+            
+                    /**
+                     * @param  A $a
+                     * @return void
+                     */
+                    function fooFoo(A $a) {
+                        if ($a instanceof A) {
+                        }
+                    }',
+                'error_message' => 'FailedTypeResolution'
+            ],
+            'type-resolution-from-docblock-and-instanceof' => [
+                '<?php
+                    class A { }
+            
+                    /**
+                     * @param  A $a
+                     * @return void
+                     */
+                    function fooFoo($a) {
+                        if ($a instanceof A) {
+                            if ($a instanceof A) {
+                            }
+                        }
+                    }',
+                'error_message' => 'FailedTypeResolution'
+            ],
+            'type-transformation' => [
+                '<?php
+                    $a = "5";
+            
+                    if (is_numeric($a)) {
+                        if (is_int($a)) {
+                            echo $a;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType'
+            ]
+        ];
     }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainNull
-     * @return                   void
-     */
-    public function testStringIsNotNull()
-    {
-        $stmts = self::$parser->parse('<?php
-        if (5 === null) { }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return  void
-     */
-    public function testIntIsMixed()
-    {
-        $stmts = self::$parser->parse('<?php
-        function foo($a) : void {
-            $b = 5;
-
-            if ($b === $a) { }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainType
-     * @return                   void
-     */
-    public function testStringIsNotFalse()
-    {
-        $stmts = self::$parser->parse('<?php
-        if (5 === false) { }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage FailedTypeResolution
-     * @return                   void
-     */
-    public function testFailedTypeResolution()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-
-        /**
-         * @return void
-         */
-        function fooFoo(A $a) {
-            if ($a instanceof A) {
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage FailedTypeResolution
-     * @return                   void
-     */
-    public function testFailedTypeResolutionWithDocblock()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-
-        /**
-         * @param  A $a
-         * @return void
-         */
-        function fooFoo(A $a) {
-            if ($a instanceof A) {
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testTypeResolutionFromDocblock()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-
-        /**
-         * @param  A $a
-         * @return void
-         */
-        function fooFoo($a) {
-            if ($a instanceof A) {
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayTypeResolutionFromDocblock()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param string[] $strs
-         * @return void
-         */
-        function foo(array $strs) {
-            foreach ($strs as $str) {
-                if (is_string($str)) {} // Issue emitted here
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testTypeResolutionFromDocblockInside()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param int $length
-         * @return void
-         */
-        function foo($length) {
-            if (!is_int($length)) {
-                if (is_numeric($length)) {
-                }
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage FailedTypeResolution
-     * @return                   void
-     */
-    public function testTypeResolutionFromDocblockAndInstanceof()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-
-        /**
-         * @param  A $a
-         * @return void
-         */
-        function fooFoo($a) {
-            if ($a instanceof A) {
-                if ($a instanceof A) {
-                }
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testNotInstanceOf()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-
-        class B extends A { }
-
-        $out = null;
-
-        if ($a instanceof B) {
-            // do something
-        }
-        else {
-            $out = $a;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $context->vars_in_scope['$a'] = Type::parseString('A');
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('null|A', (string) $context->vars_in_scope['$out']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testNotInstanceOfProperty()
-    {
-        $stmts = self::$parser->parse('<?php
-        class B { }
-
-        class C extends B { }
-
-        class A {
-            /** @var B */
-            public $foo;
-
-            public function __construct() {
-                $this->foo = new B();
-            }
-        }
-
-        $a = new A();
-
-        $out = null;
-
-        if ($a->foo instanceof C) {
-            // do something
-        }
-        else {
-            $out = $a->foo;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $context->vars_in_scope['$a'] = Type::parseString('A');
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testNotInstanceOfPropertyElseif()
-    {
-        $stmts = self::$parser->parse('<?php
-        class B { }
-
-        class C extends B { }
-
-        class A {
-            /** @var string|B */
-            public $foo = "";
-        }
-
-        $out = null;
-
-        if (is_string($a->foo)) {
-
-        }
-        elseif ($a->foo instanceof C) {
-            // do something
-        }
-        else {
-            $out = $a->foo;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $context->vars_in_scope['$a'] = Type::parseString('A');
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('null|B', (string) $context->vars_in_scope['$out']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testTypeArguments()
-    {
-        $stmts = self::$parser->parse('<?php
-        $a = min(0, 1);
-        $b = min([0, 1]);
-        $c = min("a", "b");
-        $d = min(1, 2, 3, 4);
-        $e = min(1, 2, 3, 4, 5);
-        sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$b']);
-        $this->assertEquals('string', (string) $context->vars_in_scope['$c']);
-        $this->assertEquals('string', (string)$context->vars_in_scope['$hours']);
-        $this->assertEquals('string', (string)$context->vars_in_scope['$minutes']);
-        $this->assertEquals('string', (string)$context->vars_in_scope['$seconds']);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeDoesNotContainType
-     * @return                   void
-     */
-    public function testTypeTransformation()
-    {
-        $stmts = self::$parser->parse('<?php
-        $a = "5";
-
-        if (is_numeric($a)) {
-            if (is_int($a)) {
-                echo $a;
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testTypeRefinementWithIsNumeric()
-    {
-        $stmts = self::$parser->parse('<?php
-        /** @return void */
-        function fooFoo(string $a) {
-            if (is_numeric($a)) { }
-        }
-
-        $b = rand(0, 1) ? 5 : false;
-        if (is_numeric($b)) { }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testTypeRefinementWithIsNumericAndIsString()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param mixed $a
-         * @return void
-         */
-        function foo ($a) {
-            if (is_numeric($a)) {
-                if (is_string($a)) {
-                }
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testUpdateMultipleIssetVars()
-    {
-        $stmts = self::$parser->parse('<?php
-        /** @return void **/
-        function foo(string $s) {}
-
-        $a = rand(0, 1) ? ["hello"] : null;
-        if (isset($a[0])) {
-            foo($a[0]);
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testUpdateMultipleIssetVarsWithVariableOffset()
-    {
-        $stmts = self::$parser->parse('<?php
-        /** @return void **/
-        function foo(string $s) {}
-
-        $a = rand(0, 1) ? ["hello"] : null;
-        $b = 0;
-        if (isset($a[$b])) {
-            foo($a[$b]);
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testRemoveEmptyArray()
-    {
-        $stmts = self::$parser->parse('<?php
-        $arr_or_string = [];
-
-        if (rand(0, 1)) {
-          $arr_or_string = "hello";
-        }
-
-        /** @return void **/
-        function foo(string $s) {}
-
-        if (!empty($arr_or_string)) {
-            foo($arr_or_string);
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testInstanceOfSubtypes()
-    {
-        $stmts = self::$parser->parse('<?php
-        abstract class A {}
-        class B extends A {}
-
-        abstract class C {}
-        class D extends C {}
-
-        function makeA(): A {
-          return new B();
-        }
-
-        function makeC(): C {
-          return new D();
-        }
-
-        $a = rand(0, 1) ? makeA() : makeC();
-
-        if ($a instanceof B || $a instanceof D) { }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testEmptyArrayReconciliationThenIf()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param string|string[] $a
-         */
-        function foo($a) : string {
-            if (is_string($a)) {
-                return $a;
-            } elseif (empty($a)) {
-                return "goodbye";
-            }
-
-            if (isset($a[0])) {
-                return $a[0];
-            };
-
-            return "not found";
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testEmptyStringReconciliationThenIf()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param Exception|string|string[] $a
-         */
-        function foo($a) : string {
-            if (is_array($a)) {
-                return "hello";
-            } elseif (empty($a)) {
-                return "goodbye";
-            }
-
-            if (is_string($a)) {
-                return $a;
-            };
-
-            return "an exception";
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testEmptyExceptionReconciliationAfterIf()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param Exception|null $a
-         */
-        function foo($a) : string {
-            if ($a && $a->getMessage() === "hello") {
-                return "hello";
-            } elseif (empty($a)) {
-                return "goodbye";
-            }
-
-            return $a->getMessage();
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testTypeReconciliationAfterIfAndReturn()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param string|int $a
-         * @return string|int
-         */
-        function foo($a) {
-            if (is_string($a)) {
-                return $a;
-            } elseif (is_int($a)) {
-                return $a;
-            }
-
-            throw new \LogicException("Runtime error");
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
-     * @return void
-     */
-    public function testIgnoreNullCheckAndMaintainNullValue()
-    {
-        Config::getInstance()->setCustomErrorLevel('FailedTypeResolution', Config::REPORT_SUPPRESS);
-
-        $stmts = self::$parser->parse('<?php
-        $a = null;
-        if ($a !== null) { }
-        $b = $a;
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('null', (string) $context->vars_in_scope['$b']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testIgnoreNullCheckAndMaintainNullableValue()
-    {
-        $stmts = self::$parser->parse('<?php
-        $a = rand(0, 1) ? 5 : null;
-        if ($a !== null) { }
-        $b = $a;
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('int|null', (string) $context->vars_in_scope['$b']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testTernaryByRefVar()
-    {
-        $stmts = self::$parser->parse('<?php
-        function foo() : void {
-            $b = null;
-            $c = rand(0, 1) ? bar($b) : null;
-            if (is_int($b)) { }
-        }
-        function bar(?int &$a) : void {
-            $a = 5;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testTernaryByRefVarInConditional()
-    {
-        $stmts = self::$parser->parse('<?php
-        function foo() : void {
-            $b = null;
-            if (rand(0, 1) || bar($b)) {
-                if (is_int($b)) { }
-            }
-        }
-        function bar(?int &$a) : void {
-            $a = 5;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testPossibleInstanceof()
-    {
-        $stmts = self::$parser->parse('<?php
-        interface I1 {}
-        interface I2 {}
-
-        class A
-        {
-            public function foo() : void {
-                if ($this instanceof I1 || $this instanceof I2) {}
-            }
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-
-
-    /**
-     * @return void
-     */
-    public function testIntersection()
-    {
-        $stmts = self::$parser->parse('<?php
-        interface I {
-            public function bat() : void;
-        }
-
-        function takesI(I $i) : void {}
-        function takesA(A $a) : void {}
-
-        class A {
-            public function foo() : void {
-                if ($this instanceof I) {
-                    $this->bar();
-                    $this->bat();
-
-                    takesA($this);
-                    takesI($this);
-                }
-            }
-
-            protected function bar() : void {}
-        }
-
-        class B extends A implements I {
-            public function bat() : void {}
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-
 }
