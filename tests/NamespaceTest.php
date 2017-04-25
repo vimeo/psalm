@@ -11,7 +11,7 @@ class NamespaceTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'empty-namespace' => [
+            'emptyNamespace' => [
                 '<?php
                     namespace A {
                         /** @return void */
@@ -30,7 +30,7 @@ class NamespaceTest extends TestCase
                         (new A\Bar);
                     }'
             ],
-            'constant-reference' => [
+            'constantReference' => [
                 '<?php
                     namespace Aye\Bee {
                         const HELLO = "hello";

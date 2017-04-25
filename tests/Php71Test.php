@@ -12,7 +12,7 @@ class Php71Test extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'nullable-return-type' => [
+            'nullableReturnType' => [
                 '<?php
                     function a(): ?string
                     {
@@ -24,7 +24,7 @@ class Php71Test extends TestCase
                     ['string|null' => '$a']
                 ]
             ],
-            'nullable-return-type-in-docblock' => [
+            'nullableReturnTypeInDocblock' => [
                 '<?php
                     /** @return ?string */
                     function a() {
@@ -36,7 +36,7 @@ class Php71Test extends TestCase
                     ['null|string' =>'$a']
                 ]
             ],
-            'nullable-argument' => [
+            'nullableArgument' => [
                 '<?php
                     function test(?string $name) : ?string
                     {
@@ -46,7 +46,7 @@ class Php71Test extends TestCase
                     test("elePHPant");
                     test(null);'
             ],
-            'protected-class-const' => [
+            'protectedClassConst' => [
                 '<?php
                     class A
                     {
@@ -60,7 +60,7 @@ class Php71Test extends TestCase
                         }
                     }',
             ],
-            'private-class-const' => [
+            'privateClassConst' => [
                 '<?php
                     class A
                     {
@@ -71,7 +71,7 @@ class Php71Test extends TestCase
                         }
                     }'
             ],
-            'public-class-const-fetch' => [
+            'publicClassConstFetch' => [
                 '<?php
                     class A
                     {
@@ -90,7 +90,7 @@ class Php71Test extends TestCase
                     echo A::IS_PUBLIC;
                     echo A::IS_ALSO_PUBLIC;'
             ],
-            'array-destructuring' => [
+            'arrayDestructuring' => [
                 '<?php
                     $data = [
                         [1, "Tom"],
@@ -109,7 +109,7 @@ class Php71Test extends TestCase
                     ['string|int' => '$name2']
                 ]
             ],
-            'array-destructuring-in-foreach' => [
+            'arrayDestructuringInForeach' => [
                 '<?php
                     $data = [
                         [1, "Tom"],
@@ -122,7 +122,7 @@ class Php71Test extends TestCase
                         echo $name;
                     }'
             ],
-            'array-destructuring-with-keys' => [
+            'arrayDestructuringWithKeys' => [
                 '<?php
                     $data = [
                         ["id" => 1, "name" => "Tom"],
@@ -141,7 +141,7 @@ class Php71Test extends TestCase
                     ['string' => '$name2']
                 ]
             ],
-            'array-list-destructuring-in-foreach-with-keys' => [
+            'arrayListDestructuringInForeachWithKeys' => [
                 '<?php
                     $data = [
                         ["id" => 1, "name" => "Tom"],
@@ -161,7 +161,7 @@ class Php71Test extends TestCase
                     ['null|string' => '$last_name']
                 ]
             ],
-            'array-destructuring-in-foreach-with-keys' => [
+            'arrayDestructuringInForeachWithKeys' => [
                 '<?php
                     $data = [
                         ["id" => 1, "name" => "Tom"],
@@ -181,7 +181,7 @@ class Php71Test extends TestCase
                     ['null|string' => '$last_name']
                 ]
             ],
-            'iterable-arg' => [
+            'iterableArg' => [
                 '<?php
                     /**
                      * @param  iterable<int, int> $iter
@@ -196,7 +196,7 @@ class Php71Test extends TestCase
                     iterator([1, 2, 3, 4]);
                     iterator(new SplFixedArray(5));'
             ],
-            'traversable-object' => [
+            'traversableObject' => [
                 '<?php
                     class IteratorObj implements Iterator {
                         function rewind() : void {}
@@ -221,7 +221,7 @@ class Php71Test extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'invalid-private-class-const-fetch' => [
+            'invalidPrivateClassConstFetch' => [
                 '<?php
                     class A
                     {
@@ -231,7 +231,7 @@ class Php71Test extends TestCase
                     echo A::IS_PRIVATE;',
                 'error_message' => 'InaccessibleClassConstant'
             ],
-            'invalid-private-class-const-fetch-from-subclass' => [
+            'invalidPrivateClassConstFetchFromSubclass' => [
                 '<?php
                     class A
                     {
@@ -246,7 +246,7 @@ class Php71Test extends TestCase
                     }',
                 'error_message' => 'InaccessibleClassConstant'
             ],
-            'invalid-protected-class-const-fetch' => [
+            'invalidProtectedClassConstFetch' => [
                 '<?php
                     class A
                     {
@@ -256,7 +256,7 @@ class Php71Test extends TestCase
                     echo A::IS_PROTECTED;',
                 'error_message' => 'InaccessibleClassConstant'
             ],
-            'invalid-iterable-arg' => [
+            'invalidIterableArg' => [
                 '<?php
                     /**
                      * @param  iterable<string> $iter

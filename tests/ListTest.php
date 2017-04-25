@@ -12,7 +12,7 @@ class ListTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'simple-vars' => [
+            'simpleVars' => [
                 '<?php
                     list($a, $b) = ["a", "b"];',
                 'assertions' => [
@@ -20,7 +20,7 @@ class ListTest extends TestCase
                     ['string' => '$b']
                 ]
             ],
-            'simple-vars-with-separate-types' => [
+            'simpleVarsWithSeparateTypes' => [
                 '<?php
                     list($a, $b) = ["a", 2];',
                 'assertions' => [
@@ -28,7 +28,7 @@ class ListTest extends TestCase
                     ['int' => '$b']
                 ]
             ],
-            'simple-vars-with-separate-types-in-var' => [
+            'simpleVarsWithSeparateTypesInVar' => [
                 '<?php
                     $bar = ["a", 2];
                     list($a, $b) = $bar;',
@@ -37,7 +37,7 @@ class ListTest extends TestCase
                     ['int|string' => '$b']
                 ]
             ],
-            'this-var' => [
+            'thisVar' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -63,7 +63,7 @@ class ListTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'this-var-with-bad-type' => [
+            'thisVarWithBadType' => [
                 '<?php
                     class A {
                         /** @var int */

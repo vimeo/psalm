@@ -12,7 +12,7 @@ class AssignmentTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'nested-assignment' => [
+            'nestedAssignment' => [
                 '<?php
                     $a = $b = $c = 5;',
                 'assertions' => [
@@ -28,7 +28,7 @@ class AssignmentTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'mixed-assignment' => [
+            'mixedAssignment' => [
                 '<?php
                     /** @var mixed */
                     $a = 5;

@@ -12,7 +12,7 @@ class MethodCallTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'parent-static-call' => [
+            'parentStaticCall' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -26,7 +26,7 @@ class MethodCallTest extends TestCase
                         }
                     }'
             ],
-            'non-static-invocation' => [
+            'nonStaticInvocation' => [
                 '<?php
                     class Foo {
                         public static function barBar() : void {}
@@ -34,7 +34,7 @@ class MethodCallTest extends TestCase
             
                     (new Foo())->barBar();'
             ],
-            'static-invocation' => [
+            'staticInvocation' => [
                 '<?php
                     class A {
                         public static function fooFoo() : void {}
@@ -55,7 +55,7 @@ class MethodCallTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'static-invocation' => [
+            'staticInvocation' => [
                 '<?php
                     class Foo {
                         public function barBar() : void {}
@@ -64,7 +64,7 @@ class MethodCallTest extends TestCase
                     Foo::barBar();',
                 'error_message' => 'InvalidStaticInvocation'
             ],
-            'parent-static-call' => [
+            'parentStaticCall' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -79,7 +79,7 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidStaticInvocation'
             ],
-            'mixed-method-call' => [
+            'mixedMethodCall' => [
                 '<?php
                     class Foo {
                         public static function barBar() : void {}
@@ -95,7 +95,7 @@ class MethodCallTest extends TestCase
                     'MixedAssignment'
                 ]
             ],
-            'self-non-static-invocation' => [
+            'selfNonStaticInvocation' => [
                 '<?php
                     class A {
                         public function fooFoo() : void {}
@@ -106,7 +106,7 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'NonStaticSelfCall'
             ],
-            'no-parent' => [
+            'noParent' => [
                 '<?php
                     class Foo {
                         public function barBar() : void {
@@ -115,7 +115,7 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'ParentNotFound'
             ],
-            'coerced-class' => [
+            'coercedClass' => [
                 '<?php
                     class NullableClass {
                     }

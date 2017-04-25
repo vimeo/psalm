@@ -11,7 +11,7 @@ class ForTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'continue-outside-loop' => [
+            'continueOutsideLoop' => [
                 '<?php
                     class Node {
                         /** @var Node|null */
@@ -26,7 +26,7 @@ class ForTest extends TestCase
                         }
                     }'
             ],
-            'echo-after-for' => [
+            'echoAfterFor' => [
                 '<?php
                     for ($i = 0; $i < 5; $i++);
                     echo $i;'

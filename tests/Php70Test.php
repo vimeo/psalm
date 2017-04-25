@@ -12,7 +12,7 @@ class Php70Test extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'function-type-hints' => [
+            'functionTypeHints' => [
                 '<?php
                     function indexof(string $haystack, string $needle) : int
                     {
@@ -30,7 +30,7 @@ class Php70Test extends TestCase
                     ['int' => '$a']
                 ]
             ],
-            'method-type-hints' => [
+            'methodTypeHints' => [
                 '<?php
                     class Foo {
                         public static function indexof(string $haystack, string $needle) : int
@@ -50,7 +50,7 @@ class Php70Test extends TestCase
                     ['int' => '$a']
                 ]
             ],
-            'null-coalesce' => [
+            'nullCoalesce' => [
                 '<?php
                     $a = $_GET["bar"] ?? "nobody";',
                 'assertions' => [
@@ -65,7 +65,7 @@ class Php70Test extends TestCase
                     ['int' => '$a']
                 ]
             ],
-            'define-array' => [
+            'defineArray' => [
                 '<?php
                     define("ANIMALS", [
                         "dog",
@@ -78,7 +78,7 @@ class Php70Test extends TestCase
                     ['string' =>'$a']
                 ]
             ],
-            'anonymous-class-logger' => [
+            'anonymousClassLogger' => [
                 '<?php
                     interface Logger {
                         /** @return void */
@@ -102,7 +102,7 @@ class Php70Test extends TestCase
                         }
                     });'
             ],
-            'anonymous-class-function-return-type' => [
+            'anonymousClassFunctionReturnType' => [
                 '<?php
                     $class = new class {
                         public function f() : int {
@@ -116,7 +116,7 @@ class Php70Test extends TestCase
             
                     $x = g($class->f());'
             ],
-            'generator-with-return' => [
+            'generatorWithReturn' => [
                 '<?php
                     /**
                      * @return Generator<int,int>
@@ -130,7 +130,7 @@ class Php70Test extends TestCase
                         yield 1;
                     }'
             ],
-            'generator-delegation' => [
+            'generatorDelegation' => [
                 '<?php
                     /**
                      * @return Generator<int,int>
@@ -180,7 +180,7 @@ class Php70Test extends TestCase
                 ],
                 'error_levels' => ['MixedAssignment']
             ],
-            'multiple-use' => [
+            'multipleUse' => [
                 '<?php
                     namespace Name\Space {
                         class A {
@@ -211,7 +211,7 @@ class Php70Test extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'anonymous-class-with-bad-statement' => [
+            'anonymousClassWithBadStatement' => [
                 '<?php
                     $foo = new class {
                         public function a() {
@@ -220,7 +220,7 @@ class Php70Test extends TestCase
                     };',
                 'error_message' => 'UndefinedClass'
             ],
-            'anonymous-class-with-invalid-function-return-type' => [
+            'anonymousClassWithInvalidFunctionReturnType' => [
                 '<?php
                     $foo = new class {
                         public function a() : string {

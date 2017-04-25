@@ -47,7 +47,7 @@ class Php55Test extends TestCase
                     finally {
                     }'
             ],
-            'foreach-list' => [
+            'foreachList' => [
                 '<?php
                     $array = [
                         [1, 2],
@@ -58,7 +58,7 @@ class Php55Test extends TestCase
                         echo "A: $a; B: $b\n";
                     }'
             ],
-            'array-string-dereferencing' => [
+            'arrayStringDereferencing' => [
                 '<?php
                     $a = [1, 2, 3][0];
                     $b = "PHP"[0];',
@@ -67,7 +67,7 @@ class Php55Test extends TestCase
                     ['string' => '$b']
                 ]
             ],
-            'class-string' => [
+            'classString' => [
                 '<?php
                     class ClassName {}
             

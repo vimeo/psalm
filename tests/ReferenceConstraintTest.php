@@ -12,7 +12,7 @@ class ReferenceConstraintTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'function-parameter-no-violation' => [
+            'functionParameterNoViolation' => [
                 '<?php
                     /** @return void */
                     function changeInt(int &$a) {
@@ -28,7 +28,7 @@ class ReferenceConstraintTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'function-parameter-violation' => [
+            'functionParameterViolation' => [
                 '<?php
                     /** @return void */
                     function changeInt(int &$a) {
@@ -36,7 +36,7 @@ class ReferenceConstraintTest extends TestCase
                     }',
                 'error_message' => 'ReferenceConstraintViolation'
             ],
-            'class-method-parameter-violation' => [
+            'classMethodParameterViolation' => [
                 '<?php
                     class A {
                       /** @var int */
@@ -53,7 +53,7 @@ class ReferenceConstraintTest extends TestCase
                     $bar = null; // ReferenceConstraintViolation issue emitted',
                 'error_message' => 'ReferenceConstraintViolation'
             ],
-            'class-method-parameter-violation-in-post-assignment' => [
+            'classMethodParameterViolationInPostAssignment' => [
                 '<?php
                     class A {
                       /** @var int */
@@ -69,7 +69,7 @@ class ReferenceConstraintTest extends TestCase
                     $bar = null;',
                 'error_message' => 'ReferenceConstraintViolation'
             ],
-            'contradictory-reference-constraints' => [
+            'contradictoryReferenceConstraints' => [
                 '<?php
                     class A {
                         /** @var int */

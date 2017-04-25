@@ -12,7 +12,7 @@ class ClosureTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'by-ref-use-var' => [
+            'byRefUseVar' => [
                 '<?php
                     /** @return void */
                     function run_function(\Closure $fnc) {
@@ -39,7 +39,7 @@ class ClosureTest extends TestCase
             
                     fn();'
             ],
-            'inferred-arg' => [
+            'inferredArg' => [
                 '<?php
                     $bar = ["foo", "bar"];
             
@@ -53,7 +53,7 @@ class ClosureTest extends TestCase
                         $bar
                     );'
             ],
-            'var-return-type' => [
+            'varReturnType' => [
                 '<?php
                     $add_one = function(int $a) : int {
                         return $a + 1;
@@ -64,7 +64,7 @@ class ClosureTest extends TestCase
                     ['int' => '$a']
                 ]
             ],
-            'callable-to-closure' => [
+            'callableToClosure' => [
                 '<?php
                     /**
                      * @return callable
@@ -81,7 +81,7 @@ class ClosureTest extends TestCase
                         echo (string)$c();
                     }'
             ],
-            'callable-class' => [
+            'callableClass' => [
                 '<?php
                     class C {
                         public function __invoke() : string {
@@ -98,7 +98,7 @@ class ClosureTest extends TestCase
                     $c2 = new C();
                     $c2();'
             ],
-            'correct-param-type' => [
+            'correctParamType' => [
                 '<?php
                     $take_string = function(string $s) : string { return $s; };
                     $take_string("string");'
@@ -112,7 +112,7 @@ class ClosureTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'wrong-arg' => [
+            'wrongArg' => [
                 '<?php
                     $bar = ["foo", "bar"];
             
@@ -124,7 +124,7 @@ class ClosureTest extends TestCase
                     );',
                 'error_message' => 'InvalidScalarArgument'
             ],
-            'no-return' => [
+            'noReturn' => [
                 '<?php
                     $bar = ["foo", "bar"];
             
@@ -135,7 +135,7 @@ class ClosureTest extends TestCase
                     );',
                 'error_message' => 'InvalidReturnType'
             ],
-            'undefined-callable-class' => [
+            'undefinedCallableClass' => [
                 '<?php
                     class A {
                         public function getFoo() : Foo
@@ -151,7 +151,7 @@ class ClosureTest extends TestCase
                 'error_message' => 'InvalidFunctionCall',
                 'error_levels' => ['UndefinedClass']
             ],
-            'possibly-null-function-call' => [
+            'possiblyNullFunctionCall' => [
                 '<?php
                     /**
                      * @var Closure|null $foo
@@ -168,13 +168,13 @@ class ClosureTest extends TestCase
                     };',
                 'error_message' => 'PossiblyNullFunctionCall'
             ],
-            'string-function-call' => [
+            'stringFunctionCall' => [
                 '<?php
                     $bad_one = "hello";
                     $a = $bad_one(1);',
                 'error_message' => 'InvalidFunctionCall'
             ],
-            'wrong-param-type' => [
+            'wrongParamType' => [
                 '<?php
                     $take_string = function(string $s) : string { return $s; };
                     $take_string(42);',

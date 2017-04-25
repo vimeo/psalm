@@ -64,7 +64,7 @@ class VariadicTest extends TestCase
                 f(1, 2, 3, 4);
                 f(1, 2, 3, 4, 5);'
             ],
-            'variadic-array' => [
+            'variadicArray' => [
                 '<?php
                     /**
                      * @param array<int, int> $a_list

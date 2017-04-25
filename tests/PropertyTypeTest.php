@@ -47,7 +47,7 @@ class PropertyTypeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'new-var-in-if' => [
+            'newVarInIf' => [
                 '<?php
                     class A {
                         /**
@@ -68,7 +68,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'property-without-type-suppressing-issue' => [
+            'propertyWithoutTypeSuppressingIssue' => [
                 '<?php
                     class A {
                         public $foo;
@@ -81,7 +81,7 @@ class PropertyTypeTest extends TestCase
                     'MixedAssignment'
                 ]
             ],
-            'property-without-type-suppressing-issue-and-asserting-null' => [
+            'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -99,7 +99,7 @@ class PropertyTypeTest extends TestCase
                     'MixedPropertyFetch'
                 ]
             ],
-            'shared-property-in-if' => [
+            'sharedPropertyInIf' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -120,7 +120,7 @@ class PropertyTypeTest extends TestCase
                     ['null|string|int' => '$b']
                 ]
             ],
-            'shared-property-in-else-if' => [
+            'sharedPropertyInElseIf' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -144,7 +144,7 @@ class PropertyTypeTest extends TestCase
                     ['null|string|int' => '$b']
                 ]
             ],
-            'nullable-property-check' => [
+            'nullablePropertyCheck' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -162,7 +162,7 @@ class PropertyTypeTest extends TestCase
                         echo $b->bb->aa;
                     }'
             ],
-            'nullable-property-after-guard' => [
+            'nullablePropertyAfterGuard' => [
                 '<?php
                     class A {
                         /** @var string|null */
@@ -177,7 +177,7 @@ class PropertyTypeTest extends TestCase
             
                     echo substr($a->aa, 1);'
             ],
-            'nullable-static-property-with-if-check' => [
+            'nullableStaticPropertyWithIfCheck' => [
                 '<?php
                     class A {
                         /** @var A|null */
@@ -192,7 +192,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'reflection-properties' => [
+            'reflectionProperties' => [
                 '<?php
                     class Foo {
                     }
@@ -201,7 +201,7 @@ class PropertyTypeTest extends TestCase
             
                     echo $a->name . " - " . $a->class;'
             ],
-            'grandparent-reflected-properties' => [
+            'grandparentReflectedProperties' => [
                 '<?php
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
@@ -209,7 +209,7 @@ class PropertyTypeTest extends TestCase
                     ['DOMDocument' => '$owner']
                 ]
             ],
-            'good-array-properties' => [
+            'goodArrayProperties' => [
                 '<?php
                     interface I1 {}
             
@@ -229,7 +229,7 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment']
             ],
-            'isset-property-does-not-exist' => [
+            'issetPropertyDoesNotExist' => [
                 '<?php
                     class A {
                     }
@@ -240,7 +240,7 @@ class PropertyTypeTest extends TestCase
             
                     }'
             ],
-            'not-set-in-constructor-but-has-default' => [
+            'notSetInConstructorButHasDefault' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -249,7 +249,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct() { }
                     }'
             ],
-            'property-set-in-private-method' => [
+            'propertySetInPrivateMethod' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -264,7 +264,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'defined-in-trait-set-in-constructor' => [
+            'definedInTraitSetInConstructor' => [
                 '<?php
                     trait A {
                         /** @var string **/
@@ -278,7 +278,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'property-set-in-nested-private-method' => [
+            'propertySetInNestedPrivateMethod' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -297,7 +297,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'property-array-isset-assertion' => [
+            'propertyArrayIssetAssertion' => [
                 '<?php
                     function bar(string $s) : void { }
         
@@ -312,7 +312,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'property-array-isset-assertion-with-variable-offset' => [
+            'propertyArrayIssetAssertionWithVariableOffset' => [
                 '<?php
                     function bar(string $s) : void { }
         
@@ -331,7 +331,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'static-property-array-isset-assertion-with-variable-offset' => [
+            'staticPropertyArrayIssetAssertionWithVariableOffset' => [
                 '<?php
                     function bar(string $s) : void { }
         
@@ -359,7 +359,7 @@ class PropertyTypeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'undefined-property-assignment' => [
+            'undefinedPropertyAssignment' => [
                 '<?php
                     class A {
                     }
@@ -367,7 +367,7 @@ class PropertyTypeTest extends TestCase
                     (new A)->foo = "cool";',
                 'error_message' => 'UndefinedPropertyAssignment'
             ],
-            'undefined-property-fetch' => [
+            'undefinedPropertyFetch' => [
                 '<?php
                     class A {
                     }
@@ -375,7 +375,7 @@ class PropertyTypeTest extends TestCase
                     echo (new A)->foo;',
                 'error_message' => 'UndefinedPropertyFetch'
             ],
-            'undefined-this-property-assignment' => [
+            'undefinedThisPropertyAssignment' => [
                 '<?php
                     class A {
                         public function fooFoo() : void {
@@ -384,7 +384,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedThisPropertyAssignment'
             ],
-            'undefined-this-property-fetch' => [
+            'undefinedThisPropertyFetch' => [
                 '<?php
                     class A {
                         public function fooFoo() : void {
@@ -393,7 +393,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedThisPropertyFetch'
             ],
-            'missing-property-declaration' => [
+            'missingPropertyDeclaration' => [
                 '<?php
                     class A {
                     }
@@ -404,7 +404,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'MissingPropertyDeclaration'
             ],
-            'missing-property-type' => [
+            'missingPropertyType' => [
                 '<?php
                     class A {
                         public $foo;
@@ -416,7 +416,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider null|int'
             ],
-            'missing-property-type-with-constructor-init' => [
+            'missingPropertyTypeWithConstructorInit' => [
                 '<?php
                     class A {
                         public $foo;
@@ -428,7 +428,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider int'
             ],
-            'missing-property-type-with-constructor-init-and-null' => [
+            'missingPropertyTypeWithConstructorInitAndNull' => [
                 '<?php
                     class A {
                         public $foo;
@@ -445,7 +445,7 @@ class PropertyTypeTest extends TestCase
                     'declared type - consider null|int'
             ],
             // Skipped. Doesn't yet work.
-            'SKIPPED-missing-property-type-with-constructor-init-in-private-method' => [
+            'SKIPPED-missingPropertyTypeWithConstructorInitInPrivateMethod' => [
                 '<?php
                     class A {
                         public $foo;
@@ -461,7 +461,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider int'
             ],
-            'missing-property-type-with-constructor-init-and-null-default' => [
+            'missingPropertyTypeWithConstructorInitAndNullDefault' => [
                 '<?php
                     class A {
                         public $foo = null;
@@ -473,7 +473,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider int|null'
             ],
-            'bad-assignment' => [
+            'badAssignment' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -486,19 +486,19 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidPropertyAssignment'
             ],
-            'bad-assignment-as-well' => [
+            'badAssignmentAsWell' => [
                 '<?php
                     $a = "hello";
                     $a->foo = "bar";',
                 'error_message' => 'InvalidPropertyAssignment'
             ],
-            'bad-fetch' => [
+            'badFetch' => [
                 '<?php
                     $a = "hello";
                     echo $a->foo;',
                 'error_message' => 'InvalidPropertyFetch'
             ],
-            'mixed-property-fetch' => [
+            'mixedPropertyFetch' => [
                 '<?php
                     class Foo {
                         /** @var string */
@@ -515,7 +515,7 @@ class PropertyTypeTest extends TestCase
                     'MixedAssignment'
                 ]
             ],
-            'mixed-property-assignment' => [
+            'mixedPropertyAssignment' => [
                 '<?php
                     class Foo {
                         /** @var string */
@@ -532,7 +532,7 @@ class PropertyTypeTest extends TestCase
                     'MixedAssignment'
                 ]
             ],
-            'possibly-nullable-property-assignment' => [
+            'possiblyNullablePropertyAssignment' => [
                 '<?php
                     class Foo {
                         /** @var string */
@@ -544,14 +544,14 @@ class PropertyTypeTest extends TestCase
                     $a->foo = "hello";',
                 'error_message' => 'PossiblyNullPropertyAssignment'
             ],
-            'nullable-property-assignment' => [
+            'nullablePropertyAssignment' => [
                 '<?php
                     $a = null;
             
                     $a->foo = "hello";',
                 'error_message' => 'NullPropertyAssignment'
             ],
-            'possibly-nullable-property-fetch' => [
+            'possiblyNullablePropertyFetch' => [
                 '<?php
                     class Foo {
                         /** @var string */
@@ -563,14 +563,14 @@ class PropertyTypeTest extends TestCase
                     echo $a->foo;',
                 'error_message' => 'PossiblyNullPropertyFetch'
             ],
-            'nullable-property-fetch' => [
+            'nullablePropertyFetch' => [
                 '<?php
                     $a = null;
             
                     echo $a->foo;',
                 'error_message' => 'NullPropertyFetch'
             ],
-            'bad-array-property' => [
+            'badArrayProperty' => [
                 '<?php
                     class A {}
             
@@ -586,7 +586,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignment',
                 'error_levels' => ['MixedAssignment']
             ],
-            'not-set-in-empty-constructor' => [
+            'notSetInEmptyConstructor' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -596,7 +596,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
-            'no-constructor' => [
+            'noConstructor' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -604,7 +604,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'MissingConstructor'
             ],
-            'not-set-in-all-branches-of-if' => [
+            'notSetInAllBranchesOfIf' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -618,7 +618,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
-            'property-set-in-protected-method' => [
+            'propertySetInProtectedMethod' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -634,7 +634,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
-            'defined-in-trait-not-set-in-empty-constructor' => [
+            'definedInTraitNotSetInEmptyConstructor' => [
                 '<?php
                     trait A {
                         /** @var string **/
@@ -648,7 +648,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
-            'property-set-in-private-method-with-if' => [
+            'propertySetInPrivateMethodWithIf' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -666,7 +666,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
-            'property-set-in-private-method-with-if-and-else' => [
+            'propertySetInPrivateMethodWithIfAndElse' => [
                 '<?php
                     class A {
                         /** @var int */
@@ -690,7 +690,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
-            'undefined-property-class' => [
+            'undefinedPropertyClass' => [
                 '<?php
                     class A {
                         /** @var B */

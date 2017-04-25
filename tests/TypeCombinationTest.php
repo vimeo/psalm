@@ -31,7 +31,7 @@ class TypeCombinationTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'multiple-valued-array' => [
+            'multipleValuedArray' => [
                 '<?php
                     class A {}
                     class B {}
@@ -48,104 +48,104 @@ class TypeCombinationTest extends TestCase
     public function providerTestValidTypeCombination()
     {
         return [
-            'int-or-string' => [
+            'intOrString' => [
                 'int|string',
                 [
                     'int',
                     'string'
                 ]
             ],
-            'array-of-int-or-string' => [
+            'arrayOfIntOrString' => [
                 'array<mixed, int|string>',
                 [
                     'array<int>',
                     'array<string>'
                 ]
             ],
-            'array-of-int-or-also-string' => [
+            'arrayOfIntOrAlsoString' => [
                 'array<mixed, int>|string',
                 [
                     'array<int>',
                     'string'
                 ]
             ],
-            'empty-arrays' => [
+            'emptyArrays' => [
                 'array<empty, empty>',
                 [
                     'array<empty,empty>',
                     'array<empty,empty>'
                 ]
             ],
-            'array-string-or-empty-array' => [
+            'arrayStringOrEmptyArray' => [
                 'array<mixed, string>',
                 [
                     'array<empty>',
                     'array<string>'
                 ]
             ],
-            'array-mixed-or-string' => [
+            'arrayMixedOrString' => [
                 'array<mixed, mixed>',
                 [
                     'array<mixed>',
                     'array<string>'
                 ]
             ],
-            'array-mixed-or-string-keys' => [
+            'arrayMixedOrStringKeys' => [
                 'array<mixed, string>',
                 [
                     'array<int|string,string>',
                     'array<mixed,string>'
                 ]
             ],
-            'array-mixed-or-empty' => [
+            'arrayMixedOrEmpty' => [
                 'array<mixed, mixed>',
                 [
                     'array<empty>',
                     'array<mixed>'
                 ]
             ],
-            'array-big-combination' => [
+            'arrayBigCombination' => [
                 'array<mixed, int|float|string>',
                 [
                     'array<int|float>',
                     'array<string>'
                 ]
             ],
-            'false-destruction' => [
+            'falseDestruction' => [
                 'bool',
                 [
                     'false',
                     'bool'
                 ]
             ],
-            'only-false' => [
+            'onlyFalse' => [
                 'bool',
                 [
                     'false'
                 ]
             ],
-            'false-false-destruction' => [
+            'falseFalseDestruction' => [
                 'bool',
                 [
                     'false',
                     'false'
                 ]
             ],
-            'a-and-a-of-b' => [
+            'aAndAOfB' => [
                 'A<mixed>',
                 [
                     'A',
                     'A<B>'
                 ]
             ],
-            'combine-object-type-1' => [
+            'combineObjectType1' => [
                 'array{a:int, b:string}',
                 [
                     'array{a:int}',
                     'array{b:string}'
                 ]
             ],
-            'combine-object-type-2' => [
+            'combineObjectType2' => [
                 'array{a:int|string, b:string}',
                 [
                     'array{a:int}',

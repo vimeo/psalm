@@ -12,7 +12,7 @@ class LoopScopeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'switch-variable-with-continue' => [
+            'switchVariableWithContinue' => [
                 '<?php
                     foreach ([\'a\', \'b\', \'c\'] as $letter) {
                         switch ($letter) {
@@ -29,7 +29,7 @@ class LoopScopeTest extends TestCase
                         $moo = $foo;
                     }'
             ],
-            'switch-variable-with-continue-and-ifs' => [
+            'switchVariableWithContinueAndIfs' => [
                 '<?php
                     foreach ([\'a\', \'b\', \'c\'] as $letter) {
                         switch ($letter) {
@@ -52,7 +52,7 @@ class LoopScopeTest extends TestCase
                         $moo = $foo;
                     }'
             ],
-            'switch-variable-with-fallthrough' => [
+            'switchVariableWithFallthrough' => [
                 '<?php
                     foreach ([\'a\', \'b\', \'c\'] as $letter) {
                         switch ($letter) {
@@ -69,7 +69,7 @@ class LoopScopeTest extends TestCase
                         $moo = $foo;
                     }'
             ],
-            'switch-variable-with-fallthrough-statement' => [
+            'switchVariableWithFallthroughStatement' => [
                 '<?php
                     foreach ([\'a\', \'b\', \'c\'] as $letter) {
                         switch ($letter) {
@@ -88,7 +88,7 @@ class LoopScopeTest extends TestCase
                         $moo = $foo;
                     }'
             ],
-            'while-var' => [
+            'whileVar' => [
                 '<?php
                     $worked = false;
             
@@ -99,7 +99,7 @@ class LoopScopeTest extends TestCase
                     ['bool' => '$worked']
                 ]
             ],
-            'do-while-var' => [
+            'doWhileVar' => [
                 '<?php
                     $worked = false;
             
@@ -111,7 +111,7 @@ class LoopScopeTest extends TestCase
                     ['bool' => '$worked']
                 ]
             ],
-            'do-while-var-and-break' => [
+            'doWhileVarAndBreak' => [
                 '<?php
                     /** @return void */
                     function foo(string $b) {}
@@ -125,7 +125,7 @@ class LoopScopeTest extends TestCase
                     }
                     while (rand(0,100) === 10);'
             ],
-            'object-value' => [
+            'objectValue' => [
                 '<?php
                     class B {}
                     class A {
@@ -150,7 +150,7 @@ class LoopScopeTest extends TestCase
                     ['B' => '$a']
                 ]
             ],
-            'second-loop-with-not-null-check' => [
+            'secondLoopWithNotNullCheck' => [
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
@@ -162,7 +162,7 @@ class LoopScopeTest extends TestCase
                         $a = $i;
                     }'
             ],
-            'second-loop-with-int-check' => [
+            'secondLoopWithIntCheck' => [
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
@@ -174,7 +174,7 @@ class LoopScopeTest extends TestCase
                         $a = $i;
                     }'
             ],
-            'second-loop-with-int-check-and-conditional-set' => [
+            'secondLoopWithIntCheckAndConditionalSet' => [
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
@@ -189,7 +189,7 @@ class LoopScopeTest extends TestCase
                         }
                     }'
             ],
-            'second-loop-with-int-check-and-assignments-in-if-and-else' => [
+            'secondLoopWithIntCheckAndAssignmentsInIfAndElse' => [
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
@@ -204,7 +204,7 @@ class LoopScopeTest extends TestCase
                         }
                     }'
             ],
-            'second-loop-with-int-check-and-loop-set' => [
+            'secondLoopWithIntCheckAndLoopSet' => [
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
@@ -219,7 +219,7 @@ class LoopScopeTest extends TestCase
                         }
                     }'
             ],
-            'second-loop-with-return-in-elseif' => [
+            'secondLoopWithReturnInElseif' => [
                 '<?php
                     class A {}
                     class B extends A {}
@@ -241,7 +241,7 @@ class LoopScopeTest extends TestCase
                         $b = $a;
                     }'
             ],
-            'third-loop-with-int-check-and-loop-set' => [
+            'thirdLoopWithIntCheckAndLoopSet' => [
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
@@ -262,7 +262,7 @@ class LoopScopeTest extends TestCase
                         $a = $i;
                     }'
             ],
-            'implicit-fourth-loop' => [
+            'implicitFourthLoop' => [
                 '<?php
                     function test(): int {
                       $x = 0;
@@ -276,7 +276,7 @@ class LoopScopeTest extends TestCase
                       return $x;
                     }'
             ],
-            'unset-in-loop' => [
+            'unsetInLoop' => [
                 '<?php
                     $a = null;
             
@@ -285,7 +285,7 @@ class LoopScopeTest extends TestCase
                         unset($i);
                     }'
             ],
-            'assign-inside-foreach' => [
+            'assignInsideForeach' => [
                 '<?php
                     $b = false;
             
@@ -298,7 +298,7 @@ class LoopScopeTest extends TestCase
                     ['bool' => '$b']
                 ]
             ],
-            'assign-inside-foreach-with-break' => [
+            'assignInsideForeachWithBreak' => [
                 '<?php
                     $b = false;
             
@@ -312,7 +312,7 @@ class LoopScopeTest extends TestCase
                     ['bool' => '$b']
                 ]
             ],
-            'null-check-inside-foreach-with-continue' => [
+            'nullCheckInsideForeachWithContinue' => [
                 '<?php
                     class A {
                         /** @return array<A|null> */
@@ -344,7 +344,7 @@ class LoopScopeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'possibly-undefined-array-in-foreach' => [
+            'possiblyUndefinedArrayInForeach' => [
                 '<?php
                     foreach ([1, 2, 3, 4] as $b) {
                         $array[] = "hello";
@@ -354,7 +354,7 @@ class LoopScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable ' .
                     '$array, first seen on line 3'
             ],
-            'possibly-undefined-array-in-while-and-foreach' => [
+            'possiblyUndefinedArrayInWhileAndForeach' => [
                 '<?php
                     for ($i = 0; $i < 4; $i++) {
                         while (rand(0,10) === 5) {
@@ -366,7 +366,7 @@ class LoopScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable ' .
                     '$array, first seen on line 4'
             ],
-            'possibly-undefined-variable-in-foreach' => [
+            'possiblyUndefinedVariableInForeach' => [
                 '<?php
                     foreach ([1, 2, 3, 4] as $b) {
                         $car = "Volvo";
@@ -376,7 +376,7 @@ class LoopScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable ' .
                     '$car, first seen on line 3'
             ],
-            'possible-undefined-variable-in-foreach-and-if' => [
+            'possibleUndefinedVariableInForeachAndIf' => [
                 '<?php
                     foreach ([1,2,3,4] as $i) {
                         if ($i === 1) {
@@ -389,7 +389,7 @@ class LoopScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, ' .
                     'first seen on line 4'
             ],
-            'implicit-fourth-loop-with-bad-return-type' => [
+            'implicitFourthLoopWithBadReturnType' => [
                 '<?php
                     function test(): int {
                       $x = 0;
@@ -404,7 +404,7 @@ class LoopScopeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'possibly-null-check-inside-foreach-with-no-leave-statement' => [
+            'possiblyNullCheckInsideForeachWithNoLeaveStatement' => [
                 '<?php
                     class A {
                         /** @return array<A|null> */

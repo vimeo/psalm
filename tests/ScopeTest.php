@@ -12,7 +12,7 @@ class ScopeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'new-var-in-if' => [
+            'newVarInIf' => [
                 '<?php
                     if (rand(0,100) === 10) {
                         $badge = "hello";
@@ -23,7 +23,7 @@ class ScopeTest extends TestCase
             
                     echo $badge;'
             ],
-            'new-var-in-if-with-else-return' => [
+            'newVarInIfWithElseReturn' => [
                 '<?php
                     if (rand(0,100) === 10) {
                         $badge = "hello";
@@ -34,7 +34,7 @@ class ScopeTest extends TestCase
             
                     echo $badge;'
             ],
-            'try-catch-var' => [
+            'tryCatchVar' => [
                 '<?php
                     try {
                         $worked = true;
@@ -46,13 +46,13 @@ class ScopeTest extends TestCase
                     ['bool' => '$worked']
                 ]
             ],
-            'assignment-in-if' => [
+            'assignmentInIf' => [
                 '<?php
                     if ($row = (rand(0, 10) ? [5] : null)) {
                         echo $row[0];
                     }'
             ],
-            'negated-assignment-in-if' => [
+            'negatedAssignmentInIf' => [
                 '<?php
                     if (!($row = (rand(0, 10) ? [5] : null))) {
                         // do nothing
@@ -61,7 +61,7 @@ class ScopeTest extends TestCase
                         echo $row[0];
                     }'
             ],
-            'assign-in-else-if' => [
+            'assignInElseIf' => [
                 '<?php
                     if (rand(0, 10) > 5) {
                         echo "hello";
@@ -69,25 +69,25 @@ class ScopeTest extends TestCase
                         echo $row[0];
                     }'
             ],
-            'if-not-equals-false' => [
+            'ifNotEqualsFalse' => [
                 '<?php
                     if (($row = rand(0,10) ? [1] : false) !== false) {
                        echo $row[0];
                     }'
             ],
-            'if-not-equals-null' => [
+            'ifNotEqualsNull' => [
                 '<?php
                     if (($row = rand(0,10) ? [1] : null) !== null) {
                        echo $row[0];
                     }'
             ],
-            'if-null-not-equals' => [
+            'ifNullNotEquals' => [
                 '<?php
                     if (null !== ($row = rand(0,10) ? [1] : null)) {
                        echo $row[0];
                     }'
             ],
-            'if-null-equals' => [
+            'ifNullEquals' => [
                 '<?php
                     if (null === ($row = rand(0,10) ? [1] : null)) {
             
@@ -95,40 +95,40 @@ class ScopeTest extends TestCase
                         echo $row[0];
                     }'
             ],
-            'passed-by-ref-in-if' => [
+            'passedByRefInIf' => [
                 '<?php
                     if (preg_match("/bad/", "badger", $matches)) {
                         echo (string)$matches[0];
                     }'
             ],
-            'pass-by-ref-in-if-check-after' => [
+            'passByRefInIfCheckAfter' => [
                 '<?php
                     if (!preg_match("/bad/", "badger", $matches)) {
                         exit();
                     }
                     echo (string)$matches[0];'
             ],
-            'pass-by-ref-in-if-with-boolean' => [
+            'passByRefInIfWithBoolean' => [
                 '<?php
                     $a = true;
                     if ($a && preg_match("/bad/", "badger", $matches)) {
                         echo (string)$matches[0];
                     }'
             ],
-            'pass-by-ref-in-var-with-boolean' => [
+            'passByRefInVarWithBoolean' => [
                 '<?php
                     $a = preg_match("/bad/", "badger", $matches) > 0;
                     if ($a) {
                         echo (string)$matches[1];
                     }'
             ],
-            'function-exists' => [
+            'functionExists' => [
                 '<?php
                     if (true && function_exists("flabble")) {
                         flabble();
                     }'
             ],
-            'nested-property-fetch-in-elseif' => [
+            'nestedPropertyFetchInElseif' => [
                 '<?php
                     class A {
                         /** @var A|null */
@@ -148,7 +148,7 @@ class ScopeTest extends TestCase
                         echo $a;
                     }'
             ],
-            'global-return' => [
+            'globalReturn' => [
                 '<?php
                     $foo = "foo";
             
@@ -158,7 +158,7 @@ class ScopeTest extends TestCase
                         return $foo;
                     }'
             ],
-            'negate-assertion-and-other' => [
+            'negateAssertionAndOther' => [
                 '<?php
                     $a = rand(0, 10) ? "hello" : null;
             
@@ -169,7 +169,7 @@ class ScopeTest extends TestCase
                     ['string|null' => '$a']
                 ]
             ],
-            'repeat-assertion-with-other' => [
+            'repeatAssertionWithOther' => [
                 '<?php
                     $a = rand(0, 10) ? "hello" : null;
             
@@ -182,7 +182,7 @@ class ScopeTest extends TestCase
                     ['string|null' => '$a']
                 ]
             ],
-            'refine-ored-type' => [
+            'refineOredType' => [
                 '<?php
                     class A {
                         public function doThing() : void
@@ -197,7 +197,7 @@ class ScopeTest extends TestCase
                     class B extends A {}
                     class C extends A {}'
             ],
-            'instance-of-subtraction' => [
+            'instanceOfSubtraction' => [
                 '<?php
                     class Foo {}
                     class FooBar extends Foo{}
@@ -212,7 +212,7 @@ class ScopeTest extends TestCase
             
                     }'
             ],
-            'static-null-ref' => [
+            'staticNullRef' => [
                 '<?php
                     /** @return void */
                     function foo() {
@@ -234,7 +234,7 @@ class ScopeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'possibly-undefined-var-in-if' => [
+            'possiblyUndefinedVarInIf' => [
                 '<?php
                     if (rand(0,100) === 10) {
                         $b = "s";
@@ -244,7 +244,7 @@ class ScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, ' .
                     'first seen on line 3'
             ],
-            'possibly-undefined-array-in-if' => [
+            'possiblyUndefinedArrayInIf' => [
                 '<?php
                     if (rand(0,100) === 10) {
                         $array[] = "hello";
@@ -254,14 +254,14 @@ class ScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable ' .
                     '$array, first seen on line 3'
             ],
-            'invalid-global' => [
+            'invalidGlobal' => [
                 '<?php
                     $a = "heli";
             
                     global $a;',
                 'error_message' => 'InvalidGlobal'
             ],
-            'this-in-static' => [
+            'thisInStatic' => [
                 '<?php
                     class A {
                         public static function fooFoo() {

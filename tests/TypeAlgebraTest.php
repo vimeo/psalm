@@ -12,7 +12,7 @@ class TypeAlgebraTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'two-var-logic' => [
+            'twoVarLogic' => [
                 '<?php
                     function takesString(string $s) : void {}
             
@@ -28,7 +28,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
-            'three-var-logic' => [
+            'threeVarLogic' => [
                 '<?php
                     function takesString(string $s) : void {}
             
@@ -46,7 +46,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
-            'two-var-logic-not-nested' => [
+            'twoVarLogicNotNested' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if (!$a && !$b) return "bad";
@@ -54,7 +54,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'two-var-logic-not-nested-with-all-paths-returning' => [
+            'twoVarLogicNotNestedWithAllPathsReturning' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if (!$a && !$b) {
@@ -68,7 +68,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
-            'two-var-logic-not-nested-with-assignment-before-return' => [
+            'twoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if (!$a && !$b) {
@@ -84,7 +84,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'inverted-two-var-logic-not-nested' => [
+            'invertedTwoVarLogicNotNested' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a || $b) {
@@ -97,7 +97,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'inverted-two-var-logic-not-nested-with-assignment-before-return' => [
+            'invertedTwoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a || $b) {
@@ -111,7 +111,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'two-var-logic-not-nested-with-elseif' => [
+            'twoVarLogicNotNestedWithElseif' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a) {
@@ -126,7 +126,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'three-var-logic-not-nested' => [
+            'threeVarLogicNotNested' => [
                 '<?php
                     function foo(?string $a, ?string $b, ?string $c) : string {
                         if ($a) {
@@ -144,7 +144,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'three-var-logic-not-nested-and-or' => [
+            'threeVarLogicNotNestedAndOr' => [
                 '<?php
                     function foo(?string $a, ?string $b, ?string $c) : string {
                         if ($a) {
@@ -160,7 +160,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'two-var-logic-not-nested-with-elseif-correctly-negated-in-else-if' => [
+            'twoVarLogicNotNestedWithElseifCorrectlyNegatedInElseIf' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a) {
@@ -175,7 +175,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'nested-reassignment' => [
+            'nestedReassignment' => [
                 '<?php
                     function foo(?string $a) : void {
                         if ($a === null) {
@@ -189,7 +189,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
-            'two-var-logic-not-nested-with-elseif-correctly-reinforced-in-if' => [
+            'twoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf' => [
                 '<?php
                     class A {}
                     class B extends A {}
@@ -207,7 +207,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }'
             ],
-            'different-value-checks' => [
+            'differentValueChecks' => [
                 '<?php
                     function foo(string $a) : void {
                         if ($a === "foo") {
@@ -217,7 +217,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
-            'repeated-set' => [
+            'repeatedSet' => [
                 '<?php
                     function foo() : void {
                         if ($a = rand(0, 1) ? "" : null) {
@@ -233,7 +233,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
-            'repeated-set-inside-while' => [
+            'repeatedSetInsideWhile' => [
                 '<?php
                     function foo() : void {
                         if ($a = rand(0, 1) ? "" : null) {
@@ -249,7 +249,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
-            'by-ref-assignment' => [
+            'byRefAssignment' => [
                 '<?php
                     function foo() : void {
                         preg_match("/hello/", "hello molly", $matches);
@@ -274,7 +274,7 @@ class TypeAlgebraTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'three-var-logic-with-change' => [
+            'threeVarLogicWithChange' => [
                 '<?php
                     function takesString(string $s) : void {}
             
@@ -295,7 +295,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'NullArgument'
             ],
-            'three-var-logic-with-exception' => [
+            'threeVarLogicWithException' => [
                 '<?php
                     function takesString(string $s) : void {}
             
@@ -318,7 +318,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'NullArgument'
             ],
-            'inverted-two-var-logic-not-nested-with-var-change' => [
+            'invertedTwoVarLogicNotNestedWithVarChange' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a || $b) {
@@ -332,7 +332,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'inverted-two-var-logic-not-nested-with-elseif' => [
+            'invertedTwoVarLogicNotNestedWithElseif' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if (rand(0, 1)) {
@@ -348,7 +348,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'three-var-logic-with-elseif-and-and' => [
+            'threeVarLogicWithElseifAndAnd' => [
                 '<?php
                     function foo(?string $a, ?string $b, ?string $c) : string {
                         if ($a) {
@@ -365,7 +365,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'two-var-logic-not-nested-with-elseif-negated-in-if' => [
+            'twoVarLogicNotNestedWithElseifNegatedInIf' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a) {
@@ -381,7 +381,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'two-var-logic-not-nested-with-elseif-incorrectly-reinforced-in-if' => [
+            'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a) {
@@ -397,7 +397,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'repeated-if-statements' => [
+            'repeatedIfStatements' => [
                 '<?php
                     /** @return string|null */
                     function foo(?string $a) {
@@ -411,7 +411,7 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'ParadoxicalCondition'
             ],
-            'repeated-conditionals' => [
+            'repeatedConditionals' => [
                 '<?php
                     function foo(?string $a) : void {
                         if ($a) {

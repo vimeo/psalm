@@ -104,7 +104,7 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable'
             ],
-            'if-in-function' => [
+            'ifInFunction' => [
                 '<?php
                     /** @return int */
                     function foo() {
@@ -127,12 +127,12 @@ class UnusedCodeTest extends TestCase
     public function providerTestUnusedCodeWithClassReferences()
     {
         return [
-            'unused-class' => [
+            'unusedClass' => [
                 '<?php
                     class A { }',
                 'error_message' => 'UnusedClass'
             ],
-            'public-unused-method' => [
+            'publicUnusedMethod' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -142,7 +142,7 @@ class UnusedCodeTest extends TestCase
                     new A();',
                 'error_message' => 'PossiblyUnusedMethod'
             ],
-            'private-unused-method' => [
+            'privateUnusedMethod' => [
                 '<?php
                     class A {
                         /** @return void */

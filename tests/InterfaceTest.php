@@ -33,7 +33,7 @@ class InterfaceTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'extends-and-implements' => [
+            'extendsAndImplements' => [
                 '<?php
                     interface A
                     {
@@ -84,7 +84,7 @@ class InterfaceTest extends TestCase
                     ['string' => '$dee']
                 ]
             ],
-            'is-extended-interface' => [
+            'isExtendedInterface' => [
                 '<?php
                     interface A
                     {
@@ -124,7 +124,7 @@ class InterfaceTest extends TestCase
             
                     qux(new C());'
             ],
-            'extends-with-method' => [
+            'extendsWithMethod' => [
                 '<?php
                     interface A
                     {
@@ -144,7 +144,7 @@ class InterfaceTest extends TestCase
                         $b->fooFoo();
                     }'
             ],
-            'correct-interface-method-signature' => [
+            'correctInterfaceMethodSignature' => [
                 '<?php
                     interface A {
                         public function fooFoo(int $a) : void;
@@ -156,7 +156,7 @@ class InterfaceTest extends TestCase
                         }
                     }'
             ],
-            'interface-method-implemented-in-parent' => [
+            'interfaceMethodImplementedInParent' => [
                 '<?php
                     interface MyInterface {
                         public function fooFoo(int $a) : void;
@@ -170,7 +170,7 @@ class InterfaceTest extends TestCase
             
                     class C extends B implements MyInterface { }'
             ],
-            'interface-method-signature-in-trait' => [
+            'interfaceMethodSignatureInTrait' => [
                 '<?php
                     interface A {
                         public function fooFoo(int $a, int $b) : void;
@@ -185,7 +185,7 @@ class InterfaceTest extends TestCase
                         use T;
                     }'
             ],
-            'delayed-interface' => [
+            'delayedInterface' => [
                 '<?php
                     // fails in PHP, whatcha gonna do
                     $c = new C;
@@ -196,7 +196,7 @@ class InterfaceTest extends TestCase
             
                     class C extends A implements B { }'
             ],
-            'type-does-not-contain-type' => [
+            'typeDoesNotContainType' => [
                 '<?php
                     interface A { }
                     interface B {
@@ -208,7 +208,7 @@ class InterfaceTest extends TestCase
                         }
                     }'
             ],
-            'abstract-interface-implements' => [
+            'abstractInterfaceImplements' => [
                 '<?php
                     interface I {
                         public function fnc();
@@ -216,7 +216,7 @@ class InterfaceTest extends TestCase
             
                     abstract class A implements I {}'
             ],
-            'abstract-interface-implements-but-call-method' => [
+            'abstractInterfaceImplementsButCallMethod' => [
                 '<?php
                     interface I {
                         public function foo();
@@ -228,7 +228,7 @@ class InterfaceTest extends TestCase
                         }
                     }'
             ],
-            'implements-partial-interface-methods' => [
+            'implementsPartialInterfaceMethods' => [
                 '<?php
                     namespace Bat;
             
@@ -249,7 +249,7 @@ class InterfaceTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MissingReturnType']
             ],
-            'interface-constants' => [
+            'interfaceConstants' => [
                 '<?php
                     interface I1 {
                         const A = 5;
@@ -279,7 +279,7 @@ class InterfaceTest extends TestCase
                         public $bar3 = self::E;
                     }'
             ],
-            'interface-extends-return-type' => [
+            'interfaceExtendsReturnType' => [
                 '<?php
                     interface A {}
                     interface B extends A {}
@@ -297,7 +297,7 @@ class InterfaceTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'no-interface-properties' => [
+            'noInterfaceProperties' => [
                 '<?php
                     interface A { }
             
@@ -308,7 +308,7 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'NoInterfaceProperties'
             ],
-            'unimplemented-interface-method' => [
+            'unimplementedInterfaceMethod' => [
                 '<?php
                     interface A {
                         public function fooFoo();
@@ -317,7 +317,7 @@ class InterfaceTest extends TestCase
                     class B implements A { }',
                 'error_message' => 'UnimplementedInterfaceMethod'
             ],
-            'mismatching-interface-method-signature' => [
+            'mismatchingInterfaceMethodSignature' => [
                 '<?php
                     interface A {
                         public function fooFoo(int $a) : void;
@@ -330,7 +330,7 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch'
             ],
-            'mismatching-interface-method-signature-in-trait' => [
+            'mismatchingInterfaceMethodSignatureInTrait' => [
                 '<?php
                     interface A {
                         public function fooFoo(int $a, int $b) : void;
@@ -346,7 +346,7 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch'
             ],
-            'mismatching-interface-method-signature-in-implementer' => [
+            'mismatchingInterfaceMethodSignatureInImplementer' => [
                 '<?php
                     interface A {
                         public function fooFoo(int $a, int $b) : void;
@@ -365,7 +365,7 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch'
             ],
-            'abstract-interface-implements-but-call-undefined-method' => [
+            'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 '<?php
                     interface I {
                         public function foo();
@@ -378,7 +378,7 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod'
             ],
-            'abstract-interface-implements-with-subclass' => [
+            'abstractInterfaceImplementsWithSubclass' => [
                 '<?php
                     interface I {
                         public function fnc();
@@ -389,7 +389,7 @@ class InterfaceTest extends TestCase
                     class B extends A {}',
                 'error_message' => 'UnimplementedInterfaceMethod'
             ],
-            'more-specific-return-type' => [
+            'moreSpecificReturnType' => [
                 '<?php
                     interface A {}
                     interface B extends A {}

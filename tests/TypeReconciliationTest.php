@@ -177,38 +177,37 @@ class TypeReconciliationTest extends TestCase
     public function providerTestReconcilation()
     {
         return [
-            'not-null.MyObject' => ['MyObject', '!null', 'MyObject'],
-            'not-null.MyObject|null' => ['MyObject', '!null', 'MyObject|null'],
-            'not-null.MyObject|false' => ['MyObject|false', '!null', 'MyObject|false'],
-            'not-null.mixed' => ['mixed', '!null', 'mixed'],
+            'notNullWithObject' => ['MyObject', '!null', 'MyObject'],
+            'notNullWithObjectPipeNull' => ['MyObject', '!null', 'MyObject|null'],
+            'notNullWithMyObjectPipeFalse' => ['MyObject|false', '!null', 'MyObject|false'],
+            'notNullWithMixed' => ['mixed', '!null', 'mixed'],
 
-            'not-empty.MyObject' => ['MyObject', '!empty', 'MyObject'],
-            'not-empty.MyObject|null' => ['MyObject', '!empty', 'MyObject|null'],
-            'not-empty.MyObject|false' => ['MyObject', '!empty', 'MyObject|false'],
-            'not-empty.mixed' => ['mixed', '!empty', 'mixed'],
+            'notEmptyWithMyObject' => ['MyObject', '!empty', 'MyObject'],
+            'notEmptyWithMyObjectPipeNull' => ['MyObject', '!empty', 'MyObject|null'],
+            'notEmptyWithMyObjectPipeFalse' => ['MyObject', '!empty', 'MyObject|false'],
+            'notEmptyWithMixed' => ['mixed', '!empty', 'mixed'],
             // @todo in the future this should also work
-            //'not-empty.MyObject|true' => ['MyObject|true', '!empty', 'MyObject|bool'],
+            //'notEmptyWithMyObjectFalseTrue' => ['MyObject|true', '!empty', 'MyObject|bool'],
 
-            'not-empty.MyObject|null' => ['null', 'null', 'MyObject|null'],
-            'not-empty.MyObject|null' => ['null', 'null', 'mixed'],
+            'notEmptyWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
+            'notEmptyWithMixed' => ['null', 'null', 'mixed'],
 
-            'empty.MyObject' => ['null', 'empty', 'MyObject'],
-            'empty.MyObject|false' => ['false', 'empty', 'MyObject|false'],
-            'empty.MyObject|false' => ['false', 'empty', 'MyObject|false'],
-            'empty.MyObject|bool' => ['false', 'empty', 'MyObject|bool'],
-            'empty.mixed' => ['mixed', 'empty', 'mixed'],
-            'empty.bool' => ['false', 'empty', 'bool'],
+            'emptyWithMyObject' => ['null', 'empty', 'MyObject'],
+            'emptyWithMyObjectPipeFalse' => ['false', 'empty', 'MyObject|false'],
+            'emptyWithMyObjectPipeBool' => ['false', 'empty', 'MyObject|bool'],
+            'emptyWithMixed' => ['mixed', 'empty', 'mixed'],
+            'emptyWithBool' => ['false', 'empty', 'bool'],
 
-            'not-my-object.MyObject|bool' => ['bool', '!MyObject', 'MyObject|bool'],
-            'not-my-object.MyObject|null' => ['null', '!MyObject', 'MyObject|null'],
-            'not-my-object.MyObjectA|MyObjectB' => ['MyObjectB', '!MyObjectA', 'MyObjectA|MyObjectB'],
+            'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],
+            'notMyObjectWithMyObjectPipeNull' => ['null', '!MyObject', 'MyObject|null'],
+            'notMyObjectWithMyObjectAPipeMyObjectB' => ['MyObjectB', '!MyObjectA', 'MyObjectA|MyObjectB'],
 
-            'my-object.MyObject|bool' => ['MyObject', 'MyObject', 'MyObject|bool'],
-            'my-object.MyObjectA|MyObjectB' => ['MyObjectA', 'MyObjectA', 'MyObjectA|MyObjectB'],
+            'myObjectWithMyObjectPipeBool' => ['MyObject', 'MyObject', 'MyObject|bool'],
+            'myObjectWithMyObjectAPipeMyObjectB' => ['MyObjectA', 'MyObjectA', 'MyObjectA|MyObjectB'],
 
             'array' => ['array<mixed, mixed>', 'array', 'array|null'],
 
-            '2d-array' => ['array<mixed, array<mixed, string>>', 'array', 'array<array<string>>|null'],
+            '2dArray' => ['array<mixed, array<mixed, string>>', 'array', 'array<array<string>>|null'],
 
             'numeric' => ['string', 'numeric', 'string']
         ];
@@ -220,11 +219,11 @@ class TypeReconciliationTest extends TestCase
     public function providerTestTypeIsContainedBy()
     {
         return [
-            'array-contains.array<string>' => ['array<string>', 'array'],
-            'array-contains.array<Exception>' => ['array<Exception>', 'array'],
+            'arrayContainsWithArrayOfStrings' => ['array<string>', 'array'],
+            'arrayContainsWithArrayOfExceptions' => ['array<Exception>', 'array'],
 
-            'union-contains.string' => ['string', 'string|false'],
-            'union-contains.false' => ['false', 'string|false']
+            'unionContainsWithstring' => ['string', 'string|false'],
+            'unionContainsWithFalse' => ['false', 'string|false']
         ];
     }
 
@@ -234,7 +233,7 @@ class TypeReconciliationTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'int-is-mixed' => [
+            'intIsMixed' => [
                 '<?php
                     function foo($a) : void {
                         $b = 5;
@@ -242,7 +241,7 @@ class TypeReconciliationTest extends TestCase
                         if ($b === $a) { }
                     }'
             ],
-            'type-resolution-from-docblock' => [
+            'typeResolutionFromDocblock' => [
                 '<?php
                     class A { }
             
@@ -255,7 +254,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }'
             ],
-            'array-type-resolution-from-docblock' => [
+            'arrayTypeResolutionFromDocblock' => [
                 '<?php
                     /**
                      * @param string[] $strs
@@ -267,7 +266,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }'
             ],
-            'type-resolution-from-docblock-inside' => [
+            'typeResolutionFromDocblockInside' => [
                 '<?php
                     /**
                      * @param int $length
@@ -280,7 +279,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }'
             ],
-            'not-instanceof' => [
+            'notInstanceof' => [
                 '<?php
                     class A { }
             
@@ -302,7 +301,7 @@ class TypeReconciliationTest extends TestCase
                     '$a' => Type::parseString('A')
                 ]
             ],
-            'not-instance-of-property' => [
+            'notInstanceOfProperty' => [
                 '<?php
                     class B { }
             
@@ -335,7 +334,7 @@ class TypeReconciliationTest extends TestCase
                     '$a' => Type::parseString('A')
                 ]
             ],
-            'not-instance-of-property-elseif' => [
+            'notInstanceOfPropertyElseif' => [
                 '<?php
                     class B { }
             
@@ -365,7 +364,7 @@ class TypeReconciliationTest extends TestCase
                     '$a' => Type::parseString('A')
                 ]
             ],
-            'type-arguments' => [
+            'typeArguments' => [
                 '<?php
                     $a = min(0, 1);
                     $b = min([0, 1]);
@@ -382,7 +381,7 @@ class TypeReconciliationTest extends TestCase
                     ['string' => '$seconds']
                 ]
             ],
-            'type-refinement-with-is-numeric' => [
+            'typeRefinementWithIsNumeric' => [
                 '<?php
                     /** @return void */
                     function fooFoo(string $a) {
@@ -392,7 +391,7 @@ class TypeReconciliationTest extends TestCase
                     $b = rand(0, 1) ? 5 : false;
                     if (is_numeric($b)) { }'
             ],
-            'type-refinement-with-is-numeric-and-is-string' => [
+            'typeRefinementWithIsNumericAndIsString' => [
                 '<?php
                     /**
                      * @param mixed $a
@@ -405,7 +404,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }'
             ],
-            'update-multiple-isset-vars' => [
+            'updateMultipleIssetVars' => [
                 '<?php
                     /** @return void **/
                     function foo(string $s) {}
@@ -415,7 +414,7 @@ class TypeReconciliationTest extends TestCase
                         foo($a[0]);
                     }'
             ],
-            'update-multiple-isset-vars-with-variable-offset' => [
+            'updateMultipleIssetVarsWithVariableOffset' => [
                 '<?php
                     /** @return void **/
                     function foo(string $s) {}
@@ -426,7 +425,7 @@ class TypeReconciliationTest extends TestCase
                         foo($a[$b]);
                     }'
             ],
-            'remove-empty-array' => [
+            'removeEmptyArray' => [
                 '<?php
                     $arr_or_string = [];
             
@@ -441,7 +440,7 @@ class TypeReconciliationTest extends TestCase
                         foo($arr_or_string);
                     }'
             ],
-            'instance-of-subtypes' => [
+            'instanceOfSubtypes' => [
                 '<?php
                     abstract class A {}
                     class B extends A {}
@@ -461,7 +460,7 @@ class TypeReconciliationTest extends TestCase
             
                     if ($a instanceof B || $a instanceof D) { }'
             ],
-            'empty-array-reconciliation-then-if' => [
+            'emptyArrayReconciliationThenIf' => [
                 '<?php
                     /**
                      * @param string|string[] $a
@@ -480,7 +479,7 @@ class TypeReconciliationTest extends TestCase
                         return "not found";
                     }'
             ],
-            'empty-string-reconciliation-then-if' => [
+            'emptyStringReconciliationThenIf' => [
                 '<?php
                     /**
                      * @param Exception|string|string[] $a
@@ -499,7 +498,7 @@ class TypeReconciliationTest extends TestCase
                         return "an exception";
                     }'
             ],
-            'empty-exception-reconciliation-after-if' => [
+            'emptyExceptionReconciliationAfterIf' => [
                 '<?php
                     /**
                      * @param Exception|null $a
@@ -514,7 +513,7 @@ class TypeReconciliationTest extends TestCase
                         return $a->getMessage();
                     }'
             ],
-            'type-reconciliation-after-if-and-return' => [
+            'typeReconciliationAfterIfAndReturn' => [
                 '<?php
                     /**
                      * @param string|int $a
@@ -530,7 +529,7 @@ class TypeReconciliationTest extends TestCase
                         throw new \LogicException("Runtime error");
                     }'
             ],
-            'ignore-null-check-and-maintain-null-value' => [
+            'ignoreNullCheckAndMaintainNullValue' => [
                 '<?php
                     $a = null;
                     if ($a !== null) { }
@@ -540,7 +539,7 @@ class TypeReconciliationTest extends TestCase
                 ],
                 'error_levels' => ['FailedTypeResolution']
             ],
-            'ignore-null-check-and-maintain-nullable-value' => [
+            'ignoreNullCheckAndMaintainNullableValue' => [
                 '<?php
                     $a = rand(0, 1) ? 5 : null;
                     if ($a !== null) { }
@@ -549,7 +548,7 @@ class TypeReconciliationTest extends TestCase
                     ['int|null' => '$b']
                 ]
             ],
-            'ternary-by-ref-var' => [
+            'ternaryByRefVar' => [
                 '<?php
                     function foo() : void {
                         $b = null;
@@ -560,7 +559,7 @@ class TypeReconciliationTest extends TestCase
                         $a = 5;
                     }'
             ],
-            'ternary-by-ref-var-in-conditional' => [
+            'ternaryByRefVarInConditional' => [
                 '<?php
                     function foo() : void {
                         $b = null;
@@ -572,7 +571,7 @@ class TypeReconciliationTest extends TestCase
                         $a = 5;
                     }'
             ],
-            'possible-instanceof' => [
+            'possibleInstanceof' => [
                 '<?php
                     interface I1 {}
                     interface I2 {}
@@ -620,7 +619,7 @@ class TypeReconciliationTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'make-non-nullable-null' => [
+            'makeNonNullableNull' => [
                 '<?php
                     class A { }
                     $a = new A();
@@ -628,7 +627,7 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainNull'
             ],
-            'make-instance-of-thing-in-elseif' => [
+            'makeInstanceOfThingInElseif' => [
                 '<?php
                     class A { }
                     class B { }
@@ -639,27 +638,27 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType'
             ],
-            'function-value-is-not-type' => [
+            'functionValueIsNotType' => [
                 '<?php
                     if (json_last_error() === "5") { }',
                 'error_message' => 'TypeDoesNotContainType'
             ],
-            'string-is-not-int' => [
+            'stringIsNotTnt' => [
                 '<?php
                     if (5 === "5") { }',
                 'error_message' => 'TypeDoesNotContainType'
             ],
-            'string-is-not-null' => [
+            'stringIsNotNull' => [
                 '<?php
                     if (5 === null) { }',
                 'error_message' => 'TypeDoesNotContainNull'
             ],
-            'string-is-not-false' => [
+            'stringIsNotFalse' => [
                 '<?php
                     if (5 === false) { }',
                 'error_message' => 'TypeDoesNotContainType'
             ],
-            'failed-type-resolution' => [
+            'failedTypeResolution' => [
                 '<?php
                     class A { }
             
@@ -672,7 +671,7 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'FailedTypeResolution'
             ],
-            'failed-type-resolution-with-docblock' => [
+            'failedTypeResolutionWithDocblock' => [
                 '<?php
                     class A { }
             
@@ -686,7 +685,7 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'FailedTypeResolution'
             ],
-            'type-resolution-from-docblock-and-instanceof' => [
+            'typeResolutionFromDocblockAndInstanceof' => [
                 '<?php
                     class A { }
             
@@ -702,7 +701,7 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'FailedTypeResolution'
             ],
-            'type-transformation' => [
+            'typeTransformation' => [
                 '<?php
                     $a = "5";
             

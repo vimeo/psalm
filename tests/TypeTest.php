@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Context;
-
 class TypeTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;
@@ -15,7 +12,7 @@ class TypeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'nullable-method-with-ternary-guard' => [
+            'nullableMethodWithTernaryGuard' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -29,7 +26,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-ternary-if-null-guard' => [
+            'nullableMethodWithTernaryIfNullGuard' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -43,7 +40,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-ternary-empty-guard' => [
+            'nullableMethodWithTernaryEmptyGuard' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -57,7 +54,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-ternary-is-null-guard' => [
+            'nullableMethodWithTernaryIsNullGuard' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -71,7 +68,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-if-guard' => [
+            'nullableMethodWithIfGuard' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -87,7 +84,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-ternary-guard-with-this' => [
+            'nullableMethodWithTernaryGuardWithThis' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -105,7 +102,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-ternary-if-null-guard-with-this' => [
+            'nullableMethodWithTernaryIfNullGuardWithThis' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -123,7 +120,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-if-guard-with-this' => [
+            'nullableMethodWithIfGuardWithThis' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -144,7 +141,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-exception-thrown' => [
+            'nullableMethodWithExceptionThrown' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -162,7 +159,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-redefinition-and-else' => [
+            'nullableMethodWithRedefinitionAndElse' => [
                 '<?php
                     class One {
                         /** @var int|null */
@@ -186,7 +183,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-boolean-if-guard' => [
+            'nullableMethodWithBooleanIfGuard' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -207,7 +204,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-non-null-boolean-if-guard' => [
+            'nullableMethodWithNonNullBooleanIfGuard' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -228,7 +225,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-non-null-boolean-if-guard-and-boolean-and' => [
+            'nullableMethodWithNonNullBooleanIfGuardAndBooleanAnd' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -249,7 +246,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-in-condition-with-if-guard-before' => [
+            'nullableMethodInConditionWithIfGuardBefore' => [
                 '<?php
                     class One {
                         /** @var string */
@@ -277,7 +274,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-boolean-if-guard-before' => [
+            'nullableMethodWithBooleanIfGuardBefore' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -300,7 +297,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-redefinition' => [
+            'nullableMethodWithGuardedRedefinition' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -318,7 +315,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-redefinition-in-else' => [
+            'nullableMethodWithGuardedRedefinitionInElse' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -339,7 +336,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-nested-redefinition' => [
+            'nullableMethodWithGuardedNestedRedefinition' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -369,7 +366,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-switch-redefinition' => [
+            'nullableMethodWithGuardedSwitchRedefinition' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -397,7 +394,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-switch-redefinition-due-to-exception' => [
+            'nullableMethodWithGuardedSwitchRedefinitionDueToException' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -426,7 +423,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-switch-that-always-returns' => [
+            'nullableMethodWithGuardedSwitchThatAlwaysReturns' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -452,7 +449,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-nested-redefinition-with-return' => [
+            'nullableMethodWithGuardedNestedRedefinitionWithReturn' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -478,7 +475,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-nested-redefinition-with-else-return' => [
+            'nullableMethodWithGuardedNestedRedefinitionWithElseReturn' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -504,7 +501,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-nested-redefinition-with-elseif-return' => [
+            'nullableMethodWithGuardedNestedRedefinitionWithElseifReturn' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -533,7 +530,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-switch-break' => [
+            'nullableMethodWithGuardedSwitchBreak' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -557,7 +554,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'nullable-method-with-guarded-redefinition-on-this' => [
+            'nullableMethodWithGuardedRedefinitionOnThis' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -580,7 +577,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'array-union-type-assertion' => [
+            'arrayUnionTypeAssertion' => [
                 '<?php
                     /** @var array|null */
                     $ids = (1 + 1 === 2) ? [] : null;
@@ -592,7 +589,7 @@ class TypeTest extends TestCase
                     ['array<empty, empty>' => '$ids']
                 ]
             ],
-            'array-union-type-assertion-with-is-array' => [
+            'arrayUnionTypeAssertionWithIsArray' => [
                 '<?php
                     /** @var array|null */
                     $ids = (1 + 1 === 2) ? [] : null;
@@ -604,7 +601,7 @@ class TypeTest extends TestCase
                     ['array<empty, empty>' => '$ids']
                 ]
             ],
-            '2d-array-union-type-assertion-with-is-array' => [
+            '2dArrayUnionTypeAssertionWithIsArray' => [
                 '<?php
                     /** @return array<array<string>>|null */
                     function foo() {
@@ -617,7 +614,7 @@ class TypeTest extends TestCase
                         return null;
                     }'
             ],
-            'variable-reassignment' => [
+            'variableReassignment' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -635,7 +632,7 @@ class TypeTest extends TestCase
             
                     $one->barBar();'
             ],
-            'variable-reassignment-in-if' => [
+            'variableReassignmentInIf' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -655,7 +652,7 @@ class TypeTest extends TestCase
                         $one->barBar();
                     }'
             ],
-            'union-type-flow' => [
+            'unionTypeFlow' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -687,7 +684,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'union-type-flow-with-throw' => [
+            'unionTypeFlowWithThrow' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -704,7 +701,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'union-type-flow-with-elseif' => [
+            'unionTypeFlowWithElseif' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -724,7 +721,7 @@ class TypeTest extends TestCase
                         $var->fooFoo();
                     }'
             ],
-            'typed-adjustment' => [
+            'typedAdjustment' => [
                 '<?php
                     $var = 0;
             
@@ -737,7 +734,7 @@ class TypeTest extends TestCase
                     ['int|string' => '$var']
                 ]
             ],
-            'type-mixed-adjustment' => [
+            'typeMixedAdjustment' => [
                 '<?php
                     $var = 0;
             
@@ -752,7 +749,7 @@ class TypeTest extends TestCase
                     ['int|string' => '$var']
                 ]
             ],
-            'type-adjustment-if-null' => [
+            'typeAdjustmentIfNull' => [
                 '<?php
                     class A {}
                     class B {}
@@ -766,7 +763,7 @@ class TypeTest extends TestCase
                     ['A|B' => '$var']
                 ]
             ],
-            'while-true' => [
+            'whileTrue' => [
                 '<?php
                     class One {
                         /**
@@ -784,7 +781,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'passing-param' => [
+            'passingParam' => [
                 '<?php
                     class A {}
             
@@ -796,7 +793,7 @@ class TypeTest extends TestCase
                     $b = new B();
                     $b->barBar(new A);'
             ],
-            'null-to-nullable-param' => [
+            'nullToNullableParam' => [
                 '<?php
                     class A {}
             
@@ -808,7 +805,7 @@ class TypeTest extends TestCase
                     $b = new B();
                     $b->barBar(null);'
             ],
-            'object-to-nullable-object-param' => [
+            'objectToNullableObjectParam' => [
                 '<?php
                     class A {}
             
@@ -820,7 +817,7 @@ class TypeTest extends TestCase
                     $b = new B();
                     $b->barBar(new A);'
             ],
-            'param-coercion' => [
+            'paramCoercion' => [
                 '<?php
                     class A {}
                     class B extends A {
@@ -837,7 +834,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'param-elseif-coercion' => [
+            'paramElseifCoercion' => [
                 '<?php
                     class A {}
                     class B extends A {
@@ -861,7 +858,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'plus-plus' => [
+            'plusPlus' => [
                 '<?php
                     $a = 0;
                     $b = $a++;',
@@ -869,7 +866,7 @@ class TypeTest extends TestCase
                     ['int' => '$a']
                 ]
             ],
-            'typed-value-assertion' => [
+            'typedValueAssertion' => [
                 '<?php
                     /**
                      * @param array|string $a
@@ -882,7 +879,7 @@ class TypeTest extends TestCase
                         }
                     }'
             ],
-            'isset-with-simple-assignment' => [
+            'issetWithSimpleAssignment' => [
                 '<?php
                     $array = [];
             
@@ -892,7 +889,7 @@ class TypeTest extends TestCase
             
                     print $a;'
             ],
-            'isset-with-multiple-assignments' => [
+            'issetWithMultipleAssignments' => [
                 '<?php
                     if (rand(0, 4) > 2) {
                         $arr = [5 => [3 => "hello"]];
@@ -905,7 +902,7 @@ class TypeTest extends TestCase
                     echo $a;
                     echo $b;'
             ],
-            'is-int-on-unary-plus' => [
+            'isIntOnUnaryPlus' => [
                 '<?php
                     $a = +"5";
                     if (!is_int($a)) {
@@ -920,7 +917,7 @@ class TypeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'nullable-method-call' => [
+            'nullableMethodCall' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -935,7 +932,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-call-with-this' => [
+            'nullableMethodCallWithThis' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -954,7 +951,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-if-guard' => [
+            'nullableMethodWithIfGuard' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -976,7 +973,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-wrong-boolean-if-guard' => [
+            'nullableMethodWithWrongBooleanIfGuard' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -998,7 +995,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-wrong-if-guarded-before' => [
+            'nullableMethodWithWrongIfGuardedBefore' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1022,7 +1019,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-wrong-boolean-if-guard-before' => [
+            'nullableMethodWithWrongBooleanIfGuardBefore' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1046,7 +1043,7 @@ class TypeTest extends TestCase
                     }',
                 'error_mesage' => 'PossiblyNullReference'
             ],
-            'method-with-meaningless-check' => [
+            'methodWithMeaninglessCheck' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1065,7 +1062,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-guarded-nested-incomplete-redefinition' => [
+            'nullableMethodWithGuardedNestedIncompleteRedefinition' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1093,7 +1090,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-guarded-switch-redefinition-no-default' => [
+            'nullableMethodWithGuardedSwitchRedefinitionNoDefault' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1118,7 +1115,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-guarded-switch-redefinition-empty-default' => [
+            'nullableMethodWithGuardedSwitchRedefinitionEmptyDefault' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1146,7 +1143,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'nullable-method-with-guarded-nested-redefinition-with-useless-else-return' => [
+            'nullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1176,7 +1173,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference'
             ],
-            'variable-reassignment-in-if-with-outside-call' => [
+            'variableReassignmentInIfWithOutsideCall' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1199,7 +1196,7 @@ class TypeTest extends TestCase
                     $one->barBar();',
                 'error_message' => 'UndefinedMethod'
             ],
-            'unnecessary-instanceof' => [
+            'unnecessaryInstanceof' => [
                 '<?php
                     class One {
                         public function fooFoo() {}
@@ -1212,7 +1209,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'FailedTypeResolution'
             ],
-            'un-negatable-instanceof' => [
+            'unNegatableInstanceof' => [
                 '<?php
                     class One {
                         /** @return void */
@@ -1229,7 +1226,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'FailedTypeResolution'
             ],
-            'wrong-param' => [
+            'wrongParam' => [
                 '<?php
                     class A {}
             
@@ -1242,7 +1239,7 @@ class TypeTest extends TestCase
                     $b->barBar(5);',
                 'error_message' => 'InvalidArgument'
             ],
-            'int-to-nullable-object-param' => [
+            'intToNullableObjectParam' => [
                 '<?php
                     class A {}
             
@@ -1255,7 +1252,7 @@ class TypeTest extends TestCase
                     $b->barBar(5);',
                 'error_message' => 'InvalidArgument'
             ],
-            'param-coercion-with-bad-arg' => [
+            'paramCoercionWithBadArg' => [
                 '<?php
                     class A {}
                     class B extends A {
@@ -1273,7 +1270,7 @@ class TypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod'
             ],
-            'null-check-inside-foreach-with-no-leave-statement' => [
+            'nullCheckInsideForeachWithNoLeaveStatement' => [
                 '<?php
                     $a = null;
             

@@ -11,7 +11,7 @@ class Php40Test extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'extend-old-style-constructor' => [
+            'extendOldStyleConstructor' => [
                 '<?php
                     class A {
                         /**
@@ -28,7 +28,7 @@ class Php40Test extends TestCase
                         }
                     }'
             ],
-            'same-name-method-with-new-style-constructor' => [
+            'sameNameMethodWithNewStyleConstructor' => [
                 '<?php
                     class A {
                         public function __construct(string $s) { }

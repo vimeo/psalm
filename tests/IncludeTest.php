@@ -33,7 +33,7 @@ class IncludeTest extends TestCase
     public function providerTestValidIncludes()
     {
         return [
-            'basic-require' => [
+            'basicRequire' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 'code' => '<?php
                     require("file1.php");
@@ -49,7 +49,7 @@ class IncludeTest extends TestCase
                         }'
                 ]
             ],
-            'nested-require' => [
+            'nestedRequire' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
                 'code' => '<?php
                     require("file2.php");
@@ -73,7 +73,7 @@ class IncludeTest extends TestCase
                         }'
                 ]
             ],
-            'require-namespace' => [
+            'requireNamespace' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 'code' => '<?php
                     require("file1.php");
@@ -91,7 +91,7 @@ class IncludeTest extends TestCase
                         }'
                 ]
             ],
-            'require-function' => [
+            'requireFunction' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 'code' => '<?php
                     require("file1.php");
@@ -104,7 +104,7 @@ class IncludeTest extends TestCase
                         }'
                 ]
             ],
-            'require-namespaced-with-use' => [
+            'requireNamespacedWithUse' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 'code' => '<?php
                     require("file1.php");

@@ -12,7 +12,7 @@ class ArrayAccessTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'instance-of-string-offset' => [
+            'instanceOfStringOffset' => [
                 '<?php
                     class A {
                         public function fooFoo() : void { }
@@ -23,7 +23,7 @@ class ArrayAccessTest extends TestCase
                         }
                     }'
             ],
-            'instance-of-int-offset' => [
+            'instanceOfIntOffset' => [
                 '<?php
                     class A {
                         public function fooFoo() : void { }
@@ -34,7 +34,7 @@ class ArrayAccessTest extends TestCase
                         }
                     }'
             ],
-            'not-empty-string-offset' => [
+            'notEmptyStringOffset' => [
                 '<?php
                     /**
                      * @param  array<string>  $a
@@ -47,7 +47,7 @@ class ArrayAccessTest extends TestCase
                         return "blah";
                     }'
             ],
-            'not-empty-int-offset' => [
+            'notEmptyIntOffset' => [
                 '<?php
                     /**
                      * @param  array<string>  $a
@@ -60,7 +60,7 @@ class ArrayAccessTest extends TestCase
                         return "blah";
                     }'
             ],
-            'ignore-possibly-null-array-access' => [
+            'ignorePossiblyNullArrayAccess' => [
                 '<?php
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',
@@ -76,13 +76,13 @@ class ArrayAccessTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'invalid-array-access' => [
+            'invalidArrayAccess' => [
                 '<?php
                     $a = 5;
                     echo $a[0];',
                 'error_message' => 'InvalidArrayAccess'
             ],
-            'mixed-array-access' => [
+            'mixedArrayAccess' => [
                 '<?php
                     /** @var mixed */
                     $a = [];
@@ -90,7 +90,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'MixedArrayAccess',
                 'error_level' => ['MixedAssignment']
             ],
-            'mixed-array-offset' => [
+            'mixedArrayOffset' => [
                 '<?php
                     /** @var mixed */
                     $a = 5;
@@ -98,13 +98,13 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'MixedArrayOffset',
                 'error_level' => ['MixedAssignment']
             ],
-            'null-array-access' => [
+            'nullArrayAccess' => [
                 '<?php
                     $a = null;
                     echo $a[0];',
                 'error_message' => 'NullArrayAccess'
             ],
-            'possibly-null-array-access' => [
+            'possiblyNullArrayAccess' => [
                 '<?php
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',

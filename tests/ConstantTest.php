@@ -12,7 +12,7 @@ class ConstantTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'constant-in-function' => [
+            'constantInFunction' => [
                 '<?php
                     useTest();
                     const TEST = 2;
@@ -21,7 +21,7 @@ class ConstantTest extends TestCase
                         return TEST;
                     }'
             ],
-            'constant-in-closure' => [
+            'constantInClosure' => [
                 '<?php
                     const TEST = 2;
                     
@@ -30,7 +30,7 @@ class ConstantTest extends TestCase
                     };
                     $useTest();'
             ],
-            'constant-defined-in-function' => [
+            'constantDefinedInFunction' => [
                 '<?php
                     /**
                      * @return void
@@ -52,7 +52,7 @@ class ConstantTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'constant-defined-in-function-but-not-called' => [
+            'constantDefinedInFunctionButNotCalled' => [
                 '<?php
                     /**
                      * @return void

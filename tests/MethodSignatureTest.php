@@ -92,7 +92,7 @@ class MethodSignatureTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'more-arguments' => [
+            'moreArguments' => [
                 '<?php
                     class A {
                         public function fooFoo(int $a, bool $b) : void {
@@ -107,7 +107,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'Method B::fooFoo has more arguments than parent method A::fooFoo'
             ],
-            'fewer-arguments' => [
+            'fewerArguments' => [
                 '<?php
                     class A {
                         public function fooFoo(int $a, bool $b) : void {
@@ -122,7 +122,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'Method B::fooFoo has fewer arguments than parent method A::fooFoo'
             ],
-            'different-arguments' => [
+            'differentArguments' => [
                 '<?php
                     class A {
                         public function fooFoo(int $a, bool $b) : void {

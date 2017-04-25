@@ -17,7 +17,7 @@ class Php56Test extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'const-array' => [
+            'constArray' => [
                 '<?php
                     const ARR = ["a", "b"];
                     $a = ARR[0];',
@@ -25,7 +25,7 @@ class Php56Test extends TestCase
                     ['string' =>'$a']
                 ]
             ],
-            'const-features' => [
+            'constFeatures' => [
                 '<?php
                     const ONE = 1;
                     const TWO = ONE * 2;
@@ -55,7 +55,7 @@ class Php56Test extends TestCase
                     ['float|int' => '$g']
                 ]
             ],
-            'argument-unpacking' => [
+            'argumentUnpacking' => [
                 '<?php
                     /**
                      * @return int
@@ -75,7 +75,7 @@ class Php56Test extends TestCase
                     $a = 2;
                     $a **= 3;'
             ],
-            'constant-alias-in-namespace' => [
+            'constantAliasInNamespace' => [
                 '<?php
                     namespace Name\Space {
                         const FOO = 42;
@@ -88,7 +88,7 @@ class Php56Test extends TestCase
                         echo \Name\Space\FOO;
                     }'
             ],
-            'constant-alias-in-class' => [
+            'constantAliasInClass' => [
                 '<?php
                     namespace Name\Space {
                         const FOO = 42;
@@ -106,7 +106,7 @@ class Php56Test extends TestCase
                         }
                     }'
             ],
-            'function-alias-in-namespace' => [
+            'functionAliasInNamespace' => [
                 '<?php
                     namespace Name\Space {
                         /**
@@ -122,7 +122,7 @@ class Php56Test extends TestCase
                         \Name\Space\f();
                     }'
             ],
-            'function-alias-in-class' => [
+            'functionAliasInClass' => [
                 '<?php
                     namespace Name\Space {
                         /**

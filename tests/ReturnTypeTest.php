@@ -12,7 +12,7 @@ class ReturnTypeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'return-type-after-useless-null-check' => [
+            'returnTypeAfterUselessNullCheck' => [
                 '<?php
                     class One {}
             
@@ -32,7 +32,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'return-type-not-empty-check' => [
+            'returnTypeNotEmptyCheck' => [
                 '<?php
                     class B {
                         /**
@@ -47,7 +47,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'return-type-not-empty-check-in-else-if' => [
+            'returnTypeNotEmptyCheckInElseIf' => [
                 '<?php
                     class B {
                         /**
@@ -65,7 +65,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'return-type-not-empty-check-in-else' => [
+            'returnTypeNotEmptyCheckInElse' => [
                 '<?php
                     class B {
                         /**
@@ -83,7 +83,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'return-type-after-if' => [
+            'returnTypeAfterIf' => [
                 '<?php
                     class B {
                         /**
@@ -99,7 +99,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'return-type-after-two-ifs-with-throw' => [
+            'returnTypeAfterTwoIfsWithThrow' => [
                 '<?php
                     class A1 {
                     }
@@ -120,7 +120,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'return-type-after-if-else-if-with-throw' => [
+            'returnTypeAfterIfElseIfWithThrow' => [
                 '<?php
                     class A1 {
                     }
@@ -141,7 +141,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'try-catch-return-type' => [
+            'tryCatchReturnType' => [
                 '<?php
                     class A {
                         /** @return bool */
@@ -156,7 +156,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'switch-return-type-with-fallthrough' => [
+            'switchReturnTypeWithFallthrough' => [
                 '<?php
                     class A {
                         /** @return bool */
@@ -169,7 +169,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'switch-return-type-with-fallthrough-and-statement' => [
+            'switchReturnTypeWithFallthroughAndStatement' => [
                 '<?php
                     class A {
                         /** @return bool */
@@ -183,7 +183,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'switch-return-type-with-default-exception' => [
+            'switchReturnTypeWithDefaultException' => [
                 '<?php
                     class A {
                         /**
@@ -202,7 +202,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'extends-static-call-return-type' => [
+            'extendsStaticCallReturnType' => [
                 '<?php
                     abstract class A {
                         /** @return static */
@@ -219,7 +219,7 @@ class ReturnTypeTest extends TestCase
                     ['B' => '$b']
                 ]
             ],
-            'extends-static-call-array-return-type' => [
+            'extendsStaticCallArrayReturnType' => [
                 '<?php
                     abstract class A {
                         /** @return array<int,static> */
@@ -236,7 +236,7 @@ class ReturnTypeTest extends TestCase
                     ['array<int, B>' => '$bees']
                 ]
             ],
-            'isset-return-type' => [
+            'issetReturnType' => [
                 '<?php
                     /**
                      * @param  mixed $foo
@@ -246,7 +246,7 @@ class ReturnTypeTest extends TestCase
                         return isset($foo);
                     }'
             ],
-            'this-return-type' => [
+            'thisReturnType' => [
                 '<?php
                     class A {
                         /** @return $this */
@@ -255,7 +255,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'override-return-type' => [
+            'overrideReturnType' => [
                 '<?php
                     class A {
                         /** @return string|null */
@@ -276,7 +276,7 @@ class ReturnTypeTest extends TestCase
                     ['string' => '$blah']
                 ]
             ],
-            'interface-return-type' => [
+            'interfaceReturnType' => [
                 '<?php
                     interface A {
                         /** @return string|null */
@@ -294,7 +294,7 @@ class ReturnTypeTest extends TestCase
                     ['string|null' => '$blah']
                 ]
             ],
-            'override-return-type-in-grandparent' => [
+            'overrideReturnTypeInGrandparent' => [
                 '<?php
                     abstract class A {
                         /** @return string|null */
@@ -315,7 +315,7 @@ class ReturnTypeTest extends TestCase
                     ['string|null' => '$blah']
                 ]
             ],
-            'backwards-return-type' => [
+            'backwardsReturnType' => [
                 '<?php
                     class A {}
                     class B extends A {}
@@ -334,7 +334,7 @@ class ReturnTypeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'switch-return-type-with-fallthrough-and-break' => [
+            'switchReturnTypeWithFallthroughAndBreak' => [
                 '<?php
                     class A {
                         /** @return bool */
@@ -349,7 +349,7 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'switch-return-type-with-fallthrough-and-conditional-break' => [
+            'switchReturnTypeWithFallthroughAndConditionalBreak' => [
                 '<?php
                     class A {
                         /** @return bool */
@@ -366,7 +366,7 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'switch-return-type-with-no-default' => [
+            'switchReturnTypeWithNoDefault' => [
                 '<?php
                     class A {
                         /** @return bool */
@@ -380,21 +380,21 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'wrong-return-type-1' => [
+            'wrongReturnType1' => [
                 '<?php
                     function fooFoo() : string {
                         return 5;
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'wrong-return-type-2' => [
+            'wrongReturnType2' => [
                 '<?php
                     function fooFoo() : string {
                         return rand(0, 5) ? "hello" : null;
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'wrong-return-type-in-namespace-1' => [
+            'wrongReturnTypeInNamespace1' => [
                 '<?php
                     namespace bar;
             
@@ -403,7 +403,7 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'wrong-return-type-in-namespace-2' => [
+            'wrongReturnTypeInNamespace2' => [
                 '<?php
                     namespace bar;
             
@@ -412,21 +412,21 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType'
             ],
-            'missing-return-type' => [
+            'missingReturnType' => [
                 '<?php
                     function fooFoo() {
                         return rand(0, 5) ? "hello" : null;
                     }',
                 'error_message' => 'MissingReturnType'
             ],
-            'mixed-inferred-return-type' => [
+            'mixedInferredReturnType' => [
                 '<?php
                     function fooFoo() : string {
                         return array_pop([]);
                     }',
                 'error_message' => 'MixedInferredReturnType'
             ],
-            'invalid-return-type-class' => [
+            'invalidReturnTypeClass' => [
                 '<?php
                     function fooFoo() : A {
                         return array_pop([]);
@@ -434,7 +434,7 @@ class ReturnTypeTest extends TestCase
                 'error_message' => 'UndefinedClass',
                 'error_levels' => ['MixedInferredReturnType']
             ],
-            'invalid-class-on-call' => [
+            'invalidClassOnCall' => [
                 '<?php
                     /**
                      * @psalm-suppress UndefinedClass

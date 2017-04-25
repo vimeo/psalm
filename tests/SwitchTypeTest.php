@@ -12,7 +12,7 @@ class SwitchTypeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'get-class-arg' => [
+            'getClassArg' => [
                 '<?php
                     class A {
                         /**
@@ -44,7 +44,7 @@ class SwitchTypeTest extends TestCase
                             break;
                     }'
             ],
-            'get-type-arg' => [
+            'getTypeArg' => [
                 '<?php
                     function testInt(int $var) : void {
             
@@ -75,7 +75,7 @@ class SwitchTypeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'get-class-arg-wrong-class' => [
+            'getClassArgWrongClass' => [
                 '<?php
                     class A {
                         /** @return void */
@@ -100,7 +100,7 @@ class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod'
             ],
-            'get-type-arg-wrong-args' => [
+            'getTypeArgWrongArgs' => [
                 '<?php
                     function testInt(int $var) : void {
             

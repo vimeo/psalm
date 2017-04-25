@@ -11,12 +11,12 @@ class ForeachTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'continue-outside-loop' => [
+            'continueOutsideLoop' => [
                 '<?php
                     continue;',
                 'error_message' => 'ContinueOutsideLoop'
             ],
-            'invalid-iterator' => [
+            'invalidIterator' => [
                 '<?php
                     foreach (5 as $a) {
             

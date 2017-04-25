@@ -95,7 +95,7 @@ class FunctionCallTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'typed-array-with-default' => [
+            'typedArrayWithDefault' => [
                 '<?php
                     class A {}
             
@@ -104,7 +104,7 @@ class FunctionCallTest extends TestCase
             
                     }'
             ],
-            'valid-docblock-param-default' => [
+            'validDocblockParamDefault' => [
                 '<?php
                     /**
                      * @param  int|false $p
@@ -112,7 +112,7 @@ class FunctionCallTest extends TestCase
                      */
                     function f($p = false) {}'
             ],
-            'by-ref' => [
+            'byRef' => [
                 '<?php
                     function fooFoo(string &$v) : void {}
                     fooFoo($a);'
@@ -125,7 +125,7 @@ class FunctionCallTest extends TestCase
                     function f(int $p) {}
                     f(5);'
             ],
-            'namespaced-root-function-call' => [
+            'namespacedRootFunctionCall' => [
                 '<?php
                     namespace {
                         /** @return void */
@@ -135,7 +135,7 @@ class FunctionCallTest extends TestCase
                         foo();
                     }'
             ],
-            'namespaced-aliased-function-call' => [
+            'namespacedAliasedFunctionCall' => [
                 '<?php
                     namespace Aye {
                         /** @return void */
@@ -147,14 +147,14 @@ class FunctionCallTest extends TestCase
                         A\foo();
                     }'
             ],
-            'array-keys' => [
+            'arrayKeys' => [
                 '<?php
                     $a = array_keys(["a" => 1, "b" => 2]);',
                 'assertions' => [
                     ['array<int, string>' => '$a']
                 ]
             ],
-            'array-keys-mixed' => [
+            'arrayKeysMixed' => [
                 '<?php
                     /** @var array */
                     $b = ["a" => 5];
@@ -164,35 +164,35 @@ class FunctionCallTest extends TestCase
                 ],
                 'error_levels' => ['MixedArgument']
             ],
-            'array-values' => [
+            'arrayValues' => [
                 '<?php
                     $b = array_values(["a" => 1, "b" => 2]);',
                 'assertions' => [
                     ['array<int, int>' => '$b']
                 ]
             ],
-            'array-combine' => [
+            'arrayCombine' => [
                 '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
                     ['array<string, int>' => '$c']
                 ]
             ],
-            'array-merge' => [
+            'arrayMerge' => [
                 '<?php
                     $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
                     ['array<int, int|string>' => '$d']
                 ]
             ],
-            'array-diff' => [
+            'arrayDiff' => [
                 '<?php
                     $d = array_diff(["a" => 5, "b" => 12], [5]);',
                 'assertions' => [
                     ['array<string, int>' => '$d']
                 ]
             ],
-            'by-ref-after-callable' => [
+            'byRefAfterCallable' => [
                 '<?php
                     /**
                      * @param callable $callback
@@ -209,7 +209,7 @@ class FunctionCallTest extends TestCase
                     'MixedArrayAccess'
                 ]
             ],
-            'extract-var-check' => [
+            'extractVarCheck' => [
                 '<?php
                     function takesString(string $str) : void {}
             
@@ -232,13 +232,13 @@ class FunctionCallTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'invalid-scalar-argument' => [
+            'invalidScalarArgument' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo("string");',
                 'error_message' => 'InvalidScalarArgument'
             ],
-            'mixed-argument' => [
+            'mixedArgument' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     /** @var mixed */
@@ -247,25 +247,25 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'MixedArgument',
                 'error_levels' => ['MixedAssignment']
             ],
-            'null-argument' => [
+            'nullArgument' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo(null);',
                 'error_message' => 'NullArgument'
             ],
-            'too-few-arguments' => [
+            'tooFewArguments' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo();',
                 'error_message' => 'TooFewArguments'
             ],
-            'too-many-arguments' => [
+            'tooManyArguments' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo(5, "dfd");',
                 'error_message' => 'TooManyArguments'
             ],
-            'type-coercion' => [
+            'typeCoercion' => [
                 '<?php
                     class A {}
                     class B extends A{}
@@ -274,7 +274,7 @@ class FunctionCallTest extends TestCase
                     fooFoo(new A());',
                 'error_message' => 'TypeCoercion'
             ],
-            'array-type-coercion' => [
+            'arrayTypeCoercion' => [
                 '<?php
                     class A {}
                     class B extends A{}
@@ -287,17 +287,17 @@ class FunctionCallTest extends TestCase
                     fooFoo([new A()]);',
                 'error_message' => 'TypeCoercion'
             ],
-            'duplicate-param' => [
+            'duplicateParam' => [
                 '<?php
                     function f($p, $p) {}',
                 'error_message' => 'DuplicateParam'
             ],
-            'invalid-param-default' => [
+            'invalidParamDefault' => [
                 '<?php
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault'
             ],
-            'invalid-docblock-param-default' => [
+            'invalidDocblockParamDefault' => [
                 '<?php
                     /**
                      * @param  int $p
@@ -307,13 +307,13 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidParamDefault'
             ],
             // Skipped. Does not throw an error.
-            'SKIPPED-bad-by-ref' => [
+            'SKIPPED-badByRef' => [
                 '<?php
                     function fooFoo(string &$v) : void {}
                     fooFoo("a");',
                 'error_message' => 'InvalidPassByReference'
             ],
-            'invalid-arg-after-callable' => [
+            'invalidArgAfterCallable' => [
                 '<?php
                     /**
                      * @param callable $callback

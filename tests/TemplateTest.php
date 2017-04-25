@@ -12,7 +12,7 @@ class TemplateTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'class-template' => [
+            'classTemplate' => [
                 '<?php
                     class A {}
                     class B {}
@@ -70,7 +70,7 @@ class TemplateTest extends TestCase
                     ['Foo<mixed>' => '$dfoo']
                 ]
             ],
-            'class-template-container' => [
+            'classTemplateContainer' => [
                 '<?php
                     class A {}
             
@@ -108,7 +108,7 @@ class TemplateTest extends TestCase
                 ],
                 'error_levels' => ['MixedOperand']
             ],
-            'phan-tuple' => [
+            'phanTuple' => [
                 '<?php
                     namespace Phan\Library;
             
@@ -233,7 +233,7 @@ class TemplateTest extends TestCase
                     takes_string($a->_0);
                     takes_int($a->_1);'
             ],
-            'valid-templated-type' => [
+            'validTemplatedType' => [
                 '<?php
                     /**
                      * @template T
@@ -248,7 +248,7 @@ class TemplateTest extends TestCase
             
                     bar(foo("string"));'
             ],
-            'valid-templated-static-method-type' => [
+            'validTemplatedStaticMethodType' => [
                 '<?php
                     class A {
                         /**
@@ -265,7 +265,7 @@ class TemplateTest extends TestCase
             
                     bar(A::foo("string"));'
             ],
-            'valid-templated-instance-method-type' => [
+            'validTemplatedInstanceMethodType' => [
                 '<?php
                     class A {
                         /**
@@ -282,7 +282,7 @@ class TemplateTest extends TestCase
             
                     bar((new A())->foo("string"));'
             ],
-            'generic-array-keys' => [
+            'genericArrayKeys' => [
                 '<?php
                     /**
                      * @template T
@@ -299,7 +299,7 @@ class TemplateTest extends TestCase
                     ['array<int, string>' => '$a']
                 ]
             ],
-            'generic-array-reverse' => [
+            'genericArrayReverse' => [
                 '<?php
                     /**
                      * @template TKey
@@ -326,7 +326,7 @@ class TemplateTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'invalid-templated-type' => [
+            'invalidTemplatedType' => [
                 '<?php
                     /**
                      * @template T
@@ -342,7 +342,7 @@ class TemplateTest extends TestCase
                     bar(foo(4));',
                 'error_message' => 'InvalidScalarArgument'
             ],
-            'invalid-templated-static-method-type' => [
+            'invalidTemplatedStaticMethodType' => [
                 '<?php
                     class A {
                         /**
@@ -360,7 +360,7 @@ class TemplateTest extends TestCase
                     bar(A::foo(4));',
                 'error_message' => 'InvalidScalarArgument'
             ],
-            'invalid-templated-instance-method-type' => [
+            'invalidTemplatedInstanceMethodType' => [
                 '<?php
                     class A {
                         /**

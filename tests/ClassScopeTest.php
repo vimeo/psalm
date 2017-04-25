@@ -12,7 +12,7 @@ class ClassScopeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'accessible-private-method-from-subclass' => [
+            'accessiblePrivateMethodFromSubclass' => [
                 '<?php
                     class A {
                         private function fooFoo() : void {
@@ -24,7 +24,7 @@ class ClassScopeTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-method-from-subclass' => [
+            'accessibleProtectedMethodFromSubclass' => [
                 '<?php
                     class A {
                         protected function fooFoo() : void {
@@ -37,7 +37,7 @@ class ClassScopeTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-method-from-other-subclass' => [
+            'accessibleProtectedMethodFromOtherSubclass' => [
                 '<?php
                     class A {
                         protected function fooFoo() : void {
@@ -52,7 +52,7 @@ class ClassScopeTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-property-from-subclass' => [
+            'accessibleProtectedPropertyFromSubclass' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -65,7 +65,7 @@ class ClassScopeTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-property-from-great-grandparent' => [
+            'accessibleProtectedPropertyFromGreatGrandparent' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -82,7 +82,7 @@ class ClassScopeTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-property-from-other-subclass' => [
+            'accessibleProtectedPropertyFromOtherSubclass' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -99,7 +99,7 @@ class ClassScopeTest extends TestCase
                         }
                     }'
             ],
-            'accessible-static-property-from-subclass' => [
+            'accessibleStaticPropertyFromSubclass' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -116,7 +116,7 @@ class ClassScopeTest extends TestCase
                         }
                     }'
             ],
-            'defined-private-method' => [
+            'definedPrivateMethod' => [
                 '<?php
                     class A {
                         public function foo() : void {
@@ -141,7 +141,7 @@ class ClassScopeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'inaccessible-private-method' => [
+            'inaccessiblePrivateMethod' => [
                 '<?php
                     class A {
                         private function fooFoo() : void {
@@ -152,7 +152,7 @@ class ClassScopeTest extends TestCase
                     (new A())->fooFoo();',
                 'error_message' => 'InaccessibleMethod'
             ],
-            'inaccessible-protect-method' => [
+            'inaccessibleProtectMethod' => [
                 '<?php
                     class A {
                         protected function fooFoo() : void {
@@ -163,7 +163,7 @@ class ClassScopeTest extends TestCase
                     (new A())->fooFoo();',
                 'error_message' => 'InaccessibleMethod'
             ],
-            'inaccessible-private-method-from-subclass' => [
+            'inaccessiblePrivateMethodFromSubclass' => [
                 '<?php
                     class A {
                         private function fooFoo() : void {
@@ -178,7 +178,7 @@ class ClassScopeTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleMethod'
             ],
-            'inaccessible-protectred-method-from-other-subclass' => [
+            'inaccessibleProtectredMethodFromOtherSubclass' => [
                 '<?php
                     trait T {
                         protected function fooFoo() : void {
@@ -198,7 +198,7 @@ class ClassScopeTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleMethod'
             ],
-            'inaccessible-private-property' => [
+            'inaccessiblePrivateProperty' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -208,7 +208,7 @@ class ClassScopeTest extends TestCase
                     echo (new A())->fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
-            'inaccessible-protected-property' => [
+            'inaccessibleProtectedProperty' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -218,7 +218,7 @@ class ClassScopeTest extends TestCase
                     echo (new A())->fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
-            'inaccessible-private-property-from-subclass' => [
+            'inaccessiblePrivatePropertyFromSubclass' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -232,7 +232,7 @@ class ClassScopeTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty'
             ],
-            'inaccessible-static-private-property' => [
+            'inaccessibleStaticPrivateProperty' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -242,7 +242,7 @@ class ClassScopeTest extends TestCase
                     echo A::$fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
-            'inaccessible-static-protected-property' => [
+            'inaccessibleStaticProtectedProperty' => [
                 '<?php
                     class A {
                         /** @var string */
@@ -252,7 +252,7 @@ class ClassScopeTest extends TestCase
                     echo A::$fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
-            'inaccessible-static-private-property-from-subclass' => [
+            'inaccessibleStaticPrivatePropertyFromSubclass' => [
                 '<?php
                     class A {
                         /** @var string */

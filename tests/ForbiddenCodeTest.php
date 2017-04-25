@@ -11,12 +11,12 @@ class ForbiddenCodeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'var-dump' => [
+            'varDump' => [
                 '<?php
                     var_dump("hello");',
                 'error_message' => 'ForbiddenCode'
             ],
-            'exec-ticks' => [
+            'execTicks' => [
                 '<?php
                     `rm -rf`;',
                 'error_message' => 'ForbiddenCode'

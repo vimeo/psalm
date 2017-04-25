@@ -12,7 +12,7 @@ class TraitTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'accessible-private-method-from-trait' => [
+            'accessiblePrivateMethodFromTrait' => [
                 '<?php
                     trait T {
                         private function fooFoo() : void {
@@ -27,7 +27,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-method-from-trait' => [
+            'accessibleProtectedMethodFromTrait' => [
                 '<?php
                     trait T {
                         protected function fooFoo() : void {
@@ -42,7 +42,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'accessible-public-method-from-trait' => [
+            'accessiblePublicMethodFromTrait' => [
                 '<?php
                     trait T {
                         public function fooFoo() : void {
@@ -57,7 +57,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'accessible-private-property-from-trait' => [
+            'accessiblePrivatePropertyFromTrait' => [
                 '<?php
                     trait T {
                         /** @var string */
@@ -72,7 +72,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-property-from-trait' => [
+            'accessibleProtectedPropertyFromTrait' => [
                 '<?php
                     trait T {
                         /** @var string */
@@ -87,7 +87,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'accessible-public-property-from-trait' => [
+            'accessiblePublicPropertyFromTrait' => [
                 '<?php
                     trait T {
                         /** @var string */
@@ -102,7 +102,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'accessible-protected-method-from-inherited-trait' => [
+            'accessibleProtectedMethodFromInheritedTrait' => [
                 '<?php
                     trait T {
                         protected function fooFoo() : void {
@@ -119,7 +119,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'accessible-public-method-from-inherited-trait' => [
+            'accessiblePublicMethodFromInheritedTrait' => [
                 '<?php
                     trait T {
                         public function fooFoo() : void {
@@ -136,7 +136,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'static-class-method-from-within-trait' => [
+            'staticClassMethodFromWithinTrait' => [
                 '<?php
                     trait T {
                         public function fooFoo() : void {
@@ -152,7 +152,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'redefined-trait-method-without-alias' => [
+            'redefinedTraitMethodWithoutAlias' => [
                 '<?php
                     trait T {
                         public function fooFoo() : void {
@@ -168,7 +168,7 @@ class TraitTest extends TestCase
             
                     (new B)->fooFoo("hello");'
             ],
-            'redefined-trait-method-with-alias' => [
+            'redefinedTraitMethodWithAlias' => [
                 '<?php
                     trait T {
                         public function fooFoo() : void {
@@ -185,7 +185,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'trait-self' => [
+            'traitSelf' => [
                 '<?php
                     trait T {
                         public function g(): self
@@ -203,7 +203,7 @@ class TraitTest extends TestCase
                     ['A' => '$a']
                 ]
             ],
-            'parent-trait-self' => [
+            'parentTraitSelf' => [
                 '<?php
                     trait T {
                         public function g(): self
@@ -228,7 +228,7 @@ class TraitTest extends TestCase
                     ['A' => '$a']
                 ]
             ],
-            'direct-static-call' => [
+            'directStaticCall' => [
                 '<?php
                     trait T {
                         /** @return void */
@@ -243,7 +243,7 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
-            'abstract-trait-method' => [
+            'abstractTraitMethod' => [
                 '<?php
                     trait T {
                         /** @return void */
@@ -268,7 +268,7 @@ class TraitTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'inaccessible-private-method-from-inherited-trait' => [
+            'inaccessiblePrivateMethodFromInheritedTrait' => [
                 '<?php
                     trait T {
                         private function fooFoo() : void {
@@ -286,14 +286,14 @@ class TraitTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleMethod'
             ],
-            'undefined-trait' => [
+            'undefinedTrait' => [
                 '<?php
                     class B {
                         use A;
                     }',
                 'error_message' => 'UndefinedTrait'
             ],
-            'missing-property-type' => [
+            'missingPropertyType' => [
                 '<?php
                     trait T {
                         public $foo;
@@ -308,7 +308,7 @@ class TraitTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
                     'declared type - consider null|int'
             ],
-            'missing-property-type-with-constructor-init' => [
+            'missingPropertyTypeWithConstructorInit' => [
                 '<?php
                     trait T {
                         public $foo;
@@ -323,7 +323,7 @@ class TraitTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
                     'declared type - consider int'
             ],
-            'missing-property-type-with-constructor-init-and-null' => [
+            'missingPropertyTypeWithConstructorInitAndNull' => [
                 '<?php
                     trait T {
                         public $foo;
@@ -342,7 +342,7 @@ class TraitTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
                     'declared type - consider null|int'
             ],
-            'missing-property-type-with-constructor-init-and-null-default' => [
+            'missingPropertyTypeWithConstructorInitAndNullDefault' => [
                 '<?php
                     trait T {
                         public $foo = null;

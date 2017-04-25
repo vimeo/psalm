@@ -11,7 +11,7 @@ class IssueSuppressionTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'undefined-class' => [
+            'undefinedClass' => [
                 '<?php
                     class A {
                         /**
@@ -24,7 +24,7 @@ class IssueSuppressionTest extends TestCase
                         }
                     }'
             ],
-            'exclude-issue' => [
+            'excludeIssue' => [
                 '<?php
                     fooFoo();',
                 'assertions' => [],

@@ -12,15 +12,15 @@ class BinaryOperationTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'regular-addition' => [
+            'regularAddition' => [
                 '<?php
                     $a = 5 + 4;'
             ],
-            'differing-numeric-types-addition-in-weak-mode' => [
+            'differingNumericTypesAdditionInWeakMode' => [
                 '<?php
                     $a = 5 + 4.1;'
             ],
-            'numeric-addition' => [
+            'numericAddition' => [
                 '<?php
                     $a = "5";
             
@@ -32,7 +32,7 @@ class BinaryOperationTest extends TestCase
                 '<?php
                     $a = "Hey " . "Jude,";'
             ],
-            'concatenation-with-number-in-weak-mode' => [
+            'concatenationWithNumberInWeakMode' => [
                 '<?php
                     $a = "hi" . 5;'
             ]
@@ -45,26 +45,26 @@ class BinaryOperationTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'bad-addition' => [
+            'badAddition' => [
                 '<?php
                     $a = "b" + 5;',
                 'error_message' => 'InvalidOperand'
             ],
-            'differing-numeric-types-addition-in-strict-mode' => [
+            'differingNumericTypesAdditionInStrictMode' => [
                 '<?php
                     $a = 5 + 4.1;',
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
                 'strict_mode' => true
             ],
-            'concatenation-with-number-in-strict-mode' => [
+            'concatenationWithNumberInStrictMode' => [
                 '<?php
                     $a = "hi" . 5;',
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
                 'strict_mode' => true
             ],
-            'add-array-to-number' => [
+            'addArrayToNumber' => [
                 '<?php
                     $a = [1] + 1;',
                 'error_message' => 'InvalidOperand',

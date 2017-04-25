@@ -133,7 +133,7 @@ echo $a;';
     public function providerTestJsonOutputErrors()
     {
         return [
-            'return-type-error' => [
+            'returnTypeError' => [
                 '<?php
                     function fooFoo(int $a) : string {
                         return $a + 1;
@@ -142,7 +142,7 @@ echo $a;';
                 'line' => 2,
                 'error' => 'string'
             ],
-            'undefined-var' => [
+            'undefinedVar' => [
                 '<?php
                     function fooFoo(int $a) : int {
                         return $b + 1;
@@ -151,7 +151,7 @@ echo $a;';
                 'line' => 3,
                 'error' => '$b'
             ],
-            'unknown-param-class' => [
+            'unknownParamClass' => [
                 '<?php
                     function fooFoo(Badger\Bodger $a) : Badger\Bodger {
                         return $a;
@@ -160,7 +160,7 @@ echo $a;';
                 'line' => 2,
                 'error' => 'Badger\\Bodger'
             ],
-            'missing-return-type' => [
+            'missingReturnType' => [
                 '<?php
                     function fooFoo() {
                         return "hello";
@@ -169,7 +169,7 @@ echo $a;';
                 'line' => 2,
                 'error' => 'function fooFoo() {'
             ],
-            'wrong-multiline-return-type' => [
+            'wrongMultilineReturnType' => [
                 '<?php
                     /**
                      * @return int
@@ -181,7 +181,7 @@ echo $a;';
                 'line' => 3,
                 'error' => '@return int'
             ],
-            'wrong-single-line-return-type' => [
+            'wrongSingleLineReturnType' => [
                 '<?php
                     /** @return int */
                     function fooFoo() {

@@ -12,7 +12,7 @@ class ArgTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'call-map-class-optional-arg' => [
+            'callMapClassOptionalArg' => [
                 '<?php
                     $m = new ReflectionMethod("hello", "goodbye");
                     $m->invoke("cool");'
@@ -26,7 +26,7 @@ class ArgTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'possibly-invalid-argument' => [
+            'possiblyInvalidArgument' => [
                 '<?php
                     $foo = [
                         "a",

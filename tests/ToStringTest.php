@@ -1,12 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
-use Psalm\Checker\FileChecker;
-use Psalm\Config;
-use Psalm\Context;
-
 class ToStringTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;
@@ -18,7 +12,7 @@ class ToStringTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'valid-to-string' => [
+            'validToString' => [
                 '<?php
                     class A {
                         function __toString() : string {
@@ -27,7 +21,7 @@ class ToStringTest extends TestCase
                     }
                     echo (new A);'
             ],
-            'valid-inferred-to-string-type' => [
+            'validInferredToStringType' => [
                 '<?php
                     class A {
                         /**
@@ -39,7 +33,7 @@ class ToStringTest extends TestCase
                     }
                     echo (new A);'
             ],
-            'good-cast' => [
+            'goodCast' => [
                 '<?php
                     class A {
                         public function __toString() : string
@@ -66,20 +60,20 @@ class ToStringTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'echo-class' => [
+            'echoClass' => [
                 '<?php
                     class A {}
                     echo (new A);',
                 'error_message' => 'InvalidArgument'
             ],
-            'invalid-to-string-return-type' => [
+            'invalidToStringReturnType' => [
                 '<?php
                     class A {
                         function __toString() : void { }
                     }',
                 'error_message' => 'InvalidToString'
             ],
-            'invalid-inferred-to-string-return-type' => [
+            'invalidInferredToStringReturnType' => [
                 '<?php
                     class A {
                         /**
@@ -89,7 +83,7 @@ class ToStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidToString'
             ],
-            'implicit-cost' => [
+            'implicitCost' => [
                 '<?php
                     class A {
                         public function __toString() : string

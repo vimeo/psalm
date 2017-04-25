@@ -32,7 +32,7 @@ class AnnotationTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'deprecated-method' => [
+            'deprecatedMethod' => [
                 '<?php
                     class Foo {
                         /**
@@ -42,7 +42,7 @@ class AnnotationTest extends TestCase
                         }
                     }'
             ],
-            'valid-docblock-return' => [
+            'validDocblockReturn' => [
                 '<?php
                     /**
                      * @return string
@@ -65,7 +65,7 @@ class AnnotationTest extends TestCase
                         return ["hello"];
                     }'
             ],
-            'reassert-with-is' => [
+            'reassertWithIs' => [
                 '<?php
                     /** @param array $a */
                     function foo($a) : void {
@@ -74,7 +74,7 @@ class AnnotationTest extends TestCase
                         }
                     }'
             ],
-            'check-array-with-is' => [
+            'checkArrayWithIs' => [
                 '<?php
                     /** @param mixed $b */
                     function foo($b) : void {
@@ -85,7 +85,7 @@ class AnnotationTest extends TestCase
                         }
                     }'
             ],
-            'check-array-with-is-inside-loop' => [
+            'checkArrayWithIsInsideLoop' => [
                 '<?php
                     /** @param array<mixed, array<mixed, mixed>> $data */
                     function foo($data) : void {
@@ -98,7 +98,7 @@ class AnnotationTest extends TestCase
                         }
                     }'
             ],
-            'good-docblock' => [
+            'goodDocblock' => [
                 '<?php
                     class A {
                         /**
@@ -109,7 +109,7 @@ class AnnotationTest extends TestCase
                         }
                     }'
             ],
-            'good-docblock-in-namespace' => [
+            'goodDocblockInNamespace' => [
                 '<?php
                     namespace Foo;
             
@@ -131,7 +131,7 @@ class AnnotationTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
-            'deprecated-method-with-call' => [
+            'deprecatedMethodWithCall' => [
                 '<?php
                     class Foo {
                         /**
@@ -144,7 +144,7 @@ class AnnotationTest extends TestCase
                     Foo::barBar();',
                 'error_message' => 'DeprecatedMethod'
             ],
-            'invalid-docblock-param' => [
+            'invalidDocblockParam' => [
                 '<?php
                     /**
                      * @param int $bar
@@ -153,7 +153,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock'
             ],
-            'extraneous-docblock-param' => [
+            'extraneousDocblockParam' => [
                 '<?php
                     /**
                      * @param int $bar
@@ -163,7 +163,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
                     'argument list for fooBar'
             ],
-            'missing-param-type' => [
+            'missingParamType' => [
                 '<?php
                     /**
                      * @param $bar
@@ -173,7 +173,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
                     'argument list for fooBar'
             ],
-            'missing-param-var' => [
+            'missingParamVar' => [
                 '<?php
                     /**
                      * @param string
@@ -182,7 +182,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock - somefile.php:5 - Badly-formatted @param in docblock for fooBar'
             ],
-            'invalid-docblock-return' => [
+            'invalidDocblockReturn' => [
                 '<?php
                     /**
                      * @return string

@@ -19,7 +19,7 @@ class IssetTest extends TestCase
                 ],
                 'error_levels' => ['MixedAssignment']
             ],
-            'null-coalesce' => [
+            'nullCoalesce' => [
                 '<?php
                     $a = $b ?? null;',
                 'assertions' => [
@@ -27,7 +27,7 @@ class IssetTest extends TestCase
                 ],
                 'error_levels' => ['MixedAssignment']
             ],
-            'null-coalesce-with-good-variable' => [
+            'nullCoalesceWithGoodVariable' => [
                 '<?php
                     $b = false;
                     $a = $b ?? null;',
@@ -35,7 +35,7 @@ class IssetTest extends TestCase
                     ['false|null' => '$a']
                 ]
             ],
-            'isset-keyed-offset' => [
+            'issetKeyedOffset' => [
                 '<?php
                     if (!isset($foo["a"])) {
                         $foo["a"] = "hello";
@@ -48,7 +48,7 @@ class IssetTest extends TestCase
                     '$foo' => \Psalm\Type::getArray()
                 ]
             ],
-            'isset-keyed-offset-or-false' => [
+            'issetKeyedOffsetORFalse' => [
                 '<?php
                     /** @return void */
                     function takesString(string $str) {}
@@ -64,7 +64,7 @@ class IssetTest extends TestCase
                     '$foo' => \Psalm\Type::getArray()
                 ]
             ],
-            'null-coalesce-keyed-offset' => [
+            'nullCoalesceKeyedOffset' => [
                 '<?php
                     $foo["a"] = $foo["a"] ?? "hello";',
                 'assertions' => [
