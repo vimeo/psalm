@@ -1,39 +1,158 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
-use Psalm\Checker\FileChecker;
 use Psalm\Type;
 
-class TypeCombinationTest extends PHPUnit_Framework_TestCase
+class TypeCombinationTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var TestConfig */
-    protected static $config;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
+     * @dataProvider providerTestValidTypeCombination
+     * @param string $expected
+     * @param array<string> $types
      * @return void
      */
-    public static function setUpBeforeClass()
+    public function testValidTypeCombination($expected, $types)
     {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-        self::$config = new TestConfig();
+        foreach ($types as $k => $type) {
+            $types[$k] = self::getAtomic($type);
+        }
+
+        $this->assertEquals(
+            $expected,
+            (string) Type::combineTypes($types)
+        );
     }
 
     /**
-     * @return void
+     * @return array
      */
-    public function setUp()
+    public function providerFileCheckerValidCodeParse()
     {
-        FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $this->project_checker->setConfig(self::$config);
+        return [
+            'multipleValuedArray' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    $var = [];
+                    $var[] = new A();
+                    $var[] = new B();'
+            ]
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerTestValidTypeCombination()
+    {
+        return [
+            'intOrString' => [
+                'int|string',
+                [
+                    'int',
+                    'string'
+                ]
+            ],
+            'arrayOfIntOrString' => [
+                'array<mixed, int|string>',
+                [
+                    'array<int>',
+                    'array<string>'
+                ]
+            ],
+            'arrayOfIntOrAlsoString' => [
+                'array<mixed, int>|string',
+                [
+                    'array<int>',
+                    'string'
+                ]
+            ],
+            'emptyArrays' => [
+                'array<empty, empty>',
+                [
+                    'array<empty,empty>',
+                    'array<empty,empty>'
+                ]
+            ],
+            'arrayStringOrEmptyArray' => [
+                'array<mixed, string>',
+                [
+                    'array<empty>',
+                    'array<string>'
+                ]
+            ],
+            'arrayMixedOrString' => [
+                'array<mixed, mixed>',
+                [
+                    'array<mixed>',
+                    'array<string>'
+                ]
+            ],
+            'arrayMixedOrStringKeys' => [
+                'array<mixed, string>',
+                [
+                    'array<int|string,string>',
+                    'array<mixed,string>'
+                ]
+            ],
+            'arrayMixedOrEmpty' => [
+                'array<mixed, mixed>',
+                [
+                    'array<empty>',
+                    'array<mixed>'
+                ]
+            ],
+            'arrayBigCombination' => [
+                'array<mixed, int|float|string>',
+                [
+                    'array<int|float>',
+                    'array<string>'
+                ]
+            ],
+            'falseDestruction' => [
+                'bool',
+                [
+                    'false',
+                    'bool'
+                ]
+            ],
+            'onlyFalse' => [
+                'bool',
+                [
+                    'false'
+                ]
+            ],
+            'falseFalseDestruction' => [
+                'bool',
+                [
+                    'false',
+                    'false'
+                ]
+            ],
+            'aAndAOfB' => [
+                'A<mixed>',
+                [
+                    'A',
+                    'A<B>'
+                ]
+            ],
+            'combineObjectType1' => [
+                'array{a:int, b:string}',
+                [
+                    'array{a:int}',
+                    'array{b:string}'
+                ]
+            ],
+            'combineObjectType2' => [
+                'array{a:int|string, b:string}',
+                [
+                    'array{a:int}',
+                    'array{a:string,b:string}'
+                ]
+            ]
+        ];
     }
 
     /**
@@ -43,225 +162,5 @@ class TypeCombinationTest extends PHPUnit_Framework_TestCase
     private static function getAtomic($string)
     {
         return array_values(Type::parseString($string)->types)[0];
-    }
-
-    /**
-     * @return void
-     */
-    public function testIntOrString()
-    {
-        $this->assertEquals(
-            'int|string',
-            (string) Type::combineTypes([
-                self::getAtomic('int'),
-                self::getAtomic('string')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayOfIntOrString()
-    {
-        $this->assertEquals(
-            'array<mixed, int|string>',
-            (string) Type::combineTypes([
-                self::getAtomic('array<int>'),
-                self::getAtomic('array<string>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayOfIntOrAlsoString()
-    {
-        $this->assertEquals(
-            'array<mixed, int>|string',
-            (string) Type::combineTypes([
-                self::getAtomic('array<int>'),
-                self::getAtomic('string')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testEmptyArrays()
-    {
-        $this->assertEquals(
-            'array<empty, empty>',
-            (string) Type::combineTypes([
-                self::getAtomic('array<empty,empty>'),
-                self::getAtomic('array<empty,empty>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayStringOrEmptyArray()
-    {
-        $this->assertEquals(
-            'array<mixed, string>',
-            (string) Type::combineTypes([
-                self::getAtomic('array<empty>'),
-                self::getAtomic('array<string>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayMixedOrString()
-    {
-        $this->assertEquals(
-            'array<mixed, mixed>',
-            (string) Type::combineTypes([
-                self::getAtomic('array<mixed>'),
-                self::getAtomic('array<string>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayMixedOrStringKeys()
-    {
-        $this->assertEquals(
-            'array<mixed, string>',
-            (string) Type::combineTypes([
-                self::getAtomic('array<int|string,string>'),
-                self::getAtomic('array<mixed,string>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayMixedOrEmpty()
-    {
-        $this->assertEquals(
-            'array<mixed, mixed>',
-            (string) Type::combineTypes([
-                self::getAtomic('array<empty>'),
-                self::getAtomic('array<mixed>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayBigCombination()
-    {
-        $this->assertEquals(
-            'array<mixed, int|float|string>',
-            (string) Type::combineTypes([
-                self::getAtomic('array<int|float>'),
-                self::getAtomic('array<string>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testFalseDestruction()
-    {
-        $this->assertEquals(
-            'bool',
-            (string) Type::combineTypes([
-                self::getAtomic('false'),
-                self::getAtomic('bool')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testOnlyFalse()
-    {
-        $this->assertEquals(
-            'bool',
-            (string) Type::combineTypes([
-                self::getAtomic('false')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testFalseFalseDestruction()
-    {
-        $this->assertEquals(
-            'bool',
-            (string) Type::combineTypes([
-                self::getAtomic('false'),
-                self::getAtomic('false')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testAAndAOfB()
-    {
-        $this->assertEquals(
-            'A<mixed>',
-            (string) Type::combineTypes([
-                self::getAtomic('A'),
-                self::getAtomic('A<B>')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testCombineObjectType()
-    {
-        $this->assertEquals(
-            'array{a:int, b:string}',
-            (string) Type::combineTypes([
-                self::getAtomic('array{a:int}'),
-                self::getAtomic('array{b:string}')
-            ])
-        );
-
-        $this->assertEquals(
-            'array{a:int|string, b:string}',
-            (string) Type::combineTypes([
-                self::getAtomic('array{a:int}'),
-                self::getAtomic('array{a:string,b:string}')
-            ])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testMultipleValuedArray()
-    {
-        $stmts = self::$parser->parse('<?php
-            class A {}
-            class B {}
-            $var = [];
-            $var[] = new A();
-            $var[] = new B();
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $file_checker->visitAndAnalyzeMethods();
     }
 }

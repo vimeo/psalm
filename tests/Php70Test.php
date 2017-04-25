@@ -1,355 +1,234 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
-use Psalm\Checker\FileChecker;
-use Psalm\Config;
-use Psalm\Context;
-
-class Php70Test extends PHPUnit_Framework_TestCase
+class Php70Test extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
-     * @return void
+     * @return array
      */
-    public static function setUpBeforeClass()
+    public function providerFileCheckerValidCodeParse()
     {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        return [
+            'functionTypeHints' => [
+                '<?php
+                    function indexof(string $haystack, string $needle) : int
+                    {
+                        $pos = strpos($haystack, $needle);
+            
+                        if ($pos === false) {
+                            return -1;
+                        }
+            
+                        return $pos;
+                    }
+            
+                    $a = indexof("arr", "a");',
+                'assertions' => [
+                    ['int' => '$a']
+                ]
+            ],
+            'methodTypeHints' => [
+                '<?php
+                    class Foo {
+                        public static function indexof(string $haystack, string $needle) : int
+                        {
+                            $pos = strpos($haystack, $needle);
+            
+                            if ($pos === false) {
+                                return -1;
+                            }
+            
+                            return $pos;
+                        }
+                    }
+            
+                    $a = Foo::indexof("arr", "a");',
+                'assertions' => [
+                    ['int' => '$a']
+                ]
+            ],
+            'nullCoalesce' => [
+                '<?php
+                    $a = $_GET["bar"] ?? "nobody";',
+                'assertions' => [
+                    ['mixed' => '$a']
+                ],
+                'error_levels' => ['MixedAssignment']
+            ],
+            'spaceship' => [
+                '<?php
+                    $a = 1 <=> 1;',
+                'assertions' => [
+                    ['int' => '$a']
+                ]
+            ],
+            'defineArray' => [
+                '<?php
+                    define("ANIMALS", [
+                        "dog",
+                        "cat",
+                        "bird"
+                    ]);
+            
+                    $a = ANIMALS[1];',
+                'assertions' => [
+                    ['string' =>'$a']
+                ]
+            ],
+            'anonymousClassLogger' => [
+                '<?php
+                    interface Logger {
+                        /** @return void */
+                        public function log(string $msg);
+                    }
+            
+                    class Application {
+                        /** @var Logger|null */
+                        private $logger;
+            
+                        /** @return void */
+                        public function setLogger(Logger $logger) {
+                             $this->logger = $logger;
+                        }
+                    }
+            
+                    $app = new Application;
+                    $app->setLogger(new class implements Logger {
+                        public function log(string $msg) {
+                            echo $msg;
+                        }
+                    });'
+            ],
+            'anonymousClassFunctionReturnType' => [
+                '<?php
+                    $class = new class {
+                        public function f() : int {
+                            return 42;
+                        }
+                    };
+            
+                    function g(int $i) : int {
+                        return $i;
+                    }
+            
+                    $x = g($class->f());'
+            ],
+            'generatorWithReturn' => [
+                '<?php
+                    /**
+                     * @return Generator<int,int>
+                     * @psalm-generator-return string
+                     */
+                    function fooFoo(int $i) : Generator {
+                        if ($i === 1) {
+                            return "bash";
+                        }
+            
+                        yield 1;
+                    }'
+            ],
+            'generatorDelegation' => [
+                '<?php
+                    /**
+                     * @return Generator<int,int>
+                     * @psalm-generator-return int
+                     */
+                    function count_to_ten() : Generator {
+                        yield 1;
+                        yield 2;
+                        yield from [3, 4];
+                        yield from new ArrayIterator([5, 6]);
+                        yield from seven_eight();
+                        return yield from nine_ten();
+                    }
+            
+                    /**
+                     * @return Generator<int,int>
+                     */
+                    function seven_eight() : Generator {
+                        yield 7;
+                        yield from eight();
+                    }
+            
+                    /**
+                     * @return Generator<int,int>
+                     */
+                    function eight() : Generator {
+                        yield 8;
+                    }
+            
+                    /**
+                     * @return Generator<int,int>
+                     * @psalm-generator-return int
+                     */
+                    function nine_ten() : Generator {
+                        yield 9;
+                        return 10;
+                    }
+            
+                    $gen = count_to_ten();
+                    foreach ($gen as $num) {
+                        echo "$num ";
+                    }
+                    $gen2 = $gen->getReturn();',
+                'assertions' => [
+                    ['Generator<int, int>' => '$gen'],
+                    ['mixed' => '$gen2']
+                ],
+                'error_levels' => ['MixedAssignment']
+            ],
+            'multipleUse' => [
+                '<?php
+                    namespace Name\Space {
+                        class A {
+            
+                        }
+            
+                        class B {
+            
+                        }
+                    }
+            
+                    namespace Noom\Spice {
+                        use Name\Space\{
+                            A,
+                            B
+                        };
+            
+                        new A();
+                        new B();
+                    }'
+            ]
+        ];
     }
 
     /**
-     * @return void
+     * @return array
      */
-    public function setUp()
+    public function providerFileCheckerInvalidCodeParse()
     {
-        FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
-        $this->project_checker->setConfig(new TestConfig());
-    }
-
-    /**
-     * @return void
-     */
-    public function testFunctionTypeHints()
-    {
-        $stmts = self::$parser->parse('<?php
-        function indexof(string $haystack, string $needle) : int
-        {
-            $pos = strpos($haystack, $needle);
-
-            if ($pos === false) {
-                return -1;
-            }
-
-            return $pos;
-        }
-
-        $a = indexof("arr", "a");
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testMethodTypeHints()
-    {
-        $stmts = self::$parser->parse('<?php
-        class Foo {
-            public static function indexof(string $haystack, string $needle) : int
-            {
-                $pos = strpos($haystack, $needle);
-
-                if ($pos === false) {
-                    return -1;
-                }
-
-                return $pos;
-            }
-        }
-
-        $a = Foo::indexof("arr", "a");
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testNullCoalesce()
-    {
-        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
-
-        $stmts = self::$parser->parse('<?php
-        $a = $_GET["bar"] ?? "nobody";
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$a']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testSpaceship()
-    {
-        $stmts = self::$parser->parse('<?php
-        $a = 1 <=> 1;
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testDefineArray()
-    {
-        $stmts = self::$parser->parse('<?php
-        define("ANIMALS", [
-            "dog",
-            "cat",
-            "bird"
-        ]);
-
-        $a = ANIMALS[1];
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('string', (string) $context->vars_in_scope['$a']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testAnonymousClassLogger()
-    {
-        $stmts = self::$parser->parse('<?php
-        interface Logger {
-            /** @return void */
-            public function log(string $msg);
-        }
-
-        class Application {
-            /** @var Logger|null */
-            private $logger;
-
-            /** @return void */
-            public function setLogger(Logger $logger) {
-                 $this->logger = $logger;
-            }
-        }
-
-        $app = new Application;
-        $app->setLogger(new class implements Logger {
-            public function log(string $msg) {
-                echo $msg;
-            }
-        });
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedClass
-     * @return                   void
-     */
-    public function testAnonymousClassWithBadStatement()
-    {
-        $stmts = self::$parser->parse('<?php
-        $foo = new class {
-            public function a() {
-                new B();
-            }
-        };
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidReturnType
-     * @return                   void
-     */
-    public function testAnonymousClassWithInvalidFunctionReturnType()
-    {
-        $stmts = self::$parser->parse('<?php
-        $foo = new class {
-            public function a() : string {
-                return 5;
-            }
-        };
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testAnonymousClassFunctionReturnType()
-    {
-        $stmts = self::$parser->parse('<?php
-        $class = new class {
-            public function f() : int {
-                return 42;
-            }
-        };
-
-        function g(int $i) : int {
-            return $i;
-        }
-
-        $x = g($class->f());
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testGeneratorWithReturn()
-    {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @return Generator<int,int>
-         * @psalm-generator-return string
-         */
-        function fooFoo(int $i) : Generator {
-            if ($i === 1) {
-                return "bash";
-            }
-
-            yield 1;
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @return void
-     */
-    public function testGeneratorDelegation()
-    {
-        Config::getInstance()->setCustomErrorLevel('MixedAssignment', Config::REPORT_SUPPRESS);
-
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @return Generator<int,int>
-         * @psalm-generator-return int
-         */
-        function count_to_ten() : Generator {
-            yield 1;
-            yield 2;
-            yield from [3, 4];
-            yield from new ArrayIterator([5, 6]);
-            yield from seven_eight();
-            return yield from nine_ten();
-        }
-
-        /**
-         * @return Generator<int,int>
-         */
-        function seven_eight() : Generator {
-            yield 7;
-            yield from eight();
-        }
-
-        /**
-         * @return Generator<int,int>
-         */
-        function eight() : Generator {
-            yield 8;
-        }
-
-        /**
-         * @return Generator<int,int>
-         * @psalm-generator-return int
-         */
-        function nine_ten() : Generator {
-            yield 9;
-            return 10;
-        }
-
-        $gen = count_to_ten();
-        foreach ($gen as $num) {
-            echo "$num ";
-        }
-        $gen2 = $gen->getReturn();
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('Generator<int, int>', (string) $context->vars_in_scope['$gen']);
-        $this->assertEquals('mixed', (string) $context->vars_in_scope['$gen2']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testMultipleUse()
-    {
-        $stmts = self::$parser->parse('<?php
-        namespace Name\Space {
-            class A {
-
-            }
-
-            class B {
-
-            }
-        }
-
-        namespace Noom\Spice {
-            use Name\Space\{
-                A,
-                B
-            };
-
-            new A();
-            new B();
-        }
-        ');
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        return [
+            'anonymousClassWithBadStatement' => [
+                '<?php
+                    $foo = new class {
+                        public function a() {
+                            new B();
+                        }
+                    };',
+                'error_message' => 'UndefinedClass'
+            ],
+            'anonymousClassWithInvalidFunctionReturnType' => [
+                '<?php
+                    $foo = new class {
+                        public function a() : string {
+                            return 5;
+                        }
+                    };',
+                'error_message' => 'InvalidReturnType'
+            ]
+        ];
     }
 }

@@ -1,35 +1,19 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
-use Psalm\Config;
-use Psalm\Context;
 use Psalm\IssueBuffer;
 
-class JsonOutputTest extends PHPUnit_Framework_TestCase
+class JsonOutputTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
-
-    /**
-     * @return void
-     */
-    public static function setUpBeforeClass()
-    {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
-    }
-
     /**
      * @return void
      */
     public function setUp()
     {
+        // `TestCase::setUp()` creates its own ProjectChecker and Config instance, but we don't want to do that in this
+        // case, so don't run a `parent::setUp()` call here.
         FileChecker::clearCache();
         $this->project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
 
@@ -40,174 +24,28 @@ class JsonOutputTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @dataProvider providerTestJsonOutputErrors
+     * @param string $code
+     * @param string $message
+     * @param integer $line_number
+     * @param string $error
      * @return void
      */
-    public function testJsonOutputForReturnTypeError()
+    public function testJsonOutputErrors($code, $message, $line_number, $error)
     {
-        $file_contents = '<?php
-        function fooFoo(int $a) : string {
-            return $a + 1;
-        }';
-
-        $this->project_checker->registerFile(
-            'somefile.php',
-            $file_contents
-        );
+        $this->project_checker->registerFile('somefile.php', $code);
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData()[0];
+
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['type']);
-        $this->assertSame("The declared return type 'string' for fooFoo is incorrect, got 'int'", $issue_data['message']);
-        $this->assertSame(2, $issue_data['line_number']);
+        $this->assertSame($message, $issue_data['message']);
+        $this->assertSame($line_number, $issue_data['line_number']);
         $this->assertSame(
-            'string',
-            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testJsonOutputForUndefinedVar()
-    {
-        $file_contents = '<?php
-        function fooFoo(int $a) : int {
-            return $b + 1;
-        }';
-
-        $this->project_checker->registerFile(
-            'somefile.php',
-            $file_contents
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $issue_data = IssueBuffer::getIssueData()[0];
-        $this->assertSame('somefile.php', $issue_data['file_path']);
-        $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('Cannot find referenced variable $b', $issue_data['message']);
-        $this->assertSame(3, $issue_data['line_number']);
-        $this->assertSame(
-            '$b',
-            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testJsonOutputForUnknownParamClass()
-    {
-        $file_contents = '<?php
-        function fooFoo(Badger\Bodger $a) : Badger\Bodger {
-            return $a;
-        }';
-
-        $this->project_checker->registerFile(
-            'somefile.php',
-            $file_contents
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $issue_data = IssueBuffer::getIssueData()[0];
-        $this->assertSame('somefile.php', $issue_data['file_path']);
-        $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('Class or interface Badger\\Bodger does not exist', $issue_data['message']);
-        $this->assertSame(2, $issue_data['line_number']);
-        $this->assertSame(
-            'Badger\\Bodger',
-            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testJsonOutputForMissingReturnType()
-    {
-        $file_contents = '<?php
-        function fooFoo() {
-            return "hello";
-        }';
-
-        $this->project_checker->registerFile(
-            'somefile.php',
-            $file_contents
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $issue_data = IssueBuffer::getIssueData()[0];
-        $this->assertSame('somefile.php', $issue_data['file_path']);
-        $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('Method fooFoo does not have a return type, expecting string', $issue_data['message']);
-        $this->assertSame(2, $issue_data['line_number']);
-        $this->assertSame(
-            'function fooFoo() {',
-            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testJsonOutputForWrongMultilineReturnType()
-    {
-        $file_contents = '<?php
-        /**
-         * @return int
-         */
-        function fooFoo() {
-            return "hello";
-        }';
-
-        $this->project_checker->registerFile(
-            'somefile.php',
-            $file_contents
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $issue_data = IssueBuffer::getIssueData()[0];
-        $this->assertSame('somefile.php', $issue_data['file_path']);
-        $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('The declared return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
-        $this->assertSame(3, $issue_data['line_number']);
-        $this->assertSame(
-            '@return int',
-            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testJsonOutputForWrongSingleLineReturnType()
-    {
-        $file_contents = '<?php
-        /** @return int */
-        function fooFoo() {
-            return "hello";
-        }';
-
-        $this->project_checker->registerFile(
-            'somefile.php',
-            $file_contents
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $issue_data = IssueBuffer::getIssueData()[0];
-        $this->assertSame('somefile.php', $issue_data['file_path']);
-        $this->assertSame('error', $issue_data['type']);
-        $this->assertSame('The declared return type \'int\' for fooFoo is incorrect, got \'string\'', $issue_data['message']);
-        $this->assertSame(2, $issue_data['line_number']);
-        $this->assertSame(
-            '@return int',
-            substr($file_contents, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
+            $error,
+            substr($code, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
         );
     }
 
@@ -287,5 +125,72 @@ echo $a;';
             ],
             $issue_data
         );
+    }
+
+    /**
+     * @return array
+     */
+    public function providerTestJsonOutputErrors()
+    {
+        return [
+            'returnTypeError' => [
+                '<?php
+                    function fooFoo(int $a) : string {
+                        return $a + 1;
+                    }',
+                'message' => "The declared return type 'string' for fooFoo is incorrect, got 'int'",
+                'line' => 2,
+                'error' => 'string'
+            ],
+            'undefinedVar' => [
+                '<?php
+                    function fooFoo(int $a) : int {
+                        return $b + 1;
+                    }',
+                'message' => 'Cannot find referenced variable $b',
+                'line' => 3,
+                'error' => '$b'
+            ],
+            'unknownParamClass' => [
+                '<?php
+                    function fooFoo(Badger\Bodger $a) : Badger\Bodger {
+                        return $a;
+                    }',
+                'message' => 'Class or interface Badger\\Bodger does not exist',
+                'line' => 2,
+                'error' => 'Badger\\Bodger'
+            ],
+            'missingReturnType' => [
+                '<?php
+                    function fooFoo() {
+                        return "hello";
+                    }',
+                'message' => 'Method fooFoo does not have a return type, expecting string',
+                'line' => 2,
+                'error' => 'function fooFoo() {'
+            ],
+            'wrongMultilineReturnType' => [
+                '<?php
+                    /**
+                     * @return int
+                     */
+                    function fooFoo() {
+                        return "hello";
+                    }',
+                'message' => 'The declared return type \'int\' for fooFoo is incorrect, got \'string\'',
+                'line' => 3,
+                'error' => '@return int'
+            ],
+            'wrongSingleLineReturnType' => [
+                '<?php
+                    /** @return int */
+                    function fooFoo() {
+                        return "hello";
+                    }',
+                'message' => 'The declared return type \'int\' for fooFoo is incorrect, got \'string\'',
+                'line' => 2,
+                'error' => '@return int'
+            ]
+        ];
     }
 }

@@ -1,16 +1,14 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
 use Psalm\Config;
 use Psalm\Context;
 
-class UnusedCodeTest extends PHPUnit_Framework_TestCase
+class UnusedCodeTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\FileCheckerValidCodeParseTestTrait;
 
     /** @var string */
     protected static $project_dir;
@@ -23,7 +21,7 @@ class UnusedCodeTest extends PHPUnit_Framework_TestCase
      */
     public static function setUpBeforeClass()
     {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        parent::setUpBeforeClass();
         self::$project_dir = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
@@ -47,87 +45,22 @@ class UnusedCodeTest extends PHPUnit_Framework_TestCase
                 </projectFiles>
             </psalm>'
         ));
+
         $this->project_checker->collect_references = true;
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UnusedVariable
-     * @return                   void
-     */
-    public function testFunction()
-    {
-        $stmts = self::$parser->parse('<?php
-        /** @return int */
-        function foo() {
-            $a = 5;
-            $b = [];
-            return $a;
-        }
-        ');
-
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
-
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UnusedVariable
-     * @return                   void
-     */
-    public function testIfInFunction()
-    {
-        $stmts = self::$parser->parse('<?php
-        /** @return int */
-        function foo() {
-            $a = 5;
-            if (rand(0, 1)) {
-                $b = "hello";
-            } else {
-                $b = "goodbye";
-            }
-            return $a;
-        }
-        ');
-
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
+     * @dataProvider providerTestUnusedCodeWithClassReferences
+     * @param string $code
+     * @param string $error_message
      * @return void
      */
-    public function testUnset()
+    public function testUnusedCodeWithClassReferences($code, $error_message)
     {
-        $stmts = self::$parser->parse('<?php
-        /** @return void */
-        function foo() {
-            $a = 0;
+        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectExceptionMessage($error_message);
 
-            $arr = ["hello"];
-
-            unset($arr[$a]);
-        }
-        ');
-
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UnusedClass
-     * @return                   void
-     */
-    public function testUnusedClass()
-    {
-        $stmts = self::$parser->parse('<?php
-        class A { }
-        ');
+        $stmts = self::$parser->parse($code);
 
         $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
         $context = new Context();
@@ -136,46 +69,89 @@ class UnusedCodeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyUnusedMethod
-     * @return                   void
+     * @return array
      */
-    public function testPublicUnusedMethod()
+    public function providerFileCheckerValidCodeParse()
     {
-        $stmts = self::$parser->parse('<?php
-        class A {
-            /** @return void */
-            public function foo() {}
-        }
-
-        new A();
-        ');
-
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->project_checker->checkClassReferences();
+        return [
+            'unset' => [
+                '<?php
+                    /** @return void */
+                    function foo() {
+                        $a = 0;
+            
+                        $arr = ["hello"];
+            
+                        unset($arr[$a]);
+                    }'
+            ]
+        ];
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UnusedMethod
-     * @return                   void
+     * @return array
      */
-    public function testPrivateUnusedMethod()
+    public function providerFileCheckerInvalidCodeParse()
     {
-        $stmts = self::$parser->parse('<?php
-        class A {
-            /** @return void */
-            private function foo() {}
-        }
+        return [
+            'function' => [
+                '<?php
+                    /** @return int */
+                    function foo() {
+                        $a = 5;
+                        $b = [];
+                        return $a;
+                    }',
+                'error_message' => 'UnusedVariable'
+            ],
+            'ifInFunction' => [
+                '<?php
+                    /** @return int */
+                    function foo() {
+                        $a = 5;
+                        if (rand(0, 1)) {
+                            $b = "hello";
+                        } else {
+                            $b = "goodbye";
+                        }
+                        return $a;
+                    }',
+                'error_message' => 'UnusedVariable'
+            ]
+        ];
+    }
 
-        new A();
-        ');
-
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->project_checker->checkClassReferences();
+    /**
+     * @return array
+     */
+    public function providerTestUnusedCodeWithClassReferences()
+    {
+        return [
+            'unusedClass' => [
+                '<?php
+                    class A { }',
+                'error_message' => 'UnusedClass'
+            ],
+            'publicUnusedMethod' => [
+                '<?php
+                    class A {
+                        /** @return void */
+                        public function foo() {}
+                    }
+            
+                    new A();',
+                'error_message' => 'PossiblyUnusedMethod'
+            ],
+            'privateUnusedMethod' => [
+                '<?php
+                    class A {
+                        /** @return void */
+                        private function foo() {}
+                    }
+            
+                    new A();',
+                'error_message' => 'UnusedMethod'
+            ]
+        ];
     }
 }
