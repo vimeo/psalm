@@ -237,12 +237,16 @@ class AssignmentChecker
                     $context->vars_possibly_in_scope[$list_var_id] = true;
 
                     if (!$statements_checker->hasVariable($list_var_id)) {
-                        $statements_checker->registerVariable($list_var_id, new CodeLocation($statements_checker, $var));
+                        $statements_checker->registerVariable(
+                            $list_var_id,
+                            new CodeLocation($statements_checker, $var)
+                        );
                     }
 
                     if (isset($assign_value_type->types['array'])) {
                         if ($assign_value_type->types['array'] instanceof Type\Atomic\TArray) {
-                            $context->vars_in_scope[$list_var_id] = clone $assign_value_type->types['array']->type_params[1];
+                            $context->vars_in_scope[$list_var_id] =
+                                clone $assign_value_type->types['array']->type_params[1];
 
                             continue;
                         } elseif ($assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike) {
@@ -687,7 +691,6 @@ class AssignmentChecker
                                     : Type::combineUnionTypes(Type::getNull(), $assignment_value_type);
                         }
                     }
-
                 } else {
                     $class_property_type = ExpressionChecker::fleshOutTypes(
                         clone $class_property_type,
@@ -1037,7 +1040,8 @@ class AssignmentChecker
             } elseif ($return_type->hasScalarType()) {
                 if (IssueBuffer::accepts(
                     new InvalidArrayAssignment(
-                        'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $context->vars_in_scope[$var_id],
+                        'Cannot assign value on variable ' . $var_id . ' of scalar type ' .
+                            $context->vars_in_scope[$var_id],
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -1117,7 +1121,6 @@ class AssignmentChecker
                             $context->vars_in_scope[$var_id] = $assignment_value_type;
                         }
                     }
-
                 }
             }
         } elseif ($var_id) {

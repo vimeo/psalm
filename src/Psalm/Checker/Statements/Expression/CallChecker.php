@@ -318,11 +318,11 @@ class CallChecker
                     $stmt->args,
                     $method_id,
                     $function_params,
+                    $code_location,
+                    $context->check_variables,
                     $function_storage,
                     null,
-                    $generic_params,
-                    $code_location,
-                    $context->check_variables
+                    $generic_params
                 ) === false) {
                     // fall through
                 }
@@ -341,7 +341,10 @@ class CallChecker
                     try {
                         if ($function_storage && $function_storage->return_type) {
                             if ($generic_params) {
-                                $return_type = FunctionChecker::replaceTemplateTypes($function_storage->return_type, $generic_params);
+                                $return_type = FunctionChecker::replaceTemplateTypes(
+                                    $function_storage->return_type,
+                                    $generic_params
+                                );
                             } else {
                                 $return_type = clone $function_storage->return_type;
                             }
@@ -535,11 +538,11 @@ class CallChecker
 
                     if (self::checkMethodArgs(
                         $method_id,
-                        $stmt->args,
-                        $found_generic_params,
                         $context,
                         new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker
+                        $statements_checker,
+                        $stmt->args,
+                        $found_generic_params
                     ) === false) {
                         return false;
                     }
@@ -862,11 +865,11 @@ class CallChecker
 
                 if (self::checkMethodArgs(
                     $method_id,
-                    $stmt->args,
-                    $class_template_params,
                     $context,
                     new CodeLocation($source, $stmt),
-                    $statements_checker
+                    $statements_checker,
+                    $stmt->args,
+                    $class_template_params
                 ) === false) {
                     return false;
                 }
@@ -899,7 +902,10 @@ class CallChecker
 
                     if ($return_type_candidate) {
                         if ($class_template_params) {
-                            $return_type_candidate = FunctionChecker::replaceTemplateTypes($return_type_candidate, $class_template_params);
+                            $return_type_candidate = FunctionChecker::replaceTemplateTypes(
+                                $return_type_candidate,
+                                $class_template_params
+                            );
                         } else {
                             $return_type_candidate = clone $return_type_candidate;
                         }
@@ -910,7 +916,10 @@ class CallChecker
                             $method_id
                         );
 
-                        $return_type_location = MethodChecker::getMethodReturnTypeLocation($method_id, $secondary_return_type_location);
+                        $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                            $method_id,
+                            $secondary_return_type_location
+                        );
 
                         if ($secondary_return_type_location) {
                             $return_type_location = $secondary_return_type_location;
@@ -945,11 +954,11 @@ class CallChecker
         if ($method_id === null) {
             return self::checkMethodArgs(
                 $method_id,
-                $stmt->args,
-                $found_generic_params,
                 $context,
                 new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker
+                $statements_checker,
+                $stmt->args,
+                $found_generic_params
             );
         }
 
@@ -1224,11 +1233,11 @@ class CallChecker
 
                 if (self::checkMethodArgs(
                     $method_id,
-                    $stmt->args,
-                    $found_generic_params,
                     $context,
                     new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker
+                    $statements_checker,
+                    $stmt->args,
+                    $found_generic_params
                 ) === false) {
                     return false;
                 }
@@ -1243,7 +1252,10 @@ class CallChecker
 
                 if ($return_type_candidate) {
                     if ($found_generic_params) {
-                        $return_type_candidate = FunctionChecker::replaceTemplateTypes($return_type_candidate, $found_generic_params);
+                        $return_type_candidate = FunctionChecker::replaceTemplateTypes(
+                            $return_type_candidate,
+                            $found_generic_params
+                        );
                     } else {
                         $return_type_candidate = clone $return_type_candidate;
                     }
@@ -1254,7 +1266,10 @@ class CallChecker
                         $method_id
                     );
 
-                    $return_type_location = MethodChecker::getMethodReturnTypeLocation($method_id, $secondary_return_type_location);
+                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                        $method_id,
+                        $secondary_return_type_location
+                    );
 
                     if ($secondary_return_type_location) {
                         $return_type_location = $secondary_return_type_location;
@@ -1284,11 +1299,11 @@ class CallChecker
         if ($method_id === null) {
             return self::checkMethodArgs(
                 $method_id,
-                $stmt->args,
-                $found_generic_params,
                 $context,
                 new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker
+                $statements_checker,
+                $stmt->args,
+                $found_generic_params
             );
         }
 
@@ -1299,20 +1314,20 @@ class CallChecker
 
     /**
      * @param  string|null                      $method_id
-     * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  array<string, Type\Union>|null   &$generic_params
      * @param  Context                          $context
      * @param  CodeLocation                     $code_location
      * @param  StatementsChecker                $statements_checker
+     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  array<string, Type\Union>|null   &$generic_params
      * @return false|null
      */
     protected static function checkMethodArgs(
         $method_id,
-        array $args,
-        array &$generic_params = null,
         Context $context,
         CodeLocation $code_location,
-        StatementsChecker $statements_checker
+        StatementsChecker $statements_checker,
+        array $args,
+        array &$generic_params = null
     ) {
         $file_checker = $statements_checker->getFileChecker();
 
@@ -1354,11 +1369,11 @@ class CallChecker
             $args,
             $method_id,
             $method_params,
+            $code_location,
+            $context->check_variables,
             $method_storage,
             $class_storage,
-            $generic_params,
-            $code_location,
-            $context->check_variables
+            $generic_params
         ) === false) {
             return false;
         }
@@ -1419,7 +1434,10 @@ class CallChecker
                         $context->vars_in_scope[$var_id] = Type::getMixed();
                         $context->vars_possibly_in_scope[$var_id] = true;
                         if (!$statements_checker->hasVariable($var_id)) {
-                            $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $arg->value));
+                            $statements_checker->registerVariable(
+                                $var_id,
+                                new CodeLocation($statements_checker, $arg->value)
+                            );
                         }
                     }
                 }
@@ -1478,11 +1496,11 @@ class CallChecker
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|null                             $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
+     * @param   CodeLocation                            $code_location
+     * @param   bool                                    $check_variables
      * @param   FunctionLikeStorage                     $function_storage
      * @param   ClassLikeStorage                        $class_storage
      * @param   array<string, Type\Union>|null          $generic_params
-     * @param   CodeLocation                            $code_location
-     * @param   bool                                    $check_variables
      * @return  false|null
      */
     protected static function checkFunctionArgumentsMatch(
@@ -1490,11 +1508,11 @@ class CallChecker
         array $args,
         $method_id,
         array $function_params,
+        CodeLocation $code_location,
+        $check_variables,
         FunctionLikeStorage $function_storage = null,
         ClassLikeStorage $class_storage = null,
-        array &$generic_params = null,
-        CodeLocation $code_location,
-        $check_variables
+        array &$generic_params = null
     ) {
         $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
 

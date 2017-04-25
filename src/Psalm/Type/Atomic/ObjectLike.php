@@ -67,7 +67,11 @@ class ObjectLike extends \Psalm\Type\Atomic
                          * @return string
                          */
                         function ($name, Union $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {
-                            return $name . ':' . $type->toNamespacedString($aliased_classes, $this_class, $use_phpdoc_format);
+                            return $name . ':' . $type->toNamespacedString(
+                                $aliased_classes,
+                                $this_class,
+                                $use_phpdoc_format
+                            );
                         },
                         array_keys($this->properties),
                         $this->properties

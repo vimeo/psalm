@@ -232,6 +232,4 @@ class FileReferenceProvider
             file_put_contents($cache_location, serialize(self::$file_references));
         }
     }
-
-
 }

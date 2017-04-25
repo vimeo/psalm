@@ -250,7 +250,9 @@ class Config
             $errors = libxml_get_errors();
             foreach ($errors as $error) {
                 if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
-                    throw new ConfigException('Error parsing file ' . $error->file . ' on line ' . $error->line . ': ' . $error->message);
+                    throw new ConfigException(
+                        'Error parsing file ' . $error->file . ' on line ' . $error->line . ': ' . $error->message
+                    );
                 }
             }
             libxml_clear_errors();
@@ -357,7 +359,9 @@ class Config
                 $file_path = realpath($stub_file['name']);
 
                 if (!$file_path) {
-                    throw new Exception\ConfigException('Cannot resolve stubfile path ' . getcwd() . '/' . $stub_file['name']);
+                    throw new Exception\ConfigException(
+                        'Cannot resolve stubfile path ' . getcwd() . '/' . $stub_file['name']
+                    );
                 }
 
                 $config->stub_files[] = $file_path;
