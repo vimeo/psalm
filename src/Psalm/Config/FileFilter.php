@@ -59,11 +59,12 @@ class FileFilter
         if ($e->directory) {
             /** @var \SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
-                if (strpos((string)$directory['name'], '*') !== false) {
+                $prospective_directory_path = (getcwd() . DIRECTORY_SEPARATOR . (string)$directory['name']);
+                if (strpos($prospective_directory_path, '*') !== false) {
                     $globs = array_map(
                         'realpath',
                         array_filter(
-                            glob(getcwd() . DIRECTORY_SEPARATOR . (string)($directory['name'])),
+                            glob($prospective_directory_path),
                             'is_dir'
                         )
                     );
@@ -76,7 +77,7 @@ class FileFilter
                     }
                     continue;
                 }
-                $directory_path = realpath(getcwd() . DIRECTORY_SEPARATOR . (string)$directory['name']);
+                $directory_path = realpath($prospective_directory_path);
 
                 if (!$directory_path) {
                     die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
