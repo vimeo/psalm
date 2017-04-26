@@ -67,10 +67,10 @@ class FileFilter
                             'is_dir'
                         )
                     );
-                    foreach ($globs as $globIndex => $directory_path) {
+                    foreach ($globs as $glob_index => $directory_path) {
                         if (!$directory_path) {
                             die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
-                                (string)$directory['name']. ':' . $globIndex);
+                                (string)$directory['name']. ':' . $glob_index);
                         }
                         $filter->addDirectory($directory_path);
                     }
