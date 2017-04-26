@@ -59,7 +59,25 @@ class FileFilter
         if ($e->directory) {
             /** @var \SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
-                $directory_path = realpath(getcwd() . DIRECTORY_SEPARATOR . (string)$directory['name']);
+                $prospective_directory_path = (getcwd() . DIRECTORY_SEPARATOR . (string)$directory['name']);
+                if (strpos($prospective_directory_path, '*') !== false) {
+                    $globs = array_map(
+                        'realpath',
+                        array_filter(
+                            glob($prospective_directory_path),
+                            'is_dir'
+                        )
+                    );
+                    foreach ($globs as $glob_index => $directory_path) {
+                        if (!$directory_path) {
+                            die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
+                                (string)$directory['name']. ':' . $glob_index);
+                        }
+                        $filter->addDirectory($directory_path);
+                    }
+                    continue;
+                }
+                $directory_path = realpath($prospective_directory_path);
 
                 if (!$directory_path) {
                     die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
