@@ -15,19 +15,19 @@ class ReturnTypeTest extends TestCase
             'returnTypeAfterUselessNullCheck' => [
                 '<?php
                     class One {}
-            
+
                     class B {
                         /**
                          * @return One|null
                          */
                         public function barBar() {
                             $baz = rand(0,100) > 50 ? new One() : null;
-            
+
                             // should have no effect
                             if ($baz === null) {
                                 $baz = null;
                             }
-            
+
                             return $baz;
                         }
                     }'
@@ -195,7 +195,7 @@ class ReturnTypeTest extends TestCase
                                 case 1:
                                 case 2:
                                     return true;
-            
+
                                 default:
                                     throw new \Exception("badness");
                             }
@@ -210,10 +210,10 @@ class ReturnTypeTest extends TestCase
                             return new static();
                         }
                     }
-            
+
                     class B extends A {
                     }
-            
+
                     $b = B::load();',
                 'assertions' => [
                     ['B' => '$b']
@@ -227,10 +227,10 @@ class ReturnTypeTest extends TestCase
                             return [new static()];
                         }
                     }
-            
+
                     class B extends A {
                     }
-            
+
                     $bees = B::loadMultiple();',
                 'assertions' => [
                     ['array<int, B>' => '$bees']
@@ -263,14 +263,14 @@ class ReturnTypeTest extends TestCase
                             return rand(0, 10) === 4 ? "blah" : null;
                         }
                     }
-            
+
                     class B extends A {
                         /** @return string */
                         public function blah() {
                             return "blah";
                         }
                     }
-            
+
                     $blah = (new B())->blah();',
                 'assertions' => [
                     ['string' => '$blah']
@@ -282,13 +282,13 @@ class ReturnTypeTest extends TestCase
                         /** @return string|null */
                         public function blah();
                     }
-            
+
                     class B implements A {
                         public function blah() {
                             return rand(0, 10) === 4 ? "blah" : null;
                         }
                     }
-            
+
                     $blah = (new B())->blah();',
                 'assertions' => [
                     ['string|null' => '$blah']
@@ -300,16 +300,16 @@ class ReturnTypeTest extends TestCase
                         /** @return string|null */
                         abstract public function blah();
                     }
-            
+
                     class B extends A {
                     }
-            
+
                     class C extends B {
                         public function blah() {
                             return rand(0, 10) === 4 ? "blahblah" : null;
                         }
                     }
-            
+
                     $blah = (new C())->blah();',
                 'assertions' => [
                     ['string|null' => '$blah']
@@ -319,10 +319,25 @@ class ReturnTypeTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {}
-            
+
                     /** @return B|A */
                     function foo() {
                       return rand(0, 1) ? new A : new B;
+                    }'
+            ],
+            'issetOnPropertyReturnType' => [
+                '<?php
+                    class Foo {
+                        /** @var Foo|null */
+                        protected $bar;
+
+                        /**
+                         * @return ?Foo
+                         */
+                        function getBarWithIsset() {
+                            if (isset($this->bar)) return $this->bar;
+                            return null;
+                        }
                     }'
             ]
         ];
@@ -397,7 +412,7 @@ class ReturnTypeTest extends TestCase
             'wrongReturnTypeInNamespace1' => [
                 '<?php
                     namespace bar;
-            
+
                     function fooFoo() : string {
                         return 5;
                     }',
@@ -406,7 +421,7 @@ class ReturnTypeTest extends TestCase
             'wrongReturnTypeInNamespace2' => [
                 '<?php
                     namespace bar;
-            
+
                     function fooFoo() : string {
                         return rand(0, 5) ? "hello" : null;
                     }',
@@ -443,7 +458,7 @@ class ReturnTypeTest extends TestCase
                     function fooFoo() : A {
                         return array_pop([]);
                     }
-            
+
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass'
             ]

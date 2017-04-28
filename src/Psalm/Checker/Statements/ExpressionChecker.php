@@ -1892,8 +1892,11 @@ class ExpressionChecker
                 is_string($isset_var->name)
             ) {
                 $var_id = '$this->' . $isset_var->name;
-                $context->vars_in_scope[$var_id] = Type::getMixed();
-                $context->vars_possibly_in_scope[$var_id] = true;
+
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    $context->vars_possibly_in_scope[$var_id] = true;
+                }
             }
 
             self::analyzeIssetVar($statements_checker, $isset_var, $context);
