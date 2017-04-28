@@ -237,7 +237,9 @@ class FetchChecker
                 continue;
             }
 
-            if ($stmt_var_id !== '$this' && MethodChecker::methodExists($lhs_type_part->value . '::__get', $file_checker)) {
+            if ($stmt_var_id !== '$this' &&
+                MethodChecker::methodExists($lhs_type_part->value . '::__get', $file_checker)
+            ) {
                 $stmt->inferredType = Type::getMixed();
                 continue;
             }
@@ -1218,8 +1220,8 @@ class FetchChecker
         ) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
-                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type . ' that does not ' .
-                        'implement ArrayAccess',
+                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type .
+                        ' that does not implement ArrayAccess',
                     $code_location
                 ),
                 $statements_checker->getSuppressedIssues()

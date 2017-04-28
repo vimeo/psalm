@@ -11,8 +11,7 @@ use Psalm\Type;
 
 class CommentChecker
 {
-    const TYPE_REGEX =
-        '(\??\\\?[\(\)A-Za-z0-9_\<,\>\[\]\-\{\}:|\\\]+|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
+    const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_\<,\>\[\]\-\{\}:|\\\]+|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
 
     /**
      * @param  string           $comment
@@ -78,7 +77,6 @@ class CommentChecker
                     break;
                 }
             }
-
         }
 
         if (!$type_in_comments) {

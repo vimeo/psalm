@@ -69,7 +69,8 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string                       $method_id
      * @return Type\Union|null
      */
-    public static function getMethodReturnType($method_id) {
+    public static function getMethodReturnType($method_id)
+    {
         $method_id = self::getDeclaringMethodId($method_id);
 
         if (!$method_id) {
@@ -243,7 +244,8 @@ class MethodChecker extends FunctionLikeChecker
             if ($self_call) {
                 if (IssueBuffer::accepts(
                     new NonStaticSelfCall(
-                        'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static, but is called using self::',
+                        'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static, but is called ' .
+                            'using self::',
                         $code_location
                     ),
                     $suppressed_issues
@@ -253,7 +255,8 @@ class MethodChecker extends FunctionLikeChecker
             } else {
                 if (IssueBuffer::accepts(
                     new InvalidStaticInvocation(
-                        'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static, but is called statically',
+                        'Method ' . MethodChecker::getCasedMethodId($method_id) . ' is not static, but is called ' .
+                            'statically',
                         $code_location
                     ),
                     $suppressed_issues
@@ -524,8 +527,9 @@ class MethodChecker extends FunctionLikeChecker
     public static function setDeclaringMethodId($method_id, $declaring_method_id)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        ClassLikeChecker::$storage[strtolower($fq_class_name)]->declaring_method_ids[$method_name] = $declaring_method_id;
+        ClassLikeChecker::$storage[$fq_class_name_lc]->declaring_method_ids[$method_name] = $declaring_method_id;
     }
 
     /**
@@ -536,8 +540,9 @@ class MethodChecker extends FunctionLikeChecker
     public static function setAppearingMethodId($method_id, $appearing_method_id)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        ClassLikeChecker::$storage[strtolower($fq_class_name)]->appearing_method_ids[$method_name] = $appearing_method_id;
+        ClassLikeChecker::$storage[$fq_class_name_lc]->appearing_method_ids[$method_name] = $appearing_method_id;
     }
 
     /**
@@ -594,8 +599,9 @@ class MethodChecker extends FunctionLikeChecker
     public static function setOverriddenMethodId($method_id, $overridden_method_id)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        ClassLikeChecker::$storage[strtolower($fq_class_name)]->overridden_method_ids[$method_name][] = $overridden_method_id;
+        ClassLikeChecker::$storage[$fq_class_name_lc]->overridden_method_ids[$method_name][] = $overridden_method_id;
     }
 
     /**

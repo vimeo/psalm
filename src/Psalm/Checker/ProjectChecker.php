@@ -983,7 +983,10 @@ class ProjectChecker
 
         if (!$config) {
             if ($this->output_format === self::TYPE_CONSOLE) {
-                exit('Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' . PHP_EOL);
+                exit(
+                    'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
+                    PHP_EOL
+                );
             }
 
             throw new Exception\ConfigException('Config not found for path ' . $path);

@@ -307,7 +307,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $this->getSource()
                     );
                 }
-
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
@@ -750,7 +749,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         $config = Config::getInstance();
 
         if (!$config->allow_includes) {
-            throw new FileIncludeException('File includes are not allowed per your Psalm config - check the allowFileIncludes flag.');
+            throw new FileIncludeException(
+                'File includes are not allowed per your Psalm config - check the allowFileIncludes flag.'
+            );
         }
 
         if (ExpressionChecker::analyze($this, $stmt->expr, $context) === false) {

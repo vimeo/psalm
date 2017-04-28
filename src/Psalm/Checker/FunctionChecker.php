@@ -98,7 +98,9 @@ class FunctionChecker extends FunctionLikeChecker
         $file_storage = FileChecker::$storage[$file_path];
 
         if (!isset($file_storage->functions[$function_id])) {
-            throw new \UnexpectedValueException('Not expecting ' . $function_id . ' to not have storage in ' . $file_path);
+            throw new \UnexpectedValueException(
+                'Not expecting ' . $function_id . ' to not have storage in ' . $file_path
+            );
         }
 
         return $file_storage->functions[$function_id];
@@ -204,7 +206,12 @@ class FunctionChecker extends FunctionLikeChecker
         $function_type_options = [];
 
         if (!self::$callmap_file_checker) {
-            self::$callmap_file_checker = new FileChecker('callmap.php', \Psalm\Checker\ProjectChecker::getInstance(), [], false);
+            self::$callmap_file_checker = new FileChecker(
+                'callmap.php',
+                \Psalm\Checker\ProjectChecker::getInstance(),
+                [],
+                false
+            );
         }
 
         foreach ($call_map_functions as $call_map_function_args) {
@@ -441,8 +448,13 @@ class FunctionChecker extends FunctionLikeChecker
 
             $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
-            $inner_type = $first_arg_array instanceof Type\Atomic\TArray ? $first_arg_array->type_params[1] : $first_arg_array->getGenericTypeParam();
-            $key_type = $first_arg_array instanceof Type\Atomic\TArray ? clone $first_arg_array->type_params[0] : Type::getString();
+            if ($first_arg_array instanceof Type\Atomic\TArray) {
+                $inner_type = $first_arg_array->type_params[1];
+                $key_type = clone $first_arg_array->type_params[0];
+            } else {
+                $inner_type =  $first_arg_array->getGenericTypeParam();
+                $key_type = Type::getString();
+            }
 
             if (!$second_arg) {
                 $inner_type->removeType('null');
@@ -602,24 +614,28 @@ class FunctionChecker extends FunctionLikeChecker
             return substr($function_name, 1);
         }
 
+        $function_name_lcase = strtolower($function_name);
+
         $imported_function_namespaces = $source->getAliasedFunctions();
         $imported_namespaces = $source->getAliasedClasses();
 
         if (strpos($function_name, '\\') !== false) {
             $function_name_parts = explode('\\', $function_name);
             $first_namespace = array_shift($function_name_parts);
+            $first_namespace_lcase = strtolower($first_namespace);
 
-            if (isset($imported_namespaces[strtolower($first_namespace)])) {
-                return $imported_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $function_name_parts);
+            if (isset($imported_namespaces[$first_namespace_lcase])) {
+                return $imported_namespaces[$first_namespace_lcase] . '\\' . implode('\\', $function_name_parts);
             }
 
-            if (isset($imported_function_namespaces[strtolower($first_namespace)])) {
-                return $imported_function_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $function_name_parts);
+            if (isset($imported_function_namespaces[$first_namespace_lcase])) {
+                return $imported_function_namespaces[$first_namespace_lcase] . '\\' .
+                    implode('\\', $function_name_parts);
             }
-        } elseif (isset($imported_namespaces[strtolower($function_name)])) {
-            return $imported_namespaces[strtolower($function_name)];
-        } elseif (isset($imported_function_namespaces[strtolower($function_name)])) {
-            return $imported_function_namespaces[strtolower($function_name)];
+        } elseif (isset($imported_namespaces[$function_name_lcase])) {
+            return $imported_namespaces[$function_name_lcase];
+        } elseif (isset($imported_function_namespaces[$function_name_lcase])) {
+            return $imported_function_namespaces[$function_name_lcase];
         }
 
         $namespace = $source->getNamespace();

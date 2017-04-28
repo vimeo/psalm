@@ -34,8 +34,6 @@ use Psalm\Type\Atomic\TNumericString;
 
 class TypeChecker
 {
-
-
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
@@ -798,7 +796,8 @@ class TypeChecker
                     ClassChecker::classExtendsOrImplements(
                         $container_type_part->value,
                         $input_type_part->value
-                )) ||
+                    )
+                ) ||
                 (InterfaceChecker::interfaceExists($container_type_part->value, $file_checker) &&
                     InterfaceChecker::interfaceExtends(
                         $container_type_part->value,

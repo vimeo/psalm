@@ -229,7 +229,8 @@ class ExpressionChecker
             }
 
             $use_context = new Context($context->self);
-            $use_context->collect_references = $statements_checker->getFileChecker()->project_checker->collect_references;
+            $use_context->collect_references =
+                $statements_checker->getFileChecker()->project_checker->collect_references;
 
             if (!$statements_checker->isStatic()) {
                 if ($context->collect_mutations &&

@@ -870,7 +870,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($this->function instanceof Function_) {
-            return ($this->source->getNamespace() ? strtolower($this->source->getNamespace()) . '\\' : '') . strtolower($this->function->name);
+            return ($this->source->getNamespace() ? strtolower($this->source->getNamespace()) . '\\' : '') .
+                strtolower($this->function->name);
         }
 
         return null;
@@ -881,7 +882,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public function getAliasedClassesFlipped()
     {
-        if ($this->source instanceof NamespaceChecker || $this->source instanceof FileChecker || $this->source instanceof ClassLikeChecker) {
+        if ($this->source instanceof NamespaceChecker ||
+            $this->source instanceof FileChecker ||
+            $this->source instanceof ClassLikeChecker
+        ) {
             return $this->source->getAliasedClassesFlipped();
         }
 
