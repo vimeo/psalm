@@ -78,6 +78,7 @@ $rules = [
     'no_mixed_echo_print' => [
         'use' => 'echo',
     ],
+    'no_multiline_whitespace_around_double_arrow' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
