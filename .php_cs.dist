@@ -196,6 +196,9 @@ $rules = [
     /* // to discuss
     'phpdoc_annotation_without_dot' => true,
     */
+    /* // to discuss
+    'phpdoc_indent' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
