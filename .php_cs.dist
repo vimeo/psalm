@@ -213,6 +213,9 @@ $rules = [
     'phpdoc_no_empty_return' => false,
     'phpdoc_no_package' => true,
     'phpdoc_no_useless_inheritdoc' => true,
+    /* // to discuss
+    'phpdoc_order' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
