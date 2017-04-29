@@ -226,6 +226,9 @@ $rules = [
             '@static' => 'static',
         ],
     ],
+    /* // to discuss
+    'phpdoc_scalar' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
