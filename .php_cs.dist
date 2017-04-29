@@ -200,6 +200,7 @@ $rules = [
     'phpdoc_indent' => true,
     */
     'phpdoc_inline_tag' => true,
+    'phpdoc_no_access' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
