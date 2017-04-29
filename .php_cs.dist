@@ -75,6 +75,9 @@ $rules = [
     'no_leading_import_slash' => true,
     */
     'no_leading_namespace_whitespace' => true,
+    'no_mixed_echo_print' => [
+        'use' => 'echo',
+    ],
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
