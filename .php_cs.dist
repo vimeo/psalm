@@ -261,6 +261,7 @@ $rules = [
     'self_accessor' => true,
     */
     'semicolon_after_instruction' => true,
+    'short_scalar_cast' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
