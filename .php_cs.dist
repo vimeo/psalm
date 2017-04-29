@@ -245,6 +245,9 @@ $rules = [
     'phpdoc_types' => true,
     'phpdoc_var_without_name' => true,
     'pow_to_exponentiation' => true,
+    /* // to discuss
+    'pre_increment' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
