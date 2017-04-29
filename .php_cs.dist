@@ -250,6 +250,7 @@ $rules = [
     */
     'protected_to_private' => true,
     'psr0' => false,
+    'psr4' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
