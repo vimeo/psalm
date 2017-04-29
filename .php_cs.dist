@@ -58,6 +58,7 @@ $rules = [
         ]
     ],
     */
+    'new_with_braces' => false,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
