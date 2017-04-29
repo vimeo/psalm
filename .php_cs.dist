@@ -278,6 +278,9 @@ $rules = [
     'ternary_operator_spaces' => true,
     // to be set to true if vimeo/psalm ever goes php:^7.0
     'ternary_to_null_coalescing' => false,
+    /* // to discuss
+    'trailing_comma_in_multiline_array' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
