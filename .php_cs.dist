@@ -9,16 +9,7 @@ $finder = array_reduce(
         return $finder->in($dir);
     },
     PhpCsFixer\Finder::create()->ignoreUnreadableDirs()
-);
-$finder = array_reduce(
-    [
-        __DIR__ . '/src/Psalm/CallMap.php',
-    ],
-    function (PhpCsFixer\Finder $finder, $dir) {
-        return $finder->exclude($dir);
-    },
-    $finder
-)->notPath('/stubs/i');
+)->notPath('/stubs/i')->notName('CallMap.php');
 $rules = [
     '@PSR2' => true,
     'array_syntax' => [
