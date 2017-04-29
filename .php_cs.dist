@@ -137,6 +137,9 @@ $rules = [
         ],
     ],
     */
+    /* // to discuss
+    'ordered_imports' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
