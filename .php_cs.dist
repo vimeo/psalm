@@ -1,0 +1,26 @@
+<?php
+$finder = array_reduce(
+    [
+        __DIR__ . '/src/',
+        __DIR__ . '/bin/',
+        __DIR__ . '/tests/'
+    ],
+    function (PhpCsFixer\Finder $finder, $dir) {
+        return $finder->in($dir);
+    },
+    PhpCsFixer\Finder::create()->ignoreUnreadableDirs()
+);
+$finder = array_reduce(
+    [
+        __DIR__ . '/src/Psalm/CallMap.php',
+    ],
+    function (PhpCsFixer\Finder $finder, $dir) {
+        return $finder->exclude($dir);
+    },
+    $finder
+)->notPath('/stubs/i');
+$rules = [
+    '@PSR2' => true,
+];
+
+return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
