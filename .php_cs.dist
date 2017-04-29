@@ -38,6 +38,12 @@ $rules = [
     'concat_space' => [
         'spacing' => 'one',
     ],
+    /* // to be removed/altered if vimeo/psalm ever goes php:^7.0
+    'declare_equal_normalize' => [
+        'space' => 'none',
+    ], // to be removed/altered if vimeo/psalm ever goes php:^7.0
+    'declare_strict_types' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
