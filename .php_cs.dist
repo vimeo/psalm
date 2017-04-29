@@ -201,6 +201,14 @@ $rules = [
     */
     'phpdoc_inline_tag' => true,
     'phpdoc_no_access' => true,
+    'phpdoc_no_alias_tag' => [
+        'replacements' => [
+            'property-read' => 'property',
+            'property-write' => 'property',
+            'type' => 'var',
+            'link' => 'see',
+        ],
+    ],
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
