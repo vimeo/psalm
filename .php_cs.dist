@@ -173,6 +173,7 @@ $rules = [
             'is_string',
         ],
     ],
+    'php_unit_fqcn_annotation' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
