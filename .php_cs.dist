@@ -267,6 +267,7 @@ $rules = [
     'simplified_null_return' => true,
     */
     'single_quote' => true,
+    'space_after_semicolon' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
