@@ -262,6 +262,7 @@ $rules = [
     */
     'semicolon_after_instruction' => true,
     'short_scalar_cast' => true,
+    'silenced_deprecation_error' => false,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
