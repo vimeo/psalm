@@ -209,6 +209,8 @@ $rules = [
             'link' => 'see',
         ],
     ],
+    // to be set to true if vimeo/psalm ever goes php:^7.1
+    'phpdoc_no_empty_return' => false,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
