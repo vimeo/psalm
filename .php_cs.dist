@@ -140,6 +140,14 @@ $rules = [
     /* // to discuss
     'ordered_imports' => true,
     */
+    'php_unit_construct' => [
+        'assertions' => [
+            'assertEquals',
+            'assertSame',
+            'assertNotEquals',
+            'assertNotSame',
+        ],
+    ],
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
