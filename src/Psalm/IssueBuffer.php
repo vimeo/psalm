@@ -109,8 +109,8 @@ class IssueBuffer
         if (!self::alreadyEmitted($error_message)) {
             switch ($project_checker->output_format) {
                 case ProjectChecker::TYPE_CONSOLE:
-                    echo($project_checker->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR') .
-                        ': ' . $error_message . PHP_EOL;
+                    $error_maybe_with_color = ($project_checker->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
+                    echo $error_maybe_with_color . ': ' . $error_message . PHP_EOL;
 
                     echo self::getSnippet($e, $project_checker->use_color) . PHP_EOL . PHP_EOL;
                     self::$error_count++;

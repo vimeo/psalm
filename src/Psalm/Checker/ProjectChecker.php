@@ -709,7 +709,8 @@ class ProjectChecker
         }
 
         if ($this->debug_output) {
-            echo(isset($this->visited_files[$file_path]) ? 'Rev' : 'V') . 'isiting ' . $file_path . PHP_EOL;
+            $rev_or_V = (isset($this->visited_files[$file_path]) ? 'Rev' : 'V');
+            echo $rev_or_V . 'isiting ' . $file_path . PHP_EOL;
         }
 
         $this->visited_files[$file_path] = true;
