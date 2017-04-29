@@ -82,6 +82,7 @@ $rules = [
     'no_multiline_whitespace_before_semicolons' => true,
     'no_php4_constructor' => true,
     'no_short_bool_cast' => true,
+    'no_short_echo_tag' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
