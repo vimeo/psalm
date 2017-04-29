@@ -236,6 +236,9 @@ $rules = [
     /* // to discuss
     'phpdoc_summary' => true,
     */
+    /* // to discuss
+    'phpdoc_to_comment' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
