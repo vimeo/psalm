@@ -35,6 +35,9 @@ $rules = [
     'cast_spaces' => false,
     'class_keyword_remove' => false,
     'combine_consecutive_unsets' => true,
+    'concat_space' => [
+        'spacing' => 'one',
+    ],
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
