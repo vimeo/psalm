@@ -269,6 +269,9 @@ $rules = [
     'single_quote' => true,
     'space_after_semicolon' => true,
     'standardize_not_equals' => true,
+    /* // to discuss
+    'strict_comparison' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
