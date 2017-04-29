@@ -233,6 +233,9 @@ $rules = [
     'phpdoc_separation' => true,
     */
     'phpdoc_single_line_var_spacing' => true,
+    /* // to discuss
+    'phpdoc_summary' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
