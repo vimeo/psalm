@@ -109,6 +109,9 @@ $rules = [
     /* // to discuss
     'no_unused_imports' => true,
     */
+    /* // to discuss
+    'no_useless_else' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
