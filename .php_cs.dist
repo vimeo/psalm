@@ -79,6 +79,7 @@ $rules = [
         'use' => 'echo',
     ],
     'no_multiline_whitespace_around_double_arrow' => true,
+    'no_multiline_whitespace_before_semicolons' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
