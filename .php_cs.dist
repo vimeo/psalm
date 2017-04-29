@@ -244,6 +244,7 @@ $rules = [
     */
     'phpdoc_types' => true,
     'phpdoc_var_without_name' => true,
+    'pow_to_exponentiation' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
