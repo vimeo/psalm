@@ -64,6 +64,7 @@ $rules = [
     'no_blank_lines_after_phpdoc' => true,
     'no_blank_lines_before_namespace' => true,
     'no_empty_comment' => true,
+    'no_empty_phpdoc' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
