@@ -49,6 +49,7 @@ $rules = [
     'linebreak_after_opening_tag' => true,
     'lowercase_cast' => true,
     'magic_constant_casing' => true,
+    'mb_str_functions' => false,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
