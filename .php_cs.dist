@@ -283,6 +283,9 @@ $rules = [
     */
     'trim_array_spaces' => true,
     'unary_operator_spaces' => true,
+    /* // to discuss
+    'whitespace_after_comma_in_array' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
