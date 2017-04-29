@@ -45,6 +45,7 @@ $rules = [
     'declare_strict_types' => true,
     */
     'function_to_constant' => true,
+    'include' => false,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
