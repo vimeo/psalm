@@ -252,6 +252,11 @@ $rules = [
     'psr0' => false,
     'psr4' => true,
     'random_api_migration' => true,
+    /* // to discuss
+    'return_type_declaration' => [
+        'space_before' => 'one',
+    ],
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
