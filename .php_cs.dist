@@ -239,6 +239,9 @@ $rules = [
     /* // to discuss
     'phpdoc_to_comment' => true,
     */
+    /* // to discuss
+    'phpdoc_trim' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
