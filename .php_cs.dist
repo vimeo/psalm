@@ -251,6 +251,7 @@ $rules = [
     'protected_to_private' => true,
     'psr0' => false,
     'psr4' => true,
+    'random_api_migration' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
