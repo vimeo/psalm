@@ -242,6 +242,7 @@ $rules = [
     /* // to discuss
     'phpdoc_trim' => true,
     */
+    'phpdoc_types' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
