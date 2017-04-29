@@ -74,6 +74,7 @@ $rules = [
     /* // to discuss
     'no_leading_import_slash' => true,
     */
+    'no_leading_namespace_whitespace' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
