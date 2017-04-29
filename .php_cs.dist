@@ -32,6 +32,8 @@ $rules = [
     */
     'blank_line_after_opening_tag' => false,
     'blank_line_before_return' => true,
+    'cast_spaces' => false,
+    'class_keyword_remove' => false,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
