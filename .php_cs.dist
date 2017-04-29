@@ -260,6 +260,7 @@ $rules = [
     /* // to discuss
     'self_accessor' => true,
     */
+    'semicolon_after_instruction' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
