@@ -184,6 +184,9 @@ $rules = [
         ],
     ],
     */
+    /* // to discuss
+    'php_unit_test_class_requires_covers' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
