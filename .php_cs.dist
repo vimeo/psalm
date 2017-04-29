@@ -248,6 +248,7 @@ $rules = [
     /* // to discuss
     'pre_increment' => true,
     */
+    'protected_to_private' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
