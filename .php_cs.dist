@@ -117,6 +117,26 @@ $rules = [
     'no_whitespace_in_blank_line' => true,
     'non_printable_character' => true,
     'normalize_index_brace' => true,
+    /* // to discuss
+    'ordered_class_elements' => [
+        'order' => [
+            'use_trait',
+            'constant_public',
+            'constant_protected',
+            'constant_private',
+            'property_public',
+            'property_protected',
+            'property_private',
+            'construct',
+            'destruct',
+            'magic',
+            'phpunit',
+            'method_public',
+            'method_protected',
+            'method_private',
+        ],
+    ],
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
