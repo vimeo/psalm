@@ -44,6 +44,7 @@ $rules = [
     ], // to be removed/altered if vimeo/psalm ever goes php:^7.0
     'declare_strict_types' => true,
     */
+    'function_to_constant' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);

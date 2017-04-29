@@ -31,7 +31,7 @@
     },
     "scripts": {
         "psalm": "./bin/psalm",
-        "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose",
+        "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",
         "tests": "phpunit"
     }
 }
