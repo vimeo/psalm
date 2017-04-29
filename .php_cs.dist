@@ -66,6 +66,11 @@ $rules = [
     'no_empty_comment' => true,
     'no_empty_phpdoc' => true,
     'no_empty_statement' => true,
+    'no_extra_consecutive_blank_lines' => [
+        'tokens' => [
+            'extra',
+        ],
+    ],
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
