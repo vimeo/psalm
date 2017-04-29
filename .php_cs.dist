@@ -112,6 +112,7 @@ $rules = [
     /* // to discuss
     'no_useless_else' => true,
     */
+    'no_useless_return' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
