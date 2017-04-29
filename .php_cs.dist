@@ -113,6 +113,7 @@ $rules = [
     'no_useless_else' => true,
     */
     'no_useless_return' => true,
+    'no_whitespace_before_comma_in_array' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
