@@ -106,6 +106,9 @@ $rules = [
     ],
     */
     'no_unreachable_default_argument_value' => true,
+    /* // to discuss
+    'no_unused_imports' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
