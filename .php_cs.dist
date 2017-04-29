@@ -199,6 +199,7 @@ $rules = [
     /* // to discuss
     'phpdoc_indent' => true,
     */
+    'phpdoc_inline_tag' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
