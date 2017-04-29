@@ -232,6 +232,7 @@ $rules = [
     /* // to discuss
     'phpdoc_separation' => true,
     */
+    'phpdoc_single_line_var_spacing' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
