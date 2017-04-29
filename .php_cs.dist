@@ -90,6 +90,7 @@ $rules = [
             'outside',
         ],
     ],
+    'no_trailing_comma_in_list_call' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
