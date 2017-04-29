@@ -257,6 +257,9 @@ $rules = [
         'space_before' => 'one',
     ],
     */
+    /* // to discuss
+    'self_accessor' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
