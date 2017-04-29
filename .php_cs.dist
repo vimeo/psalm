@@ -275,6 +275,7 @@ $rules = [
     /* // to discuss
     'strict_param' => true,
     */
+    'ternary_operator_spaces' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
