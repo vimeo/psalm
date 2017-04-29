@@ -105,6 +105,7 @@ $rules = [
         ],
     ],
     */
+    'no_unreachable_default_argument_value' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
