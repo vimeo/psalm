@@ -91,6 +91,7 @@ $rules = [
         ],
     ],
     'no_trailing_comma_in_list_call' => true,
+    'no_trailing_comma_in_singleline_array' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
