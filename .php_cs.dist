@@ -216,6 +216,16 @@ $rules = [
     /* // to discuss
     'phpdoc_order' => true,
     */
+    'phpdoc_return_self_reference' => [
+        'replacements' => [
+            'this' => '$this',
+            '@this' => '$this',
+            '$self' => 'self',
+            '@self' => 'self',
+            '$static' => 'static',
+            '@static' => 'static',
+        ],
+    ],
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
