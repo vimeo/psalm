@@ -211,6 +211,7 @@ $rules = [
     ],
     // to be set to true if vimeo/psalm ever goes php:^7.1
     'phpdoc_no_empty_return' => false,
+    'phpdoc_no_package' => true,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
