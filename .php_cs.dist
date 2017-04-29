@@ -52,6 +52,12 @@ $rules = [
     'mb_str_functions' => false,
     'method_separation' => true,
     'native_function_casing' => true,
+    /* // to discuss
+    'native_function_invocation' => [
+        'exclude' => [
+        ]
+    ],
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
