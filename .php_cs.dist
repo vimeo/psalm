@@ -71,6 +71,9 @@ $rules = [
             'extra',
         ],
     ],
+    /* // to discuss
+    'no_leading_import_slash' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
