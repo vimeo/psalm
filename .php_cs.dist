@@ -21,6 +21,16 @@ $finder = array_reduce(
 )->notPath('/stubs/i');
 $rules = [
     '@PSR2' => true,
+    'array_syntax' => [
+        'syntax' => 'short',
+    ],
+    /* // seems to cause high CPU spike
+    'binary_operator_spaces' => [
+        'align_double_arrow' => false,
+        'align_equals' => false,
+    ],
+    */
+    'blank_line_after_opening_tag' => false,
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
