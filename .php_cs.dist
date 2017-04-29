@@ -190,6 +190,9 @@ $rules = [
     'phpdoc_add_missing_param_annotation' => [
         'only_untyped' => true,
     ],
+    /* // to discuss
+    'phpdoc_align' => false,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
