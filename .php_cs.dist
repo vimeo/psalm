@@ -272,6 +272,9 @@ $rules = [
     /* // to discuss
     'strict_comparison' => true,
     */
+    /* // to discuss
+    'strict_param' => true,
+    */
 ];
 
 return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
