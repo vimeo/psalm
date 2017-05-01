@@ -15,10 +15,7 @@ $rules = [
     'array_syntax' => [
         'syntax' => 'short',
     ],
-    'binary_operator_spaces' => [
-        'align_double_arrow' => false,
-        'align_equals' => false,
-    ],
+    'binary_operator_spaces' => true,
     'blank_line_after_opening_tag' => false,
     'blank_line_before_return' => true,
     'cast_spaces' => false,
@@ -55,44 +52,23 @@ $rules = [
     'no_empty_comment' => true,
     'no_empty_phpdoc' => true,
     'no_empty_statement' => true,
-    'no_extra_consecutive_blank_lines' => [
-        'tokens' => [
-            'extra',
-        ],
-    ],
+    'no_extra_consecutive_blank_lines' => true,
     /* // to discuss
     'no_leading_import_slash' => true,
     */
     'no_leading_namespace_whitespace' => true,
-    'no_mixed_echo_print' => [
-        'use' => 'echo',
-    ],
+    'no_mixed_echo_print' => true,
     'no_multiline_whitespace_around_double_arrow' => true,
     'no_multiline_whitespace_before_semicolons' => true,
     'no_php4_constructor' => true,
     'no_short_bool_cast' => true,
     'no_short_echo_tag' => true,
     'no_singleline_whitespace_before_semicolons' => true,
-    'no_spaces_around_offset' => [
-        'positions' => [
-            'inside',
-            'outside',
-        ],
-    ],
+    'no_spaces_around_offset' => true,
     'no_trailing_comma_in_list_call' => true,
     'no_trailing_comma_in_singleline_array' => true,
     /* // to discuss
-    'no_unneeded_control_parentheses' => [
-        'statements' => [
-            'break',
-            'clone',
-            'continue',
-            'echo_print',
-            'return',
-            'switch_case',
-            'yield',
-        ],
-    ],
+    'no_unneeded_control_parentheses' => true,
     */
     'no_unreachable_default_argument_value' => true,
     /* // to discuss
@@ -107,78 +83,21 @@ $rules = [
     'non_printable_character' => true,
     'normalize_index_brace' => true,
     /* // to discuss
-    'ordered_class_elements' => [
-        'order' => [
-            'use_trait',
-            'constant_public',
-            'constant_protected',
-            'constant_private',
-            'property_public',
-            'property_protected',
-            'property_private',
-            'construct',
-            'destruct',
-            'magic',
-            'phpunit',
-            'method_public',
-            'method_protected',
-            'method_private',
-        ],
-    ],
+    'ordered_class_elements' => true,
     */
     /* // to discuss
     'ordered_imports' => true,
     */
-    'php_unit_construct' => [
-        'assertions' => [
-            'assertEquals',
-            'assertSame',
-            'assertNotEquals',
-            'assertNotSame',
-        ],
-    ],
-    'php_unit_dedicate_assert' => [
-        'functions' => [
-            'array_key_exists',
-            'empty',
-            'file_exists',
-            'is_infinite',
-            'is_nan',
-            'is_null',
-            'is_array',
-            'is_bool',
-            'is_boolean',
-            'is_callable',
-            'is_double',
-            'is_float',
-            'is_int',
-            'is_integer',
-            'is_long',
-            'is_numeric',
-            'is_object',
-            'is_real',
-            'is_resource',
-            'is_scalar',
-            'is_string',
-        ],
-    ],
+    'php_unit_construct' => true,
+    'php_unit_dedicate_assert' => true,
     'php_unit_fqcn_annotation' => true,
     /* // to discuss
-    'php_unit_strict' => [
-        'assertions' => [
-            'assertAttributeEquals',
-            'assertAttributeNotEquals',
-            'assertEquals',
-            'assertNotEquals',
-        ],
-    ],
+    'php_unit_strict' => true,
     */
     /* // to discuss
     'php_unit_test_class_requires_covers' => true,
     */
-    'phpdoc_add_missing_param_annotation' => [
-        'only_untyped' => true,
-    ],
+    'phpdoc_add_missing_param_annotation' => true,
     /* // to discuss
     'phpdoc_align' => false,
     */
@@ -190,14 +109,7 @@ $rules = [
     */
     'phpdoc_inline_tag' => true,
     'phpdoc_no_access' => true,
-    'phpdoc_no_alias_tag' => [
-        'replacements' => [
-            'property-read' => 'property',
-            'property-write' => 'property',
-            'type' => 'var',
-            'link' => 'see',
-        ],
-    ],
+    'phpdoc_no_alias_tag' => true,
     // to be set to true if vimeo/psalm ever goes php:^7.1
     'phpdoc_no_empty_return' => false,
     'phpdoc_no_package' => true,
@@ -205,16 +117,7 @@ $rules = [
     /* // to discuss
     'phpdoc_order' => true,
     */
-    'phpdoc_return_self_reference' => [
-        'replacements' => [
-            'this' => '$this',
-            '@this' => '$this',
-            '$self' => 'self',
-            '@self' => 'self',
-            '$static' => 'static',
-            '@static' => 'static',
-        ],
-    ],
+    'phpdoc_return_self_reference' => true,
     /* // to discuss
     'phpdoc_scalar' => true,
     */
