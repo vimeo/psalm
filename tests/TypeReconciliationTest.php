@@ -555,7 +555,8 @@ class TypeReconciliationTest extends TestCase
                         $c = rand(0, 1) ? bar($b) : null;
                         if (is_int($b)) { }
                     }
-                    function bar(?int &$a) : void {
+                    /** @param ?int $a */
+                    function bar(&$a) : void {
                         $a = 5;
                     }'
             ],
@@ -567,7 +568,8 @@ class TypeReconciliationTest extends TestCase
                             if (is_int($b)) { }
                         }
                     }
-                    function bar(?int &$a) : void {
+                    /** @param ?int $a */
+                    function bar(&$a) : void {
                         $a = 5;
                     }'
             ],
