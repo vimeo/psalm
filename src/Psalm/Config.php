@@ -411,7 +411,7 @@ class Config
         }
 
         if ($config->autoloader) {
-            require_once(getcwd() . DIRECTORY_SEPARATOR . $config->autoloader);
+            require_once($base_dir . DIRECTORY_SEPARATOR . $config->autoloader);
         }
 
         $config->collectPredefinedConstants();

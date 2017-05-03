@@ -98,40 +98,58 @@ if (isset($options['root'])) {
     $options['r'] = $options['root'];
 }
 
-$root_dir = (string)getcwd();
+$current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 
 if (isset($options['r'])) {
     $root_path = realpath($options['r']);
 
     if (!$root_path) {
-        die('Could not locate root directory ' . getcwd() . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL);
+        die('Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL);
     }
 
-    $root_dir = $root_path;
+    $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-$autoloader_found = false;
+$autoload_roots = [$current_dir];
 
-foreach ([$root_dir . '/../../autoload.php', $root_dir . '/vendor/autoload.php'] as $file) {
-    if (file_exists($file)) {
-        require $file;
-        $autoloader_found = true;
-        break;
+$psalm_dir = dirname(__DIR__);
+
+if (realpath($psalm_dir) !== realpath($current_dir)) {
+    $autoload_roots[] = $psalm_dir;
+}
+
+$autoload_files = [];
+
+foreach ($autoload_roots as $autoload_root) {
+    $has_autoloader = false;
+
+    $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
+
+    if (file_exists($nested_autoload_file)) {
+        $autoload_files[] = realpath($nested_autoload_file);
+        $has_autoloader = true;
+    }
+
+    $vendor_autoload_file = $autoload_root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+
+    if (file_exists($vendor_autoload_file)) {
+        $autoload_files[] = realpath($vendor_autoload_file);
+        $has_autoloader = true;
+    }
+
+    if (!$has_autoloader) {
+        $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
+
+        if (!isset($options['r'])) {
+            $error_message .= PHP_EOL . 'Add a --root=[your/project/directory] flag to specify a particular project to run Psalm on.';
+        }
+
+        die($error_message . PHP_EOL);
     }
 }
 
-if (!$autoloader_found) {
-    $error_message = 'Could not find any composer autoloaders in ' . $root_dir;
-
-    if (!isset($options['r'])) {
-        $error_message .= PHP_EOL . 'Add a --root=[your/project/directory] flag to specify a particular project to run Psalm on.';
-    }
-
-    die($error_message . PHP_EOL);
-}
-
-if (isset($options['r'])) {
-    $options['r'] = $options['root'];
+foreach ($autoload_files as $file) {
+    require_once $file;
 }
 
 if (isset($options['i'])) {
@@ -170,7 +188,7 @@ if (isset($options['i'])) {
         die('The given path "' . $bad_dir_path . '" does not appear to be a directory' . PHP_EOL);
     }
 
-    $template_file_name = dirname($root_dir) . '/assets/config_levels/' . $level . '.xml';
+    $template_file_name = dirname($current_dir) . '/assets/config_levels/' . $level . '.xml';
 
     if (!file_exists($template_file_name)) {
         die('Could not open config template' . PHP_EOL);
@@ -292,7 +310,7 @@ $project_checker = new ProjectChecker(
 
 // initialise custom config, if passed
 if ($path_to_config) {
-    $project_checker->setConfigXML($path_to_config, $root_dir);
+    $project_checker->setConfigXML($path_to_config, $current_dir);
 }
 
 // If XDebug is enabled, restart without it
@@ -303,13 +321,13 @@ if ($path_to_config) {
 if (array_key_exists('self-check', $options)) {
     $project_checker->checkDir(dirname(__DIR__) . '/src');
 } elseif ($paths_to_check === null) {
-    $project_checker->check($root_dir, $is_diff);
+    $project_checker->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check, $root_dir);
+            $project_checker->checkDir($path_to_check, $current_dir);
         } else {
-            $project_checker->checkFile($path_to_check, $root_dir);
+            $project_checker->checkFile($path_to_check, $current_dir);
         }
     }
 }
