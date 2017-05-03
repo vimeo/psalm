@@ -61,7 +61,7 @@ Options:
         Enable monochrome output
 
     -r, --root
-        If running as a global
+        If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
     --show-info[=BOOLEAN]
         Show non-exception parser findings
