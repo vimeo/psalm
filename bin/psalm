@@ -98,7 +98,7 @@ if (isset($options['root'])) {
     $options['r'] = $options['root'];
 }
 
-$root_dir = dirname(__DIR__);
+$root_dir = (string)getcwd();
 
 if (isset($options['r'])) {
     $root_path = realpath($options['r']);
@@ -121,7 +121,13 @@ foreach ([$root_dir . '/../../autoload.php', $root_dir . '/vendor/autoload.php']
 }
 
 if (!$autoloader_found) {
-    die('Could not find any composer autoloaders in ' . $root_dir . PHP_EOL);
+    $error_message = 'Could not find any composer autoloaders in ' . $root_dir;
+
+    if (!isset($options['r'])) {
+        $error_message .= PHP_EOL . 'Add a --root=[your/project/directory] flag to specify a particular project to run Psalm on.';
+    }
+
+    die($error_message . PHP_EOL);
 }
 
 if (isset($options['r'])) {
