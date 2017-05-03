@@ -233,21 +233,20 @@ class ProjectChecker
     }
 
     /**
+     * @param  string  $base_dir
      * @param  boolean $is_diff
      * @return void
      */
-    public function check($is_diff = false)
+    public function check($base_dir, $is_diff = false)
     {
-        $cwd = getcwd();
-
         $start_checks = (int)microtime(true);
 
-        if (!$cwd) {
-            throw new \InvalidArgumentException('Cannot work with empty cwd');
+        if (!$base_dir) {
+            throw new \InvalidArgumentException('Cannot work with empty base_dir');
         }
 
         if (!$this->config) {
-            $this->config = $this->getConfigForPath($cwd);
+            $this->config = $this->getConfigForPath($base_dir, $base_dir);
         }
 
         $diff_files = null;
@@ -515,12 +514,13 @@ class ProjectChecker
 
     /**
      * @param  string  $dir_name
+     * @param  string  $base_dir
      * @return void
      */
-    public function checkDir($dir_name)
+    public function checkDir($dir_name, $base_dir)
     {
         if (!$this->config) {
-            $this->config = $this->getConfigForPath($dir_name);
+            $this->config = $this->getConfigForPath($dir_name, $base_dir);
             $this->config->hide_external_errors = $this->config->isInProjectDirs($dir_name . DIRECTORY_SEPARATOR);
         }
 
@@ -657,16 +657,17 @@ class ProjectChecker
 
     /**
      * @param  string  $file_path
+     * @param  string  $base_dir
      * @return void
      */
-    public function checkFile($file_path)
+    public function checkFile($file_path, $base_dir)
     {
         if ($this->debug_output) {
             echo 'Checking ' . $file_path . PHP_EOL;
         }
 
         if (!$this->config) {
-            $this->config = $this->getConfigForPath($file_path);
+            $this->config = $this->getConfigForPath($file_path, $base_dir);
         }
 
         $start_checks = (int)microtime(true);
@@ -956,10 +957,11 @@ class ProjectChecker
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @param  string $path
+     * @param  string $base_dir
      * @return Config
      * @throws Exception\ConfigException If a config path is not found.
      */
-    private function getConfigForPath($path)
+    private function getConfigForPath($path, $base_dir)
     {
         $dir_path = realpath($path);
 
@@ -973,7 +975,7 @@ class ProjectChecker
             $maybe_path = $dir_path . DIRECTORY_SEPARATOR . Config::DEFAULT_FILE_NAME;
 
             if (file_exists($maybe_path)) {
-                $config = Config::loadFromXMLFile($maybe_path);
+                $config = Config::loadFromXMLFile($maybe_path, $base_dir);
 
                 break;
             }
@@ -1014,16 +1016,17 @@ class ProjectChecker
 
     /**
      * @param string $path_to_config
+     * @param string $base_dir
      * @return void
      * @throws Exception\ConfigException If a config file is not found in the given location.
      */
-    public function setConfigXML($path_to_config)
+    public function setConfigXML($path_to_config, $base_dir)
     {
         if (!file_exists($path_to_config)) {
             throw new Exception\ConfigException('Config not found at location ' . $path_to_config);
         }
 
-        $this->config = Config::loadFromXMLFile($path_to_config);
+        $this->config = Config::loadFromXMLFile($path_to_config, $base_dir);
 
         $this->config->visitStubFiles($this);
         $this->config->initializePlugins($this);

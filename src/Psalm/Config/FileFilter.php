@@ -47,11 +47,13 @@ class FileFilter
 
     /**
      * @param  SimpleXMLElement $e
+     * @param  string           $base_dir
      * @param  bool             $inclusive
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
+        $base_dir,
         $inclusive
     ) {
         $filter = new static($inclusive);
@@ -59,7 +61,7 @@ class FileFilter
         if ($e->directory) {
             /** @var \SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
-                $prospective_directory_path = (getcwd() . DIRECTORY_SEPARATOR . (string)$directory['name']);
+                $prospective_directory_path = ($base_dir . DIRECTORY_SEPARATOR . (string)$directory['name']);
                 if (strpos($prospective_directory_path, '*') !== false) {
                     $globs = array_map(
                         'realpath',
@@ -70,7 +72,7 @@ class FileFilter
                     );
                     foreach ($globs as $glob_index => $directory_path) {
                         if (!$directory_path) {
-                            die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
+                            die('Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                                 (string)$directory['name']. ':' . $glob_index);
                         }
                         $filter->addDirectory($directory_path);
@@ -80,7 +82,7 @@ class FileFilter
                 $directory_path = realpath($prospective_directory_path);
 
                 if (!$directory_path) {
-                    die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
+                    die('Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                         (string)$directory['name'] . PHP_EOL);
                 }
 
@@ -91,10 +93,10 @@ class FileFilter
         if ($e->file) {
             /** @var \SimpleXMLElement $file */
             foreach ($e->file as $file) {
-                $file_path = realpath(getcwd() . DIRECTORY_SEPARATOR . (string)$file['name']);
+                $file_path = realpath($base_dir . DIRECTORY_SEPARATOR . (string)$file['name']);
 
                 if (!$file_path) {
-                    die('Could not resolve config path to ' . getcwd() . DIRECTORY_SEPARATOR .
+                    die('Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                         (string)$file['name'] . PHP_EOL);
                 }
 

@@ -34,6 +34,7 @@ class UnusedCodeTest extends TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker();
         $this->project_checker->setConfig(Config::loadFromXML(
             'psalm.xml',
+            dirname(__DIR__),
             '<?xml version="1.0"?>
             <psalm
                 throwExceptionOnError="true"
@@ -79,9 +80,9 @@ class UnusedCodeTest extends TestCase
                     /** @return void */
                     function foo() {
                         $a = 0;
-            
+
                         $arr = ["hello"];
-            
+
                         unset($arr[$a]);
                     }'
             ]
@@ -138,7 +139,7 @@ class UnusedCodeTest extends TestCase
                         /** @return void */
                         public function foo() {}
                     }
-            
+
                     new A();',
                 'error_message' => 'PossiblyUnusedMethod'
             ],
@@ -148,7 +149,7 @@ class UnusedCodeTest extends TestCase
                         /** @return void */
                         private function foo() {}
                     }
-            
+
                     new A();',
                 'error_message' => 'UnusedMethod'
             ]

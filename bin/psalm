@@ -1,16 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
-    if (file_exists($file)) {
-        require $file;
-        break;
-    }
-}
-
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
-
 // show all errors
 error_reporting(-1);
 ini_set('display_errors', 1);
@@ -20,11 +10,11 @@ ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
 $options = getopt(
-    'f:mhc:i',
+    'f:mhc:ir:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
-        'find-dead-code', 'init', 'find-references-to:',
+        'find-dead-code', 'init', 'find-references-to:', 'root:',
     ]
 );
 
@@ -70,6 +60,9 @@ Options:
     -m, --monochrome
         Enable monochrome output
 
+    -r, --root
+        If running as a global
+
     --show-info[=BOOLEAN]
         Show non-exception parser findings
 
@@ -99,6 +92,40 @@ HELP;
 
 if (getcwd() === false) {
     die('Cannot get current working directory');
+}
+
+if (isset($options['root'])) {
+    $options['r'] = $options['root'];
+}
+
+$root_dir = dirname(__DIR__);
+
+if (isset($options['r'])) {
+    $root_path = realpath($options['r']);
+
+    if (!$root_path) {
+        die('Could not locate root directory ' . getcwd() . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL);
+    }
+
+    $root_dir = $root_path;
+}
+
+$autoloader_found = false;
+
+foreach ([$root_dir . '/../../autoload.php', $root_dir . '/vendor/autoload.php'] as $file) {
+    if (file_exists($file)) {
+        require $file;
+        $autoloader_found = true;
+        break;
+    }
+}
+
+if (!$autoloader_found) {
+    die('Could not find any composer autoloaders in ' . $root_dir . PHP_EOL);
+}
+
+if (isset($options['r'])) {
+    $options['r'] = $options['root'];
 }
 
 if (isset($options['i'])) {
@@ -137,7 +164,7 @@ if (isset($options['i'])) {
         die('The given path "' . $bad_dir_path . '" does not appear to be a directory' . PHP_EOL);
     }
 
-    $template_file_name = dirname(__DIR__) . '/assets/config_levels/' . $level . '.xml';
+    $template_file_name = dirname($root_dir) . '/assets/config_levels/' . $level . '.xml';
 
     if (!file_exists($template_file_name)) {
         die('Could not open config template' . PHP_EOL);
@@ -157,6 +184,9 @@ if (isset($options['i'])) {
 
     exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
 }
+
+use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
 
 // get vars from options
 $debug = array_key_exists('debug', $options);
@@ -256,7 +286,7 @@ $project_checker = new ProjectChecker(
 
 // initialise custom config, if passed
 if ($path_to_config) {
-    $project_checker->setConfigXML($path_to_config);
+    $project_checker->setConfigXML($path_to_config, $root_dir);
 }
 
 // If XDebug is enabled, restart without it
@@ -267,13 +297,13 @@ if ($path_to_config) {
 if (array_key_exists('self-check', $options)) {
     $project_checker->checkDir(dirname(__DIR__) . '/src');
 } elseif ($paths_to_check === null) {
-    $project_checker->check($is_diff);
+    $project_checker->check($root_dir, $is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check);
+            $project_checker->checkDir($path_to_check, $root_dir);
         } else {
-            $project_checker->checkFile($path_to_check);
+            $project_checker->checkFile($path_to_check, $root_dir);
         }
     }
 }

@@ -13,14 +13,16 @@ class ProjectFileFilter extends FileFilter
 
     /**
      * @param  SimpleXMLElement $e
+     * @param  string           $base_dir
      * @param  bool             $inclusive
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
+        $base_dir,
         $inclusive
     ) {
-        $filter = parent::loadFromXMLElement($e, $inclusive);
+        $filter = parent::loadFromXMLElement($e, $base_dir, $inclusive);
 
         if (isset($e->ignoreFiles)) {
             if (!$inclusive) {
@@ -28,7 +30,7 @@ class ProjectFileFilter extends FileFilter
             }
 
             /** @var \SimpleXMLElement $e->ignoreFiles */
-            $filter->file_filter = static::loadFromXMLElement($e->ignoreFiles, false);
+            $filter->file_filter = static::loadFromXMLElement($e->ignoreFiles, $base_dir, false);
         }
 
         return $filter;
