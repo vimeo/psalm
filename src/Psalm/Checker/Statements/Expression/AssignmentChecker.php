@@ -606,7 +606,9 @@ class AssignmentChecker
                     return null;
                 }
 
-                if ($lhs_var_id !== '$this' && MethodChecker::methodExists($lhs_type_part . '::__set', $file_checker)) {
+                if ($lhs_var_id !== '$this' &&
+                    MethodChecker::methodExists($lhs_type_part . '::__set', $file_checker)
+                ) {
                     if ($var_id) {
                         $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
 
