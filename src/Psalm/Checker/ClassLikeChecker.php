@@ -335,6 +335,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         }
                     }
                 }
+
+                if ($docblock_info->properties) {
+                    foreach ($docblock_info->properties as $property) {
+                        $pseudo_property_type = Type::parseString(
+                            FunctionLikeChecker::fixUpLocalType(
+                                $property['type'],
+                                $this
+                            )
+                        );
+
+                        $storage->pseudo_instance_properties[$property['name']] = $pseudo_property_type;
+                    }
+                }
             }
         }
 

@@ -121,6 +121,11 @@ class ClassLikeStorage
     public $properties = [];
 
     /**
+     * @var array<string, Type\Union>
+     */
+    public $pseudo_instance_properties = [];
+
+    /**
      * @var array<string, string>
      */
     public $declaring_property_ids = [];

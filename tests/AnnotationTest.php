@@ -50,14 +50,14 @@ class AnnotationTest extends TestCase
                     function fooFoo() : string {
                         return "boop";
                     }
-            
+
                     /**
                      * @return array<int, string>
                      */
                     function foo2() : array {
                         return ["hello"];
                     }
-            
+
                     /**
                      * @return array<int, string>
                      */
@@ -112,7 +112,7 @@ class AnnotationTest extends TestCase
             'goodDocblockInNamespace' => [
                 '<?php
                     namespace Foo;
-            
+
                     class A {
                         /**
                          * @param \Foo\A $a
@@ -121,7 +121,26 @@ class AnnotationTest extends TestCase
                         public function g(A $a, $b) : void {
                         }
                     }'
-            ]
+            ],
+            'propertyDocblock' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                         public function __get($name) : ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         public function __set($name, $value) : void {
+                         }
+                    }
+
+                    $a = new A();
+                    $a->foo = "hello";'
+            ],
         ];
     }
 
@@ -190,7 +209,27 @@ class AnnotationTest extends TestCase
                     function fooFoo() : void {
                     }',
                 'error_message' => 'InvalidDocblock'
-            ]
+            ],
+            'propertyDocblockInvalidAssignment' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                         public function __get($name) : ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         public function __set($name, $value) : void {
+                         }
+                    }
+
+                    $a = new A();
+                    $a->foo = 5;',
+                'error_message' => 'InvalidPropertyAssignment',
+            ],
         ];
     }
 }

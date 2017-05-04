@@ -608,6 +608,14 @@ class AssignmentChecker
 
                 if ($lhs_var_id !== '$this' && MethodChecker::methodExists($lhs_type_part . '::__set', $file_checker)) {
                     if ($var_id) {
+                        $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
+
+                        if (isset($class_storage->pseudo_instance_properties['$' . $prop_name])) {
+                            $class_property_types[] = clone $class_storage->pseudo_instance_properties['$' . $prop_name];
+                            $has_regular_setter = true;
+                            continue;
+                        }
+
                         $context->vars_in_scope[$var_id] = Type::getMixed();
                     }
                     continue;

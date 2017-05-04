@@ -240,7 +240,14 @@ class FetchChecker
             if ($stmt_var_id !== '$this' &&
                 MethodChecker::methodExists($lhs_type_part->value . '::__get', $file_checker)
             ) {
-                $stmt->inferredType = Type::getMixed();
+                $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
+
+                if (isset($class_storage->pseudo_instance_properties['$' . $stmt->name])) {
+                    $stmt->inferredType = clone $class_storage->pseudo_instance_properties['$' . $stmt->name];
+                } else {
+                    $stmt->inferredType = Type::getMixed();
+                }
+
                 continue;
             }
 

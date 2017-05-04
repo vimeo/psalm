@@ -261,6 +261,48 @@ class CommentChecker
             }
         }
 
+        if (isset($comments['specials']['deprecated'])) {
+            $info->deprecated = true;
+        }
+
+        if (isset($comments['specials']['property'])) {
+            /** @var string $property */
+            foreach ($comments['specials']['property'] as $line_number => $property) {
+                try {
+                    $line_parts = self::splitDocLine($property);
+                } catch (DocblockParseException $e) {
+                    throw $e;
+                }
+
+                if (count($line_parts) === 1 && $line_parts[0][0] === '$') {
+                    array_unshift($line_parts, 'mixed');
+                }
+
+                if (count($line_parts) > 1) {
+                    if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
+                        && !preg_match('/\[[^\]]+\]/', $line_parts[0])
+                        && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                        && !strpos($line_parts[0], '::')
+                        && $line_parts[0][0] !== '{'
+                    ) {
+                        if ($line_parts[1][0] === '&') {
+                            $line_parts[1] = substr($line_parts[1], 1);
+                        }
+
+                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
+
+                        $info->properties[] = [
+                            'name' => $line_parts[1],
+                            'type' => $line_parts[0],
+                            'line_number' => $line_number
+                        ];
+                    }
+                } else {
+                    throw new DocblockParseException('Badly-formatted @param');
+                }
+            }
+        }
+
         return $info;
     }
 
