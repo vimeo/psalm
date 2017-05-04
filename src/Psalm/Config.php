@@ -200,9 +200,10 @@ class Config
      * Creates a new config object from the file
      *
      * @param  string           $file_path
+     * @param  string           $base_dir
      * @return self
      */
-    public static function loadFromXMLFile($file_path)
+    public static function loadFromXMLFile($file_path, $base_dir)
     {
         $file_contents = file_get_contents($file_path);
 
@@ -210,13 +211,14 @@ class Config
             throw new \InvalidArgumentException('Cannot open ' . $file_path);
         }
 
-        return self::loadFromXML($file_path, $file_contents);
+        return self::loadFromXML($file_path, $base_dir, $file_contents);
     }
 
     /**
      * Creates a new config object from an XML string
      *
      * @param  string           $file_path
+     * @param  string           $base_dir
      * @param  string           $file_contents
      * @return self
      * @psalm-suppress MixedArgument
@@ -226,13 +228,13 @@ class Config
      * @psalm-suppress MixedOperand
      * @psalm-suppress MixedPropertyAssignment
      */
-    public static function loadFromXML($file_path, $file_contents)
+    public static function loadFromXML($file_path, $base_dir, $file_contents)
     {
         $config = new static();
 
         $config->file_path = $file_path;
 
-        $config->base_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
+        $config->base_dir = $base_dir;
 
         $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
 
@@ -336,7 +338,7 @@ class Config
         }
 
         if (isset($config_xml->projectFiles)) {
-            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, true);
+            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -404,12 +406,12 @@ class Config
             /** @var \SimpleXMLElement $issue_handler */
             foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
                 /** @var string $key */
-                $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement($issue_handler);
+                $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement($issue_handler, $base_dir);
             }
         }
 
         if ($config->autoloader) {
-            require_once(getcwd() . DIRECTORY_SEPARATOR . $config->autoloader);
+            require_once($base_dir . DIRECTORY_SEPARATOR . $config->autoloader);
         }
 
         $config->collectPredefinedConstants();

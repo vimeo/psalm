@@ -1,16 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
-    if (file_exists($file)) {
-        require $file;
-        break;
-    }
-}
-
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
-
 // show all errors
 error_reporting(-1);
 ini_set('display_errors', 1);
@@ -20,11 +10,11 @@ ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
 $options = getopt(
-    'f:mhc:i',
+    'f:mhc:ir:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
-        'find-dead-code', 'init', 'find-references-to:',
+        'find-dead-code', 'init', 'find-references-to:', 'root:',
     ]
 );
 
@@ -70,6 +60,9 @@ Options:
     -m, --monochrome
         Enable monochrome output
 
+    -r, --root
+        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+
     --show-info[=BOOLEAN]
         Show non-exception parser findings
 
@@ -99,6 +92,64 @@ HELP;
 
 if (getcwd() === false) {
     die('Cannot get current working directory');
+}
+
+if (isset($options['root'])) {
+    $options['r'] = $options['root'];
+}
+
+$current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
+
+if (isset($options['r'])) {
+    $root_path = realpath($options['r']);
+
+    if (!$root_path) {
+        die('Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL);
+    }
+
+    $current_dir = $root_path . DIRECTORY_SEPARATOR;
+}
+
+$autoload_roots = [$current_dir];
+
+$psalm_dir = dirname(__DIR__);
+
+if (realpath($psalm_dir) !== realpath($current_dir)) {
+    $autoload_roots[] = $psalm_dir;
+}
+
+$autoload_files = [];
+
+foreach ($autoload_roots as $autoload_root) {
+    $has_autoloader = false;
+
+    $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
+
+    if (file_exists($nested_autoload_file)) {
+        $autoload_files[] = realpath($nested_autoload_file);
+        $has_autoloader = true;
+    }
+
+    $vendor_autoload_file = $autoload_root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+
+    if (file_exists($vendor_autoload_file)) {
+        $autoload_files[] = realpath($vendor_autoload_file);
+        $has_autoloader = true;
+    }
+
+    if (!$has_autoloader) {
+        $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
+
+        if (!isset($options['r'])) {
+            $error_message .= PHP_EOL . 'Add a --root=[your/project/directory] flag to specify a particular project to run Psalm on.';
+        }
+
+        die($error_message . PHP_EOL);
+    }
+}
+
+foreach ($autoload_files as $file) {
+    require_once $file;
 }
 
 if (isset($options['i'])) {
@@ -137,7 +188,7 @@ if (isset($options['i'])) {
         die('The given path "' . $bad_dir_path . '" does not appear to be a directory' . PHP_EOL);
     }
 
-    $template_file_name = dirname(__DIR__) . '/assets/config_levels/' . $level . '.xml';
+    $template_file_name = dirname($current_dir) . '/assets/config_levels/' . $level . '.xml';
 
     if (!file_exists($template_file_name)) {
         die('Could not open config template' . PHP_EOL);
@@ -157,6 +208,9 @@ if (isset($options['i'])) {
 
     exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
 }
+
+use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
 
 // get vars from options
 $debug = array_key_exists('debug', $options);
@@ -256,7 +310,7 @@ $project_checker = new ProjectChecker(
 
 // initialise custom config, if passed
 if ($path_to_config) {
-    $project_checker->setConfigXML($path_to_config);
+    $project_checker->setConfigXML($path_to_config, $current_dir);
 }
 
 // If XDebug is enabled, restart without it
@@ -267,13 +321,13 @@ if ($path_to_config) {
 if (array_key_exists('self-check', $options)) {
     $project_checker->checkDir(dirname(__DIR__) . '/src');
 } elseif ($paths_to_check === null) {
-    $project_checker->check($is_diff);
+    $project_checker->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check);
+            $project_checker->checkDir($path_to_check, $current_dir);
         } else {
-            $project_checker->checkFile($path_to_check);
+            $project_checker->checkFile($path_to_check, $current_dir);
         }
     }
 }

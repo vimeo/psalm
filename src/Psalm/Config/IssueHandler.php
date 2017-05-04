@@ -18,9 +18,10 @@ class IssueHandler
 
     /**
      * @param  SimpleXMLElement $e
+     * @param  string           $base_dir
      * @return self
      */
-    public static function loadFromXMLElement(SimpleXMLElement $e)
+    public static function loadFromXMLElement(SimpleXMLElement $e, $base_dir)
     {
         $handler = new self();
 
@@ -34,7 +35,7 @@ class IssueHandler
 
         /** @var \SimpleXMLElement $error_level */
         foreach ($e->errorLevel as $error_level) {
-            $handler->custom_levels[] = ErrorLevelFileFilter::loadFromXMLElement($error_level, true);
+            $handler->custom_levels[] = ErrorLevelFileFilter::loadFromXMLElement($error_level, $base_dir, true);
         }
 
         return $handler;

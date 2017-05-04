@@ -70,6 +70,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     {
         $config = Config::loadFromXML(
             'psalm.xml',
+            (string)getcwd(),
             '<?xml version="1.0"?>
             <psalm>
                 <projectFiles>
@@ -89,6 +90,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     {
         $config = Config::loadFromXML(
             'psalm.xml',
+            dirname(__DIR__),
             '<?xml version="1.0"?>
             <psalm>
                 <projectFiles>
@@ -112,6 +114,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     {
         $config = Config::loadFromXML(
             'psalm.xml',
+            dirname(__DIR__),
             '<?xml version="1.0"?>
             <psalm>
                 <projectFiles>
@@ -136,6 +139,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     {
         $config = Config::loadFromXML(
             'psalm.xml',
+            dirname(__DIR__),
             '<?xml version="1.0"?>
             <psalm>
                 <projectFiles>
@@ -194,6 +198,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
 
         Config::loadFromXML(
             'psalm.xml',
+            dirname(__DIR__),
             '<?xml version="1.0"?>
             <psalm>
                 <projectFiles>
@@ -216,6 +221,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     {
         Config::loadFromXML(
             'psalm.xml',
+            dirname(__DIR__),
             '<?xml version="1.0"?>
             <psalm>
                 <projectFiles>
@@ -238,6 +244,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     {
         Config::loadFromXML(
             'psalm.xml',
+            dirname(__DIR__),
             '<?xml version="1.0"?>
             <psalm>
                 <projectFiles>
@@ -259,6 +266,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -293,6 +301,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -327,6 +336,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -357,6 +367,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -387,6 +398,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -417,6 +429,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -449,6 +462,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
                     requireVoidReturnType="true">
@@ -476,6 +490,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(
             TestConfig::loadFromXML(
                 'psalm.xml',
+                dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
                     requireVoidReturnType="false">
@@ -501,7 +516,10 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     public function testTemplatedFiles()
     {
         foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml'] as $file_name) {
-            Config::loadFromXMLFile(realpath(dirname(__DIR__) . '/assets/config_levels/' . $file_name));
+            Config::loadFromXMLFile(
+                realpath(dirname(__DIR__) . '/assets/config_levels/' . $file_name),
+                dirname(__DIR__)
+            );
         }
     }
 }
