@@ -51,11 +51,13 @@ abstract class Plugin
     /**
      * @param  ClassLikeChecker $statements_checker
      * @param  ClassLikeStorage $storage
+     * @param  PhpParser\Node\Stmt\ClassLike $stmt
      * @param  CodeLocation     $code_location
      * @return null|false
      */
     public function visitClassLike(
         ClassLikeChecker $statements_checker,
+        PhpParser\Node\Stmt\ClassLike $stmt,
         ClassLikeStorage $storage,
         CodeLocation $code_location
     ) {
