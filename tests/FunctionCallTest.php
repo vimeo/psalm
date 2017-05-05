@@ -27,11 +27,11 @@ class FunctionCallTest extends TestCase
 
         if (version_compare((string)phpversion(), '5.6.0', '>=')) {
             $stmts = self::$parser->parse('<?php
-            $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool { 
-                return true; 
+            $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool {
+                return true;
             }, ARRAY_FILTER_USE_BOTH);
-            $g = array_filter(["a" => 5, "b" => 12, "c" => null], function(string $val) : bool { 
-                return true; 
+            $g = array_filter(["a" => 5, "b" => 12, "c" => null], function(string $val) : bool {
+                return true;
             }, ARRAY_FILTER_USE_KEY);
 
             $bar = "bar";
@@ -98,10 +98,10 @@ class FunctionCallTest extends TestCase
             'typedArrayWithDefault' => [
                 '<?php
                     class A {}
-            
+
                     /** @param array<A> $a */
                     function fooFoo(array $a = []) : void {
-            
+
                     }'
             ],
             'validDocblockParamDefault' => [
@@ -120,7 +120,7 @@ class FunctionCallTest extends TestCase
             'namespaced' => [
                 '<?php
                     namespace A;
-            
+
                     /** @return void */
                     function f(int $p) {}
                     f(5);'
@@ -143,7 +143,7 @@ class FunctionCallTest extends TestCase
                     }
                     namespace Bee {
                         use Aye as A;
-            
+
                         A\foo();
                     }'
             ],
@@ -212,7 +212,7 @@ class FunctionCallTest extends TestCase
             'extractVarCheck' => [
                 '<?php
                     function takesString(string $str) : void {}
-            
+
                     $foo = null;
                     $a = ["$foo" => "bar"];
                     extract($a);
@@ -222,7 +222,24 @@ class FunctionCallTest extends TestCase
                     'MixedAssignment',
                     'MixedArrayAccess'
                 ]
-            ]
+            ],
+            'arrayMergeObjectLike' => [
+                '<?php
+                  /**
+                   * @param array<string, int> $a
+                   * @return array<string, int>
+                   */
+                  function foo($a)
+                  {
+                    return $a;
+                  }
+
+                  $a1 = ["hi" => 3];
+                  $a2 = ["bye" => 5];
+                  $a3 = array_merge($a1, $a2);
+
+                  foo($a3);'
+            ],
         ];
     }
 
@@ -269,7 +286,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A{}
-            
+
                     function fooFoo(B $b) : void {}
                     fooFoo(new A());',
                 'error_message' => 'TypeCoercion'
@@ -278,7 +295,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A{}
-            
+
                     /**
                      * @param  B[]  $b
                      * @return void
@@ -323,7 +340,7 @@ class FunctionCallTest extends TestCase
                       if (!is_callable($callback)) {  }
                       takes_int("string");
                     }
-            
+
                     function takes_int(int $i) {}',
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [

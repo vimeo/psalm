@@ -406,7 +406,14 @@ class FunctionChecker extends FunctionLikeChecker
 
                 foreach ($call_arg->value->inferredType->types as $type_part) {
                     if (!$type_part instanceof Type\Atomic\TArray) {
-                        return Type::getArray();
+                        if ($type_part instanceof Type\Atomic\ObjectLike) {
+                            $type_part = new Type\Atomic\TArray([
+                                Type::getString(),
+                                $type_part->getGenericTypeParam()
+                            ]);
+                        } else {
+                            return Type::getArray();
+                        }
                     }
 
                     if ($type_part->type_params[1]->isEmpty()) {
