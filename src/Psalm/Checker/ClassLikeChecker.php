@@ -412,6 +412,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
+        $plugins = Config::getInstance()->getPlugins();
+
+        if ($plugins) {
+            $code_location = new CodeLocation($this->source, $this->class, true);
+
+            foreach ($plugins as $plugin) {
+                if ($plugin->visitClassLike($this, $storage, $code_location) === false) {
+                    return false;
+                }
+            }
+        }
+
         $storage->registered = true;
 
         return null;

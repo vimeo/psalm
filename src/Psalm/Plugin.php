@@ -2,7 +2,9 @@
 namespace Psalm;
 
 use PhpParser;
+use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Storage\ClassLikeStorage;
 
 abstract class Plugin
 {
@@ -42,6 +44,20 @@ abstract class Plugin
         Context $context,
         CodeLocation $code_location,
         array $suppressed_issues
+    ) {
+        return null;
+    }
+
+    /**
+     * @param  ClassLikeChecker $statements_checker
+     * @param  ClassLikeStorage $storage
+     * @param  CodeLocation     $code_location
+     * @return null|false
+     */
+    public function visitClassLike(
+        ClassLikeChecker $statements_checker,
+        ClassLikeStorage $storage,
+        CodeLocation $code_location
     ) {
         return null;
     }
