@@ -27,7 +27,7 @@ class CommentChecker
      */
     public static function getTypeFromComment(
         $comment,
-        Context $context = null,
+        $context,
         StatementsSource $source,
         $var_id = null,
         array $template_types = null,

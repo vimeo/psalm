@@ -1391,7 +1391,7 @@ class CallChecker
     protected static function checkFunctionArguments(
         StatementsChecker $statements_checker,
         array $args,
-        array $function_params = null,
+        $function_params,
         Context $context
     ) {
         $last_param = $function_params

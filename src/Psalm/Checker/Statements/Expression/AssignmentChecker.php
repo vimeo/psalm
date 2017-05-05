@@ -70,8 +70,8 @@ class AssignmentChecker
     public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $assign_var,
-        PhpParser\Node\Expr $assign_value = null,
-        Type\Union $assign_value_type = null,
+        $assign_value,
+        $assign_value_type,
         Context $context,
         $doc_comment,
         $by_reference = false,
@@ -432,7 +432,7 @@ class AssignmentChecker
         StatementsChecker $statements_checker,
         $stmt,
         $prop_name,
-        PhpParser\Node\Expr $assignment_value = null,
+        $assignment_value,
         Type\Union $assignment_value_type,
         Context $context
     ) {
@@ -613,7 +613,8 @@ class AssignmentChecker
                         $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
 
                         if (isset($class_storage->pseudo_instance_properties['$' . $prop_name])) {
-                            $class_property_types[] = clone $class_storage->pseudo_instance_properties['$' . $prop_name];
+                            $class_property_types[] =
+                                clone $class_storage->pseudo_instance_properties['$' . $prop_name];
                             $has_regular_setter = true;
                             continue;
                         }
@@ -784,7 +785,7 @@ class AssignmentChecker
     protected static function analyzeStaticPropertyAssignment(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
-        PhpParser\Node\Expr $assignment_value = null,
+        $assignment_value,
         Type\Union $assignment_value_type,
         Context $context
     ) {
