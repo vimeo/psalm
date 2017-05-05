@@ -242,8 +242,8 @@ class FetchChecker
             ) {
                 $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
 
-                if (isset($class_storage->pseudo_instance_properties['$' . $stmt->name])) {
-                    $stmt->inferredType = clone $class_storage->pseudo_instance_properties['$' . $stmt->name];
+                if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name])) {
+                    $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name];
                 } else {
                     $stmt->inferredType = Type::getMixed();
                 }

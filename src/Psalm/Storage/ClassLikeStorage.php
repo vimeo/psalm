@@ -123,7 +123,12 @@ class ClassLikeStorage
     /**
      * @var array<string, Type\Union>
      */
-    public $pseudo_instance_properties = [];
+    public $pseudo_property_set_types = [];
+
+    /**
+     * @var array<string, Type\Union>
+     */
+    public $pseudo_property_get_types = [];
 
     /**
      * @var array<string, string>

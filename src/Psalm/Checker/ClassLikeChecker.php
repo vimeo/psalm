@@ -345,7 +345,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             )
                         );
 
-                        $storage->pseudo_instance_properties[$property['name']] = $pseudo_property_type;
+                        $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
+                        $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
                     }
                 }
             }

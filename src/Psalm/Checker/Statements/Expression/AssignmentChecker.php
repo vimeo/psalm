@@ -612,9 +612,9 @@ class AssignmentChecker
                     if ($var_id) {
                         $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
 
-                        if (isset($class_storage->pseudo_instance_properties['$' . $prop_name])) {
+                        if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
                             $class_property_types[] =
-                                clone $class_storage->pseudo_instance_properties['$' . $prop_name];
+                                clone $class_storage->pseudo_property_set_types['$' . $prop_name];
                             $has_regular_setter = true;
                             continue;
                         }
