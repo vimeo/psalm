@@ -2,3 +2,4 @@ vendor/
 .DS_Store
 phpunit.xml
 .php_cs.cache
+.php_cs
