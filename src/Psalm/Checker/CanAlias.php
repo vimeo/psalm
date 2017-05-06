@@ -32,6 +32,16 @@ trait CanAlias
     private $aliased_constants = [];
 
     /**
+     * @return FileChecker
+     */
+    abstract public function getFileChecker();
+
+    /**
+     * @return string
+     */
+    abstract public function getFilePath();
+
+    /**
      * @param  PhpParser\Node\Stmt\Use_ $stmt
      *
      * @return void
