@@ -82,7 +82,7 @@ class AlgebraChecker
             $source
         );
 
-        if ($assertions) {
+        if (!empty($assertions)) {
             $clauses = [];
 
             foreach ($assertions as $var => $type) {
@@ -173,7 +173,7 @@ class AlgebraChecker
                 }
             }
 
-            if ($impossibility) {
+            if (!empty($impossibility)) {
                 $impossibilities[$var_id] = $impossibility;
             }
         }
