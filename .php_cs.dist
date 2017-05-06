@@ -67,9 +67,7 @@ $rules = [
     'no_unneeded_control_parentheses' => true,
     */
     'no_unreachable_default_argument_value' => true,
-    /* // to discuss
     'no_unused_imports' => true,
-    */
     /* // to discuss
     'no_useless_else' => true,
     */
