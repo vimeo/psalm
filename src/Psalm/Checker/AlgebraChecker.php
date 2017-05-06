@@ -265,7 +265,7 @@ class AlgebraChecker
 
             $clause_var = array_keys($clause_a->possibilities)[0];
             $only_type = array_pop(array_values($clause_a->possibilities)[0]);
-            $negated_clause_type = TypeChecker::negateType($only_type);
+            $negated_clause_type = TypeChecker::negateType((string)$only_type);
 
             foreach ($cloned_clauses as $clause_b) {
                 if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
