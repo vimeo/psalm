@@ -38,12 +38,8 @@ $rules = [
     'mb_str_functions' => false,
     'method_separation' => true,
     'native_function_casing' => true,
-    /* // to discuss
-    'native_function_invocation' => [
-        'exclude' => [
-        ]
-    ],
-    */
+    // to discuss
+    'native_function_invocation' => false,
     'new_with_braces' => false,
     'no_alias_functions' => true,
     'no_blank_lines_after_class_opening' => true,
