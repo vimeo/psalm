@@ -79,9 +79,7 @@ $rules = [
     /* // to discuss
     'ordered_class_elements' => true,
     */
-    /* // to discuss
     'ordered_imports' => true,
-    */
     'php_unit_construct' => true,
     'php_unit_dedicate_assert' => true,
     'php_unit_fqcn_annotation' => true,
