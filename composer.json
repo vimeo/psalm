@@ -32,6 +32,9 @@
     "scripts": {
         "psalm": "./bin/psalm",
         "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",
-        "tests": "phpunit"
+        "tests": [
+            "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes --dry-run",
+            "phpunit"
+        ]
     }
 }
