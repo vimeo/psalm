@@ -15,4 +15,4 @@ install:
 script:
   - vendor/bin/phpunit
   - bin/psalm
-  - vendor/bin/php-cs-fixer fix --verbose --allow-risky=yes --dry-run
+  - vendor/bin/php-cs-fixer fix --verbose --allow-risky=yes --dry-run --config ./.php_cs.dist -- $(git diff --name-only $TRAVIS_COMMIT_RANGE | grep '\.php$') .php_cs.dist
