@@ -511,7 +511,7 @@ class AssignmentChecker
                 return null;
             }
 
-            if ($lhs_type->isNullable()) {
+            if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullPropertyAssignment(
                         $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',

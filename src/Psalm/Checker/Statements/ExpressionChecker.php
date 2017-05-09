@@ -1326,7 +1326,7 @@ class ExpressionChecker
                 return;
             }
 
-            if ($left_type->isNullable()) {
+            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Cannot concatenate with a possibly null ' . $left_type,
@@ -1338,7 +1338,7 @@ class ExpressionChecker
                 }
             }
 
-            if ($right_type->isNullable()) {
+            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Cannot concatenate with a possibly null ' . $right_type,

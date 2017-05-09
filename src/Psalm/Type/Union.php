@@ -39,6 +39,13 @@ class Union
     public $failed_reconciliation = false;
 
     /**
+     * Whether or not to ignore issues with possibly-null values
+     *
+     * @var boolean
+     */
+    public $ignore_nullable_issues = false;
+
+    /**
      * Constructs an Union instance
      * @param array<int, Atomic>     $types
      */

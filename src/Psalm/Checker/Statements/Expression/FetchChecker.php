@@ -153,7 +153,7 @@ class FetchChecker
             return null;
         }
 
-        if ($stmt_var_type->isNullable()) {
+        if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
             if (IssueBuffer::accepts(
                 new PossiblyNullPropertyFetch(
                     'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,

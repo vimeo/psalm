@@ -694,7 +694,11 @@ class CallChecker
             return null;
         }
 
-        if ($class_type && is_string($stmt->name) && $class_type->isNullable()) {
+        if ($class_type &&
+            is_string($stmt->name) &&
+            $class_type->isNullable() &&
+            !$class_type->ignore_nullable_issues
+        ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullReference(
                     'Cannot call method ' . $stmt->name . ' on possibly null variable ' . $var_id,
@@ -1942,7 +1946,7 @@ class CallChecker
                 return null;
             }
 
-            if ($input_type->isNullable()) {
+            if ($input_type->isNullable() && !$input_type->ignore_nullable_issues) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
