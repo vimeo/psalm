@@ -1134,7 +1134,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $inferred_return_type,
                 $declared_return_type,
                 $this->getFileChecker(),
-                false,
+                $declared_return_type->ignore_nullable_issues,
                 $has_scalar_match,
                 $type_coerced
             )) {
