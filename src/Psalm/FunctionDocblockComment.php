@@ -27,6 +27,13 @@ class FunctionDocblockComment
     public $variadic = false;
 
     /**
+     * Whether or not to ignore the nullability of this function's return type
+     *
+     * @var boolean
+     */
+    public $ignore_nullable_return = false;
+
+    /**
      * @var array<int, string>
      */
     public $suppress = [];

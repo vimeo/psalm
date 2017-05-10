@@ -725,6 +725,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $storage->variadic = true;
         }
 
+        if ($docblock_info->ignore_nullable_return && $storage->return_type) {
+            $storage->return_type->ignore_nullable_issues = true;
+        }
+
         $storage->suppressed_issues = $docblock_info->suppress;
 
         if (!$config->use_docblock_types) {
@@ -733,31 +737,29 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $template_types = $class_storage && $class_storage->template_types ? $class_storage->template_types : null;
 
-        if ($docblock_info) {
-            if ($docblock_info->template_types) {
-                $storage->template_types = [];
+        if ($docblock_info->template_types) {
+            $storage->template_types = [];
 
-                foreach ($docblock_info->template_types as $template_type) {
-                    if (count($template_type) === 3) {
-                        $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $source);
-                        $storage->template_types[$template_type[0]] = $as_type_string;
-                    } else {
-                        $storage->template_types[$template_type[0]] = 'mixed';
-                    }
+            foreach ($docblock_info->template_types as $template_type) {
+                if (count($template_type) === 3) {
+                    $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $source);
+                    $storage->template_types[$template_type[0]] = $as_type_string;
+                } else {
+                    $storage->template_types[$template_type[0]] = 'mixed';
                 }
-
-                $template_types = array_merge($template_types ?: [], $storage->template_types);
             }
 
-            if ($docblock_info->template_typeofs) {
-                $storage->template_typeof_params = [];
+            $template_types = array_merge($template_types ?: [], $storage->template_types);
+        }
 
-                foreach ($docblock_info->template_typeofs as $template_typeof) {
-                    foreach ($storage->params as $i => $param) {
-                        if ($param->name === $template_typeof['param_name']) {
-                            $storage->template_typeof_params[$i] = $template_typeof['template_type'];
-                            break;
-                        }
+        if ($docblock_info->template_typeofs) {
+            $storage->template_typeof_params = [];
+
+            foreach ($docblock_info->template_typeofs as $template_typeof) {
+                foreach ($storage->params as $i => $param) {
+                    if ($param->name === $template_typeof['param_name']) {
+                        $storage->template_typeof_params[$i] = $template_typeof['template_type'];
+                        break;
                     }
                 }
             }
@@ -797,6 +799,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             } else {
                 $storage->return_type = $docblock_return_type;
+            }
+
+            if ($docblock_info->ignore_nullable_return) {
+                $storage->return_type->ignore_nullable_issues = true;
             }
 
             if ($docblock_info->return_type_line_number) {
