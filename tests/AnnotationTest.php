@@ -130,14 +130,14 @@ class AnnotationTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                         public function __get($name) : ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        /** @return ?string */
+                        public function __get($name) {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
 
-                         public function __set($name, $value) : void {
-                         }
+                        public function __set($name, $value) : void {}
                     }
 
                     $a = new A();
@@ -239,9 +239,10 @@ class AnnotationTest extends TestCase
                 '<?php
                     /**
                      * @property string $foo
+                     * @return ?string
                      */
                     class A {
-                         public function __get($name) : ?string {
+                         public function __get($name) {
                               if ($name === "foo") {
                                    return "hello";
                               }
