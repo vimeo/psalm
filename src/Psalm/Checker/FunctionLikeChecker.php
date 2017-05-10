@@ -412,6 +412,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $closure_return_types = EffectsAnalyser::getReturnTypes(
                     $this->function->stmts,
                     $closure_yield_types,
+                    $ignore_nullable_issues,
                     true
                 );
 
