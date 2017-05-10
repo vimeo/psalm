@@ -989,6 +989,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $inferred_return_types = EffectsAnalyser::getReturnTypes(
             $this->function->getStmts(),
             $inferred_yield_types,
+            $ignore_nullable_issues,
             true
         );
 
@@ -1134,7 +1135,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $inferred_return_type,
                 $declared_return_type,
                 $this->getFileChecker(),
-                $declared_return_type->ignore_nullable_issues,
+                $ignore_nullable_issues,
                 $has_scalar_match,
                 $type_coerced
             )) {
