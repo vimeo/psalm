@@ -1498,6 +1498,7 @@ class ExpressionChecker
         $fleshed_out_type = new Type\Union($new_return_type_parts);
 
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
+        $fleshed_out_type->ignore_nullable_issues = $return_type->ignore_nullable_issues;
 
         return $fleshed_out_type;
     }
