@@ -465,6 +465,10 @@ abstract class Type
             $combined_type->from_docblock = true;
         }
 
+        if ($type_1->ignore_nullable_issues || $type_2->ignore_nullable_issues) {
+            $combined_type->ignore_nullable_issues = true;
+        }
+
         if ($both_failed_reconciliation) {
             $combined_type->failed_reconciliation = true;
         }

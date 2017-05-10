@@ -1231,6 +1231,7 @@ class TypeChecker
         }
 
         $from_docblock = $union->from_docblock;
+        $ignore_nullable_issues = $union->ignore_nullable_issues;
 
         $unique_types = [];
 
@@ -1267,6 +1268,7 @@ class TypeChecker
         $unique_type = new Type\Union($unique_types);
 
         $unique_type->from_docblock = $from_docblock;
+        $unique_type->ignore_nullable_issues = $ignore_nullable_issues;
 
         return $unique_type;
     }
