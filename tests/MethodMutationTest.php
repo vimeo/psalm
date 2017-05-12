@@ -100,4 +100,40 @@ class MethodMutationTest extends TestCase
         $this->assertEquals('string', (string)$method_context->vars_in_scope['$this->user_viewdata->name']);
         $this->assertEquals(true, (string)$method_context->vars_possibly_in_scope['$this->title']);
     }
+
+    /**
+     * @return void
+     */
+    public function testParentControllerSet()
+    {
+        $this->project_checker->registerFile(
+            'somefile.php',
+            '<?php
+        class Foo { }
+
+        class Controller {
+            /** @var Foo|null */
+            public $foo;
+
+            public function __construct() {
+                $this->foo = new Foo();
+            }
+        }
+
+        class FooController extends Controller {
+            public function __construct() {
+                parent::__construct();
+            }
+        }'
+        );
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visit($context);
+        $file_checker->analyze(false, true);
+        $method_context = new Context();
+        $this->project_checker->getMethodMutations('FooController::__construct', $method_context);
+
+        $this->assertEquals('Foo', (string)$method_context->vars_in_scope['$this->foo']);
+    }
 }

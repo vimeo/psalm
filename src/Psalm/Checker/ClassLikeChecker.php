@@ -814,6 +814,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $method_name,
         Context $context
     ) {
+        foreach (self::$storage[strtolower($this->fq_class_name)]->properties as $property_name => $property_storage) {
+            if (!isset($context->vars_in_scope['$this->' . $property_name]) &&
+                $property_storage->type !== false
+            ) {
+                $context->vars_in_scope['$this->' . $property_name] = clone $property_storage->type;
+            }
+        }
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name) === strtolower($method_name)

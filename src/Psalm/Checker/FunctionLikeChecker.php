@@ -124,7 +124,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $method_id = (string)$this->getMethodId($context->self);
 
             if ($add_mutations) {
-                $hash = $this->getMethodId() . json_encode([
+                $hash = $real_method_id . json_encode([
                     $context->vars_in_scope,
                         $context->vars_possibly_in_scope
                     ]);
@@ -144,11 +144,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($method_id);
-
-            if ($declaring_method_id !== $real_method_id) {
-                // this trait method has been overridden, so we don't care about it
-                return;
-            }
 
             $fq_class_name = (string)$context->self;
 
