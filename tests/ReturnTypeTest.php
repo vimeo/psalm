@@ -339,6 +339,14 @@ class ReturnTypeTest extends TestCase
                             return null;
                         }
                     }'
+            ],
+            'resourceReturnType' => [
+                '<?php
+                    namespace bar;
+
+                    function fooFoo() : ?resource {
+                        return null;
+                    }'
             ]
         ];
     }

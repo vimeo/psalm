@@ -1282,6 +1282,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return true;
         }
 
+        if (strrpos($fq_class_name, '\resource') === strlen($fq_class_name) - strlen('\resource')) {
+            return true;
+        }
+
         $class_exists = ClassChecker::classExists($fq_class_name, $file_checker);
         $interface_exists = InterfaceChecker::interfaceExists($fq_class_name, $file_checker);
 
