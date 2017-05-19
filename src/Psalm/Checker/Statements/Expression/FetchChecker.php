@@ -6,16 +6,15 @@ use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\MethodChecker;
-use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyFetch;
-use Psalm\Issue\InaccessibleClassConstant;
-use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayOffset;
@@ -34,26 +33,18 @@ use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\Generic;
-use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TNumeric;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TVoid;
-use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TMixed;
-use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TResource;
-use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
 
 class FetchChecker
 {
@@ -1227,7 +1218,7 @@ class FetchChecker
         ) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(
-                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id  : '') . ' of type ' . $type .
+                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id : '') . ' of type ' . $type .
                         ' that does not implement ArrayAccess',
                     $code_location
                 ),

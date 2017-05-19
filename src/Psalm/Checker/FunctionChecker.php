@@ -3,12 +3,7 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Config;
-use Psalm\EffectsAnalyser;
-use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
-use Psalm\Issue\DuplicateParam;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;

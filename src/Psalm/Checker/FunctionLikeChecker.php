@@ -1,13 +1,12 @@
 <?php
 namespace Psalm\Checker;
 
+use PhpParser;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use PhpParser;
-use Psalm\CodeLocation;
 use Psalm\Checker\Statements\ExpressionChecker;
-use Psalm\Checker\TypeChecker;
+use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;

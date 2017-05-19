@@ -3,8 +3,8 @@ namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
 use Psalm\Checker\ScopeChecker;
-use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;

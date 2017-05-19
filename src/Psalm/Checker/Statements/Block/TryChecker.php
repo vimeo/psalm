@@ -3,9 +3,9 @@ namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\CodeLocation;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;

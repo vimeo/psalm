@@ -1,11 +1,7 @@
 <?php
 namespace Psalm\Checker;
 
-use PhpParser\Node\Stmt\Namespace_;
-use PhpParser;
-use Psalm\Context;
 use Psalm\StatementsSource;
-use Psalm\Type;
 
 abstract class SourceChecker implements StatementsSource
 {

@@ -1,12 +1,11 @@
 <?php
 namespace Psalm\Checker;
 
-use PhpParser\Node\Stmt\Namespace_;
 use PhpParser;
+use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
-use Psalm\Exception\RedefinedPredefinedClassException;
-use Psalm\IssueBuffer;
 use Psalm\Issue\DuplicateClass;
+use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 

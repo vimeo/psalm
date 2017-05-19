@@ -1,12 +1,11 @@
 <?php
 namespace Psalm\Checker;
 
-use PhpParser\ParserFactory;
 use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Issue\DuplicateClass;
+use Psalm\IssueBuffer;
 use Psalm\Provider\FileProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;

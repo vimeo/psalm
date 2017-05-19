@@ -7,12 +7,11 @@ use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
-use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IfScope;
-use Psalm\IssueBuffer;
 use Psalm\Issue\ConflictingReferenceConstraint;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
 class IfChecker

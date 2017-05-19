@@ -1,8 +1,8 @@
 <?php
 namespace Psalm;
 
-use Psalm\Type\Union;
 use Psalm\Checker\FileChecker;
+use Psalm\Type\Union;
 
 class Context
 {

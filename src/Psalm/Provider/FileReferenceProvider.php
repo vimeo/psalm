@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Provider;
 
-use Psalm\Config;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Config;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff

@@ -1,7 +1,6 @@
 <?php
 namespace Psalm;
 
-use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
 
 interface StatementsSource

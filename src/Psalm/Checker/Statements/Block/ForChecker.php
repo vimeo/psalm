@@ -2,9 +2,9 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\Context;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Context;
 use Psalm\Type;
 
 class ForChecker

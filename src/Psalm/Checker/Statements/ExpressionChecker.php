@@ -8,7 +8,6 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\MethodChecker;
-use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\Checker\Statements\Expression\FetchChecker;
@@ -31,26 +30,15 @@ use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use Psalm\Type\Atomic\Generic;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TNumeric;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TVoid;
-use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
-use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TResource;
-use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
 
 class ExpressionChecker
 {

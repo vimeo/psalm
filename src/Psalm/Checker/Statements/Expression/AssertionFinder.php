@@ -5,7 +5,6 @@ use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
-use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;

@@ -2,18 +2,17 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\MethodChecker;
-use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
+use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Issue\InvalidIterator;
-use Psalm\Issue\NullReference;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
 class ForeachChecker

@@ -5,8 +5,8 @@ use PhpParser;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Clause;
 use Psalm\CodeLocation;
-use Psalm\IssueBuffer;
 use Psalm\Issue\ParadoxicalCondition;
+use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 
 class AlgebraChecker

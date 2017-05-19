@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Checker;
 
-use Psalm\Context;
-use Psalm\Exception\TypeParseTreeException;
-use Psalm\Exception\DocblockParseException;
-use Psalm\FunctionDocblockComment;
 use Psalm\ClassLikeDocblockComment;
+use Psalm\Context;
+use Psalm\Exception\DocblockParseException;
+use Psalm\Exception\TypeParseTreeException;
+use Psalm\FunctionDocblockComment;
 use Psalm\StatementsSource;
 use Psalm\Type;
 

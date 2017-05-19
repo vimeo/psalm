@@ -3,12 +3,8 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Config;
-use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\DeprecatedMethod;
-use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InaccessibleMethod;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\UndefinedMethod;
