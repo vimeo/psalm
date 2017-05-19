@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
 use Psalm\Checker\FileChecker;
 use Psalm\Context;
 
