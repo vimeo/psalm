@@ -811,7 +811,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
                 }
             }
-
         }
 
         if ($docblock_info->params) {
