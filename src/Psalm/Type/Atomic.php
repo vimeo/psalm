@@ -5,6 +5,8 @@ use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
 use Psalm\CodeLocation;
+use Psalm\IssueBuffer;
+use Psalm\Issue\ReservedWord;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
@@ -37,6 +39,13 @@ abstract class Atomic
      * @var boolean
      */
     protected $checked = false;
+
+    /**
+     * Whether or not the type comes from a docblock
+     *
+     * @var boolean
+     */
+    protected $from_docblock = false;
 
     /**
      * @param  string $value
@@ -208,6 +217,18 @@ abstract class Atomic
             return false;
         }
 
+        if ($this instanceof TResource && !$this->from_docblock) {
+            if (IssueBuffer::accepts(
+                new ReservedWord(
+                    '\'resource\' is a reserved word',
+                    $code_location
+                ),
+                $source->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
             foreach ($this->type_params as $type_param) {
                 $type_param->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
@@ -250,7 +271,7 @@ abstract class Atomic
      */
     public function setFromDocblock()
     {
-        // do nothing
+        $this->from_docblock = true;
     }
 
     /**

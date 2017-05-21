@@ -339,6 +339,25 @@ class ReturnTypeTest extends TestCase
                             return null;
                         }
                     }'
+            ],
+            'resourceReturnType' => [
+                '<?php
+                    /** @return resource */
+                    function getOutput() {
+                        $res = fopen("php://output", "w");
+
+                        if ($res === false) {
+                            throw new \Exception("Cannot write");
+                        }
+
+                        return $res;
+                    }',
+            ],
+            'resourceParamType' => [
+                '<?php
+                    /** @param resource $res */
+                    function doSomething($res) : void {
+                    }',
             ]
         ];
     }
@@ -461,6 +480,25 @@ class ReturnTypeTest extends TestCase
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass'
+            ],
+            'resourceReturnType' => [
+                '<?php
+                    function getOutput() : resource {
+                        $res = fopen("php://output", "w");
+
+                        if ($res === false) {
+                            throw new \Exception("Cannot write");
+                        }
+
+                        return $res;
+                    }',
+                'error_message' => 'ReservedWord'
+            ],
+            'resourceParamType' => [
+                '<?php
+                    function doSomething(resource $res) : void {
+                    }',
+                'error_message' => 'ReservedWord'
             ]
         ];
     }

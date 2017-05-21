@@ -159,6 +159,7 @@
             <xs:element name="PossiblyUnusedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyNotSetInConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyArguments" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />

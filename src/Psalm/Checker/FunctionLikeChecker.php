@@ -761,48 +761,57 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($docblock_info->return_type) {
-            $storage->has_template_return_type =
-                $template_types !== null &&
-                count(array_intersect(Type::tokenize($docblock_info->return_type), array_keys($template_types))) > 0;
+            if (!$storage->return_type || (string)$docblock_info->return_type !== (string)$storage->return_type) {
+                $storage->has_template_return_type =
+                    $template_types !== null &&
+                    count(
+                        array_intersect(
+                            Type::tokenize($docblock_info->return_type),
+                            array_keys($template_types)
+                        )
+                    ) > 0;
 
-            $docblock_return_type = Type::parseString(
-                self::fixUpLocalType(
-                    (string)$docblock_info->return_type,
-                    $source,
-                    $template_types
-                )
-            );
-
-            if (!$storage->return_type_location) {
-                $storage->return_type_location = new CodeLocation($source, $function, true);
-            }
-
-            if ($storage->return_type &&
-                !TypeChecker::hasIdenticalTypes(
-                    $storage->return_type,
-                    $docblock_return_type,
-                    $source->getFileChecker()
-                )
-            ) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        'Docblock return type does not match method return type for ' . $cased_function_id,
-                        new CodeLocation($source, $function, true)
+                $docblock_return_type = Type::parseString(
+                    self::fixUpLocalType(
+                        (string)$docblock_info->return_type,
+                        $source,
+                        $template_types
                     )
-                )) {
-                    // fall through
+                );
+
+                if (!$storage->return_type_location) {
+                    $storage->return_type_location = new CodeLocation($source, $function, true);
                 }
-            } else {
-                $storage->return_type = $docblock_return_type;
+
+                if ($storage->return_type &&
+                    !TypeChecker::hasIdenticalTypes(
+                        $storage->return_type,
+                        $docblock_return_type,
+                        $source->getFileChecker()
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Docblock return type does not match method return type for ' . $cased_function_id,
+                            new CodeLocation($source, $function, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    $storage->return_type = $docblock_return_type;
+                    $storage->return_type->setFromDocblock();
+                }
+
+                if ($docblock_info->ignore_nullable_return) {
+                    $storage->return_type->ignore_nullable_issues = true;
+                }
+
+                if ($docblock_info->return_type_line_number) {
+                    $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
+                }
             }
 
-            if ($docblock_info->ignore_nullable_return) {
-                $storage->return_type->ignore_nullable_issues = true;
-            }
-
-            if ($docblock_info->return_type_line_number) {
-                $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
-            }
         }
 
         if ($docblock_info->params) {
