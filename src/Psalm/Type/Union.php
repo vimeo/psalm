@@ -280,6 +280,10 @@ class Union
             return;
         }
 
+        if ($new_type && $new_type->ignore_nullable_issues) {
+            $this->ignore_nullable_issues = true;
+        }
+
         foreach ($old_type->types as $old_type_part) {
             $this->removeType($old_type_part->getKey());
         }

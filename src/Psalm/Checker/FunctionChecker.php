@@ -161,6 +161,7 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function replaceTemplateTypes(Type\Union $return_type, array $template_types)
     {
+        $ignore_nullable_issues = $return_type->ignore_nullable_issues;
         $type_tokens = Type::tokenize((string)$return_type);
 
         foreach ($type_tokens as &$type_token) {
@@ -169,7 +170,11 @@ class FunctionChecker extends FunctionLikeChecker
             }
         }
 
-        return Type::parseString(implode('', $type_tokens));
+        $result_type = Type::parseString(implode('', $type_tokens));
+
+        $result_type->ignore_nullable_issues = $ignore_nullable_issues;
+
+        return $result_type;
     }
 
     /**

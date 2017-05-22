@@ -737,7 +737,8 @@ class AssignmentChecker
             if (!TypeChecker::isContainedBy(
                 $assignment_value_type,
                 $class_property_type,
-                $file_checker
+                $file_checker,
+                $assignment_value_type->ignore_nullable_issues
             )) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignment(
