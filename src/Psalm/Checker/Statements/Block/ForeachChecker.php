@@ -13,6 +13,9 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidIterator;
 use Psalm\IssueBuffer;
+use Psalm\Issue\NullIterator;
+use Psalm\Issue\NullReference;
+use Psalm\Issue\PossiblyNullIterator;
 use Psalm\Type;
 
 class ForeachChecker
@@ -54,9 +57,35 @@ class ForeachChecker
         }
 
         if ($iterator_type) {
+            if ($iterator_type->isNull()) {
+                if (IssueBuffer::accepts(
+                    new NullIterator(
+                        'Cannot iterate over null',
+                        new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            } elseif ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullIterator(
+                        'Cannot iterate over nullable var ' . $iterator_type,
+                        new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+
             foreach ($iterator_type->types as $iterator_type) {
                 // if it's an empty array, we cannot iterate over it
                 if ((string) $iterator_type === 'array<empty, empty>') {
+                    continue;
+                }
+
+                if ($iterator_type instanceof Type\Atomic\TNull) {
                     continue;
                 }
 
@@ -78,7 +107,6 @@ class ForeachChecker
                 }
 
                 if ($iterator_type instanceof Type\Atomic\Scalar ||
-                    $iterator_type instanceof Type\Atomic\TNull ||
                     $iterator_type instanceof Type\Atomic\TVoid
                 ) {
                     if (IssueBuffer::accepts(
