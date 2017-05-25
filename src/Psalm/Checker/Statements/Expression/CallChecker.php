@@ -533,6 +533,16 @@ class CallChecker
                         return false;
                     }
 
+                    if (MethodChecker::checkMethodVisibility(
+                        $method_id,
+                        $context->self,
+                        $statements_checker->getSource(),
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues()
+                    ) === false) {
+                        return false;
+                    }
+
                     $generic_params = null;
 
                     if ($storage->template_types) {

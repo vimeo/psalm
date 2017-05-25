@@ -16,9 +16,9 @@ class ClassScopeTest extends TestCase
                 '<?php
                     class A {
                         private function fooFoo() : void {
-            
+
                         }
-            
+
                         private function barBar() : void {
                             $this->fooFoo();
                         }
@@ -30,7 +30,7 @@ class ClassScopeTest extends TestCase
                         protected function fooFoo() : void {
                         }
                     }
-            
+
                     class B extends A {
                         public function doFoo() : void {
                             $this->fooFoo();
@@ -43,9 +43,9 @@ class ClassScopeTest extends TestCase
                         protected function fooFoo() : void {
                         }
                     }
-            
+
                     class B extends A { }
-            
+
                     class C extends A {
                         public function doFoo() : void {
                             (new B)->fooFoo();
@@ -58,7 +58,7 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         protected $fooFoo = "";
                     }
-            
+
                     class B extends A {
                         public function doFoo() : void {
                             echo $this->fooFoo;
@@ -71,11 +71,11 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         protected $fooFoo = "";
                     }
-            
+
                     class B extends A { }
-            
+
                     class C extends B { }
-            
+
                     class D extends C {
                         public function doFoo() : void {
                             echo $this->fooFoo;
@@ -88,10 +88,10 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         protected $fooFoo = "";
                     }
-            
+
                     class B extends A {
                     }
-            
+
                     class C extends A {
                         public function fooFoo() : void {
                             $b = new B();
@@ -104,12 +104,12 @@ class ClassScopeTest extends TestCase
                     class A {
                         /** @var string */
                         protected static $fooFoo = "";
-            
+
                         public function barBar() : void {
                             echo self::$fooFoo;
                         }
                     }
-            
+
                     class B extends A {
                         public function doFoo() : void {
                             echo A::$fooFoo;
@@ -124,10 +124,10 @@ class ClassScopeTest extends TestCase
                                 $this->boop();
                             }
                         }
-            
+
                         private function boop() : void {}
                     }
-            
+
                     class B extends A {
                         private function boop() : void {}
                     }'
@@ -145,10 +145,10 @@ class ClassScopeTest extends TestCase
                 '<?php
                     class A {
                         private function fooFoo() : void {
-            
+
                         }
                     }
-            
+
                     (new A())->fooFoo();',
                 'error_message' => 'InaccessibleMethod'
             ],
@@ -156,10 +156,10 @@ class ClassScopeTest extends TestCase
                 '<?php
                     class A {
                         protected function fooFoo() : void {
-            
+
                         }
                     }
-            
+
                     (new A())->fooFoo();',
                 'error_message' => 'InaccessibleMethod'
             ],
@@ -167,10 +167,10 @@ class ClassScopeTest extends TestCase
                 '<?php
                     class A {
                         private function fooFoo() : void {
-            
+
                         }
                     }
-            
+
                     class B extends A {
                         public function doFoo() : void {
                             $this->fooFoo();
@@ -184,14 +184,14 @@ class ClassScopeTest extends TestCase
                         protected function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
                     }
-            
+
                     class C {
                         use T;
-            
+
                         public function doFoo() : void {
                             (new B)->fooFoo();
                         }
@@ -204,7 +204,7 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         private $fooFoo;
                     }
-            
+
                     echo (new A())->fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
@@ -214,7 +214,7 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         protected $fooFoo;
                     }
-            
+
                     echo (new A())->fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
@@ -224,7 +224,7 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         private $fooFoo = "";
                     }
-            
+
                     class B extends A {
                         public function doFoo() : void {
                             echo $this->fooFoo;
@@ -238,7 +238,7 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         private static $fooFoo;
                     }
-            
+
                     echo A::$fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
@@ -248,7 +248,7 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         protected static $fooFoo;
                     }
-            
+
                     echo A::$fooFoo;',
                 'error_message' => 'InaccessibleProperty'
             ],
@@ -258,13 +258,34 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         private static $fooFoo;
                     }
-            
+
                     class B extends A {
                         public function doFoo() : void {
                             echo A::$fooFoo;
                         }
                     }',
                 'error_message' => 'InaccessibleProperty'
+            ],
+            'privateConstructorInheritance' => [
+                '<?php
+                    class A {
+                        private function __construct() { }
+                    }
+                    class B extends A {}
+                    new B();',
+                'error_message' => 'InaccessibleMethod'
+            ],
+            'privateConstructorInheritanceCall' => [
+                '<?php
+                    class A {
+                        private function __construct() { }
+                    }
+                    class B extends A {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+                'error_message' => 'InaccessibleMethod'
             ]
         ];
     }
