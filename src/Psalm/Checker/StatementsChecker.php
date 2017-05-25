@@ -868,12 +868,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return string|null
-     * @param mixed $file_name
-     * @param mixed $current_directory
-     */
-
-    /**
      * @param   string  $file_name
      * @param   string  $current_directory
      * @return  string|null
