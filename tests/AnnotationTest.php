@@ -196,6 +196,29 @@ class AnnotationTest extends TestCase
                     Foo::barBar();',
                 'error_message' => 'DeprecatedMethod'
             ],
+            'deprecatedClassWithStaticCall' => [
+                '<?php
+                    /**
+                     * @deprecated
+                     */
+                    class Foo {
+                        public static function barBar() : void {
+                        }
+                    }
+
+                    Foo::barBar();',
+                'error_message' => 'DeprecatedClass'
+            ],
+            'deprecatedClassWithNew' => [
+                '<?php
+                    /**
+                     * @deprecated
+                     */
+                    class Foo { }
+
+                    $a = new Foo();',
+                'error_message' => 'DeprecatedClass'
+            ],
             'invalidDocblockParam' => [
                 '<?php
                     /**

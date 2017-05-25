@@ -16,6 +16,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\AbstractInstantiation;
+use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
@@ -512,6 +513,18 @@ class CallChecker
                         $statements_checker->getSuppressedIssues()
                     )) {
                         return false;
+                    }
+                }
+
+                if ($storage->deprecated) {
+                    if (IssueBuffer::accepts(
+                        new DeprecatedClass(
+                            $fq_class_name . ' is marked deprecated',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
                     }
                 }
 
@@ -1203,6 +1216,20 @@ class CallChecker
 
                 if (!$does_method_exist) {
                     return $does_method_exist;
+                }
+
+                $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+
+                if ($class_storage->deprecated) {
+                    if (IssueBuffer::accepts(
+                        new DeprecatedClass(
+                            $fq_class_name . ' is marked deprecated',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
 
                 if (MethodChecker::checkMethodVisibility(
