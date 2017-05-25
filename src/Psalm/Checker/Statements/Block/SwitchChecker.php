@@ -232,6 +232,7 @@ class SwitchChecker
         }
 
         $context->vars_possibly_in_scope = array_merge($context->vars_possibly_in_scope, $new_vars_possibly_in_scope);
+
         return null;
     }
 }

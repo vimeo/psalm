@@ -88,6 +88,7 @@ class FetchChecker
         if ($var_id && $context->hasVariable($var_id)) {
             // we don't need to check anything
             $stmt->inferredType = $context->vars_in_scope[$var_id];
+
             return null;
         }
 
@@ -447,6 +448,7 @@ class FetchChecker
                     $statements_checker->getFileChecker()->containsUnEvaluatedClassLike($fq_class_name)
                 ) {
                     $stmt->inferredType = Type::getString();
+
                     return null;
                 }
 
@@ -462,12 +464,14 @@ class FetchChecker
 
             if ($stmt->name === 'class') {
                 $stmt->inferredType = Type::getString();
+
                 return null;
             }
 
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!ClassLikeChecker::classOrInterfaceExists($fq_class_name, $statements_checker->getFileChecker())) {
                 $stmt->inferredType = Type::getMixed();
+
                 return null;
             }
 
@@ -618,6 +622,7 @@ class FetchChecker
             if ($var_id && $context->hasVariable($var_id)) {
                 // we don't need to check anything
                 $stmt->inferredType = $context->vars_in_scope[$var_id];
+
                 return null;
             }
 
@@ -1234,6 +1239,7 @@ class FetchChecker
             if ($type->type_params[1]->isEmpty()) {
                 $type->type_params[0] = $assignment_key_type;
                 $type->type_params[1] = $assignment_value_type;
+
                 return $type;
             }
 

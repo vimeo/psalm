@@ -48,7 +48,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
-     * @return boolean
+     * @return bool
      */
     public static function isVariadic($method_id)
     {
@@ -182,7 +182,6 @@ class MethodChecker extends FunctionLikeChecker
         $storage->visibility = $method->isPrivate()
             ? ClassLikeChecker::VISIBILITY_PRIVATE
             : ($method->isProtected() ? ClassLikeChecker::VISIBILITY_PROTECTED : ClassLikeChecker::VISIBILITY_PUBLIC);
-
 
         $possible_params = FunctionChecker::getParamsFromCallMap($method_id);
 
@@ -637,6 +636,6 @@ class MethodChecker extends FunctionLikeChecker
 
         list($fq_class_name) = explode('::', $method_id);
 
-        return $fq_class_name . '::' .$storage->cased_name;
+        return $fq_class_name . '::' . $storage->cased_name;
     }
 }

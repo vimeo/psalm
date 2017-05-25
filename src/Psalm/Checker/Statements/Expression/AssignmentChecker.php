@@ -708,6 +708,7 @@ class AssignmentChecker
 
         if ($var_id && count($class_property_types) === 1 && isset($class_property_types[0]->types['stdClass'])) {
             $context->vars_in_scope[$var_id] = Type::getMixed();
+
             return null;
         }
 

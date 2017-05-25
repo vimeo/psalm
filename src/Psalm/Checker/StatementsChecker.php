@@ -95,7 +95,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             }
 
-
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
                 !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             ) {
@@ -700,8 +699,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $stmt->inferredType = Type::getVoid();
         }
 
-
-
         if ($this->source instanceof FunctionLikeChecker) {
             $this->source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
         }
@@ -813,6 +810,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         $context->check_classes = false;
         $context->check_variables = false;
         $context->check_functions = false;
+
         return null;
     }
 
@@ -871,6 +869,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
     /**
      * @return string|null
+     * @param mixed $file_name
+     * @param mixed $current_directory
      */
 
     /**

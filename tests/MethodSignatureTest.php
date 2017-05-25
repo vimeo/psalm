@@ -15,6 +15,7 @@ class MethodSignatureTest extends TestCase
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
+
             return;
         }
 
@@ -55,6 +56,7 @@ class MethodSignatureTest extends TestCase
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
+
             return;
         }
 

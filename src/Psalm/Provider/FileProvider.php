@@ -8,7 +8,7 @@ class FileProvider
 {
     /**
      * @param  string  $file_path
-     * @return boolean
+     * @return bool
      */
     public static function hasFileChanged($file_path)
     {

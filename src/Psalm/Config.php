@@ -397,7 +397,6 @@ class Config
                     );
                 }
 
-
                 $config->plugins[] = $loaded_plugin;
             }
         }

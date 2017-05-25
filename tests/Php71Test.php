@@ -33,7 +33,7 @@ class Php71Test extends TestCase
             
                     $a = a();',
                 'assertions' => [
-                    ['null|string' =>'$a']
+                    ['null|string' => '$a']
                 ]
             ],
             'nullableArgument' => [

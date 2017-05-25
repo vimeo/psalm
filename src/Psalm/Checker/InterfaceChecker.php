@@ -41,7 +41,7 @@ class InterfaceChecker extends ClassLikeChecker
     /**
      * @param  string       $fq_interface_name
      * @param  FileChecker  $file_checker
-     * @return boolean
+     * @return bool
      */
     public static function interfaceExists($fq_interface_name, FileChecker $file_checker)
     {
@@ -59,7 +59,7 @@ class InterfaceChecker extends ClassLikeChecker
     /**
      * @param  string       $fq_interface_name
      * @param  FileChecker  $file_checker
-     * @return boolean
+     * @return bool
      */
     public static function hasCorrectCasing($fq_interface_name, FileChecker $file_checker)
     {
@@ -70,7 +70,7 @@ class InterfaceChecker extends ClassLikeChecker
      * @param  string       $interface_name
      * @param  string       $possible_parent
      * @param  FileChecker  $file_checker
-     * @return boolean
+     * @return bool
      */
     public static function interfaceExtends($interface_name, $possible_parent, FileChecker $file_checker)
     {

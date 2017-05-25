@@ -26,6 +26,7 @@ trait FileCheckerValidCodeParseTestTrait
         if (strpos($test_name, 'PHP7-') !== false) {
             if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
                 $this->markTestSkipped('Test case requires PHP 7.');
+
                 return;
             }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {

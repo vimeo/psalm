@@ -1130,7 +1130,6 @@ class CallChecker
                     );
                 }
 
-
                 if (!$does_class_exist) {
                     return $does_class_exist;
                 }

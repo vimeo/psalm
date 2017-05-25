@@ -190,6 +190,7 @@ class FileReferenceProvider
                 }
 
                 self::$file_references = $reference_cache;
+
                 return true;
             }
         }

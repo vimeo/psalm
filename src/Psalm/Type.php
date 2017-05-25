@@ -121,6 +121,7 @@ abstract class Type
                  */
                 function (ParseTree $child_tree) {
                     $tree_type = self::getTypeFromTree($child_tree);
+
                     return $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
                 },
                 $parse_tree->children
@@ -243,6 +244,7 @@ abstract class Type
     public static function convertSquareBrackets($type)
     {
         $class_chars = '[a-zA-Z0-9\<\>\\\\_]+';
+
         return preg_replace_callback(
             '/(' . $class_chars . '|' . '\((' . $class_chars . '(\|' . $class_chars . ')*' . ')\))((\[\])+)/',
             /**

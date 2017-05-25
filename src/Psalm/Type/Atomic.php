@@ -5,8 +5,8 @@ use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
 use Psalm\CodeLocation;
-use Psalm\IssueBuffer;
 use Psalm\Issue\ReservedWord;
+use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
@@ -36,14 +36,14 @@ abstract class Atomic
     /**
      * Whether or not the type has been checked yet
      *
-     * @var boolean
+     * @var bool
      */
     protected $checked = false;
 
     /**
      * Whether or not the type comes from a docblock
      *
-     * @var boolean
+     * @var bool
      */
     protected $from_docblock = false;
 

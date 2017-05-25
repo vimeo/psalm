@@ -87,7 +87,7 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @param  string       $fq_trait_name
      * @param  FileChecker  $file_checker
-     * @return boolean
+     * @return bool
      */
     public static function traitExists($fq_trait_name, FileChecker $file_checker)
     {
@@ -101,7 +101,7 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @param  string       $fq_trait_name
      * @param  FileChecker  $file_checker
-     * @return boolean
+     * @return bool
      */
     public static function hasCorrectCase($fq_trait_name, FileChecker $file_checker)
     {

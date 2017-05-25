@@ -399,7 +399,7 @@ class CommentChecker
                 $last = false;
             } elseif ($last !== false) {
                 $old_last_line = $lines[$last];
-                $lines[$last] = rtrim($old_last_line) .' '. trim($line);
+                $lines[$last] = rtrim($old_last_line) . ' ' . trim($line);
 
                 if ($line_number) {
                     $old_line_number = $line_map[$old_last_line];

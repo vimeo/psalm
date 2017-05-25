@@ -176,7 +176,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
                         if (IssueBuffer::accepts(
                             new OverriddenMethodAccess(
-                                'Method ' . $cased_method_id .' has different access level than ' . $parent_method_id,
+                                'Method ' . $cased_method_id . ' has different access level than ' . $parent_method_id,
                                 new CodeLocation($this, $this->function, true)
                             )
                         )) {
@@ -194,7 +194,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                             if (IssueBuffer::accepts(
                                 new MethodSignatureMismatch(
-                                    'Method ' . $cased_method_id .' has fewer arguments than parent method ' .
+                                    'Method ' . $cased_method_id . ' has fewer arguments than parent method ' .
                                         $parent_method_id,
                                     new CodeLocation($this, $this->function, true)
                                 )
@@ -214,7 +214,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                             if (IssueBuffer::accepts(
                                 new MethodSignatureMismatch(
-                                    'Argument ' . ($i + 1) . ' of ' . $cased_method_id .' has wrong type \'' .
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_method_id . ' has wrong type \'' .
                                         $storage->params[$i]->signature_type . '\', expecting \'' .
                                         $implemented_param->signature_type . '\' as defined by ' .
                                         $parent_method_id,
@@ -237,7 +237,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                             if (IssueBuffer::accepts(
                                 new MethodSignatureMismatch(
-                                    'Argument ' . ($i + 1) . ' of ' . $cased_method_id .' has wrong type \'' .
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_method_id . ' has wrong type \'' .
                                         $storage->params[$i]->type . '\', expecting \'' .
                                         $implemented_param->type . '\' as defined by ' .
                                         $parent_method_id,
@@ -259,7 +259,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                         if (IssueBuffer::accepts(
                             new MethodSignatureMismatch(
-                                'Method ' . $cased_method_id .' has more arguments than parent method ' .
+                                'Method ' . $cased_method_id . ' has more arguments than parent method ' .
                                     $parent_method_id,
                                 new CodeLocation($this, $this->function, true)
                             )
@@ -1268,7 +1268,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Parameter $' . $param_name .' does not appear in the argument list for ' .
+                        'Parameter $' . $param_name . ' does not appear in the argument list for ' .
                             $cased_method_id,
                         $code_location
                     )
@@ -1325,7 +1325,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $code_location->setCommentLine($line_number);
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
-                            'Parameter $' . $param_name .' has wrong type \'' . $new_param_type . '\', should be \'' .
+                            'Parameter $' . $param_name . ' has wrong type \'' . $new_param_type . '\', should be \'' .
                                 $storage_param_type . '\'',
                             $code_location
                         )
@@ -1361,7 +1361,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Parameter $' . $function_signature_param->name .' does not appear in the docbock for ' .
+                        'Parameter $' . $function_signature_param->name . ' does not appear in the docbock for ' .
                             $cased_method_id,
                         $function_signature_param->location
                     )
@@ -1606,7 +1606,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
     }
 
-     /**
+    /**
      * @param  array<int, array<int, FunctionLikeParameter>>  $function_param_options
      * @param  array<int, PhpParser\Node\Arg>                 $args
      * @param  FileChecker                                    $file_checker
@@ -1697,8 +1697,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     {
         $this->suppressed_issues = array_merge($this->suppressed_issues, $suppressed_issues);
     }
-
-
 
     /**
      * @return void

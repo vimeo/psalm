@@ -743,7 +743,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  StatementsSource                $source
      * @param  Context                         $class_context
      * @param  Context|null                    $global_context
-     * @param  boolean                         $update_docblocks
+     * @param  bool                         $update_docblocks
      * @return MethodChecker|null
      */
     private function analyzeClassMethod(
@@ -1979,7 +1979,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param  string  $fq_class_name
-     * @return boolean
+     * @return bool
      */
     public static function isUserDefined($fq_class_name)
     {
@@ -2000,7 +2000,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         /** @var array<string, array<string, string>> */
-        $property_map = require_once(__DIR__.'/../PropertyMap.php');
+        $property_map = require_once(__DIR__ . '/../PropertyMap.php');
 
         self::$property_map = [];
 

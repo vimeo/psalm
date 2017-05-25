@@ -54,6 +54,7 @@ class IssueBuffer
 
         if (self::$recording_level > 0) {
             self::$recorded_issues[self::$recording_level][] = $e;
+
             return false;
         }
 
@@ -97,6 +98,7 @@ class IssueBuffer
                         break;
                 }
             }
+
             return false;
         }
 
@@ -107,7 +109,7 @@ class IssueBuffer
         if (!self::alreadyEmitted($error_message)) {
             switch ($project_checker->output_format) {
                 case ProjectChecker::TYPE_CONSOLE:
-                    echo ($project_checker->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR') .
+                    echo($project_checker->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR') .
                         ': ' . $error_message . PHP_EOL;
 
                     echo self::getSnippet($e, $project_checker->use_color) . PHP_EOL . PHP_EOL;
@@ -312,6 +314,7 @@ class IssueBuffer
     {
         if (self::$recording_level === 0) {
             self::add($e);
+
             return;
         }
 

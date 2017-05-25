@@ -7,7 +7,7 @@ use Psalm\StatementsSource;
 class ClassChecker extends ClassLikeChecker
 {
     /**
-     * @var integer
+     * @var int
      */
     protected static $anonymous_class_count = 0;
 

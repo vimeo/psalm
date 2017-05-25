@@ -37,8 +37,8 @@ class ProjectFileFilter extends FileFilter
 
     /**
      * @param  string  $file_name
-     * @param  boolean $case_sensitive
-     * @return boolean
+     * @param  bool $case_sensitive
+     * @return bool
      */
     public function allows($file_name, $case_sensitive = false)
     {

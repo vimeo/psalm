@@ -48,7 +48,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
-     * @return boolean
+     * @return bool
      */
     public static function functionExists($function_id, $file_path)
     {
@@ -104,7 +104,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
-     * @return boolean
+     * @return bool
      */
     public static function isVariadic($function_id, $file_path)
     {
@@ -459,7 +459,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $inner_type = $first_arg_array->type_params[1];
                 $key_type = clone $first_arg_array->type_params[0];
             } else {
-                $inner_type =  $first_arg_array->getGenericTypeParam();
+                $inner_type = $first_arg_array->getGenericTypeParam();
                 $key_type = Type::getString();
             }
 
@@ -529,6 +529,7 @@ class FunctionChecker extends FunctionLikeChecker
 
                 if ($call_map_key === 'array_map') {
                     $inner_type = clone $closure_return_type;
+
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             $key_type,
@@ -539,6 +540,7 @@ class FunctionChecker extends FunctionLikeChecker
 
                 if ($array_arg_type) {
                     $inner_type = clone $array_arg_type->type_params[1];
+
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             $key_type,
@@ -554,6 +556,7 @@ class FunctionChecker extends FunctionLikeChecker
                 if (isset($call_map[$mapped_function_id][0])) {
                     if ($call_map[$mapped_function_id][0]) {
                         $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
+
                         return new Type\Union([
                             new Type\Atomic\TArray([
                                 Type::getInt(),
@@ -585,7 +588,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         /** @var array<string, array<string, string>> */
-        $call_map = require_once(__DIR__.'/../CallMap.php');
+        $call_map = require_once(__DIR__ . '/../CallMap.php');
 
         self::$call_map = [];
 

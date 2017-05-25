@@ -685,6 +685,7 @@ class TypeChecker
 
             if ($all_types_contain) {
                 $to_string_cast = false;
+
                 return true;
             }
 
@@ -748,6 +749,7 @@ class TypeChecker
                 MethodChecker::methodExists($input_type_part->value . '::__toString', $file_checker)
             ) {
                 $to_string_cast = true;
+
                 return true;
             }
         }
@@ -1041,7 +1043,7 @@ class TypeChecker
      * @param  Type\Union   $declared_type
      * @param  Type\Union   $inferred_type
      * @param  FileChecker  $file_checker
-     * @return boolean
+     * @return bool
      */
     public static function hasIdenticalTypes(
         Type\Union $declared_type,

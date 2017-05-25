@@ -75,7 +75,7 @@ class Php70Test extends TestCase
             
                     $a = ANIMALS[1];',
                 'assertions' => [
-                    ['string' =>'$a']
+                    ['string' => '$a']
                 ]
             ],
             'anonymousClassLogger' => [

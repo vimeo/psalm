@@ -33,14 +33,14 @@ class ProjectChecker
     /**
      * Whether or not to use colors in error output
      *
-     * @var boolean
+     * @var bool
      */
     public $use_color;
 
     /**
      * Whether or not to show informational messages
      *
-     * @var boolean
+     * @var bool
      */
     public $show_info;
 
@@ -65,12 +65,12 @@ class ProjectChecker
     public $debug_output = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $update_docblocks = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $cache = false;
 
@@ -176,14 +176,14 @@ class ProjectChecker
     public $fake_files = [];
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $server_mode = false;
 
     /**
      * Whether to log functions just at the file level or globally (for stubs)
      *
-     * @var boolean
+     * @var bool
      */
     public $register_global_functions = false;
 
@@ -192,9 +192,9 @@ class ProjectChecker
     const TYPE_EMACS = 'emacs';
 
     /**
-     * @param boolean $use_color
-     * @param boolean $show_info
-     * @param boolean $debug_output
+     * @param bool $use_color
+     * @param bool $show_info
+     * @param bool $debug_output
      * @param string  $output_format
      * @param bool    $update_docblocks
      * @param bool    $collect_references
@@ -234,7 +234,7 @@ class ProjectChecker
 
     /**
      * @param  string  $base_dir
-     * @param  boolean $is_diff
+     * @param  bool $is_diff
      * @return void
      */
     public function check($base_dir, $is_diff = false)
@@ -709,7 +709,7 @@ class ProjectChecker
         }
 
         if ($this->debug_output) {
-            echo (isset($this->visited_files[$file_path]) ? 'Rev' : 'V') . 'isiting ' . $file_path . PHP_EOL;
+            echo(isset($this->visited_files[$file_path]) ? 'Rev' : 'V') . 'isiting ' . $file_path . PHP_EOL;
         }
 
         $this->visited_files[$file_path] = true;
@@ -724,7 +724,7 @@ class ProjectChecker
      * for later checking
      *
      * @param  string $fq_class_name
-     * @return boolean
+     * @return bool
      * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
     public function fileExistsForClassLike($fq_class_name)
@@ -745,6 +745,7 @@ class ProjectChecker
             $this->visited_classes[$fq_class_name_ci] = true;
             $reflected_class = new \ReflectionClass($fq_class_name);
             ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+
             return true;
         }
 
@@ -787,7 +788,7 @@ class ProjectChecker
 
     /**
      * @param  string       $fq_class_name
-     * @return boolean
+     * @return bool
      * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
     public function visitFileForClassLike($fq_class_name)

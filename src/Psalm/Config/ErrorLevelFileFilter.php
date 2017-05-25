@@ -8,7 +8,7 @@ class ErrorLevelFileFilter extends FileFilter
     /**
      * @var string
      */
-    private $error_level = "";
+    private $error_level = '';
 
     /**
      * @param  SimpleXMLElement $e

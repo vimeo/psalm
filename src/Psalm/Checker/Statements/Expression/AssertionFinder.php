@@ -515,7 +515,7 @@ class AssertionFinder
      * @param  array<string>                &$if_types
      * @param  string|null                  $this_class_name
      * @param  StatementsSource             $source
-     * @param  boolean                      $negate
+     * @param  bool                      $negate
      * @return void
      */
     protected static function processFunctionCall(
@@ -822,7 +822,7 @@ class AssertionFinder
     {
         if ($stmt->name instanceof PhpParser\Node\Name &&
             ($stmt->name->parts === ['is_int'] ||
-                $stmt->name->parts === ['is_integer']||
+                $stmt->name->parts === ['is_integer'] ||
                 $stmt->name->parts === ['is_long'])
         ) {
             return true;

@@ -16,7 +16,7 @@ class Php56Test extends TestCase
                     const ARR = ["a", "b"];
                     $a = ARR[0];',
                 'assertions' => [
-                    ['string' =>'$a']
+                    ['string' => '$a']
                 ]
             ],
             'constFeatures' => [

@@ -526,6 +526,7 @@ class ExpressionChecker
         )
         ) {
             $stmt->inferredType = Type::getArray();
+
             return null;
         }
 
@@ -535,6 +536,7 @@ class ExpressionChecker
 
         if ($passed_by_reference && $by_ref_type) {
             self::assignByRefParam($statements_checker, $stmt, $by_ref_type, $context);
+
             return null;
         }
 
@@ -575,7 +577,7 @@ class ExpressionChecker
             if ($first_appearance) {
                 if (IssueBuffer::accepts(
                     new PossiblyUndefinedVariable(
-                        'Possibly undefined variable ' . $var_name .', first seen on line ' .
+                        'Possibly undefined variable ' . $var_name . ', first seen on line ' .
                             $first_appearance->getLineNumber(),
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
@@ -635,6 +637,7 @@ class ExpressionChecker
                 if ((string)$existing_type !== 'array<empty, empty>') {
                     $context->vars_in_scope[$var_id] = $by_ref_type;
                     $stmt->inferredType = $context->vars_in_scope[$var_id];
+
                     return;
                 }
             }
@@ -659,6 +662,7 @@ class ExpressionChecker
         // if the array is empty, this special type allows us to match any other array type against it
         if (empty($stmt->items)) {
             $stmt->inferredType = Type::getEmptyArray();
+
             return null;
         }
 
@@ -727,6 +731,7 @@ class ExpressionChecker
             $can_create_objectlike
         ) {
             $stmt->inferredType = new Type\Union([new Type\Atomic\ObjectLike($property_types)]);
+
             return null;
         }
 
@@ -1113,6 +1118,7 @@ class ExpressionChecker
                         }
 
                         $result_type = Type::getMixed();
+
                         return;
                     }
 
@@ -1142,6 +1148,7 @@ class ExpressionChecker
                             }
 
                             $result_type = Type::getArray();
+
                             return;
                         }
 
@@ -1431,6 +1438,7 @@ class ExpressionChecker
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $nesting !== null) {
             $nesting++;
+
             return self::getVarId($stmt->var, $this_class_name, $source, $nesting);
         }
 
@@ -1552,6 +1560,7 @@ class ExpressionChecker
                     if (!$statements_checker->hasVariable($use_var_id)) {
                         $statements_checker->registerVariable($use_var_id, new CodeLocation($statements_checker, $use));
                     }
+
                     return;
                 }
 
@@ -1860,6 +1869,7 @@ class ExpressionChecker
         }
 
         $stmt->inferredType = Type::getString();
+
         return null;
     }
 
@@ -1959,7 +1969,7 @@ class ExpressionChecker
 
     /**
      * @param  string  $fq_class_name
-     * @return boolean
+     * @return bool
      */
     public static function isMock($fq_class_name)
     {

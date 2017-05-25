@@ -15,33 +15,33 @@ class Union
     /**
      * Whether the type originated in a docblock
      *
-     * @var boolean
+     * @var bool
      */
     public $from_docblock = false;
 
     /**
      * Whether the property that this type has been derived from has been initialized in a constructor
      *
-     * @var boolean
+     * @var bool
      */
     public $initialized = true;
 
     /**
      * Whether or not the type has been checked yet
      *
-     * @var boolean
+     * @var bool
      */
     protected $checked = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $failed_reconciliation = false;
 
     /**
      * Whether or not to ignore issues with possibly-null values
      *
-     * @var boolean
+     * @var bool
      */
     public $ignore_nullable_issues = false;
 
@@ -72,6 +72,7 @@ class Union
         foreach ($this->types as $type) {
             $s .= $type . '|';
         }
+
         return substr($s, 0, -1);
     }
 
@@ -120,7 +121,7 @@ class Union
 
     /**
      * @param  string  $type_string
-     * @return boolean
+     * @return bool
      */
     public function hasType($type_string)
     {
@@ -128,7 +129,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasGeneric()
     {
@@ -142,7 +143,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasArray()
     {
@@ -150,7 +151,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasObjectLike()
     {
@@ -158,7 +159,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasObjectType()
     {
@@ -172,7 +173,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isNullable()
     {
@@ -180,7 +181,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasString()
     {
@@ -188,15 +189,15 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasInt()
     {
         return isset($this->types['int']);
     }
 
-     /**
-     * @return boolean
+    /**
+     * @return bool
      */
     public function hasFloat()
     {
@@ -204,7 +205,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasNumericType()
     {
@@ -228,7 +229,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isMixed()
     {
@@ -236,7 +237,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isNull()
     {
@@ -244,7 +245,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isVoid()
     {
@@ -252,7 +253,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isEmpty()
     {
@@ -330,7 +331,7 @@ class Union
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isSingle()
     {

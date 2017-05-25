@@ -61,7 +61,7 @@ class TemplateTest extends TestCase
                     ['Foo<A>' => '$afoo'],
                     ['A' => '$afoo_bar'],
 
-                    ['Foo<B>' =>'$bfoo'],
+                    ['Foo<B>' => '$bfoo'],
                     ['B' => '$bfoo_bar'],
 
                     ['Foo<C>' => '$cfoo'],

@@ -73,7 +73,7 @@ class FileFilter
                     foreach ($globs as $glob_index => $directory_path) {
                         if (!$directory_path) {
                             die('Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                                (string)$directory['name']. ':' . $glob_index);
+                                (string)$directory['name'] . ':' . $glob_index);
                         }
                         $filter->addDirectory($directory_path);
                     }
@@ -118,8 +118,8 @@ class FileFilter
 
     /**
      * @param  string  $file_name
-     * @param  boolean $case_sensitive
-     * @return boolean
+     * @param  bool $case_sensitive
+     * @return bool
      */
     public function allows($file_name, $case_sensitive = false)
     {

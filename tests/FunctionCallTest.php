@@ -25,7 +25,7 @@ class FunctionCallTest extends TestCase
         $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$d']);
         $this->assertEquals('array<string, null|int>', (string) $context->vars_in_scope['$e']);
 
-        if (version_compare((string)phpversion(), '5.6.0', '>=')) {
+        if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
             $stmts = self::$parser->parse('<?php
             $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool {
                 return true;
@@ -64,7 +64,7 @@ class FunctionCallTest extends TestCase
      */
     public function testArrayFilterUseKey()
     {
-        if (version_compare((string)phpversion(), '5.6.0', '>=')) {
+        if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
             $stmts = self::$parser->parse('<?php
             $bar = "bar";
 

@@ -12,10 +12,9 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidIterator;
-use Psalm\IssueBuffer;
 use Psalm\Issue\NullIterator;
-use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyNullIterator;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
 class ForeachChecker

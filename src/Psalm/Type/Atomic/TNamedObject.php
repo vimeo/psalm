@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use \Psalm\Type\Atomic;
+use Psalm\Type\Atomic;
 
 class TNamedObject extends Atomic
 {
@@ -46,6 +46,7 @@ class TNamedObject extends Atomic
     {
         if ($this->value === $this_class) {
             $class_parts = explode('\\', $this_class);
+
             return array_pop($class_parts);
         }
 

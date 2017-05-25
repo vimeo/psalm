@@ -20,6 +20,7 @@ trait GenericTrait
         foreach ($this->type_params as $type_param) {
             $s .= $type_param . ', ';
         }
+
         return $this->value . '<' . substr($s, 0, -2) . '>';
     }
 

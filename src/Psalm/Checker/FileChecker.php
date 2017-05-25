@@ -247,8 +247,8 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  boolean $update_docblocks
-     * @param  boolean $preserve_checkers
+     * @param  bool $update_docblocks
+     * @param  bool $preserve_checkers
      * @return void
      */
     public function analyze($update_docblocks = false, $preserve_checkers = false)
@@ -378,7 +378,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  Context|null $file_context
-     * @param  boolean      $update_docblocks
+     * @param  bool      $update_docblocks
      * @return void
      */
     public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
