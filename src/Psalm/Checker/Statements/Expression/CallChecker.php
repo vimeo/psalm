@@ -598,6 +598,16 @@ class CallChecker
                             )
                         ]);
                     }
+                } elseif ($stmt->args) {
+                    if (IssueBuffer::accepts(
+                        new TooManyArguments(
+                            'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }

@@ -282,6 +282,12 @@ class FunctionCallTest extends TestCase
                     fooFoo(5, "dfd");',
                 'error_message' => 'TooManyArguments'
             ],
+            'tooManyArgumentsForConstructor' => [
+                '<?php
+                  class A { }
+                  new A("hello");',
+                'error_message' => 'TooManyArguments'
+            ],
             'typeCoercion' => [
                 '<?php
                     class A {}
