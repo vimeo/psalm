@@ -1623,14 +1623,18 @@ class ExpressionChecker
     ) {
         $doc_comment_text = (string)$stmt->getDocComment();
 
+        $var_comment = null;
+
         if ($doc_comment_text) {
-            $type_in_comments = CommentChecker::getTypeFromComment(
+            $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $context,
-                $statements_checker->getSource()
+                $statements_checker
             );
-        } else {
-            $type_in_comments = null;
+
+            if ($var_comment && $var_comment->var_id) {
+                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+            }
         }
 
         if ($stmt->key) {
@@ -1644,8 +1648,8 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($type_in_comments) {
-                $stmt->inferredType = $type_in_comments;
+            if ($var_comment && !$var_comment->var_id) {
+                $stmt->inferredType = $var_comment->type;
             } elseif (isset($stmt->value->inferredType)) {
                 $stmt->inferredType = $stmt->value->inferredType;
             } else {

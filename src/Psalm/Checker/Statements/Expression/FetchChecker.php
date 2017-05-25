@@ -11,6 +11,7 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -286,6 +287,18 @@ class FetchChecker
             $declaring_class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
 
             $property_storage = $declaring_class_storage->properties[$stmt->name];
+
+            if ($property_storage->deprecated) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedProperty(
+                        $property_id . ' is marked deprecated',
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
 
             $class_property_type = $property_storage->type;
 

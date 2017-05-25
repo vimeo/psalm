@@ -222,12 +222,15 @@ class ForeachChecker
         $doc_comment_text = (string)$stmt->getDocComment();
 
         if ($doc_comment_text) {
-            CommentChecker::getTypeFromComment(
+            $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $foreach_context,
-                $statements_checker->getSource(),
-                null
+                $statements_checker->getSource()
             );
+
+            if ($var_comment && $var_comment->var_id) {
+                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+            }
         }
 
         $changed_vars = Context::getNewOrUpdatedVarIds($before_context, $foreach_context);

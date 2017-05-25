@@ -88,6 +88,7 @@
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FailedTypeResolution" type="IssueHandlerType" minOccurs="0" />

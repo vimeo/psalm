@@ -8,6 +8,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\FunctionDocblockComment;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\VarDocblockComment;
 
 class CommentChecker
 {
@@ -17,11 +18,10 @@ class CommentChecker
      * @param  string           $comment
      * @param  Context|null     $context
      * @param  StatementsSource $source
-     * @param  string           $var_id
      * @param  array<string, string>|null   $template_types
      * @param  int|null         $var_line_number
      * @param  int|null         $came_from_line_number what line number in $source that $comment came from
-     * @return Type\Union|null
+     * @return VarDocblockComment|null
      * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
      */
@@ -29,14 +29,13 @@ class CommentChecker
         $comment,
         $context,
         StatementsSource $source,
-        $var_id = null,
         array $template_types = null,
-        &$var_line_number = null,
+        $var_line_number = null,
         $came_from_line_number = null
     ) {
-        $type_in_comments_var_id = null;
+        $var_id = null;
 
-        $type_in_comments = null;
+        $var_type_string = null;
 
         $comments = self::parseDocComment($comment, $var_line_number);
 
@@ -60,7 +59,7 @@ class CommentChecker
                 }
 
                 if ($line_parts && $line_parts[0]) {
-                    $type_in_comments = FunctionLikeChecker::fixUpLocalType(
+                    $var_type_string = FunctionLikeChecker::fixUpLocalType(
                         $line_parts[0],
                         $source,
                         $template_types
@@ -71,7 +70,7 @@ class CommentChecker
                     // support PHPStorm-style docblocks like
                     // @var Type $variable
                     if (count($line_parts) > 1 && $line_parts[1][0] === '$') {
-                        $type_in_comments_var_id = $line_parts[1];
+                        $var_id = $line_parts[1];
                     }
 
                     break;
@@ -79,16 +78,16 @@ class CommentChecker
             }
         }
 
-        if (!$type_in_comments) {
+        if (!$var_type_string) {
             return null;
         }
 
         try {
-            $defined_type = Type::parseString($type_in_comments);
+            $defined_type = Type::parseString($var_type_string);
         } catch (TypeParseTreeException $e) {
             if (is_int($came_from_line_number)) {
                 throw new DocblockParseException(
-                    $type_in_comments .
+                    $var_type_string .
                     ' is not a valid type' .
                     ' (from ' .
                     $source->getCheckedFilePath() .
@@ -97,18 +96,19 @@ class CommentChecker
                     ')'
                 );
             }
-            throw new DocblockParseException($type_in_comments . ' is not a valid type');
+
+            throw new DocblockParseException($var_type_string . ' is not a valid type');
         }
 
         $defined_type->setFromDocblock();
 
-        if ($context && $type_in_comments_var_id && $type_in_comments_var_id !== $var_id) {
-            $context->vars_in_scope[$type_in_comments_var_id] = $defined_type;
+        $var_comment = new VarDocblockComment();
+        $var_comment->type = $defined_type;
+        $var_comment->var_id = $var_id;
+        $var_comment->line_number = $var_line_number;
+        $var_comment->deprecated = isset($comments['specials']['deprecated']);
 
-            return null;
-        }
-
-        return $defined_type;
+        return $var_comment;
     }
 
     /**
@@ -421,7 +421,7 @@ class CommentChecker
 
         // Parse @specials.
         $matches = [];
-        $have_specials = preg_match_all('/^\s?@([\w\-:]+)\s*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
+        $have_specials = preg_match_all('/^\s?@([\w\-:]+)[\t ]*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER);
         if ($have_specials) {
             $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
             /** @var string[] $match */

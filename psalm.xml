@@ -24,6 +24,7 @@
         <MisplacedRequiredParam errorLevel="suppress" />
         <PossiblyNullOperand errorLevel="suppress" />
         <MissingConstructor errorLevel="suppress" />
+        <DeprecatedProperty errorLevel="suppress" />
 
         <PossiblyUnusedVariable>
             <errorLevel type="suppress">

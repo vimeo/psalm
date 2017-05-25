@@ -299,11 +299,15 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $class_checker->analyze(null, $global_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 if ((string)$stmt->getDocComment()) {
-                    CommentChecker::getTypeFromComment(
+                    $var_comment = CommentChecker::getTypeFromComment(
                         (string)$stmt->getDocComment(),
                         $context,
                         $this->getSource()
                     );
+
+                    if ($var_comment && $var_comment->var_id) {
+                        $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                    }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
                 // do nothing
@@ -673,14 +677,18 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $doc_comment_text = (string)$stmt->getDocComment();
 
+        $var_comment = null;
+
         if ($doc_comment_text) {
-            $type_in_comments = CommentChecker::getTypeFromComment(
+            $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $context,
                 $this->source
             );
-        } else {
-            $type_in_comments = null;
+
+            if ($var_comment && $var_comment->var_id) {
+                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+            }
         }
 
         if ($stmt->expr) {
@@ -688,8 +696,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return false;
             }
 
-            if ($type_in_comments) {
-                $stmt->inferredType = $type_in_comments;
+            if ($var_comment && !$var_comment->var_id) {
+                $stmt->inferredType = $var_comment->type;
             } elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;
             } else {

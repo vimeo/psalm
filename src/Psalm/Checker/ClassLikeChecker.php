@@ -1044,18 +1044,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         Config $config
     ) {
         $comment = $stmt->getDocComment();
-        $type_in_comment = null;
+        $var_comment = null;
         $property_type_line_number = null;
         $storage = self::$storage[strtolower($this->fq_class_name)];
 
         if ($comment && $comment->getText() && $config->use_docblock_types) {
             try {
                 $property_type_line_number = $comment->getLine();
-                $type_in_comment = CommentChecker::getTypeFromComment(
+                $var_comment = CommentChecker::getTypeFromComment(
                     $comment->getText(),
                     null,
                     $this,
-                    null,
                     $storage->template_types,
                     $property_type_line_number
                 );
@@ -1071,7 +1070,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        $property_group_type = $type_in_comment ?: null;
+        $property_group_type = $var_comment ? $var_comment->type : null;
 
         foreach ($stmt->props as $property) {
             $property_type_location = null;
@@ -1098,20 +1097,21 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $property_type = count($stmt->props) === 1 ? $property_group_type : clone $property_group_type;
             }
 
-            $storage->properties[$property->name] = new PropertyStorage();
-            $storage->properties[$property->name]->is_static = (bool)$stmt->isStatic();
-            $storage->properties[$property->name]->type = $property_type;
-            $storage->properties[$property->name]->location = new CodeLocation($this, $property);
-            $storage->properties[$property->name]->type_location = $property_type_location;
-            $storage->properties[$property->name]->has_default = $property->default ? true : false;
-            $storage->properties[$property->name]->suggested_type = $property_group_type ? null : $default_type;
+            $property_storage = $storage->properties[$property->name] = new PropertyStorage();
+            $property_storage->is_static = (bool)$stmt->isStatic();
+            $property_storage->type = $property_type;
+            $property_storage->location = new CodeLocation($this, $property);
+            $property_storage->type_location = $property_type_location;
+            $property_storage->has_default = $property->default ? true : false;
+            $property_storage->suggested_type = $property_group_type ? null : $default_type;
+            $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
 
             if ($stmt->isPublic()) {
-                $storage->properties[$property->name]->visibility = self::VISIBILITY_PUBLIC;
+                $property_storage->visibility = self::VISIBILITY_PUBLIC;
             } elseif ($stmt->isProtected()) {
-                $storage->properties[$property->name]->visibility = self::VISIBILITY_PROTECTED;
+                $property_storage->visibility = self::VISIBILITY_PROTECTED;
             } elseif ($stmt->isPrivate()) {
-                $storage->properties[$property->name]->visibility = self::VISIBILITY_PRIVATE;
+                $property_storage->visibility = self::VISIBILITY_PRIVATE;
             }
 
             $property_id = $this->fq_class_name . '::$' . $property->name;
@@ -1136,7 +1136,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     private function checkForMissingPropertyType(PhpParser\Node\Stmt\Property $stmt)
     {
         $comment = $stmt->getDocComment();
-        $type_in_comment = null;
         $property_type_line_number = null;
         $storage = self::$storage[strtolower($this->fq_class_name)];
 
@@ -1194,14 +1193,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         Config $config
     ) {
         $comment = $stmt->getDocComment();
-        $type_in_comment = null;
+        $var_comment = null;
         $storage = self::$storage[strtolower((string)$class_context->self)];
 
         if ($comment && $config->use_docblock_types && count($stmt->consts) === 1) {
-            $type_in_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
+            $var_comment = CommentChecker::getTypeFromComment((string) $comment, null, $this);
         }
 
-        $const_type = $type_in_comment ? $type_in_comment : Type::getMixed();
+        $const_type = $var_comment ? $var_comment->type : Type::getMixed();
 
         foreach ($stmt->consts as $const) {
             if ($stmt->isProtected()) {

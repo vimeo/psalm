@@ -14,6 +14,7 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyAssignment;
@@ -73,19 +74,21 @@ class AssignmentChecker
             $statements_checker
         );
 
+        $var_comment = null;
+
         if ($doc_comment) {
-            $null = null;
-            $type_in_comments = CommentChecker::getTypeFromComment(
+            $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment,
                 $context,
                 $statements_checker->getSource(),
-                $var_id,
                 null,
-                $null,
+                null,
                 $came_from_line_number
             );
-        } else {
-            $type_in_comments = null;
+
+            if ($var_comment && $var_comment->var_id && $var_comment->var_id !== $var_id) {
+                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+            }
         }
 
         if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
@@ -95,14 +98,17 @@ class AssignmentChecker
                 }
 
                 // if we're not exiting immediately, make everything mixed
-                $context->vars_in_scope[$var_id] = $type_in_comments ?: Type::getMixed();
+                $context->vars_in_scope[$var_id] =
+                    $var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id)
+                        ? $var_comment->type
+                        : Type::getMixed();
             }
 
             return false;
         }
 
-        if ($type_in_comments) {
-            $assign_value_type = $type_in_comments;
+        if ($var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id)) {
+            $assign_value_type = $var_comment->type;
         } elseif (!$assign_value_type) {
             if (isset($assign_value->inferredType)) {
                 /** @var Type\Union */
@@ -666,6 +672,18 @@ class AssignmentChecker
 
                 $property_storage =
                     ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
+
+                if ($property_storage->deprecated) {
+                    if (IssueBuffer::accepts(
+                        new DeprecatedProperty(
+                            $property_id . ' is marked deprecated',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
 
                 $class_property_type = $property_storage->type;
 

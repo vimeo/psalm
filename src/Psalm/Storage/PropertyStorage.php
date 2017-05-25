@@ -40,4 +40,9 @@ class PropertyStorage
      * @var bool
      */
     public $has_default = false;
+
+    /**
+     * @var bool
+     */
+    public $deprecated = false;
 }
