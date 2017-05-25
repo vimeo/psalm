@@ -173,6 +173,16 @@ class AnnotationTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
+            'invalidReturn' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @return $thus
+                         */
+                        public static function barBar();
+                    }',
+                'error_message' => 'InvalidDocblock'
+            ],
             'deprecatedMethodWithCall' => [
                 '<?php
                     class Foo {

@@ -143,6 +143,10 @@ class CommentChecker
                 && !strpos($line_parts[0], '::')
                 && $line_parts[0][0] !== '{'
             ) {
+                if ($line_parts[0][0] === '$' && $line_parts[0] !== '$this') {
+                    throw new DocblockParseException('Badly-formatted @param type');
+                }
+
                 $info->return_type = $line_parts[0];
                 $line_number = array_keys($return_specials)[0];
 
@@ -174,6 +178,10 @@ class CommentChecker
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
+                        }
+
+                        if ($line_parts[0][0] === '$' && $line_parts[0] !== '$this') {
+                            throw new DocblockParseException('Badly-formatted @param type');
                         }
 
                         $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
@@ -288,6 +296,10 @@ class CommentChecker
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
+                        }
+
+                        if ($line_parts[0][0] === '$' && $line_parts[0] !== '$this') {
+                            throw new DocblockParseException('Badly-formatted @param type');
                         }
 
                         $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
