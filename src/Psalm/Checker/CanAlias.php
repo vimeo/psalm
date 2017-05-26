@@ -49,7 +49,7 @@ trait CanAlias
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt)
     {
         foreach ($stmt->uses as $use) {
-            $use_path = implode('\\', $use->name->parts);
+            $use_path = $use->name->toString();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
@@ -86,7 +86,7 @@ trait CanAlias
      */
     public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt)
     {
-        $use_prefix = implode('\\', $stmt->prefix->parts);
+        $use_prefix = $stmt->prefix->toString();
 
         foreach ($stmt->uses as $use) {
             $use_path = $use_prefix . '\\' . implode('\\', $use->name->parts);

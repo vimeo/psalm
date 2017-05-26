@@ -374,7 +374,7 @@ class FetchChecker
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
     ) {
-        $const_name = implode('\\', $stmt->name->parts);
+        $const_name = $stmt->name->toString();
         switch (strtolower($const_name)) {
             case 'null':
                 $stmt->inferredType = Type::getNull();
@@ -428,16 +428,16 @@ class FetchChecker
     ) {
         if ($context->check_consts &&
             $stmt->class instanceof PhpParser\Node\Name &&
-            $stmt->class->parts !== ['static'] &&
+            $stmt->class->toString() !== 'static' &&
             is_string($stmt->name)
         ) {
-            if ($stmt->class->parts === ['self']) {
+            if ($stmt->class->toString() === 'self') {
                 if (!$context->self) {
                     throw new \UnexpectedValueException('$context->self cannot be null');
                 }
 
                 $fq_class_name = (string)$context->self;
-            } elseif ($stmt->class->parts[0] === 'parent') {
+            } elseif ($stmt->class->getFirst() === 'parent') {
                 $fq_class_name = $statements_checker->getParentFQCLN();
 
                 if ($fq_class_name === null) {
@@ -574,10 +574,10 @@ class FetchChecker
         $fq_class_name = null;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (count($stmt->class->parts) === 1
-                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+            if ($stmt->class->isUnqualified()
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
-                if ($stmt->class->parts[0] === 'parent') {
+                if ($stmt->class->getFirst() === 'parent') {
                     $fq_class_name = $statements_checker->getParentFQCLN();
 
                     if ($fq_class_name === null) {

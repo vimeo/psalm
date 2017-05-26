@@ -502,11 +502,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public static function getSimpleType(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            if (strtolower($stmt->name->parts[0]) === 'false') {
+            if (strtolower($stmt->name->getFirst()) === 'false') {
                 return Type::getFalse();
-            } elseif (strtolower($stmt->name->parts[0]) === 'true') {
+            } elseif (strtolower($stmt->name->getFirst()) === 'true') {
                 return Type::getBool();
-            } elseif (strtolower($stmt->name->parts[0]) === 'null') {
+            } elseif (strtolower($stmt->name->getFirst()) === 'null') {
                 return Type::getNull();
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
@@ -860,7 +860,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
             $stmt->name instanceof PhpParser\Node\Name &&
-            $stmt->name->parts === ['dirname']
+            $stmt->name->toString() === 'dirname'
         ) {
             if ($stmt->args) {
                 $evaled_path = self::getPathTo($stmt->args[0]->value, $file_name);
@@ -872,7 +872,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return dirname($evaled_path);
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name instanceof PhpParser\Node\Name) {
-            $const_name = implode('', $stmt->name->parts);
+            $const_name = implode('', explode('\\', $stmt->name->toString()));
 
             if (defined($const_name)) {
                 $constant_value = constant($const_name);

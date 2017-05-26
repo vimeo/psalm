@@ -806,7 +806,7 @@ class AssignmentChecker
 
         $fq_class_name = (string)$stmt->class->inferredType;
 
-        if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') ||
+        if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'this') ||
             $fq_class_name === $context->self
         ) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
@@ -827,7 +827,7 @@ class AssignmentChecker
         $property_id = $fq_class_name . '::$' . $prop_name;
 
         if (!ClassLikeChecker::propertyExists($property_id)) {
-            if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
+            if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'this') {
                 if (IssueBuffer::accepts(
                     new UndefinedThisPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',

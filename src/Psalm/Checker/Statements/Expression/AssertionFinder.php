@@ -603,14 +603,14 @@ class AssertionFinder
         StatementsSource $source
     ) {
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
+            if (!in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $source
                 );
 
                 return $instanceof_class;
-            } elseif ($stmt->class->parts === ['self'] && $this_class_name) {
+            } elseif ($stmt->class->toString() === 'self' && $this_class_name) {
                 return $this_class_name;
             }
         }
@@ -627,13 +627,13 @@ class AssertionFinder
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'null') {
+            strtolower($conditional->right->name->getFirst()) === 'null') {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'null') {
+            strtolower($conditional->left->name->getFirst()) === 'null') {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -649,13 +649,13 @@ class AssertionFinder
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'false') {
+            strtolower($conditional->right->name->getFirst()) === 'false') {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'false') {
+            strtolower($conditional->left->name->getFirst()) === 'false') {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -671,13 +671,13 @@ class AssertionFinder
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'true') {
+            strtolower($conditional->right->name->getFirst()) === 'true') {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'true') {
+            strtolower($conditional->left->name->getFirst()) === 'true') {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -693,14 +693,14 @@ class AssertionFinder
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'gettype' &&
+            strtolower($conditional->right->name->getFirst()) === 'gettype' &&
             $conditional->left instanceof PhpParser\Node\Scalar\String_) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'gettype' &&
+            strtolower($conditional->left->name->getFirst()) === 'gettype' &&
             $conditional->right instanceof PhpParser\Node\Scalar\String_) {
             return self::ASSIGNMENT_TO_LEFT;
         }
@@ -737,7 +737,7 @@ class AssertionFinder
      */
     protected static function hasNullCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_null') {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'is_null') {
             return true;
         }
 
@@ -751,7 +751,7 @@ class AssertionFinder
      */
     protected static function hasIsACheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_a' &&
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'is_a' &&
             $stmt->args[1]->value instanceof PhpParser\Node\Scalar\String_) {
             return true;
         }
@@ -766,7 +766,7 @@ class AssertionFinder
      */
     protected static function hasArrayCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_array') {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'is_array') {
             return true;
         }
 
@@ -780,7 +780,7 @@ class AssertionFinder
      */
     protected static function hasStringCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_string') {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'is_string') {
             return true;
         }
 
@@ -794,7 +794,7 @@ class AssertionFinder
      */
     protected static function hasBoolCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_bool') {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'is_bool') {
             return true;
         }
 
@@ -808,7 +808,7 @@ class AssertionFinder
      */
     protected static function hasObjectCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_object']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->toString() === 'is_object') {
             return true;
         }
 
@@ -822,7 +822,7 @@ class AssertionFinder
      */
     protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_numeric']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->toString() === 'is_numeric') {
             return true;
         }
 
@@ -837,9 +837,9 @@ class AssertionFinder
     protected static function hasIntCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name &&
-            ($stmt->name->parts === ['is_int'] ||
-                $stmt->name->parts === ['is_integer'] ||
-                $stmt->name->parts === ['is_long'])
+            ($stmt->name->toString() === 'is_int' ||
+                $stmt->name->toString() === 'is_integer' ||
+                $stmt->name->toString() === 'is_long')
         ) {
             return true;
         }
@@ -855,9 +855,9 @@ class AssertionFinder
     protected static function hasFloatCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name &&
-            ($stmt->name->parts === ['is_float'] ||
-                $stmt->name->parts === ['is_real'] ||
-                $stmt->name->parts === ['is_double'])
+            ($stmt->name->toString() === 'is_float' ||
+                $stmt->name->toString() === 'is_real' ||
+                $stmt->name->toString() === 'is_double')
         ) {
             return true;
         }
@@ -872,7 +872,7 @@ class AssertionFinder
      */
     protected static function hasResourceCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_resource']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->toString() === 'is_resource') {
             return true;
         }
 
@@ -886,7 +886,7 @@ class AssertionFinder
      */
     protected static function hasScalarCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_scalar']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->toString() === 'is_scalar') {
             return true;
         }
 
@@ -900,7 +900,7 @@ class AssertionFinder
      */
     protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_callable']) {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->toString() === 'is_callable') {
             return true;
         }
 

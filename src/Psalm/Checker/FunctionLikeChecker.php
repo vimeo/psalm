@@ -644,7 +644,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             foreach ($function->stmts as $stmt) {
                 if ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
                     $stmt->name instanceof PhpParser\Node\Name &&
-                    $stmt->name->parts === ['define']
+                    $stmt->name->toString() === 'define'
                 ) {
                     $first_arg_value = isset($stmt->args[0]) ? $stmt->args[0]->value : null;
                     $second_arg_value = isset($stmt->args[1]) ? $stmt->args[1]->value : null;
@@ -1398,7 +1398,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $is_nullable = $param->default !== null &&
             $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
             $param->default->name instanceof PhpParser\Node\Name &&
-            strtolower($param->default->name->parts[0]) === 'null';
+            strtolower($param->default->name->getFirst()) === 'null';
 
         $param_typehint = $param->type;
 
@@ -1411,12 +1411,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if (is_string($param_typehint)) {
                 $param_type_string = $param_typehint;
             } elseif ($param_typehint instanceof PhpParser\Node\Name\FullyQualified) {
-                $param_type_string = implode('\\', $param_typehint->parts);
-            } elseif ($param_typehint->parts === ['self']) {
+                $param_type_string = $param_typehint->toString();
+            } elseif ($param_typehint->toString() === 'self') {
                 $param_type_string = $source->getFQCLN();
             } else {
                 $param_type_string = ClassLikeChecker::getFQCLNFromString(
-                    implode('\\', $param_typehint->parts),
+                    $param_typehint->toString(),
                     $source
                 );
             }
