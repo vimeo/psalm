@@ -170,4 +170,4 @@ $rules = [
     */
 ];
 
-return PhpCsFixer\Config::create()->setRules($rules)->setFinder($finder);
+return PhpCsFixer\Config::create()->setRiskyAllowed(true)->setRules($rules)->setFinder($finder);
