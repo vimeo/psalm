@@ -16,3 +16,4 @@ script:
   - vendor/bin/phpunit
   - bin/psalm
   - vendor/bin/phpcs
+  - bin/travis-php-cs-fixer.sh
