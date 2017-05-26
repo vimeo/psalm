@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset name="PHP_CodeSniffer">
+    <rule ref="PSR2" />
+
+    <file>bin/</file>
+    <file>src/</file>
+    <file>tests/</file>
+
+    <!-- This is a vendor file that we don't want to bother linting. -->
+    <exclude-pattern>src/Psalm/CallMap.php</exclude-pattern>
+
+    <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
+    <exclude-pattern>examples/</exclude-pattern>
+    <exclude-pattern>src/Psalm/Stubs/</exclude-pattern>
+    <exclude-pattern>tests/stubs/</exclude-pattern>
+</ruleset>
