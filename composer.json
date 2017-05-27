@@ -35,6 +35,7 @@
         "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",
         "tests": [
             "php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
+            "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes --dry-run .php_cs.dist",
             "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes --dry-run",
             "phpunit"
         ]
