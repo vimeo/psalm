@@ -46,6 +46,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             array_map(
                 /**
                  * @param string $file_name
+                 *
                  * @return string
                  */
                 function ($file_name) {
@@ -55,6 +56,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             ),
             /**
              * @param string $issue_name
+             *
              * @return bool
              */
             function ($issue_name) {
@@ -187,6 +189,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             array_map(
                 /**
                  * @param string $issue_name
+                 *
                  * @return string
                  */
                 function ($issue_name) {
@@ -215,6 +218,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException        \Psalm\Exception\ConfigException
      * @expectedExceptionMessage This element is not expected
+     *
      * @return                   void
      */
     public function testImpossibleIssue()
@@ -238,6 +242,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException        \Psalm\Exception\ConfigException
      * @expectedExceptionMessage Cannot resolve stubfile path
+     *
      * @return                   void
      */
     public function testNonexistentStubFile()
@@ -455,6 +460,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MissingReturnType
+     *
      * @return                   void
      */
     public function testRequireVoidReturnTypeExists()

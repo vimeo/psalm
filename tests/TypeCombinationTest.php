@@ -9,8 +9,10 @@ class TypeCombinationTest extends TestCase
 
     /**
      * @dataProvider providerTestValidTypeCombination
+     *
      * @param string $expected
      * @param array<string> $types
+     *
      * @return void
      */
     public function testValidTypeCombination($expected, $types)
@@ -157,6 +159,7 @@ class TypeCombinationTest extends TestCase
 
     /**
      * @param  string $string
+     *
      * @return Type\Atomic
      */
     private static function getAtomic($string)

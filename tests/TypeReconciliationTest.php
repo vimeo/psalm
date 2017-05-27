@@ -29,9 +29,11 @@ class TypeReconciliationTest extends TestCase
 
     /**
      * @dataProvider providerTestReconcilation
+     *
      * @param string $expected
      * @param string $type
      * @param string $string
+     *
      * @return void
      */
     public function testReconcilation($expected, $type, $string)
@@ -57,8 +59,10 @@ class TypeReconciliationTest extends TestCase
 
     /**
      * @dataProvider providerTestTypeIsContainedBy
+     *
      * @param string $input
      * @param string $container
+     *
      * @return void
      */
     public function testTypeIsContainedBy($input, $container)

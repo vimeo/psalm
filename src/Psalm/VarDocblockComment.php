@@ -20,7 +20,8 @@ class VarDocblockComment
 
     /**
      * Whether or not the function is deprecated
-     * @var boolean
+     *
+     * @var bool
      */
     public $deprecated = false;
 }

@@ -145,6 +145,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param   Context|null    $file_context
+     *
      * @return  void
      */
     public function visit(Context $file_context = null)
@@ -249,6 +250,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param  bool $update_docblocks
      * @param  bool $preserve_checkers
+     *
      * @return void
      */
     public function analyze($update_docblocks = false, $preserve_checkers = false)
@@ -298,6 +300,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param string       $fq_class_name
      * @param ClassChecker $class_checker
+     *
      * @return  void
      */
     public function addNamespacedClassChecker($fq_class_name, ClassChecker $class_checker)
@@ -311,6 +314,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param string            $fq_class_name
      * @param InterfaceChecker  $interface_checker
+     *
      * @return  void
      */
     public function addNamespacedInterfaceChecker($fq_class_name, InterfaceChecker $interface_checker)
@@ -321,6 +325,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param string            $function_id
      * @param FunctionChecker   $function_checker
+     *
      * @return  void
      */
     public function addNamespacedFunctionChecker($function_id, FunctionChecker $function_checker)
@@ -331,6 +336,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param  string   $method_id
      * @param  Context  $this_context
+     *
      * @return void
      */
     public function getMethodMutations($method_id, Context &$this_context)
@@ -379,6 +385,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param  Context|null $file_context
      * @param  bool      $update_docblocks
+     *
      * @return void
      */
     public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
@@ -392,6 +399,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      * Used when checking single files with multiple classlike declarations
      *
      * @param  string $fq_class_name
+     *
      * @return bool
      */
     public function containsUnEvaluatedClassLike($fq_class_name)
@@ -404,6 +412,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      * When evaluating a file, we wait until a class is actually used to evaluate its contents
      *
      * @param  string $fq_class_name
+     *
      * @return null|false
      */
     public function evaluateClassLike($fq_class_name)
@@ -451,6 +460,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  string $file_path
+     *
      * @return bool
      */
     public function fileExists($file_path)
@@ -468,6 +478,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  string|null $namespace_name
+     *
      * @return array<string, string>
      */
     public function getAliasedClasses($namespace_name = null)
@@ -481,6 +492,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  string|null $namespace_name
+     *
      * @return array<string, string>
      */
     public function getAliasedClassesFlipped($namespace_name = null)
@@ -525,6 +537,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param string $file_name
      * @param string $file_path
+     *
      * @return void
      */
     public function setFileName($file_name, $file_path)

@@ -235,6 +235,7 @@ class ProjectChecker
     /**
      * @param  string  $base_dir
      * @param  bool $is_diff
+     *
      * @return void
      */
     public function check($base_dir, $is_diff = false)
@@ -386,6 +387,7 @@ class ProjectChecker
 
     /**
      * @param  string $method_id
+     *
      * @return array<string, \Psalm\CodeLocation[]>
      */
     public function findReferencesToMethod($method_id)
@@ -413,6 +415,7 @@ class ProjectChecker
 
     /**
      * @param  string $fq_class_name
+     *
      * @return array<string, \Psalm\CodeLocation[]>
      */
     public function findReferencesToClassLike($fq_class_name)
@@ -477,6 +480,7 @@ class ProjectChecker
 
     /**
      * @param  \Psalm\Storage\ClassLikeStorage  $classlike_storage
+     *
      * @return void
      */
     protected static function checkMethodReferences($classlike_storage)
@@ -515,6 +519,7 @@ class ProjectChecker
     /**
      * @param  string  $dir_name
      * @param  string  $base_dir
+     *
      * @return void
      */
     public function checkDir($dir_name, $base_dir)
@@ -540,6 +545,7 @@ class ProjectChecker
      * @param  string $dir_name
      * @param  Config $config
      * @param  bool   $allow_non_project_files
+     *
      * @return void
      */
     private function checkDirWithConfig($dir_name, Config $config, $allow_non_project_files = false)
@@ -568,6 +574,7 @@ class ProjectChecker
 
     /**
      * @param  Config $config
+     *
      * @return array<int, string>
      */
     private function getAllFiles(Config $config)
@@ -598,6 +605,7 @@ class ProjectChecker
     /**
      * @param  string $dir_name
      * @param  Config $config
+     *
      * @return array<string>
      */
     protected static function getDiffFilesInDir($dir_name, Config $config)
@@ -634,6 +642,7 @@ class ProjectChecker
     /**
      * @param  Config           $config
      * @param  array<string>    $file_list
+     *
      * @return void
      */
     private function checkDiffFilesWithConfig(Config $config, array $file_list = [])
@@ -658,6 +667,7 @@ class ProjectChecker
     /**
      * @param  string  $file_path
      * @param  string  $base_dir
+     *
      * @return void
      */
     public function checkFile($file_path, $base_dir)
@@ -695,6 +705,7 @@ class ProjectChecker
      * @param  string $file_path
      * @param  array  $filetype_handlers
      * @param  bool   $will_analyze
+     *
      * @return FileChecker
      */
     private function visitFile($file_path, array $filetype_handlers, $will_analyze = false)
@@ -725,6 +736,7 @@ class ProjectChecker
      * for later checking
      *
      * @param  string $fq_class_name
+     *
      * @return bool
      * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
@@ -789,6 +801,7 @@ class ProjectChecker
 
     /**
      * @param  string       $fq_class_name
+     *
      * @return bool
      * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
@@ -886,6 +899,7 @@ class ProjectChecker
     /**
      * @param  string   $original_method_id
      * @param  Context  $this_context
+     *
      * @return void
      */
     public function getMethodMutations($original_method_id, Context $this_context)
@@ -913,6 +927,7 @@ class ProjectChecker
 
     /**
      * @param  string $fq_class_name
+     *
      * @return FileChecker
      */
     private function getVisitedFileCheckerForClassLike($fq_class_name)
@@ -960,8 +975,10 @@ class ProjectChecker
      *
      * @param  string $path
      * @param  string $base_dir
+     *
+     * @throws Exception\ConfigException if a config path is not found
+     *
      * @return Config
-     * @throws Exception\ConfigException If a config path is not found.
      */
     private function getConfigForPath($path, $base_dir)
     {
@@ -1006,6 +1023,7 @@ class ProjectChecker
 
     /**
      * @param  Config $config
+     *
      * @return void
      */
     public function setConfig(Config $config)
@@ -1019,8 +1037,10 @@ class ProjectChecker
     /**
      * @param string $path_to_config
      * @param string $base_dir
+     *
+     * @throws Exception\ConfigException if a config file is not found in the given location
+     *
      * @return void
-     * @throws Exception\ConfigException If a config file is not found in the given location.
      */
     public function setConfigXML($path_to_config, $base_dir)
     {
@@ -1036,6 +1056,7 @@ class ProjectChecker
 
     /**
      * @param  array<string>  $diff_files
+     *
      * @return array<string>
      */
     public static function getReferencedFilesFromDiff(array $diff_files)
@@ -1065,6 +1086,7 @@ class ProjectChecker
     /**
      * @param  string $file_path
      * @param  string $file_contents
+     *
      * @return void
      */
     public function registerFile($file_path, $file_contents)
@@ -1074,6 +1096,7 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
+     *
      * @return void
      */
     public function registerAnalyzableFile($file_path)
@@ -1084,6 +1107,7 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
+     *
      * @return string
      */
     public function getFileContents($file_path)
@@ -1098,6 +1122,7 @@ class ProjectChecker
     /**
      * @param string        $fq_class_name
      * @param string|null   $file_path
+     *
      * @return void
      */
     public function addFullyQualifiedClassName($fq_class_name, $file_path = null)
@@ -1117,6 +1142,7 @@ class ProjectChecker
     /**
      * @param string        $fq_class_name
      * @param string|null   $file_path
+     *
      * @return void
      */
     public function addFullyQualifiedInterfaceName($fq_class_name, $file_path = null)
@@ -1136,6 +1162,7 @@ class ProjectChecker
     /**
      * @param string        $fq_class_name
      * @param string|null   $file_path
+     *
      * @return void
      */
     public function addFullyQualifiedTraitName($fq_class_name, $file_path = null)
@@ -1154,6 +1181,7 @@ class ProjectChecker
 
     /**
      * @param string $fq_class_name
+     *
      * @return bool
      */
     public function hasFullyQualifiedClassName($fq_class_name)
@@ -1179,6 +1207,7 @@ class ProjectChecker
 
     /**
      * @param string $fq_class_name
+     *
      * @return bool
      */
     public function hasFullyQualifiedInterfaceName($fq_class_name)
@@ -1204,6 +1233,7 @@ class ProjectChecker
 
     /**
      * @param string $fq_class_name
+     *
      * @return bool
      */
     public function hasFullyQualifiedTraitName($fq_class_name)
@@ -1229,6 +1259,7 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
+     *
      * @return bool
      */
     public function canReportIssues($file_path)

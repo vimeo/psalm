@@ -18,6 +18,7 @@ class IssueHandler
     /**
      * @param  SimpleXMLElement $e
      * @param  string           $base_dir
+     *
      * @return self
      */
     public static function loadFromXMLElement(SimpleXMLElement $e, $base_dir)
@@ -42,6 +43,7 @@ class IssueHandler
 
     /**
      * @param string $error_level
+     *
      * @return void
      */
     public function setErrorLevel($error_level)
@@ -55,6 +57,7 @@ class IssueHandler
 
     /**
      * @param string $file_path
+     *
      * @return string
      */
     public function getReportingLevelForFile($file_path)

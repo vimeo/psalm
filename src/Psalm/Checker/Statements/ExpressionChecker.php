@@ -55,6 +55,7 @@ class ExpressionChecker
      * @param   Type\Union|null     $assignment_key_type
      * @param   Type\Union|null     $assignment_value_type
      * @param   string|null         $assignment_key_value
+     *
      * @return  false|null
      */
     public static function analyze(
@@ -450,6 +451,7 @@ class ExpressionChecker
      * @param   bool                            $passed_by_reference
      * @param   Type\Union|null                 $by_ref_type
      * @param   bool                            $array_assignment
+     *
      * @return  false|null
      */
     public static function analyzeVariable(
@@ -598,6 +600,7 @@ class ExpressionChecker
      * @param  PhpParser\Node\Expr  $stmt
      * @param  Type\Union           $by_ref_type
      * @param  Context              $context
+     *
      * @return void
      */
     public static function assignByRefParam(
@@ -652,6 +655,7 @@ class ExpressionChecker
      * @param   StatementsChecker           $statements_checker
      * @param   PhpParser\Node\Expr\Array_  $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     protected static function analyzeArray(
@@ -750,6 +754,7 @@ class ExpressionChecker
      * @param   PhpParser\Node\Expr\BinaryOp    $stmt
      * @param   Context                         $context
      * @param   int                             $nesting
+     *
      * @return  false|null
      */
     protected static function analyzeBinaryOp(
@@ -1078,6 +1083,7 @@ class ExpressionChecker
      * @param  PhpParser\Node\Expr   $right
      * @param  PhpParser\Node        $parent
      * @param  Type\Union|null   &$result_type
+     *
      * @return void
      */
     public static function analyzeNonDivArithmenticOp(
@@ -1252,6 +1258,7 @@ class ExpressionChecker
      * @param  PhpParser\Node\Expr   $left
      * @param  PhpParser\Node\Expr   $right
      * @param  Type\Union|null       &$result_type
+     *
      * @return void
      */
     public static function analyzeConcatOp(
@@ -1392,6 +1399,7 @@ class ExpressionChecker
      * @param  string|null              $this_class_name
      * @param  StatementsSource|null    $source
      * @param  int|null                 &$nesting
+     *
      * @return string|null
      */
     public static function getVarId(
@@ -1449,6 +1457,7 @@ class ExpressionChecker
      * @param  PhpParser\Node\Expr      $stmt
      * @param  string|null              $this_class_name
      * @param  StatementsSource|null    $source
+     *
      * @return string|null
      */
     public static function getArrayVarId(
@@ -1479,6 +1488,7 @@ class ExpressionChecker
      * @param  Type\Union   $return_type
      * @param  string|null  $calling_class
      * @param  string|null  $method_id
+     *
      * @return Type\Union
      */
     public static function fleshOutTypes(Type\Union $return_type, $calling_class = null, $method_id = null)
@@ -1503,6 +1513,7 @@ class ExpressionChecker
      * @param  Type\Atomic  &$return_type
      * @param  string|null  $calling_class
      * @param  string|null  $method_id
+     *
      * @return Type\Atomic
      */
     protected static function fleshOutAtomicType(Type\Atomic $return_type, $calling_class, $method_id)
@@ -1543,6 +1554,7 @@ class ExpressionChecker
      * @param   StatementsChecker           $statements_checker
      * @param   PhpParser\Node\Expr\Closure $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     protected static function analyzeClosureUses(
@@ -1614,6 +1626,7 @@ class ExpressionChecker
      * @param   StatementsChecker           $statements_checker
      * @param   PhpParser\Node\Expr\Yield_  $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     protected static function analyzeYield(
@@ -1666,6 +1679,7 @@ class ExpressionChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\YieldFrom   $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     protected static function analyzeYieldFrom(
@@ -1688,6 +1702,7 @@ class ExpressionChecker
      * @param   StatementsChecker           $statements_checker
      * @param   PhpParser\Node\Expr\Ternary $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     protected static function analyzeTernary(
@@ -1826,6 +1841,7 @@ class ExpressionChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\BooleanNot  $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     protected static function analyzeBooleanNot(
@@ -1844,6 +1860,7 @@ class ExpressionChecker
      * @param   StatementsChecker           $statements_checker
      * @param   PhpParser\Node\Expr\Empty_  $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     protected static function analyzeEmpty(
@@ -1858,6 +1875,7 @@ class ExpressionChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Scalar\Encapsed  $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     protected static function analyzeEncapsulatedString(
@@ -1881,6 +1899,7 @@ class ExpressionChecker
      * @param  StatementsChecker          $statements_checker
      * @param  PhpParser\Node\Expr\Isset_ $stmt
      * @param  Context                    $context
+     *
      * @return void
      */
     protected static function analyzeIsset(
@@ -1910,6 +1929,7 @@ class ExpressionChecker
      * @param  StatementsChecker   $statements_checker
      * @param  PhpParser\Node\Expr $stmt
      * @param  Context             $context
+     *
      * @return void
      */
     protected static function analyzeIssetVar(
@@ -1936,6 +1956,7 @@ class ExpressionChecker
      * @param  StatementsChecker            $statements_checker
      * @param  PhpParser\Node\Expr\Clone_   $stmt
      * @param  Context                      $context
+     *
      * @return false|null
      */
     protected static function analyzeClone(
@@ -1973,6 +1994,7 @@ class ExpressionChecker
 
     /**
      * @param  string  $fq_class_name
+     *
      * @return bool
      */
     public static function isMock($fq_class_name)

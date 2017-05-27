@@ -33,6 +33,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                         /**
                          * @param  string $name
                          * @param  string $type
+                         *
                          * @return string
                          */
                         function ($name, $type) {
@@ -49,6 +50,7 @@ class ObjectLike extends \Psalm\Type\Atomic
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
+     *
      * @return string
      */
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
@@ -64,6 +66,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                         /**
                          * @param  string $name
                          * @param  Union  $type
+                         *
                          * @return string
                          */
                         function ($name, Union $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {

@@ -27,6 +27,7 @@ abstract class Type
      * Parses a string type representation
      *
      * @param  string $type_string
+     *
      * @return Union
      */
     public static function parseString($type_string)
@@ -66,6 +67,7 @@ abstract class Type
 
     /**
      * @param  string $type_string
+     *
      * @return string
      */
     public static function fixScalarTerms($type_string)
@@ -104,6 +106,7 @@ abstract class Type
 
     /**
      * @param   ParseTree $parse_tree
+     *
      * @return  Atomic|TArray|TGenericObject|ObjectLike|Union
      */
     private static function getTypeFromTree(ParseTree $parse_tree)
@@ -199,6 +202,7 @@ abstract class Type
 
     /**
      * @param  string $return_type
+     *
      * @return array<int,string>
      */
     public static function tokenize($return_type)
@@ -239,6 +243,7 @@ abstract class Type
 
     /**
      * @param  string $type
+     *
      * @return string
      */
     public static function convertSquareBrackets($type)
@@ -398,6 +403,7 @@ abstract class Type
     /**
      * @param  array<string, Union> $redefined_vars
      * @param  Context              $context
+     *
      * @return void
      */
     public static function redefineGenericUnionTypes(array $redefined_vars, Context $context)
@@ -436,6 +442,7 @@ abstract class Type
      *
      * @param  Union  $type_1
      * @param  Union  $type_2
+     *
      * @return Union
      */
     public static function combineUnionTypes(Union $type_1, Union $type_2)
@@ -483,6 +490,7 @@ abstract class Type
      *  - and `array + array<string> = array<mixed>`
      *
      * @param  array<Atomic>    $types
+     *
      * @return Union
      * @psalm-suppress TypeCoercion
      */
@@ -618,6 +626,7 @@ abstract class Type
      * @param  Atomic                                   $type
      * @param  array<string, array<string, Union>>      &$key_types
      * @param  array<string, array<string, Union|null>> &$value_types
+     *
      * @return null|Union
      */
     public static function scrapeTypeProperties(Atomic $type, array &$key_types, array &$value_types)

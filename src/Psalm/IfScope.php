@@ -13,7 +13,7 @@ class IfScope
      */
     public $new_vars_possibly_in_scope = [];
 
-     /**
+    /**
      * @var array<string, Type\Union>|null
      */
     public $forced_new_vars = null;

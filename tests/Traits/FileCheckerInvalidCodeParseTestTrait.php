@@ -14,10 +14,12 @@ trait FileCheckerInvalidCodeParseTestTrait
 
     /**
      * @dataProvider providerFileCheckerInvalidCodeParse
+     *
      * @param string $code
      * @param string $error_message
      * @param array<string> $error_levels
-     * @param boolean $strict_mode
+     * @param bool $strict_mode
+     *
      * @return void
      */
     public function testInvalidCode($code, $error_message, $error_levels = [], $strict_mode = false)

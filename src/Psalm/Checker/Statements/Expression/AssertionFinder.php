@@ -23,6 +23,7 @@ class AssertionFinder
      * @param  PhpParser\Node\Expr      $conditional
      * @param  string|null              $this_class_name
      * @param  StatementsSource         $source
+     *
      * @return array<string, string>
      * @psalm-suppress MoreSpecificReturnType
      */
@@ -516,6 +517,7 @@ class AssertionFinder
      * @param  string|null                  $this_class_name
      * @param  StatementsSource             $source
      * @param  bool                      $negate
+     *
      * @return void
      */
     protected static function processFunctionCall(
@@ -592,6 +594,7 @@ class AssertionFinder
      * @param  PhpParser\Node\Expr\Instanceof_ $stmt
      * @param  string|null                     $this_class_name
      * @param  StatementsSource                $source
+     *
      * @return string|null
      */
     protected static function getInstanceOfTypes(
@@ -617,6 +620,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\BinaryOp    $conditional
+     *
      * @return  int|null
      */
     protected static function hasNullVariable(PhpParser\Node\Expr\BinaryOp $conditional)
@@ -638,6 +642,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\BinaryOp    $conditional
+     *
      * @return  int|null
      */
     protected static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional)
@@ -659,6 +664,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\BinaryOp    $conditional
+     *
      * @return  int|null
      */
     protected static function hasTrueVariable(PhpParser\Node\Expr\BinaryOp $conditional)
@@ -680,6 +686,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\BinaryOp    $conditional
+     *
      * @return  false|int
      */
     protected static function hasGetTypeCheck(PhpParser\Node\Expr\BinaryOp $conditional)
@@ -703,6 +710,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\BinaryOp    $conditional
+     *
      * @return  false|int
      */
     protected static function hasTypedValueComparison(PhpParser\Node\Expr\BinaryOp $conditional)
@@ -724,6 +732,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasNullCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -737,6 +746,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasIsACheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -751,6 +761,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasArrayCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -764,6 +775,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasStringCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -777,6 +789,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasBoolCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -790,6 +803,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasObjectCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -803,6 +817,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -816,6 +831,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasIntCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -833,6 +849,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasFloatCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -850,6 +867,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasResourceCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -863,6 +881,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasScalarCheck(PhpParser\Node\Expr\FuncCall $stmt)
@@ -876,6 +895,7 @@ class AssertionFinder
 
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
      * @return  bool
      */
     protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt)

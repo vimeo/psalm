@@ -6,7 +6,6 @@ use Psalm\Type\Atomic;
 
 /**
  * A class for analysing a given method call's effects in relation to $this/self and also looking at return types
- *
  */
 class EffectsAnalyser
 {
@@ -17,6 +16,7 @@ class EffectsAnalyser
      * @param  array<int,Type\Atomic>    $yield_types
      * @param  bool                      $ignore_nullable_issues
      * @param  bool                      $collapse_types
+     *
      * @return array<int,Type\Atomic>    a list of return types
      */
     public static function getReturnTypes(
@@ -176,6 +176,7 @@ class EffectsAnalyser
 
     /**
      * @param   PhpParser\Node\Expr $stmt
+     *
      * @return  array<int, Atomic>
      */
     protected static function getYieldTypeFromExpression($stmt)

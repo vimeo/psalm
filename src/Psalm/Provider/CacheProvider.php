@@ -26,6 +26,7 @@ class CacheProvider
      * @param  string   $file_path
      * @param  string   $file_content_hash
      * @param  string   $file_cache_key
+     *
      * @return array<int, PhpParser\Node\Stmt>|null
      */
     public static function loadStatementsFromCache($file_path, $file_content_hash, $file_cache_key)
@@ -79,6 +80,7 @@ class CacheProvider
      * @param  string                           $file_content_hash
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
      * @param  bool                             $touch_only
+     *
      * @return void
      */
     public static function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
@@ -123,6 +125,7 @@ class CacheProvider
 
     /**
      * @param int $start_time
+     *
      * @return void
      */
     public static function processSuccessfulRun($start_time)
@@ -173,6 +176,7 @@ class CacheProvider
 
     /**
      * @param  float $time_before
+     *
      * @return int
      */
     public static function deleteOldParserCaches($time_before)
@@ -211,6 +215,7 @@ class CacheProvider
     /**
      * @param  array<string>    $file_names
      * @param  int              $min_time
+     *
      * @return void
      */
     public static function touchParserCaches(array $file_names, $min_time)
@@ -238,6 +243,7 @@ class CacheProvider
 
     /**
      * @param  string   $file_name
+     *
      * @return string
      */
     public static function getParserCacheKey($file_name)

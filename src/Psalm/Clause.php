@@ -56,6 +56,7 @@ class Clause
 
     /**
      * @param  Clause $other_clause
+     *
      * @return bool
      */
     public function contains(Clause $other_clause)

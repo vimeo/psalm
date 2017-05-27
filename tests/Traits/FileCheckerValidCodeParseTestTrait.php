@@ -14,10 +14,12 @@ trait FileCheckerValidCodeParseTestTrait
 
     /**
      * @dataProvider providerFileCheckerValidCodeParse
+     *
      * @param string $code
      * @param array<array<string,string>> $assertions
      * @param array<string> $error_levels
      * @param array<string,\Psalm\Type\Union> $scope_vars
+     *
      * @return void
      */
     public function testValidCode($code, $assertions = [], $error_levels = [], $scope_vars = [])

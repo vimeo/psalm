@@ -41,6 +41,7 @@ class IfChecker
      * @param  PhpParser\Node\Stmt\If_ $stmt
      * @param  Context                 $context
      * @param  Context|null            $loop_context
+     *
      * @return null|false
      */
     public static function analyze(
@@ -273,6 +274,7 @@ class IfChecker
      * @param  Context                  $old_if_context
      * @param  Context                  $outer_context
      * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
+     *
      * @return false|null
      */
     protected static function analyzeIfBlock(
@@ -415,6 +417,7 @@ class IfChecker
      * @param  IfScope                     $if_scope
      * @param  Context                     $elseif_context
      * @param  Context                     $outer_context
+     *
      * @return false|null
      */
     protected static function analyzeElseIfBlock(
@@ -716,6 +719,7 @@ class IfChecker
      * @param  IfScope                   $if_scope
      * @param  Context                   $else_context
      * @param  Context                   $outer_context
+     *
      * @return false|null
      */
     protected static function analyzeElseBlock(
@@ -913,6 +917,7 @@ class IfChecker
 
     /**
      * @param  PhpParser\Node\Expr $stmt
+     *
      * @return PhpParser\Node\Expr|null
      */
     protected static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt)

@@ -5,7 +5,8 @@ class ClassLikeDocblockComment
 {
     /**
      * Whether or not the class is deprecated
-     * @var boolean
+     *
+     * @var bool
      */
     public $deprecated = false;
 

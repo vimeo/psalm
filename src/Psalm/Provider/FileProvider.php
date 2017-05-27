@@ -8,6 +8,7 @@ class FileProvider
 {
     /**
      * @param  string  $file_path
+     *
      * @return bool
      */
     public static function hasFileChanged($file_path)
@@ -19,6 +20,7 @@ class FileProvider
      * @param  ProjectChecker   $project_checker
      * @param  string           $file_path
      * @param  bool             $debug_output
+     *
      * @return array<int, \PhpParser\Node\Stmt>
      */
     public static function getStatementsForFile(ProjectChecker $project_checker, $file_path, $debug_output = false)
@@ -56,6 +58,7 @@ class FileProvider
 
     /**
      * @param  string   $file_contents
+     *
      * @return array<int, \PhpParser\Node\Stmt>
      */
     private static function parseStatementsInFile($file_contents)

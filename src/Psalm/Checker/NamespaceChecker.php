@@ -119,6 +119,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  PhpParser\Node\Stmt\ClassLike $stmt
+     *
      * @return void
      */
     public function visitClassLike(PhpParser\Node\Stmt\ClassLike $stmt)
@@ -173,6 +174,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     /**
      * @param string     $const_name
      * @param Type\Union $const_type
+     *
      * @return void
      */
     public function setConstType($const_name, Type\Union $const_type)
@@ -183,6 +185,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     /**
      * @param  string $namespace_name
      * @param  mixed  $visibility
+     *
      * @return array<string,Type\Union>
      */
     public static function getConstantsForNamespace($namespace_name, $visibility)

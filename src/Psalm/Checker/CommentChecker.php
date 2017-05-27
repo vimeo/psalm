@@ -21,8 +21,10 @@ class CommentChecker
      * @param  array<string, string>|null   $template_types
      * @param  int|null         $var_line_number
      * @param  int|null         $came_from_line_number what line number in $source that $comment came from
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     *
      * @return VarDocblockComment|null
-     * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
      */
     public static function getTypeFromComment(
@@ -114,8 +116,10 @@ class CommentChecker
     /**
      * @param  string  $comment
      * @param  int     $line_number
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     *
      * @return FunctionDocblockComment
-     * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
      */
     public static function extractFunctionDocblockInfo($comment, $line_number)
@@ -247,8 +251,10 @@ class CommentChecker
     /**
      * @param  string  $comment
      * @param  int     $line_number
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     *
      * @return ClassLikeDocblockComment
-     * @throws DocblockParseException If there was a problem parsing the docblock.
      * @psalm-suppress MixedArrayAccess
      */
     public static function extractClassLikeDocblockInfo($comment, $line_number)
@@ -321,8 +327,10 @@ class CommentChecker
 
     /**
      * @param  string $return_block
+     *
+     * @throws DocblockParseException if an invalid string is found
+     *
      * @return array<string>
-     * @throws DocblockParseException If an invalid string is found.
      */
     protected static function splitDocLine($return_block)
     {
@@ -374,6 +382,7 @@ class CommentChecker
      *
      * @param  string  $docblock
      * @param  int     $line_number
+     *
      * @return array Array of the main comment and specials
      * @psalm-return array{description:string, specials:array<string, array<mixed, string>>}
      */
@@ -469,6 +478,7 @@ class CommentChecker
     /**
      * @param  array{description:string,specials:array<string,array<string>>} $parsed_doc_comment
      * @param  string                                                         $left_padding
+     *
      * @return array<int, string>
      */
     public static function renderDocComment(array $parsed_doc_comment, $left_padding)

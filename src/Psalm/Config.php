@@ -49,21 +49,21 @@ class Config
     /**
      * Whether or not to stop when the first error is seen
      *
-     * @var boolean
+     * @var bool
      */
     public $stop_on_first_error = true;
 
     /**
      * Whether or not to use types as defined in docblocks
      *
-     * @var boolean
+     * @var bool
      */
     public $use_docblock_types = true;
 
     /**
      * Whether or not to throw an exception on first error
      *
-     * @var boolean
+     * @var bool
      */
     public $throw_exception = false;
 
@@ -77,14 +77,14 @@ class Config
     /**
      * Whether or not to use property defaults to inform type when none is listed
      *
-     * @var boolean
+     * @var bool
      */
     public $use_property_default_for_type = false;
 
     /**
      * Whether or not to care about casing of file names
      *
-     * @var boolean
+     * @var bool
      */
     public $use_case_sensitive_file_names = false;
 
@@ -145,7 +145,7 @@ class Config
     public $cache_file_hashes_during_run = true;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $hide_external_errors = true;
 
@@ -164,12 +164,12 @@ class Config
     /**
      * If true, assert() calls can be used to check types of variables
      *
-     * @var boolean
+     * @var bool
      */
     public $use_assert_for_type = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $remember_property_assignments_after_call = true;
 
@@ -201,6 +201,7 @@ class Config
      *
      * @param  string           $file_path
      * @param  string           $base_dir
+     *
      * @return self
      */
     public static function loadFromXMLFile($file_path, $base_dir)
@@ -220,6 +221,7 @@ class Config
      * @param  string           $file_path
      * @param  string           $base_dir
      * @param  string           $file_contents
+     *
      * @return self
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
@@ -434,6 +436,7 @@ class Config
     /**
      * @param string $issue_key
      * @param string $error_level
+     *
      * @return void
      */
     public function setCustomErrorLevel($issue_key, $error_level)
@@ -444,8 +447,10 @@ class Config
 
     /**
      * @param  array<\SimpleXMLElement> $extensions
+     *
+     * @throws ConfigException if a Config file could not be found
+     *
      * @return void
-     * @throws ConfigException If a Config file could not be found.
      */
     private function loadFileExtensions($extensions)
     {
@@ -467,6 +472,7 @@ class Config
 
     /**
      * Initialises all the plugins (done once the config is fully loaded)
+     *
      * @return void
      * @psalm-suppress MixedArrayAccess
      * @psalm-suppress MixedAssignment
@@ -501,6 +507,7 @@ class Config
 
     /**
      * @param  string $file_name
+     *
      * @return string
      */
     public function shortenFileName($file_name)
@@ -511,6 +518,7 @@ class Config
     /**
      * @param   string $issue_type
      * @param   string $file_path
+     *
      * @return  bool
      */
     public function reportIssueInFile($issue_type, $file_path)
@@ -536,6 +544,7 @@ class Config
 
     /**
      * @param   string $file_path
+     *
      * @return  bool
      */
     public function isInProjectDirs($file_path)
@@ -546,6 +555,7 @@ class Config
     /**
      * @param   string $issue_type
      * @param   string $file_path
+     *
      * @return  string
      */
     public function getReportingLevelForFile($issue_type, $file_path)
@@ -595,6 +605,7 @@ class Config
 
     /**
      * @param  ProjectChecker $project_checker
+     *
      * @return void
      */
     public function visitStubFiles(ProjectChecker $project_checker)

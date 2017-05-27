@@ -23,6 +23,7 @@ class ForeachChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Stmt\Foreach_    $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyze(

@@ -33,6 +33,7 @@ class FileFilter
 
     /**
      * @param  bool             $inclusive
+     *
      * @return self
      * @psalm-suppress FailedTypeResolution
      */
@@ -49,6 +50,7 @@ class FileFilter
      * @param  SimpleXMLElement $e
      * @param  string           $base_dir
      * @param  bool             $inclusive
+     *
      * @return static
      */
     public static function loadFromXMLElement(
@@ -109,6 +111,7 @@ class FileFilter
 
     /**
      * @param  string $str
+     *
      * @return string
      */
     protected static function slashify($str)
@@ -119,6 +122,7 @@ class FileFilter
     /**
      * @param  string  $file_name
      * @param  bool $case_sensitive
+     *
      * @return bool
      */
     public function allows($file_name, $case_sensitive = false)
@@ -185,6 +189,7 @@ class FileFilter
 
     /**
      * @param   string $file_name
+     *
      * @return  void
      */
     public function addFile($file_name)
@@ -195,6 +200,7 @@ class FileFilter
 
     /**
      * @param string $dir_name
+     *
      * @return void
      */
     public function addDirectory($dir_name)

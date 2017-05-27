@@ -53,6 +53,7 @@ class FetchChecker
      * @param   StatementsChecker                   $statements_checker
      * @param   PhpParser\Node\Expr\PropertyFetch   $stmt
      * @param   Context                             $context
+     *
      * @return  false|null
      */
     public static function analyzePropertyFetch(
@@ -365,6 +366,7 @@ class FetchChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\ConstFetch  $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyzeConstFetch(
@@ -416,6 +418,7 @@ class FetchChecker
      * @param   StatementsChecker                   $statements_checker
      * @param   PhpParser\Node\Expr\ClassConstFetch $stmt
      * @param   Context                             $context
+     *
      * @return  null|false
      */
     public static function analyzeClassConstFetch(
@@ -553,6 +556,7 @@ class FetchChecker
      * @param   StatementsChecker                       $statements_checker
      * @param   PhpParser\Node\Expr\StaticPropertyFetch $stmt
      * @param   Context                                 $context
+     *
      * @return  null|false
      */
     public static function analyzeStaticPropertyFetch(
@@ -693,6 +697,7 @@ class FetchChecker
      * @param   Type\Union|null                     $assignment_key_type
      * @param   Type\Union|null                     $assignment_value_type
      * @param   string|null                         $assignment_key_value
+     *
      * @return  false|null
      */
     public static function analyzeArrayAccess(
@@ -1202,6 +1207,7 @@ class FetchChecker
      * @param   Type\Union              $assignment_value_type
      * @param   string|null             $var_id
      * @param   CodeLocation           $code_location
+     *
      * @return  Type\Atomic|null|false
      */
     protected static function refineArrayType(

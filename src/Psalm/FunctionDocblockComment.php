@@ -15,21 +15,22 @@ class FunctionDocblockComment
 
     /**
      * Whether or not the function is deprecated
-     * @var boolean
+     *
+     * @var bool
      */
     public $deprecated = false;
 
     /**
      * Whether or not the function uses get_args
      *
-     * @var boolean
+     * @var bool
      */
     public $variadic = false;
 
     /**
      * Whether or not to ignore the nullability of this function's return type
      *
-     * @var boolean
+     * @var bool
      */
     public $ignore_nullable_return = false;
 

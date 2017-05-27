@@ -56,6 +56,7 @@ class CallChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyzeFunctionCall(
@@ -436,6 +437,7 @@ class CallChecker
      * @param   StatementsChecker           $statements_checker
      * @param   PhpParser\Node\Expr\New_    $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     public static function analyzeNew(
@@ -648,6 +650,7 @@ class CallChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\MethodCall  $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyzeMethodCall(
@@ -994,6 +997,7 @@ class CallChecker
      * @param   FunctionLikeChecker $source
      * @param   string              $method_name
      * @param   Context             $context
+     *
      * @return  void
      */
     public static function collectSpecialInformation(
@@ -1072,6 +1076,7 @@ class CallChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\StaticCall  $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyzeStaticCall(
@@ -1355,6 +1360,7 @@ class CallChecker
      * @param  Context                          $context
      * @param  CodeLocation                     $code_location
      * @param  StatementsChecker                $statements_checker
+     *
      * @return false|null
      */
     protected static function checkMethodArgs(
@@ -1422,6 +1428,7 @@ class CallChecker
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
      * @param   Context                                 $context
+     *
      * @return  false|null
      */
     protected static function checkFunctionArguments(
@@ -1537,6 +1544,7 @@ class CallChecker
      * @param   array<string, Type\Union>|null          $generic_params
      * @param   CodeLocation                            $code_location
      * @param   bool                                    $check_variables
+     *
      * @return  false|null
      */
     protected static function checkFunctionArgumentsMatch(
@@ -1750,6 +1758,7 @@ class CallChecker
      * @param   StatementsChecker                       $statements_checker
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|null                             $method_id
+     *
      * @return  false|null
      */
     protected static function checkArrayFunctionArgumentsMatch(
@@ -1931,6 +1940,7 @@ class CallChecker
      * @param   string|null         $cased_method_id
      * @param   int                 $argument_offset
      * @param   CodeLocation        $code_location
+     *
      * @return  null|false
      */
     public static function checkFunctionArgumentType(
@@ -2078,6 +2088,7 @@ class CallChecker
      * @param  StatementsChecker    $statements_checker
      * @param  string               $function_id
      * @param  CodeLocation         $code_location
+     *
      * @return bool
      */
     protected static function checkFunctionExists(

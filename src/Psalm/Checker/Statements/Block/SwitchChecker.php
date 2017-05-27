@@ -18,6 +18,7 @@ class SwitchChecker
      * @param   PhpParser\Node\Stmt\Switch_     $stmt
      * @param   Context                         $context
      * @param   Context|null                    $loop_context
+     *
      * @return  false|null
      */
     public static function analyze(

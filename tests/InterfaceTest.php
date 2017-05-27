@@ -12,6 +12,7 @@ class InterfaceTest extends TestCase
     /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedClass
+     *
      * @return                   void
      */
     public function testInvalidImplements()

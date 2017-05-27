@@ -177,6 +177,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param Context|null  $class_context
      * @param Context|null  $global_context
+     *
      * @return false|null
      */
     public function visit(
@@ -434,6 +435,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param Context|null  $class_context
      * @param Context|null  $global_context
      * @param bool          $update_docblocks
+     *
      * @return null|false
      */
     public function analyze(
@@ -746,6 +748,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  Context                         $class_context
      * @param  Context|null                    $global_context
      * @param  bool                         $update_docblocks
+     *
      * @return MethodChecker|null
      */
     private function analyzeClassMethod(
@@ -808,6 +811,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param  string       $method_name
      * @param  Context      $context
+     *
      * @return void
      */
     public function getMethodMutations(
@@ -877,6 +881,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param  string  $parent_class
+     *
      * @return false|null
      */
     private function registerParentClassInfo($parent_class)
@@ -931,6 +936,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param   PhpParser\Node\Stmt\ClassMethod $stmt
      * @param   Context                         $class_context
+     *
      * @return  void
      */
     private function visitClassMethod(
@@ -965,6 +971,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param   PhpParser\Node\Stmt\TraitUse    $stmt
      * @param   Context                         $class_context
+     *
      * @return  false|null
      */
     private function visitTraitUse(
@@ -1036,6 +1043,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   PhpParser\Node\Stmt\Property    $stmt
      * @param   Context                         $class_context
      * @param   Config                          $config
+     *
      * @return  void
      */
     private function visitPropertyDeclaration(
@@ -1131,6 +1139,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param   PhpParser\Node\Stmt\Property    $stmt
+     *
      * @return  void
      */
     private function checkForMissingPropertyType(PhpParser\Node\Stmt\Property $stmt)
@@ -1185,6 +1194,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   PhpParser\Node\Stmt\ClassConst  $stmt
      * @param   Context                         $class_context
      * @param   Config                          $config
+     *
      * @return  void
      */
     private function visitClassConstDeclaration(
@@ -1219,6 +1229,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  string       $fq_class_name
      * @param  FileChecker  $file_checker
      * @param  CodeLocation $code_location
+     *
      * @return bool
      */
     public static function classOrInterfaceExists(
@@ -1246,6 +1257,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param  string       $fq_class_name
      * @param  string       $possible_parent
+     *
      * @return bool
      */
     public static function classExtendsOrImplements(
@@ -1262,6 +1274,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @param  bool             $inferred - whether or not the type was inferred
+     *
      * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
@@ -1337,6 +1350,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @param  PhpParser\Node\Name      $class_name
      * @param  StatementsSource         $source
+     *
      * @return string
      */
     public static function getFQCLNFromNameObject(
@@ -1360,6 +1374,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param  string                   $class
      * @param  StatementsSource         $source
+     *
      * @return string
      */
     public static function getFQCLNFromString($class, StatementsSource $source)
@@ -1454,6 +1469,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  string          $class_name
      * @param  ReflectionClass $reflected_class
      * @param  ProjectChecker  $project_checker
+     *
      * @return void
      */
     public static function registerReflectedClass(
@@ -1610,6 +1626,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param string $fq_class_name
      * @param string $parent_class
+     *
      * @return void
      */
     protected static function registerInheritedMethods($fq_class_name, $parent_class)
@@ -1645,6 +1662,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param string $fq_class_name
      * @param string $parent_class
+     *
      * @return void
      */
     protected static function registerInheritedProperties($fq_class_name, $parent_class)
@@ -1671,6 +1689,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param  string $class_name
      * @param  mixed  $visibility
+     *
      * @return array<string, PropertyStorage>
      */
     public static function getPropertiesForClass($class_name, $visibility)
@@ -1704,6 +1723,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * Gets the Psalm type from a particular value
      *
      * @param  mixed $value
+     *
      * @return Type\Union
      */
     public static function getTypeFromValue($value)
@@ -1735,6 +1755,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param  string $class_name
      * @param  mixed  $visibility
+     *
      * @return array<string,Type\Union>
      */
     public static function getConstantsForClass($class_name, $visibility)
@@ -1776,6 +1797,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param   string      $const_name
      * @param   Type\Union  $type
      * @param   int         $visibility
+     *
      * @return  void
      */
     public static function setConstantType($class_name, $const_name, Type\Union $type, $visibility)
@@ -1795,6 +1817,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * Whether or not a given property exists
      *
      * @param  string $property_id
+     *
      * @return bool
      */
     public static function propertyExists($property_id)
@@ -1825,6 +1848,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
+     *
      * @return false|null
      */
     public static function checkPropertyVisibility(
@@ -1926,6 +1950,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param  string $property_id
+     *
      * @return string|null
      */
     public static function getDeclaringClassForProperty($property_id)
@@ -1945,6 +1970,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * Get the class this property appears in (vs is declared in, which could give a trait)
      *
      * @param  string $property_id
+     *
      * @return string|null
      */
     public static function getAppearingClassForProperty($property_id)
@@ -1962,6 +1988,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param   string $method_name
+     *
      * @return  string
      */
     protected function getMappedMethodName($method_name)
@@ -1971,6 +1998,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param   string $file_path
+     *
      * @return  array<string>
      */
     public static function getClassesForFile($file_path)
@@ -1980,6 +2008,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param  string  $fq_class_name
+     *
      * @return bool
      */
     public static function isUserDefined($fq_class_name)
@@ -2015,6 +2044,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param   string $class_name
+     *
      * @return  bool
      */
     public static function inPropertyMap($class_name)
@@ -2025,6 +2055,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param  string $fq_class_name
      * @param  string $fq_trait_name
+     *
      * @return void
      */
     public static function registerTraitUse($fq_class_name, $fq_trait_name)

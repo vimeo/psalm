@@ -14,6 +14,7 @@ class ErrorLevelFileFilter extends FileFilter
      * @param  SimpleXMLElement $e
      * @param  bool             $inclusive
      * @param  string           $base_dir
+     *
      * @return self
      */
     public static function loadFromXMLElement(

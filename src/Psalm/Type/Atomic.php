@@ -49,6 +49,7 @@ abstract class Atomic
 
     /**
      * @param  string $value
+     *
      * @return Atomic
      */
     public static function create($value)
@@ -111,6 +112,7 @@ abstract class Atomic
     /**
      * @param   Union        $parent
      * @param   FileChecker  $file_checker
+     *
      * @return  bool
      */
     public function isIn(Union $parent, FileChecker $file_checker)
@@ -191,6 +193,7 @@ abstract class Atomic
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
      * @param  bool             $inferred
+     *
      * @return false|null
      */
     public function check(
@@ -240,6 +243,7 @@ abstract class Atomic
 
     /**
      * @param  Atomic $other
+     *
      * @return bool
      */
     public function shallowEquals(Atomic $other)
@@ -259,6 +263,7 @@ abstract class Atomic
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
+     *
      * @return string
      */
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
@@ -278,6 +283,7 @@ abstract class Atomic
      * @param  array<string, string>     $template_types
      * @param  array<string, Type\Union> $generic_params
      * @param  Type\Atomic|null          $input_type
+     *
      * @return void
      */
     public function replaceTemplateTypes(array $template_types, array &$generic_params, Type\Atomic $input_type = null)

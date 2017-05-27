@@ -31,6 +31,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
+     *
      * @return array<int, \Psalm\FunctionLikeParameter>
      */
     public static function getMethodParams($method_id)
@@ -48,6 +49,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
+     *
      * @return bool
      */
     public static function isVariadic($method_id)
@@ -63,6 +65,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string                       $method_id
+     *
      * @return Type\Union|null
      */
     public static function getMethodReturnType($method_id)
@@ -111,6 +114,7 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param  string               $method_id
      * @param  CodeLocation|null    $defined_location
+     *
      * @return CodeLocation|null
      */
     public static function getMethodReturnTypeLocation($method_id, CodeLocation &$defined_location = null)
@@ -145,6 +149,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param \ReflectionMethod $method
+     *
      * @return null
      */
     public static function extractReflectionMethodInfo(\ReflectionMethod $method)
@@ -218,6 +223,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  bool            $self_call
      * @param  CodeLocation    $code_location
      * @param  array<string>   $suppressed_issues
+     *
      * @return bool
      */
     public static function checkStatic(
@@ -269,6 +275,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  FileChecker  $file_checker
      * @param  CodeLocation $code_location
      * @param  array        $suppressed_issues
+     *
      * @return bool|null
      */
     public static function checkMethodExists(
@@ -297,6 +304,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string       $method_id
      * @param  FileChecker  $file_checker
      * @param  CodeLocation|null $code_location
+     *
      * @return bool
      */
     public static function methodExists(
@@ -371,6 +379,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
+     *
      * @return MethodStorage
      */
     public static function getStorage($method_id)
@@ -396,6 +405,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string       $method_id
      * @param  CodeLocation $code_location
      * @param  array        $suppressed_issues
+     *
      * @return false|null
      */
     public static function checkMethodNotDeprecated($method_id, CodeLocation $code_location, array $suppressed_issues)
@@ -424,6 +434,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
+     *
      * @return false|null
      */
     public static function checkMethodVisibility(
@@ -517,6 +528,7 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param string $method_id
      * @param string $declaring_method_id
+     *
      * @return void
      */
     public static function setDeclaringMethodId($method_id, $declaring_method_id)
@@ -530,6 +542,7 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param string $method_id
      * @param string $appearing_method_id
+     *
      * @return void
      */
     public static function setAppearingMethodId($method_id, $appearing_method_id)
@@ -542,6 +555,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
+     *
      * @return string|null
      */
     public static function getDeclaringMethodId($method_id)
@@ -569,6 +583,7 @@ class MethodChecker extends FunctionLikeChecker
      * Get the class this method appears in (vs is declared in, which could give a trait)
      *
      * @param  string $method_id
+     *
      * @return string|null
      */
     public static function getAppearingMethodId($method_id)
@@ -589,6 +604,7 @@ class MethodChecker extends FunctionLikeChecker
     /**
      * @param string  $method_id
      * @param string  $overridden_method_id
+     *
      * @return void
      */
     public static function setOverriddenMethodId($method_id, $overridden_method_id)
@@ -601,6 +617,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
+     *
      * @return array<string>
      */
     public static function getOverriddenMethodIds($method_id)
@@ -618,6 +635,7 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $original_method_id
+     *
      * @return string
      */
     public static function getCasedMethodId($original_method_id)

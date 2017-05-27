@@ -39,6 +39,7 @@ class ParseTree
      * Create a parse tree from a tokenised type
      *
      * @param  array<string>  $type_tokens
+     *
      * @return self
      */
     public static function createFromTokens(array $type_tokens)

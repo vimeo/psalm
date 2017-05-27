@@ -14,6 +14,7 @@ class ProjectFileFilter extends FileFilter
      * @param  SimpleXMLElement $e
      * @param  string           $base_dir
      * @param  bool             $inclusive
+     *
      * @return static
      */
     public static function loadFromXMLElement(
@@ -38,6 +39,7 @@ class ProjectFileFilter extends FileFilter
     /**
      * @param  string  $file_name
      * @param  bool $case_sensitive
+     *
      * @return bool
      */
     public function allows($file_name, $case_sensitive = false)

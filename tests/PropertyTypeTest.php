@@ -12,6 +12,7 @@ class PropertyTypeTest extends TestCase
     /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidReturnType
+     *
      * @return                   void
      */
     public function testForgetPropertyAssignments()

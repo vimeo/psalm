@@ -40,6 +40,7 @@ class TNamedObject extends Atomic
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
+     *
      * @return string
      */
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
@@ -59,6 +60,7 @@ class TNamedObject extends Atomic
 
     /**
      * @param TNamedObject $type
+     *
      * @return void
      */
     public function addIntersectionType(TNamedObject $type)

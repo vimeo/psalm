@@ -28,6 +28,7 @@ trait GenericTrait
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
+     *
      * @return string
      */
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
@@ -90,6 +91,7 @@ trait GenericTrait
      * @param  array<string, string>    $template_types
      * @param  array<string, Union>     $generic_params
      * @param  Atomic|null              $input_type
+     *
      * @return void
      */
     public function replaceTemplateTypes(array $template_types, array &$generic_params, Atomic $input_type = null)

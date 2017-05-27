@@ -55,6 +55,7 @@ class FileReferenceProvider
                 array_keys(self::$file_references),
                 /**
                  * @param  string $file_name
+                 *
                  * @return bool
                  */
                 function ($file_name) {
@@ -69,6 +70,7 @@ class FileReferenceProvider
     /**
      * @param string $source_file
      * @param string $fq_class_name
+     *
      * @return void
      */
     public static function addFileReferenceToClass($source_file, $fq_class_name)
@@ -80,6 +82,7 @@ class FileReferenceProvider
     /**
      * @param string $source_file
      * @param string $fq_class_name
+     *
      * @return void
      */
     public static function addFileInheritanceToClass($source_file, $fq_class_name)
@@ -89,6 +92,7 @@ class FileReferenceProvider
 
     /**
      * @param   string $file
+     *
      * @return  array
      */
     public static function calculateFilesReferencingFile($file)
@@ -111,6 +115,7 @@ class FileReferenceProvider
 
     /**
      * @param   string $file
+     *
      * @return  array
      */
     public static function calculateFilesInheritingFile($file)
@@ -154,6 +159,7 @@ class FileReferenceProvider
 
     /**
      * @param  string $file
+     *
      * @return array<string>
      */
     public static function getFilesReferencingFile($file)
@@ -163,6 +169,7 @@ class FileReferenceProvider
 
     /**
      * @param  string $file
+     *
      * @return array<string>
      */
     public static function getFilesInheritingFromFile($file)
@@ -200,6 +207,7 @@ class FileReferenceProvider
 
     /**
      * @param  array<string, bool>  $visited_files
+     *
      * @return void
      */
     public static function updateReferenceCache(array $visited_files)

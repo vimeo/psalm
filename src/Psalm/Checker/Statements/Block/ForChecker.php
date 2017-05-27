@@ -13,6 +13,7 @@ class ForChecker
      * @param   StatementsChecker           $statements_checker
      * @param   PhpParser\Node\Stmt\For_    $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     public static function analyze(

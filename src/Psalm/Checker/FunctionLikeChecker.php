@@ -96,6 +96,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param Context       $context
      * @param Context|null  $global_context
      * @param bool          $add_mutations  whether or not to add mutations to this method
+     *
      * @return false|null
      */
     public function analyze(Context $context, Context $global_context = null, $add_mutations = false)
@@ -502,6 +503,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  Closure|Function_|ClassMethod    $function
      * @param  StatementsSource                 $source
+     *
      * @return FunctionLikeStorage
      */
     public static function register(
@@ -833,6 +835,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      *
      * @param   string  $return_type
      * @param   Context $context
+     *
      * @return  void
      */
     public function addReturnTypes($return_type, Context $context)
@@ -868,6 +871,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
     /**
      * @param string|null $context_self
+     *
      * @return null|string
      */
     public function getMethodId($context_self = null)
@@ -947,6 +951,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param   string              $fq_class_name
      * @param   CodeLocation|null   $return_type_location
      * @param   CodeLocation|null   $secondary_return_type_location
+     *
      * @return  false|null
      */
     public function verifyReturnType(
@@ -1201,6 +1206,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
     /**
      * @param Type\Union $inferred_return_type
+     *
      * @return void
      */
     private function addDocblockReturnType(Type\Union $inferred_return_type)
@@ -1230,6 +1236,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  StatementsSource             $source
      * @param  string|null                  $fq_class_name
      * @param  CodeLocation                 $code_location
+     *
      * @return false|null
      */
     protected static function improveParamsFromDocblock(
@@ -1379,6 +1386,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  PhpParser\Node\Param $param
      * @param  StatementsSource     $source
+     *
      * @return FunctionLikeParameter
      */
     public static function getTranslatedParam(
@@ -1453,6 +1461,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
     /**
      * @param  \ReflectionParameter $param
+     *
      * @return FunctionLikeParameter
      */
     protected static function getReflectionParamData(\ReflectionParameter $param)
@@ -1508,6 +1517,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  string                       $return_type
      * @param  StatementsSource             $source
      * @param  array<string, string>|null   $template_types
+     *
      * @return string
      */
     public static function fixUpLocalType(
@@ -1562,6 +1572,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
      * @param  FileChecker                      $file_checker
+     *
      * @return array<int, FunctionLikeParameter>
      */
     public static function getMethodParamsById($method_id, array $args, FileChecker $file_checker)
@@ -1593,6 +1604,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
      * @param  FileChecker                      $file_checker
+     *
      * @return array<int, FunctionLikeParameter>
      */
     public static function getFunctionParamsFromCallMapById($method_id, array $args, FileChecker $file_checker)
@@ -1610,6 +1622,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param  array<int, array<int, FunctionLikeParameter>>  $function_param_options
      * @param  array<int, PhpParser\Node\Arg>                 $args
      * @param  FileChecker                                    $file_checker
+     *
      * @return array<int, FunctionLikeParameter>
      */
     protected static function getMatchingParamsFromCallMapOptions(
@@ -1691,6 +1704,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * Add suppressed issues
      *
      * @param  array<string> $suppressed_issues
+     *
      * @return void
      */
     public function addSuppressedIssues(array $suppressed_issues)

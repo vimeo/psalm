@@ -48,6 +48,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
+     *
      * @return bool
      */
     public static function functionExists($function_id, $file_path)
@@ -78,6 +79,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
+     *
      * @return FunctionLikeStorage
      */
     public static function getStorage($function_id, $file_path)
@@ -104,6 +106,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
+     *
      * @return bool
      */
     public static function isVariadic($function_id, $file_path)
@@ -115,6 +118,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
+     *
      * @return false|null
      */
     protected static function extractReflectionInfo($function_id)
@@ -141,6 +145,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string $function_id
      * @param  string $file_path
+     *
      * @return string
      */
     public static function getCasedFunctionId($function_id, $file_path)
@@ -157,6 +162,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  Type\Union               $return_type
      * @param  array<string, string>    $template_types
+     *
      * @return Type\Union
      */
     public static function replaceTemplateTypes(Type\Union $return_type, array $template_types)
@@ -179,6 +185,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
+     *
      * @return array|null
      * @psalm-return array<int, array<int, FunctionLikeParameter>>|null
      */
@@ -262,6 +269,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string  $function_id
+     *
      * @return Type\Union
      */
     public static function getReturnTypeFromCallMap($function_id)
@@ -286,6 +294,7 @@ class FunctionChecker extends FunctionLikeChecker
      * @param  array<PhpParser\Node\Arg>   $call_args
      * @param  CodeLocation                $code_location
      * @param  array                       $suppressed_issues
+     *
      * @return Type\Union
      */
     public static function getReturnTypeFromCallMapWithArgs(
@@ -380,6 +389,7 @@ class FunctionChecker extends FunctionLikeChecker
      * @param  array<PhpParser\Node\Arg>    $call_args
      * @param  CodeLocation                 $code_location
      * @param  array                        $suppressed_issues
+     *
      * @return Type\Union|null
      */
     protected static function getArrayReturnType(
@@ -484,6 +494,7 @@ class FunctionChecker extends FunctionLikeChecker
      * @param  array<PhpParser\Node\Arg>    $call_args
      * @param  CodeLocation                 $code_location
      * @param  array                        $suppressed_issues
+     *
      * @return Type\Union
      */
     protected static function getArrayMapReturnType(
@@ -601,6 +612,7 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param   string $key
+     *
      * @return  bool
      */
     public static function inCallMap($key)
@@ -611,6 +623,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * @param  string                   $function_name
      * @param  StatementsSource         $source
+     *
      * @return string
      */
     public static function getFQFunctionNameFromString($function_name, StatementsSource $source)

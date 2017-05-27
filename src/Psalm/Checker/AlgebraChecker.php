@@ -15,6 +15,7 @@ class AlgebraChecker
      * @param  PhpParser\Node\Expr      $conditional
      * @param  string|null              $this_class_name
      * @param  StatementsSource         $source
+     *
      * @return array<int, Clause>
      */
     public static function getFormula(
@@ -138,6 +139,7 @@ class AlgebraChecker
      *   (!$a || !$c || !$f)
      *
      * @param  array<int, Clause>  $clauses
+     *
      * @return array<int, Clause>
      */
     public static function negateFormula(array $clauses)
@@ -151,6 +153,7 @@ class AlgebraChecker
 
     /**
      * @param  Clause $clause
+     *
      * @return void
      */
     public static function calculateNegation(Clause $clause)
@@ -190,6 +193,7 @@ class AlgebraChecker
      * @param  array<int, Clause>   $formula2
      * @param  StatementsChecker    $statements_checker,
      * @param  PhpParser\Node       $stmt
+     *
      * @return void
      */
     public static function checkForParadox(
@@ -237,6 +241,7 @@ class AlgebraChecker
      *     (!$a) && (!$b) && ($a || $b || $c) => $c
      *
      * @param  array<int, Clause>  $clauses
+     *
      * @return array<int, Clause>
      */
     public static function simplifyCNF(array $clauses)
@@ -274,6 +279,7 @@ class AlgebraChecker
                         $clause_b->possibilities[$clause_var],
                         /**
                          * @param string $possible_type
+                         *
                          * @return bool
                          */
                         function ($possible_type) use ($negated_clause_type) {
@@ -326,6 +332,7 @@ class AlgebraChecker
      * Look for clauses with only one possible value
      *
      * @param  array<int, Clause>  $clauses
+     *
      * @return array<string, string>
      */
     public static function getTruthsFromFormula(array $clauses)
@@ -355,6 +362,7 @@ class AlgebraChecker
                         $possible_types,
                         /**
                          * @param  string $possible_type
+                         *
                          * @return bool
                          */
                         function ($possible_type) {
@@ -375,6 +383,7 @@ class AlgebraChecker
 
     /**
      * @param  array<int, Clause>  $clauses
+     *
      * @return array<int, Clause>
      */
     protected static function groupImpossibilities(array $clauses)
@@ -423,6 +432,7 @@ class AlgebraChecker
     /**
      * @param  array<int, Clause>  $left_clauses
      * @param  array<int, Clause>  $right_clauses
+     *
      * @return array<int, Clause>
      */
     public static function combineOredClauses(array $left_clauses, array $right_clauses)

@@ -50,12 +50,12 @@ class FunctionLikeParameter
 
     /**
      * @param string        $name
-     * @param boolean       $by_ref
+     * @param bool       $by_ref
      * @param Type\Union    $type
      * @param CodeLocation  $location
-     * @param boolean       $is_optional
-     * @param boolean       $is_nullable
-     * @param boolean       $is_variadic
+     * @param bool       $is_optional
+     * @param bool       $is_nullable
+     * @param bool       $is_variadic
      */
     public function __construct(
         $name,

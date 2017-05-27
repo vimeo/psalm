@@ -35,6 +35,7 @@ class IssueBuffer
     /**
      * @param   CodeIssue $e
      * @param   array     $suppressed_issues
+     *
      * @return  bool
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [])
@@ -63,8 +64,10 @@ class IssueBuffer
 
     /**
      * @param   CodeIssue $e
-     * @return  bool
+     *
      * @throws  Exception\CodeException
+     *
+     * @return  bool
      */
     public static function add(CodeIssue $e)
     {
@@ -137,6 +140,7 @@ class IssueBuffer
     /**
      * @param  CodeIssue $e
      * @param  string          $severity
+     *
      * @return array
      */
     protected static function getIssueArray(CodeIssue $e, $severity = Config::REPORT_ERROR)
@@ -159,6 +163,7 @@ class IssueBuffer
     /**
      * @param  CodeIssue $e
      * @param  string          $severity
+     *
      * @return string
      */
     protected static function getEmacsOutput(CodeIssue $e, $severity = Config::REPORT_ERROR)
@@ -179,7 +184,8 @@ class IssueBuffer
 
     /**
      * @param  CodeIssue $e
-     * @param  boolean         $use_color
+     * @param  bool         $use_color
+     *
      * @return string
      */
     protected static function getSnippet(CodeIssue $e, $use_color = true)
@@ -207,6 +213,7 @@ class IssueBuffer
      * @param  bool                 $is_full
      * @param  int|null             $start_time
      * @param  array<string, bool>  $visited_files
+     *
      * @return void
      */
     public static function finish($is_full, $start_time, array $visited_files)
@@ -234,6 +241,7 @@ class IssueBuffer
 
     /**
      * @param  string $message
+     *
      * @return bool
      */
     protected static function alreadyEmitted($message)
@@ -251,6 +259,7 @@ class IssueBuffer
 
     /**
      * @param int $time
+     *
      * @return void
      */
     public static function setStartTime($time)

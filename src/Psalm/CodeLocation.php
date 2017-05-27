@@ -48,13 +48,13 @@ class CodeLocation
     /** @var string|null */
     private $regex;
 
-    /** @var boolean */
+    /** @var bool */
     private $have_recalculated = false;
 
     /**
      * @param StatementsSource $statements_source
      * @param \PhpParser\Node  $stmt
-     * @param boolean          $single_line
+     * @param bool          $single_line
      * @param string           $regex   A regular expression to select part of the snippet
      */
     public function __construct(
@@ -78,6 +78,7 @@ class CodeLocation
 
     /**
      * @param int $line
+     *
      * @return void
      */
     public function setCommentLine($line)
@@ -87,6 +88,7 @@ class CodeLocation
 
     /**
      * @psalm-suppress MixedArrayAccess
+     *
      * @return void
      */
     private function calculateRealLocation()

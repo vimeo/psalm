@@ -25,10 +25,12 @@ class JsonOutputTest extends TestCase
 
     /**
      * @dataProvider providerTestJsonOutputErrors
+     *
      * @param string $code
      * @param string $message
-     * @param integer $line_number
+     * @param int $line_number
      * @param string $error
+     *
      * @return void
      */
     public function testJsonOutputErrors($code, $message, $line_number, $error)

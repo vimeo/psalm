@@ -8,7 +8,9 @@ class VariadicTest extends TestCase
 {
     /**
      * @dataProvider providerTestValidVariadic
+     *
      * @param string $code
+     *
      * @return void
      */
     public function testVariadic($code)
@@ -23,6 +25,7 @@ class VariadicTest extends TestCase
     /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScalarArgument
+     *
      * @return                   void
      */
     public function testVariadicArrayBadParam()

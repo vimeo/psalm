@@ -85,12 +85,8 @@ $rules = [
     /* // to discuss
     'phpdoc_align' => false,
     */
-    /* // to discuss
     'phpdoc_annotation_without_dot' => true,
-    */
-    /* // to discuss
     'phpdoc_indent' => true,
-    */
     'phpdoc_inline_tag' => true,
     'phpdoc_no_access' => true,
     'phpdoc_no_alias_tag' => true,
@@ -98,26 +94,14 @@ $rules = [
     'phpdoc_no_empty_return' => false,
     'phpdoc_no_package' => true,
     'phpdoc_no_useless_inheritdoc' => true,
-    /* // to discuss
     'phpdoc_order' => true,
-    */
     'phpdoc_return_self_reference' => true,
-    /* // to discuss
     'phpdoc_scalar' => true,
-    */
-    /* // to discuss
     'phpdoc_separation' => true,
-    */
     'phpdoc_single_line_var_spacing' => true,
-    /* // to discuss
-    'phpdoc_summary' => true,
-    */
-    /* // to discuss
-    'phpdoc_to_comment' => true,
-    */
-    /* // to discuss
+    'phpdoc_summary' => false,
+    'phpdoc_to_comment' => false,
     'phpdoc_trim' => true,
-    */
     'phpdoc_types' => true,
     'phpdoc_var_without_name' => true,
     'pow_to_exponentiation' => true,

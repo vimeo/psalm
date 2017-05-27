@@ -5,6 +5,7 @@ class T extends TString
 {
     /**
      * Used to hold information as to what this refers to
+     *
      * @var string
      */
     public $typeof;

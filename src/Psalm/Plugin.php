@@ -16,6 +16,7 @@ abstract class Plugin
      * @param  Context              $context
      * @param  CodeLocation         $code_location
      * @param  array                $suppressed_issues
+     *
      * @return null|false
      */
     public function checkExpression(
@@ -36,6 +37,7 @@ abstract class Plugin
      * @param  Context                                  $context
      * @param  CodeLocation                             $code_location
      * @param  array                                    $suppressed_issues
+     *
      * @return null|false
      */
     public function checkStatement(
@@ -53,6 +55,7 @@ abstract class Plugin
      * @param  ClassLikeStorage $storage
      * @param  PhpParser\Node\Stmt\ClassLike $stmt
      * @param  CodeLocation     $code_location
+     *
      * @return null|false
      */
     public function visitClassLike(

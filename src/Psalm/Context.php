@@ -17,7 +17,7 @@ class Context
     public $vars_possibly_in_scope = [];
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $inside_loop = false;
 
@@ -26,14 +26,14 @@ class Context
      *
      * This changes whether or not the context is cloned
      *
-     * @var boolean
+     * @var bool
      */
     public $inside_conditional = false;
 
     /**
      * Whether or not we're inside a __construct function
      *
-     * @var boolean
+     * @var bool
      */
     public $inside_constructor = false;
 
@@ -48,27 +48,27 @@ class Context
     public $parent;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $check_classes = true;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $check_variables = true;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $check_methods = true;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $check_consts = true;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $check_functions = true;
 
@@ -89,14 +89,14 @@ class Context
     /**
      * Whether or not to do a deep analysis and collect mutations to this context
      *
-     * @var boolean
+     * @var bool
      */
     public $collect_mutations = false;
 
     /**
      * Whether or not to do a deep analysis and collect initializations from private methods
      *
-     * @var boolean
+     * @var bool
      */
     public $collect_initializations = false;
 
@@ -108,7 +108,7 @@ class Context
     /**
      * Whether or not to track how many times a variable is used
      *
-     * @var boolean
+     * @var bool
      */
     public $collect_references = false;
 
@@ -171,6 +171,7 @@ class Context
      *                                               $start_context and $end_context
      * @param  array       $vars_to_update
      * @param  array       $updated_vars
+     *
      * @return void
      */
     public function update(
@@ -204,6 +205,7 @@ class Context
 
     /**
      * @param  Context $original_context
+     *
      * @return array<string,Type\Union>
      */
     public function getRedefinedVars(Context $original_context)
@@ -225,6 +227,7 @@ class Context
     /**
      * @param  Context $original_context
      * @param  Context $new_context
+     *
      * @return array<int, string>
      */
     public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context)
@@ -244,6 +247,7 @@ class Context
 
     /**
      * @param  string $remove_var_id
+     *
      * @return void
      */
     public function remove($remove_var_id)
@@ -265,6 +269,7 @@ class Context
      * @param  string               $remove_var_id
      * @param  Union|null           $new_type
      * @param  FileChecker|null     $file_checker
+     *
      * @return void
      */
     public function removeVarFromConflictingClauses(
@@ -333,6 +338,7 @@ class Context
      * @param  \Psalm\Type\Union|null $existing_type
      * @param  \Psalm\Type\Union|null $new_type
      * @param  FileChecker|null       $file_checker
+     *
      * @return void
      */
     public function removeDescendents(
@@ -417,6 +423,7 @@ class Context
 
     /**
      * @param   Context $op_context
+     *
      * @return  void
      */
     public function updateChecks(Context $op_context)
@@ -430,6 +437,7 @@ class Context
 
     /**
      * @param   string $class_name
+     *
      * @return  bool
      */
     public function isPhantomClass($class_name)
@@ -439,6 +447,7 @@ class Context
 
     /**
      * @param   string $class_name
+     *
      * @return  void
      */
     public function addPhantomClass($class_name)
@@ -456,7 +465,8 @@ class Context
 
     /**
      * @param  string|null  $var_name
-     * @return boolean
+     *
+     * @return bool
      */
     public function hasVariable($var_name)
     {

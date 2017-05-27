@@ -52,8 +52,10 @@ class UnusedCodeTest extends TestCase
 
     /**
      * @dataProvider providerTestUnusedCodeWithClassReferences
+     *
      * @param string $code
      * @param string $error_message
+     *
      * @return void
      */
     public function testUnusedCodeWithClassReferences($code, $error_message)

@@ -56,6 +56,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  Context                                          $context
      * @param  Context|null                                     $loop_context
      * @param  Context|null                                     $global_context
+     *
      * @return null|false
      */
     public function analyze(
@@ -338,6 +339,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  array<int, string>                               $asserted_vars
      * @param  Context                                          $loop_context
      * @param  Context                                          $outer_context
+     *
      * @return void
      */
     public function analyzeLoop(
@@ -442,6 +444,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param  string                               $first_var_id
      * @param  array<string, array<string, bool>>   $assignment_map
+     *
      * @return int
      */
     private static function getAssignmentMapDepth($first_var_id, array $assignment_map)
@@ -469,6 +472,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param   PhpParser\Node\Stmt\Static_ $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     private function analyzeStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
@@ -492,6 +496,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param   PhpParser\Node\Expr $stmt
+     *
      * @return  Type\Union|null
      */
     public static function getSimpleType(PhpParser\Node\Expr $stmt)
@@ -540,6 +545,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param   PhpParser\Node\Stmt\Do_ $stmt
      * @param   Context                 $context
+     *
      * @return  false|null
      */
     private function analyzeDo(PhpParser\Node\Stmt\Do_ $stmt, Context $context)
@@ -588,6 +594,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param   PhpParser\Node\Stmt\Const_  $stmt
      * @param   Context                     $context
+     *
      * @return  void
      */
     private function analyzeConstAssignment(PhpParser\Node\Stmt\Const_ $stmt, Context $context)
@@ -607,6 +614,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   string  $const_name
      * @param   bool    $is_fully_qualified
      * @param   Context $context
+     *
      * @return  Type\Union|null
      */
     public function getConstType($const_name, $is_fully_qualified, Context $context)
@@ -654,6 +662,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param   string      $const_name
      * @param   Type\Union  $const_type
      * @param   Context     $context
+     *
      * @return  void
      */
     public function setConstType($const_name, Type\Union $const_type, Context $context)
@@ -671,6 +680,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param  PhpParser\Node\Stmt\Return_ $stmt
      * @param  Context                     $context
+     *
      * @return false|null
      */
     private function analyzeReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
@@ -717,6 +727,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param   PhpParser\Node\Stmt\Throw_  $stmt
      * @param   Context                     $context
+     *
      * @return  false|null
      */
     private function analyzeThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
@@ -726,6 +737,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  string       $var_name
+     *
      * @return bool
      */
     public function hasVariable($var_name)
@@ -736,6 +748,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param  string       $var_name
      * @param  CodeLocation $location
+     *
      * @return void
      */
     public function registerVariable($var_name, CodeLocation $location)
@@ -746,6 +759,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param  PhpParser\Node\Expr\Include_ $stmt
      * @param  Context                      $context
+     *
      * @return false|null
      */
     public function analyzeInclude(PhpParser\Node\Expr\Include_ $stmt, Context $context)
@@ -825,6 +839,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param  PhpParser\Node\Expr $stmt
      * @param  string              $file_name
+     *
      * @return string|null
      * @psalm-suppress MixedAssignment
      */
@@ -878,6 +893,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param   string  $file_name
      * @param   string  $current_directory
+     *
      * @return  string|null
      */
     protected static function resolveIncludePath($file_name, $current_directory)
@@ -911,6 +927,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * The first appearance of the variable in this set of statements being evaluated
      *
      * @param  string  $var_name
+     *
      * @return CodeLocation|null
      */
     public function getFirstAppearance($var_name)

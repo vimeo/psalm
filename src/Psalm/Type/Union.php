@@ -47,6 +47,7 @@ class Union
 
     /**
      * Constructs an Union instance
+     *
      * @param array<int, Atomic>     $types
      */
     public function __construct(array $types)
@@ -80,6 +81,7 @@ class Union
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
+     *
      * @return string
      */
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
@@ -112,6 +114,7 @@ class Union
 
     /**
      * @param  string $type_string
+     *
      * @return void
      */
     public function removeType($type_string)
@@ -121,6 +124,7 @@ class Union
 
     /**
      * @param  string  $type_string
+     *
      * @return bool
      */
     public function hasType($type_string)
@@ -302,6 +306,7 @@ class Union
      * @param  array<string, string>     $template_types
      * @param  array<string, Type\Union> $generic_params
      * @param  Type\Union|null           $input_type
+     *
      * @return void
      */
     public function replaceTemplateTypes(array $template_types, array &$generic_params, Type\Union $input_type = null)
@@ -354,6 +359,7 @@ class Union
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
      * @param  bool             $inferred
+     *
      * @return void
      */
     public function check(

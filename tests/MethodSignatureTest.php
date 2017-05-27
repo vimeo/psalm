@@ -50,6 +50,7 @@ class MethodSignatureTest extends TestCase
     /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MethodSignatureMismatch
+     *
      * @return                   void
      */
     public function testExtendDocblockParamTypeWithWrongParam()

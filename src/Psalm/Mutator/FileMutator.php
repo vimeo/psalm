@@ -20,6 +20,7 @@ class FileMutator
      * @param   string      $docblock
      * @param   string      $new_type
      * @param   string      $phpdoc_type
+     *
      * @return  void
      */
     public static function addDocblockReturnType($file_path, $line_number, $docblock, $new_type, $phpdoc_type)
@@ -31,6 +32,7 @@ class FileMutator
 
     /**
      * @param  string $file_path
+     *
      * @return void
      */
     public static function updateDocblocks($file_path)
@@ -61,6 +63,7 @@ class FileMutator
      * @param  string               $existing_docblock
      * @param  string               $type
      * @param  string               $phpdoc_type
+     *
      * @return void
      */
     public static function updateDocblock(

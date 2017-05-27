@@ -7,9 +7,11 @@ class IncludeTest extends TestCase
 {
     /**
      * @dataProvider providerTestValidIncludes
+     *
      * @param string $file
      * @param string $code
      * @param array<string,string> $includes
+     *
      * @return void
      */
     public function testBasicRequire($file, $code, $includes = [])

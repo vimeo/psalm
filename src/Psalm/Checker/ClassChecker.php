@@ -62,6 +62,7 @@ class ClassChecker extends ClassLikeChecker
      *
      * @param  string       $fq_class_name
      * @param  FileChecker  $file_checker
+     *
      * @return bool
      */
     public static function classExists($fq_class_name, FileChecker $file_checker)
@@ -86,6 +87,7 @@ class ClassChecker extends ClassLikeChecker
      *
      * @param  string       $fq_class_name
      * @param  FileChecker  $file_checker
+     *
      * @return bool
      */
     public static function hasCorrectCasing($fq_class_name, FileChecker $file_checker)
@@ -102,6 +104,7 @@ class ClassChecker extends ClassLikeChecker
      *
      * @param  string       $fq_class_name
      * @param  string       $possible_parent
+     *
      * @return bool
      */
     public static function classExtends($fq_class_name, $possible_parent)
@@ -123,6 +126,7 @@ class ClassChecker extends ClassLikeChecker
      * Get all the interfaces a given class implements
      *
      * @param  string $fq_class_name
+     *
      * @return array<string>
      */
     public static function getInterfacesForClass($fq_class_name)
@@ -135,6 +139,7 @@ class ClassChecker extends ClassLikeChecker
      *
      * @param  string       $fq_class_name
      * @param  string       $interface
+     *
      * @return bool
      */
     public static function classImplements($fq_class_name, $interface)

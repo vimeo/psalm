@@ -37,6 +37,7 @@ class TypeChecker
      * @param  FileChecker               $file_checker
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues
+     *
      * @return array<string, Type\Union>|false
      */
     public static function reconcileKeyedTypes(
@@ -139,6 +140,7 @@ class TypeChecker
      * @param   CodeLocation        $code_location
      * @param   array               $suppressed_issues
      * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
+     *
      * @return  Type\Union|null|false
      */
     public static function reconcileTypes(
@@ -470,6 +472,7 @@ class TypeChecker
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
      * @param  bool         &$to_string_cast
+     *
      * @return bool
      */
     public static function isContainedBy(
@@ -562,6 +565,7 @@ class TypeChecker
      * @param  Type\Union   $type1
      * @param  Type\Union   $type2
      * @param  FileChecker  $file_checker
+     *
      * @return bool
      */
     public static function canBeIdenticalTo(
@@ -617,6 +621,7 @@ class TypeChecker
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
      * @param  bool         &$to_string_cast
+     *
      * @return bool
      */
     private static function isAtomicContainedBy(
@@ -815,6 +820,7 @@ class TypeChecker
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
      * @param  FileChecker               $file_checker
+     *
      * @return Type\Union|null
      */
     protected static function getValueForKey($key, array &$existing_keys, FileChecker $file_checker)
@@ -897,6 +903,7 @@ class TypeChecker
      *
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
+     *
      * @return Type\Union|null
      */
     protected static function getArrayValueForKey($key, array &$existing_keys)
@@ -961,6 +968,7 @@ class TypeChecker
      *
      * @param  array<string, Type\Union>  $new_types
      * @param  array<string, Type\Union>  $existing_types
+     *
      * @return array<string, Type\Union>
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types)
@@ -1004,6 +1012,7 @@ class TypeChecker
 
     /**
      * @param  array<string, string>  $types
+     *
      * @return array<string, string>
      */
     public static function negateTypes(array $types)
@@ -1011,6 +1020,7 @@ class TypeChecker
         return array_map(
             /**
              * @param  string $type
+             *
              * @return  string
              */
             function ($type) {
@@ -1022,6 +1032,7 @@ class TypeChecker
 
     /**
      * @param  string $type
+     *
      * @return  string
      */
     public static function negateType($type)
@@ -1043,6 +1054,7 @@ class TypeChecker
      * @param  Type\Union   $declared_type
      * @param  Type\Union   $inferred_type
      * @param  FileChecker  $file_checker
+     *
      * @return bool
      */
     public static function hasIdenticalTypes(
@@ -1062,6 +1074,7 @@ class TypeChecker
             array_keys($declared_type->types),
             /**
              * @param  string $type_value
+             *
              * @return  bool
              */
             function ($type_value) {
@@ -1073,6 +1086,7 @@ class TypeChecker
             array_keys($inferred_type->types),
             /**
              * @param  string $type_value
+             *
              * @return  bool
              */
             function ($type_value) {
@@ -1216,6 +1230,7 @@ class TypeChecker
     /**
      * @param  Type\Union  $union
      * @param  FileChecker $file_checker
+     *
      * @return Type\Union
      */
     public static function simplifyUnionType(Type\Union $union, FileChecker $file_checker)

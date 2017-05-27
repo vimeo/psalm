@@ -33,6 +33,7 @@ trait CanAlias
 
     /**
      * @param  PhpParser\Node\Stmt\Use_ $stmt
+     *
      * @return void
      */
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt)
@@ -70,6 +71,7 @@ trait CanAlias
 
     /**
      * @param  PhpParser\Node\Stmt\GroupUse $stmt
+     *
      * @return void
      */
     public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt)

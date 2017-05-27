@@ -49,6 +49,7 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @param   Context|null    $class_context
      * @param   Context|null    $global_context
+     *
      * @return void
      */
     public function visit(
@@ -64,6 +65,7 @@ class TraitChecker extends ClassLikeChecker
 
     /**
      * @param   array<string, string> $method_map
+     *
      * @return  void
      */
     public function setMethodMap(array $method_map)
@@ -73,6 +75,7 @@ class TraitChecker extends ClassLikeChecker
 
     /**
      * @param  string $method_name
+     *
      * @return string
      */
     protected function getMappedMethodName($method_name)
@@ -87,6 +90,7 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @param  string       $fq_trait_name
      * @param  FileChecker  $file_checker
+     *
      * @return bool
      */
     public static function traitExists($fq_trait_name, FileChecker $file_checker)
@@ -101,6 +105,7 @@ class TraitChecker extends ClassLikeChecker
     /**
      * @param  string       $fq_trait_name
      * @param  FileChecker  $file_checker
+     *
      * @return bool
      */
     public static function hasCorrectCase($fq_trait_name, FileChecker $file_checker)

@@ -50,6 +50,7 @@ class AssignmentChecker
      * @param  string                   $doc_comment
      * @param  bool                     $by_reference
      * @param  int|null                 $came_from_line_number
+     *
      * @return false|Type\Union
      */
     public static function analyze(
@@ -320,6 +321,7 @@ class AssignmentChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\AssignOp    $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyzeAssignmentOperation(
@@ -389,6 +391,7 @@ class AssignmentChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Expr\AssignRef   $stmt
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyzeAssignmentRef(
@@ -416,6 +419,7 @@ class AssignmentChecker
      * @param   PhpParser\Node\Expr|null        $assignment_value
      * @param   Type\Union                      $assignment_value_type
      * @param   Context                         $context
+     *
      * @return  false|null
      */
     public static function analyzePropertyAssignment(
@@ -784,6 +788,7 @@ class AssignmentChecker
      * @param   PhpParser\Node\Expr|null                  $assignment_value
      * @param   Type\Union                                $assignment_value_type
      * @param   Context                                   $context
+     *
      * @return  false|null
      */
     protected static function analyzeStaticPropertyAssignment(
@@ -932,6 +937,7 @@ class AssignmentChecker
      * @param   PhpParser\Node\Expr\ArrayDimFetch   $stmt
      * @param   Context                             $context
      * @param   Type\Union                          $assignment_value_type
+     *
      * @return  false|null
      * @psalm-suppress MixedMethodCall - some funky logic here
      */
