@@ -22,14 +22,14 @@ class IssueSuppressionTest extends TestCase
                         public function b() {
                             B::fooFoo()->barBar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
                         }
-                    }'
+                    }',
             ],
             'excludeIssue' => [
                 '<?php
                     fooFoo();',
                 'assertions' => [],
-                'error_levels' => ['UndefinedFunction']
-            ]
+                'error_levels' => ['UndefinedFunction'],
+            ],
         ];
     }
 }

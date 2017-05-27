@@ -35,8 +35,8 @@ class Php55Test extends TestCase
                         $a = $number;
                     }',
                 'assertions' => [
-                    ['null|int' => '$a']
-                ]
+                    ['null|int' => '$a'],
+                ],
             ],
             'finally' => [
                 '<?php
@@ -45,7 +45,7 @@ class Php55Test extends TestCase
                     catch (\Exception $e) {
                     }
                     finally {
-                    }'
+                    }',
             ],
             'foreachList' => [
                 '<?php
@@ -56,7 +56,7 @@ class Php55Test extends TestCase
             
                     foreach ($array as list($a, $b)) {
                         echo "A: $a; B: $b\n";
-                    }'
+                    }',
             ],
             'arrayStringDereferencing' => [
                 '<?php
@@ -64,8 +64,8 @@ class Php55Test extends TestCase
                     $b = "PHP"[0];',
                 'assertions' => [
                     ['int' => '$a'],
-                    ['string' => '$b']
-                ]
+                    ['string' => '$b'],
+                ],
             ],
             'classString' => [
                 '<?php
@@ -73,9 +73,9 @@ class Php55Test extends TestCase
             
                     $a = ClassName::class;',
                 'assertions' => [
-                    ['string' => '$a']
-                ]
-            ]
+                    ['string' => '$a'],
+                ],
+            ],
         ];
     }
 }

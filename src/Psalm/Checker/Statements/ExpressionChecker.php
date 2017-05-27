@@ -351,7 +351,7 @@ class ExpressionChecker
             }
 
             if ($stmt->class instanceof PhpParser\Node\Name &&
-                !in_array($stmt->class->parts[0], ['self', 'static', 'parent'])
+                !in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
             ) {
                 if ($context->check_classes) {
                     $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
@@ -522,7 +522,7 @@ class ExpressionChecker
                 '_SESSION',
                 '_REQUEST',
                 '_ENV',
-            ]
+            ], true
         )
         ) {
             $stmt->inferredType = Type::getArray();
@@ -738,8 +738,8 @@ class ExpressionChecker
         $stmt->inferredType = new Type\Union([
             new Type\Atomic\TArray([
                 $item_key_type ?: new Type\Union([new TInt, new TString]),
-                $item_value_type ?: Type::getMixed()
-            ])
+                $item_value_type ?: Type::getMixed(),
+            ]),
         ]);
 
         return null;
@@ -1408,7 +1408,7 @@ class ExpressionChecker
             && is_string($stmt->name)
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
-            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 if (!$this_class_name) {
                     $fq_class_name = $stmt->class->parts[0];
                 } else {
@@ -1437,7 +1437,7 @@ class ExpressionChecker
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $nesting !== null) {
-            $nesting++;
+            ++$nesting;
 
             return self::getVarId($stmt->var, $this_class_name, $source, $nesting);
         }
@@ -1977,7 +1977,7 @@ class ExpressionChecker
      */
     public static function isMock($fq_class_name)
     {
-        return in_array($fq_class_name, Config::getInstance()->getMockClasses());
+        return in_array($fq_class_name, Config::getInstance()->getMockClasses(), true);
     }
 
     /**

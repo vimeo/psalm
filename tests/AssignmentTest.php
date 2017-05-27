@@ -16,9 +16,9 @@ class AssignmentTest extends TestCase
                 '<?php
                     $a = $b = $c = 5;',
                 'assertions' => [
-                    ['int' => '$a']
-                ]
-            ]
+                    ['int' => '$a'],
+                ],
+            ],
         ];
     }
 
@@ -33,8 +33,8 @@ class AssignmentTest extends TestCase
                     /** @var mixed */
                     $a = 5;
                     $b = $a;',
-                'error_message' => 'MixedAssignment'
-            ]
+                'error_message' => 'MixedAssignment',
+            ],
         ];
     }
 }

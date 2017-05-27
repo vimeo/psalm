@@ -189,7 +189,7 @@ class CommentChecker
                         $info->params[] = [
                             'name' => $line_parts[1],
                             'type' => $line_parts[0],
-                            'line_number' => $line_number
+                            'line_number' => $line_number,
                         ];
                     }
                 } else {
@@ -214,7 +214,7 @@ class CommentChecker
             foreach ($comments['specials']['template'] as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
-                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'])) {
+                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'], true)) {
                     $info->template_types[] = [$template_type[0], strtolower($template_type[1]), $template_type[2]];
                 } else {
                     $info->template_types[] = [$template_type[0]];
@@ -262,7 +262,7 @@ class CommentChecker
             foreach ($comments['specials']['template'] as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
-                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'])) {
+                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'], true)) {
                     $info->template_types[] = [$template_type[0], strtolower($template_type[1]), $template_type[2]];
                 } else {
                     $info->template_types[] = [$template_type[0]];
@@ -307,7 +307,7 @@ class CommentChecker
                         $info->properties[] = [
                             'name' => $line_parts[1],
                             'type' => $line_parts[0],
-                            'line_number' => $line_number
+                            'line_number' => $line_number,
                         ];
                     }
                 } else {
@@ -330,7 +330,7 @@ class CommentChecker
 
         $type = '';
 
-        for ($i = 0; $i < strlen($return_block); $i++) {
+        for ($i = 0; $i < strlen($return_block); ++$i) {
             $char = $return_block[$i];
 
             if ($char === '[' || $char === '{' || $char === '(' || $char === '<') {
@@ -442,11 +442,11 @@ class CommentChecker
         $min_indent = 80;
         $indent = 0;
         foreach (array_filter(explode("\n", $docblock)) as $line) {
-            for ($ii = 0; $ii < strlen($line); $ii++) {
+            for ($ii = 0; $ii < strlen($line); ++$ii) {
                 if ($line[$ii] != ' ') {
                     break;
                 }
-                $indent++;
+                ++$indent;
             }
 
             /** @var int */
@@ -462,7 +462,7 @@ class CommentChecker
 
         return [
             'description' => $docblock,
-            'specials' => $special
+            'specials' => $special,
         ];
     }
 

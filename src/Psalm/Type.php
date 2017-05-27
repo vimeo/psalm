@@ -88,7 +88,7 @@ abstract class Type
                 'resource',
                 'callable',
                 'iterable',
-            ]
+            ], true
         )) {
             return strtolower($type_string);
         } elseif ($type_string === 'boolean') {
@@ -255,7 +255,7 @@ abstract class Type
 
                 $dimensionality = strlen((string)$matches[4]) / 2;
 
-                for ($i = 0; $i < $dimensionality; $i++) {
+                for ($i = 0; $i < $dimensionality; ++$i) {
                     $inner_type = 'array<mixed,' . $inner_type . '>';
                 }
 
@@ -353,7 +353,7 @@ abstract class Type
         $type = new TArray(
             [
                 new Type\Union([new TMixed]),
-                new Type\Union([new TMixed])
+                new Type\Union([new TMixed]),
             ]
         );
 
@@ -369,9 +369,9 @@ abstract class Type
             new TArray(
                 [
                     new Type\Union([new TEmpty]),
-                    new Type\Union([new TEmpty])
+                    new Type\Union([new TEmpty]),
                 ]
-            )
+            ),
         ]);
     }
 
@@ -488,7 +488,7 @@ abstract class Type
      */
     public static function combineTypes(array $types)
     {
-        if (in_array(null, $types)) {
+        if (in_array(null, $types, true)) {
             return Type::getMixed();
         }
 

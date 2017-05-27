@@ -50,13 +50,13 @@ class TypeChecker
         $keys = [];
 
         foreach ($existing_types as $ek => $_) {
-            if (!in_array($ek, $keys)) {
+            if (!in_array($ek, $keys, true)) {
                 $keys[] = $ek;
             }
         }
 
         foreach ($new_types as $nk => $_) {
-            if (!in_array($nk, $keys)) {
+            if (!in_array($nk, $keys, true)) {
                 $keys[] = $nk;
             }
         }
@@ -211,7 +211,7 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if (in_array($new_var_type, ['!empty', '!null'])) {
+            if (in_array($new_var_type, ['!empty', '!null'], true)) {
                 $existing_var_type->removeType('null');
 
                 if ($new_var_type === '!empty') {
@@ -834,7 +834,7 @@ class TypeChecker
         $base_key = $key_parts[0];
 
         // for an expression like $obj->key1->key2
-        for ($i = 1; $i < count($key_parts); $i++) {
+        for ($i = 1; $i < count($key_parts); ++$i) {
             $new_base_key = $base_key . '->' . $key_parts[$i];
 
             if (!isset($existing_keys[$new_base_key])) {
@@ -914,7 +914,7 @@ class TypeChecker
         $base_key = $key_parts[0];
 
         // for an expression like $obj->key1->key2
-        for ($i = 1; $i < count($key_parts); $i++) {
+        for ($i = 1; $i < count($key_parts); ++$i) {
             $new_base_key = $base_key . '[' . $key_parts[$i] . ']';
 
             if (!isset($existing_keys[$new_base_key])) {
@@ -1106,8 +1106,8 @@ class TypeChecker
                     if (isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($simple_declared_type)]) ||
                         isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($differing_type)])
                     ) {
-                        if (in_array($differing_type, ['float', 'int']) &&
-                            in_array($simple_declared_type, ['float', 'int'])
+                        if (in_array($differing_type, ['float', 'int'], true) &&
+                            in_array($simple_declared_type, ['float', 'int'], true)
                         ) {
                             $is_match = true;
                             break;

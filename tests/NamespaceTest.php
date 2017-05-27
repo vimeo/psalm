@@ -28,7 +28,7 @@ class NamespaceTest extends TestCase
                         \A\foo();
             
                         (new A\Bar);
-                    }'
+                    }',
             ],
             'constantReference' => [
                 '<?php
@@ -47,8 +47,8 @@ class NamespaceTest extends TestCase
                                 echo \Aye\Bee\HELLO;
                             }
                         }
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 }

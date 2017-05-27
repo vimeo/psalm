@@ -14,11 +14,11 @@ class BinaryOperationTest extends TestCase
         return [
             'regularAddition' => [
                 '<?php
-                    $a = 5 + 4;'
+                    $a = 5 + 4;',
             ],
             'differingNumericTypesAdditionInWeakMode' => [
                 '<?php
-                    $a = 5 + 4.1;'
+                    $a = 5 + 4.1;',
             ],
             'numericAddition' => [
                 '<?php
@@ -26,16 +26,16 @@ class BinaryOperationTest extends TestCase
             
                     if (is_numeric($a)) {
                         $b = $a + 4;
-                    }'
+                    }',
             ],
             'concatenation' => [
                 '<?php
-                    $a = "Hey " . "Jude,";'
+                    $a = "Hey " . "Jude,";',
             ],
             'concatenationWithNumberInWeakMode' => [
                 '<?php
-                    $a = "hi" . 5;'
-            ]
+                    $a = "hi" . 5;',
+            ],
         ];
     }
 
@@ -48,29 +48,29 @@ class BinaryOperationTest extends TestCase
             'badAddition' => [
                 '<?php
                     $a = "b" + 5;',
-                'error_message' => 'InvalidOperand'
+                'error_message' => 'InvalidOperand',
             ],
             'differingNumericTypesAdditionInStrictMode' => [
                 '<?php
                     $a = 5 + 4.1;',
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
-                'strict_mode' => true
+                'strict_mode' => true,
             ],
             'concatenationWithNumberInStrictMode' => [
                 '<?php
                     $a = "hi" . 5;',
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
-                'strict_mode' => true
+                'strict_mode' => true,
             ],
             'addArrayToNumber' => [
                 '<?php
                     $a = [1] + 1;',
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
-                'strict_mode' => true
-            ]
+                'strict_mode' => true,
+            ],
         ];
     }
 }

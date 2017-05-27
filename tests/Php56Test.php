@@ -16,8 +16,8 @@ class Php56Test extends TestCase
                     const ARR = ["a", "b"];
                     $a = ARR[0];',
                 'assertions' => [
-                    ['string' => '$a']
-                ]
+                    ['string' => '$a'],
+                ],
             ],
             'constFeatures' => [
                 '<?php
@@ -46,8 +46,8 @@ class Php56Test extends TestCase
                     ['int' => '$d'],
                     ['string' => '$e'],
                     ['int' => '$f'],
-                    ['float|int' => '$g']
-                ]
+                    ['float|int' => '$g'],
+                ],
             ],
             'argumentUnpacking' => [
                 '<?php
@@ -62,12 +62,12 @@ class Php56Test extends TestCase
                     }
             
                     $operators = [2, 3];
-                    echo add(1, ...$operators);'
+                    echo add(1, ...$operators);',
             ],
             'exponentiation' => [
                 '<?php
                     $a = 2;
-                    $a **= 3;'
+                    $a **= 3;',
             ],
             'constantAliasInNamespace' => [
                 '<?php
@@ -80,7 +80,7 @@ class Php56Test extends TestCase
             
                         echo FOO . "\n";
                         echo \Name\Space\FOO;
-                    }'
+                    }',
             ],
             'constantAliasInClass' => [
                 '<?php
@@ -98,7 +98,7 @@ class Php56Test extends TestCase
                                 echo \Name\Space\FOO;
                             }
                         }
-                    }'
+                    }',
             ],
             'functionAliasInNamespace' => [
                 '<?php
@@ -114,7 +114,7 @@ class Php56Test extends TestCase
             
                         f();
                         \Name\Space\f();
-                    }'
+                    }',
             ],
             'functionAliasInClass' => [
                 '<?php
@@ -135,8 +135,8 @@ class Php56Test extends TestCase
                                 \Name\Space\f();
                             }
                         }
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 }

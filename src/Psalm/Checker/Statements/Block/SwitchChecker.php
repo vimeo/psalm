@@ -57,7 +57,7 @@ class SwitchChecker
         $has_default = false;
 
         // create a map of case statement -> ultimate exit type
-        for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
+        for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
 
             if (ScopeChecker::doesAlwaysReturnOrThrow($case->stmts)) {
@@ -73,7 +73,7 @@ class SwitchChecker
 
         $leftover_statements = [];
 
-        for ($i = count($stmt->cases) - 1; $i >= 0; $i--) {
+        for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
             /** @var string */
             $case_exit_type = $case_exit_types[$i];

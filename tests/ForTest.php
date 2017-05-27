@@ -24,13 +24,13 @@ class ForTest extends TestCase
                             $next = $node->next;
                             $node->next = null;
                         }
-                    }'
+                    }',
             ],
             'echoAfterFor' => [
                 '<?php
                     for ($i = 0; $i < 5; $i++);
-                    echo $i;'
-            ]
+                    echo $i;',
+            ],
         ];
     }
 }

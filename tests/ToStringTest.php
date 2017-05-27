@@ -19,7 +19,7 @@ class ToStringTest extends TestCase
                             return "hello";
                         }
                     }
-                    echo (new A);'
+                    echo (new A);',
             ],
             'validInferredToStringType' => [
                 '<?php
@@ -31,7 +31,7 @@ class ToStringTest extends TestCase
                             return "hello";
                         }
                     }
-                    echo (new A);'
+                    echo (new A);',
             ],
             'goodCast' => [
                 '<?php
@@ -49,8 +49,8 @@ class ToStringTest extends TestCase
                     function barBar($b) : void {}
             
                     fooFoo(new A());
-                    barBar(new A());'
-            ]
+                    barBar(new A());',
+            ],
         ];
     }
 
@@ -64,14 +64,14 @@ class ToStringTest extends TestCase
                 '<?php
                     class A {}
                     echo (new A);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'invalidToStringReturnType' => [
                 '<?php
                     class A {
                         function __toString() : void { }
                     }',
-                'error_message' => 'InvalidToString'
+                'error_message' => 'InvalidToString',
             ],
             'invalidInferredToStringReturnType' => [
                 '<?php
@@ -81,7 +81,7 @@ class ToStringTest extends TestCase
                          */
                         function __toString() { }
                     }',
-                'error_message' => 'InvalidToString'
+                'error_message' => 'InvalidToString',
             ],
             'implicitCost' => [
                 '<?php
@@ -94,8 +94,8 @@ class ToStringTest extends TestCase
             
                     function fooFoo(string $b) : void {}
                     fooFoo(new A());',
-                'error_message' => 'ImplicitToStringCast'
-            ]
+                'error_message' => 'ImplicitToStringCast',
+            ],
         ];
     }
 }

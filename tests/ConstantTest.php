@@ -19,7 +19,7 @@ class ConstantTest extends TestCase
             
                     function useTest() : int {
                         return TEST;
-                    }'
+                    }',
             ],
             'constantInClosure' => [
                 '<?php
@@ -28,7 +28,7 @@ class ConstantTest extends TestCase
                     $useTest = function() : int {
                         return TEST;
                     };
-                    $useTest();'
+                    $useTest();',
             ],
             'constantDefinedInFunction' => [
                 '<?php
@@ -41,8 +41,8 @@ class ConstantTest extends TestCase
             
                     defineConstant();
             
-                    echo CONSTANT;'
-            ]
+                    echo CONSTANT;',
+            ],
         ];
     }
 
@@ -62,8 +62,8 @@ class ConstantTest extends TestCase
                     }
             
                     echo CONSTANT;',
-                'error_message' => 'UndefinedConstant'
-            ]
+                'error_message' => 'UndefinedConstant',
+            ],
         ];
     }
 }

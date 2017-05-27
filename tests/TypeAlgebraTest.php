@@ -26,7 +26,7 @@ class TypeAlgebraTest extends TestCase
             
                             takesString($c);
                         }
-                    }'
+                    }',
             ],
             'threeVarLogic' => [
                 '<?php
@@ -44,7 +44,7 @@ class TypeAlgebraTest extends TestCase
             
                             takesString($d);
                         }
-                    }'
+                    }',
             ],
             'twoVarLogicNotNested' => [
                 '<?php
@@ -52,7 +52,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a && !$b) return "bad";
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'twoVarLogicNotNestedWithAllPathsReturning' => [
                 '<?php
@@ -66,7 +66,7 @@ class TypeAlgebraTest extends TestCase
                                 return $a;
                             }
                         }
-                    }'
+                    }',
             ],
             'twoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 '<?php
@@ -82,7 +82,7 @@ class TypeAlgebraTest extends TestCase
                         }
             
                         return $a;
-                    }'
+                    }',
             ],
             'invertedTwoVarLogicNotNested' => [
                 '<?php
@@ -95,7 +95,7 @@ class TypeAlgebraTest extends TestCase
             
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'invertedTwoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 '<?php
@@ -109,7 +109,7 @@ class TypeAlgebraTest extends TestCase
             
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'twoVarLogicNotNestedWithElseif' => [
                 '<?php
@@ -124,7 +124,7 @@ class TypeAlgebraTest extends TestCase
             
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'threeVarLogicNotNested' => [
                 '<?php
@@ -142,7 +142,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a && !$b) return $c;
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'threeVarLogicNotNestedAndOr' => [
                 '<?php
@@ -158,7 +158,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a && !$b) return $c;
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'twoVarLogicNotNestedWithElseifCorrectlyNegatedInElseIf' => [
                 '<?php
@@ -173,7 +173,7 @@ class TypeAlgebraTest extends TestCase
             
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'nestedReassignment' => [
                 '<?php
@@ -187,7 +187,7 @@ class TypeAlgebraTest extends TestCase
             
                             }
                         }
-                    }'
+                    }',
             ],
             'twoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf' => [
                 '<?php
@@ -205,7 +205,7 @@ class TypeAlgebraTest extends TestCase
             
                         if (!$a) return $b;
                         return $a;
-                    }'
+                    }',
             ],
             'differentValueChecks' => [
                 '<?php
@@ -215,7 +215,7 @@ class TypeAlgebraTest extends TestCase
                         } elseif ($a === "bar") {
                             // can never get here
                         }
-                    }'
+                    }',
             ],
             'repeatedSet' => [
                 '<?php
@@ -231,7 +231,7 @@ class TypeAlgebraTest extends TestCase
             
                             }
                         }
-                    }'
+                    }',
             ],
             'repeatedSetInsideWhile' => [
                 '<?php
@@ -247,7 +247,7 @@ class TypeAlgebraTest extends TestCase
             
                             }
                         }
-                    }'
+                    }',
             ],
             'byRefAssignment' => [
                 '<?php
@@ -263,8 +263,8 @@ class TypeAlgebraTest extends TestCase
                         if (!$matches) {
             
                         }
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -293,7 +293,7 @@ class TypeAlgebraTest extends TestCase
                             takesString($d);
                         }
                     }',
-                'error_message' => 'NullArgument'
+                'error_message' => 'NullArgument',
             ],
             'threeVarLogicWithException' => [
                 '<?php
@@ -316,7 +316,7 @@ class TypeAlgebraTest extends TestCase
                             takesString($d);
                         }
                     }',
-                'error_message' => 'NullArgument'
+                'error_message' => 'NullArgument',
             ],
             'invertedTwoVarLogicNotNestedWithVarChange' => [
                 '<?php
@@ -330,7 +330,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
                 '<?php
@@ -346,7 +346,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'threeVarLogicWithElseifAndAnd' => [
                 '<?php
@@ -363,7 +363,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'twoVarLogicNotNestedWithElseifNegatedInIf' => [
                 '<?php
@@ -379,7 +379,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
                 '<?php
@@ -395,7 +395,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'repeatedIfStatements' => [
                 '<?php
@@ -409,7 +409,7 @@ class TypeAlgebraTest extends TestCase
             
                         }
                     }',
-                'error_message' => 'ParadoxicalCondition'
+                'error_message' => 'ParadoxicalCondition',
             ],
             'repeatedConditionals' => [
                 '<?php
@@ -420,8 +420,8 @@ class TypeAlgebraTest extends TestCase
                             // can never get here
                         }
                     }',
-                'error_message' => 'ParadoxicalCondition'
-            ]
+                'error_message' => 'ParadoxicalCondition',
+            ],
         ];
     }
 }

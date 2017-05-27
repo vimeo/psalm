@@ -22,7 +22,7 @@ class ClassScopeTest extends TestCase
                         private function barBar() : void {
                             $this->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedMethodFromSubclass' => [
                 '<?php
@@ -35,7 +35,7 @@ class ClassScopeTest extends TestCase
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedMethodFromOtherSubclass' => [
                 '<?php
@@ -50,7 +50,7 @@ class ClassScopeTest extends TestCase
                         public function doFoo() : void {
                             (new B)->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedPropertyFromSubclass' => [
                 '<?php
@@ -63,7 +63,7 @@ class ClassScopeTest extends TestCase
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedPropertyFromGreatGrandparent' => [
                 '<?php
@@ -80,7 +80,7 @@ class ClassScopeTest extends TestCase
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedPropertyFromOtherSubclass' => [
                 '<?php
@@ -97,7 +97,7 @@ class ClassScopeTest extends TestCase
                             $b = new B();
                             $b->fooFoo = "hello";
                         }
-                    }'
+                    }',
             ],
             'accessibleStaticPropertyFromSubclass' => [
                 '<?php
@@ -114,7 +114,7 @@ class ClassScopeTest extends TestCase
                         public function doFoo() : void {
                             echo A::$fooFoo;
                         }
-                    }'
+                    }',
             ],
             'definedPrivateMethod' => [
                 '<?php
@@ -130,8 +130,8 @@ class ClassScopeTest extends TestCase
 
                     class B extends A {
                         private function boop() : void {}
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -150,7 +150,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     (new A())->fooFoo();',
-                'error_message' => 'InaccessibleMethod'
+                'error_message' => 'InaccessibleMethod',
             ],
             'inaccessibleProtectMethod' => [
                 '<?php
@@ -161,7 +161,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     (new A())->fooFoo();',
-                'error_message' => 'InaccessibleMethod'
+                'error_message' => 'InaccessibleMethod',
             ],
             'inaccessiblePrivateMethodFromSubclass' => [
                 '<?php
@@ -176,7 +176,7 @@ class ClassScopeTest extends TestCase
                             $this->fooFoo();
                         }
                     }',
-                'error_message' => 'InaccessibleMethod'
+                'error_message' => 'InaccessibleMethod',
             ],
             'inaccessibleProtectredMethodFromOtherSubclass' => [
                 '<?php
@@ -196,7 +196,7 @@ class ClassScopeTest extends TestCase
                             (new B)->fooFoo();
                         }
                     }',
-                'error_message' => 'InaccessibleMethod'
+                'error_message' => 'InaccessibleMethod',
             ],
             'inaccessiblePrivateProperty' => [
                 '<?php
@@ -206,7 +206,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     echo (new A())->fooFoo;',
-                'error_message' => 'InaccessibleProperty'
+                'error_message' => 'InaccessibleProperty',
             ],
             'inaccessibleProtectedProperty' => [
                 '<?php
@@ -216,7 +216,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     echo (new A())->fooFoo;',
-                'error_message' => 'InaccessibleProperty'
+                'error_message' => 'InaccessibleProperty',
             ],
             'inaccessiblePrivatePropertyFromSubclass' => [
                 '<?php
@@ -230,7 +230,7 @@ class ClassScopeTest extends TestCase
                             echo $this->fooFoo;
                         }
                     }',
-                'error_message' => 'InaccessibleProperty'
+                'error_message' => 'InaccessibleProperty',
             ],
             'inaccessibleStaticPrivateProperty' => [
                 '<?php
@@ -240,7 +240,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     echo A::$fooFoo;',
-                'error_message' => 'InaccessibleProperty'
+                'error_message' => 'InaccessibleProperty',
             ],
             'inaccessibleStaticProtectedProperty' => [
                 '<?php
@@ -250,7 +250,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     echo A::$fooFoo;',
-                'error_message' => 'InaccessibleProperty'
+                'error_message' => 'InaccessibleProperty',
             ],
             'inaccessibleStaticPrivatePropertyFromSubclass' => [
                 '<?php
@@ -264,7 +264,7 @@ class ClassScopeTest extends TestCase
                             echo A::$fooFoo;
                         }
                     }',
-                'error_message' => 'InaccessibleProperty'
+                'error_message' => 'InaccessibleProperty',
             ],
             'privateConstructorInheritance' => [
                 '<?php
@@ -273,7 +273,7 @@ class ClassScopeTest extends TestCase
                     }
                     class B extends A {}
                     new B();',
-                'error_message' => 'InaccessibleMethod'
+                'error_message' => 'InaccessibleMethod',
             ],
             'privateConstructorInheritanceCall' => [
                 '<?php
@@ -285,8 +285,8 @@ class ClassScopeTest extends TestCase
                             parent::__construct();
                         }
                     }',
-                'error_message' => 'InaccessibleMethod'
-            ]
+                'error_message' => 'InaccessibleMethod',
+            ],
         ];
     }
 }

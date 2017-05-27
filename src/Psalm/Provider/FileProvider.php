@@ -62,8 +62,8 @@ class FileProvider
     {
         $lexer = new PhpParser\Lexer([
             'usedAttributes' => [
-                'comments', 'startLine', 'startFilePos', 'endFilePos'
-            ]
+                'comments', 'startLine', 'startFilePos', 'endFilePos',
+            ],
         ]);
 
         $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);

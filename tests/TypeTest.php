@@ -24,7 +24,7 @@ class TypeTest extends TestCase
                         public function barBar(A $a = null) {
                             $b = $a ? $a->fooFoo() : null;
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithTernaryIfNullGuard' => [
                 '<?php
@@ -38,7 +38,7 @@ class TypeTest extends TestCase
                         public function barBar(A $a = null) {
                             $b = $a === null ? null : $a->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithTernaryEmptyGuard' => [
                 '<?php
@@ -52,7 +52,7 @@ class TypeTest extends TestCase
                         public function barBar(A $a = null) {
                             $b = empty($a) ? null : $a->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithTernaryIsNullGuard' => [
                 '<?php
@@ -66,7 +66,7 @@ class TypeTest extends TestCase
                         public function barBar(A $a = null) {
                             $b = is_null($a) ? null : $a->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithIfGuard' => [
                 '<?php
@@ -82,7 +82,7 @@ class TypeTest extends TestCase
                                 $a->fooFoo();
                             }
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithTernaryGuardWithThis' => [
                 '<?php
@@ -100,7 +100,7 @@ class TypeTest extends TestCase
                             $this->a = $a;
                             $b = $this->a ? $this->a->fooFoo() : null;
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithTernaryIfNullGuardWithThis' => [
                 '<?php
@@ -118,7 +118,7 @@ class TypeTest extends TestCase
                             $this->a = $a;
                             $b = $this->a === null ? null : $this->a->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithIfGuardWithThis' => [
                 '<?php
@@ -139,7 +139,7 @@ class TypeTest extends TestCase
                                 $this->a->fooFoo();
                             }
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithExceptionThrown' => [
                 '<?php
@@ -157,7 +157,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithRedefinitionAndElse' => [
                 '<?php
@@ -181,7 +181,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithBooleanIfGuard' => [
                 '<?php
@@ -202,7 +202,7 @@ class TypeTest extends TestCase
                                 $two->fooFoo();
                             }
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithNonNullBooleanIfGuard' => [
                 '<?php
@@ -223,7 +223,7 @@ class TypeTest extends TestCase
                                 $one->fooFoo();
                             }
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithNonNullBooleanIfGuardAndBooleanAnd' => [
                 '<?php
@@ -244,7 +244,7 @@ class TypeTest extends TestCase
                                 $one->fooFoo();
                             }
                         }
-                    }'
+                    }',
             ],
             'nullableMethodInConditionWithIfGuardBefore' => [
                 '<?php
@@ -272,7 +272,7 @@ class TypeTest extends TestCase
                                 // do something
                             }
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithBooleanIfGuardBefore' => [
                 '<?php
@@ -295,7 +295,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedRedefinition' => [
                 '<?php
@@ -313,7 +313,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedRedefinitionInElse' => [
                 '<?php
@@ -334,7 +334,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedNestedRedefinition' => [
                 '<?php
@@ -364,7 +364,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedSwitchRedefinition' => [
                 '<?php
@@ -392,7 +392,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedSwitchRedefinitionDueToException' => [
                 '<?php
@@ -421,7 +421,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedSwitchThatAlwaysReturns' => [
                 '<?php
@@ -447,7 +447,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithReturn' => [
                 '<?php
@@ -473,7 +473,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithElseReturn' => [
                 '<?php
@@ -499,7 +499,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithElseifReturn' => [
                 '<?php
@@ -528,7 +528,7 @@ class TypeTest extends TestCase
             
                             $one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedSwitchBreak' => [
                 '<?php
@@ -552,7 +552,7 @@ class TypeTest extends TestCase
                                     break;
                             }
                         }
-                    }'
+                    }',
             ],
             'nullableMethodWithGuardedRedefinitionOnThis' => [
                 '<?php
@@ -575,7 +575,7 @@ class TypeTest extends TestCase
             
                             $this->one->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'arrayUnionTypeAssertion' => [
                 '<?php
@@ -586,8 +586,8 @@ class TypeTest extends TestCase
                         $ids = [];
                     }',
                 'assertions' => [
-                    ['array<empty, empty>' => '$ids']
-                ]
+                    ['array<empty, empty>' => '$ids'],
+                ],
             ],
             'arrayUnionTypeAssertionWithIsArray' => [
                 '<?php
@@ -598,8 +598,8 @@ class TypeTest extends TestCase
                         $ids = [];
                     }',
                 'assertions' => [
-                    ['array<empty, empty>' => '$ids']
-                ]
+                    ['array<empty, empty>' => '$ids'],
+                ],
             ],
             '2dArrayUnionTypeAssertionWithIsArray' => [
                 '<?php
@@ -612,7 +612,7 @@ class TypeTest extends TestCase
                         }
             
                         return null;
-                    }'
+                    }',
             ],
             'variableReassignment' => [
                 '<?php
@@ -630,7 +630,7 @@ class TypeTest extends TestCase
             
                     $one = new Two();
             
-                    $one->barBar();'
+                    $one->barBar();',
             ],
             'variableReassignmentInIf' => [
                 '<?php
@@ -650,7 +650,7 @@ class TypeTest extends TestCase
                         $one = new Two();
             
                         $one->barBar();
-                    }'
+                    }',
             ],
             'unionTypeFlow' => [
                 '<?php
@@ -682,7 +682,7 @@ class TypeTest extends TestCase
                         else if ($var) {
                             $var->baz();
                         }
-                    }'
+                    }',
             ],
             'unionTypeFlowWithThrow' => [
                 '<?php
@@ -699,7 +699,7 @@ class TypeTest extends TestCase
                         else {
                             $var->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'unionTypeFlowWithElseif' => [
                 '<?php
@@ -719,7 +719,7 @@ class TypeTest extends TestCase
                     }
                     else {
                         $var->fooFoo();
-                    }'
+                    }',
             ],
             'typedAdjustment' => [
                 '<?php
@@ -731,8 +731,8 @@ class TypeTest extends TestCase
             
                     echo $var;',
                 'assertions' => [
-                    ['int|string' => '$var']
-                ]
+                    ['int|string' => '$var'],
+                ],
             ],
             'typeMixedAdjustment' => [
                 '<?php
@@ -746,8 +746,8 @@ class TypeTest extends TestCase
             
                     echo $var;',
                 'assertions' => [
-                    ['int|string' => '$var']
-                ]
+                    ['int|string' => '$var'],
+                ],
             ],
             'typeAdjustmentIfNull' => [
                 '<?php
@@ -760,8 +760,8 @@ class TypeTest extends TestCase
                         $var = new B;
                     }',
                 'assertions' => [
-                    ['A|B' => '$var']
-                ]
+                    ['A|B' => '$var'],
+                ],
             ],
             'whileTrue' => [
                 '<?php
@@ -779,7 +779,7 @@ class TypeTest extends TestCase
                                 $row[0] = "bad";
                             }
                         }
-                    }'
+                    }',
             ],
             'passingParam' => [
                 '<?php
@@ -791,7 +791,7 @@ class TypeTest extends TestCase
                     }
             
                     $b = new B();
-                    $b->barBar(new A);'
+                    $b->barBar(new A);',
             ],
             'nullToNullableParam' => [
                 '<?php
@@ -803,7 +803,7 @@ class TypeTest extends TestCase
                     }
             
                     $b = new B();
-                    $b->barBar(null);'
+                    $b->barBar(null);',
             ],
             'objectToNullableObjectParam' => [
                 '<?php
@@ -815,7 +815,7 @@ class TypeTest extends TestCase
                     }
             
                     $b = new B();
-                    $b->barBar(new A);'
+                    $b->barBar(new A);',
             ],
             'paramCoercion' => [
                 '<?php
@@ -832,7 +832,7 @@ class TypeTest extends TestCase
                                 $a->barBar();
                             }
                         }
-                    }'
+                    }',
             ],
             'paramElseifCoercion' => [
                 '<?php
@@ -856,15 +856,15 @@ class TypeTest extends TestCase
                                 $a->baz();
                             }
                         }
-                    }'
+                    }',
             ],
             'plusPlus' => [
                 '<?php
                     $a = 0;
                     $b = $a++;',
                 'assertions' => [
-                    ['int' => '$a']
-                ]
+                    ['int' => '$a'],
+                ],
             ],
             'typedValueAssertion' => [
                 '<?php
@@ -877,7 +877,7 @@ class TypeTest extends TestCase
                         if ($a === $b) {
                             echo substr($a, 1);
                         }
-                    }'
+                    }',
             ],
             'issetWithSimpleAssignment' => [
                 '<?php
@@ -887,7 +887,7 @@ class TypeTest extends TestCase
                         print "hello";
                     }
             
-                    print $a;'
+                    print $a;',
             ],
             'issetWithMultipleAssignments' => [
                 '<?php
@@ -900,14 +900,14 @@ class TypeTest extends TestCase
                     }
             
                     echo $a;
-                    echo $b;'
+                    echo $b;',
             ],
             'isIntOnUnaryPlus' => [
                 '<?php
                     $a = +"5";
                     if (!is_int($a)) {
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -930,7 +930,7 @@ class TypeTest extends TestCase
                             $a->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodCallWithThis' => [
                 '<?php
@@ -949,7 +949,7 @@ class TypeTest extends TestCase
                             $this->a->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithIfGuard' => [
                 '<?php
@@ -971,7 +971,7 @@ class TypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithWrongBooleanIfGuard' => [
                 '<?php
@@ -993,7 +993,7 @@ class TypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithWrongIfGuardedBefore' => [
                 '<?php
@@ -1017,7 +1017,7 @@ class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithWrongBooleanIfGuardBefore' => [
                 '<?php
@@ -1041,7 +1041,7 @@ class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
-                'error_mesage' => 'PossiblyNullReference'
+                'error_mesage' => 'PossiblyNullReference',
             ],
             'methodWithMeaninglessCheck' => [
                 '<?php
@@ -1060,7 +1060,7 @@ class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedNestedIncompleteRedefinition' => [
                 '<?php
@@ -1088,7 +1088,7 @@ class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedSwitchRedefinitionNoDefault' => [
                 '<?php
@@ -1113,7 +1113,7 @@ class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedSwitchRedefinitionEmptyDefault' => [
                 '<?php
@@ -1141,7 +1141,7 @@ class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn' => [
                 '<?php
@@ -1171,7 +1171,7 @@ class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'variableReassignmentInIfWithOutsideCall' => [
                 '<?php
@@ -1194,7 +1194,7 @@ class TypeTest extends TestCase
                     }
             
                     $one->barBar();',
-                'error_message' => 'UndefinedMethod'
+                'error_message' => 'UndefinedMethod',
             ],
             'unnecessaryInstanceof' => [
                 '<?php
@@ -1207,7 +1207,7 @@ class TypeTest extends TestCase
                     if ($var instanceof One) {
                         $var->fooFoo();
                     }',
-                'error_message' => 'FailedTypeResolution'
+                'error_message' => 'FailedTypeResolution',
             ],
             'unNegatableInstanceof' => [
                 '<?php
@@ -1224,7 +1224,7 @@ class TypeTest extends TestCase
                     else {
                         // do something
                     }',
-                'error_message' => 'FailedTypeResolution'
+                'error_message' => 'FailedTypeResolution',
             ],
             'wrongParam' => [
                 '<?php
@@ -1237,7 +1237,7 @@ class TypeTest extends TestCase
             
                     $b = new B();
                     $b->barBar(5);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'intToNullableObjectParam' => [
                 '<?php
@@ -1250,7 +1250,7 @@ class TypeTest extends TestCase
             
                     $b = new B();
                     $b->barBar(5);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'paramCoercionWithBadArg' => [
                 '<?php
@@ -1268,15 +1268,15 @@ class TypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'UndefinedMethod'
+                'error_message' => 'UndefinedMethod',
             ],
             'nullCheckInsideForeachWithNoLeaveStatement' => [
                 '<?php
                     $a = null;
             
                     $a->fooBar();',
-                'error_message' => 'NullReference'
-            ]
+                'error_message' => 'NullReference',
+            ],
         ];
     }
 }

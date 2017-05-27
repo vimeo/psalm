@@ -27,8 +27,8 @@ class Php70Test extends TestCase
             
                     $a = indexof("arr", "a");',
                 'assertions' => [
-                    ['int' => '$a']
-                ]
+                    ['int' => '$a'],
+                ],
             ],
             'methodTypeHints' => [
                 '<?php
@@ -47,23 +47,23 @@ class Php70Test extends TestCase
             
                     $a = Foo::indexof("arr", "a");',
                 'assertions' => [
-                    ['int' => '$a']
-                ]
+                    ['int' => '$a'],
+                ],
             ],
             'nullCoalesce' => [
                 '<?php
                     $a = $_GET["bar"] ?? "nobody";',
                 'assertions' => [
-                    ['mixed' => '$a']
+                    ['mixed' => '$a'],
                 ],
-                'error_levels' => ['MixedAssignment']
+                'error_levels' => ['MixedAssignment'],
             ],
             'spaceship' => [
                 '<?php
                     $a = 1 <=> 1;',
                 'assertions' => [
-                    ['int' => '$a']
-                ]
+                    ['int' => '$a'],
+                ],
             ],
             'defineArray' => [
                 '<?php
@@ -75,8 +75,8 @@ class Php70Test extends TestCase
             
                     $a = ANIMALS[1];',
                 'assertions' => [
-                    ['string' => '$a']
-                ]
+                    ['string' => '$a'],
+                ],
             ],
             'anonymousClassLogger' => [
                 '<?php
@@ -100,7 +100,7 @@ class Php70Test extends TestCase
                         public function log(string $msg) {
                             echo $msg;
                         }
-                    });'
+                    });',
             ],
             'anonymousClassFunctionReturnType' => [
                 '<?php
@@ -114,7 +114,7 @@ class Php70Test extends TestCase
                         return $i;
                     }
             
-                    $x = g($class->f());'
+                    $x = g($class->f());',
             ],
             'generatorWithReturn' => [
                 '<?php
@@ -128,7 +128,7 @@ class Php70Test extends TestCase
                         }
             
                         yield 1;
-                    }'
+                    }',
             ],
             'generatorDelegation' => [
                 '<?php
@@ -176,9 +176,9 @@ class Php70Test extends TestCase
                     $gen2 = $gen->getReturn();',
                 'assertions' => [
                     ['Generator<int, int>' => '$gen'],
-                    ['mixed' => '$gen2']
+                    ['mixed' => '$gen2'],
                 ],
-                'error_levels' => ['MixedAssignment']
+                'error_levels' => ['MixedAssignment'],
             ],
             'multipleUse' => [
                 '<?php
@@ -200,8 +200,8 @@ class Php70Test extends TestCase
             
                         new A();
                         new B();
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -218,7 +218,7 @@ class Php70Test extends TestCase
                             new B();
                         }
                     };',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
             'anonymousClassWithInvalidFunctionReturnType' => [
                 '<?php
@@ -227,8 +227,8 @@ class Php70Test extends TestCase
                             return 5;
                         }
                     };',
-                'error_message' => 'InvalidReturnType'
-            ]
+                'error_message' => 'InvalidReturnType',
+            ],
         ];
     }
 }

@@ -268,7 +268,7 @@ class AlgebraChecker
                 }
 
                 if (isset($clause_b->possibilities[$clause_var]) &&
-                    in_array($negated_clause_type, $clause_b->possibilities[$clause_var])
+                    in_array($negated_clause_type, $clause_b->possibilities[$clause_var], true)
                 ) {
                     $clause_b->possibilities[$clause_var] = array_filter(
                         $clause_b->possibilities[$clause_var],

@@ -22,8 +22,8 @@ class FunctionCallTest extends TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('array<string, int>', (string) $context->vars_in_scope['$d']);
-        $this->assertEquals('array<string, null|int>', (string) $context->vars_in_scope['$e']);
+        $this->assertSame('array<string, int>', (string) $context->vars_in_scope['$d']);
+        $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$e']);
 
         if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
             $stmts = self::$parser->parse('<?php
@@ -54,8 +54,8 @@ class FunctionCallTest extends TestCase
             $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
             $context = new Context();
             $file_checker->visitAndAnalyzeMethods($context);
-            $this->assertEquals('array<string, null|int>', (string) $context->vars_in_scope['$f']);
-            $this->assertEquals('array<string, null|int>', (string) $context->vars_in_scope['$g']);
+            $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$f']);
+            $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$g']);
         }
     }
 
@@ -102,7 +102,7 @@ class FunctionCallTest extends TestCase
                     /** @param array<A> $a */
                     function fooFoo(array $a = []) : void {
 
-                    }'
+                    }',
             ],
             'validDocblockParamDefault' => [
                 '<?php
@@ -110,12 +110,12 @@ class FunctionCallTest extends TestCase
                      * @param  int|false $p
                      * @return void
                      */
-                    function f($p = false) {}'
+                    function f($p = false) {}',
             ],
             'byRef' => [
                 '<?php
                     function fooFoo(string &$v) : void {}
-                    fooFoo($a);'
+                    fooFoo($a);',
             ],
             'namespaced' => [
                 '<?php
@@ -123,7 +123,7 @@ class FunctionCallTest extends TestCase
 
                     /** @return void */
                     function f(int $p) {}
-                    f(5);'
+                    f(5);',
             ],
             'namespacedRootFunctionCall' => [
                 '<?php
@@ -133,7 +133,7 @@ class FunctionCallTest extends TestCase
                     }
                     namespace A\B\C {
                         foo();
-                    }'
+                    }',
             ],
             'namespacedAliasedFunctionCall' => [
                 '<?php
@@ -145,14 +145,14 @@ class FunctionCallTest extends TestCase
                         use Aye as A;
 
                         A\foo();
-                    }'
+                    }',
             ],
             'arrayKeys' => [
                 '<?php
                     $a = array_keys(["a" => 1, "b" => 2]);',
                 'assertions' => [
-                    ['array<int, string>' => '$a']
-                ]
+                    ['array<int, string>' => '$a'],
+                ],
             ],
             'arrayKeysMixed' => [
                 '<?php
@@ -160,37 +160,37 @@ class FunctionCallTest extends TestCase
                     $b = ["a" => 5];
                     $a = array_keys($b);',
                 'assertions' => [
-                    ['array<int, mixed>' => '$a']
+                    ['array<int, mixed>' => '$a'],
                 ],
-                'error_levels' => ['MixedArgument']
+                'error_levels' => ['MixedArgument'],
             ],
             'arrayValues' => [
                 '<?php
                     $b = array_values(["a" => 1, "b" => 2]);',
                 'assertions' => [
-                    ['array<int, int>' => '$b']
-                ]
+                    ['array<int, int>' => '$b'],
+                ],
             ],
             'arrayCombine' => [
                 '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    ['array<string, int>' => '$c']
-                ]
+                    ['array<string, int>' => '$c'],
+                ],
             ],
             'arrayMerge' => [
                 '<?php
                     $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    ['array<int, int|string>' => '$d']
-                ]
+                    ['array<int, int|string>' => '$d'],
+                ],
             ],
             'arrayDiff' => [
                 '<?php
                     $d = array_diff(["a" => 5, "b" => 12], [5]);',
                 'assertions' => [
-                    ['array<string, int>' => '$d']
-                ]
+                    ['array<string, int>' => '$d'],
+                ],
             ],
             'byRefAfterCallable' => [
                 '<?php
@@ -206,8 +206,8 @@ class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [
                     'MixedAssignment',
-                    'MixedArrayAccess'
-                ]
+                    'MixedArrayAccess',
+                ],
             ],
             'extractVarCheck' => [
                 '<?php
@@ -220,8 +220,8 @@ class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [
                     'MixedAssignment',
-                    'MixedArrayAccess'
-                ]
+                    'MixedArrayAccess',
+                ],
             ],
             'arrayMergeObjectLike' => [
                 '<?php
@@ -238,7 +238,7 @@ class FunctionCallTest extends TestCase
                   $a2 = ["bye" => 5];
                   $a3 = array_merge($a1, $a2);
 
-                  foo($a3);'
+                  foo($a3);',
             ],
         ];
     }
@@ -253,7 +253,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo("string");',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'InvalidScalarArgument',
             ],
             'mixedArgument' => [
                 '<?php
@@ -262,31 +262,31 @@ class FunctionCallTest extends TestCase
                     $a = "hello";
                     fooFoo($a);',
                 'error_message' => 'MixedArgument',
-                'error_levels' => ['MixedAssignment']
+                'error_levels' => ['MixedAssignment'],
             ],
             'nullArgument' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo(null);',
-                'error_message' => 'NullArgument'
+                'error_message' => 'NullArgument',
             ],
             'tooFewArguments' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo();',
-                'error_message' => 'TooFewArguments'
+                'error_message' => 'TooFewArguments',
             ],
             'tooManyArguments' => [
                 '<?php
                     function fooFoo(int $a) : void {}
                     fooFoo(5, "dfd");',
-                'error_message' => 'TooManyArguments'
+                'error_message' => 'TooManyArguments',
             ],
             'tooManyArgumentsForConstructor' => [
                 '<?php
                   class A { }
                   new A("hello");',
-                'error_message' => 'TooManyArguments'
+                'error_message' => 'TooManyArguments',
             ],
             'typeCoercion' => [
                 '<?php
@@ -295,7 +295,7 @@ class FunctionCallTest extends TestCase
 
                     function fooFoo(B $b) : void {}
                     fooFoo(new A());',
-                'error_message' => 'TypeCoercion'
+                'error_message' => 'TypeCoercion',
             ],
             'arrayTypeCoercion' => [
                 '<?php
@@ -308,17 +308,17 @@ class FunctionCallTest extends TestCase
                      */
                     function fooFoo(array $b) {}
                     fooFoo([new A()]);',
-                'error_message' => 'TypeCoercion'
+                'error_message' => 'TypeCoercion',
             ],
             'duplicateParam' => [
                 '<?php
                     function f($p, $p) {}',
-                'error_message' => 'DuplicateParam'
+                'error_message' => 'DuplicateParam',
             ],
             'invalidParamDefault' => [
                 '<?php
                     function f(int $p = false) {}',
-                'error_message' => 'InvalidParamDefault'
+                'error_message' => 'InvalidParamDefault',
             ],
             'invalidDocblockParamDefault' => [
                 '<?php
@@ -327,14 +327,14 @@ class FunctionCallTest extends TestCase
                      * @return void
                      */
                     function f($p = false) {}',
-                'error_message' => 'InvalidParamDefault'
+                'error_message' => 'InvalidParamDefault',
             ],
             // Skipped. Does not throw an error.
             'SKIPPED-badByRef' => [
                 '<?php
                     function fooFoo(string &$v) : void {}
                     fooFoo("a");',
-                'error_message' => 'InvalidPassByReference'
+                'error_message' => 'InvalidPassByReference',
             ],
             'invalidArgAfterCallable' => [
                 '<?php
@@ -351,9 +351,9 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [
                     'MixedAssignment',
-                    'MixedArrayAccess'
-                ]
-            ]
+                    'MixedArrayAccess',
+                ],
+            ],
         ];
     }
 }

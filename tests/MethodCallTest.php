@@ -24,7 +24,7 @@ class MethodCallTest extends TestCase
                         public static function bar(){
                             parent::foo();
                         }
-                    }'
+                    }',
             ],
             'nonStaticInvocation' => [
                 '<?php
@@ -32,7 +32,7 @@ class MethodCallTest extends TestCase
                         public static function barBar() : void {}
                     }
             
-                    (new Foo())->barBar();'
+                    (new Foo())->barBar();',
             ],
             'staticInvocation' => [
                 '<?php
@@ -44,8 +44,8 @@ class MethodCallTest extends TestCase
             
                     }
             
-                    B::fooFoo();'
-            ]
+                    B::fooFoo();',
+            ],
         ];
     }
 
@@ -62,7 +62,7 @@ class MethodCallTest extends TestCase
                     }
             
                     Foo::barBar();',
-                'error_message' => 'InvalidStaticInvocation'
+                'error_message' => 'InvalidStaticInvocation',
             ],
             'parentStaticCall' => [
                 '<?php
@@ -77,7 +77,7 @@ class MethodCallTest extends TestCase
                             parent::foo();
                         }
                     }',
-                'error_message' => 'InvalidStaticInvocation'
+                'error_message' => 'InvalidStaticInvocation',
             ],
             'mixedMethodCall' => [
                 '<?php
@@ -92,8 +92,8 @@ class MethodCallTest extends TestCase
                 'error_message' => 'MixedMethodCall',
                 'error_levels' => [
                     'MissingPropertyType',
-                    'MixedAssignment'
-                ]
+                    'MixedAssignment',
+                ],
             ],
             'selfNonStaticInvocation' => [
                 '<?php
@@ -104,7 +104,7 @@ class MethodCallTest extends TestCase
                             self::fooFoo();
                         }
                     }',
-                'error_message' => 'NonStaticSelfCall'
+                'error_message' => 'NonStaticSelfCall',
             ],
             'noParent' => [
                 '<?php
@@ -113,7 +113,7 @@ class MethodCallTest extends TestCase
                             parent::barBar();
                         }
                     }',
-                'error_message' => 'ParentNotFound'
+                'error_message' => 'ParentNotFound',
             ],
             'coercedClass' => [
                 '<?php
@@ -138,8 +138,8 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'MoreSpecificReturnType',
-                'error_levels' => ['MixedInferredReturnType']
-            ]
+                'error_levels' => ['MixedInferredReturnType'],
+            ],
         ];
     }
 }

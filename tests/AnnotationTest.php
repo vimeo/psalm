@@ -23,7 +23,7 @@ class AnnotationTest extends TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertEquals('int', (string) $context->vars_in_scope['$a']);
+        $this->assertSame('int', (string) $context->vars_in_scope['$a']);
     }
 
     /**
@@ -40,7 +40,7 @@ class AnnotationTest extends TestCase
                          */
                         public static function barBar() : void {
                         }
-                    }'
+                    }',
             ],
             'validDocblockReturn' => [
                 '<?php
@@ -63,7 +63,7 @@ class AnnotationTest extends TestCase
                      */
                     function foo3() : array {
                         return ["hello"];
-                    }'
+                    }',
             ],
             'reassertWithIs' => [
                 '<?php
@@ -72,7 +72,7 @@ class AnnotationTest extends TestCase
                         if (is_array($a)) {
                             // do something
                         }
-                    }'
+                    }',
             ],
             'checkArrayWithIs' => [
                 '<?php
@@ -83,7 +83,7 @@ class AnnotationTest extends TestCase
                         if (is_array($a)) {
                             // do something
                         }
-                    }'
+                    }',
             ],
             'checkArrayWithIsInsideLoop' => [
                 '<?php
@@ -96,7 +96,7 @@ class AnnotationTest extends TestCase
                                 $data[$key] = !empty($val);
                             }
                         }
-                    }'
+                    }',
             ],
             'goodDocblock' => [
                 '<?php
@@ -107,7 +107,7 @@ class AnnotationTest extends TestCase
                          */
                         public function g(A $a, $b) : void {
                         }
-                    }'
+                    }',
             ],
             'goodDocblockInNamespace' => [
                 '<?php
@@ -120,7 +120,7 @@ class AnnotationTest extends TestCase
                          */
                         public function g(A $a, $b) : void {
                         }
-                    }'
+                    }',
             ],
             'propertyDocblock' => [
                 '<?php
@@ -139,7 +139,7 @@ class AnnotationTest extends TestCase
                     }
 
                     $a = new A();
-                    $a->foo = "hello";'
+                    $a->foo = "hello";',
             ],
             'ignoreNullableReturn' => [
                 '<?php
@@ -162,7 +162,7 @@ class AnnotationTest extends TestCase
                     $a = makeA();
                     $a->foo();
                     $a->bar = 7;
-                    takeA($a);'
+                    takeA($a);',
             ],
         ];
     }
@@ -181,7 +181,7 @@ class AnnotationTest extends TestCase
                          */
                         public static function barBar();
                     }',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'deprecatedMethodWithCall' => [
                 '<?php
@@ -194,7 +194,7 @@ class AnnotationTest extends TestCase
                     }
 
                     Foo::barBar();',
-                'error_message' => 'DeprecatedMethod'
+                'error_message' => 'DeprecatedMethod',
             ],
             'deprecatedClassWithStaticCall' => [
                 '<?php
@@ -207,7 +207,7 @@ class AnnotationTest extends TestCase
                     }
 
                     Foo::barBar();',
-                'error_message' => 'DeprecatedClass'
+                'error_message' => 'DeprecatedClass',
             ],
             'deprecatedClassWithNew' => [
                 '<?php
@@ -217,7 +217,7 @@ class AnnotationTest extends TestCase
                     class Foo { }
 
                     $a = new Foo();',
-                'error_message' => 'DeprecatedClass'
+                'error_message' => 'DeprecatedClass',
             ],
             'deprecatedPropertyGet' => [
                 '<?php
@@ -229,7 +229,7 @@ class AnnotationTest extends TestCase
                       public $foo;
                     }
                     echo (new A)->foo;',
-                'error_message' => 'DeprecatedProperty'
+                'error_message' => 'DeprecatedProperty',
             ],
             'deprecatedPropertySet' => [
                 '<?php
@@ -242,7 +242,7 @@ class AnnotationTest extends TestCase
                     }
                     $a = new A;
                     $a->foo = 5;',
-                'error_message' => 'DeprecatedProperty'
+                'error_message' => 'DeprecatedProperty',
             ],
             'invalidDocblockParam' => [
                 '<?php
@@ -251,7 +251,7 @@ class AnnotationTest extends TestCase
                      */
                     function fooFoo(array $bar) : void {
                     }',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'extraneousDocblockParam' => [
                 '<?php
@@ -261,7 +261,7 @@ class AnnotationTest extends TestCase
                     function fooBar() : void {
                     }',
                 'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
-                    'argument list for fooBar'
+                    'argument list for fooBar',
             ],
             'missingParamType' => [
                 '<?php
@@ -271,7 +271,7 @@ class AnnotationTest extends TestCase
                     function fooBar() : void {
                     }',
                 'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
-                    'argument list for fooBar'
+                    'argument list for fooBar',
             ],
             'missingParamVar' => [
                 '<?php
@@ -280,7 +280,7 @@ class AnnotationTest extends TestCase
                      */
                     function fooBar() : void {
                     }',
-                'error_message' => 'InvalidDocblock - somefile.php:5 - Badly-formatted @param in docblock for fooBar'
+                'error_message' => 'InvalidDocblock - somefile.php:5 - Badly-formatted @param in docblock for fooBar',
             ],
             'invalidDocblockReturn' => [
                 '<?php
@@ -289,7 +289,7 @@ class AnnotationTest extends TestCase
                      */
                     function fooFoo() : void {
                     }',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'propertyDocblockInvalidAssignment' => [
                 '<?php

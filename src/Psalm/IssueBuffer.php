@@ -44,7 +44,7 @@ class IssueBuffer
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
-        if (in_array($issue_type, $suppressed_issues)) {
+        if (in_array($issue_type, $suppressed_issues, true)) {
             return false;
         }
 
@@ -113,7 +113,7 @@ class IssueBuffer
                     echo $error_maybe_with_color . ': ' . $error_message . PHP_EOL;
 
                     echo self::getSnippet($e, $project_checker->use_color) . PHP_EOL . PHP_EOL;
-                    self::$error_count++;
+                    ++self::$error_count;
 
                     break;
 
@@ -214,8 +214,8 @@ class IssueBuffer
         Provider\FileReferenceProvider::updateReferenceCache($visited_files);
 
         if ($start_time) {
-            echo('Checks took ' . ((float)microtime(true) - self::$start_time));
-            echo(' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB' . PHP_EOL);
+            echo 'Checks took ' . ((float)microtime(true) - self::$start_time);
+            echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB' . PHP_EOL;
         }
 
         if (self::$error_count) {
@@ -275,7 +275,7 @@ class IssueBuffer
      */
     public static function startRecording()
     {
-        self::$recording_level++;
+        ++self::$recording_level;
         self::$recorded_issues[self::$recording_level] = [];
     }
 
@@ -288,7 +288,7 @@ class IssueBuffer
             throw new \UnexpectedValueException('Cannot stop recording - already at base level');
         }
 
-        self::$recording_level--;
+        --self::$recording_level;
     }
 
     /**

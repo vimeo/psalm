@@ -61,7 +61,7 @@ class VariadicTest extends TestCase
                 f(1, 2);
                 f(1, 2, 3);
                 f(1, 2, 3, 4);
-                f(1, 2, 3, 4, 5);'
+                f(1, 2, 3, 4, 5);',
             ],
             'variadicArray' => [
                 '<?php
@@ -90,8 +90,8 @@ class VariadicTest extends TestCase
                      * @return void
                      */
                     function g(string ...$a_list) {
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 }

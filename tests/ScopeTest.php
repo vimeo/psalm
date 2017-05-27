@@ -21,7 +21,7 @@ class ScopeTest extends TestCase
                         $badge = "goodbye";
                     }
             
-                    echo $badge;'
+                    echo $badge;',
             ],
             'newVarInIfWithElseReturn' => [
                 '<?php
@@ -32,7 +32,7 @@ class ScopeTest extends TestCase
                         throw new \Exception();
                     }
             
-                    echo $badge;'
+                    echo $badge;',
             ],
             'tryCatchVar' => [
                 '<?php
@@ -43,14 +43,14 @@ class ScopeTest extends TestCase
                         $worked = false;
                     }',
                 'assertions' => [
-                    ['bool' => '$worked']
-                ]
+                    ['bool' => '$worked'],
+                ],
             ],
             'assignmentInIf' => [
                 '<?php
                     if ($row = (rand(0, 10) ? [5] : null)) {
                         echo $row[0];
-                    }'
+                    }',
             ],
             'negatedAssignmentInIf' => [
                 '<?php
@@ -59,7 +59,7 @@ class ScopeTest extends TestCase
                     }
                     else {
                         echo $row[0];
-                    }'
+                    }',
             ],
             'assignInElseIf' => [
                 '<?php
@@ -67,25 +67,25 @@ class ScopeTest extends TestCase
                         echo "hello";
                     } elseif ($row = (rand(0, 10) ? [5] : null)) {
                         echo $row[0];
-                    }'
+                    }',
             ],
             'ifNotEqualsFalse' => [
                 '<?php
                     if (($row = rand(0,10) ? [1] : false) !== false) {
                        echo $row[0];
-                    }'
+                    }',
             ],
             'ifNotEqualsNull' => [
                 '<?php
                     if (($row = rand(0,10) ? [1] : null) !== null) {
                        echo $row[0];
-                    }'
+                    }',
             ],
             'ifNullNotEquals' => [
                 '<?php
                     if (null !== ($row = rand(0,10) ? [1] : null)) {
                        echo $row[0];
-                    }'
+                    }',
             ],
             'ifNullEquals' => [
                 '<?php
@@ -93,40 +93,40 @@ class ScopeTest extends TestCase
             
                     } else {
                         echo $row[0];
-                    }'
+                    }',
             ],
             'passedByRefInIf' => [
                 '<?php
                     if (preg_match("/bad/", "badger", $matches)) {
                         echo (string)$matches[0];
-                    }'
+                    }',
             ],
             'passByRefInIfCheckAfter' => [
                 '<?php
                     if (!preg_match("/bad/", "badger", $matches)) {
                         exit();
                     }
-                    echo (string)$matches[0];'
+                    echo (string)$matches[0];',
             ],
             'passByRefInIfWithBoolean' => [
                 '<?php
                     $a = true;
                     if ($a && preg_match("/bad/", "badger", $matches)) {
                         echo (string)$matches[0];
-                    }'
+                    }',
             ],
             'passByRefInVarWithBoolean' => [
                 '<?php
                     $a = preg_match("/bad/", "badger", $matches) > 0;
                     if ($a) {
                         echo (string)$matches[1];
-                    }'
+                    }',
             ],
             'functionExists' => [
                 '<?php
                     if (true && function_exists("flabble")) {
                         flabble();
-                    }'
+                    }',
             ],
             'nestedPropertyFetchInElseif' => [
                 '<?php
@@ -146,7 +146,7 @@ class ScopeTest extends TestCase
                     }
                     elseif ($a && $a->foo) {
                         echo $a;
-                    }'
+                    }',
             ],
             'globalReturn' => [
                 '<?php
@@ -156,7 +156,7 @@ class ScopeTest extends TestCase
                         global $foo;
             
                         return $foo;
-                    }'
+                    }',
             ],
             'negateAssertionAndOther' => [
                 '<?php
@@ -166,8 +166,8 @@ class ScopeTest extends TestCase
                         throw new \Exception("bad");
                     }',
                 'assertions' => [
-                    ['string|null' => '$a']
-                ]
+                    ['string|null' => '$a'],
+                ],
             ],
             'repeatAssertionWithOther' => [
                 '<?php
@@ -179,8 +179,8 @@ class ScopeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    ['string|null' => '$a']
-                ]
+                    ['string|null' => '$a'],
+                ],
             ],
             'refineOredType' => [
                 '<?php
@@ -195,7 +195,7 @@ class ScopeTest extends TestCase
                         }
                     }
                     class B extends A {}
-                    class C extends A {}'
+                    class C extends A {}',
             ],
             'instanceOfSubtraction' => [
                 '<?php
@@ -210,7 +210,7 @@ class ScopeTest extends TestCase
             
                     } elseif ($a instanceof FooMoo) {
             
-                    }'
+                    }',
             ],
             'staticNullRef' => [
                 '<?php
@@ -223,8 +223,8 @@ class ScopeTest extends TestCase
                         }
             
                         $bar = 5;
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -242,7 +242,7 @@ class ScopeTest extends TestCase
             
                     echo $b;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, ' .
-                    'first seen on line 3'
+                    'first seen on line 3',
             ],
             'possiblyUndefinedArrayInIf' => [
                 '<?php
@@ -252,14 +252,14 @@ class ScopeTest extends TestCase
             
                     echo $array;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable ' .
-                    '$array, first seen on line 3'
+                    '$array, first seen on line 3',
             ],
             'invalidGlobal' => [
                 '<?php
                     $a = "heli";
             
                     global $a;',
-                'error_message' => 'InvalidGlobal'
+                'error_message' => 'InvalidGlobal',
             ],
             'thisInStatic' => [
                 '<?php
@@ -268,7 +268,7 @@ class ScopeTest extends TestCase
                             echo $this;
                         }
                     }',
-                'error_message' => 'InvalidStaticVariable'
+                'error_message' => 'InvalidStaticVariable',
             ],
             'static' => [
                 '<?php
@@ -277,8 +277,8 @@ class ScopeTest extends TestCase
             
                         return $foo;
                     }',
-                'error_message' => 'MixedInferredReturnType'
-            ]
+                'error_message' => 'MixedInferredReturnType',
+            ],
         ];
     }
 }

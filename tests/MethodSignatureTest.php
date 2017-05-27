@@ -107,7 +107,7 @@ class MethodSignatureTest extends TestCase
             
                         }
                     }',
-                'error_message' => 'Method B::fooFoo has more arguments than parent method A::fooFoo'
+                'error_message' => 'Method B::fooFoo has more arguments than parent method A::fooFoo',
             ],
             'fewerArguments' => [
                 '<?php
@@ -122,7 +122,7 @@ class MethodSignatureTest extends TestCase
             
                         }
                     }',
-                'error_message' => 'Method B::fooFoo has fewer arguments than parent method A::fooFoo'
+                'error_message' => 'Method B::fooFoo has fewer arguments than parent method A::fooFoo',
             ],
             'differentArguments' => [
                 '<?php
@@ -138,8 +138,8 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'error_message' => 'Argument 1 of B::fooFoo has wrong type \'bool\', expecting \'int\' as defined ' .
-                    'by A::foo'
-            ]
+                    'by A::foo',
+            ],
         ];
     }
 }

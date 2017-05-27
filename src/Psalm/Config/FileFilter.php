@@ -137,11 +137,11 @@ class FileFilter
             }
 
             if ($case_sensitive) {
-                if (in_array($file_name, $this->files)) {
+                if (in_array($file_name, $this->files, true)) {
                     return true;
                 }
             } else {
-                if (in_array(strtolower($file_name), $this->files_lowercase)) {
+                if (in_array(strtolower($file_name), $this->files_lowercase, true)) {
                     return true;
                 }
             }
@@ -163,11 +163,11 @@ class FileFilter
         }
 
         if ($case_sensitive) {
-            if (in_array($file_name, $this->files)) {
+            if (in_array($file_name, $this->files, true)) {
                 return false;
             }
         } else {
-            if (in_array(strtolower($file_name), $this->files_lowercase)) {
+            if (in_array(strtolower($file_name), $this->files_lowercase, true)) {
                 return false;
             }
         }

@@ -216,7 +216,7 @@ class ProjectChecker
         $this->collect_references = $collect_references;
         $this->find_references_to = $find_references_to;
 
-        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS])) {
+        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS], true)) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
         }
 
@@ -553,7 +553,7 @@ class ProjectChecker
         while ($iterator->valid()) {
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
-                if (in_array($extension, $file_extensions)) {
+                if (in_array($extension, $file_extensions, true)) {
                     $file_path = (string)$iterator->getRealPath();
 
                     if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
@@ -583,7 +583,7 @@ class ProjectChecker
             while ($iterator->valid()) {
                 if (!$iterator->isDot()) {
                     $extension = $iterator->getExtension();
-                    if (in_array($extension, $file_extensions)) {
+                    if (in_array($extension, $file_extensions, true)) {
                         $file_names[] = (string)$iterator->getRealPath();
                     }
                 }
@@ -614,7 +614,7 @@ class ProjectChecker
         while ($iterator->valid()) {
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
-                if (in_array($extension, $file_extensions)) {
+                if (in_array($extension, $file_extensions, true)) {
                     $file_name = (string)$iterator->getRealPath();
 
                     if ($config->isInProjectDirs($file_name)) {
@@ -645,7 +645,7 @@ class ProjectChecker
 
             if (!$config->isInProjectDirs($file_path)) {
                 if ($this->debug_output) {
-                    echo('skipping ' . $file_path . PHP_EOL);
+                    echo 'skipping ' . $file_path . PHP_EOL;
                 }
 
                 continue;
@@ -1171,7 +1171,7 @@ class ProjectChecker
                 $this->classlike_references[$fq_class_name_ci] = 0;
             }
 
-            $this->classlike_references[$fq_class_name_ci]++;
+            ++$this->classlike_references[$fq_class_name_ci];
         }
 
         return true;
@@ -1196,7 +1196,7 @@ class ProjectChecker
                 $this->classlike_references[$fq_class_name_ci] = 0;
             }
 
-            $this->classlike_references[$fq_class_name_ci]++;
+            ++$this->classlike_references[$fq_class_name_ci];
         }
 
         return true;
@@ -1221,7 +1221,7 @@ class ProjectChecker
                 $this->classlike_references[$fq_class_name_ci] = 0;
             }
 
-            $this->classlike_references[$fq_class_name_ci]++;
+            ++$this->classlike_references[$fq_class_name_ci];
         }
 
         return true;

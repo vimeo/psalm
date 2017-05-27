@@ -78,7 +78,7 @@ echo $a;';
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
         $issue_data = IssueBuffer::getIssueData();
-        $this->assertEquals(
+        $this->assertSame(
             [
                 [
                     'type' => 'error',
@@ -140,7 +140,7 @@ echo $a;';
                     }',
                 'message' => "The declared return type 'string' for fooFoo is incorrect, got 'int'",
                 'line' => 2,
-                'error' => 'string'
+                'error' => 'string',
             ],
             'undefinedVar' => [
                 '<?php
@@ -149,7 +149,7 @@ echo $a;';
                     }',
                 'message' => 'Cannot find referenced variable $b',
                 'line' => 3,
-                'error' => '$b'
+                'error' => '$b',
             ],
             'unknownParamClass' => [
                 '<?php
@@ -158,7 +158,7 @@ echo $a;';
                     }',
                 'message' => 'Class or interface Badger\\Bodger does not exist',
                 'line' => 2,
-                'error' => 'Badger\\Bodger'
+                'error' => 'Badger\\Bodger',
             ],
             'missingReturnType' => [
                 '<?php
@@ -167,7 +167,7 @@ echo $a;';
                     }',
                 'message' => 'Method fooFoo does not have a return type, expecting string',
                 'line' => 2,
-                'error' => 'function fooFoo() {'
+                'error' => 'function fooFoo() {',
             ],
             'wrongMultilineReturnType' => [
                 '<?php
@@ -179,7 +179,7 @@ echo $a;';
                     }',
                 'message' => 'The declared return type \'int\' for fooFoo is incorrect, got \'string\'',
                 'line' => 3,
-                'error' => '@return int'
+                'error' => '@return int',
             ],
             'wrongSingleLineReturnType' => [
                 '<?php
@@ -189,8 +189,8 @@ echo $a;';
                     }',
                 'message' => 'The declared return type \'int\' for fooFoo is incorrect, got \'string\'',
                 'line' => 2,
-                'error' => '@return int'
-            ]
+                'error' => '@return int',
+            ],
         ];
     }
 }

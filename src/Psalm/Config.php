@@ -22,7 +22,7 @@ class Config
     public static $ERROR_LEVELS = [
         self::REPORT_INFO,
         self::REPORT_ERROR,
-        self::REPORT_SUPPRESS
+        self::REPORT_SUPPRESS,
     ];
 
     /**
@@ -38,7 +38,7 @@ class Config
         'MixedOperand',
         'MixedPropertyFetch',
         'MixedPropertyAssignment',
-        'MixedStringOffsetAssignment'
+        'MixedStringOffsetAssignment',
     ];
 
     /**
@@ -515,7 +515,7 @@ class Config
      */
     public function reportIssueInFile($issue_type, $file_path)
     {
-        if (!$this->totally_typed && in_array($issue_type, self::$MIXED_ISSUES)) {
+        if (!$this->totally_typed && in_array($issue_type, self::$MIXED_ISSUES, true)) {
             return false;
         }
 

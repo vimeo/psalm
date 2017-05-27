@@ -46,8 +46,8 @@ class IncludeTest extends TestCase
                 'includes' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
-                        }'
-                ]
+                        }',
+                ],
             ],
             'nestedRequire' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
@@ -70,8 +70,8 @@ class IncludeTest extends TestCase
                         require("file1.php");
             
                         class B extends A{
-                        }'
-                ]
+                        }',
+                ],
             ],
             'requireNamespace' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
@@ -88,8 +88,8 @@ class IncludeTest extends TestCase
                         namespace Foo;
             
                         class A{
-                        }'
-                ]
+                        }',
+                ],
             ],
             'requireFunction' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
@@ -101,8 +101,8 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         function fooFoo() : void {
             
-                        }'
-                ]
+                        }',
+                ],
             ],
             'requireNamespacedWithUse' => [
                 'file' => getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
@@ -121,9 +121,9 @@ class IncludeTest extends TestCase
                         namespace Foo;
             
                         class A{
-                        }'
-                ]
-            ]
+                        }',
+                ],
+            ],
         ];
     }
 }

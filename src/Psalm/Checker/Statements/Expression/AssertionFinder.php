@@ -600,7 +600,7 @@ class AssertionFinder
         StatementsSource $source
     ) {
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $source

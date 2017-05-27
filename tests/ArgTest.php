@@ -15,8 +15,8 @@ class ArgTest extends TestCase
             'callMapClassOptionalArg' => [
                 '<?php
                     $m = new ReflectionMethod("hello", "goodbye");
-                    $m->invoke("cool");'
-            ]
+                    $m->invoke("cool");',
+            ],
         ];
     }
 
@@ -39,8 +39,8 @@ class ArgTest extends TestCase
                         },
                         $foo[rand(0, 1)]
                     );',
-                'error_message' => 'PossiblyInvalidArgument'
-            ]
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
         ];
     }
 }

@@ -42,7 +42,7 @@ class SwitchTypeTest extends TestCase
                         case "B":
                             $a->barBar();
                             break;
-                    }'
+                    }',
             ],
             'getTypeArg' => [
                 '<?php
@@ -64,8 +64,8 @@ class SwitchTypeTest extends TestCase
                         case "int":
                             testInt($a);
                             break;
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -98,7 +98,7 @@ class SwitchTypeTest extends TestCase
                             $a->barBar();
                             break;
                     }',
-                'error_message' => 'UndefinedMethod'
+                'error_message' => 'UndefinedMethod',
             ],
             'getTypeArgWrongArgs' => [
                 '<?php
@@ -119,8 +119,8 @@ class SwitchTypeTest extends TestCase
                         case "int":
                             testString($a);
                     }',
-                'error_message' => 'InvalidScalarArgument'
-            ]
+                'error_message' => 'InvalidScalarArgument',
+            ],
         ];
     }
 }

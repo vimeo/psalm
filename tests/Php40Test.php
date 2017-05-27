@@ -26,7 +26,7 @@ class Php40Test extends TestCase
                         public function __construct() {
                             parent::__construct();
                         }
-                    }'
+                    }',
             ],
             'sameNameMethodWithNewStyleConstructor' => [
                 '<?php
@@ -35,8 +35,8 @@ class Php40Test extends TestCase
                         /** @return void */
                         public function a(int $i) { }
                     }
-                    new A("hello");'
-            ]
+                    new A("hello");',
+            ],
         ];
     }
 }

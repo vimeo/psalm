@@ -375,13 +375,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
 
-            for ($i = 0; $i < $assignment_depth; $i++) {
+            for ($i = 0; $i < $assignment_depth; ++$i) {
                 $vars_to_remove = [];
 
                 $has_changes = false;
 
                 foreach ($loop_context->vars_in_scope as $var_id => $type) {
-                    if (in_array($var_id, $asserted_vars)) {
+                    if (in_array($var_id, $asserted_vars, true)) {
                         // set the vars to whatever the while/foreach loop expects them to be
                         if ((string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]) {
                             $loop_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
@@ -786,7 +786,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             // if the file is already included, we can't check much more
-            if (in_array($path_to_file, get_included_files())) {
+            if (in_array($path_to_file, get_included_files(), true)) {
                 return null;
             }
 

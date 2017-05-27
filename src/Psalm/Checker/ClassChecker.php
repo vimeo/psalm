@@ -116,7 +116,7 @@ class ClassChecker extends ClassLikeChecker
             throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
         }
 
-        return in_array(strtolower($possible_parent), self::$storage[$fq_class_name]->parent_classes);
+        return in_array(strtolower($possible_parent), self::$storage[$fq_class_name]->parent_classes, true);
     }
 
     /**

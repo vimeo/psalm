@@ -81,8 +81,8 @@ class InterfaceTest extends TestCase
                     $dee = (new D())->fooFoo();',
                 'assertions' => [
                     ['string' => '$cee'],
-                    ['string' => '$dee']
-                ]
+                    ['string' => '$dee'],
+                ],
             ],
             'isExtendedInterface' => [
                 '<?php
@@ -122,7 +122,7 @@ class InterfaceTest extends TestCase
                     function qux(A $a) {
                     }
             
-                    qux(new C());'
+                    qux(new C());',
             ],
             'extendsWithMethod' => [
                 '<?php
@@ -142,7 +142,7 @@ class InterfaceTest extends TestCase
                     /** @return void */
                     function mux(B $b) {
                         $b->fooFoo();
-                    }'
+                    }',
             ],
             'correctInterfaceMethodSignature' => [
                 '<?php
@@ -154,7 +154,7 @@ class InterfaceTest extends TestCase
                         public function fooFoo(int $a) : void {
             
                         }
-                    }'
+                    }',
             ],
             'interfaceMethodImplementedInParent' => [
                 '<?php
@@ -168,7 +168,7 @@ class InterfaceTest extends TestCase
                         }
                     }
             
-                    class C extends B implements MyInterface { }'
+                    class C extends B implements MyInterface { }',
             ],
             'interfaceMethodSignatureInTrait' => [
                 '<?php
@@ -183,7 +183,7 @@ class InterfaceTest extends TestCase
             
                     class B implements A {
                         use T;
-                    }'
+                    }',
             ],
             'delayedInterface' => [
                 '<?php
@@ -194,7 +194,7 @@ class InterfaceTest extends TestCase
             
                     interface B { }
             
-                    class C extends A implements B { }'
+                    class C extends A implements B { }',
             ],
             'typeDoesNotContainType' => [
                 '<?php
@@ -206,7 +206,7 @@ class InterfaceTest extends TestCase
                         if ($a instanceof B) {
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'abstractInterfaceImplements' => [
                 '<?php
@@ -214,7 +214,7 @@ class InterfaceTest extends TestCase
                         public function fnc();
                     }
             
-                    abstract class A implements I {}'
+                    abstract class A implements I {}',
             ],
             'abstractInterfaceImplementsButCallMethod' => [
                 '<?php
@@ -226,7 +226,7 @@ class InterfaceTest extends TestCase
                         public function bar() : void {
                             $this->foo();
                         }
-                    }'
+                    }',
             ],
             'implementsPartialInterfaceMethods' => [
                 '<?php
@@ -247,7 +247,7 @@ class InterfaceTest extends TestCase
                       }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MissingReturnType']
+                'error_levels' => ['MissingReturnType'],
             ],
             'interfaceConstants' => [
                 '<?php
@@ -277,7 +277,7 @@ class InterfaceTest extends TestCase
             
                         /** @var string */
                         public $bar3 = self::E;
-                    }'
+                    }',
             ],
             'interfaceExtendsReturnType' => [
                 '<?php
@@ -286,8 +286,8 @@ class InterfaceTest extends TestCase
             
                     function foo(B $a) : A {
                         return $a;
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -306,7 +306,7 @@ class InterfaceTest extends TestCase
             
                         }
                     }',
-                'error_message' => 'NoInterfaceProperties'
+                'error_message' => 'NoInterfaceProperties',
             ],
             'unimplementedInterfaceMethod' => [
                 '<?php
@@ -315,7 +315,7 @@ class InterfaceTest extends TestCase
                     }
             
                     class B implements A { }',
-                'error_message' => 'UnimplementedInterfaceMethod'
+                'error_message' => 'UnimplementedInterfaceMethod',
             ],
             'mismatchingInterfaceMethodSignature' => [
                 '<?php
@@ -328,7 +328,7 @@ class InterfaceTest extends TestCase
             
                         }
                     }',
-                'error_message' => 'MethodSignatureMismatch'
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'mismatchingInterfaceMethodSignatureInTrait' => [
                 '<?php
@@ -344,7 +344,7 @@ class InterfaceTest extends TestCase
                     class B implements A {
                         use T;
                     }',
-                'error_message' => 'MethodSignatureMismatch'
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'mismatchingInterfaceMethodSignatureInImplementer' => [
                 '<?php
@@ -363,7 +363,7 @@ class InterfaceTest extends TestCase
                         public function fooFoo(int $a) : void {
                         }
                     }',
-                'error_message' => 'MethodSignatureMismatch'
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 '<?php
@@ -376,7 +376,7 @@ class InterfaceTest extends TestCase
                             $this->foo2();
                         }
                     }',
-                'error_message' => 'UndefinedMethod'
+                'error_message' => 'UndefinedMethod',
             ],
             'abstractInterfaceImplementsWithSubclass' => [
                 '<?php
@@ -387,7 +387,7 @@ class InterfaceTest extends TestCase
                     abstract class A implements I {}
             
                     class B extends A {}',
-                'error_message' => 'UnimplementedInterfaceMethod'
+                'error_message' => 'UnimplementedInterfaceMethod',
             ],
             'moreSpecificReturnType' => [
                 '<?php
@@ -397,8 +397,8 @@ class InterfaceTest extends TestCase
                     function foo(A $a) : B {
                         return $a;
                     }',
-                'error_message' => 'MoreSpecificReturnType'
-            ]
+                'error_message' => 'MoreSpecificReturnType',
+            ],
         ];
     }
 }

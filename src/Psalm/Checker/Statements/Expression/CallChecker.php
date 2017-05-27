@@ -450,7 +450,7 @@ class CallChecker
         $late_static = false;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $statements_checker
@@ -608,9 +608,9 @@ class CallChecker
                                     $fq_class_name,
                                     [
                                         $key_type,
-                                        $value_type
+                                        $value_type,
                                     ]
-                                )
+                                ),
                             ]);
                         }
                     } elseif ($generic_params) {
@@ -618,7 +618,7 @@ class CallChecker
                             new Type\Atomic\TGenericObject(
                                 $fq_class_name,
                                 $generic_params
-                            )
+                            ),
                         ]);
                     }
                 } elseif ($stmt->args) {
@@ -1098,7 +1098,7 @@ class CallChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
 
-            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 if ($stmt->class->parts[0] === 'parent') {
                     $fq_class_name = $statements_checker->getParentFQCLN();
 
@@ -1726,7 +1726,7 @@ class CallChecker
         }
 
         if (!$has_packed_var && count($args) < count($function_params)) {
-            for ($i = count($args); $i < count($function_params); $i++) {
+            for ($i = count($args); $i < count($function_params); ++$i) {
                 $param = $function_params[$i];
 
                 if (!$param->is_optional && !$param->is_variadic) {
@@ -1839,7 +1839,7 @@ class CallChecker
 
                 foreach ($closure_params as $closure_param) {
                     if (!isset($array_arg_types[$i])) {
-                        $i++;
+                        ++$i;
                         continue;
                     }
 
@@ -1849,7 +1849,7 @@ class CallChecker
                     $input_type = $array_arg_type->type_params[1];
 
                     if ($input_type->isMixed()) {
-                        $i++;
+                        ++$i;
                         continue;
                     }
 
@@ -1918,7 +1918,7 @@ class CallChecker
                         }
                     }
 
-                    $i++;
+                    ++$i;
                 }
             }
         }

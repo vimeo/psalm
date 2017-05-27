@@ -17,8 +17,8 @@ class ReferenceConstraintTest extends TestCase
                     /** @return void */
                     function changeInt(int &$a) {
                       $a = 5;
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -34,7 +34,7 @@ class ReferenceConstraintTest extends TestCase
                     function changeInt(int &$a) {
                       $a = "hello";
                     }',
-                'error_message' => 'ReferenceConstraintViolation'
+                'error_message' => 'ReferenceConstraintViolation',
             ],
             'classMethodParameterViolation' => [
                 '<?php
@@ -51,7 +51,7 @@ class ReferenceConstraintTest extends TestCase
                     $bar = 5;
                     $a = new A($bar); // $bar is constrained to an int
                     $bar = null; // ReferenceConstraintViolation issue emitted',
-                'error_message' => 'ReferenceConstraintViolation'
+                'error_message' => 'ReferenceConstraintViolation',
             ],
             'classMethodParameterViolationInPostAssignment' => [
                 '<?php
@@ -67,7 +67,7 @@ class ReferenceConstraintTest extends TestCase
                     $bar = 5;
                     $a = new A($bar);
                     $bar = null;',
-                'error_message' => 'ReferenceConstraintViolation'
+                'error_message' => 'ReferenceConstraintViolation',
             ],
             'contradictoryReferenceConstraints' => [
                 '<?php
@@ -98,8 +98,8 @@ class ReferenceConstraintTest extends TestCase
                     }
             
                     $v = 8;',
-                'error_message' => 'ConflictingReferenceConstraint'
-            ]
+                'error_message' => 'ConflictingReferenceConstraint',
+            ],
         ];
     }
 }

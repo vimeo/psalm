@@ -136,7 +136,7 @@ class CodeLocation
 
             $comment_line_offset = $this->docblock_line_number - $this->docblock_start_line_number;
 
-            for ($i = 0; $i < $comment_line_offset; $i++) {
+            for ($i = 0; $i < $comment_line_offset; ++$i) {
                 $preview_offset += strlen($preview_lines[$i]) + 1;
             }
 

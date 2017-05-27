@@ -84,8 +84,8 @@ class UnusedCodeTest extends TestCase
                         $arr = ["hello"];
 
                         unset($arr[$a]);
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -103,7 +103,7 @@ class UnusedCodeTest extends TestCase
                         $b = [];
                         return $a;
                     }',
-                'error_message' => 'UnusedVariable'
+                'error_message' => 'UnusedVariable',
             ],
             'ifInFunction' => [
                 '<?php
@@ -117,8 +117,8 @@ class UnusedCodeTest extends TestCase
                         }
                         return $a;
                     }',
-                'error_message' => 'UnusedVariable'
-            ]
+                'error_message' => 'UnusedVariable',
+            ],
         ];
     }
 
@@ -131,7 +131,7 @@ class UnusedCodeTest extends TestCase
             'unusedClass' => [
                 '<?php
                     class A { }',
-                'error_message' => 'UnusedClass'
+                'error_message' => 'UnusedClass',
             ],
             'publicUnusedMethod' => [
                 '<?php
@@ -141,7 +141,7 @@ class UnusedCodeTest extends TestCase
                     }
 
                     new A();',
-                'error_message' => 'PossiblyUnusedMethod'
+                'error_message' => 'PossiblyUnusedMethod',
             ],
             'privateUnusedMethod' => [
                 '<?php
@@ -151,8 +151,8 @@ class UnusedCodeTest extends TestCase
                     }
 
                     new A();',
-                'error_message' => 'UnusedMethod'
-            ]
+                'error_message' => 'UnusedMethod',
+            ],
         ];
     }
 }

@@ -29,33 +29,33 @@ namespace Psalm;
 
 return [
     'arrayobject' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'limititerator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'solrdocumentfield' => [
         'name' => 'string',
         'boost' => 'float',
-        'values' => 'array'
+        'values' => 'array',
     ],
     'domprocessinginstruction' => [
         'target' => 'string',
-        'data' => 'string'
+        'data' => 'string',
     ],
     'recursivearrayiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'eventbuffer' => [
         'length' => 'int',
-        'contiguous-space' => 'int'
+        'contiguous-space' => 'int',
     ],
     'mongocursor' => [
         'slaveokay' => 'boolean',
-        'timeout' => 'integer'
+        'timeout' => 'integer',
     ],
     'domxpath' => [
-        'document' => 'DOMDocument'
+        'document' => 'DOMDocument',
     ],
     'domentity' => [
         'publicId' => 'string',
@@ -63,31 +63,31 @@ return [
         'notationName' => 'string',
         'actualEncoding' => 'string',
         'encoding' => 'string',
-        'version' => 'string'
+        'version' => 'string',
     ],
     'splminheap' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'mongodb-driver-exception-writeexception' => [
-        'writeresult' => 'MongoDBDriverWriteResult'
+        'writeresult' => 'MongoDBDriverWriteResult',
     ],
     'ziparchive' => [
         'status' => 'int',
         'statussys' => 'int',
         'numfiles' => 'int',
         'filename' => 'string',
-        'comment' => 'string'
+        'comment' => 'string',
     ],
     'solrexception' => [
         'sourceline' => 'integer',
         'sourcefile' => 'string',
-        'zif-name' => 'string'
+        'zif-name' => 'string',
     ],
     'arrayiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'mongoid' => [
-        'id' => 'string'
+        'id' => 'string',
     ],
     'dateinterval' => [
         'y' => 'integer',
@@ -97,86 +97,86 @@ return [
         'i' => 'integer',
         's' => 'integer',
         'invert' => 'integer',
-        'days' => 'mixed'
+        'days' => 'mixed',
     ],
     'tokyotyrantexception' => [
-        'code' => 'int'
+        'code' => 'int',
     ],
     'tidy' => [
-        'errorbuffer' => 'string'
+        'errorbuffer' => 'string',
     ],
     'filteriterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'parentiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'recursiveregexiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'error' => [
         'message' => 'string',
         'code' => 'int',
         'file' => 'string',
-        'line' => 'int'
+        'line' => 'int',
     ],
     'domexception' => [
-        'code' => 'int'
+        'code' => 'int',
     ],
     'domentityreference' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'spldoublylinkedlist' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'domdocumentfragment' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'collator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'streamwrapper' => [
-        'context' => 'resource'
+        'context' => 'resource',
     ],
     'pdostatement' => [
-        'querystring' => 'string'
+        'querystring' => 'string',
     ],
     'domnotation' => [
         'publicId' => 'string',
-        'systemId' => 'string'
+        'systemId' => 'string',
     ],
     'snmpexception' => [
-        'code' => 'string'
+        'code' => 'string',
     ],
     'directoryiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'splqueue' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'locale' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'directory' => [
         'path' => 'string',
-        'handle' => 'resource'
+        'handle' => 'resource',
     ],
     'splheap' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'domnodelist' => [
-        'length' => 'int'
+        'length' => 'int',
     ],
     'mongodb' => [
         'w' => 'integer',
-        'wtimeout' => 'integer'
+        'wtimeout' => 'integer',
     ],
     'splpriorityqueue' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'mongoclient' => [
         'connected' => 'boolean',
-        'status' => 'string'
+        'status' => 'string',
     ],
     'domdocument' => [
         'actualEncoding' => 'string',
@@ -197,7 +197,7 @@ return [
         'version' => 'string',
         'xmlEncoding' => 'string',
         'xmlStandalone' => 'bool',
-        'xmlVersion' => 'string'
+        'xmlVersion' => 'string',
     ],
     'libxmlerror' => [
         'level' => 'int',
@@ -205,13 +205,13 @@ return [
         'column' => 'int',
         'message' => 'string',
         'file' => 'string',
-        'line' => 'int'
+        'line' => 'int',
     ],
     'domimplementation' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'normalizer' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'mysqli-driver' => [
         'client-info' => 'string',
@@ -219,13 +219,13 @@ return [
         'driver-version' => 'string',
         'embedded' => 'string',
         'reconnect' => 'bool',
-        'report-mode' => 'int'
+        'report-mode' => 'int',
     ],
     'norewinditerator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'event' => [
-        'pending' => 'bool'
+        'pending' => 'bool',
     ],
     'domdocumenttype' => [
         'publicId' => 'string',
@@ -233,38 +233,38 @@ return [
         'name' => 'string',
         'entities' => 'DOMNamedNodeMap',
         'notations' => 'DOMNamedNodeMap',
-        'internalSubset' => 'string'
+        'internalSubset' => 'string',
     ],
     'errorexception' => [
-        'severity' => 'int'
+        'severity' => 'int',
     ],
     'recursivedirectoryiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'domcharacterdata' => [
         'data' => 'string',
-        'length' => 'int'
+        'length' => 'int',
     ],
     'mongocollection' => [
         'db' => 'MongoDB',
         'w' => 'integer',
-        'wtimeout' => 'integer'
+        'wtimeout' => 'integer',
     ],
     'mongoint64' => [
-        'value' => 'string'
+        'value' => 'string',
     ],
     'eventlistener' => [
-        'fd' => 'int'
+        'fd' => 'int',
     ],
     'splmaxheap' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'regexiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'domelement' => [
         'schemaTypeInfo' => 'bool',
-        'tagName' => 'string'
+        'tagName' => 'string',
     ],
     'tidynode' => [
         'value' => 'string',
@@ -275,10 +275,10 @@ return [
         'proprietary' => 'bool',
         'id' => 'int',
         'attribute' => 'array',
-        'child' => 'array'
+        'child' => 'array',
     ],
     'recursivecachingiterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'solrresponse' => [
         'http-status' => 'integer',
@@ -290,27 +290,27 @@ return [
         'http-raw-request' => 'string',
         'http-raw-response-headers' => 'string',
         'http-raw-response' => 'string',
-        'http-digested-response' => 'string'
+        'http-digested-response' => 'string',
     ],
     'domnamednodemap' => [
-        'length' => 'int'
+        'length' => 'int',
     ],
     'mysqli-sql-exception' => [
-        'sqlstate' => 'string'
+        'sqlstate' => 'string',
     ],
     'splstack' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'numberformatter' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'eventsslcontext' => [
         'local-cert' => 'string',
-        'local-pk' => 'string'
+        'local-pk' => 'string',
     ],
     'pdoexception' => [
         'errorinfo' => 'array',
-        'code' => 'string'
+        'code' => 'string',
     ],
     'domnode' => [
         'nodeName' => 'string',
@@ -328,17 +328,17 @@ return [
         'prefix' => 'string',
         'localName' => 'string',
         'baseURI' => 'string',
-        'textContent' => 'string'
+        'textContent' => 'string',
     ],
     'domattr' => [
         'name' => 'string',
         'ownerElement' => 'DOMElement',
         'schemaTypeInfo' => 'bool',
         'specified' => 'bool',
-        'value' => 'string'
+        'value' => 'string',
     ],
     'simplexmliterator' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'snmp' => [
         'max-oids' => 'int',
@@ -348,10 +348,10 @@ return [
         'oid-output-format' => 'int',
         'oid-increasing-check' => 'bool',
         'exceptions-enabled' => 'int',
-        'info' => 'array'
+        'info' => 'array',
     ],
     'mongoint32' => [
-        'value' => 'string'
+        'value' => 'string',
     ],
     'xmlreader' => [
         'attributecount' => 'int',
@@ -367,88 +367,88 @@ return [
         'nodetype' => 'int',
         'prefix' => 'string',
         'value' => 'string',
-        'xmllang' => 'string'
+        'xmllang' => 'string',
     ],
     'eventbufferevent' => [
         'fd' => 'integer',
         'priority' => 'integer',
         'input' => 'EventBuffer',
-        'output' => 'EventBuffer'
+        'output' => 'EventBuffer',
     ],
     'domtext' => [
-        'wholeText' => 'string'
+        'wholeText' => 'string',
     ],
     'exception' => [
         'message' => 'string',
         'code' => 'int',
         'file' => 'string',
-        'line' => 'int'
+        'line' => 'int',
     ],
     'reflectionclass' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'reflectionmethod' => [
         'class' => 'string',
-        'name' => 'string'
+        'name' => 'string',
     ],
     'reflectionparameter' => [
-        'name' => 'string'
+        'name' => 'string',
     ],
     'phpparser\\node\\expr' => [
-        'inferredType' => 'Psalm\\Type\\Union|null'
+        'inferredType' => 'Psalm\\Type\\Union|null',
     ],
     'phpparser\\node\\name' => [
-        'inferredType' => 'Psalm\\Type\\Union|null'
+        'inferredType' => 'Psalm\\Type\\Union|null',
     ],
     'phpparser\\node\\stmt\\return_' => [
-        'inferredType' => 'Psalm\\Type\\Union|null'
+        'inferredType' => 'Psalm\\Type\\Union|null',
     ],
     'phpparser\\node\\expr\\funccall' => [
-        'args' => 'array<int, PhpParser\Node\Arg>'
+        'args' => 'array<int, PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\new_' => [
-        'args' => 'array<int, PhpParser\Node\Arg>'
+        'args' => 'array<int, PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\methodcall' => [
-        'args' => 'array<int, PhpParser\Node\Arg>'
+        'args' => 'array<int, PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\staticcall' => [
-        'args' => 'array<int, PhpParser\Node\Arg>'
+        'args' => 'array<int, PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\stmt\\namespace_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\if_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\elseif_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\else_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\for_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\foreach_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\trycatch' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\catch_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\finally_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\case_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\while_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\do_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>'
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
 ];

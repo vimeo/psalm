@@ -14,15 +14,15 @@ class ForeachTest extends TestCase
             'continueOutsideLoop' => [
                 '<?php
                     continue;',
-                'error_message' => 'ContinueOutsideLoop'
+                'error_message' => 'ContinueOutsideLoop',
             ],
             'invalidIterator' => [
                 '<?php
                     foreach (5 as $a) {
             
                     }',
-                'error_message' => 'InvalidIterator'
-            ]
+                'error_message' => 'InvalidIterator',
+            ],
         ];
     }
 }

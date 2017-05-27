@@ -30,7 +30,7 @@ class ReturnTypeTest extends TestCase
 
                             return $baz;
                         }
-                    }'
+                    }',
             ],
             'returnTypeNotEmptyCheck' => [
                 '<?php
@@ -45,7 +45,7 @@ class ReturnTypeTest extends TestCase
                             }
                             return $str;
                         }
-                    }'
+                    }',
             ],
             'returnTypeNotEmptyCheckInElseIf' => [
                 '<?php
@@ -63,7 +63,7 @@ class ReturnTypeTest extends TestCase
                             }
                             return $str;
                         }
-                    }'
+                    }',
             ],
             'returnTypeNotEmptyCheckInElse' => [
                 '<?php
@@ -81,7 +81,7 @@ class ReturnTypeTest extends TestCase
                             }
                             return $str;
                         }
-                    }'
+                    }',
             ],
             'returnTypeAfterIf' => [
                 '<?php
@@ -97,7 +97,7 @@ class ReturnTypeTest extends TestCase
                             }
                             return $str;
                         }
-                    }'
+                    }',
             ],
             'returnTypeAfterTwoIfsWithThrow' => [
                 '<?php
@@ -118,7 +118,7 @@ class ReturnTypeTest extends TestCase
                             }
                             return $a1;
                         }
-                    }'
+                    }',
             ],
             'returnTypeAfterIfElseIfWithThrow' => [
                 '<?php
@@ -139,7 +139,7 @@ class ReturnTypeTest extends TestCase
                             }
                             return $a1;
                         }
-                    }'
+                    }',
             ],
             'tryCatchReturnType' => [
                 '<?php
@@ -154,7 +154,7 @@ class ReturnTypeTest extends TestCase
                                 throw $e;
                             }
                         }
-                    }'
+                    }',
             ],
             'switchReturnTypeWithFallthrough' => [
                 '<?php
@@ -167,7 +167,7 @@ class ReturnTypeTest extends TestCase
                                     return true;
                             }
                         }
-                    }'
+                    }',
             ],
             'switchReturnTypeWithFallthroughAndStatement' => [
                 '<?php
@@ -181,7 +181,7 @@ class ReturnTypeTest extends TestCase
                                     return true;
                             }
                         }
-                    }'
+                    }',
             ],
             'switchReturnTypeWithDefaultException' => [
                 '<?php
@@ -200,7 +200,7 @@ class ReturnTypeTest extends TestCase
                                     throw new \Exception("badness");
                             }
                         }
-                    }'
+                    }',
             ],
             'extendsStaticCallReturnType' => [
                 '<?php
@@ -216,8 +216,8 @@ class ReturnTypeTest extends TestCase
 
                     $b = B::load();',
                 'assertions' => [
-                    ['B' => '$b']
-                ]
+                    ['B' => '$b'],
+                ],
             ],
             'extendsStaticCallArrayReturnType' => [
                 '<?php
@@ -233,8 +233,8 @@ class ReturnTypeTest extends TestCase
 
                     $bees = B::loadMultiple();',
                 'assertions' => [
-                    ['array<int, B>' => '$bees']
-                ]
+                    ['array<int, B>' => '$bees'],
+                ],
             ],
             'issetReturnType' => [
                 '<?php
@@ -244,7 +244,7 @@ class ReturnTypeTest extends TestCase
                      */
                     function a($foo = null) {
                         return isset($foo);
-                    }'
+                    }',
             ],
             'thisReturnType' => [
                 '<?php
@@ -253,7 +253,7 @@ class ReturnTypeTest extends TestCase
                         public function getThis() {
                             return $this;
                         }
-                    }'
+                    }',
             ],
             'overrideReturnType' => [
                 '<?php
@@ -273,8 +273,8 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new B())->blah();',
                 'assertions' => [
-                    ['string' => '$blah']
-                ]
+                    ['string' => '$blah'],
+                ],
             ],
             'interfaceReturnType' => [
                 '<?php
@@ -291,8 +291,8 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new B())->blah();',
                 'assertions' => [
-                    ['string|null' => '$blah']
-                ]
+                    ['string|null' => '$blah'],
+                ],
             ],
             'overrideReturnTypeInGrandparent' => [
                 '<?php
@@ -312,8 +312,8 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new C())->blah();',
                 'assertions' => [
-                    ['string|null' => '$blah']
-                ]
+                    ['string|null' => '$blah'],
+                ],
             ],
             'backwardsReturnType' => [
                 '<?php
@@ -323,7 +323,7 @@ class ReturnTypeTest extends TestCase
                     /** @return B|A */
                     function foo() {
                       return rand(0, 1) ? new A : new B;
-                    }'
+                    }',
             ],
             'issetOnPropertyReturnType' => [
                 '<?php
@@ -338,7 +338,7 @@ class ReturnTypeTest extends TestCase
                             if (isset($this->bar)) return $this->bar;
                             return null;
                         }
-                    }'
+                    }',
             ],
             'resourceReturnType' => [
                 '<?php
@@ -358,7 +358,7 @@ class ReturnTypeTest extends TestCase
                     /** @param resource $res */
                     function doSomething($res) : void {
                     }',
-            ]
+            ],
         ];
     }
 
@@ -381,7 +381,7 @@ class ReturnTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'switchReturnTypeWithFallthroughAndConditionalBreak' => [
                 '<?php
@@ -398,7 +398,7 @@ class ReturnTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'switchReturnTypeWithNoDefault' => [
                 '<?php
@@ -412,21 +412,21 @@ class ReturnTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'wrongReturnType1' => [
                 '<?php
                     function fooFoo() : string {
                         return 5;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'wrongReturnType2' => [
                 '<?php
                     function fooFoo() : string {
                         return rand(0, 5) ? "hello" : null;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'wrongReturnTypeInNamespace1' => [
                 '<?php
@@ -435,7 +435,7 @@ class ReturnTypeTest extends TestCase
                     function fooFoo() : string {
                         return 5;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'wrongReturnTypeInNamespace2' => [
                 '<?php
@@ -444,21 +444,21 @@ class ReturnTypeTest extends TestCase
                     function fooFoo() : string {
                         return rand(0, 5) ? "hello" : null;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'missingReturnType' => [
                 '<?php
                     function fooFoo() {
                         return rand(0, 5) ? "hello" : null;
                     }',
-                'error_message' => 'MissingReturnType'
+                'error_message' => 'MissingReturnType',
             ],
             'mixedInferredReturnType' => [
                 '<?php
                     function fooFoo() : string {
                         return array_pop([]);
                     }',
-                'error_message' => 'MixedInferredReturnType'
+                'error_message' => 'MixedInferredReturnType',
             ],
             'invalidReturnTypeClass' => [
                 '<?php
@@ -466,7 +466,7 @@ class ReturnTypeTest extends TestCase
                         return array_pop([]);
                     }',
                 'error_message' => 'UndefinedClass',
-                'error_levels' => ['MixedInferredReturnType']
+                'error_levels' => ['MixedInferredReturnType'],
             ],
             'invalidClassOnCall' => [
                 '<?php
@@ -479,7 +479,7 @@ class ReturnTypeTest extends TestCase
                     }
 
                     fooFoo()->bar();',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
             'resourceReturnType' => [
                 '<?php
@@ -492,14 +492,14 @@ class ReturnTypeTest extends TestCase
 
                         return $res;
                     }',
-                'error_message' => 'ReservedWord'
+                'error_message' => 'ReservedWord',
             ],
             'resourceParamType' => [
                 '<?php
                     function doSomething(resource $res) : void {
                     }',
-                'error_message' => 'ReservedWord'
-            ]
+                'error_message' => 'ReservedWord',
+            ],
         ];
     }
 }

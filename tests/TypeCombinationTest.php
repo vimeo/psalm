@@ -19,7 +19,7 @@ class TypeCombinationTest extends TestCase
             $types[$k] = self::getAtomic($type);
         }
 
-        $this->assertEquals(
+        $this->assertSame(
             $expected,
             (string) Type::combineTypes($types)
         );
@@ -37,8 +37,8 @@ class TypeCombinationTest extends TestCase
                     class B {}
                     $var = [];
                     $var[] = new A();
-                    $var[] = new B();'
-            ]
+                    $var[] = new B();',
+            ],
         ];
     }
 
@@ -52,106 +52,106 @@ class TypeCombinationTest extends TestCase
                 'int|string',
                 [
                     'int',
-                    'string'
-                ]
+                    'string',
+                ],
             ],
             'arrayOfIntOrString' => [
                 'array<mixed, int|string>',
                 [
                     'array<int>',
-                    'array<string>'
-                ]
+                    'array<string>',
+                ],
             ],
             'arrayOfIntOrAlsoString' => [
                 'array<mixed, int>|string',
                 [
                     'array<int>',
-                    'string'
-                ]
+                    'string',
+                ],
             ],
             'emptyArrays' => [
                 'array<empty, empty>',
                 [
                     'array<empty,empty>',
-                    'array<empty,empty>'
-                ]
+                    'array<empty,empty>',
+                ],
             ],
             'arrayStringOrEmptyArray' => [
                 'array<mixed, string>',
                 [
                     'array<empty>',
-                    'array<string>'
-                ]
+                    'array<string>',
+                ],
             ],
             'arrayMixedOrString' => [
                 'array<mixed, mixed>',
                 [
                     'array<mixed>',
-                    'array<string>'
-                ]
+                    'array<string>',
+                ],
             ],
             'arrayMixedOrStringKeys' => [
                 'array<mixed, string>',
                 [
                     'array<int|string,string>',
-                    'array<mixed,string>'
-                ]
+                    'array<mixed,string>',
+                ],
             ],
             'arrayMixedOrEmpty' => [
                 'array<mixed, mixed>',
                 [
                     'array<empty>',
-                    'array<mixed>'
-                ]
+                    'array<mixed>',
+                ],
             ],
             'arrayBigCombination' => [
                 'array<mixed, int|float|string>',
                 [
                     'array<int|float>',
-                    'array<string>'
-                ]
+                    'array<string>',
+                ],
             ],
             'falseDestruction' => [
                 'bool',
                 [
                     'false',
-                    'bool'
-                ]
+                    'bool',
+                ],
             ],
             'onlyFalse' => [
                 'bool',
                 [
-                    'false'
-                ]
+                    'false',
+                ],
             ],
             'falseFalseDestruction' => [
                 'bool',
                 [
                     'false',
-                    'false'
-                ]
+                    'false',
+                ],
             ],
             'aAndAOfB' => [
                 'A<mixed>',
                 [
                     'A',
-                    'A<B>'
-                ]
+                    'A<B>',
+                ],
             ],
             'combineObjectType1' => [
                 'array{a:int, b:string}',
                 [
                     'array{a:int}',
-                    'array{b:string}'
-                ]
+                    'array{b:string}',
+                ],
             ],
             'combineObjectType2' => [
                 'array{a:int|string, b:string}',
                 [
                     'array{a:int}',
-                    'array{a:string,b:string}'
-                ]
-            ]
+                    'array{a:string,b:string}',
+                ],
+            ],
         ];
     }
 

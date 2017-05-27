@@ -150,9 +150,9 @@ class EffectsAnalyser
                         'Generator',
                         [
                             $key_type ?: Type::getMixed(),
-                            $value_type ?: Type::getMixed()
+                            $value_type ?: Type::getMixed(),
                         ]
-                    )
+                    ),
                 ];
             }
 
@@ -192,22 +192,22 @@ class EffectsAnalyser
                     'Generator',
                     [
                         $key_type ?: Type::getInt(),
-                        $stmt->inferredType
+                        $stmt->inferredType,
                     ]
                 );
 
                 return [$generator_type];
-            } else {
-                return [new Atomic\TMixed()];
             }
+
+            return [new Atomic\TMixed()];
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             $key_type = null;
 
             if (isset($stmt->inferredType)) {
                 return array_values($stmt->inferredType->types);
-            } else {
-                return [new Atomic\TMixed()];
             }
+
+            return [new Atomic\TMixed()];
         }
 
         return [];

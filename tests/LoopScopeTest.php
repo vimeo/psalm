@@ -27,7 +27,7 @@ class LoopScopeTest extends TestCase
                         }
             
                         $moo = $foo;
-                    }'
+                    }',
             ],
             'switchVariableWithContinueAndIfs' => [
                 '<?php
@@ -50,7 +50,7 @@ class LoopScopeTest extends TestCase
                         }
             
                         $moo = $foo;
-                    }'
+                    }',
             ],
             'switchVariableWithFallthrough' => [
                 '<?php
@@ -67,7 +67,7 @@ class LoopScopeTest extends TestCase
                         }
             
                         $moo = $foo;
-                    }'
+                    }',
             ],
             'switchVariableWithFallthroughStatement' => [
                 '<?php
@@ -86,7 +86,7 @@ class LoopScopeTest extends TestCase
                         }
             
                         $moo = $foo;
-                    }'
+                    }',
             ],
             'whileVar' => [
                 '<?php
@@ -96,8 +96,8 @@ class LoopScopeTest extends TestCase
                         $worked = true;
                     }',
                 'assertions' => [
-                    ['bool' => '$worked']
-                ]
+                    ['bool' => '$worked'],
+                ],
             ],
             'doWhileVar' => [
                 '<?php
@@ -108,8 +108,8 @@ class LoopScopeTest extends TestCase
                     }
                     while (rand(0,100) === 10);',
                 'assertions' => [
-                    ['bool' => '$worked']
-                ]
+                    ['bool' => '$worked'],
+                ],
             ],
             'doWhileVarAndBreak' => [
                 '<?php
@@ -123,7 +123,7 @@ class LoopScopeTest extends TestCase
             
                         foo($a);
                     }
-                    while (rand(0,100) === 10);'
+                    while (rand(0,100) === 10);',
             ],
             'objectValue' => [
                 '<?php
@@ -147,8 +147,8 @@ class LoopScopeTest extends TestCase
                         $a = $a->child;
                     }',
                 'assertions' => [
-                    ['B' => '$a']
-                ]
+                    ['B' => '$a'],
+                ],
             ],
             'secondLoopWithNotNullCheck' => [
                 '<?php
@@ -160,7 +160,7 @@ class LoopScopeTest extends TestCase
                     foreach ([1, 2, 3] as $i) {
                         if ($a !== null) takesInt($a);
                         $a = $i;
-                    }'
+                    }',
             ],
             'secondLoopWithIntCheck' => [
                 '<?php
@@ -172,7 +172,7 @@ class LoopScopeTest extends TestCase
                     foreach ([1, 2, 3] as $i) {
                         if (is_int($a)) takesInt($a);
                         $a = $i;
-                    }'
+                    }',
             ],
             'secondLoopWithIntCheckAndConditionalSet' => [
                 '<?php
@@ -187,7 +187,7 @@ class LoopScopeTest extends TestCase
                         if (rand(0, 1)) {
                             $a = $i;
                         }
-                    }'
+                    }',
             ],
             'secondLoopWithIntCheckAndAssignmentsInIfAndElse' => [
                 '<?php
@@ -202,7 +202,7 @@ class LoopScopeTest extends TestCase
                         } else {
                             $a = $i;
                         }
-                    }'
+                    }',
             ],
             'secondLoopWithIntCheckAndLoopSet' => [
                 '<?php
@@ -217,7 +217,7 @@ class LoopScopeTest extends TestCase
                         while (rand(0, 1)) {
                             $a = $i;
                         }
-                    }'
+                    }',
             ],
             'secondLoopWithReturnInElseif' => [
                 '<?php
@@ -239,7 +239,7 @@ class LoopScopeTest extends TestCase
                         }
             
                         $b = $a;
-                    }'
+                    }',
             ],
             'thirdLoopWithIntCheckAndLoopSet' => [
                 '<?php
@@ -260,7 +260,7 @@ class LoopScopeTest extends TestCase
                         }
             
                         $a = $i;
-                    }'
+                    }',
             ],
             'implicitFourthLoop' => [
                 '<?php
@@ -274,7 +274,7 @@ class LoopScopeTest extends TestCase
                         $z = 5;
                       }
                       return $x;
-                    }'
+                    }',
             ],
             'unsetInLoop' => [
                 '<?php
@@ -283,7 +283,7 @@ class LoopScopeTest extends TestCase
                     foreach ([1, 2, 3] as $i) {
                         $a = $i;
                         unset($i);
-                    }'
+                    }',
             ],
             'assignInsideForeach' => [
                 '<?php
@@ -295,8 +295,8 @@ class LoopScopeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    ['bool' => '$b']
-                ]
+                    ['bool' => '$b'],
+                ],
             ],
             'assignInsideForeachWithBreak' => [
                 '<?php
@@ -309,8 +309,8 @@ class LoopScopeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    ['bool' => '$b']
-                ]
+                    ['bool' => '$b'],
+                ],
             ],
             'nullCheckInsideForeachWithContinue' => [
                 '<?php
@@ -333,8 +333,8 @@ class LoopScopeTest extends TestCase
                         }
             
                         $a->barBar();
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -352,7 +352,7 @@ class LoopScopeTest extends TestCase
             
                     echo $array;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable ' .
-                    '$array, first seen on line 3'
+                    '$array, first seen on line 3',
             ],
             'possiblyUndefinedArrayInWhileAndForeach' => [
                 '<?php
@@ -364,7 +364,7 @@ class LoopScopeTest extends TestCase
             
                     echo $array;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable ' .
-                    '$array, first seen on line 4'
+                    '$array, first seen on line 4',
             ],
             'possiblyUndefinedVariableInForeach' => [
                 '<?php
@@ -374,7 +374,7 @@ class LoopScopeTest extends TestCase
             
                     echo $car;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable ' .
-                    '$car, first seen on line 3'
+                    '$car, first seen on line 3',
             ],
             'possibleUndefinedVariableInForeachAndIf' => [
                 '<?php
@@ -387,7 +387,7 @@ class LoopScopeTest extends TestCase
             
                     echo $a;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, ' .
-                    'first seen on line 4'
+                    'first seen on line 4',
             ],
             'implicitFourthLoopWithBadReturnType' => [
                 '<?php
@@ -402,7 +402,7 @@ class LoopScopeTest extends TestCase
                       }
                       return $x;
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'possiblyNullCheckInsideForeachWithNoLeaveStatement' => [
                 '<?php
@@ -426,8 +426,8 @@ class LoopScopeTest extends TestCase
             
                         $a->barBar();
                     }',
-                'error_message' => 'PossiblyNullReference'
-            ]
+                'error_message' => 'PossiblyNullReference',
+            ],
         ];
     }
 }

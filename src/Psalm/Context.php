@@ -185,7 +185,7 @@ class Context
                 $old_type = $start_context->vars_in_scope[$var];
 
                 // this is only true if there was some sort of type negation
-                if (in_array($var, $vars_to_update)) {
+                if (in_array($var, $vars_to_update, true)) {
                     // if we're leaving, we're effectively deleting the possibility of the if types
                     $new_type = !$has_leaving_statements && $end_context->hasVariable($var)
                         ? $end_context->vars_in_scope[$var]

@@ -200,7 +200,7 @@ class CacheProvider
 
                 if (filemtime($full_path) < $time_before && is_writable($full_path)) {
                     unlink($full_path);
-                    $removed_count++;
+                    ++$removed_count;
                 }
             }
         }

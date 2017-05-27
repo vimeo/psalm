@@ -17,16 +17,16 @@ class ListTest extends TestCase
                     list($a, $b) = ["a", "b"];',
                 'assertions' => [
                     ['string' => '$a'],
-                    ['string' => '$b']
-                ]
+                    ['string' => '$b'],
+                ],
             ],
             'simpleVarsWithSeparateTypes' => [
                 '<?php
                     list($a, $b) = ["a", 2];',
                 'assertions' => [
                     ['string' => '$a'],
-                    ['int' => '$b']
-                ]
+                    ['int' => '$b'],
+                ],
             ],
             'simpleVarsWithSeparateTypesInVar' => [
                 '<?php
@@ -34,8 +34,8 @@ class ListTest extends TestCase
                     list($a, $b) = $bar;',
                 'assertions' => [
                     ['int|string' => '$a'],
-                    ['int|string' => '$b']
-                ]
+                    ['int|string' => '$b'],
+                ],
             ],
             'thisVar' => [
                 '<?php
@@ -52,8 +52,8 @@ class ListTest extends TestCase
             
                             return $this->a;
                         }
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -79,8 +79,8 @@ class ListTest extends TestCase
                             return $this->a;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignment - somefile.php:11'
-            ]
+                'error_message' => 'InvalidPropertyAssignment - somefile.php:11',
+            ],
         ];
     }
 }

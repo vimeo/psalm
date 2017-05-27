@@ -61,14 +61,10 @@ $rules = [
     'no_spaces_around_offset' => true,
     'no_trailing_comma_in_list_call' => true,
     'no_trailing_comma_in_singleline_array' => true,
-    /* // to discuss
     'no_unneeded_control_parentheses' => true,
-    */
     'no_unreachable_default_argument_value' => true,
     'no_unused_imports' => true,
-    /* // to discuss
     'no_useless_else' => true,
-    */
     'no_useless_return' => true,
     'no_whitespace_before_comma_in_array' => true,
     'no_whitespace_in_blank_line' => true,
@@ -81,9 +77,7 @@ $rules = [
     'php_unit_construct' => true,
     'php_unit_dedicate_assert' => true,
     'php_unit_fqcn_annotation' => true,
-    /* // to discuss
     'php_unit_strict' => true,
-    */
     /* // to discuss
     'php_unit_test_class_requires_covers' => true,
     */
@@ -127,9 +121,7 @@ $rules = [
     'phpdoc_types' => true,
     'phpdoc_var_without_name' => true,
     'pow_to_exponentiation' => true,
-    /* // to discuss
     'pre_increment' => true,
-    */
     'protected_to_private' => true,
     'psr0' => false,
     'psr4' => true,
@@ -151,23 +143,15 @@ $rules = [
     'single_quote' => true,
     'space_after_semicolon' => true,
     'standardize_not_equals' => true,
-    /* // to discuss
-    'strict_comparison' => true,
-    */
-    /* // to discuss
+    'strict_comparison' => false,
     'strict_param' => true,
-    */
     'ternary_operator_spaces' => true,
     // to be set to true if vimeo/psalm ever goes php:^7.0
     'ternary_to_null_coalescing' => false,
-    /* // to discuss
     'trailing_comma_in_multiline_array' => true,
-    */
     'trim_array_spaces' => true,
     'unary_operator_spaces' => true,
-    /* // to discuss
     'whitespace_after_comma_in_array' => true,
-    */
 ];
 
 return PhpCsFixer\Config::create()->setRiskyAllowed(true)->setRules($rules)->setFinder($finder);

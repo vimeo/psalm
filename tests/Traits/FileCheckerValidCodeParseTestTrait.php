@@ -49,7 +49,7 @@ trait FileCheckerValidCodeParseTestTrait
 
         foreach ($assertions as $assertion) {
             foreach ($assertion as $expected => $var) {
-                $this->assertEquals($expected, (string)$context->vars_in_scope[$var]);
+                $this->assertSame($expected, (string)$context->vars_in_scope[$var]);
             }
         }
     }

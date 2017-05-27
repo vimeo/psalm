@@ -1277,7 +1277,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name);
 
-        if (in_array($fq_class_name, ['callable', 'iterable'])) {
+        if (in_array($fq_class_name, ['callable', 'iterable'], true)) {
             return true;
         }
 

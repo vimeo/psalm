@@ -25,13 +25,13 @@ class ClassTest extends TestCase
                         protected function barBar() : void {
                             echo "hello";
                         }
-                    }'
+                    }',
             ],
             'constSandwich' => [
                 '<?php
                     class A { const B = 42;}
                     $a = A::B;
-                    class C {}'
+                    class C {}',
             ],
             'deferredReference' => [
                 '<?php
@@ -43,8 +43,8 @@ class ClassTest extends TestCase
             
                     $a = B::C;',
                 'assertions' => [
-                    ['int' => '$a']
-                ]
+                    ['int' => '$a'],
+                ],
             ],
             'moreCyclicalReferences' => [
                 '<?php
@@ -62,7 +62,7 @@ class ClassTest extends TestCase
                         private function f() : void {
                             self::e();
                         }
-                    }'
+                    }',
             ],
             'referenceToSubclassInMethod' => [
                 '<?php
@@ -80,7 +80,7 @@ class ClassTest extends TestCase
                         public function d() : void {
                             $this->c();
                         }
-                    }'
+                    }',
             ],
             'referenceToClassInMethod' => [
                 '<?php
@@ -88,7 +88,7 @@ class ClassTest extends TestCase
                         public function b(A $b) : void {
                             $b->b(new A());
                         }
-                    }'
+                    }',
             ],
             'overrideProtectedAccessLevelToPublic' => [
                 '<?php
@@ -98,7 +98,7 @@ class ClassTest extends TestCase
             
                     class B extends A {
                         public function fooFoo() : void {}
-                    }'
+                    }',
             ],
             'reflectedParents' => [
                 '<?php
@@ -108,7 +108,7 @@ class ClassTest extends TestCase
             
                     if ($e instanceof Exception) {
                       echo "good";
-                    }'
+                    }',
             ],
             'namespacedAliasedClassCall' => [
                 '<?php
@@ -119,7 +119,7 @@ class ClassTest extends TestCase
                         use Aye as A;
             
                         new A\Foo();
-                    }'
+                    }',
             ],
             'abstractExtendsAbstract' => [
                 '<?php
@@ -133,7 +133,7 @@ class ClassTest extends TestCase
                         public function bar() {
                             $this->foo();
                         }
-                    }'
+                    }',
             ],
             'missingParentWithFunction' => [
                 '<?php
@@ -143,8 +143,8 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [
                     'UndefinedClass',
-                    'MissingReturnType'
-                ]
+                    'MissingReturnType',
+                ],
             ],
             'classTraversal' => [
                 '<?php
@@ -167,7 +167,7 @@ class ClassTest extends TestCase
             
                     class C extends B {
                         const DOPE = "dope";
-                    }'
+                    }',
             ],
             'subclassWithSimplerArg' => [
                 '<?php
@@ -189,7 +189,7 @@ class ClassTest extends TestCase
                         public function __construct($a) {
                             parent::__construct($a);
                         }
-                    }'
+                    }',
             ],
             'PHP7-subclassOfInvalidArgumentExceptionWithSimplerArg' => [
                 '<?php
@@ -202,8 +202,8 @@ class ClassTest extends TestCase
                         public function __construct($message, $code, $previous_exception) {
                             parent::__construct($message, $code, $previous_exception);
                         }
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -216,47 +216,47 @@ class ClassTest extends TestCase
             'undefinedClass' => [
                 '<?php
                     (new Foo());',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
             'wrongCaseClass' => [
                 '<?php
                     class Foo {}
                     (new foo());',
-                'error_message' => 'InvalidClass'
+                'error_message' => 'InvalidClass',
             ],
             'invalidThisFetch' => [
                 '<?php
                     echo $this;',
-                'error_message' => 'InvalidScope'
+                'error_message' => 'InvalidScope',
             ],
             'invalidThisArgument' => [
                 '<?php
                     $this = "hello";',
-                'error_message' => 'InvalidScope'
+                'error_message' => 'InvalidScope',
             ],
             'undefinedConstant' => [
                 '<?php
                     echo HELLO;',
-                'error_message' => 'UndefinedConstant'
+                'error_message' => 'UndefinedConstant',
             ],
             'undefinedClassConstant' => [
                 '<?php
                     class A {}
                     echo A::HELLO;',
-                'error_message' => 'UndefinedConstant'
+                'error_message' => 'UndefinedConstant',
             ],
             // Skipped. A bug.
             'SKIPPED-inheritanceLoopOne' => [
                 '<?php
                     class C extends C {}',
-                'error_message' => 'InvalidParent'
+                'error_message' => 'InvalidParent',
             ],
             // Skipped. A bug.
             'SKIPPED-inheritanceLoopTwo' => [
                 '<?php
                     class E extends F {}
                     class F extends E {}',
-                'error_message' => 'InvalidParent'
+                'error_message' => 'InvalidParent',
             ],
             // Skipped. A bug.
             'SKIPPED-inheritanceLoopThree' => [
@@ -264,7 +264,7 @@ class ClassTest extends TestCase
                     class G extends H {}
                     class H extends I {}
                     class I extends G {}',
-                'error_message' => 'InvalidParent'
+                'error_message' => 'InvalidParent',
             ],
             'invalidDeferredReference' => [
                 '<?php
@@ -275,7 +275,7 @@ class ClassTest extends TestCase
                     $b = (new B);
             
                     const A = 5;',
-                'error_message' => 'UndefinedConstant'
+                'error_message' => 'UndefinedConstant',
             ],
             'overridePublicAccessLevelToPublic' => [
                 '<?php
@@ -286,7 +286,7 @@ class ClassTest extends TestCase
                     class B extends A {
                         private function fooFoo() : void {}
                     }',
-                'error_message' => 'OverriddenMethodAccess'
+                'error_message' => 'OverriddenMethodAccess',
             ],
             'overridePublicAccessLevelToProtected' => [
                 '<?php
@@ -297,7 +297,7 @@ class ClassTest extends TestCase
                     class B extends A {
                         protected function fooFoo() : void {}
                     }',
-                'error_message' => 'OverriddenMethodAccess'
+                'error_message' => 'OverriddenMethodAccess',
             ],
             'overrideProtectedAccessLevelToPrivate' => [
                 '<?php
@@ -308,13 +308,13 @@ class ClassTest extends TestCase
                     class B extends A {
                         private function fooFoo() : void {}
                     }',
-                'error_message' => 'OverriddenMethodAccess'
+                'error_message' => 'OverriddenMethodAccess',
             ],
             'classRedefinition' => [
                 '<?php
                     class Foo {}
                     class Foo {}',
-                'error_message' => 'DuplicateClass'
+                'error_message' => 'DuplicateClass',
             ],
             'classRedefinitionInNamespace' => [
                 '<?php
@@ -322,7 +322,7 @@ class ClassTest extends TestCase
                         class Foo {}
                         class Foo {}
                     }',
-                'error_message' => 'DuplicateClass'
+                'error_message' => 'DuplicateClass',
             ],
             'classRedefinitionInSeparateNamespace' => [
                 '<?php
@@ -332,18 +332,18 @@ class ClassTest extends TestCase
                     namespace Aye {
                         class Foo {}
                     }',
-                'error_message' => 'DuplicateClass'
+                'error_message' => 'DuplicateClass',
             ],
             'abstractClassInstantiation' => [
                 '<?php
                     abstract class A {}
                     new A();',
-                'error_message' => 'AbstractInstantiation'
+                'error_message' => 'AbstractInstantiation',
             ],
             'missingParent' => [
                 '<?php
                     class A extends B { }',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
             'moreSpecificReturnType' => [
                 '<?php
@@ -353,8 +353,8 @@ class ClassTest extends TestCase
                     function foo(A $a) : B {
                         return $a;
                     }',
-                'error_message' => 'MoreSpecificReturnType'
-            ]
+                'error_message' => 'MoreSpecificReturnType',
+            ],
         ];
     }
 }

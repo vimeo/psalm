@@ -188,7 +188,7 @@ class FetchChecker
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
             if ($lhs_type_part instanceof TObject ||
                 ($lhs_type_part instanceof TNamedObject &&
-                    in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'])
+                    in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'], true)
                 )
             ) {
                 $stmt->inferredType = Type::getMixed();
@@ -534,9 +534,8 @@ class FetchChecker
                 }
 
                 return false;
-            } else {
-                $stmt->inferredType = $class_constants[$stmt->name];
             }
+            $stmt->inferredType = $class_constants[$stmt->name];
 
             return null;
         }
@@ -571,7 +570,7 @@ class FetchChecker
         $fq_class_name = null;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'])) {
+            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 if ($stmt->class->parts[0] === 'parent') {
                     $fq_class_name = $statements_checker->getParentFQCLN();
 
@@ -768,8 +767,8 @@ class FetchChecker
                 if (!$assignment_key_type->isMixed() && !$assignment_key_type->hasInt() && $assignment_key_value) {
                     $keyed_assignment_type = new Type\Union([
                         new Type\Atomic\ObjectLike([
-                            $assignment_key_value => $assignment_value_type
-                        ])
+                            $assignment_key_value => $assignment_value_type,
+                        ]),
                     ]);
                 } else {
                     $keyed_assignment_type = Type::getEmptyArray();
@@ -970,7 +969,7 @@ class FetchChecker
 
                                 if ($properties) {
                                     $assignment_type = new Type\Union([
-                                        new Type\Atomic\ObjectLike($properties)
+                                        new Type\Atomic\ObjectLike($properties),
                                     ]);
                                 } else {
                                     if (!$keyed_assignment_type) {
@@ -980,8 +979,8 @@ class FetchChecker
                                     $assignment_type = new Type\Union([
                                         new Type\Atomic\TArray([
                                             $key_type,
-                                            $keyed_assignment_type
-                                        ])
+                                            $keyed_assignment_type,
+                                        ]),
                                     ]);
                                 }
                             } else {
@@ -992,8 +991,8 @@ class FetchChecker
                                 $assignment_type = new Type\Union([
                                     new Type\Atomic\TArray([
                                         $key_type,
-                                        $keyed_assignment_type
-                                    ])
+                                        $keyed_assignment_type,
+                                    ]),
                                 ]);
                             }
 
@@ -1024,7 +1023,7 @@ class FetchChecker
 
                             $array_type = $context_type;
 
-                            for ($i = 0; $i < (int)$nesting + 1; $i++) {
+                            for ($i = 0; $i < (int)$nesting + 1; ++$i) {
                                 if (isset($array_type->types['array']) &&
                                     $array_type->types['array'] instanceof Type\Atomic\TArray
                                 ) {
@@ -1155,7 +1154,7 @@ class FetchChecker
         if (!$key_type) {
             $key_type = new Type\Union([
                 new TInt,
-                new TString
+                new TString,
             ]);
         }
 

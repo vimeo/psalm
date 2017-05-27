@@ -139,7 +139,7 @@ class FileChecker extends SourceChecker implements StatementsSource
             new Type\Atomic\TArray([
                 Type::getInt(),
                 Type::getString(),
-            ])
+            ]),
         ]);
     }
 

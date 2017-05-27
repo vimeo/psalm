@@ -67,8 +67,8 @@ class TemplateTest extends TestCase
                     ['Foo<C>' => '$cfoo'],
                     ['C' => '$cfoo_bar'],
 
-                    ['Foo<mixed>' => '$dfoo']
-                ]
+                    ['Foo<mixed>' => '$dfoo'],
+                ],
             ],
             'classTemplateContainer' => [
                 '<?php
@@ -104,9 +104,9 @@ class TemplateTest extends TestCase
                     $afoo_bar = $afoo->bar();',
                 'assertions' => [
                     ['Foo<A>' => '$afoo'],
-                    ['A' => '$afoo_bar']
+                    ['A' => '$afoo_bar'],
                 ],
-                'error_levels' => ['MixedOperand']
+                'error_levels' => ['MixedOperand'],
             ],
             'phanTuple' => [
                 '<?php
@@ -231,7 +231,7 @@ class TemplateTest extends TestCase
                     function takes_string(string $s) {}
             
                     takes_string($a->_0);
-                    takes_int($a->_1);'
+                    takes_int($a->_1);',
             ],
             'validTemplatedType' => [
                 '<?php
@@ -246,7 +246,7 @@ class TemplateTest extends TestCase
             
                     function bar(string $a) : void { }
             
-                    bar(foo("string"));'
+                    bar(foo("string"));',
             ],
             'validTemplatedStaticMethodType' => [
                 '<?php
@@ -263,7 +263,7 @@ class TemplateTest extends TestCase
             
                     function bar(string $a) : void { }
             
-                    bar(A::foo("string"));'
+                    bar(A::foo("string"));',
             ],
             'validTemplatedInstanceMethodType' => [
                 '<?php
@@ -280,7 +280,7 @@ class TemplateTest extends TestCase
             
                     function bar(string $a) : void { }
             
-                    bar((new A())->foo("string"));'
+                    bar((new A())->foo("string"));',
             ],
             'genericArrayKeys' => [
                 '<?php
@@ -296,8 +296,8 @@ class TemplateTest extends TestCase
             
                     $a = my_array_keys(["hello" => 5, "goodbye" => new Exception()]);',
                 'assertions' => [
-                    ['array<int, string>' => '$a']
-                ]
+                    ['array<int, string>' => '$a'],
+                ],
             ],
             'genericArrayReverse' => [
                 '<?php
@@ -314,9 +314,9 @@ class TemplateTest extends TestCase
             
                     $b = my_array_reverse(["hello" => 5, "goodbye" => 6]);',
                 'assertions' => [
-                    ['array<int, string>' => '$b']
-                ]
-            ]
+                    ['array<int, string>' => '$b'],
+                ],
+            ],
         ];
     }
 
@@ -340,7 +340,7 @@ class TemplateTest extends TestCase
                     function bar(string $a) : void { }
             
                     bar(foo(4));',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'InvalidScalarArgument',
             ],
             'invalidTemplatedStaticMethodType' => [
                 '<?php
@@ -358,7 +358,7 @@ class TemplateTest extends TestCase
                     function bar(string $a) : void { }
             
                     bar(A::foo(4));',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'InvalidScalarArgument',
             ],
             'invalidTemplatedInstanceMethodType' => [
                 '<?php
@@ -376,8 +376,8 @@ class TemplateTest extends TestCase
                     function bar(string $a) : void { }
             
                     bar((new A())->foo(4));',
-                'error_message' => 'InvalidScalarArgument'
-            ]
+                'error_message' => 'InvalidScalarArgument',
+            ],
         ];
     }
 }

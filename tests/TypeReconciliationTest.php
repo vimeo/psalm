@@ -43,7 +43,7 @@ class TypeReconciliationTest extends TestCase
             $this->file_checker
         );
 
-        $this->assertEquals(
+        $this->assertSame(
             $expected,
             (string) $reconciled
         );
@@ -78,7 +78,7 @@ class TypeReconciliationTest extends TestCase
     public function testNegateFormula()
     {
         $formula = [
-            new Clause(['$a' => ['!empty']])
+            new Clause(['$a' => ['!empty']]),
         ];
 
         $negated_formula = AlgebraChecker::negateFormula($formula);
@@ -87,7 +87,7 @@ class TypeReconciliationTest extends TestCase
         $this->assertSame(['$a' => ['empty']], $negated_formula[0]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['!empty'], '$b' => ['!empty']])
+            new Clause(['$a' => ['!empty'], '$b' => ['!empty']]),
         ];
 
         $negated_formula = AlgebraChecker::negateFormula($formula);
@@ -107,7 +107,7 @@ class TypeReconciliationTest extends TestCase
         $this->assertSame(['$a' => ['empty'], '$b' => ['empty']], $negated_formula[0]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['int', 'string'], '$b' => ['!empty']])
+            new Clause(['$a' => ['int', 'string'], '$b' => ['!empty']]),
         ];
 
         $negated_formula = AlgebraChecker::negateFormula($formula);
@@ -127,12 +127,12 @@ class TypeReconciliationTest extends TestCase
             (new Clause(
                 [
                     '$a' => ['!empty'],
-                    '$b' => ['!empty']
+                    '$b' => ['!empty'],
                 ]
             ))->contains(
                 new Clause(
                     [
-                        '$a' => ['!empty']
+                        '$a' => ['!empty'],
                     ]
                 )
             )
@@ -141,13 +141,13 @@ class TypeReconciliationTest extends TestCase
         $this->assertFalse(
             (new Clause(
                 [
-                    '$a' => ['!empty']
+                    '$a' => ['!empty'],
                 ]
             ))->contains(
                 new Clause(
                     [
                         '$a' => ['!empty'],
-                        '$b' => ['!empty']
+                        '$b' => ['!empty'],
                     ]
                 )
             )
@@ -161,7 +161,7 @@ class TypeReconciliationTest extends TestCase
     {
         $formula = [
             new Clause(['$a' => ['!empty']]),
-            new Clause(['$a' => ['empty'], '$b' => ['empty']])
+            new Clause(['$a' => ['empty'], '$b' => ['empty']]),
         ];
 
         $simplified_formula = AlgebraChecker::simplifyCNF($formula);
@@ -209,7 +209,7 @@ class TypeReconciliationTest extends TestCase
 
             '2dArray' => ['array<mixed, array<mixed, string>>', 'array', 'array<array<string>>|null'],
 
-            'numeric' => ['string', 'numeric', 'string']
+            'numeric' => ['string', 'numeric', 'string'],
         ];
     }
 
@@ -223,7 +223,7 @@ class TypeReconciliationTest extends TestCase
             'arrayContainsWithArrayOfExceptions' => ['array<Exception>', 'array'],
 
             'unionContainsWithstring' => ['string', 'string|false'],
-            'unionContainsWithFalse' => ['false', 'string|false']
+            'unionContainsWithFalse' => ['false', 'string|false'],
         ];
     }
 
@@ -239,7 +239,7 @@ class TypeReconciliationTest extends TestCase
                         $b = 5;
 
                         if ($b === $a) { }
-                    }'
+                    }',
             ],
             'typeResolutionFromDocblock' => [
                 '<?php
@@ -252,7 +252,7 @@ class TypeReconciliationTest extends TestCase
                     function fooFoo($a) {
                         if ($a instanceof A) {
                         }
-                    }'
+                    }',
             ],
             'arrayTypeResolutionFromDocblock' => [
                 '<?php
@@ -264,7 +264,7 @@ class TypeReconciliationTest extends TestCase
                         foreach ($strs as $str) {
                             if (is_string($str)) {} // Issue emitted here
                         }
-                    }'
+                    }',
             ],
             'typeResolutionFromDocblockInside' => [
                 '<?php
@@ -277,7 +277,7 @@ class TypeReconciliationTest extends TestCase
                             if (is_numeric($length)) {
                             }
                         }
-                    }'
+                    }',
             ],
             'notInstanceof' => [
                 '<?php
@@ -294,12 +294,12 @@ class TypeReconciliationTest extends TestCase
                         $out = $a;
                     }',
                 'assertions' => [
-                    ['null|A' => '$out']
+                    ['null|A' => '$out'],
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
-                    '$a' => Type::parseString('A')
-                ]
+                    '$a' => Type::parseString('A'),
+                ],
             ],
             'notInstanceOfProperty' => [
                 '<?php
@@ -327,12 +327,12 @@ class TypeReconciliationTest extends TestCase
                         $out = $a->foo;
                     }',
                 'assertions' => [
-                    ['null|B' => '$out']
+                    ['null|B' => '$out'],
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
-                    '$a' => Type::parseString('A')
-                ]
+                    '$a' => Type::parseString('A'),
+                ],
             ],
             'notInstanceOfPropertyElseif' => [
                 '<?php
@@ -357,12 +357,12 @@ class TypeReconciliationTest extends TestCase
                         $out = $a->foo;
                     }',
                 'assertions' => [
-                    ['null|B' => '$out']
+                    ['null|B' => '$out'],
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
-                    '$a' => Type::parseString('A')
-                ]
+                    '$a' => Type::parseString('A'),
+                ],
             ],
             'typeArguments' => [
                 '<?php
@@ -378,8 +378,8 @@ class TypeReconciliationTest extends TestCase
                     ['string' => '$c'],
                     ['string|int|float' => '$hours'],
                     ['string|int|float' => '$minutes'],
-                    ['string|int|float' => '$seconds']
-                ]
+                    ['string|int|float' => '$seconds'],
+                ],
             ],
             'typeRefinementWithIsNumeric' => [
                 '<?php
@@ -389,7 +389,7 @@ class TypeReconciliationTest extends TestCase
                     }
 
                     $b = rand(0, 1) ? 5 : false;
-                    if (is_numeric($b)) { }'
+                    if (is_numeric($b)) { }',
             ],
             'typeRefinementWithIsNumericAndIsString' => [
                 '<?php
@@ -402,7 +402,7 @@ class TypeReconciliationTest extends TestCase
                             if (is_string($a)) {
                             }
                         }
-                    }'
+                    }',
             ],
             'updateMultipleIssetVars' => [
                 '<?php
@@ -412,7 +412,7 @@ class TypeReconciliationTest extends TestCase
                     $a = rand(0, 1) ? ["hello"] : null;
                     if (isset($a[0])) {
                         foo($a[0]);
-                    }'
+                    }',
             ],
             'updateMultipleIssetVarsWithVariableOffset' => [
                 '<?php
@@ -423,7 +423,7 @@ class TypeReconciliationTest extends TestCase
                     $b = 0;
                     if (isset($a[$b])) {
                         foo($a[$b]);
-                    }'
+                    }',
             ],
             'removeEmptyArray' => [
                 '<?php
@@ -438,7 +438,7 @@ class TypeReconciliationTest extends TestCase
 
                     if (!empty($arr_or_string)) {
                         foo($arr_or_string);
-                    }'
+                    }',
             ],
             'instanceOfSubtypes' => [
                 '<?php
@@ -458,7 +458,7 @@ class TypeReconciliationTest extends TestCase
 
                     $a = rand(0, 1) ? makeA() : makeC();
 
-                    if ($a instanceof B || $a instanceof D) { }'
+                    if ($a instanceof B || $a instanceof D) { }',
             ],
             'emptyArrayReconciliationThenIf' => [
                 '<?php
@@ -477,7 +477,7 @@ class TypeReconciliationTest extends TestCase
                         };
 
                         return "not found";
-                    }'
+                    }',
             ],
             'emptyStringReconciliationThenIf' => [
                 '<?php
@@ -496,7 +496,7 @@ class TypeReconciliationTest extends TestCase
                         };
 
                         return "an exception";
-                    }'
+                    }',
             ],
             'emptyExceptionReconciliationAfterIf' => [
                 '<?php
@@ -511,7 +511,7 @@ class TypeReconciliationTest extends TestCase
                         }
 
                         return $a->getMessage();
-                    }'
+                    }',
             ],
             'typeReconciliationAfterIfAndReturn' => [
                 '<?php
@@ -527,7 +527,7 @@ class TypeReconciliationTest extends TestCase
                         }
 
                         throw new \LogicException("Runtime error");
-                    }'
+                    }',
             ],
             'ignoreNullCheckAndMaintainNullValue' => [
                 '<?php
@@ -535,9 +535,9 @@ class TypeReconciliationTest extends TestCase
                     if ($a !== null) { }
                     $b = $a;',
                 'assertions' => [
-                    ['null' => '$b']
+                    ['null' => '$b'],
                 ],
-                'error_levels' => ['FailedTypeResolution']
+                'error_levels' => ['FailedTypeResolution'],
             ],
             'ignoreNullCheckAndMaintainNullableValue' => [
                 '<?php
@@ -545,8 +545,8 @@ class TypeReconciliationTest extends TestCase
                     if ($a !== null) { }
                     $b = $a;',
                 'assertions' => [
-                    ['int|null' => '$b']
-                ]
+                    ['int|null' => '$b'],
+                ],
             ],
             'ternaryByRefVar' => [
                 '<?php
@@ -557,7 +557,7 @@ class TypeReconciliationTest extends TestCase
                     }
                     function bar(?int &$a) : void {
                         $a = 5;
-                    }'
+                    }',
             ],
             'ternaryByRefVarInConditional' => [
                 '<?php
@@ -569,7 +569,7 @@ class TypeReconciliationTest extends TestCase
                     }
                     function bar(?int &$a) : void {
                         $a = 5;
-                    }'
+                    }',
             ],
             'possibleInstanceof' => [
                 '<?php
@@ -581,7 +581,7 @@ class TypeReconciliationTest extends TestCase
                         public function foo() : void {
                             if ($this instanceof I1 || $this instanceof I2) {}
                         }
-                    }'
+                    }',
             ],
             'intersection' => [
                 '<?php
@@ -608,8 +608,8 @@ class TypeReconciliationTest extends TestCase
 
                     class B extends A implements I {
                         public function bat() : void {}
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -625,7 +625,7 @@ class TypeReconciliationTest extends TestCase
                     $a = new A();
                     if ($a === null) {
                     }',
-                'error_message' => 'TypeDoesNotContainNull'
+                'error_message' => 'TypeDoesNotContainNull',
             ],
             'makeInstanceOfThingInElseif' => [
                 '<?php
@@ -636,27 +636,27 @@ class TypeReconciliationTest extends TestCase
                     if ($a instanceof A) {
                     } elseif ($a instanceof C) {
                     }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'functionValueIsNotType' => [
                 '<?php
                     if (json_last_error() === "5") { }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'stringIsNotTnt' => [
                 '<?php
                     if (5 === "5") { }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'stringIsNotNull' => [
                 '<?php
                     if (5 === null) { }',
-                'error_message' => 'TypeDoesNotContainNull'
+                'error_message' => 'TypeDoesNotContainNull',
             ],
             'stringIsNotFalse' => [
                 '<?php
                     if (5 === false) { }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'failedTypeResolution' => [
                 '<?php
@@ -669,7 +669,7 @@ class TypeReconciliationTest extends TestCase
                         if ($a instanceof A) {
                         }
                     }',
-                'error_message' => 'FailedTypeResolution'
+                'error_message' => 'FailedTypeResolution',
             ],
             'failedTypeResolutionWithDocblock' => [
                 '<?php
@@ -683,7 +683,7 @@ class TypeReconciliationTest extends TestCase
                         if ($a instanceof A) {
                         }
                     }',
-                'error_message' => 'FailedTypeResolution'
+                'error_message' => 'FailedTypeResolution',
             ],
             'typeResolutionFromDocblockAndInstanceof' => [
                 '<?php
@@ -699,7 +699,7 @@ class TypeReconciliationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'FailedTypeResolution'
+                'error_message' => 'FailedTypeResolution',
             ],
             'typeTransformation' => [
                 '<?php
@@ -710,8 +710,8 @@ class TypeReconciliationTest extends TestCase
                             echo $a;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType'
-            ]
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }

@@ -195,7 +195,7 @@ class FunctionChecker extends FunctionLikeChecker
         $call_map_functions = [];
         $call_map_functions[] = $call_map[$call_map_key];
 
-        for ($i = 1; $i < 10; $i++) {
+        for ($i = 1; $i < 10; ++$i) {
             if (!isset($call_map[$call_map_key . '\'' . $i])) {
                 break;
             }
@@ -303,7 +303,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_args) {
-            if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'])) {
+            if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'], true)) {
                 if (isset($call_args[2]->value->inferredType)) {
 
                     /** @var Type\Union */
@@ -317,7 +317,7 @@ class FunctionChecker extends FunctionLikeChecker
                 }
             }
 
-            if (in_array($call_map_key, ['pathinfo'])) {
+            if (in_array($call_map_key, ['pathinfo'], true)) {
                 if (isset($call_args[1])) {
                     return Type::getString();
                 }
@@ -409,7 +409,7 @@ class FunctionChecker extends FunctionLikeChecker
                         if ($type_part instanceof Type\Atomic\ObjectLike) {
                             $type_part = new Type\Atomic\TArray([
                                 Type::getString(),
-                                $type_part->getGenericTypeParam()
+                                $type_part->getGenericTypeParam(),
                             ]);
                         } else {
                             return Type::getArray();
@@ -432,8 +432,8 @@ class FunctionChecker extends FunctionLikeChecker
                 return new Type\Union([
                     new Type\Atomic\TArray([
                         Type::combineTypes($inner_key_types),
-                        Type::combineTypes($inner_value_types)
-                    ])
+                        Type::combineTypes($inner_value_types),
+                    ]),
                 ]);
             }
 
@@ -471,8 +471,8 @@ class FunctionChecker extends FunctionLikeChecker
             return new Type\Union([
                 new Type\Atomic\TArray([
                     $key_type,
-                    $inner_type
-                ])
+                    $inner_type,
+                ]),
             ]);
         }
 
@@ -533,8 +533,8 @@ class FunctionChecker extends FunctionLikeChecker
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             $key_type,
-                            $inner_type
-                        ])
+                            $inner_type,
+                        ]),
                     ]);
                 }
 
@@ -544,8 +544,8 @@ class FunctionChecker extends FunctionLikeChecker
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             $key_type,
-                            $inner_type
-                        ])
+                            $inner_type,
+                        ]),
                     ]);
                 }
             } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_) {
@@ -560,13 +560,12 @@ class FunctionChecker extends FunctionLikeChecker
                         return new Type\Union([
                             new Type\Atomic\TArray([
                                 Type::getInt(),
-                                $mapped_function_return
-                            ])
+                                $mapped_function_return,
+                            ]),
                         ]);
                     }
-                } else {
-                    // @todo handle array_map('some_custom_function', $arr)
                 }
+                    // @todo handle array_map('some_custom_function', $arr)
             }
         }
 

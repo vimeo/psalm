@@ -226,7 +226,7 @@ class FileReferenceProvider
 
                 self::$file_references[$file] = [
                     'a' => $all_file_references,
-                    'i' => $inheritance_references
+                    'i' => $inheritance_references,
                 ];
             }
 

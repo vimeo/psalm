@@ -96,9 +96,9 @@ class MethodMutationTest extends TestCase
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::barBar', $method_context);
 
-        $this->assertEquals('UserViewData', (string)$method_context->vars_in_scope['$this->user_viewdata']);
-        $this->assertEquals('string', (string)$method_context->vars_in_scope['$this->user_viewdata->name']);
-        $this->assertEquals(true, (string)$method_context->vars_possibly_in_scope['$this->title']);
+        $this->assertSame('UserViewData', (string)$method_context->vars_in_scope['$this->user_viewdata']);
+        $this->assertSame('string', (string)$method_context->vars_in_scope['$this->user_viewdata->name']);
+        $this->assertSame(true, $method_context->vars_possibly_in_scope['$this->title']);
     }
 
     /**
@@ -134,6 +134,6 @@ class MethodMutationTest extends TestCase
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::__construct', $method_context);
 
-        $this->assertEquals('Foo', (string)$method_context->vars_in_scope['$this->foo']);
+        $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
     }
 }

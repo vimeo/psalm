@@ -542,7 +542,7 @@ class AssignmentChecker
                     ($lhs_type_part instanceof TNamedObject &&
                         in_array(
                             strtolower($lhs_type_part->value),
-                            ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode']
+                            ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'], true
                         )
                     )
                 ) {
@@ -1105,15 +1105,15 @@ class AssignmentChecker
                     ) {
                         $assignment_value_type = new Type\Union([
                             new Type\Atomic\ObjectLike([
-                                $assignment_key_value => $assignment_value_type
-                            ])
+                                $assignment_key_value => $assignment_value_type,
+                            ]),
                         ]);
                     } else {
                         $assignment_value_type = new Type\Union([
                             new Type\Atomic\TArray([
                                 $assignment_key_type,
-                                $assignment_value_type
-                            ])
+                                $assignment_value_type,
+                            ]),
                         ]);
                     }
 

@@ -74,7 +74,7 @@ class InterfaceChecker extends ClassLikeChecker
      */
     public static function interfaceExtends($interface_name, $possible_parent, FileChecker $file_checker)
     {
-        return in_array($possible_parent, self::getParentInterfaces($interface_name, $file_checker));
+        return in_array($possible_parent, self::getParentInterfaces($interface_name, $file_checker), true);
     }
 
     /**

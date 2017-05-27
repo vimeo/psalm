@@ -14,18 +14,18 @@ class ForbiddenCodeTest extends TestCase
             'varDump' => [
                 '<?php
                     var_dump("hello");',
-                'error_message' => 'ForbiddenCode'
+                'error_message' => 'ForbiddenCode',
             ],
             'execTicks' => [
                 '<?php
                     `rm -rf`;',
-                'error_message' => 'ForbiddenCode'
+                'error_message' => 'ForbiddenCode',
             ],
             'exec' => [
                 '<?php
                     shell_exec("rm -rf");',
-                'error_message' => 'ForbiddenCode'
-            ]
+                'error_message' => 'ForbiddenCode',
+            ],
         ];
     }
 }

@@ -25,7 +25,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedMethodFromTrait' => [
                 '<?php
@@ -40,7 +40,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'accessiblePublicMethodFromTrait' => [
                 '<?php
@@ -55,7 +55,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'accessiblePrivatePropertyFromTrait' => [
                 '<?php
@@ -70,7 +70,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedPropertyFromTrait' => [
                 '<?php
@@ -85,7 +85,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
-                    }'
+                    }',
             ],
             'accessiblePublicPropertyFromTrait' => [
                 '<?php
@@ -100,7 +100,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
-                    }'
+                    }',
             ],
             'accessibleProtectedMethodFromInheritedTrait' => [
                 '<?php
@@ -117,7 +117,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'accessiblePublicMethodFromInheritedTrait' => [
                 '<?php
@@ -134,7 +134,7 @@ class TraitTest extends TestCase
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
-                    }'
+                    }',
             ],
             'staticClassMethodFromWithinTrait' => [
                 '<?php
@@ -150,7 +150,7 @@ class TraitTest extends TestCase
                         public static function barBar() : void {
             
                         }
-                    }'
+                    }',
             ],
             'redefinedTraitMethodWithoutAlias' => [
                 '<?php
@@ -166,7 +166,7 @@ class TraitTest extends TestCase
                         }
                     }
             
-                    (new B)->fooFoo("hello");'
+                    (new B)->fooFoo("hello");',
             ],
             'redefinedTraitMethodWithAlias' => [
                 '<?php
@@ -183,7 +183,7 @@ class TraitTest extends TestCase
                         public function fooFoo() : void {
                             $this->barBar();
                         }
-                    }'
+                    }',
             ],
             'traitSelf' => [
                 '<?php
@@ -200,8 +200,8 @@ class TraitTest extends TestCase
             
                     $a = (new A)->g();',
                 'assertions' => [
-                    ['A' => '$a']
-                ]
+                    ['A' => '$a'],
+                ],
             ],
             'parentTraitSelf' => [
                 '<?php
@@ -225,8 +225,8 @@ class TraitTest extends TestCase
             
                     $a = (new B)->g();',
                 'assertions' => [
-                    ['A' => '$a']
-                ]
+                    ['A' => '$a'],
+                ],
             ],
             'directStaticCall' => [
                 '<?php
@@ -241,7 +241,7 @@ class TraitTest extends TestCase
                         public function bar() {
                             T::foo();
                         }
-                    }'
+                    }',
             ],
             'abstractTraitMethod' => [
                 '<?php
@@ -257,8 +257,8 @@ class TraitTest extends TestCase
                         public function bar() {
                             $this->foo();
                         }
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -284,14 +284,14 @@ class TraitTest extends TestCase
                             $this->fooFoo();
                         }
                     }',
-                'error_message' => 'InaccessibleMethod'
+                'error_message' => 'InaccessibleMethod',
             ],
             'undefinedTrait' => [
                 '<?php
                     class B {
                         use A;
                     }',
-                'error_message' => 'UndefinedTrait'
+                'error_message' => 'UndefinedTrait',
             ],
             'missingPropertyType' => [
                 '<?php
@@ -306,7 +306,7 @@ class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
-                    'declared type - consider null|int'
+                    'declared type - consider null|int',
             ],
             'missingPropertyTypeWithConstructorInit' => [
                 '<?php
@@ -321,7 +321,7 @@ class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
-                    'declared type - consider int'
+                    'declared type - consider int',
             ],
             'missingPropertyTypeWithConstructorInitAndNull' => [
                 '<?php
@@ -340,7 +340,7 @@ class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
-                    'declared type - consider null|int'
+                    'declared type - consider null|int',
             ],
             'missingPropertyTypeWithConstructorInitAndNullDefault' => [
                 '<?php
@@ -355,8 +355,8 @@ class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
-                    'declared type - consider int|nul'
-            ]
+                    'declared type - consider int|nul',
+            ],
         ];
     }
 }

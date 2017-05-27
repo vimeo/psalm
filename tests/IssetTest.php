@@ -15,25 +15,25 @@ class IssetTest extends TestCase
                 '<?php
                     $a = isset($b) ? $b : null;',
                 'assertions' => [
-                    ['mixed' => '$a']
+                    ['mixed' => '$a'],
                 ],
-                'error_levels' => ['MixedAssignment']
+                'error_levels' => ['MixedAssignment'],
             ],
             'nullCoalesce' => [
                 '<?php
                     $a = $b ?? null;',
                 'assertions' => [
-                    ['mixed' => '$a']
+                    ['mixed' => '$a'],
                 ],
-                'error_levels' => ['MixedAssignment']
+                'error_levels' => ['MixedAssignment'],
             ],
             'nullCoalesceWithGoodVariable' => [
                 '<?php
                     $b = false;
                     $a = $b ?? null;',
                 'assertions' => [
-                    ['false|null' => '$a']
-                ]
+                    ['false|null' => '$a'],
+                ],
             ],
             'issetKeyedOffset' => [
                 '<?php
@@ -41,12 +41,12 @@ class IssetTest extends TestCase
                         $foo["a"] = "hello";
                     }',
                 'assertions' => [
-                    ['mixed' => '$foo[\'a\']']
+                    ['mixed' => '$foo[\'a\']'],
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
-                    '$foo' => \Psalm\Type::getArray()
-                ]
+                    '$foo' => \Psalm\Type::getArray(),
+                ],
             ],
             'issetKeyedOffsetORFalse' => [
                 '<?php
@@ -61,20 +61,20 @@ class IssetTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [],
                 'scope_vars' => [
-                    '$foo' => \Psalm\Type::getArray()
-                ]
+                    '$foo' => \Psalm\Type::getArray(),
+                ],
             ],
             'nullCoalesceKeyedOffset' => [
                 '<?php
                     $foo["a"] = $foo["a"] ?? "hello";',
                 'assertions' => [
-                    ['mixed' => '$foo[\'a\']']
+                    ['mixed' => '$foo[\'a\']'],
                 ],
                 'error_levels' => ['MixedAssignment'],
                 'scope_vars' => [
-                    '$foo' => \Psalm\Type::getArray()
-                ]
-            ]
+                    '$foo' => \Psalm\Type::getArray(),
+                ],
+            ],
         ];
     }
 }

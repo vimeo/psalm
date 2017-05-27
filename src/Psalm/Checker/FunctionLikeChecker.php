@@ -125,7 +125,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if ($add_mutations) {
                 $hash = $real_method_id . json_encode([
                     $context->vars_in_scope,
-                        $context->vars_possibly_in_scope
+                        $context->vars_possibly_in_scope,
                     ]);
 
                 // if we know that the function has no effects on vars, we don't bother rechecking
@@ -285,7 +285,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     'Closure',
                     $storage->params,
                     $storage->return_type ?: Type::getMixed()
-                )
+                ),
             ]);
         }
 
@@ -491,7 +491,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if ($hash && $this instanceof MethodChecker) {
                 self::$no_effects_hashes[$hash] = [
                     $context->vars_in_scope,
-                    $context->vars_possibly_in_scope
+                    $context->vars_possibly_in_scope,
                 ];
             }
         }
@@ -632,7 +632,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $has_optional_param = true;
             }
 
-            $i++;
+            ++$i;
         }
 
         $storage->required_param_count = $required_param_count;
@@ -1143,7 +1143,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $type_coerced
             )) {
                 if ($update_docblock) {
-                    if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
+                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
                         $this->addDocblockReturnType($inferred_return_type);
                     }
 
@@ -1176,7 +1176,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             } elseif (!$inferred_return_type->isNullable() && $declared_return_type->isNullable()) {
                 if ($update_docblock) {
-                    if (!in_array('InvalidReturnType', $this->suppressed_issues)) {
+                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
                         $this->addDocblockReturnType($inferred_return_type);
                     }
 
@@ -1308,8 +1308,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $new_param_type = new Type\Union([
                     new Type\Atomic\TArray([
                         Type::getInt(),
-                        $new_param_type
-                    ])
+                        $new_param_type,
+                    ]),
                 ]);
             }
 
@@ -1424,8 +1424,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $param_type = new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getInt(),
-                            $param_type
-                        ])
+                            $param_type,
+                        ]),
                     ]);
                 }
             }
@@ -1434,7 +1434,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 new Type\Atomic\TArray([
                     Type::getInt(),
                     Type::getMixed(),
-                ])
+                ]),
             ]);
         }
 
@@ -1527,7 +1527,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 continue;
             }
 
-            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'])) {
+            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'], true)) {
                 continue;
             }
 

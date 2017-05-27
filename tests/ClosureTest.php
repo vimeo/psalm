@@ -37,7 +37,7 @@ class ClosureTest extends TestCase
                         echo $data;
                     }
             
-                    fn();'
+                    fn();',
             ],
             'inferredArg' => [
                 '<?php
@@ -51,7 +51,7 @@ class ClosureTest extends TestCase
                             return $a . "blah";
                         },
                         $bar
-                    );'
+                    );',
             ],
             'varReturnType' => [
                 '<?php
@@ -61,8 +61,8 @@ class ClosureTest extends TestCase
             
                     $a = $add_one(1);',
                 'assertions' => [
-                    ['int' => '$a']
-                ]
+                    ['int' => '$a'],
+                ],
             ],
             'callableToClosure' => [
                 '<?php
@@ -73,13 +73,13 @@ class ClosureTest extends TestCase
                         return function(string $a) : string {
                             return $a . "blah";
                         };
-                    }'
+                    }',
             ],
             'callable' => [
                 '<?php
                     function foo(callable $c) : void {
                         echo (string)$c();
-                    }'
+                    }',
             ],
             'callableClass' => [
                 '<?php
@@ -96,13 +96,13 @@ class ClosureTest extends TestCase
                     foo(new C());
             
                     $c2 = new C();
-                    $c2();'
+                    $c2();',
             ],
             'correctParamType' => [
                 '<?php
                     $take_string = function(string $s) : string { return $s; };
-                    $take_string("string");'
-            ]
+                    $take_string("string");',
+            ],
         ];
     }
 
@@ -122,7 +122,7 @@ class ClosureTest extends TestCase
                         },
                         $bar
                     );',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'InvalidScalarArgument',
             ],
             'noReturn' => [
                 '<?php
@@ -133,7 +133,7 @@ class ClosureTest extends TestCase
                         },
                         $bar
                     );',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'undefinedCallableClass' => [
                 '<?php
@@ -149,7 +149,7 @@ class ClosureTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidFunctionCall',
-                'error_levels' => ['UndefinedClass']
+                'error_levels' => ['UndefinedClass'],
             ],
             'possiblyNullFunctionCall' => [
                 '<?php
@@ -166,20 +166,20 @@ class ClosureTest extends TestCase
             
                         return $bar;
                     };',
-                'error_message' => 'PossiblyNullFunctionCall'
+                'error_message' => 'PossiblyNullFunctionCall',
             ],
             'stringFunctionCall' => [
                 '<?php
                     $bad_one = "hello";
                     $a = $bad_one(1);',
-                'error_message' => 'InvalidFunctionCall'
+                'error_message' => 'InvalidFunctionCall',
             ],
             'wrongParamType' => [
                 '<?php
                     $take_string = function(string $s) : string { return $s; };
                     $take_string(42);',
-                'error_message' => 'InvalidScalarArgument'
-            ]
+                'error_message' => 'InvalidScalarArgument',
+            ],
         ];
     }
 }
