@@ -1736,7 +1736,8 @@ class CallChecker
         }
 
         if (!$has_packed_var && count($args) < count($function_params)) {
-            for ($i = count($args); $i < count($function_params); ++$i) {
+            $j = count($function_params);
+            for ($i = count($args); $i < $j; ++$i) {
                 $param = $function_params[$i];
 
                 if (!$param->is_optional && !$param->is_variadic) {

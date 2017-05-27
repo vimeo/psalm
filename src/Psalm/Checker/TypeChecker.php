@@ -840,7 +840,8 @@ class TypeChecker
         $base_key = $key_parts[0];
 
         // for an expression like $obj->key1->key2
-        for ($i = 1; $i < count($key_parts); ++$i) {
+        $j = count($key_parts);
+        for ($i = 1; $i < $j; ++$i) {
             $new_base_key = $base_key . '->' . $key_parts[$i];
 
             if (!isset($existing_keys[$new_base_key])) {
@@ -921,7 +922,8 @@ class TypeChecker
         $base_key = $key_parts[0];
 
         // for an expression like $obj->key1->key2
-        for ($i = 1; $i < count($key_parts); ++$i) {
+        $j = count($key_parts);
+        for ($i = 1; $i < $j; ++$i) {
             $new_base_key = $base_key . '[' . $key_parts[$i] . ']';
 
             if (!isset($existing_keys[$new_base_key])) {
