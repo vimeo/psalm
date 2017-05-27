@@ -2,6 +2,7 @@
 
 [![Packagist](https://img.shields.io/packagist/v/vimeo/psalm.svg)](https://packagist.org/packages/vimeo/psalm)
 [![Travis CI](https://img.shields.io/travis/vimeo/psalm/master.svg)](https://travis-ci.org/vimeo/psalm/branches)
+[![Scrutinizer](https://img.shields.io/scrutinizer/g/vimeo/psalm/master.svg)](https://scrutinizer-ci.com/g/vimeo/psalm/?branch=master)
 
 Psalm is a static analysis tool for finding errors in PHP applications.
 
@@ -30,7 +31,7 @@ Then run Psalm:
 ./vendor/bin/psalm
 ```
 
-The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level with 
+The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level with
 
 ```bash
 ./vendor/bin/psalm --init [source_dir] [level]
