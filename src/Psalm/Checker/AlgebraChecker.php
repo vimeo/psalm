@@ -370,7 +370,9 @@ class AlgebraChecker
                         }
                     );
 
-                    if (!empty($things_that_can_be_said) && count($things_that_can_be_said) === count($possible_types)) {
+                    if (!empty($things_that_can_be_said)
+                        && count($things_that_can_be_said) === count($possible_types)
+                    ) {
                         $things_that_can_be_said = array_unique($things_that_can_be_said);
                         $truths[$var] = implode('|', array_unique($things_that_can_be_said));
                     }
