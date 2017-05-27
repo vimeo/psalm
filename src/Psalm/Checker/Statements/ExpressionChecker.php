@@ -1416,7 +1416,9 @@ class ExpressionChecker
             && is_string($stmt->name)
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
-            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
+            if (count($stmt->class->parts) === 1
+                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+            ) {
                 if (!$this_class_name) {
                     $fq_class_name = $stmt->class->parts[0];
                 } else {

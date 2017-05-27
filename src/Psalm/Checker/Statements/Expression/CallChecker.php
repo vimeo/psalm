@@ -1103,7 +1103,9 @@ class CallChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
 
-            if (count($stmt->class->parts) === 1 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
+            if (count($stmt->class->parts) === 1
+                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+            ) {
                 if ($stmt->class->parts[0] === 'parent') {
                     $fq_class_name = $statements_checker->getParentFQCLN();
 
