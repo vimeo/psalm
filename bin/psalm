@@ -188,10 +188,10 @@ if (isset($options['i'])) {
         die('The given path "' . $bad_dir_path . '" does not appear to be a directory' . PHP_EOL);
     }
 
-    $template_file_name = dirname($current_dir) . '/assets/config_levels/' . $level . '.xml';
+    $template_file_name = dirname(__DIR__) . '/assets/config_levels/' . $level . '.xml';
 
     if (!file_exists($template_file_name)) {
-        die('Could not open config template' . PHP_EOL);
+        die('Could not open config template ' . $template_file_name . PHP_EOL);
     }
 
     $template = (string)file_get_contents($template_file_name);
