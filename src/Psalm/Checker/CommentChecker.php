@@ -169,7 +169,7 @@ class CommentChecker
                     throw $e;
                 }
 
-                if (count($line_parts) === 1 && $line_parts[0][0] === '$') {
+                if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
                     array_unshift($line_parts, 'mixed');
                 }
 
