@@ -773,13 +773,24 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         )
                     ) > 0;
 
-                $docblock_return_type = Type::parseString(
-                    self::fixUpLocalType(
-                        (string)$docblock_info->return_type,
-                        $source,
-                        $template_types
-                    )
-                );
+                try {
+                    $docblock_return_type = Type::parseString(
+                        self::fixUpLocalType(
+                            (string)$docblock_info->return_type,
+                            $source,
+                            $template_types
+                        )
+                    );
+                } catch (\Psalm\Exception\TypeParseTreeException $e) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                            new CodeLocation($source, $function, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
 
                 if (!$storage->return_type_location) {
                     $storage->return_type_location = new CodeLocation($source, $function, true);
