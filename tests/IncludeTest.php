@@ -8,9 +8,8 @@ class IncludeTest extends TestCase
     /**
      * @dataProvider providerTestValidIncludes
      *
-     * @param array $files_to_check
-     * @param array $files
-     * @param array<string,string> $includes
+     * @param array<int, string> $files_to_check
+     * @param array<string, string> $files
      *
      * @return void
      */
@@ -136,16 +135,6 @@ class IncludeTest extends TestCase
             ],
             'noInfiniteRequireLoop' => [
                 'files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
-                        require_once("file1.php");
-
-                        class A{
-                            public function fooFoo() : void {
-
-                            }
-                        }
-
-                        new C();',
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         require_once("file2.php");
 
@@ -156,9 +145,18 @@ class IncludeTest extends TestCase
                         }
 
                         class C {}',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require_once("file1.php");
+
+                        class A{
+                            public function fooFoo() : void { }
+                        }
+
+                        new C();',
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
         ];
