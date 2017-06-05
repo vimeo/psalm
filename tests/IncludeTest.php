@@ -23,12 +23,7 @@ class IncludeTest extends TestCase
         foreach ($files_to_check as $filename) {
             $contents = $files[$filename];
 
-            $file_checker = new FileChecker(
-                $filename,
-                $this->project_checker,
-                self::$parser->parse($contents)
-            );
-
+            $file_checker = new FileChecker($filename, $this->project_checker);
             $file_checker->visitAndAnalyzeMethods();
         }
     }
@@ -137,6 +132,33 @@ class IncludeTest extends TestCase
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php'
+                ],
+            ],
+            'noInfiniteRequireLoop' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require_once("file1.php");
+
+                        class A{
+                            public function fooFoo() : void {
+
+                            }
+                        }
+
+                        new C();',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");
+
+                        class B extends A {
+                            public function doFoo() : void {
+                                $this->fooFoo();
+                            }
+                        }
+
+                        class C {}',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
         ];
