@@ -93,6 +93,11 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $namespace_checkers = [];
 
     /**
+     * @var array<string, bool>
+     */
+    private $included_file_paths = [];
+
+    /**
      * @var Context
      */
     public $context;
@@ -112,12 +117,14 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @param ProjectChecker                        $project_checker
      * @param array<int, PhpParser\Node\Stmt>|null  $preloaded_statements
      * @param bool                                  $will_analyze
+     * @param array<string, bool>                   $included_file_paths
      */
     public function __construct(
         $file_path,
         ProjectChecker $project_checker,
         array $preloaded_statements = null,
-        $will_analyze = true
+        $will_analyze = true,
+        array $included_file_paths = []
     ) {
         $this->file_path = $file_path;
         $this->file_name = Config::getInstance()->shortenFileName($this->file_path);
@@ -141,6 +148,9 @@ class FileChecker extends SourceChecker implements StatementsSource
                 Type::getString(),
             ]),
         ]);
+
+        $included_file_paths[$file_path] = true;
+        $this->included_file_paths = $included_file_paths;
     }
 
     /**
@@ -588,5 +598,21 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function getFileChecker()
     {
         return $this;
+    }
+
+    /** @return array<string, bool> */
+    public function getIncludedFilePaths()
+    {
+        return $this->included_file_paths;
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return void
+     */
+    public function addIncludedFilePath($file_path)
+    {
+        $this->included_file_paths[$file_path] = true;
     }
 }

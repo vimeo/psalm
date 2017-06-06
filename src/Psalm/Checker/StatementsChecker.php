@@ -810,11 +810,20 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             $current_file_checker = $this->getFileChecker();
 
-            if ($this->getFileChecker()->fileExists($path_to_file)) {
+            $included_file_paths = $current_file_checker->getIncludedFilePaths();
+
+            if (isset($included_file_paths[$path_to_file])) {
+                return null;
+            }
+
+            if ($current_file_checker->fileExists($path_to_file)) {
                 $include_stmts = \Psalm\Provider\FileProvider::getStatementsForFile(
                     $current_file_checker->project_checker,
                     $path_to_file
                 );
+
+                $included_file_paths[$this->getFilePath()] = true;
+                $included_file_paths[$this->getCheckedFilePath()] = true;
 
                 if (is_subclass_of($current_file_checker, 'Psalm\\Checker\\FileChecker')) {
                     $this->analyze($include_stmts, $context);
@@ -822,7 +831,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     $include_file_checker = new FileChecker(
                         $path_to_file,
                         $current_file_checker->project_checker,
-                        $include_stmts
+                        $include_stmts,
+                        true,
+                        $included_file_paths
                     );
                     $include_file_checker->setFileName($this->getFileName(), $this->getFilePath());
                     $include_file_checker->visit($context);

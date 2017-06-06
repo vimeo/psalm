@@ -137,6 +137,7 @@ class IncludeTest extends TestCase
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         require_once("file2.php");
+                        require_once("file3.php");
 
                         class B extends A {
                             public function doFoo() : void {
@@ -144,19 +145,29 @@ class IncludeTest extends TestCase
                             }
                         }
 
-                        class C {}',
+                        class C {}
+
+                        new D();',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
-                        require_once("file1.php");
+                        require_once("file3.php");
 
                         class A{
                             public function fooFoo() : void { }
                         }
 
                         new C();',
+
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
+                        require_once("file1.php");
+
+                        class D{ }
+
+                        new C();',
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
                 ],
             ],
         ];
