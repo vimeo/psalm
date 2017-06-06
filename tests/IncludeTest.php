@@ -170,6 +170,34 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
                 ],
             ],
+            'analyzeAllClasses' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");
+                        class B extends A {
+                            public function doFoo() : void {
+                                $this->fooFoo();
+                            }
+                        }
+                        class C {
+                            public function barBar() : void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require_once("file1.php");
+                        class A{
+                            public function fooFoo() : void { }
+                        }
+                        class D extends C {
+                            public function doBar() : void {
+                                $this->barBar();
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+            ],
         ];
     }
 }
