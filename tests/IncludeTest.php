@@ -47,7 +47,7 @@ class IncludeTest extends TestCase
                         class A{}',
                 ],
                 'files_to_check' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php'
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
             'nestedRequire' => [
@@ -73,7 +73,7 @@ class IncludeTest extends TestCase
                         }',
                 ],
                 'files_to_check' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php'
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
                 ],
             ],
             'requireNamespace' => [
@@ -93,7 +93,7 @@ class IncludeTest extends TestCase
                         }',
                 ],
                 'files_to_check' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php'
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
             'requireFunction' => [
@@ -108,7 +108,7 @@ class IncludeTest extends TestCase
                         fooFoo();',
                 ],
                 'files_to_check' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php'
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
             'requireNamespacedWithUse' => [
@@ -130,7 +130,7 @@ class IncludeTest extends TestCase
                         }',
                 ],
                 'files_to_check' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php'
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
             'noInfiniteRequireLoop' => [
