@@ -314,7 +314,9 @@ if ($path_to_config) {
 }
 
 // If XDebug is enabled, restart without it
-(new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
+if (!$debug) {
+    (new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
+}
 
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 
