@@ -750,7 +750,7 @@ class TypeChecker
             $input_type_part instanceof TNamedObject
         ) {
             // check whether the object has a __toString method
-            if (ClassChecker::classExists($input_type_part->value, $file_checker) &&
+            if (ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
                 MethodChecker::methodExists($input_type_part->value . '::__toString', $file_checker)
             ) {
                 $to_string_cast = true;

@@ -41,13 +41,13 @@ class ToStringTest extends TestCase
                             return "hello";
                         }
                     }
-            
+
                     /** @param string|A $b */
                     function fooFoo($b) : void {}
-            
+
                     /** @param A|string $b */
                     function barBar($b) : void {}
-            
+
                     fooFoo(new A());
                     barBar(new A());',
             ],
@@ -91,11 +91,25 @@ class ToStringTest extends TestCase
                             return "hello";
                         }
                     }
-            
+
                     function fooFoo(string $b) : void {}
                     fooFoo(new A());',
                 'error_message' => 'ImplicitToStringCast',
             ],
+            'implicitCastFromInterface' => [
+                '<?php
+                    interface I {
+                        public function __toString();
+                    }
+
+                    function takesString(string $str) : void { }
+
+                    function takesI(I $i) : void
+                    {
+                        takesString($i);
+                    }',
+                'error_message' => 'ImplicitToStringCast',
+            ]
         ];
     }
 }
