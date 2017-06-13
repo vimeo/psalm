@@ -198,7 +198,8 @@ class AssignmentChecker
                     continue;
                 } elseif (isset($assign_value_type->types['array']) &&
                     $assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike &&
-                    isset($assign_value_type->types['array']->properties[(string)$offset]) // if object-like has int offsets
+                    // if object-like has int offsets
+                    isset($assign_value_type->types['array']->properties[(string)$offset])
                 ) {
                     self::analyze(
                         $statements_checker,
