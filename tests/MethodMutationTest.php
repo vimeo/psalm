@@ -136,4 +136,42 @@ class MethodMutationTest extends TestCase
 
         $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
     }
+
+    /**
+     * @return void
+     */
+    public function testTraitMethod()
+    {
+        $this->project_checker->registerFile(
+            'somefile.php',
+            '<?php
+        class Foo { }
+
+        trait T {
+            private function setFoo() : void {
+                $this->foo = new Foo();
+            }
+        }
+
+        class FooController {
+            use T;
+
+            /** @var Foo|null */
+            public $foo;
+
+            public function __construct() {
+                $this->setFoo();
+            }
+        }'
+        );
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $context = new Context();
+        $file_checker->visit($context);
+        $file_checker->analyze(false, true);
+        $method_context = new Context();
+        $this->project_checker->getMethodMutations('FooController::__construct', $method_context);
+
+        $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
+    }
 }

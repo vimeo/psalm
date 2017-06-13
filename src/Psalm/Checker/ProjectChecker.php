@@ -908,11 +908,11 @@ class ProjectChecker
 
         $file_checker = $this->getVisitedFileCheckerForClassLike($fq_class_name);
 
-        $declaring_method_id = (string)MethodChecker::getDeclaringMethodId($original_method_id);
-        list($declaring_fq_class_name) = explode('::', $declaring_method_id);
+        $appearing_method_id = (string)MethodChecker::getAppearingMethodId($original_method_id);
+        list($appearing_fq_class_name) = explode('::', $appearing_method_id);
 
-        if (strtolower($declaring_fq_class_name) !== strtolower($fq_class_name)) {
-            $file_checker = $this->getVisitedFileCheckerForClassLike($declaring_fq_class_name);
+        if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
+            $file_checker = $this->getVisitedFileCheckerForClassLike($appearing_fq_class_name);
         }
 
         $file_checker->analyze(false, true);
@@ -922,7 +922,7 @@ class ProjectChecker
             $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
         }
 
-        $file_checker->getMethodMutations($declaring_method_id, $this_context);
+        $file_checker->getMethodMutations($appearing_method_id, $this_context);
     }
 
     /**
