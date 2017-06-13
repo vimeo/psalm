@@ -12,6 +12,9 @@
     "config": {
         "platform": {
             "php": "5.4"
+        },
+        "platform-dev": {
+            "php": "5.6"
         }
     },
     "require": {
@@ -37,10 +40,7 @@
     },
     "scripts": {
         "psalm": "./bin/psalm",
-        "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",
         "tests": [
-            "php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-            "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes --dry-run",
             "phpunit"
         ]
     }
