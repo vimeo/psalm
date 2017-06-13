@@ -90,7 +90,8 @@ abstract class Type
                 'resource',
                 'callable',
                 'iterable',
-            ], true
+            ],
+            true
         )) {
             return strtolower($type_string);
         } elseif ($type_string === 'boolean') {
