@@ -14,6 +14,7 @@ class FunctionCallTest extends TestCase
      */
     public function testArrayFilter()
     {
+        $this->markTestSkipped('PHP 7.1 syntax');
         $this->addFile(
             'somefile.php',
             '<?php
