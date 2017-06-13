@@ -1293,7 +1293,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         'Parameter $' . $param_name . ' does not appear in the argument list for ' .
                             $cased_method_id,
                         $code_location
-                    )
+                    ),
+                    $storage->suppressed_issues
                 )) {
                     return false;
                 }
@@ -1350,7 +1351,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             'Parameter $' . $param_name . ' has wrong type \'' . $new_param_type . '\', should be \'' .
                                 $storage_param_type . '\'',
                             $code_location
-                        )
+                        ),
+                        $storage->suppressed_issues
                     )) {
                         return false;
                     }
@@ -1386,7 +1388,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         'Parameter $' . $function_signature_param->name . ' does not appear in the docbock for ' .
                             $cased_method_id,
                         $function_signature_param->location
-                    )
+                    ),
+                    $storage->suppressed_issues
                 )) {
                     return false;
                 }

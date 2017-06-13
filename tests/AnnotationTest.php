@@ -164,6 +164,15 @@ class AnnotationTest extends TestCase
                     $a->bar = 7;
                     takeA($a);',
             ],
+            'invalidDocblockParamSuppress' => [
+                '<?php
+                    /**
+                     * @param int $bar
+                     * @psalm-suppress InvalidDocblock
+                     */
+                    function fooFoo(array $bar) : void {
+                    }',
+            ],
         ];
     }
 
