@@ -58,12 +58,8 @@ class FileProvider
 
     /**
      * @param  string   $file_contents
-<<<<<<< 152d1512f16ee9fe91ba4561a43543994873d089
      *
-     * @return array<int, \PhpParser\Node\Stmt>
-=======
      * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
->>>>>>> Break away from master (again)
      */
     private static function parseStatementsInFile($file_contents)
     {
