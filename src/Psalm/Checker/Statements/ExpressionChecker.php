@@ -882,7 +882,10 @@ class ExpressionChecker
             if (!($stmt->right instanceof PhpParser\Node\Expr\Exit_)) {
                 foreach ($op_context->vars_in_scope as $var_id => $type) {
                     if (isset($context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->vars_in_scope[$var_id],
+                            $type
+                        );
                     }
                 }
             } elseif ($stmt->left instanceof PhpParser\Node\Expr\Assign) {
