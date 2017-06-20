@@ -109,7 +109,7 @@ class ToStringTest extends TestCase
                         takesString($i);
                     }',
                 'error_message' => 'ImplicitToStringCast',
-            ]
+            ],
         ];
     }
 }

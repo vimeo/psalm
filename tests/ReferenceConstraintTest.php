@@ -41,13 +41,13 @@ class ReferenceConstraintTest extends TestCase
                     class A {
                       /** @var int */
                       private $foo;
-            
+
                         public function __construct(int &$foo) {
                             $this->foo = &$foo;
                             $foo = "hello";
                         }
                     }
-            
+
                     $bar = 5;
                     $a = new A($bar); // $bar is constrained to an int
                     $bar = null; // ReferenceConstraintViolation issue emitted',
@@ -58,12 +58,12 @@ class ReferenceConstraintTest extends TestCase
                     class A {
                       /** @var int */
                       private $foo;
-            
+
                         public function __construct(int &$foo) {
                             $this->foo = &$foo;
                         }
                     }
-            
+
                     $bar = 5;
                     $a = new A($bar);
                     $bar = null;',
@@ -74,21 +74,21 @@ class ReferenceConstraintTest extends TestCase
                     class A {
                         /** @var int */
                         private $foo;
-            
+
                         public function __construct(int &$foo) {
                             $this->foo = &$foo;
                         }
                     }
-            
+
                     class B {
                         /** @var string */
                         private $bar;
-            
+
                         public function __construct(string &$bar) {
                             $this->bar = &$bar;
                         }
                     }
-            
+
                     if (rand(0, 1)) {
                         $v = 5;
                         $c = (new A($v)); // $v is constrained to an int
@@ -96,7 +96,7 @@ class ReferenceConstraintTest extends TestCase
                         $v = "hello";
                         $c =  (new B($v)); // $v is constrained to a string
                     }
-            
+
                     $v = 8;',
                 'error_message' => 'ConflictingReferenceConstraint',
             ],
