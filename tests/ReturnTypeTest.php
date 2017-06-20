@@ -353,6 +353,15 @@ class ReturnTypeTest extends TestCase
                         return $res;
                     }',
             ],
+            'resourceReturnTypeWithOrDie' => [
+                '<?php
+                    /** @return resource */
+                    function getOutput() {
+                        $res = fopen("php://output", "w") or die();
+
+                        return $res;
+                    }',
+            ],
             'resourceParamType' => [
                 '<?php
                     /** @param resource $res */

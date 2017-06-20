@@ -879,9 +879,28 @@ class ExpressionChecker
                 return false;
             }
 
-            foreach ($op_context->vars_in_scope as $var_id => $type) {
-                if (isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+            if (!($stmt->right instanceof PhpParser\Node\Expr\Exit_)) {
+                foreach ($op_context->vars_in_scope as $var_id => $type) {
+                    if (isset($context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+                    }
+                }
+            } elseif ($stmt->left instanceof PhpParser\Node\Expr\Assign) {
+                $var_id = self::getVarId($stmt->left->var, $context->self);
+
+                if ($var_id && isset($context->vars_in_scope[$var_id])) {
+                    $left_inferred_reconciled = TypeChecker::reconcileTypes(
+                        '!empty',
+                        $context->vars_in_scope[$var_id],
+                        '',
+                        $statements_checker->getFileChecker(),
+                        new CodeLocation($statements_checker->getSource(), $stmt->left),
+                        $statements_checker->getSuppressedIssues()
+                    );
+
+                    if ($left_inferred_reconciled) {
+                        $context->vars_in_scope[$var_id] = $left_inferred_reconciled;
+                    }
                 }
             }
 
