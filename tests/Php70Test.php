@@ -58,6 +58,14 @@ class Php70Test extends TestCase
                     ['string|null' => '$a'],
                 ],
             ],
+            'nullCoalesceWithReference' => [
+                '<?php
+                    $arr = ["hello", "goodbye"];
+                    $a =& $arr[rand(0, 10)] ?? null;',
+                'assertions' => [
+                    ['string|null' => '$a'],
+                ],
+            ],
             'spaceship' => [
                 '<?php
                     $a = 1 <=> 1;',
