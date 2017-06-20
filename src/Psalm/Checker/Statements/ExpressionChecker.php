@@ -968,6 +968,14 @@ class ExpressionChecker
                 return false;
             }
 
+            foreach ($t_if_context->vars_in_scope as $var_id => $type) {
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+                } else {
+                    $context->vars_in_scope[$var_id] = $type;
+                }
+            }
+
             if ($context->collect_references) {
                 $context->referenced_vars = array_merge(
                     $context->referenced_vars,

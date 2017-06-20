@@ -60,10 +60,10 @@ class Php70Test extends TestCase
             ],
             'nullCoalesceWithReference' => [
                 '<?php
-                    $arr = ["hello", "goodbye"];
-                    $a =& $arr[rand(0, 10)] ?? null;',
+                    $var = 0;
+                    ($a =& $var) ?? "hello";',
                 'assertions' => [
-                    ['string|null' => '$a'],
+                    ['int' => '$a'],
                 ],
             ],
             'spaceship' => [
