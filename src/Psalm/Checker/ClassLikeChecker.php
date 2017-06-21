@@ -625,12 +625,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     foreach ($trait_checker->class->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                            $this->analyzeClassMethod(
+                            $trait_method_checker = $this->analyzeClassMethod(
                                 $trait_stmt,
                                 $trait_checker,
                                 $class_context,
                                 $global_context
                             );
+
+                            if ($trait_stmt->name === '__construct') {
+                                $constructor_checker = $trait_method_checker;
+                            }
                         }
                     }
                 }
@@ -666,8 +670,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
 
-            if ($uninitialized_properties) {
-                if (isset($storage->methods['__construct']) && $constructor_checker) {
+            if ($uninitialized_properties && !($this instanceof TraitChecker)) {
+                if ($constructor_checker) {
                     $method_context = clone $class_context;
                     $method_context->collect_initializations = true;
                     $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
@@ -697,7 +701,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             }
                         }
                     }
-                } elseif (!$this instanceof TraitChecker) {
+                } else {
                     $first_uninitialized_property = array_shift($uninitialized_properties);
 
                     if ($first_uninitialized_property->location) {
