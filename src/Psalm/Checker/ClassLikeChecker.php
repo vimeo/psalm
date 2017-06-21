@@ -792,6 +792,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
+        if ($source instanceof TraitChecker) {
+            $checked_file_path = $source->getCheckedFilePath();
+            $project_checker = $this->getFileChecker()->project_checker;
+            $project_checker->registerAnalyzableFile($checked_file_path);
+        }
+
         $method_checker->analyze(
             clone $class_context,
             $global_context ? clone $global_context : null
