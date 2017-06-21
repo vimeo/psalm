@@ -51,15 +51,20 @@ class CodeLocation
     /** @var bool */
     private $have_recalculated = false;
 
+    /** @var ?CodeLocation */
+    public $previous_location;
+
     /**
      * @param StatementsSource $statements_source
      * @param \PhpParser\Node  $stmt
      * @param bool          $single_line
      * @param string           $regex   A regular expression to select part of the snippet
+     * @param CodeLocation  $previous_location
      */
     public function __construct(
         StatementsSource $statements_source,
         \PhpParser\Node $stmt,
+        CodeLocation $previous_location = null,
         $single_line = false,
         $regex = null
     ) {
@@ -69,6 +74,7 @@ class CodeLocation
         $this->file_name = $statements_source->getCheckedFileName();
         $this->single_line = $single_line;
         $this->regex = $regex;
+        $this->previous_location = $previous_location;
 
         $doc_comment = $stmt->getDocComment();
         $this->preview_start = $doc_comment ? $doc_comment->getFilePos() : $this->file_start;

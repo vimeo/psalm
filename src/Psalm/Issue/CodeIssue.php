@@ -40,7 +40,14 @@ abstract class CodeIssue
      */
     public function getShortLocation()
     {
-        return $this->code_location->file_name . ':' . $this->code_location->getLineNumber();
+        $previous_text = '';
+
+        if ($this->code_location->previous_location) {
+            $previous_location = $this->code_location->previous_location;
+            $previous_text = ' from ' . $previous_location->file_name . ':' . $previous_location->getLineNumber();
+        }
+
+        return $this->code_location->file_name . ':' . $this->code_location->getLineNumber() . $previous_text;
     }
 
     /**

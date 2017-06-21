@@ -321,7 +321,7 @@ if (!$debug) {
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 
 if (array_key_exists('self-check', $options)) {
-    $project_checker->checkDir(dirname(__DIR__) . '/src');
+    $project_checker->checkDir(dirname(__DIR__) . '/src', dirname(__DIR__));
 } elseif ($paths_to_check === null) {
     $project_checker->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {

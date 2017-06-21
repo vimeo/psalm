@@ -38,6 +38,11 @@ class Context
     public $inside_constructor = false;
 
     /**
+     * @var ?CodeLocation
+     */
+    public $include_location = null;
+
+    /**
      * @var string|null
      */
     public $self;

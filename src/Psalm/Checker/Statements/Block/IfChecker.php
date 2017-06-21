@@ -119,7 +119,7 @@ class IfChecker
                     $if_context->vars_in_scope,
                     $changed_vars,
                     $statements_checker->getFileChecker(),
-                    new CodeLocation($statements_checker->getSource(), $stmt->cond),
+                    new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -157,7 +157,7 @@ class IfChecker
                 $temp_else_context->vars_in_scope,
                 $changed_vars,
                 $statements_checker->getFileChecker(),
-                new CodeLocation($statements_checker->getSource(), $stmt->cond),
+                new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -307,7 +307,7 @@ class IfChecker
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by--reference constraint on ' . $var_id,
-                            new CodeLocation($statements_checker, $stmt, true)
+                            new CodeLocation($statements_checker, $stmt, $outer_context->include_location, true)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -350,7 +350,12 @@ class IfChecker
                     $outer_context->vars_in_scope,
                     $changed_vars,
                     $statements_checker->getFileChecker(),
-                    new CodeLocation($statements_checker->getSource(), $stmt->cond),
+                    new CodeLocation(
+                        $statements_checker->getSource(),
+                        $stmt->cond,
+                        $outer_context->include_location,
+                        false
+                    ),
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -437,7 +442,12 @@ class IfChecker
                 $elseif_context->vars_in_scope,
                 $changed_vars,
                 $statements_checker->getFileChecker(),
-                new CodeLocation($statements_checker->getSource(), $elseif->cond),
+                new CodeLocation(
+                    $statements_checker->getSource(),
+                    $elseif->cond,
+                    $outer_context->include_location,
+                    false
+                ),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -507,7 +517,7 @@ class IfChecker
                 $elseif_context->vars_in_scope,
                 $changed_vars,
                 $statements_checker->getFileChecker(),
-                new CodeLocation($statements_checker->getSource(), $elseif->cond),
+                new CodeLocation($statements_checker->getSource(), $elseif->cond, $outer_context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -537,7 +547,7 @@ class IfChecker
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by--reference constraint on ' . $var_id,
-                            new CodeLocation($statements_checker, $elseif, true)
+                            new CodeLocation($statements_checker, $elseif, $outer_context->include_location, true)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -625,7 +635,7 @@ class IfChecker
                         $pre_conditional_context->vars_in_scope,
                         $changed_vars,
                         $statements_checker->getFileChecker(),
-                        new CodeLocation($statements_checker->getSource(), $elseif),
+                        new CodeLocation($statements_checker->getSource(), $elseif, $outer_context->include_location),
                         $statements_checker->getSuppressedIssues()
                     );
 
@@ -748,7 +758,7 @@ class IfChecker
                 $else_context->vars_in_scope,
                 $changed_vars,
                 $statements_checker->getFileChecker(),
-                new CodeLocation($statements_checker->getSource(), $else),
+                new CodeLocation($statements_checker->getSource(), $else, $outer_context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
 
@@ -778,7 +788,7 @@ class IfChecker
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by--reference constraint on ' . $var_id,
-                            new CodeLocation($statements_checker, $else, true)
+                            new CodeLocation($statements_checker, $else, $outer_context->include_location, true)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {

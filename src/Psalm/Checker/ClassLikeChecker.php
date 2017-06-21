@@ -141,7 +141,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if (!isset(self::$storage[$fq_class_name_lower])) {
             self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
             $storage->name = $fq_class_name;
-            $storage->location = new CodeLocation($this->source, $class, true);
+            $storage->location = new CodeLocation($this->source, $class, null, true);
             $storage->user_defined = true;
 
             self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
@@ -164,7 +164,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         new DuplicateClass(
                             'Class ' . $fq_class_name . ' has already been defined at ' .
                                 $storage_file_path . ':' . $storage->location->getLineNumber(),
-                            new \Psalm\CodeLocation($this, $class, true)
+                            new \Psalm\CodeLocation($this, $class, null, true)
                         )
                     )) {
                         // fall through
@@ -262,7 +262,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 if (self::checkFullyQualifiedClassLikeName(
                     $interface_name,
                     $this->getFileChecker(),
-                    new CodeLocation($this, $this->class, true),
+                    new CodeLocation($this, $this->class, null, true),
                     $this->getSuppressedIssues()
                 ) === false) {
                     return false;
@@ -314,7 +314,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         $e->getMessage() . ' in docblock for ' . $this->fq_class_name,
-                        new CodeLocation($this->source, $this->class, true)
+                        new CodeLocation($this->source, $this->class, null, true)
                     )
                 )) {
                     // fall through
@@ -417,7 +417,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $plugins = Config::getInstance()->getPlugins();
 
         if ($plugins) {
-            $code_location = new CodeLocation($this->source, $this->class, true);
+            $code_location = new CodeLocation($this->source, $this->class, null, true);
 
             foreach ($plugins as $plugin) {
                 if ($plugin->visitClassLike($this, $this->class, $storage, $code_location) === false) {
@@ -512,7 +512,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                     new UnimplementedInterfaceMethod(
                                         'Method ' . $cased_method_id . ' is not defined on class ' .
                                         $this->fq_class_name,
-                                        new CodeLocation($this, $this->class, true)
+                                        new CodeLocation(
+                                            $this,
+                                            $this->class,
+                                            $class_context ? $class_context->include_location : null,
+                                            true
+                                        )
                                     ),
                                     $this->source->getSuppressedIssues()
                                 )) {
@@ -527,7 +532,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                     new InaccessibleMethod(
                                         'Interface-defined method ' . $cased_method_id .
                                             ' must be public in ' . $this->fq_class_name,
-                                        new CodeLocation($this, $this->class, true)
+                                        new CodeLocation(
+                                            $this,
+                                            $this->class,
+                                            $class_context ? $class_context->include_location : null,
+                                            true
+                                        )
                                     ),
                                     $this->source->getSuppressedIssues()
                                 )) {
@@ -611,7 +621,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $constructor_checker = $method_checker;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                $previous_context_include_location = $class_context->include_location;
                 foreach ($stmt->traits as $trait) {
+                    $class_context->include_location = new CodeLocation($this, $trait, null, true);
+
                     $fq_trait_name = self::getFQCLNFromNameObject(
                         $trait,
                         $this->source
@@ -638,6 +651,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         }
                     }
                 }
+                $class_context->include_location = $previous_context_include_location;
             }
         }
 
@@ -901,7 +915,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if (self::checkFullyQualifiedClassLikeName(
             $parent_class,
             $this->getFileChecker(),
-            new CodeLocation($this, $this->class->extends, true),
+            new CodeLocation($this, $this->class->extends, null, true),
             $this->getSuppressedIssues()
         ) === false
         ) {
@@ -1074,7 +1088,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         (string)$e->getMessage(),
-                        new CodeLocation($this, $this->class, true)
+                        new CodeLocation($this, $this->class, null, true)
                     )
                 )) {
                     // fall through

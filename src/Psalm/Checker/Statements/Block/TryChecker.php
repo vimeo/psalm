@@ -47,7 +47,7 @@ class TryChecker
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $fq_catch_class,
                         $statements_checker->getFileChecker(),
-                        new CodeLocation($statements_checker->getSource(), $catch_type),
+                        new CodeLocation($statements_checker->getSource(), $catch_type, $context->include_location),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
@@ -78,7 +78,7 @@ class TryChecker
             if (!$statements_checker->hasVariable($catch_var_id)) {
                 $statements_checker->registerVariable(
                     $catch_var_id,
-                    new CodeLocation($statements_checker, $catch, true)
+                    new CodeLocation($statements_checker, $catch, $context->include_location, true)
                 );
             }
 

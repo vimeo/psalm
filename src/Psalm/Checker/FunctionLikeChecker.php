@@ -182,7 +182,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         if (IssueBuffer::accepts(
                             new OverriddenMethodAccess(
                                 'Method ' . $cased_method_id . ' has different access level than ' . $parent_method_id,
-                                new CodeLocation($this, $this->function, true)
+                                new CodeLocation($this, $this->function, $context->include_location, true)
                             )
                         )) {
                             return false;
@@ -201,7 +201,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                 new MethodSignatureMismatch(
                                     'Method ' . $cased_method_id . ' has fewer arguments than parent method ' .
                                         $parent_method_id,
-                                    new CodeLocation($this, $this->function, true)
+                                    new CodeLocation($this, $this->function, $context->include_location, true)
                                 )
                             )) {
                                 return false;
@@ -223,7 +223,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                         $storage->params[$i]->signature_type . '\', expecting \'' .
                                         $implemented_param->signature_type . '\' as defined by ' .
                                         $parent_method_id,
-                                    $storage->params[$i]->location ?: new CodeLocation($this, $this->function, true)
+                                    $storage->params[$i]->location
+                                        ?: new CodeLocation(
+                                            $this,
+                                            $this->function,
+                                            $context->include_location,
+                                            true
+                                        )
                                 )
                             )) {
                                 return false;
@@ -246,7 +252,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                         $storage->params[$i]->type . '\', expecting \'' .
                                         $implemented_param->type . '\' as defined by ' .
                                         $parent_method_id,
-                                    $storage->params[$i]->location ?: new CodeLocation($this, $this->function, true)
+                                    $storage->params[$i]->location
+                                        ?: new CodeLocation(
+                                            $this,
+                                            $this->function,
+                                            $context->include_location,
+                                            true
+                                        )
                                 )
                             )) {
                                 return false;
@@ -266,7 +278,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             new MethodSignatureMismatch(
                                 'Method ' . $cased_method_id . ' has more arguments than parent method ' .
                                     $parent_method_id,
-                                new CodeLocation($this, $this->function, true)
+                                new CodeLocation($this, $this->function, $context->include_location, true)
                             )
                         )) {
                             return false;
@@ -593,7 +605,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $storage->cased_name = $function->name;
         }
 
-        $storage->location = new CodeLocation($source, $function, true);
+        $storage->location = new CodeLocation($source, $function, null, true);
         $storage->namespace = $source->getNamespace();
 
         $required_param_count = 0;
@@ -608,7 +620,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if (IssueBuffer::accepts(
                     new DuplicateParam(
                         'Duplicate param $' . $param->name . ' in docblock for ' . $cased_function_id,
-                        new CodeLocation($source, $param, true)
+                        new CodeLocation($source, $param, null, true)
                     ),
                     $source->getSuppressedIssues()
                 )) {
@@ -627,7 +639,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         new MisplacedRequiredParam(
                             'Required param $' . $param->name . ' should come before any optional params in ' .
                             $cased_function_id,
-                            new CodeLocation($source, $param, true)
+                            new CodeLocation($source, $param, null, true)
                         ),
                         $source->getSuppressedIssues()
                     )) {
@@ -686,6 +698,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $storage->return_type_location = new CodeLocation(
                 $source,
                 $function,
+                null,
                 false,
                 self::RETURN_TYPE_REGEX
             );
@@ -707,7 +720,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if (IssueBuffer::accepts(
                 new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($source, $function, true)
+                    new CodeLocation($source, $function, null, true)
                 )
             )) {
                 // fall through
@@ -789,7 +802,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                            new CodeLocation($source, $function, true)
+                            new CodeLocation($source, $function, null, true)
                         )
                     )) {
                         // fall through
@@ -797,7 +810,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
 
                 if (!$storage->return_type_location) {
-                    $storage->return_type_location = new CodeLocation($source, $function, true);
+                    $storage->return_type_location = new CodeLocation($source, $function, null, true);
                 }
 
                 if ($storage->return_type &&
@@ -810,7 +823,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             'Docblock return type does not match method return type for ' . $cased_function_id,
-                            new CodeLocation($source, $function, true)
+                            new CodeLocation($source, $function, null, true)
                         )
                     )) {
                         // fall through
@@ -838,7 +851,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $function,
                 $source,
                 $source->getFQCLN(),
-                new CodeLocation($source, $function, true)
+                new CodeLocation($source, $function, null, true)
             );
         }
 
@@ -1005,7 +1018,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if (!$return_type_location) {
-            $return_type_location = new CodeLocation($this, $this->function, true);
+            $return_type_location = new CodeLocation($this, $this->function, null, true);
         }
 
         $inferred_yield_types = [];
@@ -1044,7 +1057,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if (IssueBuffer::accepts(
                     new MissingClosureReturnType(
                         'Closure does not have a return type, expecting ' . $inferred_return_type,
-                        new CodeLocation($this, $this->function, true)
+                        new CodeLocation($this, $this->function, null, true)
                     ),
                     $this->suppressed_issues
                 )) {
@@ -1058,7 +1071,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type' .
                       (!$inferred_return_type->isMixed() ? ', expecting ' . $inferred_return_type : ''),
-                    new CodeLocation($this, $this->function, true)
+                    new CodeLocation($this, $this->function, null, true)
                 ),
                 $this->suppressed_issues
             )) {
@@ -1470,7 +1483,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param->name,
             $param->byRef,
             $param_type ?: Type::getMixed(),
-            new CodeLocation($source, $param, false, self::PARAM_TYPE_REGEX),
+            new CodeLocation($source, $param, null, false, self::PARAM_TYPE_REGEX),
             $is_optional,
             $is_nullable,
             $param->variadic

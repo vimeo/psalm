@@ -181,7 +181,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                     if (IssueBuffer::accepts(
                         new DuplicateClass(
                             'Class ' . $stmt->name . ' has already been defined internally',
-                            new \Psalm\CodeLocation($this, $stmt, true)
+                            new \Psalm\CodeLocation($this, $stmt, null, true)
                         )
                     )) {
                         // fall through
