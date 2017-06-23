@@ -1,7 +1,7 @@
 <?php
 namespace Psalm;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Type\Union;
 
 class Context
@@ -273,14 +273,14 @@ class Context
     /**
      * @param  string               $remove_var_id
      * @param  Union|null           $new_type
-     * @param  FileChecker|null     $file_checker
+     * @param  ?StatementsChecker   $statements_checker
      *
      * @return void
      */
     public function removeVarFromConflictingClauses(
         $remove_var_id,
         Union $new_type = null,
-        FileChecker $file_checker = null
+        StatementsChecker $statements_checker = null
     ) {
         $clauses_to_keep = [];
 
@@ -293,7 +293,7 @@ class Context
                 $clause->possibilities[$remove_var_id] === [$new_type_string]
             ) {
                 $clauses_to_keep[] = $clause;
-            } elseif ($file_checker &&
+            } elseif ($statements_checker &&
                 $new_type &&
                 !$new_type->isMixed()
             ) {
@@ -313,7 +313,7 @@ class Context
                         $type,
                         clone $new_type,
                         null,
-                        $file_checker,
+                        $statements_checker,
                         null,
                         [],
                         $failed_reconciliation
@@ -342,7 +342,7 @@ class Context
      * @param  string                 $remove_var_id
      * @param  \Psalm\Type\Union|null $existing_type
      * @param  \Psalm\Type\Union|null $new_type
-     * @param  FileChecker|null       $file_checker
+     * @param  ?StatementsChecker     $statements_checker
      *
      * @return void
      */
@@ -350,7 +350,7 @@ class Context
         $remove_var_id,
         Union $existing_type = null,
         Union $new_type = null,
-        FileChecker $file_checker = null
+        StatementsChecker $statements_checker = null
     ) {
         if (!$existing_type && isset($this->vars_in_scope[$remove_var_id])) {
             $existing_type = $this->vars_in_scope[$remove_var_id];
@@ -363,7 +363,7 @@ class Context
         $this->removeVarFromConflictingClauses(
             $remove_var_id,
             $existing_type->isMixed() ? null : $new_type,
-            $file_checker
+            $statements_checker
         );
 
         if ($existing_type->hasArray() || $existing_type->isMixed()) {

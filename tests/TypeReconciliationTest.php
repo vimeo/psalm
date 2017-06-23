@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\FileChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\Context;
@@ -16,6 +17,9 @@ class TypeReconciliationTest extends TestCase
     /** @var FileChecker */
     protected $file_checker;
 
+    /** @var StatementsChecker */
+    protected $statements_checker;
+
     /**
      * @return void
      */
@@ -25,6 +29,7 @@ class TypeReconciliationTest extends TestCase
 
         $this->file_checker = new FileChecker('somefile.php', $this->project_checker);
         $this->file_checker->context = new Context();
+        $this->statements_checker = new StatementsChecker($this->file_checker);
     }
 
     /**
@@ -42,7 +47,7 @@ class TypeReconciliationTest extends TestCase
             $type,
             Type::parseString($string),
             null,
-            $this->file_checker
+            $this->statements_checker
         );
 
         $this->assertSame(

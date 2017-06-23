@@ -34,7 +34,7 @@ class TypeChecker
      * @param  array<string, string>     $new_types
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string>             $changed_types
-     * @param  FileChecker               $file_checker
+     * @param  StatementsChecker         $statements_checker
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues
      *
@@ -44,7 +44,7 @@ class TypeChecker
         array $new_types,
         array $existing_types,
         array &$changed_types,
-        FileChecker $file_checker,
+        StatementsChecker $statements_checker,
         CodeLocation $code_location,
         array $suppressed_issues = []
     ) {
@@ -75,7 +75,7 @@ class TypeChecker
 
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
-                : self::getValueForKey($key, $existing_types, $file_checker);
+                : self::getValueForKey($key, $existing_types, $statements_checker->getFileChecker());
 
             if ($result_type && empty($result_type->types)) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -90,7 +90,7 @@ class TypeChecker
                     (string) $new_type_part,
                     $result_type,
                     $key,
-                    $file_checker,
+                    $statements_checker,
                     $code_location,
                     $suppressed_issues,
                     $failed_reconciliation
@@ -136,7 +136,7 @@ class TypeChecker
      * @param   string              $new_var_type
      * @param   Type\Union|null     $existing_var_type
      * @param   string|null         $key
-     * @param   FileChecker         $file_checker
+     * @param   StatementsChecker   $statements_checker
      * @param   CodeLocation        $code_location
      * @param   array               $suppressed_issues
      * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
@@ -147,11 +147,13 @@ class TypeChecker
         $new_var_type,
         $existing_var_type,
         $key,
-        FileChecker $file_checker,
+        StatementsChecker $statements_checker,
         CodeLocation $code_location = null,
         array $suppressed_issues = [],
         &$failed_reconciliation = false
     ) {
+        $file_checker = $statements_checker->getFileChecker();
+
         if ($existing_var_type === null) {
             if ($new_var_type === '^isset') {
                 return null;
@@ -249,7 +251,9 @@ class TypeChecker
             $existing_var_type->removeType($negated_type);
 
             if (empty($existing_var_type->types)) {
-                if (!$existing_var_type->from_docblock) {
+                if (!$existing_var_type->from_docblock
+                    && ($key !== '$this' || !($statements_checker->getSource()->getSource() instanceof TraitChecker))
+                ) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
                             new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),

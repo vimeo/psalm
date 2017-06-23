@@ -18,10 +18,10 @@ class TraitTest extends TestCase
                         private function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
@@ -33,10 +33,10 @@ class TraitTest extends TestCase
                         protected function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
@@ -48,10 +48,10 @@ class TraitTest extends TestCase
                         public function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public function doFoo() : void {
                             $this->fooFoo();
                         }
@@ -63,10 +63,10 @@ class TraitTest extends TestCase
                         /** @var string */
                         private $fooFoo = "";
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
@@ -78,10 +78,10 @@ class TraitTest extends TestCase
                         /** @var string */
                         protected $fooFoo = "";
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
@@ -93,10 +93,10 @@ class TraitTest extends TestCase
                         /** @var string */
                         public $fooFoo = "";
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public function doFoo() : void {
                             echo $this->fooFoo;
                         }
@@ -108,11 +108,11 @@ class TraitTest extends TestCase
                         protected function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
                     }
-            
+
                     class C extends B {
                         public function doFoo() : void {
                             $this->fooFoo();
@@ -125,11 +125,11 @@ class TraitTest extends TestCase
                         public function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
                     }
-            
+
                     class C extends B {
                         public function doFoo() : void {
                             $this->fooFoo();
@@ -143,12 +143,12 @@ class TraitTest extends TestCase
                             self::barBar();
                         }
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public static function barBar() : void {
-            
+
                         }
                     }',
             ],
@@ -158,14 +158,14 @@ class TraitTest extends TestCase
                         public function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
-            
+
                         public function fooFoo(string $a) : void {
                         }
                     }
-            
+
                     (new B)->fooFoo("hello");',
             ],
             'redefinedTraitMethodWithAlias' => [
@@ -174,12 +174,12 @@ class TraitTest extends TestCase
                         public function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T {
                             fooFoo as barBar;
                         }
-            
+
                         public function fooFoo() : void {
                             $this->barBar();
                         }
@@ -193,11 +193,11 @@ class TraitTest extends TestCase
                             return $this;
                         }
                     }
-            
+
                     class A {
                         use T;
                     }
-            
+
                     $a = (new A)->g();',
                 'assertions' => [
                     ['A' => '$a'],
@@ -211,18 +211,18 @@ class TraitTest extends TestCase
                             return $this;
                         }
                     }
-            
+
                     class A {
                         use T;
                     }
-            
+
                     class B extends A {
                     }
-            
+
                     class C {
                         use T;
                     }
-            
+
                     $a = (new B)->g();',
                 'assertions' => [
                     ['A' => '$a'],
@@ -236,7 +236,7 @@ class TraitTest extends TestCase
                     }
                     class A {
                         use T;
-            
+
                         /** @return void */
                         public function bar() {
                             T::foo();
@@ -249,14 +249,26 @@ class TraitTest extends TestCase
                         /** @return void */
                         abstract public function foo();
                     }
-            
+
                     abstract class A {
                         use T;
-            
+
                         /** @return void */
                         public function bar() {
                             $this->foo();
                         }
+                    }',
+            ],
+            'instanceOfTraitUser' => [
+                '<?php
+                    trait T {
+                      public function f() : void {
+                        if ($this instanceof A) { }
+                      }
+                    }
+
+                    class A {
+                      use T;
                     }',
             ],
         ];
@@ -274,11 +286,11 @@ class TraitTest extends TestCase
                         private function fooFoo() : void {
                         }
                     }
-            
+
                     class B {
                         use T;
                     }
-            
+
                     class C extends B {
                         public function doFoo() : void {
                             $this->fooFoo();
@@ -300,7 +312,7 @@ class TraitTest extends TestCase
                     }
                     class A {
                         use T;
-            
+
                         public function assignToFoo() : void {
                             $this->foo = 5;
                         }
@@ -315,7 +327,7 @@ class TraitTest extends TestCase
                     }
                     class A {
                         use T;
-            
+
                         public function __construct() : void {
                             $this->foo = 5;
                         }
@@ -330,11 +342,11 @@ class TraitTest extends TestCase
                     }
                     class A {
                         use T;
-            
+
                         public function __construct() : void {
                             $this->foo = 5;
                         }
-            
+
                         public function makeNull() : void {
                             $this->foo = null;
                         }
@@ -349,7 +361,7 @@ class TraitTest extends TestCase
                     }
                     class A {
                         use T;
-            
+
                         public function __construct() : void {
                             $this->foo = 5;
                         }

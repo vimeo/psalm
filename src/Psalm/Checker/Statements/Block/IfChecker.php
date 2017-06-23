@@ -118,7 +118,7 @@ class IfChecker
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
                     $changed_vars,
-                    $statements_checker->getFileChecker(),
+                    $statements_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
                     $statements_checker->getSuppressedIssues()
                 );
@@ -156,7 +156,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
                 $changed_vars,
-                $statements_checker->getFileChecker(),
+                $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
@@ -349,7 +349,7 @@ class IfChecker
                     $if_scope->negated_types,
                     $outer_context->vars_in_scope,
                     $changed_vars,
-                    $statements_checker->getFileChecker(),
+                    $statements_checker,
                     new CodeLocation(
                         $statements_checker->getSource(),
                         $stmt->cond,
@@ -441,7 +441,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
                 $changed_vars,
-                $statements_checker->getFileChecker(),
+                $statements_checker,
                 new CodeLocation(
                     $statements_checker->getSource(),
                     $elseif->cond,
@@ -516,7 +516,7 @@ class IfChecker
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
                 $changed_vars,
-                $statements_checker->getFileChecker(),
+                $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $elseif->cond, $outer_context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
@@ -634,7 +634,7 @@ class IfChecker
                         $negated_elseif_types,
                         $pre_conditional_context->vars_in_scope,
                         $changed_vars,
-                        $statements_checker->getFileChecker(),
+                        $statements_checker,
                         new CodeLocation($statements_checker->getSource(), $elseif, $outer_context->include_location),
                         $statements_checker->getSuppressedIssues()
                     );
@@ -757,7 +757,7 @@ class IfChecker
                 $else_types,
                 $else_context->vars_in_scope,
                 $changed_vars,
-                $statements_checker->getFileChecker(),
+                $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $else, $outer_context->include_location),
                 $statements_checker->getSuppressedIssues()
             );

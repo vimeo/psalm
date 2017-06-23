@@ -125,7 +125,7 @@ class AssignmentChecker
                 $array_var_id,
                 $context->vars_in_scope[$array_var_id],
                 $assign_value_type,
-                $statements_checker->getFileChecker()
+                $statements_checker
             );
         }
 
