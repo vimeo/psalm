@@ -1381,16 +1381,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         PhpParser\Node\Name $class_name,
         StatementsSource $source
     ) {
-        if ($class_name->parts == ['self']) {
+        if ($class_name->toString() == 'self') {
             return 'self';
         }
 
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
-            return implode('\\', $class_name->parts);
+            return $class_name->toString();
         }
 
         return self::getFQCLNFromString(
-            implode('\\', $class_name->parts),
+            $class_name->toString(),
             $source
         );
     }

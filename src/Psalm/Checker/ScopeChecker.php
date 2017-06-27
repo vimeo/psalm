@@ -57,8 +57,8 @@ class ScopeChecker
                 $has_default_leaver = false;
 
                 // iterate backwards in a case statement
-                for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
-                    $case = $stmt->cases[$i];
+                for ($j = count($stmt->cases) - 1; $j >= 0; --$j) {
+                    $case = $stmt->cases[$j];
 
                     $case_does_leave = self::doesEverBreakOrContinue($case->stmts, true);
 
@@ -166,8 +166,8 @@ class ScopeChecker
             if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 // iterate backwards
                 // in switch statements we only care here about continue
-                for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
-                    $case = $stmt->cases[$i];
+                for ($j = count($stmt->cases) - 1; $j >= 0; --$j) {
+                    $case = $stmt->cases[$j];
 
                     if (self::doesEverBreakOrContinue($case->stmts, true)) {
                         return true;
@@ -225,8 +225,8 @@ class ScopeChecker
             if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 // iterate backwards
                 // in switch statements we only care here about continue
-                for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
-                    $case = $stmt->cases[$i];
+                for ($j = count($stmt->cases) - 1; $j >= 0; --$j) {
+                    $case = $stmt->cases[$j];
 
                     if (!self::doesAlwaysBreakOrContinue($case->stmts, true)) {
                         return false;
@@ -289,8 +289,8 @@ class ScopeChecker
                 $has_default_terminator = false;
 
                 // iterate backwards in a case statement
-                for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
-                    $case = $stmt->cases[$i];
+                for ($j = count($stmt->cases) - 1; $j >= 0; --$j) {
+                    $case = $stmt->cases[$j];
 
                     if (self::doesEverBreakOrContinue($case->stmts)) {
                         return false;

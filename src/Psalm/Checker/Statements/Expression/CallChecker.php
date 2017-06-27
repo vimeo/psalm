@@ -69,34 +69,34 @@ class CallChecker
         if ($method instanceof PhpParser\Node\Name) {
             $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
 
-            if ($method->parts === ['method_exists']) {
+            if ($method->toString() === 'method_exists') {
                 $context->check_methods = false;
-            } elseif ($method->parts === ['class_exists']) {
+            } elseif ($method->toString() === 'class_exists') {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $context->addPhantomClass($first_arg->value->value);
                 } else {
                     $context->check_classes = false;
                 }
-            } elseif ($method->parts === ['function_exists']) {
+            } elseif ($method->toString() === 'function_exists') {
                 $context->check_functions = false;
-            } elseif ($method->parts === ['is_callable']) {
+            } elseif ($method->toString() === 'is_callable') {
                 $context->check_methods = false;
                 $context->check_functions = false;
-            } elseif ($method->parts === ['defined']) {
+            } elseif ($method->toString() === 'defined') {
                 $context->check_consts = false;
-            } elseif ($method->parts === ['extract']) {
+            } elseif ($method->toString() === 'extract') {
                 $context->check_variables = false;
-            } elseif ($method->parts === ['var_dump'] || $method->parts === ['shell_exec']) {
+            } elseif ($method->toString() === 'var_dump' || $method->toString() === 'shell_exec') {
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
-                        'Unsafe ' . implode('', $method->parts),
+                        'Unsafe ' . $method->toString(),
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
                     return false;
                 }
-            } elseif ($method->parts === ['define']) {
+            } elseif ($method->toString() === 'define') {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $second_arg = $stmt->args[1];
                     ExpressionChecker::analyze($statements_checker, $second_arg->value, $context);
@@ -215,7 +215,7 @@ class CallChecker
                 $stmt->inferredType = Type::getMixed();
             }
         } else {
-            $method_id = implode('\\', $stmt->name->parts);
+            $method_id = $stmt->name->toString();
 
             $in_call_map = FunctionChecker::inCallMap($method_id);
             $is_stubbed = isset(FunctionChecker::$stubbed_functions[strtolower($method_id)]);
@@ -375,7 +375,7 @@ class CallChecker
 
             if (Config::getInstance()->use_assert_for_type &&
                 $method instanceof PhpParser\Node\Name &&
-                $method->parts === ['assert'] &&
+                $method->toString() === 'assert' &&
                 isset($stmt->args[0])
             ) {
                 $assert_clauses = AlgebraChecker::getFormula(
@@ -420,7 +420,7 @@ class CallChecker
         }
 
         if ($stmt->name instanceof PhpParser\Node\Name &&
-            ($stmt->name->parts === ['get_class'] || $stmt->name->parts === ['gettype']) &&
+            ($stmt->name->toString() === 'get_class' || $stmt->name->toString() === 'gettype') &&
             $stmt->args
         ) {
             $var = $stmt->args[0]->value;
@@ -452,7 +452,7 @@ class CallChecker
         $late_static = false;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
+            if (!in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $statements_checker
@@ -473,7 +473,7 @@ class CallChecker
                     }
                 }
             } else {
-                switch ($stmt->class->parts[0]) {
+                switch ($stmt->class->getFirst()) {
                     case 'self':
                         $fq_class_name = $context->self;
                         break;
@@ -1103,10 +1103,10 @@ class CallChecker
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
 
-            if (count($stmt->class->parts) === 1
-                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+            if ($stmt->class->isUnqualified()
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
-                if ($stmt->class->parts[0] === 'parent') {
+                if ($stmt->class->getFirst() === 'parent') {
                     $fq_class_name = $statements_checker->getParentFQCLN();
 
                     if ($fq_class_name === null) {
@@ -1250,7 +1250,7 @@ class CallChecker
                 }
 
                 if ($stmt->class instanceof PhpParser\Node\Name
-                    && ($stmt->class->parts[0] !== 'parent' || $statements_checker->isStatic())
+                    && ($stmt->class->getFirst() !== 'parent' || $statements_checker->isStatic())
                     && (!$context->self
                         || $statements_checker->isStatic()
                         || !ClassChecker::classExtends($context->self, $fq_class_name)
@@ -1258,7 +1258,7 @@ class CallChecker
                 ) {
                     if (MethodChecker::checkStatic(
                         $method_id,
-                        $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
+                        $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'self',
                         new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
@@ -1285,7 +1285,7 @@ class CallChecker
                     return false;
                 }
 
-                $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
+                $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->toString() === 'parent'
                     ? $statements_checker->getFQCLN()
                     : $fq_class_name;
 
@@ -1736,7 +1736,8 @@ class CallChecker
         }
 
         if (!$has_packed_var && count($args) < count($function_params)) {
-            for ($i = count($args); $i < count($function_params); ++$i) {
+            $j = count($function_params);
+            for ($i = count($args); $i < $j; ++$i) {
                 $param = $function_params[$i];
 
                 if (!$param->is_optional && !$param->is_variadic) {

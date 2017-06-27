@@ -352,7 +352,7 @@ class ExpressionChecker
             }
 
             if ($stmt->class instanceof PhpParser\Node\Name &&
-                !in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+                !in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
                 if ($context->check_classes) {
                     $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
@@ -1446,11 +1446,11 @@ class ExpressionChecker
             && is_string($stmt->name)
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
-            if (count($stmt->class->parts) === 1
-                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+            if ($stmt->class->isUnqualified()
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
                 if (!$this_class_name) {
-                    $fq_class_name = $stmt->class->parts[0];
+                    $fq_class_name = $stmt->class->getFirst();
                 } else {
                     $fq_class_name = $this_class_name;
                 }
@@ -1460,7 +1460,7 @@ class ExpressionChecker
                         $stmt->class,
                         $source
                     )
-                    : implode('\\', $stmt->class->parts);
+                    : $stmt->class->toString();
             }
 
             return $fq_class_name . '::$' . $stmt->name;
