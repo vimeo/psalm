@@ -712,7 +712,7 @@ class Config
 
         foreach ($predefined_classes as $predefined_class) {
             $reflection_class = new \ReflectionClass($predefined_class);
-            
+
             if (!$reflection_class->isUserDefined()) {
                 $this->predefined_classlikes[strtolower($predefined_class)] = true;
             }
@@ -723,7 +723,7 @@ class Config
 
         foreach ($predefined_interfaces as $predefined_interface) {
             $reflection_class = new \ReflectionClass($predefined_interface);
-            
+
             if (!$reflection_class->isUserDefined()) {
                 $this->predefined_classlikes[strtolower($predefined_interface)] = true;
             }
