@@ -711,11 +711,9 @@ class Config
         $predefined_classes = get_declared_classes();
 
         foreach ($predefined_classes as $predefined_class) {
-            if (strpos($predefined_class, 'Psalm\\') !== 0 &&
-                strpos($predefined_class, 'PhpParser\\') !== 0 &&
-                strpos($predefined_class, 'Symfony\\') !== 0 &&
-                strpos($predefined_class, 'Composer\\') !== 0
-            ) {
+            $reflection_class = new \ReflectionClass($predefined_class);
+            
+            if (!$reflection_class->isUserDefined()) {
                 $this->predefined_classlikes[strtolower($predefined_class)] = true;
             }
         }
@@ -724,11 +722,9 @@ class Config
         $predefined_interfaces = get_declared_interfaces();
 
         foreach ($predefined_interfaces as $predefined_interface) {
-            if (strpos($predefined_interface, 'Psalm\\') !== 0 &&
-                strpos($predefined_interface, 'PhpParser\\') !== 0 &&
-                strpos($predefined_interface, 'Symfony\\') !== 0 &&
-                strpos($predefined_interface, 'Composer\\') !== 0
-            ) {
+            $reflection_class = new \ReflectionClass($predefined_interface);
+            
+            if (!$reflection_class->isUserDefined()) {
                 $this->predefined_classlikes[strtolower($predefined_interface)] = true;
             }
         }
