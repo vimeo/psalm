@@ -134,7 +134,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'aAndAOfB' => [
-                'A<mixed>',
+                'A',
                 [
                     'A',
                     'A<B>',

@@ -524,7 +524,10 @@ abstract class Type
             }
         }
 
-        if (count($combination->value_types) === 1 && !count($combination->objectlike_entries)) {
+        if (count($combination->value_types) === 1
+            && !count($combination->objectlike_entries)
+            && !count($combination->type_params)
+        ) {
             if (isset($combination->value_types['false'])) {
                 return Type::getBool();
             }
@@ -532,89 +535,36 @@ abstract class Type
             unset($combination->value_types['void']);
 
             if (!isset($combination->value_types['null'])) {
-                $combination->value_types['null'] = ['null' => null];
+                $combination->value_types['null'] = new TNull();
             }
         }
 
         $new_types = [];
 
         if (count($combination->objectlike_entries) &&
-            (!isset($combination->value_types['array'])
-                || isset($combination->value_types['array']['empty']))
+            (!isset($combination->type_params['array'])
+                || $combination->type_params['array'][1]->isEmpty())
         ) {
             $new_types[] = new ObjectLike($combination->objectlike_entries);
-        }
-
-        foreach ($combination->value_types as $generic_type => $value_type) {
-            $key_type = isset($combination->key_types[$generic_type])
-                ? $combination->key_types[$generic_type]
-                : [];
 
             // if we're merging an empty array with an object-like, clobber empty array
-            if ($generic_type === 'array'
-                && count($combination->objectlike_entries)
-                && count($value_type) === 1
-                && isset($value_type['empty'])
-                && count($key_type) === 1
-                && (isset($key_type['empty']) || isset($key_type['string']))
-            ) {
-                continue;
-            }
+            unset($combination->type_params['array']);
+        }
 
-            $expanded_key_types = [];
-
-            foreach ($key_type as $expandable_key_type) {
-                $expanded_key_types = array_merge($expanded_key_types, array_values($expandable_key_type->types));
-            }
-
-            if (count($value_type) === 1) {
-                $value_type_param = array_values($value_type)[0];
-                $generic_type_params = [$value_type_param];
-
-                // if we're continuing, also add the correspoinding key type param if it exists
-                if ($expanded_key_types) {
-                    array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
-                }
-
-                if ($value_type_param) {
-                    if ($generic_type === 'array') {
-                        $new_types[] = new TArray($generic_type_params);
-                    } else {
-                        $new_types[] = new TGenericObject($generic_type, $generic_type_params);
-                    }
-                } else {
-                    $new_types[] = Atomic::create($generic_type);
-                }
-
-                continue;
-            }
-
-            $expanded_value_types = [];
-
-            $has_null = false;
-
-            foreach ($value_type as $expandable_value_type) {
-                if ($expandable_value_type) {
-                    $has_null = $has_null || $expandable_value_type->isNullable();
-                    $expanded_value_types = array_merge(
-                        $expanded_value_types,
-                        array_values($expandable_value_type->types)
-                    );
-                } else {
-                    $expanded_value_types = [new TMixed];
-                }
-            }
-
-            $generic_type_params = [self::combineTypes($expanded_value_types)];
-
-            if ($expanded_key_types) {
-                array_unshift($generic_type_params, self::combineTypes($expanded_key_types));
-            }
-
+        foreach ($combination->type_params as $generic_type => $generic_type_params) {
             if ($generic_type === 'array') {
                 $new_types[] = new TArray($generic_type_params);
-            } else {
+            } elseif (!isset($combination->value_types[$generic_type])) {
                 $new_types[] = new TGenericObject($generic_type, $generic_type_params);
+            }
+        }
+
+        foreach ($combination->value_types as $generic_type => $type) {
+            if (!($type instanceof TEmpty)
+                || (count($combination->value_types) === 1
+                    && !count($new_types))
+            ) {
+                $new_types[] = $type;
             }
         }
 
@@ -631,11 +581,6 @@ abstract class Type
      */
     public static function scrapeTypeProperties(Atomic $type, TypeCombination $combination)
     {
-        // if we see the magic empty value and there's more than one type, ignore it
-        if ($type instanceof TEmpty) {
-            return null;
-        }
-
         if ($type instanceof TMixed) {
             return Type::getMixed();
         }
@@ -650,17 +595,17 @@ abstract class Type
         $type_key = $type->getKey();
 
         if ($type instanceof TArray || $type instanceof TGenericObject) {
-            if (!isset($combination->value_types[$type_key])) {
-                $combination->value_types[$type_key] = [];
-            }
+            for ($i = 0; $i < count($type->type_params); $i++) {
+                $type_param = $type->type_params[$i];
 
-            $value_type_param_index = count($type->type_params) - 1;
-
-            $combination->value_types[$type_key][(string) $type->type_params[$value_type_param_index]] =
-                $type->type_params[$value_type_param_index];
-
-            if ($value_type_param_index) {
-                $combination->key_types[$type_key][(string) $type->type_params[0]] = $type->type_params[0];
+                if (isset($combination->type_params[$type_key][$i])) {
+                    $combination->type_params[$type_key][$i] = Type::combineUnionTypes(
+                        $combination->type_params[$type_key][$i],
+                        $type_param
+                    );
+                } else {
+                    $combination->type_params[$type_key][$i] = $type_param;
+                }
             }
         } elseif ($type instanceof ObjectLike) {
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
@@ -678,11 +623,7 @@ abstract class Type
                 }
             }
         } else {
-            if (!isset($combination->value_types[$type_key])) {
-                $combination->value_types[$type_key] = [];
-            }
-
-            $combination->value_types[$type_key][(string) $type] = null;
+            $combination->value_types[$type_key] = $type;
         }
     }
 }
