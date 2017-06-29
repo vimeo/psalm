@@ -12,6 +12,7 @@ use Psalm\Checker\TraitChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
+use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -1064,6 +1065,18 @@ class FetchChecker
                         }
                     } elseif ($type instanceof Type\Atomic\TArray && $value_index !== null) {
                         $stmt->inferredType = $type->type_params[$value_index];
+                        if ($stmt->inferredType->isEmpty()) {
+                            if (IssueBuffer::accepts(
+                                new EmptyArrayAccess(
+                                    'Cannot access value on empty array variable ' . $var_id,
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                            $stmt->inferredType = Type::getMixed();
+                        }
                     } elseif ($type instanceof Type\Atomic\ObjectLike) {
                         $object_like_keys = array_keys($type->properties);
                         if ($object_like_keys) {

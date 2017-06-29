@@ -43,7 +43,7 @@ class ArrayAccessTest extends TestCase
                         if ($a["bat"]) {
                             return $a["bat"];
                         }
-            
+
                         return "blah";
                     }',
             ],
@@ -56,7 +56,7 @@ class ArrayAccessTest extends TestCase
                         if ($a[0]) {
                             return $a[0];
                         }
-            
+
                         return "blah";
                     }',
             ],
@@ -64,8 +64,17 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',
-                'assertions' => [],
                 'error_levels' => ['PossiblyNullArrayAccess'],
+            ],
+            'ignorePossiblyNullArrayAccess' => [
+                '<?php
+                    $arr = [];
+                    $x = $arr[0];
+                    if (isset($arr[0]) && $arr[0]) { }',
+                'assertions' => [
+                    ['mixed' => '$x'],
+                ],
+                'error_levels' => ['EmptyArrayAccess', 'MixedAssignment'],
             ],
         ];
     }

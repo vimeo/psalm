@@ -546,7 +546,8 @@ class AssignmentChecker
                     ($lhs_type_part instanceof TNamedObject &&
                         in_array(
                             strtolower($lhs_type_part->value),
-                            ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'], true
+                            ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'],
+                            true
                         )
                     )
                 ) {
