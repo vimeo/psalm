@@ -4,6 +4,7 @@ namespace Psalm\Tests\Traits;
 use Psalm\Checker\FileChecker;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Type\Union;
 
 trait FileCheckerValidCodeParseTestTrait
 {
@@ -16,9 +17,9 @@ trait FileCheckerValidCodeParseTestTrait
      * @dataProvider providerFileCheckerValidCodeParse
      *
      * @param string $code
-     * @param array<array<string,string>> $assertions
+     * @param array<string, string> $assertions
      * @param array<string> $error_levels
-     * @param array<string,\Psalm\Type\Union> $scope_vars
+     * @param array<string, Union> $scope_vars
      *
      * @return void
      */
