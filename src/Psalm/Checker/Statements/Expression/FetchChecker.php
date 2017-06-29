@@ -1075,7 +1075,10 @@ class FetchChecker
                             )) {
                                 return false;
                             }
-                            $stmt->inferredType = Type::getMixed();
+
+                            if (!IssueBuffer::isRecording()) {
+                                $stmt->inferredType = Type::getMixed();
+                            }
                         }
                     } elseif ($type instanceof Type\Atomic\ObjectLike) {
                         $object_like_keys = array_keys($type->properties);

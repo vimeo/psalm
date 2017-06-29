@@ -218,11 +218,18 @@ class Context
         $redefined_vars = [];
 
         foreach ($original_context->vars_in_scope as $var => $context_type) {
-            if (isset($this->vars_in_scope[$var]) &&
-                !$this->vars_in_scope[$var]->failed_reconciliation &&
-                (string)$this->vars_in_scope[$var] !== (string)$context_type
+            if (!isset($this->vars_in_scope[$var])) {
+                continue;
+            }
+
+            $this_var = $this->vars_in_scope[$var];
+
+            if (!$this_var->failed_reconciliation &&
+                !$this_var->isEmpty() &&
+                !$context_type->isEmpty() &&
+                (string)$this_var !== (string)$context_type
             ) {
-                $redefined_vars[$var] = $this->vars_in_scope[$var];
+                $redefined_vars[$var] = $this_var;
             }
         }
 

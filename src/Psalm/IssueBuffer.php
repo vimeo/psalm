@@ -280,6 +280,14 @@ class IssueBuffer
     }
 
     /**
+     * @return bool
+     */
+    public static function isRecording()
+    {
+        return self::$recording_level > 0;
+    }
+
+    /**
      * @return void
      */
     public static function startRecording()

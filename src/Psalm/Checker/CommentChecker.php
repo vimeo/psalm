@@ -441,7 +441,9 @@ class CommentChecker
                     $special[$type] = [];
                 }
 
-                $special[$type][$line_map && isset($line_map[$_]) ? $line_map[$_] : $m] = $data;
+                $line_number = $line_map && isset($line_map[$_]) ? $line_map[$_] : (int)$m;
+
+                $special[$type][$line_number] = $data;
             }
         }
 
