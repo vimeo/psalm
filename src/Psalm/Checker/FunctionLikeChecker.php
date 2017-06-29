@@ -828,12 +828,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     )) {
                         // fall through
                     }
-                } else {
+                } elseif ($docblock_return_type) {
                     $storage->return_type = $docblock_return_type;
                     $storage->return_type->setFromDocblock();
                 }
 
-                if ($docblock_info->ignore_nullable_return) {
+                if ($storage->return_type && $docblock_info->ignore_nullable_return) {
                     $storage->return_type->ignore_nullable_issues = true;
                 }
 
