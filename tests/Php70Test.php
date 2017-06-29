@@ -27,7 +27,7 @@ class Php70Test extends TestCase
 
                     $a = indexof("arr", "a");',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
             'methodTypeHints' => [
@@ -47,7 +47,7 @@ class Php70Test extends TestCase
 
                     $a = Foo::indexof("arr", "a");',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
             'nullCoalesce' => [
@@ -55,7 +55,7 @@ class Php70Test extends TestCase
                     $arr = ["hello", "goodbye"];
                     $a = $arr[rand(0, 10)] ?? null;',
                 'assertions' => [
-                    ['string|null' => '$a'],
+                    '$a' => 'string|null',
                 ],
             ],
             'nullCoalesceWithReference' => [
@@ -63,14 +63,14 @@ class Php70Test extends TestCase
                     $var = 0;
                     ($a =& $var) ?? "hello";',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
             'spaceship' => [
                 '<?php
                     $a = 1 <=> 1;',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
             'defineArray' => [
@@ -83,7 +83,7 @@ class Php70Test extends TestCase
 
                     $a = ANIMALS[1];',
                 'assertions' => [
-                    ['string' => '$a'],
+                    '$a' => 'string',
                 ],
             ],
             'anonymousClassLogger' => [
@@ -183,8 +183,8 @@ class Php70Test extends TestCase
                     }
                     $gen2 = $gen->getReturn();',
                 'assertions' => [
-                    ['Generator<int, int>' => '$gen'],
-                    ['mixed' => '$gen2'],
+                    '$gen' => 'Generator<int, int>',
+                    '$gen2' => 'mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],

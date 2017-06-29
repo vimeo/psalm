@@ -118,7 +118,7 @@ class PropertyTypeTest extends TestCase
                         $b = $a->foo;
                     }',
                 'assertions' => [
-                    ['null|string|int' => '$b'],
+                    '$b' => 'null|string|int',
                 ],
             ],
             'sharedPropertyInElseIf' => [
@@ -142,7 +142,7 @@ class PropertyTypeTest extends TestCase
                         $b = $a->foo;
                     }',
                 'assertions' => [
-                    ['null|string|int' => '$b'],
+                    '$b' => 'null|string|int',
                 ],
             ],
             'nullablePropertyCheck' => [
@@ -207,7 +207,7 @@ class PropertyTypeTest extends TestCase
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
                 'assertions' => [
-                    ['DOMDocument' => '$owner'],
+                    '$owner' => 'DOMDocument',
                 ],
             ],
             'goodArrayProperties' => [

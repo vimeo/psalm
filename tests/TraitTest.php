@@ -200,7 +200,7 @@ class TraitTest extends TestCase
 
                     $a = (new A)->g();',
                 'assertions' => [
-                    ['A' => '$a'],
+                    '$a' => 'A',
                 ],
             ],
             'parentTraitSelf' => [
@@ -225,7 +225,7 @@ class TraitTest extends TestCase
 
                     $a = (new B)->g();',
                 'assertions' => [
-                    ['A' => '$a'],
+                    '$a' => 'A',
                 ],
             ],
             'directStaticCall' => [

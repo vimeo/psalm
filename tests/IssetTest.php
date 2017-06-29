@@ -15,7 +15,7 @@ class IssetTest extends TestCase
                 '<?php
                     $a = isset($b) ? $b : null;',
                 'assertions' => [
-                    ['mixed' => '$a'],
+                    '$a' => 'mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -23,7 +23,7 @@ class IssetTest extends TestCase
                 '<?php
                     $a = $b ?? null;',
                 'assertions' => [
-                    ['mixed' => '$a'],
+                    '$a' => 'mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -32,7 +32,7 @@ class IssetTest extends TestCase
                     $b = false;
                     $a = $b ?? null;',
                 'assertions' => [
-                    ['false|null' => '$a'],
+                    '$a' => 'false|null',
                 ],
             ],
             'issetKeyedOffset' => [
@@ -41,7 +41,7 @@ class IssetTest extends TestCase
                         $foo["a"] = "hello";
                     }',
                 'assertions' => [
-                    ['mixed' => '$foo[\'a\']'],
+                    '$foo[\'a\']' => 'mixed',
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
@@ -52,9 +52,9 @@ class IssetTest extends TestCase
                 '<?php
                     /** @return void */
                     function takesString(string $str) {}
-        
+
                     $bar = rand(0, 1) ? ["foo" => "bar"] : false;
-        
+
                     if (isset($bar["foo"])) {
                         takesString($bar["foo"]);
                     }',
@@ -68,7 +68,7 @@ class IssetTest extends TestCase
                 '<?php
                     $foo["a"] = $foo["a"] ?? "hello";',
                 'assertions' => [
-                    ['mixed' => '$foo[\'a\']'],
+                    '$foo[\'a\']' => 'mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
                 'scope_vars' => [

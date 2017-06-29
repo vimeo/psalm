@@ -18,7 +18,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {
@@ -32,7 +32,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {
@@ -46,7 +46,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {
@@ -60,7 +60,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {
@@ -74,7 +74,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {
@@ -90,11 +90,11 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @var A|null */
                         public $a;
-            
+
                         /** @return void */
                         public function barBar(A $a = null) {
                             $this->a = $a;
@@ -108,11 +108,11 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @var A|null */
                         public $a;
-            
+
                         /** @return void */
                         public function barBar(A $a = null) {
                             $this->a = $a;
@@ -126,15 +126,15 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @var A|null */
                         public $a;
-            
+
                         /** @return void */
                         public function barBar(A $a = null) {
                             $this->a = $a;
-            
+
                             if ($this->a) {
                                 $this->a->fooFoo();
                             }
@@ -147,14 +147,14 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             if (!$one) {
                                 throw new Exception();
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -164,11 +164,11 @@ class TypeTest extends TestCase
                     class One {
                         /** @var int|null */
                         public $two;
-            
+
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
@@ -178,7 +178,7 @@ class TypeTest extends TestCase
                             else {
                                 $one->two = 3;
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -189,12 +189,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
@@ -210,12 +210,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
@@ -231,12 +231,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
@@ -251,23 +251,23 @@ class TypeTest extends TestCase
                     class One {
                         /** @var string */
                         public $a = "";
-            
+
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
                             if ($one === null) {
                                 return;
                             }
-            
+
                             if (!$one->a && $one->fooFoo()) {
                                 // do something
                             }
@@ -280,19 +280,19 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
                             if ($one === null || $two === null) {
                                 return;
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -303,14 +303,14 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             if ($one === null) {
                                 $one = new One();
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -321,7 +321,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
@@ -331,7 +331,7 @@ class TypeTest extends TestCase
                             else {
                                 $one = new One();
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -342,17 +342,17 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 if ($a === 4) {
                                     $one = new One();
@@ -361,7 +361,7 @@ class TypeTest extends TestCase
                                     $one = new One();
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -372,24 +372,24 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 switch ($a) {
                                     case 4:
                                         $one = new One();
                                         break;
-            
+
                                     default:
                                         $one = new One();
                                         break;
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -400,25 +400,25 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /**
                          * @return void
                          */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 switch ($a) {
                                     case 4:
                                         $one = new One();
                                         break;
-            
+
                                     default:
                                         throw new \Exception("bad");
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -429,22 +429,22 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 switch ($a) {
                                     case 4:
                                         return;
-            
+
                                     default:
                                         return;
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -455,12 +455,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 if ($a === 4) {
                                     $one = new One();
@@ -470,7 +470,7 @@ class TypeTest extends TestCase
                                     $one = new One();
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -481,12 +481,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 if ($a === 4) {
                                     $one = new One();
@@ -496,7 +496,7 @@ class TypeTest extends TestCase
                                     return;
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -507,12 +507,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 if ($a === 4) {
                                     $one = new One();
@@ -525,7 +525,7 @@ class TypeTest extends TestCase
                                     $one = new One();
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -536,18 +536,18 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             switch ($a) {
                                 case 4:
                                     if ($one === null) {
                                         break;
                                     }
-            
+
                                     $one->fooFoo();
                                     break;
                             }
@@ -560,19 +560,19 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @var One|null */
                         public $one;
-            
+
                         /** @return void */
                         public function barBar(One $one = null) {
                             $this->one = $one;
-            
+
                             if ($this->one === null) {
                                 $this->one = new One();
                             }
-            
+
                             $this->one->fooFoo();
                         }
                     }',
@@ -581,24 +581,24 @@ class TypeTest extends TestCase
                 '<?php
                     /** @var array|null */
                     $ids = (1 + 1 === 2) ? [] : null;
-        
+
                     if ($ids === null) {
                         $ids = [];
                     }',
                 'assertions' => [
-                    ['array<empty, empty>' => '$ids'],
+                    '$ids' => 'array<empty, empty>',
                 ],
             ],
             'arrayUnionTypeAssertionWithIsArray' => [
                 '<?php
                     /** @var array|null */
                     $ids = (1 + 1 === 2) ? [] : null;
-        
+
                     if (!is_array($ids)) {
                         $ids = [];
                     }',
                 'assertions' => [
-                    ['array<empty, empty>' => '$ids'],
+                    '$ids' => 'array<empty, empty>',
                 ],
             ],
             '2dArrayUnionTypeAssertionWithIsArray' => [
@@ -606,11 +606,11 @@ class TypeTest extends TestCase
                     /** @return array<array<string>>|null */
                     function foo() {
                         $ids = rand(0, 1) ? [["hello"]] : null;
-            
+
                         if (is_array($ids)) {
                             return $ids;
                         }
-            
+
                         return null;
                     }',
             ],
@@ -620,16 +620,16 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function barBar() {}
                     }
-            
+
                     $one = new One();
-            
+
                     $one = new Two();
-            
+
                     $one->barBar();',
             ],
             'variableReassignmentInIf' => [
@@ -638,17 +638,17 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function barBar() {}
                     }
-            
+
                     $one = new One();
-            
+
                     if (1 + 1 === 2) {
                         $one = new Two();
-            
+
                         $one->barBar();
                     }',
             ],
@@ -658,20 +658,20 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function barBar() {}
                     }
-            
+
                     class Three {
                         /** @return void */
                         public function baz() {}
                     }
-            
+
                     /** @var One|Two|Three|null */
                     $var = null;
-            
+
                     if ($var instanceof One) {
                         $var->fooFoo();
                     }
@@ -690,7 +690,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     /** @return void */
                     function a(One $var = null) {
                         if (!$var) {
@@ -707,15 +707,15 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     /** @var One|null */
                     $var = null;
-            
+
                     if (rand(0,100) === 5) {
-            
+
                     }
                     elseif (!$var) {
-            
+
                     }
                     else {
                         $var->fooFoo();
@@ -724,43 +724,43 @@ class TypeTest extends TestCase
             'typedAdjustment' => [
                 '<?php
                     $var = 0;
-            
+
                     if (5 + 3 === 8) {
                         $var = "hello";
                     }
-            
+
                     echo $var;',
                 'assertions' => [
-                    ['int|string' => '$var'],
+                    '$var' => 'int|string',
                 ],
             ],
             'typeMixedAdjustment' => [
                 '<?php
                     $var = 0;
-            
+
                     $arr = ["hello"];
-            
+
                     if (5 + 3 === 8) {
                         $var = $arr[0];
                     }
-            
+
                     echo $var;',
                 'assertions' => [
-                    ['int|string' => '$var'],
+                    '$var' => 'int|string',
                 ],
             ],
             'typeAdjustmentIfNull' => [
                 '<?php
                     class A {}
                     class B {}
-            
+
                     $var = rand(0,10) > 5 ? new A : null;
-            
+
                     if ($var === null) {
                         $var = new B;
                     }',
                 'assertions' => [
-                    ['A|B' => '$var'],
+                    '$var' => 'A|B',
                 ],
             ],
             'whileTrue' => [
@@ -772,7 +772,7 @@ class TypeTest extends TestCase
                         public function fooFoo(){
                             return rand(0,100) ? ["hello"] : false;
                         }
-            
+
                         /** @return void */
                         public function barBar(){
                             while ($row = $this->fooFoo()) {
@@ -784,36 +784,36 @@ class TypeTest extends TestCase
             'passingParam' => [
                 '<?php
                     class A {}
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a) {}
                     }
-            
+
                     $b = new B();
                     $b->barBar(new A);',
             ],
             'nullToNullableParam' => [
                 '<?php
                     class A {}
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {}
                     }
-            
+
                     $b = new B();
                     $b->barBar(null);',
             ],
             'objectToNullableObjectParam' => [
                 '<?php
                     class A {}
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {}
                     }
-            
+
                     $b = new B();
                     $b->barBar(new A);',
             ],
@@ -824,7 +824,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function barBar() {}
                     }
-            
+
                     class C {
                         /** @return void */
                         function fooFoo(A $a) {
@@ -845,7 +845,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function baz() {}
                     }
-            
+
                     class D {
                         /** @return void */
                         function fooFoo(A $a) {
@@ -863,7 +863,7 @@ class TypeTest extends TestCase
                     $a = 0;
                     $b = $a++;',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
             'typedValueAssertion' => [
@@ -873,7 +873,7 @@ class TypeTest extends TestCase
                      */
                     function fooFoo($a) : void {
                         $b = "aadad";
-            
+
                         if ($a === $b) {
                             echo substr($a, 1);
                         }
@@ -882,11 +882,11 @@ class TypeTest extends TestCase
             'issetWithSimpleAssignment' => [
                 '<?php
                     $array = [];
-            
+
                     if (isset($array[$a = 5])) {
                         print "hello";
                     }
-            
+
                     print $a;',
             ],
             'issetWithMultipleAssignments' => [
@@ -894,11 +894,11 @@ class TypeTest extends TestCase
                     if (rand(0, 4) > 2) {
                         $arr = [5 => [3 => "hello"]];
                     }
-            
+
                     if (isset($arr[$a = 5][$b = 3])) {
-            
+
                     }
-            
+
                     echo $a;
                     echo $b;',
             ],
@@ -923,7 +923,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {
@@ -938,11 +938,11 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @var A|null */
                         protected $a;
-            
+
                         /** @return void */
                         public function barBar(A $a = null) {
                             $this->a = $a;
@@ -957,12 +957,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
@@ -979,12 +979,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
@@ -1001,19 +1001,19 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
                             if ($two === null) {
                                 return;
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -1025,19 +1025,19 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
                             if ($one === null && $two === null) {
                                 return;
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -1049,14 +1049,14 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one) {
                             if (!$one) {
                                 // do nothing
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -1068,23 +1068,23 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 if ($a === 4) {
                                     $one = new One();
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -1096,12 +1096,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 switch ($a) {
                                     case 4:
@@ -1109,7 +1109,7 @@ class TypeTest extends TestCase
                                         break;
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -1121,23 +1121,23 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 switch ($a) {
                                     case 4:
                                         $one = new One();
                                         break;
-            
+
                                     default:
                                         break;
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -1149,12 +1149,12 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
                             $a = 4;
-            
+
                             if ($one === null) {
                                 if ($a === 4) {
                                     $one = new One();
@@ -1167,7 +1167,7 @@ class TypeTest extends TestCase
                                     return;
                                 }
                             }
-            
+
                             $one->fooFoo();
                         }
                     }',
@@ -1179,20 +1179,20 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     class Two {
                         /** @return void */
                         public function barBar() {}
                     }
-            
+
                     $one = new One();
-            
+
                     if (1 + 1 === 2) {
                         $one = new Two();
-            
+
                         $one->barBar();
                     }
-            
+
                     $one->barBar();',
                 'error_message' => 'UndefinedMethod',
             ],
@@ -1201,9 +1201,9 @@ class TypeTest extends TestCase
                     class One {
                         public function fooFoo() {}
                     }
-            
+
                     $var = new One();
-            
+
                     if ($var instanceof One) {
                         $var->fooFoo();
                     }',
@@ -1215,9 +1215,9 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function fooFoo() {}
                     }
-            
+
                     $var = new One();
-            
+
                     if ($var instanceof One) {
                         $var->fooFoo();
                     }
@@ -1229,12 +1229,12 @@ class TypeTest extends TestCase
             'wrongParam' => [
                 '<?php
                     class A {}
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a) {}
                     }
-            
+
                     $b = new B();
                     $b->barBar(5);',
                 'error_message' => 'InvalidArgument',
@@ -1242,12 +1242,12 @@ class TypeTest extends TestCase
             'intToNullableObjectParam' => [
                 '<?php
                     class A {}
-            
+
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {}
                     }
-            
+
                     $b = new B();
                     $b->barBar(5);',
                 'error_message' => 'InvalidArgument',
@@ -1259,7 +1259,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function blab() {}
                     }
-            
+
                     class C {
                         /** @return void */
                         function fooFoo(A $a) {
@@ -1273,7 +1273,7 @@ class TypeTest extends TestCase
             'nullCheckInsideForeachWithNoLeaveStatement' => [
                 '<?php
                     $a = null;
-            
+
                     $a->fooBar();',
                 'error_message' => 'NullReference',
             ],

@@ -24,9 +24,9 @@ class Php55Test extends TestCase
                             yield $i;
                         }
                     }
-            
+
                     $a = null;
-            
+
                     /*
                      * Note that an array is never created or returned,
                      * which saves memory.
@@ -35,7 +35,7 @@ class Php55Test extends TestCase
                         $a = $number;
                     }',
                 'assertions' => [
-                    ['null|int' => '$a'],
+                    '$a' => 'null|int',
                 ],
             ],
             'finally' => [
@@ -53,7 +53,7 @@ class Php55Test extends TestCase
                         [1, 2],
                         [3, 4],
                     ];
-            
+
                     foreach ($array as list($a, $b)) {
                         echo "A: $a; B: $b\n";
                     }',
@@ -63,17 +63,17 @@ class Php55Test extends TestCase
                     $a = [1, 2, 3][0];
                     $b = "PHP"[0];',
                 'assertions' => [
-                    ['int' => '$a'],
-                    ['string' => '$b'],
+                    '$a' => 'int',
+                    '$b' => 'string',
                 ],
             ],
             'classString' => [
                 '<?php
                     class ClassName {}
-            
+
                     $a = ClassName::class;',
                 'assertions' => [
-                    ['string' => '$a'],
+                    '$a' => 'string',
                 ],
             ],
         ];

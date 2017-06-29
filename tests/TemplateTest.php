@@ -18,14 +18,14 @@ class TemplateTest extends TestCase
                     class B {}
                     class C {}
                     class D {}
-            
+
                     /**
                      * @template T as object
                      */
                     class Foo {
                         /** @var string */
                         public $T;
-            
+
                         /**
                          * @param string $T
                          * @template-typeof T $T
@@ -33,7 +33,7 @@ class TemplateTest extends TestCase
                         public function __construct(string $T) {
                             $this->T = $T;
                         }
-            
+
                         /**
                          * @return T
                          */
@@ -42,83 +42,83 @@ class TemplateTest extends TestCase
                             return new $t();
                         }
                     }
-            
+
                     $at = "A";
-            
+
                     /** @var Foo<A> */
                     $afoo = new Foo($at);
                     $afoo_bar = $afoo->bar();
-            
+
                     $bfoo = new Foo(B::class);
                     $bfoo_bar = $bfoo->bar();
-            
+
                     $cfoo = new Foo("C");
                     $cfoo_bar = $cfoo->bar();
-            
+
                     $dt = "D";
                     $dfoo = new Foo($dt);',
                 'assertions' => [
-                    ['Foo<A>' => '$afoo'],
-                    ['A' => '$afoo_bar'],
+                    '$afoo' => 'Foo<A>',
+                    '$afoo_bar' => 'A',
 
-                    ['Foo<B>' => '$bfoo'],
-                    ['B' => '$bfoo_bar'],
+                    '$bfoo' => 'Foo<B>',
+                    '$bfoo_bar' => 'B',
 
-                    ['Foo<C>' => '$cfoo'],
-                    ['C' => '$cfoo_bar'],
+                    '$cfoo' => 'Foo<C>',
+                    '$cfoo_bar' => 'C',
 
-                    ['Foo<mixed>' => '$dfoo'],
+                    '$dfoo' => 'Foo<mixed>',
                 ],
             ],
             'classTemplateContainer' => [
                 '<?php
                     class A {}
-            
+
                     /**
                      * @template T
                      */
                     class Foo {
                         /** @var T */
                         public $obj;
-            
+
                         /**
                          * @param T $obj
                          */
                         public function __construct($obj) {
                             $this->obj = $obj;
                         }
-            
+
                         /**
                          * @return T
                          */
                         public function bar() {
                             return $this->obj;
                         }
-            
+
                         public function __toString() : string {
                             return "hello " . $this->obj;
                         }
                     }
-            
+
                     $afoo = new Foo(new A());
                     $afoo_bar = $afoo->bar();',
                 'assertions' => [
-                    ['Foo<A>' => '$afoo'],
-                    ['A' => '$afoo_bar'],
+                    '$afoo' => 'Foo<A>',
+                    '$afoo_bar' => 'A',
                 ],
                 'error_levels' => ['MixedOperand'],
             ],
             'phanTuple' => [
                 '<?php
                     namespace Phan\Library;
-            
+
                     /**
                      * An abstract tuple.
                      */
                     abstract class Tuple
                     {
                         const ARITY = 0;
-            
+
                         /**
                          * @return int
                          * The arity of this tuple
@@ -127,14 +127,14 @@ class TemplateTest extends TestCase
                         {
                             return (int)static::ARITY;
                         }
-            
+
                         /**
                          * @return array
                          * An array of all elements in this tuple.
                          */
                         abstract public function toArray() : array;
                     }
-            
+
                     /**
                      * A tuple of 1 element.
                      *
@@ -145,10 +145,10 @@ class TemplateTest extends TestCase
                     {
                         /** @var int */
                         const ARITY = 1;
-            
+
                         /** @var T0 */
                         public $_0;
-            
+
                         /**
                          * @param T0 $_0
                          * The 0th element
@@ -156,7 +156,7 @@ class TemplateTest extends TestCase
                         public function __construct($_0) {
                             $this->_0 = $_0;
                         }
-            
+
                         /**
                          * @return int
                          * The arity of this tuple
@@ -165,7 +165,7 @@ class TemplateTest extends TestCase
                         {
                             return (int)static::ARITY;
                         }
-            
+
                         /**
                          * @return array
                          * An array of all elements in this tuple.
@@ -177,7 +177,7 @@ class TemplateTest extends TestCase
                             ];
                         }
                     }
-            
+
                     /**
                      * A tuple of 2 elements.
                      *
@@ -193,10 +193,10 @@ class TemplateTest extends TestCase
                     {
                         /** @var int */
                         const ARITY = 2;
-            
+
                         /** @var T1 */
                         public $_1;
-            
+
                         /**
                          * @param T0 $_0
                          * The 0th element
@@ -208,7 +208,7 @@ class TemplateTest extends TestCase
                             parent::__construct($_0);
                             $this->_1 = $_1;
                         }
-            
+
                         /**
                          * @return array
                          * An array of all elements in this tuple.
@@ -221,15 +221,15 @@ class TemplateTest extends TestCase
                             ];
                         }
                     }
-            
+
                     $a = new Tuple2("cool", 5);
-            
+
                     /** @return void */
                     function takes_int(int $i) {}
-            
+
                     /** @return void */
                     function takes_string(string $s) {}
-            
+
                     takes_string($a->_0);
                     takes_int($a->_1);',
             ],
@@ -243,9 +243,9 @@ class TemplateTest extends TestCase
                     function foo($x) {
                         return $x;
                     }
-            
+
                     function bar(string $a) : void { }
-            
+
                     bar(foo("string"));',
             ],
             'validTemplatedStaticMethodType' => [
@@ -260,9 +260,9 @@ class TemplateTest extends TestCase
                             return $x;
                         }
                     }
-            
+
                     function bar(string $a) : void { }
-            
+
                     bar(A::foo("string"));',
             ],
             'validTemplatedInstanceMethodType' => [
@@ -277,9 +277,9 @@ class TemplateTest extends TestCase
                             return $x;
                         }
                     }
-            
+
                     function bar(string $a) : void { }
-            
+
                     bar((new A())->foo("string"));',
             ],
             'genericArrayKeys' => [
@@ -293,10 +293,10 @@ class TemplateTest extends TestCase
                     function my_array_keys($arr) {
                         return array_keys($arr);
                     }
-            
+
                     $a = my_array_keys(["hello" => 5, "goodbye" => new Exception()]);',
                 'assertions' => [
-                    ['array<int, string>' => '$a'],
+                    '$a' => 'array<int, string>',
                 ],
             ],
             'genericArrayReverse' => [
@@ -311,10 +311,10 @@ class TemplateTest extends TestCase
                     function my_array_reverse($arr) {
                         return array_reverse($arr);
                     }
-            
+
                     $b = my_array_reverse(["hello" => 5, "goodbye" => 6]);',
                 'assertions' => [
-                    ['array<int, string>' => '$b'],
+                    '$b' => 'array<int, string>',
                 ],
             ],
         ];
@@ -336,9 +336,9 @@ class TemplateTest extends TestCase
                     function foo($x) {
                         return $x;
                     }
-            
+
                     function bar(string $a) : void { }
-            
+
                     bar(foo(4));',
                 'error_message' => 'InvalidScalarArgument',
             ],
@@ -354,9 +354,9 @@ class TemplateTest extends TestCase
                             return $x;
                         }
                     }
-            
+
                     function bar(string $a) : void { }
-            
+
                     bar(A::foo(4));',
                 'error_message' => 'InvalidScalarArgument',
             ],
@@ -372,9 +372,9 @@ class TemplateTest extends TestCase
                             return $x;
                         }
                     }
-            
+
                     function bar(string $a) : void { }
-            
+
                     bar((new A())->foo(4));',
                 'error_message' => 'InvalidScalarArgument',
             ],

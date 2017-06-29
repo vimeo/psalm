@@ -49,10 +49,8 @@ trait FileCheckerValidCodeParseTestTrait
         $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $file_checker->visitAndAnalyzeMethods($context);
 
-        foreach ($assertions as $assertion) {
-            foreach ($assertion as $expected => $var) {
-                $this->assertSame($expected, (string)$context->vars_in_scope[$var]);
-            }
+        foreach ($assertions as $var => $expected) {
+            $this->assertSame($expected, (string)$context->vars_in_scope[$var]);
         }
     }
 }

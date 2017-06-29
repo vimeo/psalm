@@ -25,7 +25,7 @@ class LoopScopeTest extends TestCase
                             default:
                                 continue;
                         }
-            
+
                         $moo = $foo;
                     }',
             ],
@@ -48,7 +48,7 @@ class LoopScopeTest extends TestCase
                             default:
                                 continue;
                         }
-            
+
                         $moo = $foo;
                     }',
             ],
@@ -60,12 +60,12 @@ class LoopScopeTest extends TestCase
                             case \'b\':
                                 $foo = 2;
                                 break;
-            
+
                             default:
                                 $foo = 3;
                                 break;
                         }
-            
+
                         $moo = $foo;
                     }',
             ],
@@ -75,52 +75,52 @@ class LoopScopeTest extends TestCase
                         switch ($letter) {
                             case \'a\':
                                 $bar = 1;
-            
+
                             case \'b\':
                                 $foo = 2;
                                 break;
-            
+
                             default:
                                 $foo = 3;
                                 break;
                         }
-            
+
                         $moo = $foo;
                     }',
             ],
             'whileVar' => [
                 '<?php
                     $worked = false;
-            
+
                     while (rand(0,100) === 10) {
                         $worked = true;
                     }',
                 'assertions' => [
-                    ['bool' => '$worked'],
+                    '$worked' => 'bool',
                 ],
             ],
             'doWhileVar' => [
                 '<?php
                     $worked = false;
-            
+
                     do {
                         $worked = true;
                     }
                     while (rand(0,100) === 10);',
                 'assertions' => [
-                    ['bool' => '$worked'],
+                    '$worked' => 'bool',
                 ],
             ],
             'doWhileVarAndBreak' => [
                 '<?php
                     /** @return void */
                     function foo(string $b) {}
-            
+
                     do {
                         if (null === ($a = rand(0, 1) ? "hello" : null)) {
                             break;
                         }
-            
+
                         foo($a);
                     }
                     while (rand(0,100) === 10);',
@@ -131,32 +131,32 @@ class LoopScopeTest extends TestCase
                     class A {
                         /** @var A|B */
                         public $child;
-            
+
                         public function __construct() {
                             $this->child = rand(0, 1) ? new A() : new B();
                         }
                     }
-            
+
                     function makeA() : A {
                         return new A();
                     }
-            
+
                     $a = makeA();
-            
+
                     while ($a instanceof A) {
                         $a = $a->child;
                     }',
                 'assertions' => [
-                    ['B' => '$a'],
+                    '$a' => 'B',
                 ],
             ],
             'secondLoopWithNotNullCheck' => [
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
-            
+
                     $a = null;
-            
+
                     foreach ([1, 2, 3] as $i) {
                         if ($a !== null) takesInt($a);
                         $a = $i;
@@ -166,9 +166,9 @@ class LoopScopeTest extends TestCase
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
-            
+
                     $a = null;
-            
+
                     foreach ([1, 2, 3] as $i) {
                         if (is_int($a)) takesInt($a);
                         $a = $i;
@@ -178,12 +178,12 @@ class LoopScopeTest extends TestCase
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
-            
+
                     $a = null;
-            
+
                     foreach ([1, 2, 3] as $i) {
                         if (is_int($a)) takesInt($a);
-            
+
                         if (rand(0, 1)) {
                             $a = $i;
                         }
@@ -193,9 +193,9 @@ class LoopScopeTest extends TestCase
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
-            
+
                     $a = null;
-            
+
                     foreach ([1, 2, 3] as $i) {
                         if (is_int($a)) {
                             $a = 6;
@@ -208,12 +208,12 @@ class LoopScopeTest extends TestCase
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
-            
+
                     $a = null;
-            
+
                     foreach ([1, 2, 3] as $i) {
                         if (is_int($a)) takesInt($a);
-            
+
                         while (rand(0, 1)) {
                             $a = $i;
                         }
@@ -224,20 +224,20 @@ class LoopScopeTest extends TestCase
                     class A {}
                     class B extends A {}
                     class C extends A {}
-            
+
                     $b = null;
-            
+
                     foreach ([new A, new A] as $a) {
                         if ($a instanceof B) {
-            
+
                         } elseif (!$a instanceof C) {
                             return "goodbye";
                         }
-            
+
                         if ($b instanceof C) {
                             return "hello";
                         }
-            
+
                         $b = $a;
                     }',
             ],
@@ -245,20 +245,20 @@ class LoopScopeTest extends TestCase
                 '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
-            
+
                     $a = null;
                     $b = null;
-            
+
                     foreach ([1, 2, 3] as $i) {
                         if ($b !== null) {
                             takesInt($b);
                         }
-            
+
                         if ($a !== null) {
                             takesInt($a);
                             $b = $a;
                         }
-            
+
                         $a = $i;
                     }',
             ],
@@ -279,7 +279,7 @@ class LoopScopeTest extends TestCase
             'unsetInLoop' => [
                 '<?php
                     $a = null;
-            
+
                     foreach ([1, 2, 3] as $i) {
                         $a = $i;
                         unset($i);
@@ -288,20 +288,20 @@ class LoopScopeTest extends TestCase
             'assignInsideForeach' => [
                 '<?php
                     $b = false;
-            
+
                     foreach ([1, 2, 3, 4] as $a) {
                         if ($a === rand(0, 10)) {
                             $b = true;
                         }
                     }',
                 'assertions' => [
-                    ['bool' => '$b'],
+                    '$b' => 'bool',
                 ],
             ],
             'assignInsideForeachWithBreak' => [
                 '<?php
                     $b = false;
-            
+
                     foreach ([1, 2, 3, 4] as $a) {
                         if ($a === rand(0, 10)) {
                             $b = true;
@@ -309,7 +309,7 @@ class LoopScopeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    ['bool' => '$b'],
+                    '$b' => 'bool',
                 ],
             ],
             'nullCheckInsideForeachWithContinue' => [
@@ -320,18 +320,18 @@ class LoopScopeTest extends TestCase
                         {
                             return [new A, null];
                         }
-            
+
                         /** @return void */
                         public function barBar() {
-            
+
                         }
                     }
-            
+
                     foreach (A::loadMultiple() as $a) {
                         if ($a === null) {
                             continue;
                         }
-            
+
                         $a->barBar();
                     }',
             ],
@@ -349,7 +349,7 @@ class LoopScopeTest extends TestCase
                     foreach ([1, 2, 3, 4] as $b) {
                         $array[] = "hello";
                     }
-            
+
                     echo $array;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable ' .
                     '$array, first seen on line 3',
@@ -361,7 +361,7 @@ class LoopScopeTest extends TestCase
                             $array[] = "hello";
                         }
                     }
-            
+
                     echo $array;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable ' .
                     '$array, first seen on line 4',
@@ -371,7 +371,7 @@ class LoopScopeTest extends TestCase
                     foreach ([1, 2, 3, 4] as $b) {
                         $car = "Volvo";
                     }
-            
+
                     echo $car;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable ' .
                     '$car, first seen on line 3',
@@ -384,7 +384,7 @@ class LoopScopeTest extends TestCase
                             break;
                         }
                     }
-            
+
                     echo $a;',
                 'error_message' => 'PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, ' .
                     'first seen on line 4',
@@ -412,18 +412,18 @@ class LoopScopeTest extends TestCase
                         {
                             return [new A, null];
                         }
-            
+
                         /** @return void */
                         public function barBar() {
-            
+
                         }
                     }
-            
+
                     foreach (A::loadMultiple() as $a) {
                         if ($a === null) {
                             // do nothing
                         }
-            
+
                         $a->barBar();
                     }',
                 'error_message' => 'PossiblyNullReference',

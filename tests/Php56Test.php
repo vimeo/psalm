@@ -16,19 +16,19 @@ class Php56Test extends TestCase
                     const ARR = ["a", "b"];
                     $a = ARR[0];',
                 'assertions' => [
-                    ['string' => '$a'],
+                    '$a' => 'string',
                 ],
             ],
             'constFeatures' => [
                 '<?php
                     const ONE = 1;
                     const TWO = ONE * 2;
-            
+
                     class C {
                         const THREE = TWO + 1;
                         const ONE_THIRD = ONE / self::THREE;
                         const SENTENCE = "The value of THREE is " . self::THREE;
-            
+
                         /**
                          * @param  int $a
                          * @return int
@@ -37,16 +37,16 @@ class Php56Test extends TestCase
                             return $a;
                         }
                     }
-            
+
                     $d = (new C)->f();
                     $e = C::SENTENCE;
                     $f = TWO;
                     $g = C::ONE_THIRD;',
                 'assertions' => [
-                    ['int' => '$d'],
-                    ['string' => '$e'],
-                    ['int' => '$f'],
-                    ['float|int' => '$g'],
+                    '$d' => 'int',
+                    '$e' => 'string',
+                    '$f' => 'int',
+                    '$g' => 'float|int',
                 ],
             ],
             'argumentUnpacking' => [
@@ -60,7 +60,7 @@ class Php56Test extends TestCase
                     function add($a, $b, $c) {
                         return $a + $b + $c;
                     }
-            
+
                     $operators = [2, 3];
                     echo add(1, ...$operators);',
             ],
@@ -74,10 +74,10 @@ class Php56Test extends TestCase
                     namespace Name\Space {
                         const FOO = 42;
                     }
-            
+
                     namespace Noom\Spice {
                         use const Name\Space\FOO;
-            
+
                         echo FOO . "\n";
                         echo \Name\Space\FOO;
                     }',
@@ -87,10 +87,10 @@ class Php56Test extends TestCase
                     namespace Name\Space {
                         const FOO = 42;
                     }
-            
+
                     namespace Noom\Spice {
                         use const Name\Space\FOO;
-            
+
                         class A {
                             /** @return void */
                             public function fooFoo() {
@@ -108,10 +108,10 @@ class Php56Test extends TestCase
                          */
                         function f() { echo __FUNCTION__."\n"; }
                     }
-            
+
                     namespace Noom\Spice {
                         use function Name\Space\f;
-            
+
                         f();
                         \Name\Space\f();
                     }',
@@ -124,10 +124,10 @@ class Php56Test extends TestCase
                          */
                         function f() { echo __FUNCTION__."\n"; }
                     }
-            
+
                     namespace Noom\Spice {
                         use function Name\Space\f;
-            
+
                         class A {
                             /** @return void */
                             public function fooFoo() {

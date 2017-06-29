@@ -16,16 +16,16 @@ class ListTest extends TestCase
                 '<?php
                     list($a, $b) = ["a", "b"];',
                 'assertions' => [
-                    ['string' => '$a'],
-                    ['string' => '$b'],
+                    '$a' => 'string',
+                    '$b' => 'string',
                 ],
             ],
             'simpleVarsWithSeparateTypes' => [
                 '<?php
                     list($a, $b) = ["a", 2];',
                 'assertions' => [
-                    ['string' => '$a'],
-                    ['int' => '$b'],
+                    '$a' => 'string',
+                    '$b' => 'int',
                 ],
             ],
             'simpleVarsWithSeparateTypesInVar' => [
@@ -33,8 +33,8 @@ class ListTest extends TestCase
                     $bar = ["a", 2];
                     list($a, $b) = $bar;',
                 'assertions' => [
-                    ['int|string' => '$a'],
-                    ['int|string' => '$b'],
+                    '$a' => 'int|string',
+                    '$b' => 'int|string',
                 ],
             ],
             'thisVar' => [
@@ -42,14 +42,14 @@ class ListTest extends TestCase
                     class A {
                         /** @var string */
                         public $a = "";
-            
+
                         /** @var string */
                         public $b = "";
-            
+
                         public function fooFoo() : string
                         {
                             list($this->a, $this->b) = ["a", "b"];
-            
+
                             return $this->a;
                         }
                     }',
@@ -68,14 +68,14 @@ class ListTest extends TestCase
                     class A {
                         /** @var int */
                         public $a = 0;
-            
+
                         /** @var string */
                         public $b = "";
-            
+
                         public function fooFoo() : string
                         {
                             list($this->a, $this->b) = ["a", "b"];
-            
+
                             return $this->a;
                         }
                     }',

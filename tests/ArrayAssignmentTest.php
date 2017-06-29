@@ -73,111 +73,111 @@ class ArrayAssignmentTest extends TestCase
             'genericArrayCreation' => [
                 '<?php
                     $out = [];
-            
+
                     foreach ([1, 2, 3, 4, 5] as $value) {
                         $out[] = 4;
                     }',
                 'assertions' => [
-                    ['array<int, int>' => '$out'],
+                    '$out' => 'array<int, int>',
                 ],
             ],
             'generic2dArrayCreation' => [
                 '<?php
                     $out = [];
-            
+
                     foreach ([1, 2, 3, 4, 5] as $value) {
                         $out[] = [4];
                     }',
                 'assertions' => [
-                    ['array<int, array<int, int>>' => '$out'],
+                    '$out' => 'array<int, array<int, int>>',
                 ],
             ],
             'generic2dArrayCreationAddedInIf' => [
                 '<?php
                     $out = [];
-            
+
                     $bits = [];
-            
+
                     foreach ([1, 2, 3, 4, 5] as $value) {
                         if (rand(0,100) > 50) {
                             $out[] = $bits;
                             $bits = [];
                         }
-            
+
                         $bits[] = 4;
                     }
-            
+
                     if ($bits) {
                         $out[] = $bits;
                     }',
                 'assertions' => [
-                    ['array<int, array<int, int>>' => '$out'],
+                    '$out' => 'array<int, array<int, int>>',
                 ],
             ],
             'genericArrayCreationWithObjectAddedInIf' => [
                 '<?php
                     class B {}
-            
+
                     $out = [];
-            
+
                     if (rand(0,10) === 10) {
                         $out[] = new B();
                     }',
                 'assertions' => [
-                    ['array<int, B>' => '$out'],
+                    '$out' => 'array<int, B>',
                 ],
             ],
             'genericArrayCreationWithElementAddedInSwitch' => [
                 '<?php
                     $out = [];
-            
+
                     switch (rand(0,10)) {
                         case 5:
                             $out[] = 4;
                             break;
-            
+
                         case 6:
                             // do nothing
                     }',
                 'assertions' => [
-                    ['array<int, int>' => '$out'],
+                    '$out' => 'array<int, int>',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitch' => [
                 '<?php
                     $out = [];
-            
+
                     switch (rand(0,10)) {
                         case 5:
                             $out[] = 4;
                             break;
-            
+
                         case 6:
                             $out[] = "hello";
                             break;
                     }',
                 'assertions' => [
-                    ['array<int, int|string>' => '$out'],
+                    '$out' => 'array<int, int|string>',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitchWithNothing' => [
                 '<?php
                     $out = [];
-            
+
                     switch (rand(0,10)) {
                         case 5:
                             $out[] = 4;
                             break;
-            
+
                         case 6:
                             $out[] = "hello";
                             break;
-            
+
                         case 7:
                             // do nothing
                     }',
                 'assertions' => [
-                    ['array<int, int|string>' => '$out'],
+                    '$out' => 'array<int, int|string>',
                 ],
             ],
             'implicitIntArrayCreation' => [
@@ -185,7 +185,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[] = "hello";',
                 'assertions' => [
-                    ['array<int, string>' => '$foo'],
+                    '$foo' => 'array<int, string>',
                 ],
             ],
             'implicit2dIntArrayCreation' => [
@@ -193,7 +193,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][] = "hello";',
                 'assertions' => [
-                    ['array<int, array<int, string>>' => '$foo'],
+                    '$foo' => 'array<int, array<int, string>>',
                 ],
             ],
             'implicit3dIntArrayCreation' => [
@@ -201,7 +201,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][] = "hello";',
                 'assertions' => [
-                    ['array<int, array<int, array<int, string>>>' => '$foo'],
+                    '$foo' => 'array<int, array<int, array<int, string>>>',
                 ],
             ],
             'implicit4dIntArrayCreation' => [
@@ -209,7 +209,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][][] = "hello";',
                 'assertions' => [
-                    ['array<int, array<int, array<int, array<int, string>>>>' => '$foo'],
+                    '$foo' => 'array<int, array<int, array<int, array<int, string>>>>',
                 ],
             ],
             'implicitIndexedIntArrayCreation' => [
@@ -218,18 +218,18 @@ class ArrayAssignmentTest extends TestCase
                     $foo[0] = "hello";
                     $foo[1] = "hello";
                     $foo[2] = "hello";
-            
+
                     $bar = [0, 1, 2];
-            
+
                     $bat = [];
-            
+
                     foreach ($foo as $i => $text) {
                         $bat[$text] = $bar[$i];
                     }',
                 'assertions' => [
-                    ['array<int, string>' => '$foo'],
-                    ['array<int, int>' => '$bar'],
-                    ['array<string, int>' => '$bat'],
+                    '$foo' => 'array<int, string>',
+                    '$bar' => 'array<int, int>',
+                    '$bat' => 'array<string, int>',
                 ],
             ],
             'implicitStringArrayCreation' => [
@@ -237,8 +237,8 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"] = "hello";',
                 'assertions' => [
-                    ['array{bar:string}' => '$foo'],
-                    ['string' => '$foo[\'bar\']'],
+                    '$foo' => 'array{bar:string}',
+                    '$foo[\'bar\']' => 'string',
                 ],
             ],
             'implicit2dStringArrayCreation' => [
@@ -246,8 +246,8 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"]["baz"] = "hello";',
                 'assertions' => [
-                    ['array{bar:array{baz:string}}' => '$foo'],
-                    ['string' => '$foo[\'bar\'][\'baz\']'],
+                    '$foo' => 'array{bar:array{baz:string}}',
+                    '$foo[\'bar\'][\'baz\']' => 'string',
                 ],
             ],
             'implicit3dStringArrayCreation' => [
@@ -255,8 +255,8 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"]["baz"]["bat"] = "hello";',
                 'assertions' => [
-                    ['array{bar:array{baz:array{bat:string}}}' => '$foo'],
-                    ['string' => '$foo[\'bar\'][\'baz\'][\'bat\']'],
+                    '$foo' => 'array{bar:array{baz:array{bat:string}}}',
+                    '$foo[\'bar\'][\'baz\'][\'bat\']' => 'string',
                 ],
             ],
             'implicit4dStringArrayCreation' => [
@@ -264,8 +264,8 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"]["baz"]["bat"]["bap"] = "hello";',
                 'assertions' => [
-                    ['array{bar:array{baz:array{bat:array{bap:string}}}}' => '$foo'],
-                    ['string' => '$foo[\'bar\'][\'baz\'][\'bat\'][\'bap\']'],
+                    '$foo' => 'array{bar:array{baz:array{bat:array{bap:string}}}}',
+                    '$foo[\'bar\'][\'baz\'][\'bat\'][\'bap\']' => 'string',
                 ],
             ],
             '2Step2dStringArrayCreation' => [
@@ -273,8 +273,8 @@ class ArrayAssignmentTest extends TestCase
                     $foo = ["bar" => []];
                     $foo["bar"]["baz"] = "hello";',
                 'assertions' => [
-                    ['array{bar:array{baz:string}}' => '$foo'],
-                    ['string' => '$foo[\'bar\'][\'baz\']'],
+                    '$foo' => 'array{bar:array{baz:string}}',
+                    '$foo[\'bar\'][\'baz\']' => 'string',
                 ],
             ],
             '2StepImplicit3dStringArrayCreation' => [
@@ -282,7 +282,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = ["bar" => []];
                     $foo["bar"]["baz"]["bat"] = "hello";',
                 'assertions' => [
-                    ['array{bar:array{baz:array{bat:string}}}' => '$foo'],
+                    '$foo' => 'array{bar:array{baz:array{bat:string}}}',
                 ],
             ],
             'conflictingTypes' => [
@@ -292,7 +292,7 @@ class ArrayAssignmentTest extends TestCase
                         "baz" => [1]
                     ];',
                 'assertions' => [
-                    ['array{bar:array{a:string}, baz:array<int, int>}' => '$foo'],
+                    '$foo' => 'array{bar:array{a:string}, baz:array<int, int>}',
                 ],
             ],
             'implicitObjectLikeCreation' => [
@@ -302,7 +302,7 @@ class ArrayAssignmentTest extends TestCase
                     ];
                     $foo["baz"] = "a";',
                 'assertions' => [
-                    ['array{bar:int, baz:string}' => '$foo'],
+                    '$foo' => 'array{bar:int, baz:string}',
                 ],
             ],
             'conflictingTypesWithAssignment' => [
@@ -313,7 +313,7 @@ class ArrayAssignmentTest extends TestCase
                     ];
                     $foo["bar"]["bam"]["baz"] = "hello";',
                 'assertions' => [
-                    ['array{bar:array{a:string, bam:array{baz:string}}, baz:array<int, int>}' => '$foo'],
+                    '$foo' => 'array{bar:array{a:string, bam:array{baz:string}}, baz:array<int, int>}',
                 ],
             ],
             'conflictingTypesWithAssignment2' => [
@@ -323,10 +323,10 @@ class ArrayAssignmentTest extends TestCase
                     $foo["b"][] = "goodbye";
                     $bar = $foo["a"];',
                 'assertions' => [
-                    ['array{a:string, b:array<int, string>}' => '$foo'],
-                    ['string' => '$foo[\'a\']'],
-                    ['array<int, string>' => '$foo[\'b\']'],
-                    ['string' => '$bar'],
+                    '$foo' => 'array{a:string, b:array<int, string>}',
+                    '$foo[\'a\']' => 'string',
+                    '$foo[\'b\']' => 'array<int, string>',
+                    '$bar' => 'string',
                 ],
             ],
             'conflictingTypesWithAssignment3' => [
@@ -335,7 +335,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["a"] = "hello";
                     $foo["b"]["c"]["d"] = "goodbye";',
                 'assertions' => [
-                    ['array{a:string, b:array{c:array{d:string}}}' => '$foo'],
+                    '$foo' => 'array{a:string, b:array{c:array{d:string}}}',
                 ],
             ],
             'nestedObjectLikeAssignment' => [
@@ -344,7 +344,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["a"]["b"] = "hello";
                     $foo["a"]["c"] = 1;',
                 'assertions' => [
-                    ['array{a:array{b:string, c:int}}' => '$foo'],
+                    '$foo' => 'array{a:array{b:string, c:int}}',
                 ],
             ],
             'conditionalObjectLikeAssignment' => [
@@ -357,20 +357,20 @@ class ArrayAssignmentTest extends TestCase
                         $foo["b"] = 2;
                     }',
                 'assertions' => [
-                    ['array{a:string, b:int}' => '$foo'],
+                    '$foo' => 'array{a:string, b:int}',
                 ],
             ],
             'arrayKey' => [
                 '<?php
                     $a = ["foo", "bar"];
                     $b = $a[0];
-        
+
                     $c = ["a" => "foo", "b"=> "bar"];
                     $d = "a";
                     $e = $a[$d];',
                 'assertions' => [
-                    ['string' => '$b'],
-                    ['string' => '$e'],
+                    '$b' => 'string',
+                    '$e' => 'string',
                 ],
             ],
             'conditionalCheck' => [
@@ -391,12 +391,12 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
                     $b = "boop";
                     $a[$b][] = "bam";
-            
+
                     $c = [];
                     $c[$b][$b][] = "bam";',
                 'assertions' => [
-                    ['array<string, array<int, string>>' => '$a'],
-                    ['array<string, array<string, array<int, string>>>' => '$c'],
+                    '$a' => 'array<string, array<int, string>>',
+                    '$c' => 'array<string, array<string, array<int, string>>>',
                 ],
             ],
             'assignExplicitValueToGeneric' => [
@@ -405,38 +405,38 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
                     $a["foo"] = ["bar" => "baz"];',
                 'assertions' => [
-                    ['array<string, array<string, string>>' => '$a'],
+                    '$a' => 'array<string, array<string, string>>',
                 ],
             ],
             'additionWithEmpty' => [
                 '<?php
                     $a = [];
                     $a += ["bar"];
-            
+
                     $b = [] + ["bar"];',
                 'assertions' => [
-                    ['array<int, string>' => '$a'],
-                    ['array<int, string>' => '$b'],
+                    '$a' => 'array<int, string>',
+                    '$b' => 'array<int, string>',
                 ],
             ],
             'additionDifferentType' => [
                 '<?php
                     $a = ["bar"];
                     $a += [1];
-            
+
                     $b = ["bar"] + [1];',
                 'assertions' => [
-                    ['array<int, string|int>' => '$a'],
-                    ['array<int, string|int>' => '$b'],
+                    '$a' => 'array<int, string|int>',
+                    '$b' => 'array<int, string|int>',
                 ],
             ],
             'present1dArrayTypeWithVarKeys' => [
                 '<?php
                     /** @var array<string, array<int, string>> */
                     $a = [];
-            
+
                     $foo = "foo";
-            
+
                     $a[$foo][] = "bat";',
                 'assertions' => [],
             ],
@@ -444,10 +444,10 @@ class ArrayAssignmentTest extends TestCase
                 '<?php
                     /** @var array<string, array<string, array<int, string>>> */
                     $b = [];
-            
+
                     $foo = "foo";
                     $bar = "bar";
-            
+
                     $b[$foo][$bar][] = "bat";',
                 'assertions' => [],
             ],
@@ -459,10 +459,10 @@ class ArrayAssignmentTest extends TestCase
                     $c = $a[1]; // int
                     list($d, $e) = $a; // $d is string, $e is int',
                 'assertions' => [
-                    ['string' => '$b'],
-                    ['int' => '$c'],
-                    ['string' => '$d'],
-                    ['int' => '$e'],
+                    '$b' => 'string',
+                    '$c' => 'int',
+                    '$d' => 'string',
+                    '$e' => 'int',
                 ],
             ],
         ];
@@ -498,11 +498,11 @@ class ArrayAssignmentTest extends TestCase
                 '<?php
                     /** @param array<mixed, int|string> $foo */
                     function fooFoo(array $foo) : void { }
-            
+
                     function barBar(array $bar) : void {
                         fooFoo($bar);
                     }
-            
+
                     barBar([1, "2"]);',
                 'error_message' => 'TypeCoercion',
                 'error_level' => ['MixedAssignment'],
@@ -512,7 +512,7 @@ class ArrayAssignmentTest extends TestCase
                     class A {
                         /** @var string[] */
                         public $strs = ["a", "b", "c"];
-            
+
                         /** @return void */
                         public function bar() {
                             $this->strs = [new stdClass()]; // no issue emitted
@@ -525,7 +525,7 @@ class ArrayAssignmentTest extends TestCase
                     class A {
                         /** @var string[] */
                         public $strs = ["a", "b", "c"];
-            
+
                         /** @return void */
                         public function bar() {
                             $this->strs[] = new stdClass(); // no issue emitted

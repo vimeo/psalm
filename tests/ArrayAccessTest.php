@@ -72,7 +72,7 @@ class ArrayAccessTest extends TestCase
                     $x = $arr[0];
                     if (isset($arr[0]) && $arr[0]) { }',
                 'assertions' => [
-                    ['mixed' => '$x'],
+                    '$x' => 'mixed',
                 ],
                 'error_levels' => ['EmptyArrayAccess', 'MixedAssignment'],
             ],

@@ -16,7 +16,7 @@ class AssignmentTest extends TestCase
                 '<?php
                     $a = $b = $c = 5;',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
         ];

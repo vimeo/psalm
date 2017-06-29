@@ -15,13 +15,13 @@ class ClassTest extends TestCase
             'singleFileInheritance' => [
                 '<?php
                     class A extends B {}
-            
+
                     class B {
                         public function fooFoo() : void {
                             $a = new A();
                             $a->barBar();
                         }
-            
+
                         protected function barBar() : void {
                             echo "hello";
                         }
@@ -38,12 +38,12 @@ class ClassTest extends TestCase
                     class B {
                         const C = A;
                     }
-            
+
                     const A = 5;
-            
+
                     $a = B::C;',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
             'moreCyclicalReferences' => [
@@ -68,14 +68,14 @@ class ClassTest extends TestCase
                 '<?php
                     class A {
                         public function b(B $b) : void {
-            
+
                         }
-            
+
                         public function c() : void {
-            
+
                         }
                     }
-            
+
                     class B extends A {
                         public function d() : void {
                             $this->c();
@@ -95,7 +95,7 @@ class ClassTest extends TestCase
                     class A {
                         protected function fooFoo() : void {}
                     }
-            
+
                     class B extends A {
                         public function fooFoo() : void {}
                     }',
@@ -105,7 +105,7 @@ class ClassTest extends TestCase
                     $e = rand(0, 10)
                       ? new RuntimeException("m")
                       : null;
-            
+
                     if ($e instanceof Exception) {
                       echo "good";
                     }',
@@ -117,7 +117,7 @@ class ClassTest extends TestCase
                     }
                     namespace Bee {
                         use Aye as A;
-            
+
                         new A\Foo();
                     }',
             ],
@@ -127,7 +127,7 @@ class ClassTest extends TestCase
                         /** @return void */
                         abstract public function foo();
                     }
-            
+
                     abstract class B extends A {
                         /** @return void */
                         public function bar() {
@@ -149,22 +149,22 @@ class ClassTest extends TestCase
             'classTraversal' => [
                 '<?php
                     namespace Foo;
-            
+
                     class A {
                         /** @var string */
                         protected $foo = C::DOPE;
-            
+
                         /** @return string */
                         public function __get() { }
                     }
-            
+
                     class B extends A {
                         /** @return void */
                         public function foo() {
                             echo (string)(new C)->bar;
                         }
                     }
-            
+
                     class C extends B {
                         const DOPE = "dope";
                     }',
@@ -173,7 +173,7 @@ class ClassTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {}
-            
+
                     class E1 {
                         /**
                          * @param A|B|null $a
@@ -181,7 +181,7 @@ class ClassTest extends TestCase
                         public function __construct($a) {
                         }
                     }
-            
+
                     class E2 extends E1 {
                         /**
                          * @param A|null $a
@@ -271,9 +271,9 @@ class ClassTest extends TestCase
                     class B {
                         const C = A;
                     }
-            
+
                     $b = (new B);
-            
+
                     const A = 5;',
                 'error_message' => 'UndefinedConstant',
             ],
@@ -282,7 +282,7 @@ class ClassTest extends TestCase
                     class A {
                         public function fooFoo() : void {}
                     }
-            
+
                     class B extends A {
                         private function fooFoo() : void {}
                     }',
@@ -293,7 +293,7 @@ class ClassTest extends TestCase
                     class A {
                         public function fooFoo() : void {}
                     }
-            
+
                     class B extends A {
                         protected function fooFoo() : void {}
                     }',
@@ -304,7 +304,7 @@ class ClassTest extends TestCase
                     class A {
                         protected function fooFoo() : void {}
                     }
-            
+
                     class B extends A {
                         private function fooFoo() : void {}
                     }',
@@ -349,7 +349,7 @@ class ClassTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {}
-            
+
                     function foo(A $a) : B {
                         return $a;
                     }',

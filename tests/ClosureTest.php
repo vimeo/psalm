@@ -18,7 +18,7 @@ class ClosureTest extends TestCase
                     function run_function(\Closure $fnc) {
                         $fnc();
                     }
-            
+
                     // here we have to make sure $data exists as a side-effect of calling `run_function`
                     // because it could exist depending on how run_function is implemented
                     /**
@@ -36,13 +36,13 @@ class ClosureTest extends TestCase
                         );
                         echo $data;
                     }
-            
+
                     fn();',
             ],
             'inferredArg' => [
                 '<?php
                     $bar = ["foo", "bar"];
-            
+
                     $bam = array_map(
                         /**
                          * @psalm-suppress MissingClosureReturnType
@@ -58,10 +58,10 @@ class ClosureTest extends TestCase
                     $add_one = function(int $a) : int {
                         return $a + 1;
                     };
-            
+
                     $a = $add_one(1);',
                 'assertions' => [
-                    ['int' => '$a'],
+                    '$a' => 'int',
                 ],
             ],
             'callableToClosure' => [
@@ -88,13 +88,13 @@ class ClosureTest extends TestCase
                             return "You ran?";
                         }
                     }
-            
+
                     function foo(callable $c) : void {
                         echo (string)$c();
                     }
-            
+
                     foo(new C());
-            
+
                     $c2 = new C();
                     $c2();',
             ],
@@ -115,7 +115,7 @@ class ClosureTest extends TestCase
             'wrongArg' => [
                 '<?php
                     $bar = ["foo", "bar"];
-            
+
                     $bam = array_map(
                         function(int $a) : int {
                             return $a + 1;
@@ -127,7 +127,7 @@ class ClosureTest extends TestCase
             'noReturn' => [
                 '<?php
                     $bar = ["foo", "bar"];
-            
+
                     $bam = array_map(
                         function(string $a) : string {
                         },
@@ -142,7 +142,7 @@ class ClosureTest extends TestCase
                         {
                             return new Foo([]);
                         }
-            
+
                         public function bar($argOne, $argTwo)
                         {
                             $this->getFoo()($argOne, $argTwo);
@@ -157,13 +157,13 @@ class ClosureTest extends TestCase
                      * @var Closure|null $foo
                      */
                     $foo = null;
-            
+
                     $foo = function ($bar) use (&$foo) : string
                     {
                         if (is_array($bar)) {
                             return $foo($bar);
                         }
-            
+
                         return $bar;
                     };',
                 'error_message' => 'PossiblyNullFunctionCall',

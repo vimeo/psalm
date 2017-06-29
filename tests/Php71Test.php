@@ -18,10 +18,10 @@ class Php71Test extends TestCase
                     {
                         return rand(0, 10) ? "elePHPant" : null;
                     }
-            
+
                     $a = a();',
                 'assertions' => [
-                    ['string|null' => '$a'],
+                    '$a' => 'string|null',
                 ],
             ],
             'nullableReturnTypeInDocblock' => [
@@ -30,10 +30,10 @@ class Php71Test extends TestCase
                     function a() {
                         return rand(0, 10) ? "elePHPant" : null;
                     }
-            
+
                     $a = a();',
                 'assertions' => [
-                    ['null|string' => '$a'],
+                    '$a' => 'null|string',
                 ],
             ],
             'nullableArgument' => [
@@ -42,7 +42,7 @@ class Php71Test extends TestCase
                     {
                         return $name;
                     }
-            
+
                     test("elePHPant");
                     test(null);',
             ],
@@ -52,7 +52,7 @@ class Php71Test extends TestCase
                     {
                         protected const IS_PROTECTED = 1;
                     }
-            
+
                     class B extends A
                     {
                         function fooFoo() : int {
@@ -65,7 +65,7 @@ class Php71Test extends TestCase
                     class A
                     {
                         private const IS_PRIVATE = 1;
-            
+
                         function fooFoo() : int {
                             return A::IS_PRIVATE;
                         }
@@ -78,7 +78,7 @@ class Php71Test extends TestCase
                         public const IS_PUBLIC = 1;
                         const IS_ALSO_PUBLIC = 2;
                     }
-            
+
                     class B extends A
                     {
                         function fooFoo() : int {
@@ -86,7 +86,7 @@ class Php71Test extends TestCase
                             return A::IS_ALSO_PUBLIC;
                         }
                     }
-            
+
                     echo A::IS_PUBLIC;
                     echo A::IS_ALSO_PUBLIC;',
             ],
@@ -96,17 +96,17 @@ class Php71Test extends TestCase
                         [1, "Tom"],
                         [2, "Fred"],
                     ];
-            
+
                     // list() style
                     list($id1, $name1) = $data[0];
-            
+
                     // [] style
                     [$id2, $name2] = $data[1];',
                 'assertions' => [
-                    ['string|int' => '$id1'],
-                    ['string|int' => '$name1'],
-                    ['string|int' => '$id2'],
-                    ['string|int' => '$name2'],
+                    '$id1' => 'string|int',
+                    '$name1' => 'string|int',
+                    '$id2' => 'string|int',
+                    '$name2' => 'string|int',
                 ],
             ],
             'arrayDestructuringInForeach' => [
@@ -115,7 +115,7 @@ class Php71Test extends TestCase
                         [1, "Tom"],
                         [2, "Fred"],
                     ];
-            
+
                     // [] style
                     foreach ($data as [$id, $name]) {
                         echo $id;
@@ -128,17 +128,17 @@ class Php71Test extends TestCase
                         ["id" => 1, "name" => "Tom"],
                         ["id" => 2, "name" => "Fred"],
                     ];
-            
+
                     // list() style
                     list("id" => $id1, "name" => $name1) = $data[0];
-            
+
                     // [] style
                     ["id" => $id2, "name" => $name2] = $data[1];',
                 'assertions' => [
-                    ['int' => '$id1'],
-                    ['string' => '$name1'],
-                    ['int' => '$id2'],
-                    ['string' => '$name2'],
+                    '$id1' => 'int',
+                    '$name1' => 'string',
+                    '$id2' => 'int',
+                    '$name2' => 'string',
                 ],
             ],
             'arrayListDestructuringInForeachWithKeys' => [
@@ -147,18 +147,18 @@ class Php71Test extends TestCase
                         ["id" => 1, "name" => "Tom"],
                         ["id" => 2, "name" => "Fred"],
                     ];
-            
+
                     $last_id = null;
                     $last_name = null;
-            
+
                     // list() style
                     foreach ($data as list("id" => $id, "name" => $name)) {
                         $last_id = $id;
                         $last_name = $name;
                     }',
                 'assertions' => [
-                    ['null|int' => '$last_id'],
-                    ['null|string' => '$last_name'],
+                    '$last_id' => 'null|int',
+                    '$last_name' => 'null|string',
                 ],
             ],
             'arrayDestructuringInForeachWithKeys' => [
@@ -167,18 +167,18 @@ class Php71Test extends TestCase
                         ["id" => 1, "name" => "Tom"],
                         ["id" => 2, "name" => "Fred"],
                     ];
-            
+
                     $last_id = null;
                     $last_name = null;
-            
+
                     // [] style
                     foreach ($data as ["id" => $id, "name" => $name]) {
                         $last_id = $id;
                         $last_name = $name;
                     }',
                 'assertions' => [
-                    ['null|int' => '$last_id'],
-                    ['null|string' => '$last_name'],
+                    '$last_id' => 'null|int',
+                    '$last_name' => 'null|string',
                 ],
             ],
             'iterableArg' => [
@@ -192,7 +192,7 @@ class Php71Test extends TestCase
                             //
                         }
                     }
-            
+
                     iterator([1, 2, 3, 4]);
                     iterator(new SplFixedArray(5));',
             ],
@@ -206,10 +206,10 @@ class Php71Test extends TestCase
                         function next() : void {}
                         function valid() : bool { return false; }
                     }
-            
+
                     function foo(\Traversable $t) : void {
                     }
-            
+
                     foo(new IteratorObj);',
             ],
         ];
@@ -227,7 +227,7 @@ class Php71Test extends TestCase
                     {
                         private const IS_PRIVATE = 1;
                     }
-            
+
                     echo A::IS_PRIVATE;',
                 'error_message' => 'InaccessibleClassConstant',
             ],
@@ -237,7 +237,7 @@ class Php71Test extends TestCase
                     {
                         private const IS_PRIVATE = 1;
                     }
-            
+
                     class B extends A
                     {
                         function fooFoo() : int {
@@ -252,7 +252,7 @@ class Php71Test extends TestCase
                     {
                         protected const IS_PROTECTED = 1;
                     }
-            
+
                     echo A::IS_PROTECTED;',
                 'error_message' => 'InaccessibleClassConstant',
             ],
@@ -267,10 +267,10 @@ class Php71Test extends TestCase
                             //
                         }
                     }
-            
+
                     class A {
                     }
-            
+
                     iterator(new A());',
                 'error_message' => 'InvalidArgument',
             ],

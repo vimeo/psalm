@@ -151,7 +151,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = array_keys(["a" => 1, "b" => 2]);',
                 'assertions' => [
-                    ['array<int, string>' => '$a'],
+                    '$a' => 'array<int, string>',
                 ],
             ],
             'arrayKeysMixed' => [
@@ -160,7 +160,7 @@ class FunctionCallTest extends TestCase
                     $b = ["a" => 5];
                     $a = array_keys($b);',
                 'assertions' => [
-                    ['array<int, mixed>' => '$a'],
+                    '$a' => 'array<int, mixed>',
                 ],
                 'error_levels' => ['MixedArgument'],
             ],
@@ -168,28 +168,28 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $b = array_values(["a" => 1, "b" => 2]);',
                 'assertions' => [
-                    ['array<int, int>' => '$b'],
+                    '$b' => 'array<int, int>',
                 ],
             ],
             'arrayCombine' => [
                 '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    ['array<string, int>' => '$c'],
+                    '$c' => 'array<string, int>',
                 ],
             ],
             'arrayMerge' => [
                 '<?php
                     $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    ['array<int, int|string>' => '$d'],
+                    '$d' => 'array<int, int|string>',
                 ],
             ],
             'arrayDiff' => [
                 '<?php
                     $d = array_diff(["a" => 5, "b" => 12], [5]);',
                 'assertions' => [
-                    ['array<string, int>' => '$d'],
+                    '$d' => 'array<string, int>',
                 ],
             ],
             'byRefAfterCallable' => [

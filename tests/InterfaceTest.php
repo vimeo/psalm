@@ -43,7 +43,7 @@ class InterfaceTest extends TestCase
                          */
                         public function fooFoo();
                     }
-            
+
                     interface B
                     {
                         /**
@@ -51,7 +51,7 @@ class InterfaceTest extends TestCase
                          */
                         public function barBar();
                     }
-            
+
                     interface C extends A, B
                     {
                         /**
@@ -59,30 +59,30 @@ class InterfaceTest extends TestCase
                          */
                         public function baz();
                     }
-            
+
                     class D implements C
                     {
                         public function fooFoo()
                         {
                             return "hello";
                         }
-            
+
                         public function barBar()
                         {
                             return "goodbye";
                         }
-            
+
                         public function baz()
                         {
                             return "hello again";
                         }
                     }
-            
+
                     $cee = (new D())->baz();
                     $dee = (new D())->fooFoo();',
                 'assertions' => [
-                    ['string' => '$cee'],
-                    ['string' => '$dee'],
+                    '$cee' => 'string',
+                    '$dee' => 'string',
                 ],
             ],
             'isExtendedInterface' => [
@@ -94,7 +94,7 @@ class InterfaceTest extends TestCase
                          */
                         public function fooFoo();
                     }
-            
+
                     interface B extends A
                     {
                         /**
@@ -102,27 +102,27 @@ class InterfaceTest extends TestCase
                          */
                         public function baz();
                     }
-            
+
                     class C implements B
                     {
                         public function fooFoo()
                         {
                             return "hello";
                         }
-            
+
                         public function baz()
                         {
                             return "goodbye";
                         }
                     }
-            
+
                     /**
                      * @param  A      $a
                      * @return void
                      */
                     function qux(A $a) {
                     }
-            
+
                     qux(new C());',
             ],
             'extendsWithMethod' => [
@@ -134,12 +134,12 @@ class InterfaceTest extends TestCase
                          */
                         public function fooFoo();
                     }
-            
+
                     interface B extends A
                     {
                         public function barBar();
                     }
-            
+
                     /** @return void */
                     function mux(B $b) {
                         $b->fooFoo();
@@ -150,10 +150,10 @@ class InterfaceTest extends TestCase
                     interface A {
                         public function fooFoo(int $a) : void;
                     }
-            
+
                     class B implements A {
                         public function fooFoo(int $a) : void {
-            
+
                         }
                     }',
             ],
@@ -162,13 +162,13 @@ class InterfaceTest extends TestCase
                     interface MyInterface {
                         public function fooFoo(int $a) : void;
                     }
-            
+
                     class B {
                         public function fooFoo(int $a) : void {
-            
+
                         }
                     }
-            
+
                     class C extends B implements MyInterface { }',
             ],
             'interfaceMethodSignatureInTrait' => [
@@ -176,12 +176,12 @@ class InterfaceTest extends TestCase
                     interface A {
                         public function fooFoo(int $a, int $b) : void;
                     }
-            
+
                     trait T {
                         public function fooFoo(int $a, int $b) : void {
                         }
                     }
-            
+
                     class B implements A {
                         use T;
                     }',
@@ -190,11 +190,11 @@ class InterfaceTest extends TestCase
                 '<?php
                     // fails in PHP, whatcha gonna do
                     $c = new C;
-            
+
                     class A { }
-            
+
                     interface B { }
-            
+
                     class C extends A implements B { }',
             ],
             'typeDoesNotContainType' => [
@@ -214,7 +214,7 @@ class InterfaceTest extends TestCase
                     interface I {
                         public function fnc();
                     }
-            
+
                     abstract class A implements I {}',
             ],
             'abstractInterfaceImplementsButCallMethod' => [
@@ -222,7 +222,7 @@ class InterfaceTest extends TestCase
                     interface I {
                         public function foo();
                     }
-            
+
                     abstract class A implements I {
                         public function bar() : void {
                             $this->foo();
@@ -232,7 +232,7 @@ class InterfaceTest extends TestCase
             'implementsPartialInterfaceMethods' => [
                 '<?php
                     namespace Bat;
-            
+
                     interface I  {
                       public function foo();
                       public function bar();
@@ -257,25 +257,25 @@ class InterfaceTest extends TestCase
                         const B = "two";
                         const C = 3.0;
                     }
-            
+
                     interface I2 extends I1 {
                         const D = 5;
                         const E = "two";
                     }
-            
+
                     class A implements I2 {
                         /** @var int */
                         public $foo = I1::A;
-            
+
                         /** @var string */
                         public $bar = self::B;
-            
+
                         /** @var float */
                         public $bar2 = I2::C;
-            
+
                         /** @var int */
                         public $foo2 = I2::D;
-            
+
                         /** @var string */
                         public $bar3 = self::E;
                     }',
@@ -284,7 +284,7 @@ class InterfaceTest extends TestCase
                 '<?php
                     interface A {}
                     interface B extends A {}
-            
+
                     function foo(B $a) : A {
                         return $a;
                     }',
@@ -301,10 +301,10 @@ class InterfaceTest extends TestCase
             'noInterfaceProperties' => [
                 '<?php
                     interface A { }
-            
+
                     function fooFoo(A $a) : void {
                         if ($a->bar) {
-            
+
                         }
                     }',
                 'error_message' => 'NoInterfaceProperties',
@@ -314,7 +314,7 @@ class InterfaceTest extends TestCase
                     interface A {
                         public function fooFoo();
                     }
-            
+
                     class B implements A { }',
                 'error_message' => 'UnimplementedInterfaceMethod',
             ],
@@ -323,10 +323,10 @@ class InterfaceTest extends TestCase
                     interface A {
                         public function fooFoo(int $a) : void;
                     }
-            
+
                     class B implements A {
                         public function fooFoo(string $a) : void {
-            
+
                         }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
@@ -336,12 +336,12 @@ class InterfaceTest extends TestCase
                     interface A {
                         public function fooFoo(int $a, int $b) : void;
                     }
-            
+
                     trait T {
                         public function fooFoo(int $a) : void {
                         }
                     }
-            
+
                     class B implements A {
                         use T;
                     }',
@@ -352,15 +352,15 @@ class InterfaceTest extends TestCase
                     interface A {
                         public function fooFoo(int $a, int $b) : void;
                     }
-            
+
                     trait T {
                         public function fooFoo(int $a, int $b) : void {
                         }
                     }
-            
+
                     class B implements A {
                         use T;
-            
+
                         public function fooFoo(int $a) : void {
                         }
                     }',
@@ -371,7 +371,7 @@ class InterfaceTest extends TestCase
                     interface I {
                         public function foo();
                     }
-            
+
                     abstract class A implements I {
                         public function bar() : void {
                             $this->foo2();
@@ -384,9 +384,9 @@ class InterfaceTest extends TestCase
                     interface I {
                         public function fnc();
                     }
-            
+
                     abstract class A implements I {}
-            
+
                     class B extends A {}',
                 'error_message' => 'UnimplementedInterfaceMethod',
             ],
@@ -394,7 +394,7 @@ class InterfaceTest extends TestCase
                 '<?php
                     interface A {}
                     interface B extends A {}
-            
+
                     function foo(A $a) : B {
                         return $a;
                     }',

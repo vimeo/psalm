@@ -303,7 +303,7 @@ class TypeReconciliationTest extends TestCase
                         $out = $a;
                     }',
                 'assertions' => [
-                    ['null|A' => '$out'],
+                    '$out' => 'null|A',
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
@@ -336,7 +336,7 @@ class TypeReconciliationTest extends TestCase
                         $out = $a->foo;
                     }',
                 'assertions' => [
-                    ['null|B' => '$out'],
+                    '$out' => 'null|B',
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
@@ -366,7 +366,7 @@ class TypeReconciliationTest extends TestCase
                         $out = $a->foo;
                     }',
                 'assertions' => [
-                    ['null|B' => '$out'],
+                    '$out' => 'null|B',
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
@@ -382,12 +382,12 @@ class TypeReconciliationTest extends TestCase
                     $e = min(1, 2, 3, 4, 5);
                     sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
                 'assertions' => [
-                    ['int' => '$a'],
-                    ['int' => '$b'],
-                    ['string' => '$c'],
-                    ['string|int|float' => '$hours'],
-                    ['string|int|float' => '$minutes'],
-                    ['string|int|float' => '$seconds'],
+                    '$a' => 'int',
+                    '$b' => 'int',
+                    '$c' => 'string',
+                    '$hours' => 'string|int|float',
+                    '$minutes' => 'string|int|float',
+                    '$seconds' => 'string|int|float',
                 ],
             ],
             'typeRefinementWithIsNumeric' => [
@@ -544,7 +544,7 @@ class TypeReconciliationTest extends TestCase
                     if ($a !== null) { }
                     $b = $a;',
                 'assertions' => [
-                    ['null' => '$b'],
+                    '$b' => 'null',
                 ],
                 'error_levels' => ['FailedTypeResolution'],
             ],
@@ -554,7 +554,7 @@ class TypeReconciliationTest extends TestCase
                     if ($a !== null) { }
                     $b = $a;',
                 'assertions' => [
-                    ['int|null' => '$b'],
+                    '$b' => 'int|null',
                 ],
             ],
             'ternaryByRefVar' => [

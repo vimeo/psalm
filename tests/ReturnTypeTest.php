@@ -216,7 +216,7 @@ class ReturnTypeTest extends TestCase
 
                     $b = B::load();',
                 'assertions' => [
-                    ['B' => '$b'],
+                    '$b' => 'B',
                 ],
             ],
             'extendsStaticCallArrayReturnType' => [
@@ -233,7 +233,7 @@ class ReturnTypeTest extends TestCase
 
                     $bees = B::loadMultiple();',
                 'assertions' => [
-                    ['array<int, B>' => '$bees'],
+                    '$bees' => 'array<int, B>',
                 ],
             ],
             'issetReturnType' => [
@@ -273,7 +273,7 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new B())->blah();',
                 'assertions' => [
-                    ['string' => '$blah'],
+                    '$blah' => 'string',
                 ],
             ],
             'interfaceReturnType' => [
@@ -291,7 +291,7 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new B())->blah();',
                 'assertions' => [
-                    ['string|null' => '$blah'],
+                    '$blah' => 'string|null',
                 ],
             ],
             'overrideReturnTypeInGrandparent' => [
@@ -312,7 +312,7 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new C())->blah();',
                 'assertions' => [
-                    ['string|null' => '$blah'],
+                    '$blah' => 'string|null',
                 ],
             ],
             'backwardsReturnType' => [
