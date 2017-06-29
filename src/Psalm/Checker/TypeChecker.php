@@ -829,139 +829,114 @@ class TypeChecker
      */
     protected static function getValueForKey($key, array &$existing_keys, FileChecker $file_checker)
     {
-        if (strpos($key, '[') !== false) {
-            return self::getArrayValueForKey($key, $existing_keys);
-        }
-
-        $key_parts = explode('->', $key);
-
-        $base_type = self::getArrayValueForKey($key_parts[0], $existing_keys);
-
-        if (!$base_type) {
-            return null;
-        }
-
-        $base_key = $key_parts[0];
-
-        // for an expression like $obj->key1->key2
-        for ($i = 1; $i < count($key_parts); ++$i) {
-            $new_base_key = $base_key . '->' . $key_parts[$i];
-
-            if (!isset($existing_keys[$new_base_key])) {
-                $new_base_type = null;
-
-                foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
-                    if ($existing_key_type_part instanceof TNull) {
-                        $class_property_type = Type::getNull();
-                    } elseif ($existing_key_type_part instanceof TMixed ||
-                        $existing_key_type_part instanceof TObject ||
-                        ($existing_key_type_part instanceof TNamedObject &&
-                            strtolower($existing_key_type_part->value) === 'stdclass')
-                    ) {
-                        $class_property_type = Type::getMixed();
-                    } elseif ($existing_key_type_part instanceof TNamedObject) {
-                        if (!ClassLikeChecker::classOrInterfaceExists(
-                            $existing_key_type_part->value,
-                            $file_checker
-                        )) {
-                            continue;
-                        }
-
-                        $property_id = $existing_key_type_part->value . '::$' . $key_parts[$i];
-
-                        if (!ClassLikeChecker::propertyExists($property_id)) {
-                            return null;
-                        }
-
-                        $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
-
-                        $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
-
-                        $class_property_type = $class_storage->properties[$key_parts[$i]]->type;
-
-                        $class_property_type = $class_property_type ? clone $class_property_type : Type::getMixed();
-                    } else {
-                        // @todo handle this
-                        continue;
-                    }
-
-                    if ($new_base_type instanceof Type\Union) {
-                        $new_base_type = Type::combineUnionTypes($new_base_type, $class_property_type);
-                    } else {
-                        $new_base_type = $class_property_type;
-                    }
-
-                    $existing_keys[$new_base_key] = $new_base_type;
-                }
-            }
-
-            $base_type = $existing_keys[$new_base_key];
-            $base_key = $new_base_key;
-        }
-
-        return $existing_keys[$base_key];
-    }
-
-    /**
-     * Gets the type for a given (non-existent key) based on the passed keys
-     *
-     * @param  string                    $key
-     * @param  array<string,Type\Union>  $existing_keys
-     *
-     * @return Type\Union|null
-     */
-    protected static function getArrayValueForKey($key, array &$existing_keys)
-    {
-        $key_parts = preg_split('/(\]|\[)/', $key, -1, PREG_SPLIT_NO_EMPTY);
+        $key_parts = preg_split('/(->|\[|\])/', $key, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
         if (count($key_parts) === 1) {
             return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
         }
 
-        if (!isset($existing_keys[$key_parts[0]])) {
-            return null;
-        }
+        $base_key = array_shift($key_parts);
 
-        $base_key = $key_parts[0];
+        while ($key_parts) {
+            $divider = array_shift($key_parts);
 
-        // for an expression like $obj->key1->key2
-        for ($i = 1; $i < count($key_parts); ++$i) {
-            $new_base_key = $base_key . '[' . $key_parts[$i] . ']';
+            if ($divider === '[') {
+                $array_key = array_shift($key_parts);
+                array_shift($key_parts);
 
-            if (!isset($existing_keys[$new_base_key])) {
-                $new_base_type = null;
+                $new_base_key = $base_key . '[' . $array_key . ']';
 
-                foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
-                    if ($existing_key_type_part instanceof Type\Atomic\TArray) {
-                        $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
-                    } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
-                        return null;
-                    } else {
-                        $array_properties = $existing_key_type_part->properties;
+                if (!isset($existing_keys[$new_base_key])) {
+                    $new_base_type = null;
 
-                        $key_parts_key = str_replace('\'', '', $key_parts[$i]);
-
-                        if (!isset($array_properties[$key_parts_key])) {
+                    foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
+                        if ($existing_key_type_part instanceof Type\Atomic\TArray) {
+                            $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
+                        } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return null;
+                        } else {
+                            $array_properties = $existing_key_type_part->properties;
+
+                            $key_parts_key = str_replace('\'', '', $array_key);
+
+                            if (!isset($array_properties[$key_parts_key])) {
+                                return null;
+                            }
+
+                            $new_base_type_candidate = clone $array_properties[$key_parts_key];
                         }
 
-                        $new_base_type_candidate = clone $array_properties[$key_parts_key];
-                    }
+                        if (!$new_base_type) {
+                            $new_base_type = $new_base_type_candidate;
+                        } else {
+                            $new_base_type = Type::combineUnionTypes(
+                                $new_base_type,
+                                $new_base_type_candidate
+                            );
+                        }
 
-                    if (!$new_base_type) {
-                        $new_base_type = $new_base_type_candidate;
-                    } else {
-                        $new_base_type = Type::combineUnionTypes(
-                            $new_base_type,
-                            $new_base_type_candidate
-                        );
+                        $existing_keys[$new_base_key] = $new_base_type;
                     }
-
-                    $existing_keys[$new_base_key] = $new_base_type;
                 }
-            }
 
-            $base_key = $new_base_key;
+                $base_key = $new_base_key;
+            } elseif ($divider === '->') {
+                $property_name = array_shift($key_parts);
+                $new_base_key = $base_key . '->' . $property_name;
+
+                if (!isset($existing_keys[$new_base_key])) {
+                    $new_base_type = null;
+
+                    foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
+                        if ($existing_key_type_part instanceof TNull) {
+                            $class_property_type = Type::getNull();
+                        } elseif ($existing_key_type_part instanceof TMixed ||
+                            $existing_key_type_part instanceof TObject ||
+                            ($existing_key_type_part instanceof TNamedObject &&
+                                strtolower($existing_key_type_part->value) === 'stdclass')
+                        ) {
+                            $class_property_type = Type::getMixed();
+                        } elseif ($existing_key_type_part instanceof TNamedObject) {
+                            if (!ClassLikeChecker::classOrInterfaceExists(
+                                $existing_key_type_part->value,
+                                $file_checker
+                            )) {
+                                continue;
+                            }
+
+                            $property_id = $existing_key_type_part->value . '::$' . $property_name;
+
+                            if (!ClassLikeChecker::propertyExists($property_id)) {
+                                return null;
+                            }
+
+                            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
+
+                            $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
+
+                            $class_property_type = $class_storage->properties[$property_name]->type;
+
+                            $class_property_type = $class_property_type ? clone $class_property_type : Type::getMixed();
+                        } else {
+                            // @todo handle this
+                            continue;
+                        }
+
+                        if ($new_base_type instanceof Type\Union) {
+                            $new_base_type = Type::combineUnionTypes($new_base_type, $class_property_type);
+                        } else {
+                            $new_base_type = $class_property_type;
+                        }
+
+                        $existing_keys[$new_base_key] = $new_base_type;
+                    }
+                }
+
+                $base_type = $existing_keys[$new_base_key];
+                $base_key = $new_base_key;
+            } else {
+                throw new \InvalidArgumentException('Unexpected divider ' . $divider);
+            }
         }
 
         return $existing_keys[$base_key];
