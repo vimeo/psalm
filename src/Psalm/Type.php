@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\ParseTree;
+use Psalm\Type\TypeCombination;
 use Psalm\Type\Union;
 
 abstract class Type
@@ -513,46 +514,49 @@ abstract class Type
             throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
-        $key_types = [];
-        $value_types = [];
+        $combination = new TypeCombination();
 
         foreach ($types as $type) {
-            $result = self::scrapeTypeProperties($type, $key_types, $value_types);
+            $result = self::scrapeTypeProperties($type, $combination);
 
             if ($result) {
                 return $result;
             }
         }
 
-        if (count($value_types) === 1) {
-            if (isset($value_types['false'])) {
+        if (count($combination->value_types) === 1) {
+            if (isset($combination->value_types['false'])) {
                 return Type::getBool();
             }
-        } elseif (isset($value_types['void'])) {
-            unset($value_types['void']);
+        } elseif (isset($combination->value_types['void'])) {
+            unset($combination->value_types['void']);
 
-            if (!isset($value_types['null'])) {
-                $value_types['null'] = ['null' => null];
+            if (!isset($combination->value_types['null'])) {
+                $combination->value_types['null'] = ['null' => null];
             }
         }
 
         $new_types = [];
 
-        foreach ($value_types as $generic_type => $value_type) {
+        foreach ($combination->value_types as $generic_type => $value_type) {
             // special case for ObjectLike where $value_type is actually an array of properties
             if ($generic_type === 'object-like') {
-                if (!isset($value_types['array']) || isset($value_types['array']['empty'])) {
+                if (!isset($combination->value_types['array'])
+                    || isset($combination->value_types['array']['empty'])
+                ) {
                     $new_types[] = new ObjectLike($value_type);
                 }
 
                 continue;
             }
 
-            $key_type = isset($key_types[$generic_type]) ? $key_types[$generic_type] : [];
+            $key_type = isset($combination->key_types[$generic_type])
+                ? $combination->key_types[$generic_type]
+                : [];
 
             // if we're merging an empty array with an object-like, clobber empty array
             if ($generic_type === 'array'
-                && isset($value_types['object-like'])
+                && isset($combination->value_types['object-like'])
                 && count($value_type) === 1
                 && isset($value_type['empty'])
                 && count($key_type) === 1
@@ -624,13 +628,12 @@ abstract class Type
     }
 
     /**
-     * @param  Atomic                                   $type
-     * @param  array<string, array<string, Union>>      &$key_types
-     * @param  array<string, array<string, Union|null>> &$value_types
+     * @param  Atomic  $type
+     * @param  TypeCombination $combination
      *
      * @return null|Union
      */
-    public static function scrapeTypeProperties(Atomic $type, array &$key_types, array &$value_types)
+    public static function scrapeTypeProperties(Atomic $type, TypeCombination $combination)
     {
         // if we see the magic empty value and there's more than one type, ignore it
         if ($type instanceof TEmpty) {
@@ -642,48 +645,48 @@ abstract class Type
         }
 
         // deal with false|bool => bool
-        if ($type instanceof TFalse && isset($value_types['bool'])) {
+        if ($type instanceof TFalse && isset($combination->value_types['bool'])) {
             return null;
-        } elseif ($type instanceof TBool && isset($value_types['false'])) {
-            unset($value_types['false']);
+        } elseif ($type instanceof TBool && isset($combination->value_types['false'])) {
+            unset($combination->value_types['false']);
         }
 
         $type_key = $type->getKey();
 
         if ($type instanceof TArray || $type instanceof TGenericObject) {
-            if (!isset($value_types[$type_key])) {
-                $value_types[$type_key] = [];
+            if (!isset($combination->value_types[$type_key])) {
+                $combination->value_types[$type_key] = [];
             }
 
             $value_type_param_index = count($type->type_params) - 1;
 
-            $value_types[$type_key][(string) $type->type_params[$value_type_param_index]] =
+            $combination->value_types[$type_key][(string) $type->type_params[$value_type_param_index]] =
                 $type->type_params[$value_type_param_index];
 
             if ($value_type_param_index) {
-                $key_types[$type_key][(string) $type->type_params[0]] = $type->type_params[0];
+                $combination->key_types[$type_key][(string) $type->type_params[0]] = $type->type_params[0];
             }
         } elseif ($type instanceof ObjectLike) {
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
-                $value_type = isset($value_types['object-like'][$candidate_property_name])
-                    ? $value_types['object-like'][$candidate_property_name]
+                $value_type = isset($combination->value_types['object-like'][$candidate_property_name])
+                    ? $combination->value_types['object-like'][$candidate_property_name]
                     : null;
 
                 if (!$value_type) {
-                    $value_types['object-like'][$candidate_property_name] = $candidate_property_type;
+                    $combination->value_types['object-like'][$candidate_property_name] = $candidate_property_type;
                 } else {
-                    $value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
+                    $combination->value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
                         $candidate_property_type
                     );
                 }
             }
         } else {
-            if (!isset($value_types[$type_key])) {
-                $value_types[$type_key] = [];
+            if (!isset($combination->value_types[$type_key])) {
+                $combination->value_types[$type_key] = [];
             }
 
-            $value_types[$type_key][(string) $type] = null;
+            $combination->value_types[$type_key][(string) $type] = null;
         }
     }
 }
