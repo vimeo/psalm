@@ -524,7 +524,7 @@ abstract class Type
             }
         }
 
-        if (count($combination->value_types) === 1) {
+        if (count($combination->value_types) === 1 && !count($combination->objectlike_entries)) {
             if (isset($combination->value_types['false'])) {
                 return Type::getBool();
             }
@@ -538,25 +538,21 @@ abstract class Type
 
         $new_types = [];
 
+        if (count($combination->objectlike_entries) &&
+            (!isset($combination->value_types['array'])
+                || isset($combination->value_types['array']['empty']))
+        ) {
+            $new_types[] = new ObjectLike($combination->objectlike_entries);
+        }
+
         foreach ($combination->value_types as $generic_type => $value_type) {
-            // special case for ObjectLike where $value_type is actually an array of properties
-            if ($generic_type === 'object-like') {
-                if (!isset($combination->value_types['array'])
-                    || isset($combination->value_types['array']['empty'])
-                ) {
-                    $new_types[] = new ObjectLike($value_type);
-                }
-
-                continue;
-            }
-
             $key_type = isset($combination->key_types[$generic_type])
                 ? $combination->key_types[$generic_type]
                 : [];
 
             // if we're merging an empty array with an object-like, clobber empty array
             if ($generic_type === 'array'
-                && isset($combination->value_types['object-like'])
+                && count($combination->objectlike_entries)
                 && count($value_type) === 1
                 && isset($value_type['empty'])
                 && count($key_type) === 1
@@ -668,14 +664,14 @@ abstract class Type
             }
         } elseif ($type instanceof ObjectLike) {
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
-                $value_type = isset($combination->value_types['object-like'][$candidate_property_name])
-                    ? $combination->value_types['object-like'][$candidate_property_name]
+                $value_type = isset($combination->objectlike_entries[$candidate_property_name])
+                    ? $combination->objectlike_entries[$candidate_property_name]
                     : null;
 
                 if (!$value_type) {
-                    $combination->value_types['object-like'][$candidate_property_name] = $candidate_property_type;
+                    $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type;
                 } else {
-                    $combination->value_types['object-like'][$candidate_property_name] = Type::combineUnionTypes(
+                    $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
                         $candidate_property_type
                     );

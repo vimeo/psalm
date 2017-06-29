@@ -8,4 +8,7 @@ class TypeCombination
 
     /** @var array<string, array<string, Union|null>> */
     public $value_types = [];
+
+    /** @var array<string, Union> */
+    public $objectlike_entries = [];
 }
