@@ -837,6 +837,10 @@ class TypeChecker
 
         $base_key = array_shift($key_parts);
 
+        if (!isset($existing_keys[$base_key])) {
+            return null;
+        }
+
         while ($key_parts) {
             $divider = array_shift($key_parts);
 
