@@ -6829,7 +6829,7 @@ return [
 'PDOStatement::debugDumpParams' => [''],
 'PDOStatement::errorCode' => ['string'],
 'PDOStatement::errorInfo' => ['array'],
-'PDOStatement::execute' => ['bool', 'bound_input_params='=>'array'],
+'PDOStatement::execute' => ['bool', 'bound_input_params='=>'array|null'],
 'PDOStatement::fetchAll' => ['array', 'how='=>'int', 'fetch_argument='=>'int|string|callable', 'ctor_args='=>'null|array'],
 'PDOStatement::fetchColumn' => ['string', 'column_number='=>'int'],
 'PDOStatement::fetch' => ['', 'how='=>'int', 'orientation='=>'int', 'offset='=>'int'],
