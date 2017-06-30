@@ -1123,12 +1123,47 @@ class CallChecker
                         return;
                     }
 
-                    if (is_string($stmt->name)) {
-                        if ($context->collect_mutations) {
-                            $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+                    $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
 
-                            $file_checker->project_checker->getMethodMutations($method_id, $context);
+                    if (is_string($stmt->name) && $class_storage->user_defined) {
+                        $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+
+                        $old_context_include_location = $context->include_location;
+                        $old_self = $context->self;
+                        $context->include_location = new CodeLocation($statements_checker->getSource(), $stmt);
+                        $context->self = $fq_class_name;
+
+                        if ($context->collect_mutations) {
+                            $file_checker->getMethodMutations($method_id, $context);
+                        } elseif ($context->collect_initializations) {
+                            $local_vars_in_scope = [];
+                            $local_vars_possibly_in_scope = [];
+
+                            foreach ($context->vars_in_scope as $var => $type) {
+                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                    $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                                }
+                            }
+
+                            foreach ($context->vars_possibly_in_scope as $var => $type) {
+                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                    $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                                }
+                            }
+
+                            $file_checker->getMethodMutations($method_id, $context);
+
+                            foreach ($local_vars_in_scope as $var => $type) {
+                                $context->vars_in_scope[$var] = $type;
+                            }
+
+                            foreach ($local_vars_possibly_in_scope as $var => $type) {
+                                $context->vars_possibly_in_scope[$var] = $type;
+                            }
                         }
+
+                        $context->include_location = $old_context_include_location;
+                        $context->self = $old_self;
                     }
                 } else {
                     $namespace = $statements_checker->getNamespace()

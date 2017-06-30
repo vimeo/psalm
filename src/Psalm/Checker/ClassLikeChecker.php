@@ -563,10 +563,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-            if (explode('::', $appearing_property_id)[0] !== $fq_class_name) {
-                continue;
-            }
-
             $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
             $property_class_storage = self::$storage[strtolower((string)$property_class_name)];
             $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
@@ -662,10 +658,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $uninitialized_properties = [];
 
             foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-                if (explode('::', $appearing_property_id)[0] !== $fq_class_name) {
-                    continue;
-                }
-
                 $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
                 $property_class_storage = self::$storage[strtolower((string)$property_class_name)];
                 $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
@@ -684,7 +676,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
 
-            if ($uninitialized_properties && !($this instanceof TraitChecker)) {
+            if ($uninitialized_properties
+                && !($this instanceof TraitChecker)
+                && !$storage->abstract
+            ) {
                 if ($constructor_checker) {
                     $method_context = clone $class_context;
                     $method_context->collect_initializations = true;
@@ -842,14 +837,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $method_name,
         Context $context
     ) {
-        foreach (self::$storage[strtolower($this->fq_class_name)]->properties as $property_name => $property_storage) {
-            if (!isset($context->vars_in_scope['$this->' . $property_name]) &&
-                $property_storage->type !== false
-            ) {
-                $context->vars_in_scope['$this->' . $property_name] = clone $property_storage->type;
-            }
-        }
-
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name) === strtolower($method_name)
@@ -1696,16 +1683,37 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === self::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
             $storage->appearing_property_ids[$property_name] = $appearing_property_id;
         }
 
         // register where they're declared
         foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === self::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
             $storage->declaring_property_ids[$property_name] = $declaring_property_id;
         }
 
         // register where they're declared
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === self::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
             $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
         }
     }

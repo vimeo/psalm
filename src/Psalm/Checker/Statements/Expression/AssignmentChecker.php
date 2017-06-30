@@ -770,7 +770,8 @@ class AssignmentChecker
                             $assignment_value_type . '\'',
                         new CodeLocation(
                             $statements_checker->getSource(),
-                            $assignment_value ?: $stmt
+                            $assignment_value ?: $stmt,
+                            $context->include_location
                         )
                     ),
                     $statements_checker->getSuppressedIssues()

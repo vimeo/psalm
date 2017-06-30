@@ -96,6 +96,11 @@ class ClassLikeStorage
     public $used_traits = [];
 
     /**
+     * @var bool
+     */
+    public $is_trait = false;
+
+    /**
      * @var array<string, MethodStorage>
      */
     public $methods = [];

@@ -230,7 +230,7 @@ class ClassScopeTest extends TestCase
                             echo $this->fooFoo;
                         }
                     }',
-                'error_message' => 'InaccessibleProperty',
+                'error_message' => 'UndefinedThisPropertyFetch',
             ],
             'inaccessibleStaticPrivateProperty' => [
                 '<?php

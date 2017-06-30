@@ -595,7 +595,7 @@ abstract class Type
         $type_key = $type->getKey();
 
         if ($type instanceof TArray || $type instanceof TGenericObject) {
-            for ($i = 0; $i < count($type->type_params); $i++) {
+            for ($i = 0; $i < count($type->type_params); ++$i) {
                 $type_param = $type->type_params[$i];
 
                 if (isset($combination->type_params[$type_key][$i])) {

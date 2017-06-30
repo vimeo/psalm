@@ -366,6 +366,43 @@ class PropertyTypeTest extends TestCase
                       use T;
                     }',
             ],
+            'abstractClassWithNoConstructor' => [
+                '<?php
+                    abstract class A {
+                        /** @var string */
+                        public $foo;
+                    }',
+            ],
+            'abstractClassConstructorAndChildConstructor' => [
+                '<?php
+                    abstract class A {
+                        /** @var string */
+                        public $foo;
+
+                        public function __construct() {
+                            $this->foo = "";
+                        }
+                    }
+
+                    class B extends A {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
+            'SKIPPED-abstractClassConstructorAndImplicitChildConstructor' => [
+                '<?php
+                    abstract class A {
+                        /** @var string */
+                        public $foo;
+
+                        public function __construct() {
+                            $this->foo = "";
+                        }
+                    }
+
+                    class B extends A {}',
+            ],
         ];
     }
 
@@ -713,6 +750,19 @@ class PropertyTypeTest extends TestCase
                         public $foo;
                     }',
                 'error_message' => 'UndefinedClass',
+            ],
+            'abstractClassWithNoConstructorButChild' => [
+                '<?php
+                    abstract class A {
+                      /** @var string */
+                      public $foo;
+                    }
+
+                    class B extends A {
+                      public function __construct() {
+                      }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
         ];
     }

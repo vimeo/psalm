@@ -352,8 +352,25 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function getMethodMutations($method_id, Context &$this_context)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
-        $call_context = new Context((string)array_values($this_context->vars_in_scope['$this']->types)[0]);
+
+        $class_checker_to_examine = null;
+
+        foreach ($this->class_checkers_to_analyze as $class_checker) {
+            if (strtolower($class_checker->getFQCLN()) === strtolower($fq_class_name)) {
+                $class_checker_to_examine = $class_checker;
+                break;
+            }
+        }
+
+        if (!$class_checker_to_examine) {
+            $this->project_checker->getMethodMutations($method_id, $this_context);
+
+            return;
+        }
+
+        $call_context = new Context($this_context->self);
         $call_context->collect_mutations = true;
+        $call_context->include_location = $this_context->include_location;
 
         foreach ($this_context->vars_possibly_in_scope as $var => $type) {
             if (strpos($var, '$this->') === 0) {
@@ -369,19 +386,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $call_context->vars_in_scope['$this'] = $this_context->vars_in_scope['$this'];
 
-        $checked = false;
-
-        foreach ($this->class_checkers_to_analyze as $class_checker) {
-            if (strtolower($class_checker->getFQCLN()) === strtolower($fq_class_name)) {
-                $class_checker->getMethodMutations($method_name, $call_context);
-                $checked = true;
-                break;
-            }
-        }
-
-        if (!$checked) {
-            throw new \UnexpectedValueException('Method ' . $method_id . ' could not be checked');
-        }
+        $class_checker_to_examine->getMethodMutations($method_name, $call_context);
 
         foreach ($call_context->vars_possibly_in_scope as $var => $_) {
             $this_context->vars_possibly_in_scope[$var] = true;
