@@ -17,6 +17,7 @@ use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedTrait;
+use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
 use Psalm\Provider\FileReferenceProvider;
@@ -561,6 +562,33 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if ($this->leftover_stmts) {
             (new StatementsChecker($this))->analyze($this->leftover_stmts, $class_context);
         }
+
+        if (!$storage->abstract) {
+            foreach ($storage->declaring_method_ids as $method_name => $declaring_method_id) {
+                $method_storage = MethodChecker::getStorage($declaring_method_id);
+
+                list($declaring_class_name, $method_name) = explode('::', $declaring_method_id);
+
+                if ($method_storage->abstract) {
+                    if (IssueBuffer::accepts(
+                        new UnimplementedAbstractMethod(
+                            'Method ' . $method_name . ' is not defined on class ' .
+                            $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
+                            new CodeLocation(
+                                $this,
+                                $this->class,
+                                $class_context->include_location,
+                                true
+                            )
+                        ),
+                        $this->source->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+            }
+        }
+
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
             $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);

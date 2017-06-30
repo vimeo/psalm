@@ -58,6 +58,11 @@ class FunctionLikeStorage
     public $variadic;
 
     /**
+     * @var bool
+     */
+    public $abstract = false;
+
+    /**
      * @var int
      */
     public $required_param_count;

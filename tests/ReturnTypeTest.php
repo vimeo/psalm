@@ -301,7 +301,7 @@ class ReturnTypeTest extends TestCase
                         abstract public function blah();
                     }
 
-                    class B extends A {
+                    abstract class B extends A {
                     }
 
                     class C extends B {

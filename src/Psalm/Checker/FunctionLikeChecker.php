@@ -588,6 +588,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             /** @var bool */
             $storage->is_static = $function->isStatic();
 
+            /** @var bool */
+            $storage->abstract = $function->isAbstract();
+
             if ($function->isPrivate()) {
                 $storage->visibility = ClassLikeChecker::VISIBILITY_PRIVATE;
             } elseif ($function->isProtected()) {

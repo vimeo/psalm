@@ -340,6 +340,15 @@ class ClassTest extends TestCase
                     new A();',
                 'error_message' => 'AbstractInstantiation',
             ],
+            'abstractClassMethod' => [
+                '<?php
+                abstract class A {
+                    abstract public function foo();
+                }
+
+                class B extends A { }',
+                'error_message' => 'UnimplementedAbstractMethod',
+            ],
             'missingParent' => [
                 '<?php
                     class A extends B { }',
