@@ -12,13 +12,17 @@ class MethodCallTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
+            'notInCallMapTest' => [
+                '<?php
+                    new DOMImplementation();'
+            ],
             'parentStaticCall' => [
                 '<?php
                     class A {
                         /** @return void */
                         public static function foo(){}
                     }
-            
+
                     class B extends A {
                         /** @return void */
                         public static function bar(){
@@ -31,7 +35,7 @@ class MethodCallTest extends TestCase
                     class Foo {
                         public static function barBar() : void {}
                     }
-            
+
                     (new Foo())->barBar();',
             ],
             'staticInvocation' => [
@@ -39,11 +43,11 @@ class MethodCallTest extends TestCase
                     class A {
                         public static function fooFoo() : void {}
                     }
-            
+
                     class B extends A {
-            
+
                     }
-            
+
                     B::fooFoo();',
             ],
         ];
@@ -60,7 +64,7 @@ class MethodCallTest extends TestCase
                     class Foo {
                         public function barBar() : void {}
                     }
-            
+
                     Foo::barBar();',
                 'error_message' => 'InvalidStaticInvocation',
             ],
@@ -70,7 +74,7 @@ class MethodCallTest extends TestCase
                         /** @return void */
                         public function foo(){}
                     }
-            
+
                     class B extends A {
                         /** @return void */
                         public static function bar(){
@@ -84,10 +88,10 @@ class MethodCallTest extends TestCase
                     class Foo {
                         public static function barBar() : void {}
                     }
-            
+
                     /** @var mixed */
                     $a = (new Foo());
-            
+
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
                 'error_levels' => [
@@ -99,7 +103,7 @@ class MethodCallTest extends TestCase
                 '<?php
                     class A {
                         public function fooFoo() : void {}
-            
+
                         public function barBar() : void {
                             self::fooFoo();
                         }
@@ -119,7 +123,7 @@ class MethodCallTest extends TestCase
                 '<?php
                     class NullableClass {
                     }
-            
+
                     class NullableBug {
                         /**
                          * @param string $className
@@ -129,7 +133,7 @@ class MethodCallTest extends TestCase
                             if (!$className) { return null; }
                             return new $className();
                         }
-            
+
                         /**
                          * @return NullableClass
                          */

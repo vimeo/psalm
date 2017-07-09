@@ -447,8 +447,18 @@ class MethodChecker extends FunctionLikeChecker
         $declaring_method_id = self::getDeclaringMethodId($method_id);
         $appearing_method_id = self::getAppearingMethodId($method_id);
 
-        list($declaring_method_class) = explode('::', (string)$declaring_method_id);
-        list($appearing_method_class) = explode('::', (string)$appearing_method_id);
+        if ($declaring_method_id === null && $appearing_method_id === null) {
+            list($method_class, $method_name) = explode('::', $method_id);
+
+            if ($method_name === '__construct') {
+                return null;
+            }
+
+            throw new \UnexpectedValueException('$declaring_method_id not expected to be null here');
+        }
+
+        list($declaring_method_class) = explode('::', $declaring_method_id);
+        list($appearing_method_class) = explode('::', $appearing_method_id);
 
         // if the calling class is the same, we know the method exists, so it must be visible
         if ($appearing_method_class === $calling_context) {
