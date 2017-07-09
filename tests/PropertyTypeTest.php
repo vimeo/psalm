@@ -669,6 +669,36 @@ class PropertyTypeTest extends TestCase
                     class B extends A {}',
                 'error_message' => 'MissingConstructor',
             ],
+            'abstractClassInheritsPrivateConstructor' => [
+                '<?php
+                    abstract class A {
+                        /** @var string */
+                        public $foo;
+
+                        private function __construct() {
+                            $this->foo = "hello";
+                        }
+                    }
+
+                    class B extends A {}',
+                'error_message' => 'InaccessibleMethod',
+            ],
+            'classInheritsPrivateConstructorWithImplementedConstructor' => [
+                '<?php
+                    abstract class A {
+                        /** @var string */
+                        public $foo;
+
+                        private function __construct() {
+                            $this->foo = "hello";
+                        }
+                    }
+
+                    class B extends A {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'notSetInAllBranchesOfIf' => [
                 '<?php
                     class A {
