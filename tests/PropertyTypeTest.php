@@ -390,18 +390,20 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
-            'SKIPPED-abstractClassConstructorAndImplicitChildConstructor' => [
+            'abstractClassConstructorAndImplicitChildConstructor' => [
                 '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
 
-                        public function __construct() {
-                            $this->foo = "";
+                        public function __construct(int $bar) {
+                            $this->foo = (string)$bar;
                         }
                     }
 
-                    class B extends A {}',
+                    class B extends A {}
+
+                    class E extends \Exception{}',
             ],
         ];
     }
@@ -655,6 +657,16 @@ class PropertyTypeTest extends TestCase
                         /** @var int */
                         public $a;
                     }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'abstractClassInheritsNoConstructor' => [
+                '<?php
+                    abstract class A {
+                        /** @var string */
+                        public $foo;
+                    }
+
+                    class B extends A {}',
                 'error_message' => 'MissingConstructor',
             ],
             'notSetInAllBranchesOfIf' => [

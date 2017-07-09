@@ -40,6 +40,11 @@ class ClassLikeStorage
     /**
      * @var bool
      */
+    public $all_properties_set_in_constructor = false;
+
+    /**
+     * @var bool
+     */
     public $deprecated = false;
 
     /**

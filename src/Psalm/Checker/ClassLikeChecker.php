@@ -589,7 +589,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
             $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
             $property_class_storage = self::$storage[strtolower((string)$property_class_name)];
@@ -675,6 +674,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         }
                     }
                 }
+
                 $class_context->include_location = $previous_context_include_location;
             }
         }
@@ -692,7 +692,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $property = $property_class_storage->properties[$property_name];
 
-                if (!$property->has_default &&
+                $constructor_class_storage = null;
+
+                if (isset($property_class_storage->methods['__construct'])
+                    && $property_class_storage !== $storage
+                ) {
+                    $constructor_class_storage = $property_class_storage;
+                } elseif (!empty($property_class_storage->overridden_method_ids['__construct'])) {
+                    list($construct_fqcln) =
+                        explode('::', $property_class_storage->overridden_method_ids['__construct'][0]);
+                    $constructor_class_storage = self::$storage[strtolower($construct_fqcln)];
+                }
+
+                if ((!$constructor_class_storage || !$constructor_class_storage->all_properties_set_in_constructor) &&
+                    !$property->has_default &&
                     $property->type &&
                     !$property->type->isMixed() &&
                     !$property->type->isNullable() &&
@@ -704,10 +717,64 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
 
-            if ($uninitialized_properties
-                && !($this instanceof TraitChecker)
-                && !$storage->abstract
-            ) {
+            if ($uninitialized_properties && !($this instanceof TraitChecker)) {
+                if (!$storage->abstract
+                    && !$constructor_checker
+                    && isset($storage->declaring_method_ids['__construct'])
+                ) {
+                    list($construct_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
+
+                    $constructor_class_storage = self::$storage[strtolower($construct_fqcln)];
+
+                    // ignore oldstyle constructors and classes without any declared properties
+                    if (isset($constructor_class_storage->methods['__construct'])) {
+                        $constructor_storage = self::$storage[strtolower($construct_fqcln)]->methods['__construct'];
+
+                        $fake_constructor_params = array_map(
+                            /** @return PhpParser\Node\Param */
+                            function (\Psalm\FunctionLikeParameter $param) {
+                                return (new PhpParser\Builder\Param($param->name))
+                                    ->setTypehint((string)$param->signature_type)
+                                    ->getNode();
+                            },
+                            $constructor_storage->params
+                        );
+
+                        $fake_constructor_stmt_args = array_map(
+                            /** @return PhpParser\Node\Arg */
+                            function (\Psalm\FunctionLikeParameter $param) {
+                                return new PhpParser\Node\Arg(new PhpParser\Node\Expr\Variable($param->name));
+                            },
+                            $constructor_storage->params
+                        );
+
+                        $fake_constructor_stmts = [
+                            new PhpParser\Node\Expr\StaticCall(
+                                new PhpParser\Node\Name(['parent']),
+                                '__construct',
+                                $fake_constructor_stmt_args
+                            ),
+                        ];
+
+                        $fake_stmt = new PhpParser\Node\Stmt\ClassMethod(
+                            '__construct',
+                            [
+                                'type' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
+                                'params' => $fake_constructor_params,
+                                'stmts' => $fake_constructor_stmts,
+                            ]
+                        );
+
+                        $constructor_checker = $this->analyzeClassMethod(
+                            $fake_stmt,
+                            $this,
+                            $class_context,
+                            $global_context,
+                            $update_docblocks
+                        );
+                    }
+                }
+
                 if ($constructor_checker) {
                     $method_context = clone $class_context;
                     $method_context->collect_initializations = true;
@@ -716,12 +783,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     $constructor_checker->analyze($method_context, $global_context, true);
 
+                    $all_properties_set_in_constructor = true;
+
                     foreach ($uninitialized_properties as $property_name => $property) {
                         if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
                             throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
                         }
 
                         $end_type = $method_context->vars_in_scope['$this->' . $property_name];
+
+                        if (!$end_type->initialized) {
+                            $all_properties_set_in_constructor = false;
+                        }
 
                         if (!$end_type->initialized && $property->location) {
                             $property_id = $this->fq_class_name . '::$' . $property_name;
@@ -738,7 +811,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             }
                         }
                     }
-                } else {
+
+                    $storage->all_properties_set_in_constructor = $all_properties_set_in_constructor;
+                } elseif (!$storage->abstract) {
                     $first_uninitialized_property = array_shift($uninitialized_properties);
 
                     if ($first_uninitialized_property->location) {
@@ -826,7 +901,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $global_context ? clone $global_context : null
         );
 
-        if ($config->reportIssueInFile('InvalidReturnType', $source->getFilePath())) {
+        if ($stmt->name !== '__construct' && $config->reportIssueInFile('InvalidReturnType', $source->getFilePath())) {
             $return_type_location = null;
             $secondary_return_type_location = null;
 
