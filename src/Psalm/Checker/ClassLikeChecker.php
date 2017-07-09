@@ -681,7 +681,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $config = Config::getInstance();
 
-        if ($config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
+        if ($this->class instanceof PhpParser\Node\Stmt\Class_
+            && $config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())
+        ) {
             $uninitialized_variables = [];
             $uninitialized_properties = [];
 
@@ -719,10 +721,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
 
-            if ($uninitialized_properties && !($this instanceof TraitChecker)) {
+            if ($uninitialized_properties) {
                 if (!$storage->abstract
                     && !$constructor_checker
                     && isset($storage->declaring_method_ids['__construct'])
+                    && $this->class->extends
                 ) {
                     list($construct_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
 
