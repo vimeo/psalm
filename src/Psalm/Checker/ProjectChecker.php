@@ -911,6 +911,12 @@ class ProjectChecker
         $appearing_method_id = (string)MethodChecker::getAppearingMethodId($original_method_id);
         list($appearing_fq_class_name) = explode('::', $appearing_method_id);
 
+        $appearing_class_storage = ClassLikeChecker::$storage[$appearing_fq_class_name];
+
+        if (!$appearing_class_storage->user_defined) {
+            return;
+        }
+
         if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
             $file_checker = $this->getVisitedFileCheckerForClassLike($appearing_fq_class_name);
         }
