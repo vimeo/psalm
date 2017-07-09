@@ -754,7 +754,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             new PhpParser\Node\Expr\StaticCall(
                                 new PhpParser\Node\Name(['parent']),
                                 '__construct',
-                                $fake_constructor_stmt_args
+                                $fake_constructor_stmt_args,
+                                [
+                                    'line' => $this->class->getLine(),
+                                    'startFilePos' => $this->class->getAttribute('startFilePos'),
+                                    'endFilePos' => $this->class->getAttribute('endFilePos'),
+                                ]
                             ),
                         ];
 
