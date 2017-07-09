@@ -805,13 +805,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             $all_properties_set_in_constructor = false;
                         }
 
-                        if (!$end_type->initialized && $property->location && $this->class->extends) {
+                        if (!$end_type->initialized && $property->location) {
                             $property_id = $this->fq_class_name . '::$' . $property_name;
 
                             if (!$config->reportIssueInFile(
                                 'PropertyNotSetInConstructor',
                                 $property->location->file_path
-                            )) {
+                            ) && $this->class->extends
+                            ) {
                                 $error_location = new CodeLocation($this, $this->class->extends);
                             } else {
                                 $error_location = $property->location;
@@ -834,11 +835,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 } elseif (!$storage->abstract) {
                     $first_uninitialized_property = array_shift($uninitialized_properties);
 
-                    if ($first_uninitialized_property->location && $this->class->extends) {
+                    if ($first_uninitialized_property->location) {
                         if (!$config->reportIssueInFile(
                             'PropertyNotSetInConstructor',
                             $first_uninitialized_property->location->file_path
-                        )) {
+                        ) && $this->class->extends) {
                             $error_location = new CodeLocation($this, $this->class->extends);
                         } else {
                             $error_location = $first_uninitialized_property->location;
