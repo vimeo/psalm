@@ -445,9 +445,8 @@ class MethodChecker extends FunctionLikeChecker
         array $suppressed_issues
     ) {
         $declaring_method_id = self::getDeclaringMethodId($method_id);
-        $appearing_method_id = self::getAppearingMethodId($method_id);
 
-        if ($declaring_method_id === null && $appearing_method_id === null) {
+        if (!$declaring_method_id) {
             list($method_class, $method_name) = explode('::', $method_id);
 
             if ($method_name === '__construct') {
@@ -457,19 +456,26 @@ class MethodChecker extends FunctionLikeChecker
             throw new \UnexpectedValueException('$declaring_method_id not expected to be null here');
         }
 
-        list($declaring_method_class) = explode('::', $declaring_method_id);
-        list($appearing_method_class) = explode('::', $appearing_method_id);
+        $appearing_method_id = self::getAppearingMethodId($method_id);
 
-        // if the calling class is the same, we know the method exists, so it must be visible
-        if ($appearing_method_class === $calling_context) {
-            return null;
+        $appearing_method_class = null;
+
+        if ($appearing_method_id) {
+            list($appearing_method_class) = explode('::', $appearing_method_id);
+
+            // if the calling class is the same, we know the method exists, so it must be visible
+            if ($appearing_method_class === $calling_context) {
+                return null;
+            }
         }
+
+        list($declaring_method_class) = explode('::', $declaring_method_id);
 
         if ($source->getSource() instanceof TraitChecker && $declaring_method_class === $source->getFQCLN()) {
             return null;
         }
 
-        $storage = self::getStorage((string)$declaring_method_id);
+        $storage = self::getStorage($declaring_method_id);
 
         if (!$storage) {
             throw new \UnexpectedValueException('$storage should not be null');
@@ -496,10 +502,6 @@ class MethodChecker extends FunctionLikeChecker
                 return null;
 
             case ClassLikeChecker::VISIBILITY_PROTECTED:
-                if ($appearing_method_class === $calling_context) {
-                    return null;
-                }
-
                 if (!$calling_context) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
@@ -514,11 +516,11 @@ class MethodChecker extends FunctionLikeChecker
                     return null;
                 }
 
-                if (ClassChecker::classExtends($appearing_method_class, $calling_context)) {
+                if ($appearing_method_class && ClassChecker::classExtends($appearing_method_class, $calling_context)) {
                     return null;
                 }
 
-                if (!ClassChecker::classExtends($calling_context, $appearing_method_class)) {
+                if ($appearing_method_class && !ClassChecker::classExtends($calling_context, $appearing_method_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . MethodChecker::getCasedMethodId($method_id) .
