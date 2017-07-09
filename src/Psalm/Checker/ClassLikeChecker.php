@@ -1079,6 +1079,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $implemented_method_id =
                 $class_context->self . '::' . strtolower($this->getMappedMethodName(strtolower($stmt->name)));
 
+            if ($stmt->isAbstract()) {
+                list($fq_class_name, $method_name) = explode('::', $implemented_method_id);
+                $fq_class_name_lc = strtolower($fq_class_name);
+
+                if (isset(self::$storage[$fq_class_name_lc]->declaring_method_ids[$method_name])) {
+                    return;
+                }
+            }
+
             MethodChecker::setDeclaringMethodId(
                 $implemented_method_id,
                 $method_id

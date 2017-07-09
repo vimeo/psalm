@@ -271,6 +271,30 @@ class TraitTest extends TestCase
                       use T;
                     }',
             ],
+            'useTraitInClassWithAbstractMethod' => [
+                '<?php
+                    trait T {
+                      abstract public function foo() : void;
+                    }
+
+                    class A {
+                      public function foo() : void {}
+                    }'
+            ],
+            'useTraitInSubclassWithAbstractMethod' => [
+                '<?php
+                    trait T {
+                      abstract public function foo() : void;
+                    }
+
+                    abstract class A {
+                      public function foo() : void {}
+                    }
+
+                    class B extends A {
+                      use T;
+                    }'
+            ],
         ];
     }
 
