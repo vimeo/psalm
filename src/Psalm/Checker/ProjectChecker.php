@@ -911,7 +911,7 @@ class ProjectChecker
         $appearing_method_id = (string)MethodChecker::getAppearingMethodId($original_method_id);
         list($appearing_fq_class_name) = explode('::', $appearing_method_id);
 
-        $appearing_class_storage = ClassLikeChecker::$storage[$appearing_fq_class_name];
+        $appearing_class_storage = ClassLikeChecker::$storage[strtolower($appearing_fq_class_name)];
 
         if (!$appearing_class_storage->user_defined) {
             return;
