@@ -717,7 +717,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 ) {
                     $uninitialized_variables[] = '$this->' . $property_name;
                     $uninitialized_properties[$property_name] = $property;
-                    break;
                 }
             }
 
@@ -806,14 +805,23 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             $all_properties_set_in_constructor = false;
                         }
 
-                        if (!$end_type->initialized && $property->location) {
+                        if (!$end_type->initialized && $property->location && $this->class->extends) {
                             $property_id = $this->fq_class_name . '::$' . $property_name;
+
+                            if (!$config->reportIssueInFile(
+                                'PropertyNotSetInConstructor',
+                                $property->location->file_path
+                            )) {
+                                $error_location = new CodeLocation($this, $this->class->extends);
+                            } else {
+                                $error_location = $property->location;
+                            }
 
                             if (IssueBuffer::accepts(
                                 new PropertyNotSetInConstructor(
                                     'Property ' . $property_id . ' is not defined in constructor of ' .
                                         $this->fq_class_name . ' or in any private methods called in the constructor',
-                                    $property->location
+                                    $error_location
                                 ),
                                 $this->source->getSuppressedIssues()
                             )) {
@@ -826,7 +834,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 } elseif (!$storage->abstract) {
                     $first_uninitialized_property = array_shift($uninitialized_properties);
 
-                    if ($first_uninitialized_property->location) {
+                    if ($first_uninitialized_property->location && $this->class->extends) {
+                        if (!$config->reportIssueInFile(
+                            'PropertyNotSetInConstructor',
+                            $first_uninitialized_property->location->file_path
+                        )) {
+                            $error_location = new CodeLocation($this, $this->class->extends);
+                        } else {
+                            $error_location = $first_uninitialized_property->location;
+                        }
+
                         if (IssueBuffer::accepts(
                             new MissingConstructor(
                                 $fq_class_name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
