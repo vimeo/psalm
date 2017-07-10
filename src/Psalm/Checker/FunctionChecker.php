@@ -157,7 +157,7 @@ class FunctionChecker extends FunctionLikeChecker
                         (string)$doc_comment,
                         0
                     );
-                } catch (DocblockParseException $e) {
+                } catch (\Psalm\Exception\DocblockParseException $e) {
                     // do nothing
                 }
 
@@ -180,7 +180,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $storage->suppressed_issues = $docblock_info->suppress;
 
                 if (!$config->use_docblock_types) {
-                    return $storage;
+                    return;
                 }
 
                 if ($docblock_info->return_type) {
