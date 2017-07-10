@@ -137,6 +137,63 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             $storage->cased_name = $reflection_function->getName();
+
+            $config = \Psalm\Config::getInstance();
+
+            if ($reflection_return_type = $reflection_function->getReturnType()) {
+                $storage->return_type = Type::parseString((string)$reflection_return_type);
+            }
+
+            if ($reflection_function->isUserDefined()) {
+                $docblock_info = null;
+                $doc_comment = $reflection_function->getDocComment();
+
+                if (!$doc_comment) {
+                    return;
+                }
+
+                try {
+                    $docblock_info = CommentChecker::extractFunctionDocblockInfo(
+                        (string)$doc_comment,
+                        0
+                    );
+                } catch (DocblockParseException $e) {
+                    // do nothing
+                }
+
+                if (!$docblock_info) {
+                    return;
+                }
+
+                if ($docblock_info->deprecated) {
+                    $storage->deprecated = true;
+                }
+
+                if ($docblock_info->variadic) {
+                    $storage->variadic = true;
+                }
+
+                if ($docblock_info->ignore_nullable_return && $storage->return_type) {
+                    $storage->return_type->ignore_nullable_issues = true;
+                }
+
+                $storage->suppressed_issues = $docblock_info->suppress;
+
+                if (!$config->use_docblock_types) {
+                    return $storage;
+                }
+
+                if ($docblock_info->return_type) {
+                    if (!$storage->return_type) {
+                        $storage->return_type = Type::parseString($docblock_info->return_type);
+                        $storage->return_type->setFromDocblock();
+
+                        if ($docblock_info->ignore_nullable_return) {
+                            $storage->return_type->ignore_nullable_issues = true;
+                        }
+                    }
+                }
+            }
         } catch (\ReflectionException $e) {
             return false;
         }
