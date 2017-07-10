@@ -763,7 +763,10 @@ class ProjectChecker
         }
 
         $old_level = error_reporting();
-        error_reporting(0);
+
+        if (!$this->debug_output) {
+            error_reporting(0);
+        }
 
         try {
             $reflected_class = new \ReflectionClass($fq_class_name);
