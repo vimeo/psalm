@@ -289,6 +289,16 @@ class InterfaceTest extends TestCase
                         return $a;
                     }',
             ],
+            'SKIPPED-interfaceInstanceof' => [
+                '<?php
+                    interface A {}
+                    interface B {}
+
+                    function foo(A $i) : A {
+                        if ($i instanceof B) {}
+                        return $i;
+                    }',
+            ],
         ];
     }
 
