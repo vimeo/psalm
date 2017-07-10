@@ -192,6 +192,36 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'invalidReturnClass' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @return 1
+                         */
+                        public static function barBar();
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidReturnClassWithComma' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @return 1,
+                         */
+                        public static function barBar();
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'returnClassWithComma' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @return a,
+                         */
+                        public static function barBar();
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'deprecatedMethodWithCall' => [
                 '<?php
                     class Foo {

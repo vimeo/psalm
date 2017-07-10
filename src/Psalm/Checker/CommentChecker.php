@@ -12,7 +12,7 @@ use Psalm\VarDocblockComment;
 
 class CommentChecker
 {
-    const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_\<,\>\[\]\-\{\}:|\\\]+|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
+    const TYPE_REGEX = '(\??\\\?[A-Za-z][\(\)A-Za-z0-9_\<,\>\[\]\-\{\}:|\\\]*|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
 
     /**
      * @param  string           $comment
@@ -157,6 +157,8 @@ class CommentChecker
                 if ($line_number) {
                     $info->return_type_line_number = $line_number;
                 }
+            } else {
+                throw new DocblockParseException('Badly-formatted @return type');
             }
         }
 
