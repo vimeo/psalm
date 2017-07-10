@@ -140,7 +140,9 @@ class FunctionChecker extends FunctionLikeChecker
 
             $config = \Psalm\Config::getInstance();
 
-            if ($reflection_return_type = $reflection_function->getReturnType()) {
+            if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                && $reflection_return_type = $reflection_function->getReturnType()
+            ) {
                 $storage->return_type = Type::parseString((string)$reflection_return_type);
             }
 
