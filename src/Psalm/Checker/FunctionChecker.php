@@ -42,7 +42,7 @@ class FunctionChecker extends FunctionLikeChecker
 
         parent::__construct($function, $source);
 
-        self::register($function, $this);
+        //self::register($function, $this);
     }
 
     /**

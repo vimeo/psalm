@@ -130,6 +130,11 @@ class ProjectChecker
     private $classes_to_scan = [];
 
     /**
+     * @var array<string, bool>
+     */
+    private $classes_to_analyze = [];
+
+    /**
      * @var array<string, string>
      */
     private $files_to_visit = [];
@@ -367,9 +372,38 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        foreach ($this->files_to_scan as $file_path => $_) {
-            if (!isset($this->scanned_files[$file_path])) {
-                $this->scanFile($file_path, $filetype_handlers);
+        while ($this->files_to_scan || $this->classes_to_scan) {
+            if ($this->files_to_scan) {
+                $file_path = array_shift($this->files_to_scan);
+
+                if (!isset($this->scanned_files[$file_path])) {
+                    $this->scanFile($file_path, $filetype_handlers, isset($this->files_to_analyze[$file_path]));
+                }
+            } else {
+                $class_to_scan = array_shift($this->classes_to_scan);
+                $fq_class_name_lower = strtolower($class_to_scan);
+
+                if (!isset($this->classlike_files[$fq_class_name_lower])) {
+                    if ($this->fileExistsForClassLike($class_to_scan) && isset($this->classlike_files[$fq_class_name_lower])) {
+                        $file_path = $this->classlike_files[$fq_class_name_lower];
+                        $this->files_to_scan[$file_path] = $file_path;
+                        if (isset($this->classes_to_analyze[$fq_class_name_lower])) {
+                            unset($this->classes_to_analyze[$fq_class_name_lower]);
+                            $this->files_to_analyze[$file_path] = $file_path;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public function queueClassLikeForScanning($fqcln, $analyze_too = false)
+    {
+        if (!isset($this->classlike_files[strtolower($fqcln)])) {
+            $this->classes_to_scan[] = $fqcln;
+
+            if ($analyze_too) {
+                $this->classes_to_analyze[strtolower($fqcln)] = true;
             }
         }
     }
@@ -575,7 +609,7 @@ class ProjectChecker
 
                     if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
                         $this->files_to_analyze[$file_path] = true;
-                        $this->files_to_scan[$file_path] = true;
+                        $this->files_to_scan[$file_path] = $file_path;
                     }
                 }
             }

@@ -110,7 +110,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @var bool
      */
-    protected $will_analyze;
+    public $will_analyze;
 
     /**
      * @param string                                $file_path
@@ -131,26 +131,9 @@ class FileChecker extends SourceChecker implements StatementsSource
         $this->project_checker = $project_checker;
         $this->will_analyze = $will_analyze;
 
-        if (!isset(self::$storage[$file_path])) {
-            self::$storage[$file_path] = new FileStorage();
-        }
-
         if ($preloaded_statements) {
             $this->preloaded_statements = $preloaded_statements;
         }
-
-        $this->context = new Context();
-        $this->context->collect_references = $project_checker->collect_references;
-        $this->context->vars_in_scope['$argc'] = Type::getInt();
-        $this->context->vars_in_scope['$argv'] = new Type\Union([
-            new Type\Atomic\TArray([
-                Type::getInt(),
-                Type::getString(),
-            ]),
-        ]);
-
-        $included_file_paths[$file_path] = true;
-        $this->included_file_paths = $included_file_paths;
     }
 
     /**
@@ -167,7 +150,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $stmts = $this->getStatements();
 
         $traverser = new PhpParser\NodeTraverser();
-        $traverser->addVisitor(new \Psalm\Visitor\DependencyFinderVisitor($this->project_checker));
+        $traverser->addVisitor(new \Psalm\Visitor\DependencyFinderVisitor($this->project_checker, $this));
         $traverser->traverse($stmts);
     }
 
