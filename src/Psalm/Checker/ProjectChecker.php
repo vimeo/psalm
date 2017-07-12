@@ -120,6 +120,16 @@ class ProjectChecker
     private $classlike_files = [];
 
     /**
+     * @var array<string, bool>
+     */
+    private $files_to_scan = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private $classes_to_scan = [];
+
+    /**
      * @var array<string, string>
      */
     private $files_to_visit = [];
@@ -132,7 +142,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $visited_files = [];
+    private $scanned_files = [];
 
     /**
      * @var array<string, bool>
@@ -267,7 +277,8 @@ class ProjectChecker
                 $this->checkDirWithConfig($dir_name, $this->config);
             }
 
-            $this->visitFiles();
+            $this->scanFiles();
+            $this->populateStorage();
 
             if (!$this->server_mode) {
                 $this->analyzeFiles();
@@ -348,7 +359,7 @@ class ProjectChecker
     /**
      * @return void
      */
-    private function visitFiles()
+    private function scanFiles()
     {
         if (!$this->config) {
             throw new \UnexpectedValueException('$this->config cannot be null');
@@ -356,9 +367,9 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        foreach ($this->files_to_analyze as $file_path => $_) {
-            if (!isset($this->visited_files[$file_path])) {
-                $this->visitFile($file_path, $filetype_handlers);
+        foreach ($this->files_to_scan as $file_path => $_) {
+            if (!isset($this->scanned_files[$file_path])) {
+                $this->scanFile($file_path, $filetype_handlers);
             }
         }
     }
@@ -564,6 +575,7 @@ class ProjectChecker
 
                     if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
                         $this->files_to_analyze[$file_path] = true;
+                        $this->files_to_scan[$file_path] = true;
                     }
                 }
             }
@@ -727,6 +739,39 @@ class ProjectChecker
         $this->visited_files[$file_path] = true;
 
         $file_checker->visit();
+
+        return $file_checker;
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  array  $filetype_handlers
+     * @param  bool   $will_analyze
+     *
+     * @return FileChecker
+     */
+    private function scanFile($file_path, array $filetype_handlers, $will_analyze = false)
+    {
+        $extension = (string)pathinfo($file_path)['extension'];
+
+        if (isset($filetype_handlers[$extension])) {
+            /** @var FileChecker */
+            $file_checker = new $filetype_handlers[$extension]($file_path, $this);
+        } else {
+            $file_checker = new FileChecker($file_path, $this, null, $will_analyze);
+        }
+
+        if (isset($this->scanned_files[$file_path])) {
+            throw new \UnexpectedValueException('Should not be rescanning ' . $file_path);
+        }
+
+        if ($this->debug_output) {
+            echo 'Scanning ' . $file_path . PHP_EOL;
+        }
+
+        $this->scanned_files[$file_path] = true;
+
+        $file_checker->scan();
 
         return $file_checker;
     }

@@ -158,6 +158,24 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return  void
      */
+    public function scan(Context $file_context = null)
+    {
+        $this->context = $file_context ?: $this->context;
+
+        $config = Config::getInstance();
+
+        $stmts = $this->getStatements();
+
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor(new \Psalm\Visitor\DependencyFinderVisitor($this->project_checker));
+        $traverser->traverse($stmts);
+    }
+
+    /**
+     * @param   Context|null    $file_context
+     *
+     * @return  void
+     */
     public function visit(Context $file_context = null)
     {
         $this->context = $file_context ?: $this->context;
