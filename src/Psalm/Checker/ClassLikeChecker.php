@@ -1789,8 +1789,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
             $parent_method_id = $parent_class . '::' . $method_name;
 
-            /** @var string */
-            $appearing_method_id = MethodChecker::getAppearingMethodId($parent_method_id);
             $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->appearing_method_ids[$method_name] = $appearing_method_id;
@@ -1800,8 +1798,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($parent_storage->declaring_method_ids as $method_name => $declaring_method_id) {
             $parent_method_id = $parent_class . '::' . $method_name;
 
-            /** @var string */
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($parent_method_id);
             $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
