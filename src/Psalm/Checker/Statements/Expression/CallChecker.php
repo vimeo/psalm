@@ -455,7 +455,7 @@ class CallChecker
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 if ($context->check_classes) {
@@ -1179,7 +1179,7 @@ class CallChecker
             } elseif ($context->check_classes) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -1676,7 +1676,7 @@ class CallChecker
                                 $offset_value_type = Type::parseString(
                                     ClassLikeChecker::getFQCLNFromNameObject(
                                         $arg->value->class,
-                                        $statements_checker
+                                        $statements_checker->getAliases()
                                     )
                                 );
                             } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_ && $arg->value->value) {

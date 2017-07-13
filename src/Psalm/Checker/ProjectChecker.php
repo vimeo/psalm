@@ -595,7 +595,7 @@ class ProjectChecker
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         foreach ($this->files_to_analyze as $file_path => $_) {
-            $file_checker = $this->visitFile($file_path, $filetype_handlers, true);
+            $file_checker = $this->getFile($file_path, $filetype_handlers, true);
 
             if ($this->debug_output) {
                 echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -929,7 +929,7 @@ class ProjectChecker
      *
      * @return FileChecker
      */
-    private function visitFile($file_path, array $filetype_handlers, $will_analyze = false)
+    private function getFile($file_path, array $filetype_handlers, $will_analyze = false)
     {
         $extension = (string)pathinfo($file_path)['extension'];
 
@@ -941,13 +941,8 @@ class ProjectChecker
         }
 
         if ($this->debug_output) {
-            $rev_or_V = (isset($this->visited_files[$file_path]) ? 'Rev' : 'V');
-            echo $rev_or_V . 'isiting ' . $file_path . PHP_EOL;
+            echo 'Getting ' . $file_path . PHP_EOL;
         }
-
-        $this->visited_files[$file_path] = true;
-
-        $file_checker->visit();
 
         return $file_checker;
     }
@@ -1057,79 +1052,6 @@ class ProjectChecker
     }
 
     /**
-     * @param  string       $fq_class_name
-     *
-     * @return bool
-     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
-     */
-    public function visitFileForClassLike($fq_class_name)
-    {
-        if (!$fq_class_name || strpos($fq_class_name, '::') !== false) {
-            throw new \InvalidArgumentException('Invalid class name ' . $fq_class_name);
-        }
-
-        $fq_class_name_ci = strtolower($fq_class_name);
-
-        if (isset($this->visited_classes[$fq_class_name_ci])) {
-            return $this->visited_classes[$fq_class_name_ci];
-        }
-
-        // this registers the class if it's not user defined
-        if (!$this->fileExistsForClassLike($fq_class_name)) {
-            return false;
-        }
-
-        $this->visited_classes[$fq_class_name_ci] = true;
-
-        if (isset($this->classlike_files[$fq_class_name_ci])) {
-            $file_path = $this->classlike_files[$fq_class_name_ci];
-
-            if (isset($this->visited_files[$file_path])) {
-                return true;
-            }
-
-            $this->visited_files[$file_path] = true;
-
-            $file_checker = new FileChecker(
-                $file_path,
-                $this,
-                null,
-                false
-            );
-
-            ClassLikeChecker::$file_classes[$file_path][] = $fq_class_name;
-
-            $fq_class_name_lower = strtolower($fq_class_name);
-
-            if ($this->debug_output) {
-                echo 'Visiting ' . $file_path . PHP_EOL;
-            }
-
-            $file_checker->visit();
-
-            $storage = ClassLikeChecker::$storage[$fq_class_name_lower];
-
-            if (ClassLikeChecker::inPropertyMap($fq_class_name)) {
-                $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_class_name)];
-
-                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
-                    $property_type = Type::parseString($public_mapped_property);
-                    $storage->properties[$property_name] = new PropertyStorage();
-                    $storage->properties[$property_name]->type = $property_type;
-                    $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
-
-                    $property_id = $fq_class_name . '::$' . $property_name;
-
-                    $storage->declaring_property_ids[$property_name] = $property_id;
-                    $storage->appearing_property_ids[$property_name] = $property_id;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * @return void
      */
     public function enableCache()
@@ -1178,7 +1100,7 @@ class ProjectChecker
             $file_checker = $this->getVisitedFileCheckerForClassLike($appearing_fq_class_name);
         }
 
-        $file_checker->analyze(false, true);
+        $file_checker->analyze(null, false, true);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;

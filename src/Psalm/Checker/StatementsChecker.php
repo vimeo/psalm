@@ -621,7 +621,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $fq_const_name = null;
 
-        $aliased_constants = $this->getAliasedConstants();
+        $aliased_constants = $this->getAliases()->constants;
 
         if (isset($aliased_constants[$const_name])) {
             $fq_const_name = $aliased_constants[$const_name];
@@ -693,7 +693,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $context,
-                $this->source
+                $this->source,
+                $this->source->getAliases()
             );
 
             if ($var_comment && $var_comment->var_id) {

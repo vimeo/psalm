@@ -41,8 +41,6 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         parent::__construct($function, $source);
-
-        //self::register($function, $this);
     }
 
     /**
@@ -697,8 +695,10 @@ class FunctionChecker extends FunctionLikeChecker
 
         $function_name_lcase = strtolower($function_name);
 
-        $imported_function_namespaces = $source->getAliasedFunctions();
-        $imported_namespaces = $source->getAliasedClasses();
+        $aliases = $source->getAliases();
+
+        $imported_function_namespaces = $aliases->functions;
+        $imported_namespaces = $aliases->uses;
 
         if (strpos($function_name, '\\') !== false) {
             $function_name_parts = explode('\\', $function_name);

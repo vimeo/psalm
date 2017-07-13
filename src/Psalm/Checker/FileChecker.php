@@ -70,15 +70,10 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @var array<string, ClassLikeChecker>
      */
-    protected $interface_checkers_to_visit = [];
+    protected $interface_checkers_to_analyze = [];
 
     /**
      * @var array<string, ClassLikeChecker>
-     */
-    protected $class_checkers_to_visit = [];
-
-    /**
-     * @var array<int, ClassLikeChecker>
      */
     protected $class_checkers_to_analyze = [];
 
@@ -98,7 +93,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     private $included_file_paths = [];
 
     /**
-     * @var Context
+     * @var ?Context
      */
     public $context;
 
@@ -145,10 +140,8 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return  void
      */
-    public function scan(Context $file_context = null)
+    public function scan()
     {
-        $this->context = $file_context ?: $this->context;
-
         $config = Config::getInstance();
 
         $stmts = $this->getStatements();
@@ -159,13 +152,24 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param   Context|null    $file_context
+     * @param  bool $update_docblocks
+     * @param  bool $preserve_checkers
      *
-     * @return  void
+     * @return void
      */
-    public function visit(Context $file_context = null)
+    public function analyze($update_docblocks = false, $preserve_checkers = false)
     {
-        $this->context = $file_context ?: $this->context;
+        if (!$this->context) {
+            $this->context = new Context();
+            $this->context->collect_references = $this->project_checker->collect_references;
+            $this->context->vars_in_scope['$argc'] = Type::getInt();
+            $this->context->vars_in_scope['$argv'] = new Type\Union([
+                new Type\Atomic\TArray([
+                    Type::getInt(),
+                    Type::getString(),
+                ]),
+            ]);
+        }
 
         $config = Config::getInstance();
 
@@ -200,16 +204,13 @@ class FileChecker extends SourceChecker implements StatementsSource
 
                     $fq_class_name = $class_checker->getFQCLN();
 
-                    $this->class_checkers_to_visit[$fq_class_name] = $class_checker;
-                    if ($this->will_analyze) {
-                        $this->class_checkers_to_analyze[] = $class_checker;
-                    }
+                    $this->class_checkers_to_analyze[$fq_class_name] = $class_checker;
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
                     $class_checker = new InterfaceChecker($stmt, $this, $stmt->name);
 
                     $fq_class_name = $class_checker->getFQCLN();
 
-                    $this->interface_checkers_to_visit[$fq_class_name] = $class_checker;
+                    $this->interface_checkers_to_analyze[$fq_class_name] = $class_checker;
                 } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
                     new TraitChecker($stmt, $this, $stmt->name);
                 }
@@ -219,7 +220,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                 $namespace_checker = new NamespaceChecker($stmt, $this);
                 $namespace_checker->visit();
 
-                $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliasedClasses();
+                $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliases()->uses;
                 $this->namespace_aliased_classes_flipped[$namespace_name] =
                     $namespace_checker->getAliasedClassesFlipped();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
@@ -249,32 +250,16 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         // check any leftover interfaces not already evaluated
-        foreach ($this->interface_checkers_to_visit as $interface_checker) {
-            $interface_checker->visit();
+        foreach ($this->interface_checkers_to_analyze as $interface_checker) {
+            $interface_checker->analyze();
         }
 
         // check any leftover classes not already evaluated
-        foreach ($this->class_checkers_to_visit as $class_checker) {
-            $class_checker->visit();
-        }
-
-        $this->class_checkers_to_visit = [];
-        $this->interface_checkers_to_visit = [];
-    }
-
-    /**
-     * @param  bool $update_docblocks
-     * @param  bool $preserve_checkers
-     *
-     * @return void
-     */
-    public function analyze($update_docblocks = false, $preserve_checkers = false)
-    {
-        $config = Config::getInstance();
-
         foreach ($this->class_checkers_to_analyze as $class_checker) {
             $class_checker->analyze(null, $this->context, $update_docblocks);
         }
+
+        $config = Config::getInstance();
 
         foreach ($this->function_checkers as $function_checker) {
             $function_context = new Context($this->context->self);
@@ -320,10 +305,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function addNamespacedClassChecker($fq_class_name, ClassChecker $class_checker)
     {
-        $this->class_checkers_to_visit[$fq_class_name] = $class_checker;
-        if ($this->will_analyze) {
-            $this->class_checkers_to_analyze[] = $class_checker;
-        }
+        $this->class_checkers_to_analyze[] = $class_checker;
     }
 
     /**
@@ -334,7 +316,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function addNamespacedInterfaceChecker($fq_class_name, InterfaceChecker $interface_checker)
     {
-        $this->interface_checkers_to_visit[$fq_class_name] = $interface_checker;
+        $this->interface_checkers_to_analyze[$fq_class_name] = $interface_checker;
     }
 
     /**
@@ -460,8 +442,6 @@ class FileChecker extends SourceChecker implements StatementsSource
 
             return;
         }
-
-        $this->project_checker->visitFileForClassLike($fq_class_name);
     }
 
     /**
@@ -494,20 +474,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function getNamespace()
     {
         return null;
-    }
-
-    /**
-     * @param  string|null $namespace_name
-     *
-     * @return array<string, string>
-     */
-    public function getAliasedClasses($namespace_name = null)
-    {
-        if ($namespace_name && isset($this->namespace_aliased_classes[$namespace_name])) {
-            return $this->namespace_aliased_classes[$namespace_name];
-        }
-
-        return $this->aliased_classes;
     }
 
     /**

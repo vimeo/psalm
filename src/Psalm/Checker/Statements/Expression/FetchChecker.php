@@ -457,7 +457,7 @@ class FetchChecker
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 // edge case when evaluating single files
@@ -604,7 +604,7 @@ class FetchChecker
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {

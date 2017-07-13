@@ -82,7 +82,7 @@ class AssignmentChecker
                 $doc_comment,
                 $context,
                 $statements_checker->getSource(),
-                null,
+                $statements_checker->getAliases(),
                 null,
                 $came_from_line_number
             );

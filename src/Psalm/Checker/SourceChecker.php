@@ -18,13 +18,13 @@ abstract class SourceChecker implements StatementsSource
     /**
      * @return array<string, string>
      */
-    public function getAliasedClasses()
+    public function getAliases()
     {
         if ($this->source === null) {
             throw new \UnexpectedValueException('$source cannot be null');
         }
 
-        return $this->source->getAliasedClasses();
+        return $this->source->getAliases();
     }
 
     /**
@@ -37,34 +37,6 @@ abstract class SourceChecker implements StatementsSource
         }
 
         return $this->source->getAliasedClassesFlipped();
-    }
-
-    /**
-     * Gets a list of all aliased constants
-     *
-     * @return array<string, string>
-     */
-    public function getAliasedConstants()
-    {
-        if ($this->source === null) {
-            throw new \UnexpectedValueException('$source cannot be null');
-        }
-
-        return $this->source->getAliasedConstants();
-    }
-
-    /**
-     * Gets a list of all aliased functions
-     *
-     * @return array<string, string>
-     */
-    public function getAliasedFunctions()
-    {
-        if ($this->source === null) {
-            throw new \UnexpectedValueException('$source cannot be null');
-        }
-
-        return $this->source->getAliasedFunctions();
     }
 
     /**

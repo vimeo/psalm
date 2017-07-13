@@ -357,7 +357,7 @@ class ExpressionChecker
                 if ($context->check_classes) {
                     $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                         $stmt->class,
-                        $statements_checker
+                        $statements_checker->getAliases()
                     );
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
@@ -1458,7 +1458,7 @@ class ExpressionChecker
                 $fq_class_name = $source
                     ? ClassLikeChecker::getFQCLNFromNameObject(
                         $stmt->class,
-                        $source
+                        $source->getAliases()
                     )
                     : implode('\\', $stmt->class->parts);
             }

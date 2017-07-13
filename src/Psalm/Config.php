@@ -618,14 +618,14 @@ class Config
                 $generic_stubs,
                 $project_checker
             );
-            $generic_stub_checker->visit();
+            $generic_stub_checker->scan();
         } else {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
         foreach ($this->stub_files as $stub_file) {
             $stub_checker = new FileChecker($stub_file, $project_checker);
-            $stub_checker->visit();
+            $stub_checker->scan();
         }
 
         $project_checker->register_global_functions = false;

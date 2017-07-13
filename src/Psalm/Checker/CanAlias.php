@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\Aliases;
 use Psalm\CodeLocation;
 
 trait CanAlias
@@ -109,36 +110,18 @@ trait CanAlias
     /**
      * @return array<string, string>
      */
-    public function getAliasedClasses()
-    {
-        return $this->aliased_classes;
-    }
-
-    /**
-     * @return array<string, string>
-     */
     public function getAliasedClassesFlipped()
     {
         return $this->aliased_classes_flipped;
     }
 
-    /**
-     * Gets a list of all aliased constants
-     *
-     * @return array<string, string>
-     */
-    public function getAliasedConstants()
+    public function getAliases()
     {
-        return $this->aliased_constants;
-    }
-
-    /**
-     * Gets a list of all aliased functions
-     *
-     * @return array<string, string>
-     */
-    public function getAliasedFunctions()
-    {
-        return $this->aliased_functions;
+        return new Aliases(
+            $this->getNamespace(),
+            $this->aliased_classes,
+            $this->aliased_functions,
+            $this->aliased_constants
+        );
     }
 }

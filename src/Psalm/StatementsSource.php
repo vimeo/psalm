@@ -13,26 +13,12 @@ interface StatementsSource
     /**
      * @return array<string, string>
      */
-    public function getAliasedClasses();
+    public function getAliases();
 
     /**
      * @return array<string, string>
      */
     public function getAliasedClassesFlipped();
-
-    /**
-     * Gets a list of all aliased constants
-     *
-     * @return array<string, string>
-     */
-    public function getAliasedConstants();
-
-    /**
-     * Gets a list of all aliased functions
-     *
-     * @return array<string, string>
-     */
-    public function getAliasedFunctions();
 
     /**
      * @return string|null

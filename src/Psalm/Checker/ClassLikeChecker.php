@@ -297,7 +297,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
                     $extended_interface,
-                    $this
+                    $this->getAliases()
                 );
 
                 $parent_reference_location = new CodeLocation($this, $extended_interface);
@@ -480,7 +480,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     $fq_trait_name = self::getFQCLNFromNameObject(
                         $trait,
-                        $this->source
+                        $this->source->getAliases()
                     );
 
                     if (!isset(self::$trait_checkers[$fq_trait_name])) {
@@ -697,7 +697,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
                         $trait,
-                        $this->source
+                        $this->source->getAliases()
                     );
 
                     if (!isset(self::$trait_checkers[$fq_trait_name])) {
@@ -821,7 +821,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
                         $trait,
-                        $this->source
+                        $this->source->getAliases()
                     );
 
                     $trait_checker = self::$trait_checkers[$fq_trait_name];
@@ -972,7 +972,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         foreach ($stmt->traits as $trait) {
             $trait_name = self::getFQCLNFromNameObject(
                 $trait,
-                $this->source
+                $this->source->getAliases()
             );
 
             if (!TraitChecker::traitExists($trait_name, $this->getFileChecker())) {

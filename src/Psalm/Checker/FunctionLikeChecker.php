@@ -295,7 +295,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $cased_method_id = $this->function->name;
         } else { // Closure
-            $storage = self::register($this->function, $this->getSource());
+            $file_storage = FileChecker::$storage[$this->source->getFilePath()];
+
+            $function_id = $cased_function_id = $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
+
+            $storage = $file_storage->functions[$function_id];
 
             /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([

@@ -78,7 +78,13 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         $namespace_context->collect_references = $this->getFileChecker()->project_checker->collect_references;
 
         foreach ($this->namespace->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Const_) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+                $this->visitClassLike($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                $this->visitUse($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                $this->visitGroupUse($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
                     self::$public_namespace_constants[$this->namespace_name][$const->name] = Type::getMixed();
                 }
@@ -124,6 +130,37 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         $config = \Psalm\Config::getInstance();
 
+        $predefined_classlikes = $config->getPredefinedClassLikes();
+
+        $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this->getAliases());
+
+        if (isset($predefined_classlikes[strtolower($fq_class_name)])) {
+            if (IssueBuffer::accepts(
+                new DuplicateClass(
+                    'Class ' . $fq_class_name . ' has already been defined internally',
+                    new \Psalm\CodeLocation($this, $stmt, null, true)
+                )
+            )) {
+                // fall through
+            }
+
+            return;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+            $this->source->addNamespacedClassChecker(
+                $fq_class_name,
+                new ClassChecker($stmt, $this, $fq_class_name)
+            );
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+            $this->source->addNamespacedInterfaceChecker(
+                $fq_class_name,
+                new InterfaceChecker($stmt, $this, $fq_class_name)
+            );
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+            // register the trait checker
+            new TraitChecker($stmt, $this, $fq_class_name);
+        }
     }
 
     /**

@@ -6,8 +6,10 @@ use Psalm\Aliases;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\FileChecker;
+use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\ProjectChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -243,7 +245,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             $storage->trait_alias_map = $method_map;
-            
+
             foreach ($node->traits as $trait) {
                 $trait_fqcln = ClassLikeChecker::getFQCLNFromNameObject($trait, $this->aliases);
                 $this->project_checker->queueClassLikeForScanning($trait_fqcln, true);
@@ -282,7 +284,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $class_storage = null;
 
         if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-            $cased_function_id = ($namespace ? $namespace . '\\' : '') . $stmt->name;
+            $cased_function_id = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name;
             $function_id = strtolower($cased_function_id);
 
             $project_checker = $this->project_checker;
@@ -350,9 +352,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $storage->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
             }
         } else {
-            $function_id = $cased_function_id = 'closure';
+            $file_storage = FileChecker::$storage[$this->file_path];
 
-            $storage = new FunctionLikeStorage();
+            $function_id = $cased_function_id = $this->file_path . ':' . $stmt->getLine() . ':' . 'closure';
+
+            $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
         }
 
         if ($stmt instanceof ClassMethod || $stmt instanceof Function_) {
