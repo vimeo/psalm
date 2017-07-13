@@ -5,6 +5,7 @@ use PhpParser;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use Psalm\Aliases;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -977,7 +978,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public static function fixUpLocalType(
         $return_type,
-        StatementsSource $source,
+        Aliases $aliases,
         array $template_types = null
     ) {
         if (strpos($return_type, '[') !== false) {
@@ -1015,7 +1016,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 $return_type_token = ClassLikeChecker::getFQCLNFromString(
                     $return_type_token,
-                    $source
+                    $aliases
                 );
             }
         }

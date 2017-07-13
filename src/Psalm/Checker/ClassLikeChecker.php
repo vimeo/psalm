@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\Aliases;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -206,7 +207,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_context->vars_possibly_in_scope['$this'] = true;
         }
 
-        if (!($this instanceof TraitChecker) && $storage->registered) {
+        if (!($this instanceof TraitChecker) && $storage->populated) {
             // get leftover statements from properties to analyze
             foreach ($this->class->stmts as $stmt) {
                 if ($stmt instanceof PhpParser\Node\Stmt\Property) {
@@ -222,164 +223,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-         // set all constants first
-        foreach ($this->class->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-                foreach ($stmt->consts as $const) {
-                    if ($stmt->isProtected()) {
-                        $storage->protected_class_constants[$const->name] = Type::getMixed();
-                    } elseif ($stmt->isPrivate()) {
-                        $storage->private_class_constants[$const->name] = Type::getMixed();
-                    } else {
-                        $storage->public_class_constants[$const->name] = Type::getMixed();
-                    }
-                }
-            }
-        }
-
-        if ($this instanceof ClassChecker) {
-            if ($this->parent_fq_class_name &&
-                $this->registerParentClassInfo($this->parent_fq_class_name) === false
-            ) {
-                return false;
-            }
-        }
-
-        if ($this instanceof InterfaceChecker || $this instanceof ClassChecker) {
-            $extra_interfaces = [];
-
-            if ($this instanceof InterfaceChecker) {
-                $parent_interfaces = InterfaceChecker::getParentInterfaces(
-                    $this->fq_class_name,
-                    $this->getFileChecker()
-                );
-
-                $extra_interfaces = $parent_interfaces;
-            } else {
-                $parent_interfaces = self::$storage[strtolower($this->fq_class_name)]->class_implements;
-            }
-
-            foreach ($parent_interfaces as $interface_name) {
-                if (self::checkFullyQualifiedClassLikeName(
-                    $interface_name,
-                    $this->getFileChecker(),
-                    new CodeLocation($this, $this->class, null, true),
-                    $this->getSuppressedIssues()
-                ) === false) {
-                    return false;
-                }
-
-                $extra_interfaces = array_merge(
-                    $extra_interfaces,
-                    InterfaceChecker::getParentInterfaces(
-                        $interface_name,
-                        $this->getFileChecker()
-                    )
-                );
-
-                $interface_storage = self::$storage[strtolower($interface_name)];
-
-                // copy over any constants
-                $storage->public_class_constants = array_merge(
-                    $storage->public_class_constants,
-                    $interface_storage->public_class_constants
-                );
-
-                FileReferenceProvider::addFileInheritanceToClass($long_file_name, $interface_name);
-            }
-
-            $extra_interfaces = array_unique($extra_interfaces);
-
-            foreach ($extra_interfaces as $extra_interface_name) {
-                FileReferenceProvider::addFileInheritanceToClass($long_file_name, $extra_interface_name);
-
-                if ($this instanceof ClassChecker) {
-                    $storage->class_implements[strtolower($extra_interface_name)] = $extra_interface_name;
-                } else {
-                    $this->registerInheritedMethods($this->fq_class_name, $extra_interface_name);
-                }
-            }
-        }
-
-        $doc_comment = $this->class->getDocComment();
-
-        if ($doc_comment) {
-            $docblock_info = null;
-
-            try {
-                $docblock_info = CommentChecker::extractClassLikeDocblockInfo(
-                    (string)$doc_comment,
-                    $doc_comment->getLine()
-                );
-            } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . $this->fq_class_name,
-                        new CodeLocation($this->source, $this->class, null, true)
-                    )
-                )) {
-                    // fall through
-                }
-            }
-
-            if ($docblock_info) {
-                if ($docblock_info->template_types) {
-                    $storage->template_types = [];
-
-                    foreach ($docblock_info->template_types as $template_type) {
-                        if (count($template_type) === 3) {
-                            $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $this->source);
-                            $storage->template_types[$template_type[0]] = $as_type_string;
-                        } else {
-                            $storage->template_types[$template_type[0]] = 'mixed';
-                        }
-                    }
-                }
-
-                if ($docblock_info->properties) {
-                    foreach ($docblock_info->properties as $property) {
-                        $pseudo_property_type = Type::parseString(
-                            FunctionLikeChecker::fixUpLocalType(
-                                $property['type'],
-                                $this
-                            )
-                        );
-
-                        $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
-                        $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
-                    }
-                }
-
-                $storage->deprecated = $docblock_info->deprecated;
-            }
-        }
 
         $const_stmts = [];
 
         foreach ($this->class->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $this->visitClassMethod(
-                    $stmt,
-                    $class_context
-                );
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                $this->visitTraitUse(
-                    $stmt,
-                    $class_context
-                );
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                $this->visitPropertyDeclaration(
-                    $stmt,
-                    $class_context,
-                    $config
-                );
+            if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 $this->leftover_stmts[] = $stmt;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-                $this->visitClassConstDeclaration(
-                    $stmt,
-                    $class_context,
-                    $config
-                );
                 $const_stmts[] = $stmt;
             }
         }
@@ -394,26 +244,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $config = Config::getInstance();
 
-        if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
-            $storage->abstract = (bool)$this->class->isAbstract();
-
-            foreach (ClassChecker::getInterfacesForClass(
-                $this->fq_class_name
-            ) as $_ => $interface_name) {
-                $interface_storage = self::$storage[strtolower($interface_name)];
-
-                $storage->public_class_constants += $interface_storage->public_class_constants;
-
-                foreach ($interface_storage->methods as $method_name => $method) {
-                    if ($method->visibility === self::VISIBILITY_PUBLIC) {
-                        $mentioned_method_id = $interface_name . '::' . $method_name;
-                        $implemented_method_id = $this->fq_class_name . '::' . $method_name;
-
-                        MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
-                    }
-                }
-            }
-        }
 
         $plugins = Config::getInstance()->getPlugins();
 
@@ -1504,21 +1334,19 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return string
      */
-    public static function getFQCLNFromNameObject(
-        PhpParser\Node\Name $class_name,
-        StatementsSource $source
-    ) {
-        if ($class_name->parts == ['self']) {
-            return 'self';
-        }
-
+    public static function getFQCLNFromNameObject(PhpParser\Node\Name $class_name, Aliases $aliases)
+    {
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
             return implode('\\', $class_name->parts);
         }
 
+        if (in_array($class_name->parts[0], ['self', 'static', 'parent'])) {
+            return $class_name->parts[0];
+        }
+
         return self::getFQCLNFromString(
             implode('\\', $class_name->parts),
-            $source
+            $aliases
         );
     }
 
@@ -1528,7 +1356,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return string
      */
-    public static function getFQCLNFromString($class, StatementsSource $source)
+    public static function getFQCLNFromString($class, Aliases $aliases)
     {
         if (empty($class)) {
             throw new \InvalidArgumentException('$class cannot be empty');
@@ -1538,7 +1366,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return substr($class, 1);
         }
 
-        $imported_namespaces = $source->getAliasedClasses();
+        $imported_namespaces = $aliases->uses;
 
         if (strpos($class, '\\') !== false) {
             $class_parts = explode('\\', $class);
@@ -1551,7 +1379,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return $imported_namespaces[strtolower($class)];
         }
 
-        $namespace = $source->getNamespace();
+        $namespace = $aliases->namespace;
 
         return ($namespace ? $namespace . '\\' : '') . $class;
     }

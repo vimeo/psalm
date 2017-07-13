@@ -11,6 +11,7 @@ use Psalm\IssueBuffer;
 use Psalm\Provider\CacheProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use RecursiveDirectoryIterator;
@@ -283,7 +284,7 @@ class ProjectChecker
             }
 
             $this->scanFiles();
-            $this->populateStorage();
+            $this->populateClassLikeStorages();
 
             if (!$this->server_mode) {
                 $this->analyzeFiles();
@@ -394,6 +395,180 @@ class ProjectChecker
                     }
                 }
             }
+        }
+    }
+
+    private function populateClassLikeStorages()
+    {
+        if ($this->debug_output) {
+            echo 'ClassLikeStorage is populating' . PHP_EOL;
+        }
+        foreach (ClassLikeChecker::$storage as $storage) {
+            if (!$storage->user_defined) {
+                continue;
+            }
+
+            $this->populateClassLikeStorage($storage);
+        }
+        if ($this->debug_output) {
+            echo 'ClassLikeStorage is populated' . PHP_EOL;
+        }
+    }
+
+    private function populateClassLikeStorage(ClassLikeStorage $storage, $dependent_classlikes = [])
+    {
+        if ($storage->populated) {
+            return;
+        }
+
+        if (isset($dependent_classlikes[$storage->name])) {
+            throw new \LogicException('Circular dependency');
+        }
+
+        $dependent_classlikes[$storage->name] = true;
+
+        if (isset($storage->parent_classes[0])) {
+            $parent_storage = ClassLikeChecker::$storage[strtolower($storage->parent_classes[0])];
+
+            $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
+
+            $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
+
+            $this->inheritMethodsFromParent($storage, $parent_storage);
+            $this->inheritPropertiesFromParent($storage, $parent_storage);
+
+            $storage->class_implements += $parent_storage->class_implements;
+
+            $storage->public_class_constants += $parent_storage->public_class_constants;
+            $storage->protected_class_constants += $parent_storage->protected_class_constants;
+        }
+
+        foreach ($storage->parent_interfaces as $parent_interface) {
+            $parent_interface_storage = ClassLikeChecker::$storage[strtolower($parent_interface)];
+
+            $this->populateClassLikeStorage($parent_interface_storage, $dependent_classlikes);
+
+            // copy over any constants
+            $storage->public_class_constants = array_merge(
+                $storage->public_class_constants,
+                $parent_interface_storage->public_class_constants
+            );
+
+            $this->inheritMethodsFromParent($storage, $parent_interface_storage);
+        }
+
+        $extra_interfaces = [];
+
+        foreach ($storage->class_implements as $implemented_interface) {
+            $implemented_interface_storage = ClassLikeChecker::$storage[strtolower($implemented_interface)];
+
+            $this->populateClassLikeStorage($implemented_interface_storage, $dependent_classlikes);
+
+            // copy over any constants
+            $storage->public_class_constants = array_merge(
+                $storage->public_class_constants,
+                $implemented_interface_storage->public_class_constants
+            );
+
+            $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
+
+            $storage->public_class_constants += $implemented_interface_storage->public_class_constants;
+
+            foreach ($implemented_interface_storage->methods as $method_name => $method) {
+                if ($method->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
+                    $mentioned_method_id = $implemented_interface . '::' . $method_name;
+                    $implemented_method_id = $storage->name . '::' . $method_name;
+
+                    MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
+                }
+            }
+        }
+
+        $storage->class_implements = array_unique(array_merge($extra_interfaces, $storage->class_implements));
+
+        foreach ($storage->used_traits as $used_trait => $_) {
+            $trait_storage = ClassLikeChecker::$storage[strtolower($used_trait)];
+
+            $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
+        }
+
+        $storage->populated = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @param string $parent_class
+     *
+     * @return void
+     */
+    protected static function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
+    {
+        $fq_class_name = $storage->name;
+        $parent_class = $parent_storage->name;
+
+        // register where they appear (can never be in a trait)
+        foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+            $parent_method_id = $parent_class . '::' . $method_name;
+
+            $implemented_method_id = $fq_class_name . '::' . $method_name;
+
+            $storage->appearing_method_ids[$method_name] = $appearing_method_id;
+        }
+
+        // register where they're declared
+        foreach ($parent_storage->declaring_method_ids as $method_name => $declaring_method_id) {
+            $parent_method_id = $parent_class . '::' . $method_name;
+
+            $implemented_method_id = $fq_class_name . '::' . $method_name;
+
+            $storage->declaring_method_ids[$method_name] = $declaring_method_id;
+
+            MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
+        }
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @param string $parent_class
+     *
+     * @return void
+     */
+    protected static function inheritPropertiesFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
+    {
+        // register where they appear (can never be in a trait)
+        foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
+            $storage->appearing_property_ids[$property_name] = $appearing_property_id;
+        }
+
+        // register where they're declared
+        foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
+            $storage->declaring_property_ids[$property_name] = $declaring_property_id;
+        }
+
+        // register where they're declared
+        foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
+            $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
         }
     }
 

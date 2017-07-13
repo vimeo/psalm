@@ -30,7 +30,7 @@ class ClassLikeStorage
     /**
      * @var bool
      */
-    public $registered = false;
+    public $populated = false;
 
     /**
      * @var bool
@@ -99,6 +99,11 @@ class ClassLikeStorage
      * @var array<string, bool>
      */
     public $used_traits = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $trait_alias_map = [];
 
     /**
      * @var bool

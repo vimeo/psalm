@@ -134,6 +134,10 @@ class FileChecker extends SourceChecker implements StatementsSource
         if ($preloaded_statements) {
             $this->preloaded_statements = $preloaded_statements;
         }
+
+        if (!isset(self::$storage[$file_path])) {
+            self::$storage[$file_path] = new FileStorage();
+        }
     }
 
     /**
