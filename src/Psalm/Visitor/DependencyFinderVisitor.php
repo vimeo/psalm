@@ -269,6 +269,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassConst) {
             $this->visitClassConstDeclaration($node, $this->config);
+        } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
+            $this->visitInclude($node);
         }
     }
 
@@ -854,5 +856,155 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $storage->public_class_constants[$const->name] = $const_type;
             }
         }
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr\Include_ $stmt
+     *
+     * @return false|null
+     */
+    public function visitInclude(PhpParser\Node\Expr\Include_ $stmt)
+    {
+        $config = Config::getInstance();
+
+        if (!$config->allow_includes) {
+            throw new FileIncludeException(
+                'File includes are not allowed per your Psalm config - check the allowFileIncludes flag.'
+            );
+        }
+
+        $path_to_file = null;
+
+        if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
+            $path_to_file = $stmt->expr->value;
+
+            // attempts to resolve using get_include_path dirs
+            $include_path = StatementsChecker::resolveIncludePath($path_to_file, dirname($this->file_path));
+            $path_to_file = $include_path ? $include_path : $path_to_file;
+
+            if ($path_to_file[0] !== DIRECTORY_SEPARATOR) {
+                $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
+            }
+        } else {
+            $path_to_file = StatementsChecker::getPathTo($stmt->expr, $this->file_path);
+        }
+
+        if ($path_to_file) {
+            $reduce_pattern = '/\/[^\/]+\/\.\.\//';
+
+            while (preg_match($reduce_pattern, $path_to_file)) {
+                $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
+            }
+
+            // if the file is already included, we can't check much more
+            if (in_array($path_to_file, get_included_files(), true)) {
+                return null;
+            }
+
+            if ($this->file_path === $path_to_file) {
+                return null;
+            }
+
+            $included_file_paths = $this->file_checker->getIncludedFilePaths();
+
+            if (isset($included_file_paths[$path_to_file])) {
+                return null;
+            }
+
+            if ($this->file_checker->fileExists($path_to_file)) {
+                $this->project_checker->queueFileForScanning($path_to_file);
+
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr $stmt
+     * @param  string              $file_name
+     *
+     * @return string|null
+     * @psalm-suppress MixedAssignment
+     */
+    protected static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
+    {
+        if ($file_name[0] !== DIRECTORY_SEPARATOR) {
+            $file_name = getcwd() . DIRECTORY_SEPARATOR . $file_name;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\String_) {
+            return $stmt->value;
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            $left_string = StatementsChecker::getPathTo($stmt->left, $file_name);
+            $right_string = StatementsChecker::getPathTo($stmt->right, $file_name);
+
+            if ($left_string && $right_string) {
+                return $left_string . $right_string;
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
+            $stmt->name instanceof PhpParser\Node\Name &&
+            $stmt->name->parts === ['dirname']
+        ) {
+            if ($stmt->args) {
+                $evaled_path = StatementsChecker::getPathTo($stmt->args[0]->value, $file_name);
+
+                if (!$evaled_path) {
+                    return null;
+                }
+
+                return dirname($evaled_path);
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name instanceof PhpParser\Node\Name) {
+            $const_name = implode('', $stmt->name->parts);
+
+            if (defined($const_name)) {
+                $constant_value = constant($const_name);
+
+                if (is_string($constant_value)) {
+                    return $constant_value;
+                }
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
+            return dirname($file_name);
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File) {
+            return $file_name;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param   string  $file_name
+     * @param   string  $current_directory
+     *
+     * @return  string|null
+     */
+    protected static function resolveIncludePath($file_name, $current_directory)
+    {
+        if (!$current_directory) {
+            return $file_name;
+        }
+
+        $paths = PATH_SEPARATOR == ':'
+            ? preg_split('#(?<!phar):#', get_include_path())
+            : explode(PATH_SEPARATOR, get_include_path());
+
+        foreach ($paths as $prefix) {
+            $ds = substr($prefix, -1) == DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
+
+            if ($prefix === '.') {
+                $prefix = $current_directory;
+            }
+
+            $file = $prefix . $ds . $file_name;
+
+            if (file_exists($file)) {
+                return $file;
+            }
+        }
+
+        return null;
     }
 }

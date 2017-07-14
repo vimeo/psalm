@@ -137,11 +137,6 @@ class ProjectChecker
     private $classes_to_analyze = [];
 
     /**
-     * @var array<string, string>
-     */
-    private $files_to_visit = [];
-
-    /**
      * @var array<string, bool>
      */
     private $files_to_analyze = [];
@@ -366,7 +361,7 @@ class ProjectChecker
     /**
      * @return void
      */
-    private function scanFiles()
+    public function scanFiles()
     {
         if (!$this->config) {
             throw new \UnexpectedValueException('$this->config cannot be null');
@@ -634,6 +629,11 @@ class ProjectChecker
                 $this->classes_to_analyze[$fq_classlike_name_ci] = true;
             }
         }
+    }
+
+    public function queueFileForScanning($file_path)
+    {
+        $this->files_to_scan[$file_path] = $file_path;
     }
 
     /**
