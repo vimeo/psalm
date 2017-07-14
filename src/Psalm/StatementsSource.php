@@ -11,7 +11,7 @@ interface StatementsSource
     public function getNamespace();
 
     /**
-     * @return array<string, string>
+     * @return Aliases
      */
     public function getAliases();
 

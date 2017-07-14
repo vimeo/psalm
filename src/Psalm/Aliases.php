@@ -22,10 +22,10 @@ class Aliases
     public $namespace;
 
     /**
-     * @param string|null   $namespace
-     * @param array         $uses
-     * @param array         $functions
-     * @param array         $constants
+     * @param string|null           $namespace
+     * @param array<string, string> $uses
+     * @param array<string, string> $functions
+     * @param array<string, string> $constants
      */
     public function __construct(
         $namespace = null,
