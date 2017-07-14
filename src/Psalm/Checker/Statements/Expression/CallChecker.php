@@ -2039,6 +2039,8 @@ class CallChecker
             }
         }
 
+        $param_type = TypeChecker::simplifyUnionType($param_type, $statements_checker->getFileChecker());
+
         $type_match_found = TypeChecker::isContainedBy(
             $input_type,
             $param_type,

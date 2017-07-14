@@ -12,16 +12,12 @@ class ClassChecker extends ClassLikeChecker
     protected static $anonymous_class_count = 0;
 
     /**
-     * @param PhpParser\Node\Stmt\ClassLike $class
+     * @param PhpParser\Node\Stmt\Class_    $class
      * @param StatementsSource              $source
      * @param string|null                   $fq_class_name
      */
-    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $fq_class_name)
+    public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $fq_class_name)
     {
-        if (!$class instanceof PhpParser\Node\Stmt\Class_) {
-            throw new \InvalidArgumentException('Bad');
-        }
-
         if ($fq_class_name === null) {
             $fq_class_name = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
             $class->name = $fq_class_name;
@@ -45,15 +41,6 @@ class ClassChecker extends ClassLikeChecker
                 $this->class->extends,
                 $this->source->getAliases()
             );
-        }
-
-        foreach ($class->implements as $interface_name) {
-            $fq_interface_name = self::getFQCLNFromNameObject(
-                $interface_name,
-                $this->source->getAliases()
-            );
-
-            $storage->class_implements[strtolower($fq_interface_name)] = $fq_interface_name;
         }
     }
 

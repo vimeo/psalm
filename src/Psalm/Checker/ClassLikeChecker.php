@@ -140,37 +140,28 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $fq_class_name_lower = strtolower($fq_class_name);
 
-        if (!isset(self::$storage[$fq_class_name_lower])) {
-            self::$storage[$fq_class_name_lower] = $storage = new ClassLikeStorage();
-            $storage->name = $fq_class_name;
-            $storage->location = new CodeLocation($this->source, $class, null, true);
-            $storage->user_defined = true;
+        $storage = self::$storage[$fq_class_name_lower];
 
-            self::$file_classes[$this->source->getFilePath()][] = $fq_class_name;
-        } else {
-            $storage = self::$storage[$fq_class_name_lower];
+        if ($storage->location) {
+            $storage_file_path = $storage->location->file_path;
+            $source_file_path = $this->source->getCheckedFilePath();
 
-            if ($storage->location) {
-                $storage_file_path = $storage->location->file_path;
-                $source_file_path = $this->source->getCheckedFilePath();
+            if (!Config::getInstance()->use_case_sensitive_file_names) {
+                $storage_file_path = strtolower($storage_file_path);
+                $source_file_path = strtolower($source_file_path);
+            }
 
-                if (!Config::getInstance()->use_case_sensitive_file_names) {
-                    $storage_file_path = strtolower($storage_file_path);
-                    $source_file_path = strtolower($source_file_path);
-                }
-
-                if ($storage_file_path !== $source_file_path ||
-                    $storage->location->getLineNumber() !== $class->getLine()
-                ) {
-                    if (IssueBuffer::accepts(
-                        new DuplicateClass(
-                            'Class ' . $fq_class_name . ' has already been defined at ' .
-                                $storage_file_path . ':' . $storage->location->getLineNumber(),
-                            new \Psalm\CodeLocation($this, $class, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
+            if ($storage_file_path !== $source_file_path ||
+                $storage->location->getLineNumber() !== $class->getLine()
+            ) {
+                if (IssueBuffer::accepts(
+                    new DuplicateClass(
+                        'Class ' . $fq_class_name . ' has already been defined at ' .
+                            $storage_file_path . ':' . $storage->location->getLineNumber(),
+                        new \Psalm\CodeLocation($this, $class, null, true)
+                    )
+                )) {
+                    // fall through
                 }
             }
         }
@@ -278,21 +269,42 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $storage = self::$storage[strtolower($fq_class_name)];
 
-        if ($this->class instanceof PhpParser\Node\Stmt\Class_ && $this->class->extends) {
-            if (!$this->parent_fq_class_name) {
-                throw new \UnexpectedValueException('Parent class should be filled in');
+        if ($this->class instanceof PhpParser\Node\Stmt\Class_) {
+            if ($this->class->extends) {
+                if (!$this->parent_fq_class_name) {
+                    throw new \UnexpectedValueException('Parent class should be filled in');
+                }
+
+                $parent_reference_location = new CodeLocation($this, $this->class->extends);
+
+                if (self::checkFullyQualifiedClassLikeName(
+                    $this->parent_fq_class_name,
+                    $this->getFileChecker(),
+                    $parent_reference_location,
+                    $this->getSuppressedIssues()
+                ) === false) {
+                    return false;
+                }
             }
 
-            $parent_reference_location = new CodeLocation($this, $this->class->extends);
+            foreach ($this->class->implements as $interface_name) {
+                $fq_interface_name = self::getFQCLNFromNameObject(
+                    $interface_name,
+                    $this->source->getAliases()
+                );
 
-            if (!ClassLikeChecker::classOrInterfaceExists(
-                $this->parent_fq_class_name,
-                $this->getFileChecker(),
-                $parent_reference_location
-            )) {
-                // we should not normally get here
-                return;
+                $interface_location = new CodeLocation($this, $interface_name);
+
+                if (self::checkFullyQualifiedClassLikeName(
+                    $fq_interface_name,
+                    $this->getFileChecker(),
+                    $interface_location,
+                    $this->getSuppressedIssues()
+                ) === false) {
+                    return false;
+                }
             }
+
         } elseif ($this->class instanceof PhpParser\Node\Stmt\Interface_ && $this->class->extends) {
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
@@ -483,23 +495,45 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $this->source->getAliases()
                     );
 
-                    if (!isset(self::$trait_checkers[$fq_trait_name])) {
-                        throw new \UnexpectedValueException('Expecting trait to be hydrated');
-                    }
+                    if (!TraitChecker::traitExists($fq_trait_name, $this->getFileChecker())) {
+                        if (IssueBuffer::accepts(
+                            new UndefinedTrait(
+                                'Trait ' . $fq_trait_name . ' does not exist',
+                                new CodeLocation($this, $trait)
+                            ),
+                            $this->source->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    } else {
+                        if (!TraitChecker::hasCorrectCase($fq_trait_name, $this->getFileChecker())) {
+                            if (IssueBuffer::accepts(
+                                new UndefinedTrait(
+                                    'Trait ' . $fq_trait_name . ' has wrong casing',
+                                    new CodeLocation($this, $trait)
+                                ),
+                                $this->source->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
 
-                    $trait_checker = self::$trait_checkers[$fq_trait_name];
+                            continue;
+                        }
 
-                    foreach ($trait_checker->class->stmts as $trait_stmt) {
-                        if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                            $trait_method_checker = $this->analyzeClassMethod(
-                                $trait_stmt,
-                                $trait_checker,
-                                $class_context,
-                                $global_context
-                            );
+                        $trait_checker = self::$trait_checkers[$fq_trait_name];
 
-                            if ($trait_stmt->name === '__construct') {
-                                $constructor_checker = $trait_method_checker;
+                        foreach ($trait_checker->class->stmts as $trait_stmt) {
+                            if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                                $trait_method_checker = $this->analyzeClassMethod(
+                                    $trait_stmt,
+                                    $trait_checker,
+                                    $class_context,
+                                    $global_context
+                                );
+
+                                if ($trait_stmt->name === '__construct') {
+                                    $constructor_checker = $trait_method_checker;
+                                }
                             }
                         }
                     }

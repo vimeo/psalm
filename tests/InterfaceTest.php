@@ -10,25 +10,6 @@ class InterfaceTest extends TestCase
     use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedClass
-     *
-     * @return                   void
-     */
-    public function testInvalidImplements()
-    {
-        $this->project_checker->registerFile(
-            'somefile.php',
-            '<?php
-        class C2 implements A { }
-        '
-        );
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
-
-    /**
      * @return array
      */
     public function providerFileCheckerValidCodeParse()
@@ -308,6 +289,11 @@ class InterfaceTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
+            'invalidInterface' => [
+                '<?php
+                    class C2 implements A { }',
+                'error_message' => 'UndefinedClass',
+            ],
             'noInterfaceProperties' => [
                 '<?php
                     interface A { }

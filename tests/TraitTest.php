@@ -393,6 +393,23 @@ class TraitTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property T::$foo does not have a ' .
                     'declared type - consider int|nul',
             ],
+            'redefinedTraitMethodInSubclass' => [
+                '<?php
+                    trait T {
+                        public function fooFoo() : void {
+                        }
+                    }
+
+                    class B {
+                        use T;
+                    }
+
+                    class C extends B {
+                        public function fooFoo(string $a) : void {
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }

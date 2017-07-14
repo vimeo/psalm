@@ -200,6 +200,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $storage->parent_interfaces[] = $interface_fqcln;
                 }
             } elseif ($node instanceof PhpParser\Node\Stmt\Trait_) {
+                $storage->is_trait = true;
                 $this->project_checker->addFullyQualifiedTraitName($fq_class_name, $this->file_path);
             }
 

@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
@@ -427,13 +428,15 @@ class ProjectChecker
             return;
         }
 
-        if (isset($dependent_classlikes[$storage->name])) {
-            throw new \LogicException('Circular dependency');
+        if (isset($dependent_classlikes[strtolower($storage->name)])) {
+            throw new CircularReferenceException(
+                'Circular reference discovered when loading ' . $storage->name
+            );
         }
 
-        $dependent_classlikes[$storage->name] = true;
+        $dependent_classlikes[strtolower($storage->name)] = true;
 
-        if (isset($storage->parent_classes[0])) {
+        if (isset($storage->parent_classes[0]) && isset(ClassLikeChecker::$storage[$storage->parent_classes[0]])) {
             $parent_storage = ClassLikeChecker::$storage[$storage->parent_classes[0]];
 
             $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
@@ -466,6 +469,9 @@ class ProjectChecker
         $extra_interfaces = [];
 
         foreach ($storage->class_implements as $implemented_interface) {
+            if (!isset(ClassLikeChecker::$storage[strtolower($implemented_interface)])) {
+                continue;
+            }
             $implemented_interface_storage = ClassLikeChecker::$storage[strtolower($implemented_interface)];
 
             $this->populateClassLikeStorage($implemented_interface_storage, $dependent_classlikes);
@@ -479,6 +485,15 @@ class ProjectChecker
             $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
 
             $storage->public_class_constants += $implemented_interface_storage->public_class_constants;
+        }
+
+        $storage->class_implements = array_unique(array_merge($extra_interfaces, $storage->class_implements));
+
+        foreach ($storage->class_implements as $implemented_interface) {
+            if (!isset(ClassLikeChecker::$storage[strtolower($implemented_interface)])) {
+                continue;
+            }
+            $implemented_interface_storage = ClassLikeChecker::$storage[strtolower($implemented_interface)];
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
                 if ($method->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
@@ -490,14 +505,17 @@ class ProjectChecker
             }
         }
 
-        $storage->class_implements = array_unique(array_merge($extra_interfaces, $storage->class_implements));
-
         foreach ($storage->used_traits as $used_trait => $_) {
+            if (!isset(ClassLikeChecker::$storage[strtolower($used_trait)])) {
+                continue;
+            }
+
             $trait_storage = ClassLikeChecker::$storage[strtolower($used_trait)];
 
             $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
             $this->inheritMethodsFromParent($storage, $trait_storage, true);
+            $this->inheritPropertiesFromParent($storage, $trait_storage, true);
         }
 
         $storage->populated = true;
@@ -509,33 +527,40 @@ class ProjectChecker
      *
      * @return void
      */
-    protected static function inheritMethodsFromParent(
-        ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage,
-        bool $parent_is_trait = false
-    ) {
+    protected static function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
+    {
         $fq_class_name = $storage->name;
         $parent_class = $parent_storage->name;
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+            if (isset($storage->appearing_method_ids[$method_name])) {
+                continue;
+            }
+
             $parent_method_id = $parent_class . '::' . $method_name;
 
             $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->appearing_method_ids[$method_name] =
-                $parent_is_trait ? $implemented_method_id : $appearing_method_id;
+                $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
         }
 
         // register where they're declared
         foreach ($parent_storage->declaring_method_ids as $method_name => $declaring_method_id) {
+            if (!$parent_storage->is_trait) {
+                $implemented_method_id = $fq_class_name . '::' . $method_name;
+
+                MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
+            }
+
+            if (isset($storage->declaring_method_ids[$method_name])) {
+                continue;
+            }
+
             $parent_method_id = $parent_class . '::' . $method_name;
 
-            $implemented_method_id = $fq_class_name . '::' . $method_name;
-
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
-
-            MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
         }
     }
 

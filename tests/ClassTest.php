@@ -12,84 +12,6 @@ class ClassTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'singleFileInheritance' => [
-                '<?php
-                    class A extends B {}
-
-                    class B {
-                        public function fooFoo() : void {
-                            $a = new A();
-                            $a->barBar();
-                        }
-
-                        protected function barBar() : void {
-                            echo "hello";
-                        }
-                    }',
-            ],
-            'constSandwich' => [
-                '<?php
-                    class A { const B = 42;}
-                    $a = A::B;
-                    class C {}',
-            ],
-            'deferredReference' => [
-                '<?php
-                    class B {
-                        const C = A;
-                    }
-
-                    const A = 5;
-
-                    $a = B::C;',
-                'assertions' => [
-                    '$a' => 'int',
-                ],
-            ],
-            'moreCyclicalReferences' => [
-                '<?php
-                    class B extends C {
-                        public function d() : A {
-                            return new A;
-                        }
-                    }
-                    class C {
-                        /** @var string */
-                        public $p = A::class;
-                        public static function e() : void {}
-                    }
-                    class A extends B {
-                        private function f() : void {
-                            self::e();
-                        }
-                    }',
-            ],
-            'referenceToSubclassInMethod' => [
-                '<?php
-                    class A {
-                        public function b(B $b) : void {
-
-                        }
-
-                        public function c() : void {
-
-                        }
-                    }
-
-                    class B extends A {
-                        public function d() : void {
-                            $this->c();
-                        }
-                    }',
-            ],
-            'referenceToClassInMethod' => [
-                '<?php
-                    class A {
-                        public function b(A $b) : void {
-                            $b->b(new A());
-                        }
-                    }',
-            ],
             'overrideProtectedAccessLevelToPublic' => [
                 '<?php
                     class A {
@@ -145,29 +67,6 @@ class ClassTest extends TestCase
                     'UndefinedClass',
                     'MissingReturnType',
                 ],
-            ],
-            'classTraversal' => [
-                '<?php
-                    namespace Foo;
-
-                    class A {
-                        /** @var string */
-                        protected $foo = C::DOPE;
-
-                        /** @return string */
-                        public function __get() { }
-                    }
-
-                    class B extends A {
-                        /** @return void */
-                        public function foo() {
-                            echo (string)(new C)->bar;
-                        }
-                    }
-
-                    class C extends B {
-                        const DOPE = "dope";
-                    }',
             ],
             'subclassWithSimplerArg' => [
                 '<?php
@@ -243,38 +142,6 @@ class ClassTest extends TestCase
                 '<?php
                     class A {}
                     echo A::HELLO;',
-                'error_message' => 'UndefinedConstant',
-            ],
-            // Skipped. A bug.
-            'SKIPPED-inheritanceLoopOne' => [
-                '<?php
-                    class C extends C {}',
-                'error_message' => 'InvalidParent',
-            ],
-            // Skipped. A bug.
-            'SKIPPED-inheritanceLoopTwo' => [
-                '<?php
-                    class E extends F {}
-                    class F extends E {}',
-                'error_message' => 'InvalidParent',
-            ],
-            // Skipped. A bug.
-            'SKIPPED-inheritanceLoopThree' => [
-                '<?php
-                    class G extends H {}
-                    class H extends I {}
-                    class I extends G {}',
-                'error_message' => 'InvalidParent',
-            ],
-            'invalidDeferredReference' => [
-                '<?php
-                    class B {
-                        const C = A;
-                    }
-
-                    $b = (new B);
-
-                    const A = 5;',
                 'error_message' => 'UndefinedConstant',
             ],
             'overridePublicAccessLevelToPublic' => [
