@@ -359,7 +359,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
         }
 
-        if ($stmt instanceof ClassMethod || $stmt instanceof Function_) {
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod || $stmt instanceof PhpParser\Node\Stmt\Function_) {
             $storage->cased_name = $stmt->name;
         }
 
@@ -808,6 +808,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             $property_id = $this->fq_classlike_name . '::$' . $property->name;
+
+            $storage->declaring_property_ids[$property->name] = $property_id;
+            $storage->appearing_property_ids[$property->name] = $property_id;
 
             if (!$stmt->isPrivate()) {
                 $storage->inheritable_property_ids[$property->name] = $property_id;

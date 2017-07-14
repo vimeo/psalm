@@ -490,6 +490,8 @@ class ProjectChecker
             $trait_storage = ClassLikeChecker::$storage[strtolower($used_trait)];
 
             $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
+
+            $this->inheritMethodsFromParent($storage, $trait_storage, true);
         }
 
         $storage->populated = true;
@@ -501,8 +503,11 @@ class ProjectChecker
      *
      * @return void
      */
-    protected static function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
-    {
+    protected static function inheritMethodsFromParent(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        bool $parent_is_trait = false
+    ) {
         $fq_class_name = $storage->name;
         $parent_class = $parent_storage->name;
 
@@ -512,7 +517,8 @@ class ProjectChecker
 
             $implemented_method_id = $fq_class_name . '::' . $method_name;
 
-            $storage->appearing_method_ids[$method_name] = $appearing_method_id;
+            $storage->appearing_method_ids[$method_name] =
+                $parent_is_trait ? $implemented_method_id : $appearing_method_id;
         }
 
         // register where they're declared
