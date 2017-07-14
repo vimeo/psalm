@@ -104,6 +104,15 @@ class FunctionCallTest extends TestCase
 
                     }',
             ],
+            'typedArrayWithDefault' => [
+                '<?php
+                    $a = abs(-5);
+                    $b = abs(-7.5);',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'int',
+                ],
+            ],
             'validDocblockParamDefault' => [
                 '<?php
                     /**

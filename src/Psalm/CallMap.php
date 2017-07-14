@@ -49,7 +49,8 @@ namespace Psalm;
  */
 
 return [
-'abs' => ['int|float', 'number'=>'int|float'],
+'abs' => ['int', 'number'=>'int'],
+'abs\'1' => ['float', 'number'=>'float'],
 'accelerator_get_configuration' => ['array'],
 'accelerator_get_scripts' => ['array'],
 'accelerator_get_status' => ['array', 'fetch_scripts'=>'bool'],
