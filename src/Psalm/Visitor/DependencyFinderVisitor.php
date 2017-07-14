@@ -8,6 +8,7 @@ use Psalm\Checker\CommentChecker;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
+use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
@@ -182,7 +183,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 if ($node->extends) {
                     $parent_fqcln = ClassLikeChecker::getFQCLNFromNameObject($node->extends, $this->aliases);
                     $this->project_checker->queueClassLikeForScanning($parent_fqcln, true);
-                    $storage->parent_classes[] = $parent_fqcln;
+                    $storage->parent_classes[] = strtolower($parent_fqcln);
                 }
 
                 foreach ($node->implements as $interface) {

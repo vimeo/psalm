@@ -157,8 +157,12 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function analyze($update_docblocks = false, $preserve_checkers = false)
+    public function analyze(Context $file_context = null, $update_docblocks = false, $preserve_checkers = false)
     {
+        if ($file_context) {
+            $this->context = $file_context;
+        }
+
         if (!$this->context) {
             $this->context = new Context();
             $this->context->collect_references = $this->project_checker->collect_references;
@@ -393,8 +397,9 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
     {
         $this->project_checker->registerAnalyzableFile($this->file_path);
-        $this->visit($file_context);
-        $this->analyze($update_docblocks);
+        $this->scan();
+        $this->project_checker->populateClassLikeStorages();
+        $this->analyze($file_context, $update_docblocks);
     }
 
     /**

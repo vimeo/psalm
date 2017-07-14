@@ -303,7 +303,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     $var_comment = CommentChecker::getTypeFromComment(
                         (string)$stmt->getDocComment(),
                         $context,
-                        $this->getSource()
+                        $this->getSource(),
+                        $this->getSource()->getAliases()
                     );
 
                     if ($var_comment && $var_comment->var_id) {

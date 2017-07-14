@@ -385,12 +385,16 @@ class ProjectChecker
                 $fq_class_name_lower = strtolower($class_to_scan);
 
                 if (!isset($this->classlike_files[$fq_class_name_lower])) {
-                    if ($this->fileExistsForClassLike($class_to_scan) && isset($this->classlike_files[$fq_class_name_lower])) {
-                        $file_path = $this->classlike_files[$fq_class_name_lower];
-                        $this->files_to_scan[$file_path] = $file_path;
-                        if (isset($this->classes_to_analyze[$fq_class_name_lower])) {
-                            unset($this->classes_to_analyze[$fq_class_name_lower]);
-                            $this->files_to_analyze[$file_path] = $file_path;
+                    if ($this->fileExistsForClassLike($class_to_scan)) {
+                        if (isset($this->classlike_files[$fq_class_name_lower])) {
+                            $file_path = $this->classlike_files[$fq_class_name_lower];
+                            $this->files_to_scan[$file_path] = $file_path;
+                            if (isset($this->classes_to_analyze[$fq_class_name_lower])) {
+                                unset($this->classes_to_analyze[$fq_class_name_lower]);
+                                $this->files_to_analyze[$file_path] = $file_path;
+                            }
+                        } else {
+
                         }
                     }
                 }
@@ -398,11 +402,12 @@ class ProjectChecker
         }
     }
 
-    private function populateClassLikeStorages()
+    public function populateClassLikeStorages()
     {
         if ($this->debug_output) {
             echo 'ClassLikeStorage is populating' . PHP_EOL;
         }
+
         foreach (ClassLikeChecker::$storage as $storage) {
             if (!$storage->user_defined) {
                 continue;
@@ -410,6 +415,7 @@ class ProjectChecker
 
             $this->populateClassLikeStorage($storage);
         }
+
         if ($this->debug_output) {
             echo 'ClassLikeStorage is populated' . PHP_EOL;
         }
@@ -428,7 +434,7 @@ class ProjectChecker
         $dependent_classlikes[$storage->name] = true;
 
         if (isset($storage->parent_classes[0])) {
-            $parent_storage = ClassLikeChecker::$storage[strtolower($storage->parent_classes[0])];
+            $parent_storage = ClassLikeChecker::$storage[$storage->parent_classes[0]];
 
             $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
@@ -578,13 +584,29 @@ class ProjectChecker
         }
     }
 
-    public function queueClassLikeForScanning($fqcln, $analyze_too = false)
+    public function queueClassLikeForScanning($fq_classlike_name, $analyze_too = false)
     {
-        if (!isset($this->classlike_files[strtolower($fqcln)])) {
-            $this->classes_to_scan[] = $fqcln;
+        if (!$this->config) {
+            throw new \UnexpectedValueException('Config should not be null here');
+        }
+
+        $fq_classlike_name_ci = strtolower($fq_classlike_name);
+
+        if (!isset($this->classlike_files[$fq_classlike_name_ci])) {
+            $predefined_classlikes = $this->config->getPredefinedClassLikes();
+
+            if (isset($predefined_classlikes[$fq_classlike_name_ci])) {
+                $this->visited_classes[$fq_classlike_name_ci] = true;
+                $reflected_class = new \ReflectionClass($fq_classlike_name);
+                ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+
+                return;
+            }
+
+            $this->classes_to_scan[] = $fq_classlike_name;
 
             if ($analyze_too) {
-                $this->classes_to_analyze[strtolower($fqcln)] = true;
+                $this->classes_to_analyze[$fq_classlike_name_ci] = true;
             }
         }
     }
@@ -607,7 +629,7 @@ class ProjectChecker
                 echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
             }
 
-            $file_checker->analyze($this->update_docblocks);
+            $file_checker->analyze(null, $this->update_docblocks);
         }
     }
 
@@ -923,7 +945,7 @@ class ProjectChecker
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
         }
 
-        $file_checker->analyze($this->update_docblocks);
+        $file_checker->analyze(null, $this->update_docblocks);
 
         IssueBuffer::finish(false, $start_checks, $this->visited_files);
     }
@@ -1001,20 +1023,6 @@ class ProjectChecker
 
         if (isset($this->existing_classlikes_ci[$fq_class_name_ci])) {
             return $this->existing_classlikes_ci[$fq_class_name_ci];
-        }
-
-        if (!$this->config) {
-            throw new \UnexpectedValueException('Config should not be null here');
-        }
-
-        $predefined_classlikes = $this->config->getPredefinedClassLikes();
-
-        if (isset($predefined_classlikes[$fq_class_name_ci])) {
-            $this->visited_classes[$fq_class_name_ci] = true;
-            $reflected_class = new \ReflectionClass($fq_class_name);
-            ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
-
-            return true;
         }
 
         $old_level = error_reporting();
