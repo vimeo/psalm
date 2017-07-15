@@ -234,6 +234,8 @@ class ProjectChecker
 
         $this->output_format = $output_format;
         self::$instance = $this;
+
+        $this->collectPredefinedClassLikes();
     }
 
     /**
@@ -447,8 +449,10 @@ class ProjectChecker
             $storage->protected_class_constants += $parent_storage->protected_class_constants;
         }
 
-        foreach ($storage->parent_interfaces as $parent_interface) {
-            $parent_interface_storage = ClassLikeChecker::$storage[strtolower($parent_interface)];
+        $parent_interfaces = [];
+
+        foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
+            $parent_interface_storage = ClassLikeChecker::$storage[$parent_interface_lc];
 
             $this->populateClassLikeStorage($parent_interface_storage, $dependent_classlikes);
 
@@ -458,16 +462,20 @@ class ProjectChecker
                 $parent_interface_storage->public_class_constants
             );
 
+            $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
+
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);
         }
 
+        $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
+
         $extra_interfaces = [];
 
-        foreach ($storage->class_implements as $implemented_interface) {
-            if (!isset(ClassLikeChecker::$storage[strtolower($implemented_interface)])) {
+        foreach ($storage->class_implements as $implemented_interface_lc => $_) {
+            if (!isset(ClassLikeChecker::$storage[$implemented_interface_lc])) {
                 continue;
             }
-            $implemented_interface_storage = ClassLikeChecker::$storage[strtolower($implemented_interface)];
+            $implemented_interface_storage = ClassLikeChecker::$storage[$implemented_interface_lc];
 
             $this->populateClassLikeStorage($implemented_interface_storage, $dependent_classlikes);
 
@@ -482,12 +490,13 @@ class ProjectChecker
             $storage->public_class_constants += $implemented_interface_storage->public_class_constants;
         }
 
-        $storage->class_implements = array_unique(array_merge($extra_interfaces, $storage->class_implements));
+        $storage->class_implements = array_merge($extra_interfaces, $storage->class_implements);
 
         foreach ($storage->class_implements as $implemented_interface) {
             if (!isset(ClassLikeChecker::$storage[strtolower($implemented_interface)])) {
                 continue;
             }
+
             $implemented_interface_storage = ClassLikeChecker::$storage[strtolower($implemented_interface)];
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
@@ -613,9 +622,7 @@ class ProjectChecker
         $fq_classlike_name_ci = strtolower($fq_classlike_name);
 
         if (!isset($this->classlike_files[$fq_classlike_name_ci])) {
-            $predefined_classlikes = $this->config->getPredefinedClassLikes();
-
-            if (isset($predefined_classlikes[$fq_classlike_name_ci])) {
+            if (isset($this->existing_classlikes_ci[$fq_classlike_name_ci])) {
                 $this->visited_classes[$fq_classlike_name_ci] = true;
                 $reflected_class = new \ReflectionClass($fq_classlike_name);
                 ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
@@ -1046,14 +1053,18 @@ class ProjectChecker
     {
         $fq_class_name_ci = strtolower($fq_class_name);
 
+        if (isset($this->classlike_files[$fq_class_name_ci])) {
+            return true;
+        }
+
         if (isset($this->existing_classlikes_ci[$fq_class_name_ci])) {
-            return $this->existing_classlikes_ci[$fq_class_name_ci];
+            throw new \InvalidArgumentException('Why are you asking about a builtin class?');
         }
 
         $old_level = error_reporting();
 
         if (!$this->debug_output) {
-            error_reporting(0);
+            error_reporting(E_ERROR);
         }
 
         try {
@@ -1241,6 +1252,7 @@ class ProjectChecker
 
         $config->visitStubFiles($this);
         $config->initializePlugins($this);
+        $this->existing_classlikes_ci[] = $config->getPredefinedClassLikes();
 
         return $config;
     }
@@ -1256,6 +1268,7 @@ class ProjectChecker
 
         $config->visitStubFiles($this);
         $config->initializePlugins($this);
+        $this->existing_classlikes_ci[] = $config->getPredefinedClassLikes();
     }
 
     /**
@@ -1489,5 +1502,38 @@ class ProjectChecker
     public function canReportIssues($file_path)
     {
         return isset($this->files_to_analyze[$file_path]);
+    }
+
+
+    /**
+     * @return void
+     */
+    public function collectPredefinedClassLikes()
+    {
+        /** @var array<int, string> */
+        $predefined_classes = get_declared_classes();
+
+        foreach ($predefined_classes as $predefined_class) {
+            $reflection_class = new \ReflectionClass($predefined_class);
+
+            if (!$reflection_class->isUserDefined()) {
+                $predefined_class_ci = strtolower($predefined_class);
+                $this->existing_classlikes_ci[$predefined_class_ci] = true;
+                $this->existing_classes_ci[$predefined_class_ci] = true;
+            }
+        }
+
+        /** @var array<int, string> */
+        $predefined_interfaces = get_declared_interfaces();
+
+        foreach ($predefined_interfaces as $predefined_interface) {
+            $reflection_class = new \ReflectionClass($predefined_interface);
+
+            if (!$reflection_class->isUserDefined()) {
+                $predefined_interface_ci = strtolower($predefined_interface);
+                $this->existing_classlikes_ci[$predefined_interface_ci] = true;
+                $this->existing_interface_ci[$predefined_interface_ci] = true;
+            }
+        }
     }
 }

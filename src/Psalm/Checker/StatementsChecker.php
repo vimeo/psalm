@@ -837,7 +837,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @return string|null
      * @psalm-suppress MixedAssignment
      */
-    protected static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
+    public static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
     {
         if ($file_name[0] !== DIRECTORY_SEPARATOR) {
             $file_name = getcwd() . DIRECTORY_SEPARATOR . $file_name;

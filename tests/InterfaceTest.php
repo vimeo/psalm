@@ -68,34 +68,22 @@ class InterfaceTest extends TestCase
             ],
             'isExtendedInterface' => [
                 '<?php
-                    interface A
-                    {
-                        /**
-                         * @return string
-                         */
-                        public function fooFoo();
-                    }
+                    interface A {}
+                    class B implements A {}
 
-                    interface B extends A
-                    {
-                        /**
-                         * @return string
-                         */
-                        public function baz();
-                    }
+                    /**
+                     * @param  A      $a
+                     * @return void
+                     */
+                    function qux(A $a) { }
 
-                    class C implements B
-                    {
-                        public function fooFoo()
-                        {
-                            return "hello";
-                        }
-
-                        public function baz()
-                        {
-                            return "goodbye";
-                        }
-                    }
+                    qux(new B());',
+            ],
+            'isDoubleExtendedInterface' => [
+                '<?php
+                    interface A {}
+                    interface B extends A {}
+                    class C implements B {}
 
                     /**
                      * @param  A      $a

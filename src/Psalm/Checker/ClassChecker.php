@@ -7,22 +7,12 @@ use Psalm\StatementsSource;
 class ClassChecker extends ClassLikeChecker
 {
     /**
-     * @var int
-     */
-    protected static $anonymous_class_count = 0;
-
-    /**
      * @param PhpParser\Node\Stmt\Class_    $class
      * @param StatementsSource              $source
      * @param string|null                   $fq_class_name
      */
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $fq_class_name)
     {
-        if ($fq_class_name === null) {
-            $fq_class_name = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
-            $class->name = $fq_class_name;
-        }
-
         parent::__construct($class, $source, $fq_class_name);
 
         $fq_class_name_lower = strtolower($fq_class_name);
@@ -150,13 +140,5 @@ class ClassChecker extends ClassLikeChecker
         $storage = self::$storage[$fq_class_name];
 
         return isset($storage->class_implements[$interface_id]);
-    }
-
-    /**
-     * @return void
-     */
-    public static function clearCache()
-    {
-        self::$anonymous_class_count = 0;
     }
 }

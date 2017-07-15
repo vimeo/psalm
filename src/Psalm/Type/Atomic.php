@@ -4,6 +4,7 @@ namespace Psalm\Type;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\ReservedWord;
 use Psalm\IssueBuffer;
@@ -239,6 +240,26 @@ abstract class Atomic
         }
 
         $this->checked = true;
+    }
+
+    /**
+     * @param  ProjectChecker $project_checker
+     * @param  array<string, bool> $phantom_classes
+     *
+     * @return void
+     */
+    public function queueClassLikesForScanning(ProjectChecker $project_checker, array $phantom_classes = [])
+    {
+        if ($this instanceof TNamedObject && !isset($phantom_classes[strtolower($this->value)])) {
+            $project_checker->queueClassLikeForScanning($this->value);
+            return;
+        }
+
+        if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
+            foreach ($this->type_params as $type_param) {
+                $type_param->queueClassLikesForScanning($project_checker, $phantom_classes);
+            }
+        }
     }
 
     /**

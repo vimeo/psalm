@@ -2107,7 +2107,5 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         self::$class_checkers = [];
 
         self::$storage = [];
-
-        ClassChecker::clearCache();
     }
 }

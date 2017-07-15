@@ -192,8 +192,6 @@ class Config
     protected function __construct()
     {
         self::$config = $this;
-
-        $this->collectPredefinedClassLikes();
     }
 
     /**
@@ -698,34 +696,6 @@ class Config
         if (isset($defined_functions['internal'])) {
             foreach ($defined_functions['internal'] as $function_name) {
                 $this->predefined_functions[$function_name] = true;
-            }
-        }
-    }
-
-    /**
-     * @return void
-     */
-    public function collectPredefinedClassLikes()
-    {
-        /** @var array<int, string> */
-        $predefined_classes = get_declared_classes();
-
-        foreach ($predefined_classes as $predefined_class) {
-            $reflection_class = new \ReflectionClass($predefined_class);
-
-            if (!$reflection_class->isUserDefined()) {
-                $this->predefined_classlikes[strtolower($predefined_class)] = true;
-            }
-        }
-
-        /** @var array<int, string> */
-        $predefined_interfaces = get_declared_interfaces();
-
-        foreach ($predefined_interfaces as $predefined_interface) {
-            $reflection_class = new \ReflectionClass($predefined_interface);
-
-            if (!$reflection_class->isUserDefined()) {
-                $this->predefined_classlikes[strtolower($predefined_interface)] = true;
             }
         }
     }
