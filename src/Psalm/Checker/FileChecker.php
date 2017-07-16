@@ -296,6 +296,8 @@ class FileChecker extends SourceChecker implements StatementsSource
             $this->function_checkers = [];
         }
 
+        var_dump($this->class_checkers_to_analyze);
+
         if ($update_docblocks) {
             \Psalm\Mutator\FileMutator::updateDocblocks($this->file_path);
         }
@@ -340,7 +342,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function getMethodMutations($method_id, Context &$this_context)
+    public function getMethodMutations($method_id, Context $this_context)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 

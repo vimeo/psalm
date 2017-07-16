@@ -1190,7 +1190,7 @@ class ProjectChecker
 
         $file_checker = new FileChecker($file_path, $this, null, true);
 
-        $file_checker->visit();
+        $file_checker->scan();
 
         if ($this->debug_output) {
             echo 'Visiting ' . $file_path . PHP_EOL;
