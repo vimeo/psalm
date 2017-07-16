@@ -296,8 +296,6 @@ class FileChecker extends SourceChecker implements StatementsSource
             $this->function_checkers = [];
         }
 
-        var_dump($this->class_checkers_to_analyze);
-
         if ($update_docblocks) {
             \Psalm\Mutator\FileMutator::updateDocblocks($this->file_path);
         }
