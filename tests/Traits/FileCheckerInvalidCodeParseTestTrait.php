@@ -39,10 +39,14 @@ trait FileCheckerInvalidCodeParseTestTrait
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessage($error_message);
 
-        $stmts = self::$parser->parse($code);
+        $this->project_checker->registerFile(
+            'somefile.php',
+            $code
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
         $context = new Context();
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods($context);
     }
 }

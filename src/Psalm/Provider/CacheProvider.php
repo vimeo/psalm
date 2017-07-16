@@ -29,7 +29,7 @@ class CacheProvider
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      */
-    public static function loadStatementsFromCache($file_path, $file_content_hash, $file_cache_key)
+    public static function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash, $file_cache_key)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -48,7 +48,7 @@ class CacheProvider
         if (isset($file_content_hashes[$file_cache_key]) &&
             $file_content_hash === $file_content_hashes[$file_cache_key] &&
             is_readable($cache_location) &&
-            filemtime($cache_location) > filemtime($file_path)
+            filemtime($cache_location) > $file_modified_time
         ) {
             /** @var array<int, \PhpParser\Node\Stmt> */
             return unserialize((string)file_get_contents($cache_location));

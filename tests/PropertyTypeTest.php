@@ -19,26 +19,28 @@ class PropertyTypeTest extends TestCase
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
 
-        $stmts = self::$parser->parse('<?php
-        class X {
-            /** @var ?int **/
-            private $x;
+        $this->project_checker->registerFile(
+            'somefile.php',
+            '<?php
+                class X {
+                    /** @var ?int **/
+                    private $x;
 
-            public function getX(): int {
-                if ($this->x === null) {
-                    $this->x = 0;
-                }
-                $this->modifyX();
-                return $this->x;
-            }
+                    public function getX(): int {
+                        if ($this->x === null) {
+                            $this->x = 0;
+                        }
+                        $this->modifyX();
+                        return $this->x;
+                    }
 
-            private function modifyX(): void {
-                $this->x = null;
-            }
-        }
-        ');
+                    private function modifyX(): void {
+                        $this->x = null;
+                    }
+                }'
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
     }
 

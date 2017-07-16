@@ -397,7 +397,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
     {
         $this->project_checker->registerAnalyzableFile($this->file_path);
-        $this->scan();
+        $this->project_checker->scanFiles();
         $this->project_checker->populateClassLikeStorages();
         $this->analyze($file_context, $update_docblocks);
     }

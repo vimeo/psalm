@@ -79,7 +79,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_classlikes_ci = [];
+    private $existing_classlikes_lc = [];
 
     /**
      * @var array<string, bool>
@@ -89,7 +89,12 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_classes_ci = [];
+    private $existing_classes_lc = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private $reflected_classeslikes_lc = [];
 
     /**
      * @var array<string, bool>
@@ -99,7 +104,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_interfaces_ci = [];
+    private $existing_interfaces_lc = [];
 
     /**
      * @var array<string, bool>
@@ -109,7 +114,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_traits_ci = [];
+    private $existing_traits_lc = [];
 
     /**
      * @var array<string, bool>
@@ -186,6 +191,11 @@ class ProjectChecker
      * @var array<string, string>
      */
     public $fake_files = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $fake_file_times = [];
 
     /**
      * @var bool
@@ -379,16 +389,24 @@ class ProjectChecker
                     $this->scanFile($file_path, $filetype_handlers, isset($this->files_to_analyze[$file_path]));
                 }
             } else {
-                $class_to_scan = array_shift($this->classes_to_scan);
-                $fq_class_name_lower = strtolower($class_to_scan);
+                $fq_classlike_name = array_shift($this->classes_to_scan);
+                $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-                if (!isset($this->classlike_files[$fq_class_name_lower])) {
-                    if ($this->fileExistsForClassLike($class_to_scan)) {
-                        if (isset($this->classlike_files[$fq_class_name_lower])) {
-                            $file_path = $this->classlike_files[$fq_class_name_lower];
+                if (isset($this->reflected_classeslikes_lc[$fq_classlike_name_lc])) {
+                    continue;
+                }
+
+                if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
+                    if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])) {
+                        $reflected_class = new \ReflectionClass($fq_classlike_name);
+                        ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+                        $this->reflected_classeslikes_lc[$fq_classlike_name_lc] = $fq_classlike_name;
+                    } elseif ($this->fileExistsForClassLike($fq_classlike_name)) {
+                        if (isset($this->classlike_files[$fq_classlike_name_lc])) {
+                            $file_path = $this->classlike_files[$fq_classlike_name_lc];
                             $this->files_to_scan[$file_path] = $file_path;
-                            if (isset($this->classes_to_analyze[$fq_class_name_lower])) {
-                                unset($this->classes_to_analyze[$fq_class_name_lower]);
+                            if (isset($this->classes_to_analyze[$fq_classlike_name_lc])) {
+                                unset($this->classes_to_analyze[$fq_classlike_name_lc]);
                                 $this->files_to_analyze[$file_path] = $file_path;
                             }
                         } else {
@@ -619,21 +637,13 @@ class ProjectChecker
             throw new \UnexpectedValueException('Config should not be null here');
         }
 
-        $fq_classlike_name_ci = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        if (!isset($this->classlike_files[$fq_classlike_name_ci])) {
-            if (isset($this->existing_classlikes_ci[$fq_classlike_name_ci])) {
-                $this->visited_classes[$fq_classlike_name_ci] = true;
-                $reflected_class = new \ReflectionClass($fq_classlike_name);
-                ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
-
-                return;
-            }
-
-            $this->classes_to_scan[] = $fq_classlike_name;
+        if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
+            $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
 
             if ($analyze_too) {
-                $this->classes_to_analyze[$fq_classlike_name_ci] = true;
+                $this->classes_to_analyze[$fq_classlike_name_lc] = true;
             }
         }
     }
@@ -733,15 +743,15 @@ class ProjectChecker
      */
     public function checkClassReferences()
     {
-        foreach ($this->existing_classlikes_ci as $fq_class_name_ci => $_) {
-            if (isset(ClassLikeChecker::$storage[$fq_class_name_ci])) {
-                $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_ci];
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            if (isset(ClassLikeChecker::$storage[$fq_class_name_lc])) {
+                $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_lc];
 
                 if ($classlike_storage->location &&
                     $this->config &&
                     $this->config->isInProjectDirs($classlike_storage->location->file_path)
                 ) {
-                    if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                    if (!isset($this->classlike_references[$fq_class_name_lc])) {
                         if (IssueBuffer::accepts(
                             new UnusedClass(
                                 'Class ' . $classlike_storage->name . ' is never used',
@@ -1016,7 +1026,9 @@ class ProjectChecker
      */
     private function scanFile($file_path, array $filetype_handlers, $will_analyze = false)
     {
-        $extension = (string)pathinfo($file_path)['extension'];
+        $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
+        $file_name_parts = explode('.', array_pop($path_parts));
+        $extension = count($file_name_parts > 1) ? array_pop($file_name_parts) : null;
 
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
@@ -1051,13 +1063,13 @@ class ProjectChecker
      */
     public function fileExistsForClassLike($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (isset($this->classlike_files[$fq_class_name_ci])) {
+        if (isset($this->classlike_files[$fq_class_name_lc])) {
             return true;
         }
 
-        if (isset($this->existing_classlikes_ci[$fq_class_name_ci])) {
+        if (isset($this->existing_classlikes_lc[$fq_class_name_lc])) {
             throw new \InvalidArgumentException('Why are you asking about a builtin class?');
         }
 
@@ -1087,7 +1099,7 @@ class ProjectChecker
         }
 
         $fq_class_name = $reflected_class->getName();
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
         $this->existing_classlikes[$fq_class_name] = true;
 
         if ($reflected_class->isInterface()) {
@@ -1167,7 +1179,7 @@ class ProjectChecker
      */
     private function getFileCheckerForClassLike($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
         if (!$this->fake_files) {
             // this registers the class if it's not user defined
@@ -1175,11 +1187,11 @@ class ProjectChecker
                 throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
             }
 
-            if (!isset($this->classlike_files[$fq_class_name_ci])) {
+            if (!isset($this->classlike_files[$fq_class_name_lc])) {
                 throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
             }
 
-            $file_path = $this->classlike_files[$fq_class_name_ci];
+            $file_path = $this->classlike_files[$fq_class_name_lc];
         } else {
             $file_path = array_keys($this->fake_files)[0];
         }
@@ -1246,7 +1258,7 @@ class ProjectChecker
 
         $config->visitStubFiles($this);
         $config->initializePlugins($this);
-        $this->existing_classlikes_ci[] = $config->getPredefinedClassLikes();
+        $this->existing_classlikes_lc[] = $config->getPredefinedClassLikes();
 
         return $config;
     }
@@ -1262,7 +1274,7 @@ class ProjectChecker
 
         $config->visitStubFiles($this);
         $config->initializePlugins($this);
-        $this->existing_classlikes_ci[] = $config->getPredefinedClassLikes();
+        $this->existing_classlikes_lc[] = $config->getPredefinedClassLikes();
     }
 
     /**
@@ -1323,6 +1335,8 @@ class ProjectChecker
     public function registerFile($file_path, $file_contents)
     {
         $this->fake_files[$file_path] = $file_contents;
+        $this->fake_file_times[$file_path] = microtime(true);
+        $this->files_to_scan[$file_path] = $file_path;
     }
 
     /**
@@ -1332,7 +1346,6 @@ class ProjectChecker
      */
     public function registerAnalyzableFile($file_path)
     {
-        $this->visited_files[$file_path] = true;
         $this->files_to_analyze[$file_path] = true;
     }
 
@@ -1351,6 +1364,20 @@ class ProjectChecker
     }
 
     /**
+     * @param  string $file_path
+     *
+     * @return string
+     */
+    public function getFileModifiedTime($file_path)
+    {
+        if (isset($this->fake_file_times[$file_path])) {
+            return $this->fake_file_times[$file_path];
+        }
+
+        return filemtime($file_path);
+    }
+
+    /**
      * @param string        $fq_class_name
      * @param string|null   $file_path
      *
@@ -1358,15 +1385,15 @@ class ProjectChecker
      */
     public function addFullyQualifiedClassName($fq_class_name, $file_path = null)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
-        $this->existing_classes_ci[$fq_class_name_ci] = true;
-        $this->existing_traits_ci[$fq_class_name_ci] = false;
-        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $fq_class_name_lc = strtolower($fq_class_name);
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
+        $this->existing_classes_lc[$fq_class_name_lc] = true;
+        $this->existing_traits_lc[$fq_class_name_lc] = false;
+        $this->existing_interfaces_lc[$fq_class_name_lc] = false;
         $this->existing_classes[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name_ci] = $file_path;
+            $this->classlike_files[$fq_class_name_lc] = $file_path;
         }
     }
 
@@ -1378,15 +1405,15 @@ class ProjectChecker
      */
     public function addFullyQualifiedInterfaceName($fq_class_name, $file_path = null)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
-        $this->existing_interfaces_ci[$fq_class_name_ci] = true;
-        $this->existing_classes_ci[$fq_class_name_ci] = false;
-        $this->existing_traits_ci[$fq_class_name_ci] = false;
+        $fq_class_name_lc = strtolower($fq_class_name);
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
+        $this->existing_interfaces_lc[$fq_class_name_lc] = true;
+        $this->existing_classes_lc[$fq_class_name_lc] = false;
+        $this->existing_traits_lc[$fq_class_name_lc] = false;
         $this->existing_interfaces[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name_ci] = $file_path;
+            $this->classlike_files[$fq_class_name_lc] = $file_path;
         }
     }
 
@@ -1398,15 +1425,15 @@ class ProjectChecker
      */
     public function addFullyQualifiedTraitName($fq_class_name, $file_path = null)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
-        $this->existing_traits_ci[$fq_class_name_ci] = true;
-        $this->existing_classes_ci[$fq_class_name_ci] = false;
-        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $fq_class_name_lc = strtolower($fq_class_name);
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
+        $this->existing_traits_lc[$fq_class_name_lc] = true;
+        $this->existing_classes_lc[$fq_class_name_lc] = false;
+        $this->existing_interfaces_lc[$fq_class_name_lc] = false;
         $this->existing_traits[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name_ci] = $file_path;
+            $this->classlike_files[$fq_class_name_lc] = $file_path;
         }
     }
 
@@ -1417,20 +1444,20 @@ class ProjectChecker
      */
     public function hasFullyQualifiedClassName($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_classes_ci[$fq_class_name_ci]) ||
-            !$this->existing_classes_ci[$fq_class_name_ci]
+        if (!isset($this->existing_classes_lc[$fq_class_name_lc]) ||
+            !$this->existing_classes_lc[$fq_class_name_lc]
         ) {
             return false;
         }
 
         if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                $this->classlike_references[$fq_class_name_ci] = 0;
+            if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                $this->classlike_references[$fq_class_name_lc] = 0;
             }
 
-            ++$this->classlike_references[$fq_class_name_ci];
+            ++$this->classlike_references[$fq_class_name_lc];
         }
 
         return true;
@@ -1443,20 +1470,20 @@ class ProjectChecker
      */
     public function hasFullyQualifiedInterfaceName($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_interfaces_ci[$fq_class_name_ci]) ||
-            !$this->existing_interfaces_ci[$fq_class_name_ci]
+        if (!isset($this->existing_interfaces_lc[$fq_class_name_lc]) ||
+            !$this->existing_interfaces_lc[$fq_class_name_lc]
         ) {
             return false;
         }
 
         if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                $this->classlike_references[$fq_class_name_ci] = 0;
+            if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                $this->classlike_references[$fq_class_name_lc] = 0;
             }
 
-            ++$this->classlike_references[$fq_class_name_ci];
+            ++$this->classlike_references[$fq_class_name_lc];
         }
 
         return true;
@@ -1469,20 +1496,20 @@ class ProjectChecker
      */
     public function hasFullyQualifiedTraitName($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_traits_ci[$fq_class_name_ci]) ||
-            !$this->existing_traits_ci[$fq_class_name_ci]
+        if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
+            !$this->existing_traits_lc[$fq_class_name_lc]
         ) {
             return false;
         }
 
         if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                $this->classlike_references[$fq_class_name_ci] = 0;
+            if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                $this->classlike_references[$fq_class_name_lc] = 0;
             }
 
-            ++$this->classlike_references[$fq_class_name_ci];
+            ++$this->classlike_references[$fq_class_name_lc];
         }
 
         return true;
@@ -1511,9 +1538,9 @@ class ProjectChecker
             $reflection_class = new \ReflectionClass($predefined_class);
 
             if (!$reflection_class->isUserDefined()) {
-                $predefined_class_ci = strtolower($predefined_class);
-                $this->existing_classlikes_ci[$predefined_class_ci] = true;
-                $this->existing_classes_ci[$predefined_class_ci] = true;
+                $predefined_class_lc = strtolower($predefined_class);
+                $this->existing_classlikes_lc[$predefined_class_lc] = true;
+                $this->existing_classes_lc[$predefined_class_lc] = true;
             }
         }
 
@@ -1524,9 +1551,9 @@ class ProjectChecker
             $reflection_class = new \ReflectionClass($predefined_interface);
 
             if (!$reflection_class->isUserDefined()) {
-                $predefined_interface_ci = strtolower($predefined_interface);
-                $this->existing_classlikes_ci[$predefined_interface_ci] = true;
-                $this->existing_interface_ci[$predefined_interface_ci] = true;
+                $predefined_interface_lc = strtolower($predefined_interface);
+                $this->existing_classlikes_lc[$predefined_interface_lc] = true;
+                $this->existing_interface_lc[$predefined_interface_lc] = true;
             }
         }
     }

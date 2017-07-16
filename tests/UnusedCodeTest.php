@@ -63,11 +63,13 @@ class UnusedCodeTest extends TestCase
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessage($error_message);
 
-        $stmts = self::$parser->parse($code);
+        $this->project_checker->registerFile(
+            self::$project_dir . 'somefile.php',
+            $code
+        );
 
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $this->project_checker->checkClassReferences();
     }
 

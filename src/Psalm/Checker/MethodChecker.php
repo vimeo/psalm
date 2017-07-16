@@ -149,10 +149,11 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param \ReflectionMethod $method
+     * @param ProjectChecker $project_checker
      *
      * @return null
      */
-    public static function extractReflectionMethodInfo(\ReflectionMethod $method)
+    public static function extractReflectionMethodInfo(\ReflectionMethod $method, ProjectChecker $project_checker)
     {
         $method_name = strtolower($method->getName());
 
@@ -202,6 +203,10 @@ class MethodChecker extends FunctionLikeChecker
                 $storage->param_types[$param->name] = $param_array->type;
             }
         } else {
+            foreach ($possible_params[0] as $param) {
+                $param->type->queueClassLikesForScanning($project_checker);
+            }
+
             $storage->params = $possible_params[0];
         }
 

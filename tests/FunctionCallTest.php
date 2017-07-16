@@ -14,46 +14,57 @@ class FunctionCallTest extends TestCase
      */
     public function testArrayFilter()
     {
-        $stmts = self::$parser->parse('<?php
-        $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
-        $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i) : bool { return true; });
-        ');
+        $this->project_checker->registerFile(
+            'somefile.php',
+            '<?php
+                $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
+                $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i) : bool { return true; });'
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
+        $this->project_checker->checkClassReferences();
+
         $this->assertSame('array<string, int>', (string) $context->vars_in_scope['$d']);
         $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$e']);
+    }
 
+    public function testArrayFilterAdvanced()
+    {
         if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
-            $stmts = self::$parser->parse('<?php
-            $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool {
-                return true;
-            }, ARRAY_FILTER_USE_BOTH);
-            $g = array_filter(["a" => 5, "b" => 12, "c" => null], function(string $val) : bool {
-                return true;
-            }, ARRAY_FILTER_USE_KEY);
+            $this->project_checker->registerFile(
+                'somefile.php',
+                '<?php
+                    $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool {
+                        return true;
+                    }, ARRAY_FILTER_USE_BOTH);
+                    $g = array_filter(["a" => 5, "b" => 12, "c" => null], function(string $val) : bool {
+                        return true;
+                    }, ARRAY_FILTER_USE_KEY);
 
-            $bar = "bar";
+                    $bar = "bar";
 
-            $foo = [
-                $bar => function () : string {
-                    return "baz";
-                },
-            ];
+                    $foo = [
+                        $bar => function () : string {
+                            return "baz";
+                        },
+                    ];
 
-            $foo = array_filter(
-                $foo,
-                function (string $key) : bool {
-                    return $key === "bar";
-                },
-                ARRAY_FILTER_USE_KEY
+                    $foo = array_filter(
+                        $foo,
+                        function (string $key) : bool {
+                            return $key === "bar";
+                        },
+                        ARRAY_FILTER_USE_KEY
+                    );'
             );
-            ');
 
-            $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+            $file_checker = new FileChecker('somefile.php', $this->project_checker);
             $context = new Context();
             $file_checker->visitAndAnalyzeMethods($context);
+            $this->project_checker->checkClassReferences();
+
             $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$f']);
             $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$g']);
         }
@@ -65,27 +76,30 @@ class FunctionCallTest extends TestCase
     public function testArrayFilterUseKey()
     {
         if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
-            $stmts = self::$parser->parse('<?php
-            $bar = "bar";
+            $this->project_checker->registerFile(
+                getcwd() . '/src/somefile.php',
+                '<?php
+                    $bar = "bar";
 
-            $foo = [
-                $bar => function () : string {
-                    return "baz";
-                },
-            ];
+                    $foo = [
+                        $bar => function () : string {
+                            return "baz";
+                        },
+                    ];
 
-            $foo = array_filter(
-                $foo,
-                function (string $key) : bool {
-                    return $key === "bar";
-                },
-                ARRAY_FILTER_USE_KEY
+                    $foo = array_filter(
+                        $foo,
+                        function (string $key) : bool {
+                            return $key === "bar";
+                        },
+                        ARRAY_FILTER_USE_KEY
+                    );'
             );
-            ');
 
-            $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+            $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
             $context = new Context();
             $file_checker->visitAndAnalyzeMethods($context);
+            $this->project_checker->checkClassReferences();
         }
     }
 

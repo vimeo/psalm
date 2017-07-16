@@ -35,7 +35,12 @@ class FileProvider
         $file_content_hash = md5($version . $file_contents);
         $file_cache_key = CacheProvider::getParserCacheKey($file_path);
 
-        $stmts = CacheProvider::loadStatementsFromCache($file_path, $file_content_hash, $file_cache_key);
+        $stmts = CacheProvider::loadStatementsFromCache(
+            $file_path,
+            $project_checker->getFileModifiedTime($file_path),
+            $file_content_hash,
+            $file_cache_key
+        );
 
         if ($stmts === null) {
             if ($debug_output) {

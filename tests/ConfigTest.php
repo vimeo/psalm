@@ -285,17 +285,19 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        $a = new SystemClass();
-        echo SystemClass::HELLO;
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                $a = new SystemClass();
+                echo SystemClass::HELLO;
 
-        $b = $a->foo(5, "hello");
-        $c = SystemClass::bar(5, "hello");
-        ');
+                $b = $a->foo(5, "hello");
+                $c = SystemClass::bar(5, "hello");'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -320,17 +322,19 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        $a = new Foo\SystemClass();
-        echo Foo\SystemClass::HELLO;
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                $a = new Foo\SystemClass();
+                echo Foo\SystemClass::HELLO;
 
-        $b = $a->foo(5, "hello");
-        $c = Foo\SystemClass::bar(5, "hello");
-        ');
+                $b = $a->foo(5, "hello");
+                $c = Foo\SystemClass::bar(5, "hello");'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -355,13 +359,15 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        echo barBar("hello");
-        ');
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                echo barBar("hello");'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -386,13 +392,15 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        echo Foo\barBar("hello");
-        ');
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                echo Foo\barBar("hello");'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -417,13 +425,15 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        echo Foo\barBar("hello");
-        ');
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                echo Foo\barBar("hello");'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -448,13 +458,15 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        $a = new LogicException("bad");
-        ');
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                $a = new LogicException("bad");'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -479,13 +491,15 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        function foo() {}
-        ');
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                function foo() {}'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -507,13 +521,15 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $stmts = self::$parser->parse('<?php
-        function foo() {}
-        ');
+        $this->project_checker->registerFile(
+            getcwd() . '/src/somefile.php',
+            '<?php
+                function foo() {}'
+        );
 
-        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
     }
 
     /**
