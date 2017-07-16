@@ -296,7 +296,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 $class_checker = (new ClassChecker($stmt, $this->source, $stmt->name));
-                $class_checker->visit();
                 $class_checker->analyze(null, $global_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 if ((string)$stmt->getDocComment()) {
