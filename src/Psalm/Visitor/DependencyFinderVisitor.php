@@ -17,6 +17,7 @@ use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
 use Psalm\IssueBuffer;
+use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Storage\ClassLikeStorage;
@@ -164,7 +165,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                         foreach ($docblock_info->template_types as $template_type) {
                             if (count($template_type) === 3) {
-                                $as_type_string = $this->getFQCLNFromString($template_type[2]);
+                                $as_type_string = ClassLikeChecker::getFQCLNFromString(
+                                    $template_type[2],
+                                    $this->aliases
+                                );
                                 $storage->template_types[$template_type[0]] = $as_type_string;
                             } else {
                                 $storage->template_types[$template_type[0]] = 'mixed';
@@ -263,18 +267,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Property) {
             $this->visitPropertyDeclaration($node, $this->config);
-        } elseif ($node instanceof PhpParser\Node\Stmt\ClassConst) {
-            $storage = ClassLikeChecker::$storage[strtolower($this->fq_classlike_name)];
-
-            foreach ($node->consts as $const) {
-                if ($node->isProtected()) {
-                    $storage->protected_class_constants[$const->name] = Type::getMixed();
-                } elseif ($node->isPrivate()) {
-                    $storage->private_class_constants[$const->name] = Type::getMixed();
-                } else {
-                    $storage->public_class_constants[$const->name] = Type::getMixed();
-                }
-            }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassConst) {
             $this->visitClassConstDeclaration($node, $this->config);
         } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
@@ -551,10 +543,21 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 if ($docblock_return_type) {
-                    $storage->return_type = Type::parseString(
-                        FunctionLikeChecker::fixUpLocalType($docblock_return_type, $this->aliases)
-                    );
-                    $storage->return_type->setFromDocblock();
+                    $fixed_type_string = FunctionLikeChecker::fixUpLocalType($docblock_return_type, $this->aliases);
+
+                    try {
+                        $storage->return_type = Type::parseString($fixed_type_string);
+                        $storage->return_type->setFromDocblock();
+                    } catch (\Psalm\Exception\TypeParseTreeException $e) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                                new CodeLocation($this->file_checker, $stmt, null, true)
+                            )
+                        )) {
+                            // fall through
+                        }
+                    }
                 }
 
                 if ($storage->return_type && $docblock_info->ignore_nullable_return) {
@@ -838,26 +841,13 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
      *
      * @return  void
      */
-    private function visitClassConstDeclaration(
-        PhpParser\Node\Stmt\ClassConst $stmt,
-        Config $config
-    ) {
-        $comment = $stmt->getDocComment();
-        $var_comment = null;
-        $storage = ClassLikeChecker::$storage[strtolower((string)$class_context->self)];
-
-        if ($comment && $config->use_docblock_types && count($stmt->consts) === 1) {
-            $var_comment = CommentChecker::getTypeFromComment(
-                (string) $comment,
-                null,
-                $this->aliases,
-                $this->file_checker
-            );
-        }
-
-        $const_type = $var_comment ? $var_comment->type : Type::getMixed();
+    private function visitClassConstDeclaration(PhpParser\Node\Stmt\ClassConst $stmt)
+    {
+        $storage = ClassLikeChecker::$storage[strtolower($this->fq_classlike_name)];
 
         foreach ($stmt->consts as $const) {
+            $const_type = StatementsChecker::getSimpleType($const->value) ?: Type::getMixed();
+
             if ($stmt->isProtected()) {
                 $storage->protected_class_constants[$const->name] = $const_type;
             } elseif ($stmt->isPrivate()) {

@@ -1610,7 +1610,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             self::registerReflectedClass($interface_name, $interface, $project_checker);
 
             if ($reflected_class->isInterface()) {
-                $storage->parent_interfaces[] = $interface_name;
+                $storage->parent_interfaces[strtolower($interface_name)] = $interface_name;
             } else {
                 $storage->class_implements[strtolower($interface_name)] = $interface_name;
             }
