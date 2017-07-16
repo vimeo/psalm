@@ -509,12 +509,12 @@ class ProjectChecker
             }
         }
 
-        foreach ($storage->used_traits as $used_trait => $_) {
-            if (!isset(ClassLikeChecker::$storage[strtolower($used_trait)])) {
+        foreach ($storage->used_traits as $used_trait_lc => $used_trait) {
+            if (!isset(ClassLikeChecker::$storage[$used_trait_lc])) {
                 continue;
             }
 
-            $trait_storage = ClassLikeChecker::$storage[strtolower($used_trait)];
+            $trait_storage = ClassLikeChecker::$storage[$used_trait_lc];
 
             $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
@@ -1135,7 +1135,7 @@ class ProjectChecker
     {
         list($fq_class_name) = explode('::', $original_method_id);
 
-        $file_checker = $this->getVisitedFileCheckerForClassLike($fq_class_name);
+        $file_checker = $this->getFileCheckerForClassLike($fq_class_name);
 
         $appearing_method_id = (string)MethodChecker::getAppearingMethodId($original_method_id);
         list($appearing_fq_class_name) = explode('::', $appearing_method_id);
@@ -1147,7 +1147,7 @@ class ProjectChecker
         }
 
         if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
-            $file_checker = $this->getVisitedFileCheckerForClassLike($appearing_fq_class_name);
+            $file_checker = $this->getFileCheckerForClassLike($appearing_fq_class_name);
         }
 
         $file_checker->analyze(null, false, true);
@@ -1165,7 +1165,7 @@ class ProjectChecker
      *
      * @return FileChecker
      */
-    private function getVisitedFileCheckerForClassLike($fq_class_name)
+    private function getFileCheckerForClassLike($fq_class_name)
     {
         $fq_class_name_ci = strtolower($fq_class_name);
 
@@ -1189,12 +1189,6 @@ class ProjectChecker
         }
 
         $file_checker = new FileChecker($file_path, $this, null, true);
-
-        $file_checker->scan();
-
-        if ($this->debug_output) {
-            echo 'Visiting ' . $file_path . PHP_EOL;
-        }
 
         if ($this->cache) {
             $this->file_checkers[$file_path] = $file_checker;

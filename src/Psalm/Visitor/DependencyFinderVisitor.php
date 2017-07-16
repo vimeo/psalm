@@ -263,7 +263,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             foreach ($node->traits as $trait) {
                 $trait_fqcln = ClassLikeChecker::getFQCLNFromNameObject($trait, $this->aliases);
                 $this->project_checker->queueClassLikeForScanning($trait_fqcln, true);
-                $storage->used_traits[$trait_fqcln] = true;
+                $storage->used_traits[strtolower($trait_fqcln)] = $trait_fqcln;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Property) {
             $this->visitPropertyDeclaration($node, $this->config);
