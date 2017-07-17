@@ -383,7 +383,7 @@ class Union
 
     /**
      * @param  ProjectChecker $project_checker
-     * @param  array<string, bool> $phantom_classes
+     * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */

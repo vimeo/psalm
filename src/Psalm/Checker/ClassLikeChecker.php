@@ -105,9 +105,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * A lookup table of cached TraitCheckers
      *
-     * @var array<string, PhpParser\Node\Stmt\Trait_>
+     * @var array<string, TraitChecker>
      */
-    public static $trait_class_stmts;
+    public static $trait_checkers;
 
     /**
      * A lookup table of cached ClassCheckers
@@ -434,15 +434,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             continue;
                         }
 
-                        if (!isset(self::$trait_class_stmts[strtolower($fq_trait_name)])) {
+                        if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
                             throw new \UnexpectedValueException('Expecting trait statements to exist');
                         }
 
-                        $trait_class_stmt = self::$trait_class_stmts[strtolower($fq_trait_name)];
+                        $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
 
-                        $trait_checker = new TraitChecker($trait_class_stmt, $this, $fq_trait_name);
-
-                        foreach ($trait_class_stmt->stmts as $trait_stmt) {
+                        foreach ($trait_checker->class->stmts as $trait_stmt) {
                             if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                                 $trait_method_checker = $this->analyzeClassMethod(
                                     $trait_stmt,
@@ -654,13 +652,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $this->source->getAliases()
                     );
 
-                    if (!isset(self::$trait_class_stmts[strtolower($fq_trait_name)])) {
+                    if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
                         throw new \UnexpectedValueException('Expecting trait statements to exist');
                     }
 
-                    $trait_class_stmt = self::$trait_class_stmts[strtolower($fq_trait_name)];
+                    $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
 
-                    foreach ($trait_class_stmt->stmts as $trait_stmt) {
+                    foreach ($trait_checker->class->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
                             $this->checkForMissingPropertyType($trait_stmt);
                         }
@@ -700,12 +698,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($actual_method_id !== $declaring_method_id) {
                 return;
             }
-        }
-
-        if ($source instanceof TraitChecker) {
-            $checked_file_path = $source->getCheckedFilePath();
-            $project_checker = $this->getFileChecker()->project_checker;
-            $project_checker->registerAnalyzableFile($checked_file_path);
         }
 
         $method_checker->analyze(
@@ -778,15 +770,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $this->source->getAliases()
                     );
 
-                    if (!isset(self::$trait_class_stmts[strtolower($fq_trait_name)])) {
+                    if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
                         throw new \UnexpectedValueException('Expecting trait statements to exist');
                     }
 
-                    $trait_class_stmt = self::$trait_class_stmts[strtolower($fq_trait_name)];
+                    $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
 
-                    $trait_checker = new TraitChecker($trait_class_stmt, $this, $fq_trait_name);
-
-                    foreach ($trait_class_stmt->stmts as $trait_stmt) {
+                    foreach ($trait_checker->class->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                             strtolower($trait_stmt->name) === strtolower($method_name)
                         ) {
@@ -1726,7 +1716,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     {
         self::$file_classes = [];
 
-        self::$trait_class_stmts = [];
+        self::$trait_checkers = [];
 
         self::$class_checkers = [];
 

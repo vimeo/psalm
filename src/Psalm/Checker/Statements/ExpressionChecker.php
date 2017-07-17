@@ -1674,11 +1674,12 @@ class ExpressionChecker
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $context,
-                $statements_checker
+                $statements_checker,
+                $statements_checker->getAliases()
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
             }
         }
 
@@ -1694,7 +1695,7 @@ class ExpressionChecker
             }
 
             if ($var_comment && !$var_comment->var_id) {
-                $stmt->inferredType = $var_comment->type;
+                $stmt->inferredType = Type::parseString($var_comment->type);
             } elseif (isset($stmt->value->inferredType)) {
                 $stmt->inferredType = $stmt->value->inferredType;
             } else {

@@ -479,7 +479,7 @@ class Config
     {
         foreach ($this->filetype_handlers as &$path) {
             $plugin_file_checker = new FileChecker($path, $project_checker);
-            $plugin_file_checker->visit();
+            $plugin_file_checker->scan();
 
             $declared_classes = ClassLikeChecker::getClassesForFile($path);
 
@@ -668,14 +668,6 @@ class Config
     public function getPredefinedFunctions()
     {
         return $this->predefined_functions;
-    }
-
-    /**
-     * @return array<string, bool>
-     */
-    public function getPredefinedClassLikes()
-    {
-        return $this->predefined_classlikes;
     }
 
     /**

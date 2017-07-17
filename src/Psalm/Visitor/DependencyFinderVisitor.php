@@ -13,6 +13,7 @@ use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\TraitChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
@@ -25,6 +26,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\TraitSource;
 use Psalm\Type;
 
 class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
@@ -35,6 +37,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var Aliases */
     protected $file_aliases;
 
+    /**
+     * @var boolean
+     */
     protected $in_classlike = false;
 
     /**
@@ -52,7 +57,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     protected $file_path;
 
     /** @var bool */
-    protected $will_analyze;
+    protected $scan_deep;
 
     /** @var Config */
     protected $config;
@@ -69,9 +74,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $this->project_checker = $project_checker;
         $this->file_checker = $file_checker;
         $this->file_path = $file_checker->getFilePath();
-        $this->will_analyze = $file_checker->will_analyze;
+        $this->scan_deep = $file_checker->will_analyze;
         $this->config = Config::getInstance();
-        $this->aliases = new Aliases();
+        $this->aliases = $this->file_aliases = new Aliases();
     }
 
     public function enterNode(PhpParser\Node $node)
@@ -200,7 +205,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 if ($node->extends) {
                     $parent_fqcln = ClassLikeChecker::getFQCLNFromNameObject($node->extends, $this->aliases);
-                    $this->project_checker->queueClassLikeForScanning($parent_fqcln, true);
+                    $this->project_checker->queueClassLikeForScanning($parent_fqcln, $this->scan_deep);
                     $storage->parent_classes[] = strtolower($parent_fqcln);
                 }
 
@@ -220,7 +225,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             } elseif ($node instanceof PhpParser\Node\Stmt\Trait_) {
                 $storage->is_trait = true;
                 $this->project_checker->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
-                ClassLikeChecker::$trait_class_stmts[$fq_classlike_name_lc] = $node;
+                ClassLikeChecker::$trait_checkers[$fq_classlike_name_lc] = new TraitChecker(
+                    $node,
+                    new TraitSource($this->file_checker, $this->aliases),
+                    $fq_classlike_name
+                );
             }
         } elseif (($node instanceof PhpParser\Node\Expr\New_
                 || $node instanceof PhpParser\Node\Expr\Instanceof_
@@ -247,7 +256,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
             $this->registerFunctionLike($node);
 
-            if (!$this->will_analyze) {
+            if (!$this->scan_deep) {
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
@@ -282,7 +291,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             foreach ($node->traits as $trait) {
                 $trait_fqcln = ClassLikeChecker::getFQCLNFromNameObject($trait, $this->aliases);
-                $this->project_checker->queueClassLikeForScanning($trait_fqcln, true);
+                $this->project_checker->queueClassLikeForScanning($trait_fqcln, $this->scan_deep);
                 $storage->used_traits[strtolower($trait_fqcln)] = $trait_fqcln;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Property) {
@@ -708,7 +717,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
      * @param  string|null                  $fq_classlike_name
      * @param  CodeLocation                 $code_location
      *
-     * @return false|null
+     * @return void
      */
     protected function improveParamsFromDocblock(
         FunctionLikeStorage $storage,
@@ -818,7 +827,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         (string)$e->getMessage(),
-                        new CodeLocation($this, $this->class, null, true)
+                        new CodeLocation($this, $stmt, null, true)
                     )
                 )) {
                     // fall through
@@ -826,7 +835,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         }
 
-        $property_group_type = $var_comment ? $var_comment->type : null;
+        $property_group_type = $var_comment ? Type::parseString($var_comment->type) : null;
+
+        if ($property_group_type) {
+            $property_group_type->queueClassLikesForScanning($this->project_checker);
+        }
 
         foreach ($stmt->props as $property) {
             $property_type_location = null;

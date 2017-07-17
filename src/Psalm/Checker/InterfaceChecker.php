@@ -11,31 +11,9 @@ class InterfaceChecker extends ClassLikeChecker
      * @param StatementsSource               $source
      * @param string                         $fq_interface_name
      */
-    public function __construct(PhpParser\Node\Stmt\ClassLike $interface, StatementsSource $source, $fq_interface_name)
+    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source, $fq_interface_name)
     {
-        if (!$interface instanceof PhpParser\Node\Stmt\Interface_) {
-            throw new \InvalidArgumentException('Expecting an interface');
-        }
-
         parent::__construct($interface, $source, $fq_interface_name);
-
-        $fq_interface_name_lower = strtolower($fq_interface_name);
-
-        $storage = self::$storage[$fq_interface_name_lower];
-
-        $project_checker = $source->getFileChecker()->project_checker;
-        $project_checker->addFullyQualifiedInterfaceName($fq_interface_name, $source->getFilePath());
-
-        if ($interface->extends) {
-            foreach ($interface->extends as $extended_interface) {
-                $extended_interface_name = self::getFQCLNFromNameObject(
-                    $extended_interface,
-                    $this->getAliases()
-                );
-
-                $storage->parent_interfaces[] = $extended_interface_name;
-            }
-        }
     }
 
     /**
@@ -47,10 +25,6 @@ class InterfaceChecker extends ClassLikeChecker
     public static function interfaceExists($fq_interface_name, FileChecker $file_checker)
     {
         if (isset(self::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
-            return false;
-        }
-
-        if ($file_checker->evaluateClassLike($fq_interface_name) === false) {
             return false;
         }
 

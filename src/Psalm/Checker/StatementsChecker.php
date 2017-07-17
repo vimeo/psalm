@@ -307,7 +307,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     );
 
                     if ($var_comment && $var_comment->var_id) {
-                        $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                        $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
@@ -628,7 +628,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         } elseif ($is_fully_qualified) {
             $fq_const_name = $const_name;
         } elseif (strpos($const_name, '\\')) {
-            $fq_const_name = ClassLikeChecker::getFQCLNFromString($const_name, $this);
+            $fq_const_name = ClassLikeChecker::getFQCLNFromString($const_name, $this->getAliases());
         }
 
         if ($fq_const_name) {
@@ -698,7 +698,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
             }
         }
 
@@ -708,7 +708,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($var_comment && !$var_comment->var_id) {
-                $stmt->inferredType = $var_comment->type;
+                $stmt->inferredType = Type::parseString($var_comment->type);
             } elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;
             } else {

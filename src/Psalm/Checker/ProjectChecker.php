@@ -131,24 +131,31 @@ class ProjectChecker
     private $classlike_files = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<string, string>
      */
     private $files_to_scan = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<string, string>
      */
     private $classes_to_scan = [];
 
     /**
      * @var array<string, bool>
      */
-    private $classes_to_analyze = [];
+    private $classes_to_deep_scan = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<string, string>
      */
-    private $files_to_analyze = [];
+    private $files_to_deep_scan = [];
+
+    /**
+     * We analyze more files than we necessarily report errors in
+     *
+     * @var array<string, string>
+     */
+    private $files_to_report = [];
 
     /**
      * @var array<string, bool>
@@ -278,7 +285,7 @@ class ProjectChecker
             $diff_files = $deleted_files;
 
             foreach ($this->config->getProjectDirectories() as $dir_name) {
-                $diff_files = array_merge($diff_files, self::getDiffFilesInDir($dir_name, $this->config));
+                $diff_files = array_merge($diff_files, $this->getDiffFilesInDir($dir_name, $this->config));
             }
         }
 
@@ -303,7 +310,7 @@ class ProjectChecker
             $file_list = array_diff($file_list, $deleted_files);
             $this->checkDiffFilesWithConfig($this->config, $file_list);
 
-            $this->visitFiles();
+            $this->scanFiles();
 
             if (!$this->server_mode) {
                 $this->analyzeFiles();
@@ -362,11 +369,12 @@ class ProjectChecker
             }
         }
 
-        IssueBuffer::finish(true, (int)$start_checks, $this->visited_files);
+        IssueBuffer::finish(true, (int)$start_checks, $this->scanned_files);
     }
 
     /**
      * @return void
+     * @psalm-suppress ParadoxicalCondition
      */
     public function scanFiles()
     {
@@ -381,7 +389,7 @@ class ProjectChecker
                 $file_path = array_shift($this->files_to_scan);
 
                 if (!isset($this->scanned_files[$file_path])) {
-                    $this->scanFile($file_path, $filetype_handlers, isset($this->files_to_analyze[$file_path]));
+                    $this->scanFile($file_path, $filetype_handlers, isset($this->files_to_deep_scan[$file_path]));
                 }
             } else {
                 $fq_classlike_name = array_shift($this->classes_to_scan);
@@ -395,14 +403,14 @@ class ProjectChecker
                     if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])) {
                         $reflected_class = new \ReflectionClass($fq_classlike_name);
                         ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
-                        $this->reflected_classeslikes_lc[$fq_classlike_name_lc] = $fq_classlike_name;
+                        $this->reflected_classeslikes_lc[$fq_classlike_name_lc] = true;
                     } elseif ($this->fileExistsForClassLike($fq_classlike_name)) {
                         if (isset($this->classlike_files[$fq_classlike_name_lc])) {
                             $file_path = $this->classlike_files[$fq_classlike_name_lc];
                             $this->files_to_scan[$file_path] = $file_path;
-                            if (isset($this->classes_to_analyze[$fq_classlike_name_lc])) {
-                                unset($this->classes_to_analyze[$fq_classlike_name_lc]);
-                                $this->files_to_analyze[$file_path] = $file_path;
+                            if (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])) {
+                                unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
+                                $this->files_to_deep_scan[$file_path] = $file_path;
                             }
                         } else {
 
@@ -429,6 +437,11 @@ class ProjectChecker
         }
     }
 
+    /**
+     * @param  ClassLikeStorage $storage
+     * @param  array            $dependent_classlikes
+     * @return void
+     */
     private function populateClassLikeStorage(ClassLikeStorage $storage, $dependent_classlikes = [])
     {
         if ($storage->populated) {
@@ -528,8 +541,8 @@ class ProjectChecker
 
             $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
-            $this->inheritMethodsFromParent($storage, $trait_storage, true);
-            $this->inheritPropertiesFromParent($storage, $trait_storage, true);
+            $this->inheritMethodsFromParent($storage, $trait_storage);
+            $this->inheritPropertiesFromParent($storage, $trait_storage);
         }
 
         $storage->populated = true;
@@ -631,6 +644,11 @@ class ProjectChecker
         }
     }
 
+    /**
+     * @param  string  $fq_classlike_name
+     * @param  boolean $analyze_too
+     * @return void
+     */
     public function queueClassLikeForScanning($fq_classlike_name, $analyze_too = false)
     {
         if (!$this->config) {
@@ -643,11 +661,15 @@ class ProjectChecker
             $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
 
             if ($analyze_too) {
-                $this->classes_to_analyze[$fq_classlike_name_lc] = true;
+                $this->classes_to_deep_scan[$fq_classlike_name_lc] = true;
             }
         }
     }
 
+    /**
+     * @param  string $file_path
+     * @return void
+     */
     public function queueFileForScanning($file_path)
     {
         $this->files_to_scan[$file_path] = $file_path;
@@ -664,7 +686,7 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        foreach ($this->files_to_analyze as $file_path => $_) {
+        foreach ($this->files_to_report as $file_path => $_) {
             $file_checker = $this->getFile($file_path, $filetype_handlers, true);
 
             if ($this->debug_output) {
@@ -825,10 +847,10 @@ class ProjectChecker
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
-        $this->visitFiles();
+        $this->scanFiles();
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks, $this->visited_files);
+        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
     }
 
     /**
@@ -853,7 +875,8 @@ class ProjectChecker
                     $file_path = (string)$iterator->getRealPath();
 
                     if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
-                        $this->files_to_analyze[$file_path] = true;
+                        $this->files_to_report[$file_path] = $file_path;
+                        $this->files_to_deep_scan[$file_path] = $file_path;
                         $this->files_to_scan[$file_path] = $file_path;
                     }
                 }
@@ -899,7 +922,7 @@ class ProjectChecker
      *
      * @return array<string>
      */
-    protected static function getDiffFilesInDir($dir_name, Config $config)
+    protected function getDiffFilesInDir($dir_name, Config $config)
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
@@ -951,7 +974,8 @@ class ProjectChecker
                 continue;
             }
 
-            $this->files_to_analyze[$file_path] = true;
+            $this->files_to_deep_scan[$file_path] = $file_path;
+            $this->files_to_report[$file_path] = $file_path;
         }
     }
 
@@ -975,13 +999,14 @@ class ProjectChecker
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
-        $this->files_to_analyze[$file_path] = true;
+        $this->files_to_deep_scan[$file_path] = $file_path;
+        $this->files_to_report[$file_path] = $file_path;
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileReferenceProvider::loadReferenceCache();
 
-        $file_checker = $this->visitFile($file_path, $filetype_handlers, true);
+        $file_checker = $this->scanFile($file_path, $filetype_handlers, true);
 
         if ($this->debug_output) {
             echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -989,7 +1014,7 @@ class ProjectChecker
 
         $file_checker->analyze(null, $this->update_docblocks);
 
-        IssueBuffer::finish(false, $start_checks, $this->visited_files);
+        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
     }
 
     /**
@@ -1042,7 +1067,11 @@ class ProjectChecker
         }
 
         if ($this->debug_output) {
-            echo 'Scanning ' . $file_path . PHP_EOL;
+            if (isset($this->files_to_deep_scan[$file_path])) {
+                echo 'Deep scanning ' . $file_path . PHP_EOL;
+            } else {
+                echo 'Scanning ' . $file_path . PHP_EOL;
+            }
         }
 
         $this->scanned_files[$file_path] = true;
@@ -1254,7 +1283,6 @@ class ProjectChecker
 
         $config->visitStubFiles($this);
         $config->initializePlugins($this);
-        $this->existing_classlikes_lc[] = $config->getPredefinedClassLikes();
 
         return $config;
     }
@@ -1270,7 +1298,6 @@ class ProjectChecker
 
         $config->visitStubFiles($this);
         $config->initializePlugins($this);
-        $this->existing_classlikes_lc[] = $config->getPredefinedClassLikes();
     }
 
     /**
@@ -1329,7 +1356,8 @@ class ProjectChecker
      */
     public function registerAnalyzableFile($file_path)
     {
-        $this->files_to_analyze[$file_path] = true;
+        $this->files_to_deep_scan[$file_path] = $file_path;
+        $this->files_to_report[$file_path] = $file_path;
     }
 
     /**
@@ -1510,7 +1538,7 @@ class ProjectChecker
      */
     public function canReportIssues($file_path)
     {
-        return isset($this->files_to_analyze[$file_path]);
+        return isset($this->files_to_report[$file_path]);
     }
 
 
@@ -1541,7 +1569,7 @@ class ProjectChecker
             if (!$reflection_class->isUserDefined()) {
                 $predefined_interface_lc = strtolower($predefined_interface);
                 $this->existing_classlikes_lc[$predefined_interface_lc] = true;
-                $this->existing_interface_lc[$predefined_interface_lc] = true;
+                $this->existing_interfaces_lc[$predefined_interface_lc] = true;
             }
         }
     }

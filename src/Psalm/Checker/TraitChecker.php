@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\TraitSource;
 
 class TraitChecker extends ClassLikeChecker
 {
@@ -19,34 +20,14 @@ class TraitChecker extends ClassLikeChecker
      * @param   StatementsSource                $source
      * @param   string                          $fq_class_name
      */
-    public function __construct(PhpParser\Node\Stmt\Trait_ $class, StatementsSource $source, $fq_class_name)
+    public function __construct(PhpParser\Node\Stmt\Trait_ $class, TraitSource $trait_source, $fq_class_name)
     {
-        $this->source = $source;
-        $this->file_checker = $source->getFileChecker();
+        $this->source = $trait_source;
+        $this->file_checker = $trait_source->getFileChecker();
         $this->class = $class;
         $this->fq_class_name = $fq_class_name;
 
-        $fq_class_name_lower = strtolower($fq_class_name);
-
-        $project_checker = $source->getFileChecker()->project_checker;
-        $project_checker->addFullyQualifiedTraitName($fq_class_name, $source->getFilePath());
-    }
-
-    /**
-     * @param   Context|null    $class_context
-     * @param   Context|null    $global_context
-     *
-     * @return void
-     */
-    public function visit(
-        Context $class_context = null,
-        Context $global_context = null
-    ) {
-        if (!$class_context) {
-            throw new \InvalidArgumentException('TraitChecker::check must be called with a $class_context');
-        }
-
-        parent::visit($class_context, $global_context);
+        self::$trait_checkers[strtolower($fq_class_name)] = $this;
     }
 
     /**
@@ -81,10 +62,6 @@ class TraitChecker extends ClassLikeChecker
      */
     public static function traitExists($fq_trait_name, FileChecker $file_checker)
     {
-        if ($file_checker->evaluateClassLike($fq_trait_name) === false) {
-            return false;
-        }
-
         return $file_checker->project_checker->hasFullyQualifiedTraitName($fq_trait_name);
     }
 

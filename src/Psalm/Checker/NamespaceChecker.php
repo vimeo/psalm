@@ -128,24 +128,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             throw new \UnexpectedValueException('Did not expect anonymous class here');
         }
 
-        $config = \Psalm\Config::getInstance();
-
-        $predefined_classlikes = $config->getPredefinedClassLikes();
-
         $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this->getAliases());
-
-        if (isset($predefined_classlikes[strtolower($fq_class_name)])) {
-            if (IssueBuffer::accepts(
-                new DuplicateClass(
-                    'Class ' . $fq_class_name . ' has already been defined internally',
-                    new \Psalm\CodeLocation($this, $stmt, null, true)
-                )
-            )) {
-                // fall through
-            }
-
-            return;
-        }
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             $this->source->addNamespacedClassChecker(

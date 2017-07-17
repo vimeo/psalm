@@ -23,7 +23,7 @@ class FileProvider
      */
     public function getModifiedTime($file_path)
     {
-        return filemtime($file_path);
+        return (int)filemtime($file_path);
     }
 
     /**
@@ -43,6 +43,6 @@ class FileProvider
      */
     public function hasFileChanged($file_path)
     {
-        return $this->getFileModifiedTime($file_path) > CacheProvider::getLastGoodRun();
+        return $this->getModifiedTime($file_path) > CacheProvider::getLastGoodRun();
     }
 }

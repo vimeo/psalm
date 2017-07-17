@@ -66,10 +66,6 @@ class ClassChecker extends ClassLikeChecker
             return true;
         }
 
-        if ($file_checker->evaluateClassLike($fq_class_name) === false) {
-            return false;
-        }
-
         return $file_checker->project_checker->hasFullyQualifiedClassName($fq_class_name);
     }
 

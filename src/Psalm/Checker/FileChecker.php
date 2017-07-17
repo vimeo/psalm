@@ -178,25 +178,10 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $statements_checker = new StatementsChecker($this);
 
-        $predefined_classlikes = $config->getPredefinedClassLikes();
-
         $function_stmts = [];
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike && $stmt->name) {
-                if (isset($predefined_classlikes[strtolower($stmt->name)])) {
-                    if (IssueBuffer::accepts(
-                        new DuplicateClass(
-                            'Class ' . $stmt->name . ' has already been defined internally',
-                            new \Psalm\CodeLocation($this, $stmt, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
-
-                    continue;
-                }
-
                 if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                     $class_checker = new ClassChecker($stmt, $this, $stmt->name);
 
@@ -410,7 +395,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @param  string $fq_class_name
      *
-     * @return null|false
+     * @return void
      */
     public function evaluateClassLike($fq_class_name)
     {
