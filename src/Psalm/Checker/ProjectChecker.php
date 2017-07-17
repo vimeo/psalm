@@ -588,6 +588,10 @@ class ProjectChecker
     {
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
+            if (isset($storage->appearing_property_ids[$property_name])) {
+                continue;
+            }
+
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
                 && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
@@ -600,6 +604,10 @@ class ProjectChecker
 
         // register where they're declared
         foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
+            if (isset($storage->declaring_property_ids[$property_name])) {
+                continue;
+            }
+
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
                 && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE

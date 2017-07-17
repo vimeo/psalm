@@ -288,8 +288,12 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if (ClassLikeChecker::inPropertyMap($fq_classlike_name)) {
                 $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_classlike_name)];
 
+                $storage = ClassLikeChecker::$storage[strtolower($fq_classlike_name)];
+
                 foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
                     $property_type = Type::parseString($public_mapped_property);
+
+                    $property_type->queueClassLikesForScanning($this->project_checker);
 
                     if (!isset($storage->properties[$property_name])) {
                         $storage->properties[$property_name] = new PropertyStorage();

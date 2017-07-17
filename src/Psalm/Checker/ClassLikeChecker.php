@@ -1206,8 +1206,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $project_checker->addFullyQualifiedClassName($class_name);
         }
 
-        $storage->registered = true;
-
         $reflection_methods = $reflected_class->getMethods(
             ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
         );
