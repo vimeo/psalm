@@ -30,6 +30,9 @@ class FunctionCallTest extends TestCase
         $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$e']);
     }
 
+    /**
+     * @return void
+     */
     public function testArrayFilterAdvanced()
     {
         if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {

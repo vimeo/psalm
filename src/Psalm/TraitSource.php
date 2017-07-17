@@ -124,7 +124,7 @@ class TraitSource implements StatementsSource
     }
 
     /**
-     * @return StatementsSource|null
+     * @return FileChecker
      */
     public function getSource()
     {

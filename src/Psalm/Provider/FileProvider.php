@@ -19,7 +19,7 @@ class FileProvider
     /**
      * @param  string $file_path
      *
-     * @return string
+     * @return int
      */
     public function getModifiedTime($file_path)
     {

@@ -41,6 +41,11 @@ class TestCase extends PHPUnit_Framework_TestCase
         $this->project_checker->setConfig(new TestConfig());
     }
 
+    /**
+     * @param string $file_path
+     * @param string $contents
+     * @return void
+     */
     public function addFile($file_path, $contents)
     {
         $this->file_provider->registerFile($file_path, $contents);

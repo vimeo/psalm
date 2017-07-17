@@ -9,7 +9,7 @@ class FakeFileProvider extends \Psalm\Provider\FileProvider
     public $fake_files = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, int>
      */
     public $fake_file_times = [];
 
@@ -40,7 +40,7 @@ class FakeFileProvider extends \Psalm\Provider\FileProvider
     /**
      * @param  string $file_path
      *
-     * @return string
+     * @return int
      */
     public function getModifiedTime($file_path)
     {
@@ -56,10 +56,11 @@ class FakeFileProvider extends \Psalm\Provider\FileProvider
      * @param  string $file_contents
      *
      * @return void
+     * @psalm-suppress InvalidPropertyAssignment because microtime is needed for cache busting
      */
     public function registerFile($file_path, $file_contents)
     {
         $this->fake_files[$file_path] = $file_contents;
-        $this->fake_file_times[$file_path] = microtime(true);
+        $this->fake_file_times[$file_path] = (float)microtime(true);
     }
 }
