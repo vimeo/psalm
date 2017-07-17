@@ -282,7 +282,29 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->aliases = $this->file_aliases;
-        } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike && $node->name) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
+            $fq_classlike_name = $this->fq_classlike_name;
+
+            if (ClassLikeChecker::inPropertyMap($fq_classlike_name)) {
+                $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_classlike_name)];
+
+                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                    $property_type = Type::parseString($public_mapped_property);
+
+                    if (!isset($storage->properties[$property_name])) {
+                        $storage->properties[$property_name] = new PropertyStorage();
+                    }
+
+                    $storage->properties[$property_name]->type = $property_type;
+                    $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
+
+                    $property_id = $fq_classlike_name . '::$' . $property_name;
+
+                    $storage->declaring_property_ids[$property_name] = $property_id;
+                    $storage->appearing_property_ids[$property_name] = $property_id;
+                }
+            }
+
             $this->fq_classlike_name = null;
         }
     }
