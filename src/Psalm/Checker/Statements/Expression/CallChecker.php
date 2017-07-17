@@ -491,7 +491,7 @@ class CallChecker
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
             $statements_checker->analyze([$stmt->class], $context);
-            $fq_class_name = $stmt->class->name;
+            $fq_class_name = ClassChecker::getAnonymousClassName($stmt->class, $statements_checker->getFilePath());
         } else {
             ExpressionChecker::analyze($statements_checker, $stmt->class, $context);
         }
