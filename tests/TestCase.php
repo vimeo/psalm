@@ -16,13 +16,15 @@ class TestCase extends PHPUnit_Framework_TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /** @var Provider\FakeFileProvider */
+    protected $file_provider;
+
     /**
      * @return void
      */
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     }
 
     /**
@@ -33,7 +35,15 @@ class TestCase extends PHPUnit_Framework_TestCase
         parent::setUp();
 
         FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
+
+        $this->file_provider = new Provider\FakeFileProvider();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker($this->file_provider);
         $this->project_checker->setConfig(new TestConfig());
+    }
+
+    public function addFile($file_path, $contents)
+    {
+        $this->file_provider->registerFile($file_path, $contents);
+        $this->project_checker->queueFileForScanning($file_path);
     }
 }

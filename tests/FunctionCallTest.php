@@ -14,7 +14,7 @@ class FunctionCallTest extends TestCase
      */
     public function testArrayFilter()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
                 $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
@@ -33,7 +33,7 @@ class FunctionCallTest extends TestCase
     public function testArrayFilterAdvanced()
     {
         if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
-            $this->project_checker->registerFile(
+            $this->addFile(
                 'somefile.php',
                 '<?php
                     $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool {
@@ -76,7 +76,7 @@ class FunctionCallTest extends TestCase
     public function testArrayFilterUseKey()
     {
         if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
-            $this->project_checker->registerFile(
+            $this->addFile(
                 getcwd() . '/src/somefile.php',
                 '<?php
                     $bar = "bar";

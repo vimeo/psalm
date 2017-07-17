@@ -14,7 +14,7 @@ class ArrayAssignmentTest extends TestCase
      */
     public function testConditionalAssignment()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
                 if ($b) {
@@ -36,7 +36,7 @@ class ArrayAssignmentTest extends TestCase
      */
     public function testImplementsArrayAccess()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
                 class A implements \ArrayAccess {

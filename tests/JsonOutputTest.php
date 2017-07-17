@@ -15,7 +15,8 @@ class JsonOutputTest extends TestCase
         // `TestCase::setUp()` creates its own ProjectChecker and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
         FileChecker::clearCache();
-        $this->project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
+        $this->file_provider = new Provider\FakeFileProvider();
+        $this->project_checker = new ProjectChecker($this->file_provider, false, true, ProjectChecker::TYPE_JSON);
 
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -35,7 +36,7 @@ class JsonOutputTest extends TestCase
      */
     public function testJsonOutputErrors($code, $message, $line_number, $error)
     {
-        $this->project_checker->registerFile('somefile.php', $code);
+        $this->addFile('somefile.php', $code);
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
@@ -72,7 +73,7 @@ if (rand(0, 100) > 10) {
 
 echo $a;';
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             $file_contents
         );

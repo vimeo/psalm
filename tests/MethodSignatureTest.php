@@ -19,7 +19,7 @@ class MethodSignatureTest extends TestCase
             return;
         }
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
                 class A extends SoapClient
@@ -63,7 +63,7 @@ class MethodSignatureTest extends TestCase
             return;
         }
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
                 class A extends SoapClient

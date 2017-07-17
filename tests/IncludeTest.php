@@ -16,13 +16,11 @@ class IncludeTest extends TestCase
     public function testValidInclude(array $files, array $files_to_check)
     {
         foreach ($files as $filename => $contents) {
-            $this->project_checker->registerFile($filename, $contents);
+            $this->addFile($filename, $contents);
             $this->project_checker->registerAnalyzableFile($filename);
-            $this->project_checker->queueFileForScanning($filename);
         }
 
         $this->project_checker->scanFiles();
-        $this->project_checker->populateClassLikeStorages();
 
         foreach ($files_to_check as $filename) {
             $file_checker = new FileChecker($filename, $this->project_checker);
@@ -41,13 +39,11 @@ class IncludeTest extends TestCase
     public function testInvalidInclude(array $files, array $files_to_check, $error_message)
     {
         foreach ($files as $filename => $contents) {
-            $this->project_checker->registerFile($filename, $contents);
+            $this->addFile($filename, $contents);
             $this->project_checker->registerAnalyzableFile($filename);
-            $this->project_checker->queueFileForScanning($filename);
         }
 
         $this->project_checker->scanFiles();
-        $this->project_checker->populateClassLikeStorages();
 
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessage($error_message);

@@ -817,7 +817,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return null;
             }
 
-            if ($current_file_checker->fileExists($path_to_file)) {
+            if ($current_file_checker->project_checker->fileExists($path_to_file)) {
                 return null;
             }
         }

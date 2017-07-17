@@ -45,7 +45,7 @@ trait FileCheckerValidCodeParseTestTrait
             $context->vars_in_scope[$var] = $value;
         }
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             $code
         );

@@ -915,7 +915,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 return null;
             }
 
-            if ($this->file_checker->fileExists($path_to_file)) {
+            if ($this->project_checker->fileExists($path_to_file)) {
                 $this->project_checker->queueFileForScanning($path_to_file);
 
                 return null;

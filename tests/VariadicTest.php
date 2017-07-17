@@ -15,7 +15,7 @@ class VariadicTest extends TestCase
      */
     public function testVariadic($code)
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             $code
         );
@@ -33,7 +33,7 @@ class VariadicTest extends TestCase
      */
     public function testVariadicArrayBadParam()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
                 /**

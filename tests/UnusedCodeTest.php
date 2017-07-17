@@ -31,7 +31,8 @@ class UnusedCodeTest extends TestCase
     public function setUp()
     {
         FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
+        $this->file_provider = new Provider\FakeFileProvider();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker($this->file_provider);
         $this->project_checker->setConfig(Config::loadFromXML(
             'psalm.xml',
             dirname(__DIR__),
@@ -63,7 +64,7 @@ class UnusedCodeTest extends TestCase
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessage($error_message);
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             self::$project_dir . 'somefile.php',
             $code
         );

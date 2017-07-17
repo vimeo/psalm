@@ -299,6 +299,7 @@ $find_references_to = isset($options['find-references-to']) ? $options['find-ref
 $update_docblocks = isset($options['update-docblocks']);
 
 $project_checker = new ProjectChecker(
+    new Psalm\Provider\FileProvider(),
     $use_color,
     $show_info,
     $output_format,

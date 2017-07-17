@@ -19,7 +19,7 @@ class PropertyTypeTest extends TestCase
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
                 class X {

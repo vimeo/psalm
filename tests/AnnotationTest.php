@@ -14,13 +14,16 @@ class AnnotationTest extends TestCase
      */
     public function testNopType()
     {
-        $stmts = self::$parser->parse('<?php
-        $a = "hello";
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $a = "hello";
 
-        /** @var int $a */
-        ');
+                /** @var int $a */
+            '
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
         $this->assertSame('int', (string) $context->vars_in_scope['$a']);

@@ -39,7 +39,7 @@ trait FileCheckerInvalidCodeParseTestTrait
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessage($error_message);
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             $code
         );

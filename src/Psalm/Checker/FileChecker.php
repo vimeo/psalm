@@ -6,7 +6,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
-use Psalm\Provider\FileProvider;
+use Psalm\Provider\StatementsProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -110,14 +110,12 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @param string                                $file_path
      * @param ProjectChecker                        $project_checker
-     * @param array<int, PhpParser\Node\Stmt>|null  $preloaded_statements
      * @param bool                                  $will_analyze
      * @param array<string, bool>                   $included_file_paths
      */
     public function __construct(
         $file_path,
         ProjectChecker $project_checker,
-        array $preloaded_statements = null,
         $will_analyze = true,
         array $included_file_paths = []
     ) {
@@ -125,10 +123,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         $this->file_name = Config::getInstance()->shortenFileName($this->file_path);
         $this->project_checker = $project_checker;
         $this->will_analyze = $will_analyze;
-
-        if ($preloaded_statements) {
-            $this->preloaded_statements = $preloaded_statements;
-        }
 
         if (!isset(self::$storage[$file_path])) {
             self::$storage[$file_path] = new FileStorage();
@@ -398,7 +392,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         $this->project_checker->registerAnalyzableFile($this->file_path);
         $this->project_checker->scanFiles();
-        $this->project_checker->populateClassLikeStorages();
         $this->analyze($file_context, $update_docblocks);
     }
 
@@ -454,23 +447,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     protected function getStatements()
     {
-        return $this->preloaded_statements
-            ? $this->preloaded_statements
-            : FileProvider::getStatementsForFile(
-                $this->project_checker,
-                $this->file_path,
-                $this->project_checker->debug_output
-            );
-    }
-
-    /**
-     * @param  string $file_path
-     *
-     * @return bool
-     */
-    public function fileExists($file_path)
-    {
-        return file_exists($file_path) || isset($this->project_checker->fake_files[$file_path]);
+        return $this->project_checker->getStatementsForFile($this->file_path);
     }
 
     /**

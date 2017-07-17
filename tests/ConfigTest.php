@@ -7,7 +7,7 @@ use Psalm\Checker\FileChecker;
 use Psalm\Config;
 use Psalm\Context;
 
-class ConfigTest extends PHPUnit_Framework_TestCase
+class ConfigTest extends TestCase
 {
     /** @var \PhpParser\Parser */
     protected static $parser;
@@ -23,7 +23,6 @@ class ConfigTest extends PHPUnit_Framework_TestCase
      */
     public static function setUpBeforeClass()
     {
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
         self::$config = new TestConfig();
     }
 
@@ -33,7 +32,8 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
+        $this->file_provider = new Provider\FakeFileProvider();
+        $this->project_checker = new \Psalm\Checker\ProjectChecker($this->file_provider);
     }
 
     /**
@@ -285,7 +285,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 $a = new SystemClass();
@@ -322,7 +322,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 $a = new Foo\SystemClass();
@@ -359,7 +359,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 echo barBar("hello");'
@@ -392,7 +392,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 echo Foo\barBar("hello");'
@@ -425,7 +425,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 echo Foo\barBar("hello");'
@@ -458,7 +458,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 $a = new LogicException("bad");'
@@ -491,7 +491,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 function foo() {}'
@@ -521,7 +521,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             )
         );
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
                 function foo() {}'

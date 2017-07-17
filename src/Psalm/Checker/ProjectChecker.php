@@ -12,6 +12,7 @@ use Psalm\IssueBuffer;
 use Psalm\Provider\CacheProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
+use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -31,6 +32,9 @@ class ProjectChecker
      * @var self
      */
     public static $instance;
+
+    /** @var FileProvider */
+    private $file_provider;
 
     /**
      * Whether or not to use colors in error output
@@ -188,16 +192,6 @@ class ProjectChecker
     public $use_referencing_files = [];
 
     /**
-     * @var array<string, string>
-     */
-    public $fake_files = [];
-
-    /**
-     * @var array<string, string>
-     */
-    public $fake_file_times = [];
-
-    /**
      * @var bool
      */
     public $server_mode = false;
@@ -223,6 +217,7 @@ class ProjectChecker
      * @param string  $find_references_to
      */
     public function __construct(
+        FileProvider $file_provider,
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
@@ -231,6 +226,7 @@ class ProjectChecker
         $collect_references = false,
         $find_references_to = null
     ) {
+        $this->file_provider = $file_provider;
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
@@ -292,7 +288,6 @@ class ProjectChecker
             }
 
             $this->scanFiles();
-            $this->populateClassLikeStorages();
 
             if (!$this->server_mode) {
                 $this->analyzeFiles();
@@ -416,10 +411,7 @@ class ProjectChecker
                 }
             }
         }
-    }
 
-    public function populateClassLikeStorages()
-    {
         if ($this->debug_output) {
             echo 'ClassLikeStorage is populating' . PHP_EOL;
         }
@@ -917,7 +909,7 @@ class ProjectChecker
                     $file_name = (string)$iterator->getRealPath();
 
                     if ($config->isInProjectDirs($file_name)) {
-                        if (FileProvider::hasFileChanged($file_name)) {
+                        if ($this->file_provider->hasFileChanged($file_name)) {
                             $diff_files[] = $file_name;
                         }
                     }
@@ -1007,7 +999,7 @@ class ProjectChecker
             /** @var FileChecker */
             $file_checker = new $filetype_handlers[$extension]($file_path, $this);
         } else {
-            $file_checker = new FileChecker($file_path, $this, null, $will_analyze);
+            $file_checker = new FileChecker($file_path, $this, $will_analyze);
         }
 
         if ($this->debug_output) {
@@ -1034,7 +1026,7 @@ class ProjectChecker
             /** @var FileChecker */
             $file_checker = new $filetype_handlers[$extension]($file_path, $this);
         } else {
-            $file_checker = new FileChecker($file_path, $this, null, $will_analyze);
+            $file_checker = new FileChecker($file_path, $this, $will_analyze);
         }
 
         if (isset($this->scanned_files[$file_path])) {
@@ -1181,26 +1173,22 @@ class ProjectChecker
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!$this->fake_files) {
-            // this registers the class if it's not user defined
-            if (!$this->fileExistsForClassLike($fq_class_name)) {
-                throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
-            }
-
-            if (!isset($this->classlike_files[$fq_class_name_lc])) {
-                throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
-            }
-
-            $file_path = $this->classlike_files[$fq_class_name_lc];
-        } else {
-            $file_path = array_keys($this->fake_files)[0];
+        // this registers the class if it's not user defined
+        if (!$this->fileExistsForClassLike($fq_class_name)) {
+            throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
         }
+
+        if (!isset($this->classlike_files[$fq_class_name_lc])) {
+            throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
+        }
+
+        $file_path = $this->classlike_files[$fq_class_name_lc];
 
         if ($this->cache && isset($this->file_checkers[$file_path])) {
             return $this->file_checkers[$file_path];
         }
 
-        $file_checker = new FileChecker($file_path, $this, null, true);
+        $file_checker = new FileChecker($file_path, $this, true);
 
         if ($this->cache) {
             $this->file_checkers[$file_path] = $file_checker;
@@ -1328,19 +1316,6 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
-     * @param  string $file_contents
-     *
-     * @return void
-     */
-    public function registerFile($file_path, $file_contents)
-    {
-        $this->fake_files[$file_path] = $file_contents;
-        $this->fake_file_times[$file_path] = microtime(true);
-        $this->files_to_scan[$file_path] = $file_path;
-    }
-
-    /**
-     * @param  string $file_path
      *
      * @return void
      */
@@ -1351,16 +1326,25 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
-     *
-     * @return string
+     * @return array<int, \PhpParser\Node\Stmt>
      */
-    public function getFileContents($file_path)
+    public function getStatementsForFile($file_path)
     {
-        if (isset($this->fake_files[$file_path])) {
-            return $this->fake_files[$file_path];
-        }
+        return StatementsProvider::getStatementsForFile(
+            $file_path,
+            $this->file_provider->getContents($file_path),
+            $this->file_provider->getModifiedTime($file_path),
+            $this->debug_output
+        );
+    }
 
-        return (string)file_get_contents($file_path);
+    /**
+     * @param  string $file_path
+     * @return bool
+     */
+    public function fileExists($file_path)
+    {
+        return $this->file_provider->fileExists($file_path);
     }
 
     /**
@@ -1368,13 +1352,9 @@ class ProjectChecker
      *
      * @return string
      */
-    public function getFileModifiedTime($file_path)
+    public function getFileContents($file_path)
     {
-        if (isset($this->fake_file_times[$file_path])) {
-            return $this->fake_file_times[$file_path];
-        }
-
-        return filemtime($file_path);
+        return $this->file_provider->getContents($file_path);
     }
 
     /**

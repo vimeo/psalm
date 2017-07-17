@@ -11,7 +11,7 @@ class MethodMutationTest extends TestCase
      */
     public function testControllerMutation()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
         class User {
@@ -91,7 +91,6 @@ class MethodMutationTest extends TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $this->project_checker->scanFiles();
-        $this->project_checker->populateClassLikeStorages();
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::barBar', $method_context);
 
@@ -105,7 +104,7 @@ class MethodMutationTest extends TestCase
      */
     public function testParentControllerSet()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
         class Foo { }
@@ -128,7 +127,6 @@ class MethodMutationTest extends TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $this->project_checker->scanFiles();
-        $this->project_checker->populateClassLikeStorages();
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::__construct', $method_context);
 
@@ -140,7 +138,7 @@ class MethodMutationTest extends TestCase
      */
     public function testTraitMethod()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
         class Foo { }
@@ -165,7 +163,6 @@ class MethodMutationTest extends TestCase
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $this->project_checker->scanFiles();
-        $this->project_checker->populateClassLikeStorages();
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::__construct', $method_context);
 
