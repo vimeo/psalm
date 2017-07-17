@@ -220,6 +220,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             } elseif ($node instanceof PhpParser\Node\Stmt\Trait_) {
                 $storage->is_trait = true;
                 $this->project_checker->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
+                ClassLikeChecker::$trait_class_stmts[$fq_classlike_name_lc] = $node;
             }
         } elseif (($node instanceof PhpParser\Node\Expr\New_
                 || $node instanceof PhpParser\Node\Expr\Instanceof_
@@ -248,6 +249,21 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if (!$this->will_analyze) {
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            }
+        } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
+            $function_id = implode('\\', $node->name->parts);
+            if (FunctionChecker::inCallMap($function_id)) {
+                $function_params = FunctionChecker::getParamsFromCallMap($function_id);
+
+                foreach ($function_params as $function_param_group) {
+                    foreach ($function_param_group as $function_param) {
+                        $function_param->type->queueClassLikesForScanning($this->project_checker);
+                    }
+                }
+
+                $return_type = FunctionChecker::getReturnTypeFromCallMap($function_id);
+
+                $return_type->queueClassLikesForScanning($this->project_checker);
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             $storage = ClassLikeChecker::$storage[strtolower($this->fq_classlike_name)];

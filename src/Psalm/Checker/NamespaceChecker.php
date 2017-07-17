@@ -65,7 +65,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     /**
      * @return  void
      */
-    public function visit()
+    public function collectAnalyzableInformation()
     {
         $leftover_stmts = [];
         $function_stmts = [];
@@ -79,7 +79,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
-                $this->visitClassLike($stmt);
+                $this->collectAnalyzableClassLike($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
@@ -122,7 +122,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function visitClassLike(PhpParser\Node\Stmt\ClassLike $stmt)
+    public function collectAnalyzableClassLike(PhpParser\Node\Stmt\ClassLike $stmt)
     {
         if (!$stmt->name) {
             throw new \UnexpectedValueException('Did not expect anonymous class here');
@@ -157,9 +157,6 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
                 $fq_class_name,
                 new InterfaceChecker($stmt, $this, $fq_class_name)
             );
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-            // register the trait checker
-            new TraitChecker($stmt, $this, $fq_class_name);
         }
     }
 

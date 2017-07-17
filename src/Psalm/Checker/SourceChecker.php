@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Checker;
 
+use Psalm\Aliases;
 use Psalm\StatementsSource;
 
 abstract class SourceChecker implements StatementsSource
@@ -16,7 +17,7 @@ abstract class SourceChecker implements StatementsSource
     protected $file_checker;
 
     /**
-     * @return array<string, string>
+     * @return Aliases
      */
     public function getAliases()
     {

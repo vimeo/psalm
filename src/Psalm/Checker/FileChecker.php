@@ -209,14 +209,12 @@ class FileChecker extends SourceChecker implements StatementsSource
                     $fq_class_name = $class_checker->getFQCLN();
 
                     $this->interface_checkers_to_analyze[$fq_class_name] = $class_checker;
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-                    new TraitChecker($stmt, $this, $stmt->name);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
 
                 $namespace_checker = new NamespaceChecker($stmt, $this);
-                $namespace_checker->visit();
+                $namespace_checker->collectAnalyzableInformation();
 
                 $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliases()->uses;
                 $this->namespace_aliased_classes_flipped[$namespace_name] =
@@ -303,7 +301,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function addNamespacedClassChecker($fq_class_name, ClassChecker $class_checker)
     {
-        $this->class_checkers_to_analyze[] = $class_checker;
+        $this->class_checkers_to_analyze[$fq_class_name] = $class_checker;
     }
 
     /**
@@ -404,8 +402,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function containsUnEvaluatedClassLike($fq_class_name)
     {
-        return isset($this->interface_checkers_to_visit[$fq_class_name]) ||
-            isset($this->class_checkers_to_visit[$fq_class_name]);
+        return false;
     }
 
     /**
@@ -417,29 +414,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function evaluateClassLike($fq_class_name)
     {
-        if (isset($this->interface_checkers_to_visit[$fq_class_name])) {
-            $interface_checker = $this->interface_checkers_to_visit[$fq_class_name];
 
-            unset($this->interface_checkers_to_visit[$fq_class_name]);
-
-            if ($interface_checker->visit() === false) {
-                return false;
-            }
-
-            return;
-        }
-
-        if (isset($this->class_checkers_to_visit[$fq_class_name])) {
-            $class_checker = $this->class_checkers_to_visit[$fq_class_name];
-
-            unset($this->class_checkers_to_visit[$fq_class_name]);
-
-            if ($class_checker->visit(null, $this->context) === false) {
-                return false;
-            }
-
-            return;
-        }
     }
 
     /**
