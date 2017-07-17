@@ -13,6 +13,10 @@ class ClassChecker extends ClassLikeChecker
      */
     public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $fq_class_name)
     {
+        if (!$fq_class_name) {
+            $fq_class_name = self::getAnonymousClassName($class, $source->getFilePath());
+        }
+
         parent::__construct($class, $source, $fq_class_name);
 
         $fq_class_name_lower = strtolower($fq_class_name);
@@ -32,6 +36,16 @@ class ClassChecker extends ClassLikeChecker
                 $this->source->getAliases()
             );
         }
+    }
+
+    /**
+     * @param  PhpParser\Node\Stmt\Class_ $class
+     * @param  string                     $file_path
+     * @return string
+     */
+    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path)
+    {
+        return $file_path . ':' . $class->getLine();
     }
 
     /**

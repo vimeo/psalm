@@ -3,6 +3,7 @@ namespace Psalm\Visitor;
 
 use PhpParser;
 use Psalm\Aliases;
+use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\FileChecker;
@@ -123,7 +124,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($node->name === null) {
-                $fq_classlike_name = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
+                if (!$node instanceof PhpParser\Node\Stmt\Class_) {
+                    throw new \LogicException('Anonymous classes are always classes');
+                }
+
+                $fq_classlike_name = ClassChecker::getAnonymousClassName($node, $this->file_path);
                 $node->name = $fq_classlike_name;
             } else {
                 $fq_classlike_name = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name;
