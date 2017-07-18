@@ -863,6 +863,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         if ($property_group_type) {
             $property_group_type->queueClassLikesForScanning($this->project_checker);
+            $property_group_type->setFromDocblock();
         }
 
         foreach ($stmt->props as $property) {

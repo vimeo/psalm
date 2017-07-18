@@ -686,14 +686,58 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        foreach ($this->files_to_report as $file_path => $_) {
-            $file_checker = $this->getFile($file_path, $filetype_handlers, true);
+        $analysis_worker =
+            /**
+             * @param int $i
+             * @param string $file_path
+             *
+             * @return void
+             */
+            function ($i, $file_path) use ($filetype_handlers) {
+                $file_checker = $this->getFile($file_path, $filetype_handlers, true);
 
-            if ($this->debug_output) {
-                echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
+                if ($this->debug_output) {
+                    echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
+                }
+
+                $file_checker->analyze(null, $this->update_docblocks);
+            };
+
+        if (true) {
+            $process_file_paths = [];
+
+            $i = 0;
+
+            foreach ($this->files_to_report as $file_path) {
+                $process_file_paths[$i % 4][] = $file_path;
+                ++$i;
             }
 
-            $file_checker->analyze(null, $this->update_docblocks);
+            // Run analysis one file at a time, splitting the set of
+            // files up among a given number of child processes.
+            $pool = new \Psalm\Fork\Pool(
+                $process_file_paths,
+                /** @return void */
+                function () {
+                },
+                $analysis_worker,
+                /** @return void */
+                function () {
+                    // Return the collected issues to be serialized.
+                    //return self::getIssueCollector()->getCollectedIssues();
+                }
+            );
+
+            // Wait for all tasks to complete and collect the results.
+            var_dump($pool->wait());
+            $did_fork_pool_have_error = $pool->didHaveError();
+        } else {
+            $i = 0;
+
+            foreach ($this->files_to_report as $file_path => $_) {
+                $analysis_worker($i, $file_path);
+                ++$i;
+            }
         }
     }
 
