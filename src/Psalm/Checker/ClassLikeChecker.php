@@ -1647,7 +1647,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static function getClassesForFile($file_path)
     {
-        return isset(self::$file_classes[$file_path]) ? array_unique(self::$file_classes[$file_path]) : [];
+        return isset(FileChecker::$storage[$file_path]) ? array_unique(FileChecker::$storage[$file_path]->classes_in_file) : [];
     }
 
     /**

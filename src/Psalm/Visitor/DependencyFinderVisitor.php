@@ -137,6 +137,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $fq_classlike_name = ClassChecker::getAnonymousClassName($node, $this->file_path);
             } else {
                 $fq_classlike_name = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name;
+                FileChecker::$storage[$this->file_path]->classes_in_file[] = $fq_classlike_name;
             }
 
             $this->fq_classlike_name = $fq_classlike_name;
