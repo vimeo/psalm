@@ -269,8 +269,9 @@ class Pool
 
     /**
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
+     * @return  bool
      */
-    public function didHaveError() : bool
+    public function didHaveError()
     {
         return $this->did_have_error;
     }
