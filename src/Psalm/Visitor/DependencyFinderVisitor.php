@@ -261,12 +261,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
-                foreach ($catch->types as $catch_type) {
-                    $catch_fqcln = ClassLikeChecker::getFQCLNFromNameObject($catch_type, $this->aliases);
+                $catch_fqcln = ClassLikeChecker::getFQCLNFromNameObject($catch->type, $this->aliases);
 
-                    if (!in_array($catch_fqcln, ['self', 'static', 'parent'], true)) {
-                        $this->project_checker->queueClassLikeForScanning($catch_fqcln, $this->file_path);
-                    }
+                if (!in_array($catch_fqcln, ['self', 'static', 'parent'], true)) {
+                    $this->project_checker->queueClassLikeForScanning($catch_fqcln, $this->file_path);
                 }
             }
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
@@ -1056,13 +1054,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $existing_constants[$const->name] = $const_type;
 
-            if ($stmt->isProtected()) {
-                $storage->protected_class_constants[$const->name] = $const_type;
-            } elseif ($stmt->isPrivate()) {
-                $storage->private_class_constants[$const->name] = $const_type;
-            } else {
-                $storage->public_class_constants[$const->name] = $const_type;
-            }
+            $storage->public_class_constants[$const->name] = $const_type;
         }
     }
 
