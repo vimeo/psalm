@@ -703,13 +703,15 @@ class ProjectChecker
                 $file_checker->analyze(null, $this->update_docblocks);
             };
 
-        if (true) {
+        $pool_size = 4;
+
+        if (true && count($this->files_to_report) > $pool_size) {
             $process_file_paths = [];
 
             $i = 0;
 
             foreach ($this->files_to_report as $file_path) {
-                $process_file_paths[$i % 4][] = $file_path;
+                $process_file_paths[$i % $pool_size][] = $file_path;
                 ++$i;
             }
 
@@ -1053,19 +1055,16 @@ class ProjectChecker
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
         $this->files_to_deep_scan[$file_path] = $file_path;
+        $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_report[$file_path] = $file_path;
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileReferenceProvider::loadReferenceCache();
 
-        $file_checker = $this->scanFile($file_path, $filetype_handlers, true);
+        $this->scanFiles();
 
-        if ($this->debug_output) {
-            echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
-        }
-
-        $file_checker->analyze(null, $this->update_docblocks);
+        $this->analyzeFiles();
 
         IssueBuffer::finish(false, $start_checks, $this->scanned_files);
     }

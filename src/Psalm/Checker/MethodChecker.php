@@ -185,6 +185,14 @@ class MethodChecker extends FunctionLikeChecker
         $class_storage->appearing_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
         $class_storage->overridden_method_ids[$method_name] = [];
 
+        try {
+            $storage->return_type = FunctionChecker::getReturnTypeFromCallMap($method_id);
+            $storage->return_type->queueClassLikesForScanning($project_checker);
+        } catch (\InvalidArgumentException $e) {
+            // do nothing
+        }
+
+
         $storage->visibility = $method->isPrivate()
             ? ClassLikeChecker::VISIBILITY_PRIVATE
             : ($method->isProtected() ? ClassLikeChecker::VISIBILITY_PROTECTED : ClassLikeChecker::VISIBILITY_PUBLIC);
