@@ -83,16 +83,8 @@ class StatementsProvider
             self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
         }
 
-        $error_handler = new \PhpParser\ErrorHandler\Collecting();
-
         /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = self::$parser->parse($file_contents, $error_handler);
-
-        if (!$stmts && $error_handler->hasErrors()) {
-            foreach ($error_handler->getErrors() as $error) {
-                throw $error;
-            }
-        }
+        $stmts = $parser->parse($file_contents);
 
         return $stmts;
     }
