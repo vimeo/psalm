@@ -14,7 +14,7 @@ $options = getopt(
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
-        'find-dead-code', 'init', 'find-references-to:', 'root:',
+        'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:'
     ]
 );
 
@@ -298,11 +298,14 @@ $find_references_to = isset($options['find-references-to']) ? $options['find-ref
 
 $update_docblocks = isset($options['update-docblocks']);
 
+$threads = isset($options['threads']) ? (int)$options['threads'] : 1;
+
 $project_checker = new ProjectChecker(
     new Psalm\Provider\FileProvider(),
     $use_color,
     $show_info,
     $output_format,
+    $threads,
     $debug,
     $update_docblocks,
     $find_dead_code || $find_references_to !== null,

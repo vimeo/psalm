@@ -203,6 +203,9 @@ class ProjectChecker
      */
     public $server_mode = false;
 
+    /** @var int */
+    public $threads;
+
     /**
      * Whether to log functions just at the file level or globally (for stubs)
      *
@@ -228,6 +231,7 @@ class ProjectChecker
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
+        $threads = 1,
         $debug_output = false,
         $update_docblocks = false,
         $collect_references = false,
@@ -237,6 +241,7 @@ class ProjectChecker
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
+        $this->threads = $threads;
         $this->update_docblocks = $update_docblocks;
         $this->collect_references = $collect_references;
         $this->find_references_to = $find_references_to;
@@ -703,9 +708,9 @@ class ProjectChecker
                 $file_checker->analyze(null, $this->update_docblocks);
             };
 
-        $pool_size = 4;
+        $pool_size = $this->threads;
 
-        if (true && count($this->files_to_report) > $pool_size) {
+        if ($pool_size > 1 && count($this->files_to_report) > $pool_size) {
             $process_file_paths = [];
 
             $i = 0;
@@ -1243,7 +1248,9 @@ class ProjectChecker
             $file_checker = $this->getFileCheckerForClassLike($appearing_fq_class_name);
         }
 
-        $file_checker->analyze(null, false, true);
+        $stmts = $file_checker->getStatements();
+
+        $file_checker->populateCheckers($stmts);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
