@@ -3576,7 +3576,7 @@ return [
 'image_type_to_extension' => ['string', 'imagetype'=>'int', 'include_dot='=>'bool'],
 'image_type_to_mime_type' => ['string', 'imagetype'=>'int'],
 'imagewbmp' => ['bool', 'im'=>'', 'filename='=>'string|null', 'foreground='=>'int'],
-'imagewebp' => ['bool', 'im'=>'', 'filename'=>'string|null', 'quality'=>'int'],
+'imagewebp' => ['bool', 'im'=>'', 'filename'=>'string|null', 'quality='=>'int'],
 'imagexbm' => ['bool', 'im'=>'int', 'filename'=>'string|null', 'foreground='=>'int'],
 'Imagick::adaptiveBlurImage' => ['bool', 'radius'=>'float', 'sigma'=>'float', 'channel='=>'int'],
 'Imagick::adaptiveResizeImage' => ['bool', 'columns'=>'int', 'rows'=>'int', 'bestfit='=>'bool'],
