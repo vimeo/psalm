@@ -721,15 +721,24 @@ class ProjectChecker
                 function () {
                 },
                 $analysis_worker,
-                /** @return void */
+                /** @return array */
                 function () {
-                    // Return the collected issues to be serialized.
-                    //return self::getIssueCollector()->getCollectedIssues();
+                    return IssueBuffer::getIssuesData();
                 }
             );
 
             // Wait for all tasks to complete and collect the results.
-            var_dump($pool->wait());
+            /**
+             * @var array<array<int, array{severity: string, line_number: string, type: string, message: string,
+             *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
+             *  snippet_to: int, column: int}>>
+             */
+            $forked_issues_data = $pool->wait();
+
+            foreach ($forked_issues_data as $issues_data) {
+                IssueBuffer::addIssues($issues_data);
+            }
+
             $did_fork_pool_have_error = $pool->didHaveError();
         } else {
             $i = 0;

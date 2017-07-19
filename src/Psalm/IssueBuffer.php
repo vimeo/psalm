@@ -7,9 +7,15 @@ use Psalm\Issue\CodeIssue;
 class IssueBuffer
 {
     /**
+     * @var array<int, array{severity: string, line_number: string, type: string, message: string, file_name: string,
+     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column: int}>
+     */
+    protected static $issues_data = [];
+
+    /**
      * @var array<int, array>
      */
-    protected static $issue_data = [];
+    protected static $console_issues = [];
 
     /**
      * @var int
@@ -87,19 +93,7 @@ class IssueBuffer
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($project_checker->show_info && !self::alreadyEmitted($error_message)) {
-                switch ($project_checker->output_format) {
-                    case ProjectChecker::TYPE_CONSOLE:
-                        echo 'INFO: ' . $error_message . PHP_EOL;
-                        break;
-
-                    case ProjectChecker::TYPE_JSON:
-                        self::$issue_data[] = self::getIssueArray($e, Config::REPORT_INFO);
-                        break;
-
-                    case ProjectChecker::TYPE_EMACS:
-                        echo self::getEmacsOutput($e, Config::REPORT_INFO) . PHP_EOL;
-                        break;
-                }
+                self::$issues_data[] = $e->toArray(Config::REPORT_INFO);
             }
 
             return false;
@@ -110,24 +104,7 @@ class IssueBuffer
         }
 
         if (!self::alreadyEmitted($error_message)) {
-            switch ($project_checker->output_format) {
-                case ProjectChecker::TYPE_CONSOLE:
-                    $error_maybe_with_color = ($project_checker->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
-                    echo $error_maybe_with_color . ': ' . $error_message . PHP_EOL;
-
-                    echo self::getSnippet($e, $project_checker->use_color) . PHP_EOL . PHP_EOL;
-                    ++self::$error_count;
-
-                    break;
-
-                case ProjectChecker::TYPE_JSON:
-                    self::$issue_data[] = self::getIssueArray($e);
-                    break;
-
-                case ProjectChecker::TYPE_EMACS:
-                    echo self::getEmacsOutput($e) . PHP_EOL;
-                    break;
-            }
+            self::$issues_data[] = $e->toArray(Config::REPORT_ERROR);
         }
 
         if ($config->stop_on_first_error) {
@@ -138,75 +115,73 @@ class IssueBuffer
     }
 
     /**
-     * @param  CodeIssue $e
-     * @param  string          $severity
-     *
-     * @return array
-     */
-    protected static function getIssueArray(CodeIssue $e, $severity = Config::REPORT_ERROR)
-    {
-        $location = $e->getLocation();
-        $selection_bounds = $location->getSelectionBounds();
-
-        return [
-            'type' => $severity,
-            'line_number' => $location->getLineNumber(),
-            'message' => $e->getMessage(),
-            'file_name' => $location->file_name,
-            'file_path' => $location->file_path,
-            'snippet' => $location->getSnippet(),
-            'from' => $selection_bounds[0],
-            'to' => $selection_bounds[1],
-        ];
-    }
-
-    /**
-     * @param  CodeIssue $e
-     * @param  string          $severity
+     * @param  array{severity: string, line_number: string, type: string, message: string, file_name: string,
+     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
+     *  column: int} $issue_data
      *
      * @return string
      */
-    protected static function getEmacsOutput(CodeIssue $e, $severity = Config::REPORT_ERROR)
+    protected static function getEmacsOutput(array $issue_data)
     {
-        $location = $e->getLocation();
-
-        return $location->file_path . ':' . $location->getLineNumber() . ':' . $location->getColumn() . ': ' .
-            ($severity === Config::REPORT_ERROR ? 'error' : 'warning') . ' - ' . $e->getMessage();
+        return $issue_data['file_path'] . ':' . $issue_data['line_number'] . ':' . $issue_data['column'] . ':' .
+            ($issue_data['severity'] === Config::REPORT_ERROR ? 'error' : 'warning') . ' - ' . $issue_data['message'];
     }
 
     /**
-     * @return array<int, array>
-     */
-    public static function getIssueData()
-    {
-        return self::$issue_data;
-    }
-
-    /**
-     * @param  CodeIssue $e
-     * @param  bool         $use_color
+     * @param  array{severity: string, line_number: string, type: string, message: string, file_name: string,
+     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
+     *  column: int} $issue_data
+     * @param  bool  $use_color
      *
      * @return string
      */
-    protected static function getSnippet(CodeIssue $e, $use_color = true)
+    protected static function getConsoleOutput(array $issue_data, $use_color)
     {
-        $location = $e->getLocation();
+        $issue_string = '';
 
-        $snippet = $location->getSnippet();
-
-        if (!$use_color) {
-            return $snippet;
+        if ($issue_data['severity'] === Config::REPORT_ERROR) {
+            $issue_string .= ($use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
+        } else {
+            $issue_string .= 'INFO';
         }
 
-        $snippet_bounds = $location->getSnippetBounds();
-        $selection_bounds = $location->getSelectionBounds();
+        $issue_string .= ': ' . $issue_data['type'] . ' - ' . $issue_data['file_name'] . ':' .
+            $issue_data['line_number'] . ':' . $issue_data['column'] . ' - ' . $issue_data['message'] . PHP_EOL;
 
-        $selection_start = $selection_bounds[0] - $snippet_bounds[0];
-        $selection_length = $selection_bounds[1] - $selection_bounds[0];
+        $snippet = $issue_data['snippet'];
 
-        return substr($snippet, 0, $selection_start) .
-            "\e[97;41m" . substr($snippet, $selection_start, $selection_length) .
-            "\e[0m" . substr($snippet, $selection_length + $selection_start) . PHP_EOL;
+        if (!$use_color) {
+            $issue_string .= $snippet;
+        } else {
+            $selection_start = $issue_data['from'] - $issue_data['snippet_from'];
+            $selection_length = $issue_data['to'] - $issue_data['from'];
+
+            $issue_string .= substr($snippet, 0, $selection_start) .
+                "\e[97;41m" . substr($snippet, $selection_start, $selection_length) .
+                "\e[0m" . substr($snippet, $selection_length + $selection_start) . PHP_EOL;
+        }
+
+        return $issue_string;
+    }
+
+    /**
+     * @return array<int, array{severity: string, line_number: string, type: string, message: string, file_name: string,
+     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column: int}>
+     */
+    public static function getIssuesData()
+    {
+        return self::$issues_data;
+    }
+
+    /**
+     * @param array<int, array{severity: string, line_number: string, type: string, message: string,
+     *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
+     *  snippet_to: int, column: int}> $issues_data
+     * @return void
+     */
+    public static function addIssues(array $issues_data)
+    {
+        self::$issues_data += $issues_data;
     }
 
     /**
@@ -220,17 +195,38 @@ class IssueBuffer
     {
         Provider\FileReferenceProvider::updateReferenceCache($visited_files);
 
+        $has_error = false;
+
+        if (self::$issues_data) {
+            $project_checker = ProjectChecker::getInstance();
+
+            if ($project_checker->output_format === ProjectChecker::TYPE_JSON) {
+                echo json_encode(self::$issues_data) . PHP_EOL;
+            } elseif ($project_checker->output_format === ProjectChecker::TYPE_EMACS) {
+                foreach (self::$issues_data as $issue_data) {
+                    if ($issue_data['severity'] === Config::REPORT_ERROR) {
+                        $has_error = true;
+                    }
+
+                    echo self::getEmacsOutput($issue_data) . PHP_EOL;
+                }
+            } else {
+                foreach (self::$issues_data as $issue_data) {
+                    if ($issue_data['severity'] === Config::REPORT_ERROR) {
+                        $has_error = true;
+                    }
+
+                    echo self::getConsoleOutput($issue_data, $project_checker->use_color) . PHP_EOL . PHP_EOL;
+                }
+            }
+        }
+
         if ($start_time) {
             echo 'Checks took ' . ((float)microtime(true) - self::$start_time);
             echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB' . PHP_EOL;
         }
 
-        if (self::$error_count) {
-            $project_checker = ProjectChecker::getInstance();
-            if ($project_checker->output_format === ProjectChecker::TYPE_JSON) {
-                echo json_encode(self::$issue_data) . PHP_EOL;
-            }
-
+        if ($has_error) {
             exit(1);
         }
 
@@ -272,11 +268,12 @@ class IssueBuffer
      */
     public static function clearCache()
     {
-        self::$issue_data = [];
+        self::$issues_data = [];
         self::$emitted = [];
         self::$error_count = 0;
         self::$recording_level = 0;
         self::$recorded_issues = [];
+        self::$console_issues = [];
     }
 
     /**

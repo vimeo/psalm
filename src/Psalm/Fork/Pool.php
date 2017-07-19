@@ -224,6 +224,7 @@ class Pool
                  * @return array
                  */
                 function ($data) {
+                    /** @var array */
                     $result = unserialize($data);
                     if (!\is_array($result)) {
                         error_log("Child terminated without returning a serialized array (threw or crashed - not enough memory?): response type=" . gettype($result));
