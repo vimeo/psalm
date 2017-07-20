@@ -522,6 +522,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 FunctionLikeChecker::RETURN_TYPE_REGEX
             );
 
+            $storage->return_type->queueClassLikesForScanning($this->project_checker);
+
             $storage->signature_return_type = $storage->return_type;
             $storage->signature_return_type_location = $storage->return_type_location;
         }
@@ -624,6 +626,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     try {
                         $storage->return_type = Type::parseString($fixed_type_string);
                         $storage->return_type->setFromDocblock();
+                        $storage->return_type->queueClassLikesForScanning($this->project_checker);
                     } catch (\Psalm\Exception\TypeParseTreeException $e) {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(
