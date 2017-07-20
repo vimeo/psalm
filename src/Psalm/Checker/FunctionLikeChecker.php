@@ -329,6 +329,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         foreach ($storage->params as $offset => $function_param) {
+            $signature_type = $function_param->signature_type;
             $param_type = clone $function_param->type;
 
             $param_type = ExpressionChecker::fleshOutTypes(
@@ -345,6 +346,28 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             $parser_param = $this->function->getParams()[$offset];
+
+            if ($signature_type) {
+                if (!TypeChecker::isContainedBy(
+                    $param_type,
+                    $signature_type,
+                    $statements_checker->getFileChecker()
+                )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Parameter $' . $function_param->name . ' has wrong type \'' . $param_type .
+                                '\', should be \'' . $signature_type . '\'',
+                            $function_param->location
+                        ),
+                        $storage->suppressed_issues
+                    )) {
+                        return false;
+                    }
+
+                    continue;
+                }
+            }
 
             if ($parser_param->default) {
                 $default_type = StatementsChecker::getSimpleType($parser_param->default);
@@ -409,6 +432,26 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 '$' . $function_param->name,
                 $function_param->location
             );
+        }
+
+        if ($storage->return_type && $storage->signature_return_type && $storage->return_type_location) {
+            if (!TypeChecker::isContainedBy(
+                $storage->return_type,
+                $storage->signature_return_type,
+                $statements_checker->getFileChecker()
+            )
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Return type has wrong type \'' . $storage->return_type .
+                            '\', should be \'' . $storage->signature_return_type . '\'',
+                        $storage->return_type_location
+                    ),
+                    $storage->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
         }
 
         $statements_checker->analyze($function_stmts, $context, null, $global_context);

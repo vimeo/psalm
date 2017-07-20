@@ -176,6 +176,17 @@ class AnnotationTest extends TestCase
                     function fooFoo(array $bar) : void {
                     }',
             ],
+            'differentDocblockParamClassSuppress' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param B $bar
+                     * @psalm-suppress InvalidDocblock
+                     */
+                    function fooFoo(A $bar) : void {
+                    }',
+            ],
         ];
     }
 
@@ -329,7 +340,8 @@ class AnnotationTest extends TestCase
                     /**
                      * @return string
                      */
-                    function fooFoo() : void {
+                    function fooFoo() : int {
+                        return 5;
                     }',
                 'error_message' => 'InvalidDocblock',
             ],

@@ -16,7 +16,7 @@ class TraitChecker extends ClassLikeChecker
     private $method_map = [];
 
     /**
-     * @param   PhpParser\Node\Stmt\ClassLike   $class
+     * @param  PhpParser\Node\Stmt\Trait_       $class
      * @param   StatementsSource                $source
      * @param   string                          $fq_class_name
      */

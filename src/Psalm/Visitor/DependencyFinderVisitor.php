@@ -831,6 +831,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if ((string)$storage_param->type !== (string)$new_param_type) {
                 $storage_param->type = $new_param_type;
+                $storage_param->location = $code_location;
             }
         }
     }

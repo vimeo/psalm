@@ -7,7 +7,7 @@ use Psalm\StatementsSource;
 class InterfaceChecker extends ClassLikeChecker
 {
     /**
-     * @param PhpParser\Node\Stmt\ClassLike  $interface
+     * @param PhpParser\Node\Stmt\Interface_ $interface
      * @param StatementsSource               $source
      * @param string                         $fq_interface_name
      */
