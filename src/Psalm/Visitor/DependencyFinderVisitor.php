@@ -63,6 +63,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var Config */
     protected $config;
 
+    /** @var bool */
+    protected $queue_strings_as_possible_type = false;
+
     /** @var int */
     protected static $anonymous_class_count = 0;
 
@@ -277,6 +280,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $return_type = FunctionChecker::getReturnTypeFromCallMap($function_id);
 
                 $return_type->queueClassLikesForScanning($this->project_checker);
+
+                if ($function_id === 'get_class') {
+                    $this->queue_strings_as_possible_type = true;
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if (!$this->fq_classlike_name) {
@@ -308,6 +315,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $this->visitClassConstDeclaration($node);
         } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
             $this->visitInclude($node);
+        } elseif ($node instanceof PhpParser\Node\Scalar\String_ && $this->queue_strings_as_possible_type) {
+            if (preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $node->value)) {
+                $this->project_checker->queueClassLikeForScanning($node->value);
+            }
         }
     }
 
@@ -347,6 +358,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             $this->fq_classlike_name = null;
+        } elseif ($node instanceof PhpParser\Node\Stmt\Function_
+            || $node instanceof PhpParser\Node\Stmt\ClassMethod
+        ) {
+            $this->queue_strings_as_possible_type = false;
         }
     }
 

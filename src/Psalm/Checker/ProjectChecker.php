@@ -222,6 +222,7 @@ class ProjectChecker
      * @param bool $show_info
      * @param bool $debug_output
      * @param string  $output_format
+     * @param int     $threads
      * @param bool    $update_docblocks
      * @param bool    $collect_references
      * @param string  $find_references_to
