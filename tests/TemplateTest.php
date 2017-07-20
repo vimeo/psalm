@@ -235,6 +235,8 @@ class TemplateTest extends TestCase
             ],
             'validTemplatedType' => [
                 '<?php
+                    namespace FooFoo;
+
                     /**
                      * @template T
                      * @param T $x
@@ -250,6 +252,8 @@ class TemplateTest extends TestCase
             ],
             'validTemplatedStaticMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T
@@ -267,6 +271,8 @@ class TemplateTest extends TestCase
             ],
             'validTemplatedInstanceMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T
@@ -294,7 +300,7 @@ class TemplateTest extends TestCase
                         return array_keys($arr);
                     }
 
-                    $a = my_array_keys(["hello" => 5, "goodbye" => new Exception()]);',
+                    $a = my_array_keys(["hello" => 5, "goodbye" => new \Exception()]);',
                 'assertions' => [
                     '$a' => 'array<int, string>',
                 ],
@@ -328,6 +334,8 @@ class TemplateTest extends TestCase
         return [
             'invalidTemplatedType' => [
                 '<?php
+                    namespace FooFoo;
+
                     /**
                      * @template T
                      * @param T $x
@@ -344,6 +352,8 @@ class TemplateTest extends TestCase
             ],
             'invalidTemplatedStaticMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T
@@ -362,6 +372,8 @@ class TemplateTest extends TestCase
             ],
             'invalidTemplatedInstanceMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T

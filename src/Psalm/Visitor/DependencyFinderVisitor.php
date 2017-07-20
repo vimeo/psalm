@@ -66,8 +66,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var bool */
     protected $queue_strings_as_possible_type = false;
 
-    /** @var int */
-    protected static $anonymous_class_count = 0;
+    /** @var array<string, bool> */
+    protected $class_template_types = [];
+
+    /** @var array<string, bool> */
+    protected $function_template_types = [];
 
     /**
      * @param ProjectChecker $project_checker
@@ -188,6 +191,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                                 $storage->template_types[$template_type[0]] = 'mixed';
                             }
                         }
+
+                        $this->class_template_types = $storage->template_types;
                     }
 
                     if ($docblock_info->properties) {
@@ -358,10 +363,13 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             $this->fq_classlike_name = null;
+            $this->class_template_types = [];
         } elseif ($node instanceof PhpParser\Node\Stmt\Function_
             || $node instanceof PhpParser\Node\Stmt\ClassMethod
         ) {
             $this->queue_strings_as_possible_type = false;
+
+            $this->function_template_types = [];
         }
     }
 
@@ -603,6 +611,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             $template_types = array_merge($template_types ?: [], $storage->template_types);
+
+            $this->function_template_types = $template_types;
         }
 
         if ($docblock_info->template_typeofs) {
@@ -636,7 +646,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 if ($docblock_return_type) {
-                    $fixed_type_string = FunctionLikeChecker::fixUpLocalType($docblock_return_type, $this->aliases);
+                    $fixed_type_string = FunctionLikeChecker::fixUpLocalType(
+                        $docblock_return_type,
+                        $this->aliases,
+                        $this->function_template_types + $this->class_template_types
+                    );
 
                     try {
                         $storage->return_type = Type::parseString($fixed_type_string);
@@ -807,7 +821,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $docblock_param_vars[$param_name] = true;
 
             $new_param_type = Type::parseString(
-                FunctionLikeChecker::fixUpLocalType($docblock_param['type'], $this->aliases)
+                FunctionLikeChecker::fixUpLocalType(
+                    $docblock_param['type'],
+                    $this->aliases,
+                    $this->function_template_types + $this->class_template_types
+                )
             );
 
             $new_param_type->queueClassLikesForScanning($this->project_checker, $storage->template_types ?: []);
@@ -864,7 +882,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     null,
                     $this->file_checker,
                     $this->aliases,
-                    [],
+                    $this->function_template_types + $this->class_template_types,
                     $property_type_line_number
                 );
             } catch (DocblockParseException $e) {
