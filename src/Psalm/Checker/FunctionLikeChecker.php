@@ -291,11 +291,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         } elseif ($this->function instanceof Function_) {
-            $storage = FileChecker::$storage[$this->source->getFilePath()]->functions[(string)$this->getMethodId()];
+            $storage = FileChecker::$storage[strtolower($this->source->getFilePath())]->functions[(string)$this->getMethodId()];
 
             $cased_method_id = $this->function->name;
         } else { // Closure
-            $file_storage = FileChecker::$storage[$this->source->getFilePath()];
+            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
 
             $function_id = $cased_function_id = $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
 

@@ -124,8 +124,9 @@ class FileChecker extends SourceChecker implements StatementsSource
         $this->project_checker = $project_checker;
         $this->will_analyze = $will_analyze;
 
-        if (!isset(self::$storage[$file_path])) {
-            self::$storage[$file_path] = new FileStorage();
+        if (!isset(self::$storage[strtolower($file_path)])) {
+            self::$storage[strtolower($file_path)] = new FileStorage();
+            self::$storage[strtolower($file_path)]->file_path = $file_path;
         }
     }
 

@@ -143,7 +143,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $fq_classlike_name = ClassChecker::getAnonymousClassName($node, $this->file_path);
             } else {
                 $fq_classlike_name = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name;
-                FileChecker::$storage[$this->file_path]->classes_in_file[] = $fq_classlike_name;
+                FileChecker::$storage[strtolower($this->file_path)]->classes_in_file[] = $fq_classlike_name;
             }
 
             $this->fq_classlike_name = $fq_classlike_name;
@@ -391,13 +391,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($project_checker->register_global_functions) {
                 $storage = FunctionChecker::$stubbed_functions[$function_id] = new FunctionLikeStorage();
             } else {
-                $file_storage = FileChecker::$storage[$this->file_path];
+                $file_storage = FileChecker::$storage[strtolower($this->file_path)];
 
                 if (isset($file_storage->functions[$function_id])) {
                     return;
                 }
 
                 $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
+                $file_storage->declaring_function_ids[$function_id] = strtolower($this->file_path);
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             if (!$this->fq_classlike_name) {
@@ -455,7 +456,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $storage->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
             }
         } else {
-            $file_storage = FileChecker::$storage[$this->file_path];
+            $file_storage = FileChecker::$storage[strtolower($this->file_path)];
 
             $function_id = $cased_function_id = $this->file_path . ':' . $stmt->getLine() . ':' . 'closure';
 
@@ -1039,6 +1040,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if ($this->project_checker->fileExists($path_to_file)) {
                 $this->project_checker->queueFileForScanning($path_to_file);
+
+                $file_storage = FileChecker::$storage[strtolower($this->file_path)];
+                $file_storage->included_file_paths[strtolower($path_to_file)] = $path_to_file;
 
                 return null;
             }

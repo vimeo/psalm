@@ -14,6 +14,7 @@ use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FileStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use RecursiveDirectoryIterator;
@@ -441,6 +442,18 @@ class ProjectChecker
         if ($this->debug_output) {
             echo 'ClassLikeStorage is populated' . PHP_EOL;
         }
+
+        if ($this->debug_output) {
+            echo 'FileStorage is populating' . PHP_EOL;
+        }
+
+        foreach (FileChecker::$storage as $storage) {
+            $this->populateFileStorage($storage);
+        }
+
+        if ($this->debug_output) {
+            echo 'FileStorage is populated' . PHP_EOL;
+        }
     }
 
     /**
@@ -549,6 +562,40 @@ class ProjectChecker
 
             $this->inheritMethodsFromParent($storage, $trait_storage);
             $this->inheritPropertiesFromParent($storage, $trait_storage);
+        }
+
+        $storage->populated = true;
+    }
+
+    /**
+     * @param  FileStorage $storage
+     * @param  array<string, true> $dependent_file_paths
+     * @return void
+     */
+    private function populateFileStorage(FileStorage $storage, array $dependent_file_paths = [])
+    {
+        if ($storage->populated) {
+            return;
+        }
+
+        if (isset($dependent_file_paths[strtolower($storage->file_path)])) {
+            return;
+        }
+
+        $dependent_file_paths[strtolower($storage->file_path)] = true;
+
+        foreach ($storage->included_file_paths as $included_file_path => $_) {
+            if (!isset(FileChecker::$storage[$included_file_path])) {
+                continue;
+            }
+
+            $included_file_storage = FileChecker::$storage[$included_file_path];
+            $this->populateFileStorage($included_file_storage, $dependent_file_paths);
+
+            $storage->declaring_function_ids = array_merge(
+                $included_file_storage->declaring_function_ids,
+                $storage->declaring_function_ids
+            );
         }
 
         $storage->populated = true;
