@@ -338,9 +338,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     null
                 );
 
-                $var_type = Type::parseString($var_comment->type);
+                if ($var_comment) {
+                    $var_type = Type::parseString($var_comment->type);
 
-                $var_type->queueClassLikesForScanning($this->project_checker);
+                    $var_type->queueClassLikesForScanning($this->project_checker);
+                }
             }
 
         }
