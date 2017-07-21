@@ -953,8 +953,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if (($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name, $file_checker)) ||
             ($interface_exists && !InterfaceChecker::hasCorrectCasing($fq_class_name, $file_checker))
         ) {
-            $file_checker->evaluateClassLike($fq_class_name);
-
             if (ClassLikeChecker::isUserDefined($fq_class_name)) {
                 if (IssueBuffer::accepts(
                     new InvalidClass(

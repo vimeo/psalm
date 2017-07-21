@@ -1569,9 +1569,23 @@ class ProjectChecker
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_classes_lc[$fq_class_name_lc]) ||
-            !$this->existing_classes_lc[$fq_class_name_lc]
+        if (!isset($this->existing_classes_lc[$fq_class_name_lc])
+            || !$this->existing_classes_lc[$fq_class_name_lc]
+            || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
         ) {
+            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lc])) {
+                // attempt to load in the class
+                $this->queueClassLikeForScanning($fq_class_name);
+                $this->scanFiles();
+
+                if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
+                    $this->existing_classes_lc[$fq_class_name_lc] = false;
+                    return false;
+                } else {
+                    return $this->existing_classes_lc[$fq_class_name_lc];
+                }
+            }
+
             return false;
         }
 
@@ -1595,9 +1609,23 @@ class ProjectChecker
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_interfaces_lc[$fq_class_name_lc]) ||
-            !$this->existing_interfaces_lc[$fq_class_name_lc]
+        if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
+            || !$this->existing_interfaces_lc[$fq_class_name_lc]
+            || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
         ) {
+            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lc])) {
+                // attempt to load in the class
+                $this->queueClassLikeForScanning($fq_class_name);
+                $this->scanFiles();
+
+                if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
+                    $this->existing_interfaces_lc[$fq_class_name_lc] = false;
+                    return false;
+                } else {
+                    return $this->existing_interfaces_lc[$fq_class_name_lc];
+                }
+            }
+
             return false;
         }
 

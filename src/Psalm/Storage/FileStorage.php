@@ -8,6 +8,7 @@ class FileStorage
      */
     public $classes_in_file = [];
 
+    /** @var string */
     public $file_path;
 
     /**

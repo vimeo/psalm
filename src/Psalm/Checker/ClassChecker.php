@@ -19,13 +19,6 @@ class ClassChecker extends ClassLikeChecker
 
         parent::__construct($class, $source, $fq_class_name);
 
-        $fq_class_name_lower = strtolower($fq_class_name);
-
-        $storage = self::$storage[$fq_class_name_lower];
-
-        $project_checker = $source->getFileChecker()->project_checker;
-        $project_checker->addFullyQualifiedClassName($fq_class_name, $source->getFilePath());
-
         if (!$this->class instanceof PhpParser\Node\Stmt\Class_) {
             throw new \InvalidArgumentException('Bad');
         }

@@ -70,6 +70,45 @@ class TemplateTest extends TestCase
                     '$dfoo' => 'Foo<mixed>',
                 ],
             ],
+            'classTemplateExternalClasses' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    class Foo {
+                        /** @var string */
+                        public $T;
+
+                        /**
+                         * @param string $T
+                         * @template-typeof T $T
+                         */
+                        public function __construct(string $T) {
+                            $this->T = $T;
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function bar() {
+                            $t = $this->T;
+                            return new $t();
+                        }
+                    }
+
+                    $efoo = new Foo(Exception::class)
+                    $efoo_bar = $efoo->bar();
+
+                    $ffoo = new Foo("LogicException");
+                    $ffoo_bar = $ffoo->bar();',
+                'assertions' => [
+                    '$efoo' => 'Foo<Exception>',
+                    '$efoo_bar' => 'Exception',
+
+                    '$ffoo' => 'Foo<LogicException>',
+                    '$ffoo_bar' => 'LogicException',
+                ],
+            ],
             'classTemplateContainer' => [
                 '<?php
                     class A {}

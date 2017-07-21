@@ -66,10 +66,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var bool */
     protected $queue_strings_as_possible_type = false;
 
-    /** @var array<string, bool> */
+    /** @var array<string, string> */
     protected $class_template_types = [];
 
-    /** @var array<string, bool> */
+    /** @var array<string, string> */
     protected $function_template_types = [];
 
     /**
@@ -330,7 +330,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         ) {
             if ($doc_comment = $node->getDocComment()) {
                 $var_comment = CommentChecker::getTypeFromComment(
-                    $doc_comment,
+                    (string)$doc_comment,
                     null,
                     $this->file_checker,
                     $this->aliases,
