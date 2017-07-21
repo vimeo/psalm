@@ -181,7 +181,7 @@ class IssueBuffer
      */
     public static function addIssues(array $issues_data)
     {
-        self::$issues_data += $issues_data;
+        self::$issues_data = array_merge($issues_data, self::$issues_data);
     }
 
     /**
