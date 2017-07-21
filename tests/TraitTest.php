@@ -69,6 +69,7 @@ class TraitTest extends TestCase
 
                         public function doFoo() : void {
                             echo $this->fooFoo;
+                            $this->fooFoo = "hello";
                         }
                     }',
             ],
@@ -84,6 +85,7 @@ class TraitTest extends TestCase
 
                         public function doFoo() : void {
                             echo $this->fooFoo;
+                            $this->fooFoo = "hello";
                         }
                     }',
             ],
@@ -99,6 +101,7 @@ class TraitTest extends TestCase
 
                         public function doFoo() : void {
                             echo $this->fooFoo;
+                            $this->fooFoo = "hello";
                         }
                     }',
             ],

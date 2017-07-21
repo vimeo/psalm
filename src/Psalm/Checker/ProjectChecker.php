@@ -680,7 +680,10 @@ class ProjectChecker
                 continue;
             }
 
-            $storage->appearing_property_ids[$property_name] = $appearing_property_id;
+            $implemented_property_id = $storage->name . '::$' . $property_name;
+
+            $storage->appearing_property_ids[$property_name] =
+                $parent_storage->is_trait ? $implemented_property_id : $appearing_property_id;
         }
 
         // register where they're declared
