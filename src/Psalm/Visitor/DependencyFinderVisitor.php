@@ -894,7 +894,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $improved_atomic_types['null'] = new Type\Atomic\TNull();
             }
 
-            $storage_param->type = new Type\Union($improved_atomic_types);
+            $storage_param->type = new Type\Union(array_values($improved_atomic_types));
             $storage_param->type->setFromDocblock();
             $storage_param->location = $code_location;
         }

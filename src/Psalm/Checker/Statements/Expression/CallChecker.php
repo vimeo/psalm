@@ -299,21 +299,19 @@ class CallChecker
                 }
             }
 
-            if ($function_params) {
-                // do this here to allow closure param checks
-                if (self::checkFunctionArgumentsMatch(
-                    $statements_checker,
-                    $stmt->args,
-                    $method_id,
-                    $function_params,
-                    $function_storage,
-                    null,
-                    $generic_params,
-                    $code_location,
-                    $context->check_variables
-                ) === false) {
-                    // fall through
-                }
+            // do this here to allow closure param checks
+            if (self::checkFunctionArgumentsMatch(
+                $statements_checker,
+                $stmt->args,
+                $method_id,
+                $function_params ?: [],
+                $function_storage,
+                null,
+                $generic_params,
+                $code_location,
+                $context->check_variables
+            ) === false) {
+                // fall through
             }
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {

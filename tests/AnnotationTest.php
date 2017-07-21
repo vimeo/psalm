@@ -304,34 +304,16 @@ class AnnotationTest extends TestCase
                     $a->foo = 5;',
                 'error_message' => 'DeprecatedProperty',
             ],
-            'invalidDocblockParam' => [
-                '<?php
-                    /**
-                     * @param int $bar
-                     */
-                    function fooFoo(array $bar) : void {
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
-            'extraneousDocblockParam' => [
-                '<?php
-                    /**
-                     * @param int $bar
-                     */
-                    function fooBar() : void {
-                    }',
-                'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
-                    'argument list for fooBar',
-            ],
             'missingParamType' => [
                 '<?php
                     /**
-                     * @param $bar
+                     * @param string $bar
                      */
                     function fooBar() : void {
-                    }',
-                'error_message' => 'InvalidDocblock - somefile.php:3 - Parameter $bar does not appear in the ' .
-                    'argument list for fooBar',
+                    }
+
+                    fooBar("hello");',
+                'error_message' => 'TooManyArguments',
             ],
             'missingParamVar' => [
                 '<?php
