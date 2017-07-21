@@ -324,6 +324,25 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if (preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $node->value)) {
                 $this->project_checker->queueClassLikeForScanning($node->value);
             }
+        } elseif ($node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\AssignRef
+        ) {
+            if ($doc_comment = $node->getDocComment()) {
+                $var_comment = CommentChecker::getTypeFromComment(
+                    $doc_comment,
+                    null,
+                    $this->file_checker,
+                    $this->aliases,
+                    null,
+                    null
+                );
+
+                $var_type = Type::parseString($var_comment->type);
+
+                $var_type->queueClassLikesForScanning($this->project_checker);
+            }
+
         }
     }
 

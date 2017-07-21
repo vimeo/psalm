@@ -187,6 +187,13 @@ class AnnotationTest extends TestCase
                     function fooFoo(A $bar) : void {
                     }',
             ],
+            'varDocblock' => [
+                '<?php
+                    /** @var array<Exception> */
+                    $a = [];
+
+                    $a[0]->getMessage();',
+            ],
         ];
     }
 
