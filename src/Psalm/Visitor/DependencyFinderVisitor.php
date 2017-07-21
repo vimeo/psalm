@@ -861,9 +861,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 ]);
             }
 
+            $existing_param_type_nullable = $storage_param->is_nullable;
+
             $new_param_type->setFromDocblock();
 
             if ($storage_param->type->isMixed() || $storage->template_types) {
+                if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
+                    $new_param_type->types['null'] = new Type\Atomic\TNull();
+                }
+
                 $storage_param->type = $new_param_type;
                 $storage_param->location = $code_location;
                 continue;
@@ -882,6 +888,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 $improved_atomic_types[$key] = clone $new_param_type->types[$key];
+            }
+
+            if ($existing_param_type_nullable && !isset($improved_atomic_types['null'])) {
+                $improved_atomic_types['null'] = new Type\Atomic\TNull();
             }
 
             $storage_param->type = new Type\Union($improved_atomic_types);
