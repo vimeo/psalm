@@ -863,16 +863,30 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $new_param_type->setFromDocblock();
 
-            $existing_param_type_nullable = $storage_param->is_nullable;
-
-            if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->types['null'] = new Type\Atomic\TNull();
-            }
-
-            if ((string)$storage_param->type !== (string)$new_param_type) {
+            if ($storage_param->type->isMixed() || $storage->template_types) {
                 $storage_param->type = $new_param_type;
                 $storage_param->location = $code_location;
+                continue;
             }
+
+            if ((string)$storage_param->type === (string)$new_param_type) {
+                continue;
+            }
+
+            $improved_atomic_types = [];
+
+            foreach ($storage_param->type->types as $key => $atomic_type) {
+                if (!isset($new_param_type->types[$key])) {
+                    $improved_atomic_types[$key] = clone $atomic_type;
+                    continue;
+                }
+
+                $improved_atomic_types[$key] = clone $new_param_type->types[$key];
+            }
+
+            $storage_param->type = new Type\Union($improved_atomic_types);
+            $storage_param->type->setFromDocblock();
+            $storage_param->location = $code_location;
         }
     }
 
