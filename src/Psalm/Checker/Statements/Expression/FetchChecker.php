@@ -544,6 +544,8 @@ class FetchChecker
             return null;
         }
 
+        $stmt->inferredType = Type::getMixed();
+
         if ($stmt->class instanceof PhpParser\Node\Expr) {
             if (ExpressionChecker::analyze($statements_checker, $stmt->class, $context) === false) {
                 return false;
