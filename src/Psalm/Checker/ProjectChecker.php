@@ -391,12 +391,15 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
+        $has_changes = false;
+
         while ($this->files_to_scan || $this->classes_to_scan) {
             if ($this->files_to_scan) {
                 $file_path = array_shift($this->files_to_scan);
 
                 if (!isset($this->scanned_files[$file_path])) {
                     $this->scanFile($file_path, $filetype_handlers, isset($this->files_to_deep_scan[$file_path]));
+                    $has_changes = true;
                 }
             } else {
                 $fq_classlike_name = array_shift($this->classes_to_scan);
@@ -406,8 +409,16 @@ class ProjectChecker
                     continue;
                 }
 
+                if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
+                        && $this->existing_classlikes_lc[$fq_classlike_name_lc] === false
+                ) {
+                    continue;
+                }
+
                 if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
-                    if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])) {
+                    if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
+                        && $this->existing_classlikes_lc[$fq_classlike_name_lc]
+                    ) {
                         $reflected_class = new \ReflectionClass($fq_classlike_name);
                         ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
                         $this->reflected_classeslikes_lc[$fq_classlike_name_lc] = true;
@@ -419,12 +430,16 @@ class ProjectChecker
                                 unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
                                 $this->files_to_deep_scan[$file_path] = $file_path;
                             }
-                        } else {
-
                         }
+                    } else {
+                        $this->existing_classlikes_lc[$fq_classlike_name_lc] = false;
                     }
                 }
             }
+        }
+
+        if (!$has_changes) {
+            return;
         }
 
         if ($this->debug_output) {
@@ -1573,7 +1588,14 @@ class ProjectChecker
             || !$this->existing_classes_lc[$fq_class_name_lc]
             || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
         ) {
-            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lc])) {
+            if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                )
+                && !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+            ) {
+                if ($this->debug_output) {
+                    echo 'Last-chance attempt to hydrate ' . $fq_class_name . PHP_EOL;
+                }
                 // attempt to load in the class
                 $this->queueClassLikeForScanning($fq_class_name);
                 $this->scanFiles();
@@ -1613,7 +1635,15 @@ class ProjectChecker
             || !$this->existing_interfaces_lc[$fq_class_name_lc]
             || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
         ) {
-            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lc])) {
+            if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                )
+                && !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+            ) {
+                if ($this->debug_output) {
+                    echo 'Last-chance attempt to hydrate ' . $fq_class_name . PHP_EOL;
+                }
+
                 // attempt to load in the class
                 $this->queueClassLikeForScanning($fq_class_name);
                 $this->scanFiles();
