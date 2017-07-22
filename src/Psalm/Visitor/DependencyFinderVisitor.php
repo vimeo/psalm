@@ -1032,8 +1032,18 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $storage = ClassLikeChecker::$storage[strtolower($this->fq_classlike_name)];
 
+        $existing_constants = $storage->protected_class_constants
+            + $storage->private_class_constants
+            + $storage->public_class_constants;
+
         foreach ($stmt->consts as $const) {
-            $const_type = StatementsChecker::getSimpleType($const->value) ?: Type::getMixed();
+            $const_type = StatementsChecker::getSimpleType(
+                $const->value,
+                $this->file_checker,
+                $existing_constants
+            ) ?: Type::getMixed();
+
+            $existing_constants[$const->name] = $const_type;
 
             if ($stmt->isProtected()) {
                 $storage->protected_class_constants[$const->name] = $const_type;

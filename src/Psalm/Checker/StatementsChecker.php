@@ -496,11 +496,92 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param   PhpParser\Node\Expr $stmt
+     * @param   array<string, Type\Union> $existing_class_constants
      *
      * @return  Type\Union|null
      */
-    public static function getSimpleType(PhpParser\Node\Expr $stmt)
-    {
+    public static function getSimpleType(
+        PhpParser\Node\Expr $stmt,
+        StatementsSource $statements_source = null,
+        array $existing_class_constants = []
+    ) {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+                return Type::getString();
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+            ) {
+                return Type::getBool();
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
+                return null;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
+                return Type::getInt();
+            }
+
+            $stmt->left->inferredType = self::getSimpleType(
+                $stmt->left,
+                $statements_source,
+                $existing_class_constants
+            );
+            $stmt->right->inferredType = self::getSimpleType(
+                $stmt->right,
+                $statements_source,
+                $existing_class_constants
+            );
+
+            if (!$stmt->left->inferredType || !$stmt->right->inferredType) {
+                return null;
+            }
+
+            if (!$statements_source) {
+                return null;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
+            ) {
+                ExpressionChecker::analyzeNonDivArithmenticOp(
+                    $statements_source,
+                    $stmt->left,
+                    $stmt->right,
+                    $stmt,
+                    $result_type
+                );
+
+                if ($result_type) {
+                    return $result_type;
+                }
+
+                return null;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div
+                && ($stmt->left->inferredType->hasInt() || $stmt->left->inferredType->hasFloat())
+                && ($stmt->right->inferredType->hasInt() || $stmt->right->inferredType->hasFloat())
+            ) {
+                return Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             if (strtolower($stmt->name->parts[0]) === 'false') {
                 return Type::getFalse();
@@ -509,34 +590,68 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif (strtolower($stmt->name->parts[0]) === 'null') {
                 return Type::getNull();
             }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
-            // @todo support this as well
-        } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
+
+            return null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            if ($stmt->class instanceof PhpParser\Node\Name
+                && $stmt->class->parts !== ['static']
+                && is_string($stmt->name)
+                && isset($existing_class_constants[$stmt->name])
+            ) {
+                return $existing_class_constants[$stmt->name];
+            }
+
+            return null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\String_) {
             return Type::getString();
-        } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
             return Type::getInt();
-        } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             return Type::getFloat();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Array_) {
             if (count($stmt->items) === 0) {
                 return Type::getEmptyArray();
             }
 
             return Type::getArray();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             return Type::getInt();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             return Type::getFloat();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             return Type::getBool();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
             return Type::getString();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             return Type::getObject();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             return Type::getArray();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
-            return self::getSimpleType($stmt->expr);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+            return self::getSimpleType($stmt->expr, $statements_source, $existing_class_constants);
         }
 
         return null;

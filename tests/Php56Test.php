@@ -19,14 +19,13 @@ class Php56Test extends TestCase
                     '$a' => 'string',
                 ],
             ],
-            'SKIPPED-constFeatures' => [
+            'classConstFeatures' => [
                 '<?php
-                    const ONE = 1;
-                    const TWO = ONE * 2;
-
                     class C {
-                        const THREE = TWO + 1;
-                        const ONE_THIRD = ONE / self::THREE;
+                        const ONE = 1;
+                        const TWO = self::ONE * 2;
+                        const THREE = self::TWO + 1;
+                        const ONE_THIRD = self::ONE / self::THREE;
                         const SENTENCE = "The value of THREE is " . self::THREE;
 
                         /**
@@ -38,15 +37,31 @@ class Php56Test extends TestCase
                         }
                     }
 
-                    $d = (new C)->f();
-                    $e = C::SENTENCE;
-                    $f = TWO;
-                    $g = C::ONE_THIRD;',
+                    $c1 = C::ONE;
+                    $c2 = C::TWO;
+                    $c3 = C::THREE;
+                    $c1_3rd = C::ONE_THIRD;
+                    $c_sentence = C::SENTENCE;
+                    $cf = (new C)->f();',
                 'assertions' => [
-                    '$d' => 'int',
-                    '$e' => 'string',
-                    '$f' => 'int',
-                    '$g' => 'float|int',
+                    '$c1' => 'int',
+                    '$c2' => 'int',
+                    '$c3' => 'int',
+                    '$c1_3rd' => 'float|int',
+                    '$c_sentence' => 'string',
+                    '$cf' => 'int',
+                ],
+            ],
+            'constFeatures' => [
+                '<?php
+                    const ONE = 1;
+                    const TWO = ONE * 2;
+
+                    $one = ONE;
+                    $two = TWO;',
+                'assertions' => [
+                    '$one' => 'int',
+                    '$two' => 'int',
                 ],
             ],
             'argumentUnpacking' => [
