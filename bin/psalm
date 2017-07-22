@@ -85,6 +85,9 @@ Options:
         Searches the codebase for references to the given fully-qualified class or method,
         where method is in the format class::methodName
 
+    --threads=INT
+        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+
 HELP;
 
     exit;
