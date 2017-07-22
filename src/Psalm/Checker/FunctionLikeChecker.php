@@ -11,16 +11,13 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;
-use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
-use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
 use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
-use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
@@ -31,7 +28,6 @@ use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Mutator\FileMutator;
 use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -291,13 +287,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         } elseif ($this->function instanceof Function_) {
-            $storage = FileChecker::$storage[strtolower($this->source->getFilePath())]->functions[(string)$this->getMethodId()];
+            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
+
+            $storage = $file_storage->functions[(string)$this->getMethodId()];
 
             $cased_method_id = $this->function->name;
         } else { // Closure
             $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
 
-            $function_id = $cased_function_id = $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
+            $function_id = $cased_function_id =
+                $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
 
             $storage = $file_storage->functions[$function_id];
 

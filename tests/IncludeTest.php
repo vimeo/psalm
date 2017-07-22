@@ -33,6 +33,7 @@ class IncludeTest extends TestCase
      *
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
+     * @param mixed $error_message
      *
      * @return void
      */

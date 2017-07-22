@@ -26,6 +26,7 @@ class CacheProvider
      * @param  string   $file_path
      * @param  string   $file_content_hash
      * @param  string   $file_cache_key
+     * @param mixed $file_modified_time
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      */

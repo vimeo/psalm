@@ -252,6 +252,7 @@ abstract class Atomic
     {
         if ($this instanceof TNamedObject && !isset($phantom_classes[strtolower($this->value)])) {
             $project_checker->queueClassLikeForScanning($this->value);
+
             return;
         }
 

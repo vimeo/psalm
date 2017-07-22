@@ -192,7 +192,6 @@ class MethodChecker extends FunctionLikeChecker
             // do nothing
         }
 
-
         $storage->visibility = $method->isPrivate()
             ? ClassLikeChecker::VISIBILITY_PRIVATE
             : ($method->isProtected() ? ClassLikeChecker::VISIBILITY_PROTECTED : ClassLikeChecker::VISIBILITY_PUBLIC);

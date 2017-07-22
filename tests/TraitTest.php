@@ -282,7 +282,7 @@ class TraitTest extends TestCase
 
                     class A {
                       public function foo() : void {}
-                    }'
+                    }',
             ],
             'useTraitInSubclassWithAbstractMethod' => [
                 '<?php
@@ -296,7 +296,7 @@ class TraitTest extends TestCase
 
                     class B extends A {
                       use T;
-                    }'
+                    }',
             ],
         ];
     }

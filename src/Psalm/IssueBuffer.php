@@ -177,6 +177,7 @@ class IssueBuffer
      * @param array<int, array{severity: string, line_number: string, type: string, message: string,
      *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
      *  snippet_to: int, column: int}> $issues_data
+     *
      * @return void
      */
     public static function addIssues(array $issues_data)

@@ -4,9 +4,7 @@ namespace Psalm\Checker;
 use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
-use Psalm\Provider\StatementsProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -250,6 +248,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>  $stmts
+     *
      * @return array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>
      */
     public function populateCheckers(array $stmts)
@@ -285,7 +284,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                 $this->visitUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
                 $this->visitGroupUse($stmt);
-            } elseif(!($stmt instanceof PhpParser\Node\Stmt\Function_)) {
+            } elseif (!($stmt instanceof PhpParser\Node\Stmt\Function_)) {
                 $leftover_stmts[] = $stmt;
             }
         }
@@ -398,18 +397,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function containsUnEvaluatedClassLike($fq_class_name)
     {
         return false;
-    }
-
-    /**
-     * When evaluating a file, we wait until a class is actually used to evaluate its contents
-     *
-     * @param  string $fq_class_name
-     *
-     * @return void
-     */
-    public function evaluateClassLike($fq_class_name)
-    {
-
     }
 
     /**

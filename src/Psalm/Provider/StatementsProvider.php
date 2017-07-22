@@ -2,7 +2,6 @@
 namespace Psalm\Provider;
 
 use PhpParser;
-use Psalm\Checker\ProjectChecker;
 
 class StatementsProvider
 {
@@ -10,6 +9,7 @@ class StatementsProvider
      * @param  string  $file_path
      * @param  string  $file_contents
      * @param  bool    $debug_output
+     * @param mixed $modified_time
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */

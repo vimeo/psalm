@@ -14,7 +14,7 @@ class MethodCallTest extends TestCase
         return [
             'notInCallMapTest' => [
                 '<?php
-                    new DOMImplementation();'
+                    new DOMImplementation();',
             ],
             'parentStaticCall' => [
                 '<?php

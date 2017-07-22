@@ -108,11 +108,11 @@ class TraitSource implements StatementsSource
     /**
      * @param string|null $file_name
      * @param string|null $file_path
+     *
      * @return void
      */
     public function setFileName($file_name, $file_path)
     {
-
     }
 
     /**

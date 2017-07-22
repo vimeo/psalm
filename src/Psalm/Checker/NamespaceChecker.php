@@ -4,8 +4,6 @@ namespace Psalm\Checker;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
-use Psalm\Issue\DuplicateClass;
-use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 

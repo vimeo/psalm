@@ -2,10 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\StatementsSource;
-use Psalm\Storage\ClassLikeStorage;
 use Psalm\TraitSource;
 
 class TraitChecker extends ClassLikeChecker

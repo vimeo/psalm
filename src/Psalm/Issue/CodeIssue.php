@@ -75,7 +75,7 @@ abstract class CodeIssue
         return $this->message;
     }
 
-     /**
+    /**
      * @param  string          $severity
      *
      * @return array{severity: string, line_number: string, type: string, message: string, file_name: string,

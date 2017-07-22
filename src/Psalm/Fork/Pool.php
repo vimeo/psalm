@@ -23,14 +23,11 @@ class Pool
      * @param array[] $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
-     *
      * @param \Closure $startup_closure
      * A closure to execute upon starting a child
-     *
      * @param \Closure $task_closure
      * A method to execute on each task data.
      * This closure must return an array (to be gathered).
-     *
      * @param \Closure $shutdown_closure
      * A closure to execute upon shutting down a child
      *
@@ -42,7 +39,6 @@ class Pool
         \Closure $task_closure,
         \Closure $shutdown_closure
     ) {
-
         $pool_size = count($process_task_data_iterator);
 
         \assert($pool_size > 1,
@@ -60,12 +56,11 @@ class Pool
 
         // Fork as many times as requested to get the given
         // pool size
-        for ($proc_id = 0; $proc_id < $pool_size; $proc_id++) {
-
+        for ($proc_id = 0; $proc_id < $pool_size; ++$proc_id) {
             // Create an IPC socket pair.
             $sockets = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
             if (!$sockets) {
-                error_log("unable to create stream socket pair");
+                error_log('unable to create stream socket pair');
                 exit(self::EXIT_FAILURE);
             }
 
@@ -127,6 +122,7 @@ class Pool
      * return the stream the parent will use to read results.
      *
      * @param resource[] $sockets the socket pair for IPC
+     *
      * @return resource
      */
     private static function streamForParent(array $sockets)
@@ -151,7 +147,8 @@ class Pool
      * Prepare the socket pair to be used in a child process and return
      * the stream the child will use to write results.
      *
-     * @param resource[] $sockets the socket pair for IPC.
+     * @param resource[] $sockets the socket pair for IPC
+     *
      * @return resource
      */
     private static function streamForChild(array $sockets)
@@ -161,6 +158,7 @@ class Pool
         // The while will not use the read channel, so it must
         // be closed to prevent deadlock.
         fclose($for_read);
+
         return $for_write;
     }
 
@@ -188,7 +186,7 @@ class Pool
         $content = array_fill_keys(array_keys($streams), '');
 
         // Read the data off of all the stream.
-        while (count($streams) >0) {
+        while (count($streams) > 0) {
             $needs_read = array_values($streams);
             $needs_write = null;
             $needs_except = null;
@@ -196,7 +194,7 @@ class Pool
             // Wait for data on at least one stream.
             $num = stream_select($needs_read, $needs_write, $needs_except, null /* no timeout */);
             if ($num === false) {
-                error_log("unable to select on read stream");
+                error_log('unable to select on read stream');
                 exit(self::EXIT_FAILURE);
             }
 
@@ -227,9 +225,12 @@ class Pool
                     /** @var array */
                     $result = unserialize($data);
                     if (!\is_array($result)) {
-                        error_log("Child terminated without returning a serialized array (threw or crashed - not enough memory?): response type=" . gettype($result));
+                        error_log(
+                            'Child terminated without returning a serialized array - response type=' . gettype($result)
+                        );
                         $this->did_have_error = true;
                     }
+
                     return $result;
                 },
                 $content
@@ -269,6 +270,7 @@ class Pool
 
     /**
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
+     *
      * @return  bool
      */
     public function didHaveError()

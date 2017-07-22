@@ -7,12 +7,10 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\PropertyNotSetInConstructor;
@@ -26,7 +24,6 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TNamedObject;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
@@ -218,7 +215,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     return false;
                 }
             }
-
         } elseif ($this->class instanceof PhpParser\Node\Stmt\Interface_ && $this->class->extends) {
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
@@ -988,7 +984,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return implode('\\', $class_name->parts);
         }
 
-        if (in_array($class_name->parts[0], ['self', 'static', 'parent'])) {
+        if (in_array($class_name->parts[0], ['self', 'static', 'parent'], true)) {
             return $class_name->parts[0];
         }
 

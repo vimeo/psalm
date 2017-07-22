@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Context;
-
 class InterfaceTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;

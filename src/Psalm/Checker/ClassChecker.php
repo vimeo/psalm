@@ -34,6 +34,7 @@ class ClassChecker extends ClassLikeChecker
     /**
      * @param  PhpParser\Node\Stmt\Class_ $class
      * @param  string                     $file_path
+     *
      * @return string
      */
     public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path)

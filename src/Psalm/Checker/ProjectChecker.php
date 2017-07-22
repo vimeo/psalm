@@ -15,7 +15,6 @@ use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
-use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -474,6 +473,7 @@ class ProjectChecker
     /**
      * @param  ClassLikeStorage $storage
      * @param  array            $dependent_classlikes
+     *
      * @return void
      */
     private function populateClassLikeStorage(ClassLikeStorage $storage, $dependent_classlikes = [])
@@ -585,6 +585,7 @@ class ProjectChecker
     /**
      * @param  FileStorage $storage
      * @param  array<string, true> $dependent_file_paths
+     *
      * @return void
      */
     private function populateFileStorage(FileStorage $storage, array $dependent_file_paths = [])
@@ -735,7 +736,8 @@ class ProjectChecker
 
     /**
      * @param  string  $fq_classlike_name
-     * @param  boolean $analyze_too
+     * @param  bool $analyze_too
+     *
      * @return void
      */
     public function queueClassLikeForScanning($fq_classlike_name, $analyze_too = false)
@@ -757,6 +759,7 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
+     *
      * @return void
      */
     public function queueFileForScanning($file_path)
@@ -1505,6 +1508,7 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
+     *
      * @return array<int, \PhpParser\Node\Stmt>
      */
     public function getStatementsForFile($file_path)
@@ -1519,6 +1523,7 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
+     *
      * @return bool
      */
     public function fileExists($file_path)
@@ -1623,10 +1628,11 @@ class ProjectChecker
 
                 if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
                     $this->existing_classes_lc[$fq_class_name_lc] = false;
+
                     return false;
-                } else {
-                    return $this->existing_classes_lc[$fq_class_name_lc];
                 }
+
+                return $this->existing_classes_lc[$fq_class_name_lc];
             }
 
             return false;
@@ -1671,10 +1677,11 @@ class ProjectChecker
 
                 if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
                     $this->existing_interfaces_lc[$fq_class_name_lc] = false;
+
                     return false;
-                } else {
-                    return $this->existing_interfaces_lc[$fq_class_name_lc];
                 }
+
+                return $this->existing_interfaces_lc[$fq_class_name_lc];
             }
 
             return false;
@@ -1726,7 +1733,6 @@ class ProjectChecker
     {
         return isset($this->files_to_report[$file_path]);
     }
-
 
     /**
      * @return void

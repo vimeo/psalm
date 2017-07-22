@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
 use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
 
@@ -44,6 +43,7 @@ class TestCase extends PHPUnit_Framework_TestCase
     /**
      * @param string $file_path
      * @param string $contents
+     *
      * @return void
      */
     public function addFile($file_path, $contents)

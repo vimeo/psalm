@@ -1,11 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\ParserFactory;
-use PHPUnit_Framework_TestCase;
 use Psalm\Checker\FileChecker;
 use Psalm\Config;
-use Psalm\Context;
 
 class ConfigTest extends TestCase
 {

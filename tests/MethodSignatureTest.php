@@ -2,7 +2,6 @@
 namespace Psalm\Tests;
 
 use Psalm\Checker\FileChecker;
-use Psalm\Context;
 
 class MethodSignatureTest extends TestCase
 {

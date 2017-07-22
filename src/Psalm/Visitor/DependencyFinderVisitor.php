@@ -12,17 +12,16 @@ use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TraitChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
 use Psalm\FunctionLikeParameter;
-use Psalm\IssueBuffer;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MisplacedRequiredParam;
+use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -39,7 +38,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     protected $file_aliases;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $in_classlike = false;
 
@@ -253,7 +252,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         ) {
             $fq_classlike_name = ClassLikeChecker::getFQCLNFromNameObject($node->class, $this->aliases);
 
-            if (!in_array($fq_classlike_name, ['self', 'static', 'parent'])) {
+            if (!in_array($fq_classlike_name, ['self', 'static', 'parent'], true)) {
                 $this->project_checker->queueClassLikeForScanning($fq_classlike_name);
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -261,7 +260,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 foreach ($catch->types as $catch_type) {
                     $catch_fqcln = ClassLikeChecker::getFQCLNFromNameObject($catch_type, $this->aliases);
 
-                    if (!in_array($catch_fqcln, ['self', 'static', 'parent'])) {
+                    if (!in_array($catch_fqcln, ['self', 'static', 'parent'], true)) {
                         $this->project_checker->queueClassLikeForScanning($catch_fqcln);
                     }
                 }
@@ -356,7 +355,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $var_type->queueClassLikesForScanning($this->project_checker);
                 }
             }
-
         }
     }
 
@@ -567,7 +565,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->aliases
                 );
 
-                if (!in_array($return_type_fq_classlike_name, ['self', 'static', 'parent'])) {
+                if (!in_array($return_type_fq_classlike_name, ['self', 'static', 'parent'], true)) {
                     $this->project_checker->queueClassLikeForScanning($return_type_fq_classlike_name);
                 }
 
@@ -732,7 +730,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
      *
      * @return FunctionLikeParameter
      */
-    public function getTranslatedFunctionParam(PhpParser\Node\Param $param) {
+    public function getTranslatedFunctionParam(PhpParser\Node\Param $param)
+    {
         $param_type = null;
 
         $is_nullable = $param->default !== null &&
@@ -757,7 +756,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $param_type_string = $this->fq_classlike_name;
             } else {
                 $param_type_string = ClassLikeChecker::getFQCLNFromNameObject($param_typehint, $this->aliases);
-                if (!in_array($param_type_string, ['self', 'static', 'parent'])) {
+                if (!in_array($param_type_string, ['self', 'static', 'parent'], true)) {
                     $this->project_checker->queueClassLikeForScanning($param_type_string);
                 }
             }

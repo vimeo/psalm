@@ -140,7 +140,7 @@ echo $a;';
                     'snippet_from' => 6,
                     'snippet_to' => 86,
                     'column' => 43,
-                ]
+                ],
             ],
             $issue_data
         );

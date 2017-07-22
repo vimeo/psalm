@@ -628,8 +628,6 @@ class FetchChecker
             $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
 
-
-
         if ($fq_class_name &&
             $context->check_classes &&
             $context->check_variables &&
