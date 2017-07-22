@@ -16,7 +16,14 @@ class JsonOutputTest extends TestCase
         // case, so don't run a `parent::setUp()` call here.
         FileChecker::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
-        $this->project_checker = new ProjectChecker($this->file_provider, false, true, ProjectChecker::TYPE_JSON);
+
+        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+            $this->file_provider,
+            new Provider\FakeCacheProvider(),
+            false,
+            true,
+            ProjectChecker::TYPE_JSON
+        );
 
         $config = new TestConfig();
         $config->throw_exception = false;

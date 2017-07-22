@@ -36,7 +36,11 @@ class TestCase extends PHPUnit_Framework_TestCase
         FileChecker::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker($this->file_provider);
+
+        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+            $this->file_provider,
+            new Provider\FakeCacheProvider()
+        );
         $this->project_checker->setConfig(new TestConfig());
     }
 

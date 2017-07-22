@@ -13,14 +13,14 @@ class CacheProvider
     /**
      * @var int|null
      */
-    protected static $last_good_run = null;
+    protected $last_good_run = null;
 
     /**
      * A map of filename hashes to contents hashes
      *
      * @var array<string, string>|null
      */
-    private static $file_content_hashes = null;
+    protected $file_content_hashes = null;
 
     /**
      * @param  string   $file_path
@@ -30,7 +30,7 @@ class CacheProvider
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      */
-    public static function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash, $file_cache_key)
+    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash, $file_cache_key)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -42,7 +42,7 @@ class CacheProvider
 
         $cache_location = null;
 
-        $file_content_hashes = self::getFileContentHashes();
+        $file_content_hashes = $this->getFileContentHashes();
 
         $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
 
@@ -59,21 +59,21 @@ class CacheProvider
     /**
      * @return array<string, string>
      */
-    private static function getFileContentHashes()
+    private function getFileContentHashes()
     {
         $config = Config::getInstance();
         $root_cache_directory = $config->getCacheDirectory();
 
-        if (self::$file_content_hashes === null || !$config->cache_file_hashes_during_run) {
+        if ($this->file_content_hashes === null || !$config->cache_file_hashes_during_run) {
             $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
             /** @var array<string, string> */
-            self::$file_content_hashes =
+            $this->file_content_hashes =
                 $root_cache_directory && is_readable($file_hashes_path)
                     ? json_decode((string)file_get_contents($file_hashes_path), true)
                     : [];
         }
 
-        return self::$file_content_hashes;
+        return $this->file_content_hashes;
     }
 
     /**
@@ -84,7 +84,7 @@ class CacheProvider
      *
      * @return void
      */
-    public static function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
+    public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -105,11 +105,11 @@ class CacheProvider
 
             file_put_contents($cache_location, serialize($stmts));
 
-            self::$file_content_hashes[$file_cache_key] = $file_content_hash;
+            $this->file_content_hashes[$file_cache_key] = $file_content_hash;
 
             file_put_contents(
                 $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES,
-                json_encode(self::$file_content_hashes)
+                json_encode($this->file_content_hashes)
             );
         }
     }
@@ -117,7 +117,7 @@ class CacheProvider
     /**
      * @return bool
      */
-    public static function canDiffFiles()
+    public function canDiffFiles()
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -129,7 +129,7 @@ class CacheProvider
      *
      * @return void
      */
-    public static function processSuccessfulRun($start_time)
+    public function processSuccessfulRun($start_time)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -164,15 +164,15 @@ class CacheProvider
     /**
      * @return int
      */
-    public static function getLastGoodRun()
+    public function getLastGoodRun()
     {
-        if (self::$last_good_run === null) {
+        if ($this->last_good_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();
 
-            self::$last_good_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME) ?: 0;
+            $this->last_good_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME) ?: 0;
         }
 
-        return self::$last_good_run;
+        return $this->last_good_run;
     }
 
     /**
@@ -180,7 +180,7 @@ class CacheProvider
      *
      * @return int
      */
-    public static function deleteOldParserCaches($time_before)
+    public function deleteOldParserCaches($time_before)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -219,7 +219,7 @@ class CacheProvider
      *
      * @return void
      */
-    public static function touchParserCaches(array $file_names, $min_time)
+    public function touchParserCaches(array $file_names, $min_time)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -231,7 +231,7 @@ class CacheProvider
 
         if (is_dir($cache_directory)) {
             foreach ($file_names as $file_name) {
-                $hash_file_name = $cache_directory . DIRECTORY_SEPARATOR . self::getParserCacheKey($file_name);
+                $hash_file_name = $cache_directory . DIRECTORY_SEPARATOR . $this->getParserCacheKey($file_name);
 
                 if (file_exists($hash_file_name)) {
                     if (filemtime($hash_file_name) < $min_time) {

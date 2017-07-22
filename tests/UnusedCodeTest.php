@@ -30,8 +30,14 @@ class UnusedCodeTest extends TestCase
     public function setUp()
     {
         FileChecker::clearCache();
+
         $this->file_provider = new Provider\FakeFileProvider();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker($this->file_provider);
+
+        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+            $this->file_provider,
+            new Provider\FakeCacheProvider()
+        );
+
         $this->project_checker->setConfig(Config::loadFromXML(
             'psalm.xml',
             dirname(__DIR__),

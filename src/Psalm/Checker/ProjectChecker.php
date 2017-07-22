@@ -36,6 +36,9 @@ class ProjectChecker
     /** @var FileProvider */
     private $file_provider;
 
+    /** @var CacheProvider */
+    public $cache_provider;
+
     /**
      * Whether or not to use colors in error output
      *
@@ -229,6 +232,7 @@ class ProjectChecker
      */
     public function __construct(
         FileProvider $file_provider,
+        CacheProvider $cache_provider,
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
@@ -239,6 +243,7 @@ class ProjectChecker
         $find_references_to = null
     ) {
         $this->file_provider = $file_provider;
+        $this->cache_provider = $cache_provider;
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
@@ -286,7 +291,7 @@ class ProjectChecker
         $diff_files = null;
         $deleted_files = null;
 
-        if ($is_diff && FileReferenceProvider::loadReferenceCache() && CacheProvider::canDiffFiles()) {
+        if ($is_diff && FileReferenceProvider::loadReferenceCache() && $this->cache_provider->canDiffFiles()) {
             $deleted_files = FileReferenceProvider::getDeletedReferencedFiles();
             $diff_files = $deleted_files;
 
@@ -323,8 +328,8 @@ class ProjectChecker
             }
         }
 
-        $removed_parser_files = CacheProvider::deleteOldParserCaches(
-            $is_diff ? CacheProvider::getLastGoodRun() : $start_checks
+        $removed_parser_files = $this->cache_provider->deleteOldParserCaches(
+            $is_diff ? $this->cache_provider->getLastGoodRun() : $start_checks
         );
 
         if ($this->debug_output && $removed_parser_files) {
@@ -332,7 +337,7 @@ class ProjectChecker
         }
 
         if ($is_diff) {
-            CacheProvider::touchParserCaches($this->getAllFiles($this->config), $start_checks);
+            $this->cache_provider->touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
         if ($this->collect_references) {
@@ -1084,11 +1089,12 @@ class ProjectChecker
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
                 if (in_array($extension, $file_extensions, true)) {
-                    $file_name = (string)$iterator->getRealPath();
+                    $file_path = (string)$iterator->getRealPath();
 
-                    if ($config->isInProjectDirs($file_name)) {
-                        if ($this->file_provider->hasFileChanged($file_name)) {
-                            $diff_files[] = $file_name;
+                    if ($config->isInProjectDirs($file_path)) {
+                        if ($this->file_provider->getModifiedTime($file_path) > $this->cache_provider->getLastGoodRun()
+                        ) {
+                            $diff_files[] = $file_path;
                         }
                     }
                 }
@@ -1515,8 +1521,8 @@ class ProjectChecker
     {
         return StatementsProvider::getStatementsForFile(
             $file_path,
-            $this->file_provider->getContents($file_path),
-            $this->file_provider->getModifiedTime($file_path),
+            $this->file_provider,
+            $this->cache_provider,
             $this->debug_output
         );
     }

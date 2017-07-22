@@ -7,24 +7,31 @@ class StatementsProvider
 {
     /**
      * @param  string  $file_path
-     * @param  string  $file_contents
+     * @param  FileProvider $file_provider
+     * @param  CacheProvider $cache_provider
      * @param  bool    $debug_output
-     * @param mixed $modified_time
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */
-    public static function getStatementsForFile($file_path, $file_contents, $modified_time, $debug_output = false)
-    {
+    public static function getStatementsForFile(
+        $file_path,
+        FileProvider $file_provider,
+        CacheProvider $cache_provider,
+        $debug_output = false
+    ) {
         $stmts = [];
 
         $from_cache = false;
 
         $version = 'parsercache4';
 
-        $file_content_hash = md5($version . $file_contents);
-        $file_cache_key = CacheProvider::getParserCacheKey($file_path);
+        $file_contents = $file_provider->getContents($file_path);
+        $modified_time = $file_provider->getModifiedTime($file_path);
 
-        $stmts = CacheProvider::loadStatementsFromCache(
+        $file_content_hash = md5($version . $file_contents);
+        $file_cache_key = $cache_provider->getParserCacheKey($file_path);
+
+        $stmts = $cache_provider->loadStatementsFromCache(
             $file_path,
             $modified_time,
             $file_content_hash,
@@ -41,7 +48,7 @@ class StatementsProvider
             $from_cache = true;
         }
 
-        CacheProvider::saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
+        $cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
 
         if (!$stmts) {
             return [];

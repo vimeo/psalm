@@ -198,9 +198,9 @@ class IssueBuffer
 
         $has_error = false;
 
-        if (self::$issues_data) {
-            $project_checker = ProjectChecker::getInstance();
+        $project_checker = ProjectChecker::getInstance();
 
+        if (self::$issues_data) {
             if ($project_checker->output_format === ProjectChecker::TYPE_JSON) {
                 echo json_encode(self::$issues_data) . PHP_EOL;
             } elseif ($project_checker->output_format === ProjectChecker::TYPE_EMACS) {
@@ -232,7 +232,7 @@ class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            Provider\CacheProvider::processSuccessfulRun($start_time);
+            $project_checker->cache_provider->processSuccessfulRun($start_time);
         }
     }
 

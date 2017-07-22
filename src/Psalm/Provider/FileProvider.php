@@ -32,14 +32,4 @@ class FileProvider
     {
         return file_exists($file_path);
     }
-
-    /**
-     * @param  string  $file_path
-     *
-     * @return bool
-     */
-    public function hasFileChanged($file_path)
-    {
-        return $this->getModifiedTime($file_path) > CacheProvider::getLastGoodRun();
-    }
 }

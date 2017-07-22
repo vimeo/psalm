@@ -302,6 +302,7 @@ $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
 $project_checker = new ProjectChecker(
     new Psalm\Provider\FileProvider(),
+    new Psalm\Provider\CacheProvider(),
     $use_color,
     $show_info,
     $output_format,
