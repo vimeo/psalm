@@ -1102,12 +1102,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 return null;
             }
 
-            $included_file_paths = $this->file_checker->getIncludedFilePaths();
-
-            if (isset($included_file_paths[$path_to_file])) {
-                return null;
-            }
-
             if ($this->project_checker->fileExists($path_to_file)) {
                 $this->project_checker->queueFileForScanning($path_to_file);
 

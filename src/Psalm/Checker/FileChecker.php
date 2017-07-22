@@ -514,20 +514,4 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         return $this;
     }
-
-    /** @return array<string, bool> */
-    public function getIncludedFilePaths()
-    {
-        return $this->included_file_paths;
-    }
-
-    /**
-     * @param string $file_path
-     *
-     * @return void
-     */
-    public function addIncludedFilePath($file_path)
-    {
-        $this->included_file_paths[$file_path] = true;
-    }
 }

@@ -926,12 +926,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             $current_file_checker = $this->getFileChecker();
 
-            $included_file_paths = $current_file_checker->getIncludedFilePaths();
-
-            if (isset($included_file_paths[$path_to_file])) {
-                return null;
-            }
-
             if ($current_file_checker->project_checker->fileExists($path_to_file)) {
                 return null;
             }

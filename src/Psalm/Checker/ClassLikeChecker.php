@@ -1693,19 +1693,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param  string $fq_class_name
-     * @param  string $fq_trait_name
-     *
-     * @return void
-     */
-    public static function registerTraitUse($fq_class_name, $fq_trait_name)
-    {
-        $storage = self::$storage[strtolower($fq_class_name)];
-
-        $storage->used_traits[strtolower($fq_trait_name)] = $fq_trait_name;
-    }
-
-    /**
      * @return void
      */
     public static function clearCache()
