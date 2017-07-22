@@ -2,7 +2,6 @@
 namespace Psalm\Tests\Provider;
 
 use PhpParser;
-use Psalm\Config;
 
 class FakeCacheProvider extends \Psalm\Provider\CacheProvider
 {
@@ -29,6 +28,5 @@ class FakeCacheProvider extends \Psalm\Provider\CacheProvider
      */
     public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
     {
-        return;
     }
 }
