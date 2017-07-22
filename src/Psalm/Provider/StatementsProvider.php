@@ -14,7 +14,7 @@ class StatementsProvider
      * @param  CacheProvider $cache_provider
      * @param  bool    $debug_output
      *
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return array<int, \PhpParser\Node\Expr|\PhpParser\Node\Stmt>
      */
     public static function getStatementsForFile(
         $file_path,
