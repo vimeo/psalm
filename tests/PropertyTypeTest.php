@@ -501,23 +501,6 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider null|int',
             ],
-            // Skipped. Doesn't yet work.
-            'SKIPPED-missingPropertyTypeWithConstructorInitInPrivateMethod' => [
-                '<?php
-                    class A {
-                        public $foo;
-
-                        public function __construct() : void {
-                            $this->makeValue();
-                        }
-
-                        private function makeValue() : void {
-                            $this->foo = 5;
-                        }
-                    }',
-                'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
-                    'declared type - consider int',
-            ],
             'missingPropertyTypeWithConstructorInitAndNullDefault' => [
                 '<?php
                     class A {
