@@ -629,15 +629,24 @@ class ProjectChecker
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
-            if (isset($storage->appearing_method_ids[$method_name])) {
+            if ($parent_storage->is_trait
+                && $storage->trait_alias_map
+                && isset($storage->trait_alias_map[$method_name])
+            ) {
+                $aliased_method_name = $storage->trait_alias_map[$method_name];
+            } else {
+                $aliased_method_name = $method_name;
+            }
+
+            if (isset($storage->appearing_method_ids[$aliased_method_name])) {
                 continue;
             }
 
             $parent_method_id = $parent_class . '::' . $method_name;
 
-            $implemented_method_id = $fq_class_name . '::' . $method_name;
+            $implemented_method_id = $fq_class_name . '::' . $aliased_method_name;
 
-            $storage->appearing_method_ids[$method_name] =
+            $storage->appearing_method_ids[$aliased_method_name] =
                 $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
         }
 
@@ -649,13 +658,22 @@ class ProjectChecker
                 MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
             }
 
-            if (isset($storage->declaring_method_ids[$method_name])) {
+            if ($parent_storage->is_trait
+                && $storage->trait_alias_map
+                && isset($storage->trait_alias_map[$method_name])
+            ) {
+                $aliased_method_name = $storage->trait_alias_map[$method_name];
+            } else {
+                $aliased_method_name = $method_name;
+            }
+
+            if (isset($storage->declaring_method_ids[$aliased_method_name])) {
                 continue;
             }
 
             $parent_method_id = $parent_class . '::' . $method_name;
 
-            $storage->declaring_method_ids[$method_name] = $declaring_method_id;
+            $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
         }
     }
 

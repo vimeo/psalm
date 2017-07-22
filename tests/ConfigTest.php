@@ -461,7 +461,7 @@ class ConfigTest extends TestCase
         $this->addFile(
             getcwd() . '/src/somefile.php',
             '<?php
-                $a = new LogicException("bad");'
+                $a = new LogicException(5);'
         );
 
         $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
