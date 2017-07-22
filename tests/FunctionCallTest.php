@@ -36,6 +36,7 @@ class FunctionCallTest extends TestCase
      */
     public function testArrayFilterAdvanced()
     {
+        $this->markTestSkipped('PHP 7.1 syntax');
         if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
             $this->addFile(
                 'somefile.php',
