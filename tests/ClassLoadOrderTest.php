@@ -33,7 +33,7 @@ class ClassLoadOrderTest extends TestCase
                     $a = A::B;
                     class C {}',
             ],
-            'deferredReference' => [
+            'SKIPPED-deferredReference' => [
                 '<?php
                     class B {
                         const C = A;
@@ -140,7 +140,7 @@ class ClassLoadOrderTest extends TestCase
                     class I extends G {}',
                 'error_message' => 'Circular reference',
             ],
-            'invalidDeferredReference' => [
+            'SKIPPED-invalidDeferredReference' => [
                 '<?php
                     class B {
                         const C = A;

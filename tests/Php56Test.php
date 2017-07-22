@@ -19,7 +19,7 @@ class Php56Test extends TestCase
                     '$a' => 'string',
                 ],
             ],
-            'constFeatures' => [
+            'SKIPPED-constFeatures' => [
                 '<?php
                     const ONE = 1;
                     const TWO = ONE * 2;
