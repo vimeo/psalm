@@ -64,11 +64,17 @@ class StatementsProvider
      */
     private static function parseStatementsInFile($file_contents)
     {
-        $lexer = new PhpParser\Lexer([
-            'usedAttributes' => [
-                'comments', 'startLine', 'startFilePos', 'endFilePos',
-            ],
-        ]);
+        $lexer = version_compare(PHP_VERSION, '7.0.0dev', '>=')
+            ? new PhpParser\Lexer([
+                'usedAttributes' => [
+                    'comments', 'startLine', 'startFilePos', 'endFilePos',
+                ],
+            ])
+            : new PhpParser\Lexer\Emulative([
+                'usedAttributes' => [
+                    'comments', 'startLine', 'startFilePos', 'endFilePos',
+                ],
+            ]);
 
         $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
 
