@@ -5,6 +5,9 @@ use PhpParser;
 
 class StatementsProvider
 {
+    /** @var ?PhpParser\Parser */
+    protected static $parser;
+
     /**
      * @param  string  $file_path
      * @param  FileProvider $file_provider
@@ -64,24 +67,26 @@ class StatementsProvider
      */
     private static function parseStatementsInFile($file_contents)
     {
-        $lexer = version_compare(PHP_VERSION, '7.0.0dev', '>=')
-            ? new PhpParser\Lexer([
-                'usedAttributes' => [
-                    'comments', 'startLine', 'startFilePos', 'endFilePos',
-                ],
-            ])
-            : new PhpParser\Lexer\Emulative([
-                'usedAttributes' => [
-                    'comments', 'startLine', 'startFilePos', 'endFilePos',
-                ],
-            ]);
+        if (!self::$parser) {
+            $lexer = version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                ? new PhpParser\Lexer([
+                    'usedAttributes' => [
+                        'comments', 'startLine', 'startFilePos', 'endFilePos',
+                    ],
+                ])
+                : new PhpParser\Lexer\Emulative([
+                    'usedAttributes' => [
+                        'comments', 'startLine', 'startFilePos', 'endFilePos',
+                    ],
+                ]);
 
-        $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
+            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
+        }
 
         $error_handler = new \PhpParser\ErrorHandler\Collecting();
 
         /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = $parser->parse($file_contents, $error_handler);
+        $stmts = self::$parser->parse($file_contents, $error_handler);
 
         if (!$stmts && $error_handler->hasErrors()) {
             foreach ($error_handler->getErrors() as $error) {
