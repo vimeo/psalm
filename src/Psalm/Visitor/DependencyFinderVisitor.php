@@ -72,6 +72,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var array<string, string> */
     protected $function_template_types = [];
 
+    /** @var ?FunctionLikeStorage */
+    protected $functionlike_storage;
+
     /**
      * @param ProjectChecker $project_checker
      * @param string $file_path
@@ -289,6 +292,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 if ($function_id === 'get_class') {
                     $this->queue_strings_as_possible_type = true;
                 }
+
+                if ($function_id === 'define' && $this->functionlike_storage) {
+                    $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
+                    $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
+                    if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
+                        $this->functionlike_storage->defined_constants[$first_arg_value->value] =
+                            StatementsChecker::getSimpleType($second_arg_value) ?: Type::getMixed();
+                    }
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if (!$this->fq_classlike_name) {
@@ -391,6 +403,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $this->queue_strings_as_possible_type = false;
 
             $this->function_template_types = [];
+        } elseif ($node instanceof PhpParser\Node\FunctionLike) {
+            $this->functionlike_storage = null;
         }
     }
 
@@ -483,6 +497,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
         }
+
+        $this->functionlike_storage = $storage;
 
         if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod || $stmt instanceof PhpParser\Node\Stmt\Function_) {
             $storage->cased_name = $stmt->name;
