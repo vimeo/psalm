@@ -2,6 +2,11 @@
 namespace Psalm\Fork;
 
 /**
+ * Adapted with relatively few changes from
+ * https://github.com/etsy/phan/blob/1ccbe7a43a6151ca7c0759d6c53e2c3686994e53/src/Phan/ForkPool.php
+ *
+ * Authors: https://github.com/morria, https://github.com/TysonAndre
+ *
  * Fork off to n-processes and divide up tasks between
  * each process.
  */

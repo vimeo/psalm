@@ -319,6 +319,7 @@ class ProjectChecker
 
             // strip out deleted files
             $file_list = array_diff($file_list, $deleted_files);
+
             $this->checkDiffFilesWithConfig($this->config, $file_list);
 
             $this->scanFiles();
@@ -582,6 +583,26 @@ class ProjectChecker
 
             $this->inheritMethodsFromParent($storage, $trait_storage);
             $this->inheritPropertiesFromParent($storage, $trait_storage);
+        }
+
+        if ($storage->location) {
+            $file_path = $storage->location->file_path;
+
+            foreach ($storage->parent_interfaces as $parent_interface_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_interface_lc);
+            }
+
+            foreach ($storage->parent_classes as $parent_class_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_class_lc);
+            }
+
+            foreach ($storage->class_implements as $implemented_interface) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, strtolower($implemented_interface));
+            }
+
+            foreach ($storage->used_traits as $used_trait_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $used_trait_lc);
+            }
         }
 
         $storage->populated = true;
@@ -1127,8 +1148,9 @@ class ProjectChecker
                 continue;
             }
 
-            $this->files_to_deep_scan[$file_path] = $file_path;
             $this->files_to_report[$file_path] = $file_path;
+            $this->files_to_deep_scan[$file_path] = $file_path;
+            $this->files_to_scan[$file_path] = $file_path;
         }
     }
 
