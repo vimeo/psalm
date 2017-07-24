@@ -7990,7 +7990,7 @@ return [
 'SessionHandler::gc' => ['bool', 'maxlifetime'=>'int'],
 'SessionHandlerInterface::close' => ['bool'],
 'SessionHandlerInterface::destroy' => ['bool', 'session_id'=>'string'],
-'SessionHandlerInterface::gc' => ['bool', 'maxlifetime'=>'string'],
+'SessionHandlerInterface::gc' => ['bool', 'maxlifetime'=>'int'],
 'SessionHandlerInterface::open' => ['bool', 'save_path'=>'string', 'name'=>'string'],
 'SessionHandlerInterface::read' => ['string', 'session_id'=>'string'],
 'SessionHandlerInterface::write' => ['bool', 'session_id'=>'string', 'session_data'=>'string'],
