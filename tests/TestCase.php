@@ -12,6 +12,9 @@ class TestCase extends PHPUnit_Framework_TestCase
     /** @var TestConfig */
     protected static $config;
 
+    /** @var string */
+    protected static $src_dir_path;
+
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
@@ -24,6 +27,7 @@ class TestCase extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
+        self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
     /**

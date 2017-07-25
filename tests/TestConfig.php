@@ -17,6 +17,11 @@ class TestConfig extends Config
         $this->totally_typed = true;
         $this->cache_directory = null;
 
+        $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;
+
+        $this->project_files = new Config\ProjectFileFilter(true);
+        $this->project_files->addDirectory($this->base_dir . 'src');
+
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
     }

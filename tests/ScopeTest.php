@@ -241,7 +241,7 @@ class ScopeTest extends TestCase
                     }
 
                     echo $b;',
-                'error_message' => 'PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable $b, ' .
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:6 - Possibly undefined variable $b, ' .
                     'first seen on line 3',
             ],
             'possiblyUndefinedArrayInIf' => [
@@ -251,7 +251,7 @@ class ScopeTest extends TestCase
                     }
 
                     echo $array;',
-                'error_message' => 'PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable ' .
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:3 - Possibly undefined variable ' .
                     '$array, first seen on line 3',
             ],
             'invalidGlobal' => [

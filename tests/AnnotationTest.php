@@ -322,7 +322,7 @@ class AnnotationTest extends TestCase
                      */
                     function fooBar() : void {
                     }',
-                'error_message' => 'InvalidDocblock - somefile.php:5 - Badly-formatted @param in docblock for fooBar',
+                'error_message' => 'InvalidDocblock - src/somefile.php:5 - Badly-formatted @param in docblock for fooBar',
             ],
             'invalidDocblockReturn' => [
                 '<?php

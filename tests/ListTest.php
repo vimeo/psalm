@@ -79,7 +79,7 @@ class ListTest extends TestCase
                             return $this->a;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignment - somefile.php:11',
+                'error_message' => 'InvalidPropertyAssignment - src/somefile.php:11',
             ],
         ];
     }

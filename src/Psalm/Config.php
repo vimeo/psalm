@@ -98,14 +98,14 @@ class Config
     /**
      * @var ProjectFileFilter|null
      */
-    private $project_files;
+    protected $project_files;
 
     /**
      * The base directory of this config file
      *
      * @var string
      */
-    private $base_dir;
+    protected $base_dir;
 
     /**
      * The path to this config file

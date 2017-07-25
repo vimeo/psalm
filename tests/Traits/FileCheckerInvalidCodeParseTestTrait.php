@@ -40,13 +40,13 @@ trait FileCheckerInvalidCodeParseTestTrait
         $this->expectExceptionMessage($error_message);
 
         $this->addFile(
-            'somefile.php',
+            self::$src_dir_path . 'somefile.php',
             $code
         );
 
         $context = new Context();
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker = new FileChecker(self::$src_dir_path . 'somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods($context);
     }
 }

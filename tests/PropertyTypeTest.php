@@ -470,7 +470,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = 5;
                         }
                     }',
-                'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
+                'error_message' => 'MissingPropertyType - src/somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider null|int',
             ],
             'missingPropertyTypeWithConstructorInit' => [
@@ -482,7 +482,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = 5;
                         }
                     }',
-                'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
+                'error_message' => 'MissingPropertyType - src/somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider int',
             ],
             'missingPropertyTypeWithConstructorInitAndNull' => [
@@ -498,7 +498,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = null;
                         }
                     }',
-                'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
+                'error_message' => 'MissingPropertyType - src/somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider null|int',
             ],
             'missingPropertyTypeWithConstructorInitAndNullDefault' => [
@@ -510,7 +510,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = 5;
                         }
                     }',
-                'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
+                'error_message' => 'MissingPropertyType - src/somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider int|null',
             ],
             'badAssignment' => [

@@ -351,7 +351,7 @@ class LoopScopeTest extends TestCase
                     }
 
                     echo $array;',
-                'error_message' => 'PossiblyUndefinedVariable - somefile.php:3 - Possibly undefined variable ' .
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:3 - Possibly undefined variable ' .
                     '$array, first seen on line 3',
             ],
             'possiblyUndefinedArrayInWhileAndForeach' => [
@@ -363,7 +363,7 @@ class LoopScopeTest extends TestCase
                     }
 
                     echo $array;',
-                'error_message' => 'PossiblyUndefinedVariable - somefile.php:4 - Possibly undefined variable ' .
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:4 - Possibly undefined variable ' .
                     '$array, first seen on line 4',
             ],
             'possiblyUndefinedVariableInForeach' => [
@@ -373,7 +373,7 @@ class LoopScopeTest extends TestCase
                     }
 
                     echo $car;',
-                'error_message' => 'PossiblyUndefinedVariable - somefile.php:6 - Possibly undefined variable ' .
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:6 - Possibly undefined variable ' .
                     '$car, first seen on line 3',
             ],
             'possibleUndefinedVariableInForeachAndIf' => [
@@ -386,7 +386,7 @@ class LoopScopeTest extends TestCase
                     }
 
                     echo $a;',
-                'error_message' => 'PossiblyUndefinedVariable - somefile.php:9 - Possibly undefined variable $a, ' .
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:9 - Possibly undefined variable $a, ' .
                     'first seen on line 4',
             ],
             'implicitFourthLoopWithBadReturnType' => [

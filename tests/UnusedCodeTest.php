@@ -3,26 +3,12 @@ namespace Psalm\Tests;
 
 use Psalm\Checker\FileChecker;
 use Psalm\Config;
+use Psalm\Context;
 
 class UnusedCodeTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
-
-    /** @var string */
-    protected static $project_dir;
-
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
-
-    /**
-     * @return void
-     */
-    public static function setUpBeforeClass()
-    {
-        parent::setUpBeforeClass();
-        self::$project_dir = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
-    }
 
     /**
      * @return void
@@ -38,44 +24,71 @@ class UnusedCodeTest extends TestCase
             new Provider\FakeCacheProvider()
         );
 
-        $this->project_checker->setConfig(Config::loadFromXML(
-            'psalm.xml',
-            dirname(__DIR__),
-            '<?xml version="1.0"?>
-            <psalm
-                throwExceptionOnError="true"
-                useDocblockTypes="true"
-                totallyTyped="true"
-            >
-                <projectFiles>
-                    <directory name="src" />
-                </projectFiles>
-            </psalm>'
-        ));
+        $this->project_checker->setConfig(new TestConfig());
 
         $this->project_checker->collect_references = true;
     }
 
     /**
-     * @dataProvider providerTestUnusedCodeWithClassReferences
+     * @dataProvider providerFileCheckerValidCodeParse
+     *
+     * @param string $code
+     * @param array<string, string> $assertions
+     * @param array<string> $error_levels
+     *
+     * @return void
+     */
+    public function testValidCode($code)
+    {
+        $test_name = $this->getName();
+        if (strpos($test_name, 'PHP7-') !== false) {
+            if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
+                $this->markTestSkipped('Test case requires PHP 7.');
+
+                return;
+            }
+        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+            $this->markTestSkipped('Skipped due to a bug.');
+        }
+
+        $context = new Context();
+
+        $this->addFile(
+            self::$src_dir_path . 'somefile.php',
+            $code
+        );
+
+        $file_checker = new FileChecker(self::$src_dir_path . 'somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods($context);
+        $this->project_checker->checkClassReferences();
+    }
+
+    /**
+     * @dataProvider providerFileCheckerInvalidCodeParse
      *
      * @param string $code
      * @param string $error_message
      *
      * @return void
      */
-    public function testUnusedCodeWithClassReferences($code, $error_message)
+    public function testInvalidCode($code, $error_message)
     {
+        if (strpos($this->getName(), 'SKIPPED-') !== false) {
+            $this->markTestSkipped();
+        }
+
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessage($error_message);
 
         $this->addFile(
-            self::$project_dir . 'somefile.php',
+            self::$src_dir_path . 'somefile.php',
             $code
         );
 
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
+        $context = new Context();
+
+        $file_checker = new FileChecker(self::$src_dir_path . 'somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods($context);
         $this->project_checker->checkClassReferences();
     }
 
@@ -95,6 +108,31 @@ class UnusedCodeTest extends TestCase
 
                         unset($arr[$a]);
                     }',
+                'check_unused_references' => true,
+            ],
+            'usedVariables' => [
+                '<?php
+                    /** @return string */
+                    function foo() {
+                        $a = 5;
+                        $b = [];
+                        return $a . implode(",", $b);
+                    }',
+                'check_unused_references' => true,
+            ],
+            'ifInFunction' => [
+                '<?php
+                    /** @return string */
+                    function foo() {
+                        $a = 5;
+                        if (rand(0, 1)) {
+                            $b = "hello";
+                        } else {
+                            $b = "goodbye";
+                        }
+                        return $a . $b;
+                    }',
+                'check_unused_references' => true,
             ],
         ];
     }
@@ -114,6 +152,7 @@ class UnusedCodeTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'UnusedVariable',
+                'check_unused_references' => true,
             ],
             'ifInFunction' => [
                 '<?php
@@ -128,20 +167,13 @@ class UnusedCodeTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'UnusedVariable',
+                'check_unused_references' => true,
             ],
-        ];
-    }
-
-    /**
-     * @return array
-     */
-    public function providerTestUnusedCodeWithClassReferences()
-    {
-        return [
             'unusedClass' => [
                 '<?php
                     class A { }',
                 'error_message' => 'UnusedClass',
+                'check_unused_references' => true,
             ],
             'publicUnusedMethod' => [
                 '<?php
@@ -152,6 +184,7 @@ class UnusedCodeTest extends TestCase
 
                     new A();',
                 'error_message' => 'PossiblyUnusedMethod',
+                'check_unused_references' => true,
             ],
             'privateUnusedMethod' => [
                 '<?php
@@ -162,6 +195,7 @@ class UnusedCodeTest extends TestCase
 
                     new A();',
                 'error_message' => 'UnusedMethod',
+                'check_unused_references' => true,
             ],
         ];
     }
