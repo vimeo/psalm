@@ -40,14 +40,17 @@ trait FileCheckerValidCodeParseTestTrait
             Config::getInstance()->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
-        $stmts = self::$parser->parse($code);
-
         $context = new Context();
         foreach ($scope_vars as $var => $value) {
             $context->vars_in_scope[$var] = $value;
         }
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $this->addFile(
+            'somefile.php',
+            $code
+        );
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods($context);
 
         foreach ($assertions as $var => $expected) {

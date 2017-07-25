@@ -30,7 +30,7 @@ class ClassLikeStorage
     /**
      * @var bool
      */
-    public $registered = false;
+    public $populated = false;
 
     /**
      * @var bool
@@ -67,14 +67,14 @@ class ClassLikeStorage
     /**
      * Interfaces this class implements
      *
-     * @var array<string>
+     * @var array<string, string>
      */
     public $class_implements = [];
 
     /**
      * Parent interfaces
      *
-     * @var  array<string>
+     * @var  array<string, string>
      */
     public $parent_interfaces = [];
 
@@ -96,9 +96,14 @@ class ClassLikeStorage
     public $abstract = false;
 
     /**
-     * @var array<string, bool>
+     * @var array<string, string>
      */
     public $used_traits = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $trait_alias_map = [];
 
     /**
      * @var bool

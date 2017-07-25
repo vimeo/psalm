@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\Checker\ProjectChecker;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -378,5 +379,18 @@ class Union
         }
 
         $this->checked = true;
+    }
+
+    /**
+     * @param  ProjectChecker $project_checker
+     * @param  array<string, mixed> $phantom_classes
+     *
+     * @return void
+     */
+    public function queueClassLikesForScanning(ProjectChecker $project_checker, array $phantom_classes = [])
+    {
+        foreach ($this->types as $atomic_type) {
+            $atomic_type->queueClassLikesForScanning($project_checker, $phantom_classes);
+        }
     }
 }

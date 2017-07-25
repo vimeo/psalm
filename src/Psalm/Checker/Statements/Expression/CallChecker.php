@@ -299,21 +299,19 @@ class CallChecker
                 }
             }
 
-            if ($function_params) {
-                // do this here to allow closure param checks
-                if (self::checkFunctionArgumentsMatch(
-                    $statements_checker,
-                    $stmt->args,
-                    $method_id,
-                    $function_params,
-                    $function_storage,
-                    null,
-                    $generic_params,
-                    $code_location,
-                    $context->check_variables
-                ) === false) {
-                    // fall through
-                }
+            // do this here to allow closure param checks
+            if (self::checkFunctionArgumentsMatch(
+                $statements_checker,
+                $stmt->args,
+                $method_id,
+                $function_params ?: [],
+                $function_storage,
+                null,
+                $generic_params,
+                $code_location,
+                $context->check_variables
+            ) === false) {
+                // fall through
             }
 
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
@@ -455,7 +453,7 @@ class CallChecker
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 if ($context->check_classes) {
@@ -491,7 +489,7 @@ class CallChecker
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
             $statements_checker->analyze([$stmt->class], $context);
-            $fq_class_name = $stmt->class->name;
+            $fq_class_name = ClassChecker::getAnonymousClassName($stmt->class, $statements_checker->getFilePath());
         } else {
             ExpressionChecker::analyze($statements_checker, $stmt->class, $context);
         }
@@ -1179,7 +1177,7 @@ class CallChecker
             } elseif ($context->check_classes) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -1188,11 +1186,13 @@ class CallChecker
 
                 $does_class_exist = false;
 
-                if ($context->self &&
-                    isset(ClassLikeChecker::$storage[strtolower($context->self)]->used_traits[$fq_class_name])
-                ) {
-                    $fq_class_name = $context->self;
-                    $does_class_exist = true;
+                if ($context->self) {
+                    if (isset(
+                        ClassLikeChecker::$storage[strtolower($context->self)]->used_traits[strtolower($fq_class_name)]
+                    )) {
+                        $fq_class_name = $context->self;
+                        $does_class_exist = true;
+                    }
                 }
 
                 if (!$does_class_exist) {
@@ -1676,7 +1676,7 @@ class CallChecker
                                 $offset_value_type = Type::parseString(
                                     ClassLikeChecker::getFQCLNFromNameObject(
                                         $arg->value->class,
-                                        $statements_checker
+                                        $statements_checker->getAliases()
                                     )
                                 );
                             } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_ && $arg->value->value) {
@@ -2038,6 +2038,8 @@ class CallChecker
                 }
             }
         }
+
+        $param_type = TypeChecker::simplifyUnionType($param_type, $statements_checker->getFileChecker());
 
         $type_match_found = TypeChecker::isContainedBy(
             $input_type,

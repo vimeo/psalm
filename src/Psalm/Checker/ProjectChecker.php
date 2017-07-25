@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
@@ -11,7 +12,9 @@ use Psalm\IssueBuffer;
 use Psalm\Provider\CacheProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
-use Psalm\Storage\PropertyStorage;
+use Psalm\Provider\StatementsProvider;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -29,6 +32,12 @@ class ProjectChecker
      * @var self
      */
     public static $instance;
+
+    /** @var FileProvider */
+    private $file_provider;
+
+    /** @var CacheProvider */
+    public $cache_provider;
 
     /**
      * Whether or not to use colors in error output
@@ -77,7 +86,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_classlikes_ci = [];
+    private $existing_classlikes_lc = [];
 
     /**
      * @var array<string, bool>
@@ -87,7 +96,12 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_classes_ci = [];
+    private $existing_classes_lc = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private $reflected_classeslikes_lc = [];
 
     /**
      * @var array<string, bool>
@@ -97,7 +111,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_interfaces_ci = [];
+    private $existing_interfaces_lc = [];
 
     /**
      * @var array<string, bool>
@@ -107,7 +121,7 @@ class ProjectChecker
     /**
      * @var array<string, bool>
      */
-    private $existing_traits_ci = [];
+    private $existing_traits_lc = [];
 
     /**
      * @var array<string, bool>
@@ -122,17 +136,34 @@ class ProjectChecker
     /**
      * @var array<string, string>
      */
-    private $files_to_visit = [];
+    private $files_to_scan = [];
+
+    /**
+     * @var array<string, string>
+     */
+    private $classes_to_scan = [];
 
     /**
      * @var array<string, bool>
      */
-    private $files_to_analyze = [];
+    private $classes_to_deep_scan = [];
+
+    /**
+     * @var array<string, string>
+     */
+    private $files_to_deep_scan = [];
+
+    /**
+     * We analyze more files than we necessarily report errors in
+     *
+     * @var array<string, string>
+     */
+    private $files_to_report = [];
 
     /**
      * @var array<string, bool>
      */
-    private $visited_files = [];
+    private $scanned_files = [];
 
     /**
      * @var array<string, bool>
@@ -171,14 +202,12 @@ class ProjectChecker
     public $use_referencing_files = [];
 
     /**
-     * @var array<string, string>
-     */
-    public $fake_files = [];
-
-    /**
      * @var bool
      */
     public $server_mode = false;
+
+    /** @var int */
+    public $threads;
 
     /**
      * Whether to log functions just at the file level or globally (for stubs)
@@ -196,22 +225,29 @@ class ProjectChecker
      * @param bool $show_info
      * @param bool $debug_output
      * @param string  $output_format
+     * @param int     $threads
      * @param bool    $update_docblocks
      * @param bool    $collect_references
      * @param string  $find_references_to
      */
     public function __construct(
+        FileProvider $file_provider,
+        CacheProvider $cache_provider,
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
+        $threads = 1,
         $debug_output = false,
         $update_docblocks = false,
         $collect_references = false,
         $find_references_to = null
     ) {
+        $this->file_provider = $file_provider;
+        $this->cache_provider = $cache_provider;
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
+        $this->threads = $threads;
         $this->update_docblocks = $update_docblocks;
         $this->collect_references = $collect_references;
         $this->find_references_to = $find_references_to;
@@ -222,6 +258,8 @@ class ProjectChecker
 
         $this->output_format = $output_format;
         self::$instance = $this;
+
+        $this->collectPredefinedClassLikes();
     }
 
     /**
@@ -253,12 +291,12 @@ class ProjectChecker
         $diff_files = null;
         $deleted_files = null;
 
-        if ($is_diff && FileReferenceProvider::loadReferenceCache() && CacheProvider::canDiffFiles()) {
+        if ($is_diff && FileReferenceProvider::loadReferenceCache() && $this->cache_provider->canDiffFiles()) {
             $deleted_files = FileReferenceProvider::getDeletedReferencedFiles();
             $diff_files = $deleted_files;
 
             foreach ($this->config->getProjectDirectories() as $dir_name) {
-                $diff_files = array_merge($diff_files, self::getDiffFilesInDir($dir_name, $this->config));
+                $diff_files = array_merge($diff_files, $this->getDiffFilesInDir($dir_name, $this->config));
             }
         }
 
@@ -267,7 +305,7 @@ class ProjectChecker
                 $this->checkDirWithConfig($dir_name, $this->config);
             }
 
-            $this->visitFiles();
+            $this->scanFiles();
 
             if (!$this->server_mode) {
                 $this->analyzeFiles();
@@ -281,17 +319,18 @@ class ProjectChecker
 
             // strip out deleted files
             $file_list = array_diff($file_list, $deleted_files);
+
             $this->checkDiffFilesWithConfig($this->config, $file_list);
 
-            $this->visitFiles();
+            $this->scanFiles();
 
             if (!$this->server_mode) {
                 $this->analyzeFiles();
             }
         }
 
-        $removed_parser_files = CacheProvider::deleteOldParserCaches(
-            $is_diff ? CacheProvider::getLastGoodRun() : $start_checks
+        $removed_parser_files = $this->cache_provider->deleteOldParserCaches(
+            $is_diff ? $this->cache_provider->getLastGoodRun() : $start_checks
         );
 
         if ($this->debug_output && $removed_parser_files) {
@@ -299,7 +338,7 @@ class ProjectChecker
         }
 
         if ($is_diff) {
-            CacheProvider::touchParserCaches($this->getAllFiles($this->config), $start_checks);
+            $this->cache_provider->touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
 
         if ($this->collect_references) {
@@ -342,13 +381,14 @@ class ProjectChecker
             }
         }
 
-        IssueBuffer::finish(true, (int)$start_checks, $this->visited_files);
+        IssueBuffer::finish(true, (int)$start_checks, $this->scanned_files);
     }
 
     /**
      * @return void
+     * @psalm-suppress ParadoxicalCondition
      */
-    private function visitFiles()
+    public function scanFiles()
     {
         if (!$this->config) {
             throw new \UnexpectedValueException('$this->config cannot be null');
@@ -356,11 +396,401 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        foreach ($this->files_to_analyze as $file_path => $_) {
-            if (!isset($this->visited_files[$file_path])) {
-                $this->visitFile($file_path, $filetype_handlers);
+        $has_changes = false;
+
+        while ($this->files_to_scan || $this->classes_to_scan) {
+            if ($this->files_to_scan) {
+                $file_path = array_shift($this->files_to_scan);
+
+                if (!isset($this->scanned_files[$file_path])) {
+                    $this->scanFile($file_path, $filetype_handlers, isset($this->files_to_deep_scan[$file_path]));
+                    $has_changes = true;
+                }
+            } else {
+                $fq_classlike_name = array_shift($this->classes_to_scan);
+                $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+                if (isset($this->reflected_classeslikes_lc[$fq_classlike_name_lc])) {
+                    continue;
+                }
+
+                if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
+                        && $this->existing_classlikes_lc[$fq_classlike_name_lc] === false
+                ) {
+                    continue;
+                }
+
+                if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
+                    if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
+                        && $this->existing_classlikes_lc[$fq_classlike_name_lc]
+                    ) {
+                        $reflected_class = new \ReflectionClass($fq_classlike_name);
+                        ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
+                        $this->reflected_classeslikes_lc[$fq_classlike_name_lc] = true;
+                    } elseif ($this->fileExistsForClassLike($fq_classlike_name)) {
+                        if (isset($this->classlike_files[$fq_classlike_name_lc])) {
+                            $file_path = $this->classlike_files[$fq_classlike_name_lc];
+                            $this->files_to_scan[$file_path] = $file_path;
+                            if (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])) {
+                                unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
+                                $this->files_to_deep_scan[$file_path] = $file_path;
+                            }
+                        }
+                    } else {
+                        $this->existing_classlikes_lc[$fq_classlike_name_lc] = false;
+                    }
+                }
             }
         }
+
+        if (!$has_changes) {
+            return;
+        }
+
+        if ($this->debug_output) {
+            echo 'ClassLikeStorage is populating' . PHP_EOL;
+        }
+
+        foreach (ClassLikeChecker::$storage as $storage) {
+            if (!$storage->user_defined) {
+                continue;
+            }
+
+            $this->populateClassLikeStorage($storage);
+        }
+
+        if ($this->debug_output) {
+            echo 'ClassLikeStorage is populated' . PHP_EOL;
+        }
+
+        if ($this->debug_output) {
+            echo 'FileStorage is populating' . PHP_EOL;
+        }
+
+        foreach (FileChecker::$storage as $storage) {
+            $this->populateFileStorage($storage);
+        }
+
+        if ($this->debug_output) {
+            echo 'FileStorage is populated' . PHP_EOL;
+        }
+    }
+
+    /**
+     * @param  ClassLikeStorage $storage
+     * @param  array            $dependent_classlikes
+     *
+     * @return void
+     */
+    private function populateClassLikeStorage(ClassLikeStorage $storage, $dependent_classlikes = [])
+    {
+        if ($storage->populated) {
+            return;
+        }
+
+        if (isset($dependent_classlikes[strtolower($storage->name)])) {
+            throw new CircularReferenceException(
+                'Circular reference discovered when loading ' . $storage->name
+            );
+        }
+
+        $dependent_classlikes[strtolower($storage->name)] = true;
+
+        if (isset($storage->parent_classes[0]) && isset(ClassLikeChecker::$storage[$storage->parent_classes[0]])) {
+            $parent_storage = ClassLikeChecker::$storage[$storage->parent_classes[0]];
+
+            $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
+
+            $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
+
+            $this->inheritMethodsFromParent($storage, $parent_storage);
+            $this->inheritPropertiesFromParent($storage, $parent_storage);
+
+            $storage->class_implements += $parent_storage->class_implements;
+
+            $storage->public_class_constants += $parent_storage->public_class_constants;
+            $storage->protected_class_constants += $parent_storage->protected_class_constants;
+        }
+
+        $parent_interfaces = [];
+
+        foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
+            $parent_interface_storage = ClassLikeChecker::$storage[$parent_interface_lc];
+
+            $this->populateClassLikeStorage($parent_interface_storage, $dependent_classlikes);
+
+            // copy over any constants
+            $storage->public_class_constants = array_merge(
+                $storage->public_class_constants,
+                $parent_interface_storage->public_class_constants
+            );
+
+            $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
+
+            $this->inheritMethodsFromParent($storage, $parent_interface_storage);
+        }
+
+        $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
+
+        $extra_interfaces = [];
+
+        foreach ($storage->class_implements as $implemented_interface_lc => $_) {
+            if (!isset(ClassLikeChecker::$storage[$implemented_interface_lc])) {
+                continue;
+            }
+            $implemented_interface_storage = ClassLikeChecker::$storage[$implemented_interface_lc];
+
+            $this->populateClassLikeStorage($implemented_interface_storage, $dependent_classlikes);
+
+            // copy over any constants
+            $storage->public_class_constants = array_merge(
+                $storage->public_class_constants,
+                $implemented_interface_storage->public_class_constants
+            );
+
+            $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
+
+            $storage->public_class_constants += $implemented_interface_storage->public_class_constants;
+        }
+
+        $storage->class_implements = array_merge($extra_interfaces, $storage->class_implements);
+
+        foreach ($storage->class_implements as $implemented_interface) {
+            if (!isset(ClassLikeChecker::$storage[strtolower($implemented_interface)])) {
+                continue;
+            }
+
+            $implemented_interface_storage = ClassLikeChecker::$storage[strtolower($implemented_interface)];
+
+            foreach ($implemented_interface_storage->methods as $method_name => $method) {
+                if ($method->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
+                    $mentioned_method_id = $implemented_interface . '::' . $method_name;
+                    $implemented_method_id = $storage->name . '::' . $method_name;
+
+                    MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
+                }
+            }
+        }
+
+        foreach ($storage->used_traits as $used_trait_lc => $used_trait) {
+            if (!isset(ClassLikeChecker::$storage[$used_trait_lc])) {
+                continue;
+            }
+
+            $trait_storage = ClassLikeChecker::$storage[$used_trait_lc];
+
+            $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
+
+            $this->inheritMethodsFromParent($storage, $trait_storage);
+            $this->inheritPropertiesFromParent($storage, $trait_storage);
+        }
+
+        if ($storage->location) {
+            $file_path = $storage->location->file_path;
+
+            foreach ($storage->parent_interfaces as $parent_interface_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_interface_lc);
+            }
+
+            foreach ($storage->parent_classes as $parent_class_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_class_lc);
+            }
+
+            foreach ($storage->class_implements as $implemented_interface) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, strtolower($implemented_interface));
+            }
+
+            foreach ($storage->used_traits as $used_trait_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $used_trait_lc);
+            }
+        }
+
+        $storage->populated = true;
+    }
+
+    /**
+     * @param  FileStorage $storage
+     * @param  array<string, true> $dependent_file_paths
+     *
+     * @return void
+     */
+    private function populateFileStorage(FileStorage $storage, array $dependent_file_paths = [])
+    {
+        if ($storage->populated) {
+            return;
+        }
+
+        if (isset($dependent_file_paths[strtolower($storage->file_path)])) {
+            return;
+        }
+
+        $dependent_file_paths[strtolower($storage->file_path)] = true;
+
+        foreach ($storage->included_file_paths as $included_file_path => $_) {
+            if (!isset(FileChecker::$storage[$included_file_path])) {
+                continue;
+            }
+
+            $included_file_storage = FileChecker::$storage[$included_file_path];
+            $this->populateFileStorage($included_file_storage, $dependent_file_paths);
+
+            $storage->declaring_function_ids = array_merge(
+                $included_file_storage->declaring_function_ids,
+                $storage->declaring_function_ids
+            );
+        }
+
+        $storage->populated = true;
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @param string $parent_class
+     *
+     * @return void
+     */
+    protected static function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
+    {
+        $fq_class_name = $storage->name;
+        $parent_class = $parent_storage->name;
+
+        // register where they appear (can never be in a trait)
+        foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+            if ($parent_storage->is_trait
+                && $storage->trait_alias_map
+                && isset($storage->trait_alias_map[$method_name])
+            ) {
+                $aliased_method_name = $storage->trait_alias_map[$method_name];
+            } else {
+                $aliased_method_name = $method_name;
+            }
+
+            if (isset($storage->appearing_method_ids[$aliased_method_name])) {
+                continue;
+            }
+
+            $parent_method_id = $parent_class . '::' . $method_name;
+
+            $implemented_method_id = $fq_class_name . '::' . $aliased_method_name;
+
+            $storage->appearing_method_ids[$aliased_method_name] =
+                $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
+        }
+
+        // register where they're declared
+        foreach ($parent_storage->declaring_method_ids as $method_name => $declaring_method_id) {
+            if (!$parent_storage->is_trait) {
+                $implemented_method_id = $fq_class_name . '::' . $method_name;
+
+                MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
+            }
+
+            if ($parent_storage->is_trait
+                && $storage->trait_alias_map
+                && isset($storage->trait_alias_map[$method_name])
+            ) {
+                $aliased_method_name = $storage->trait_alias_map[$method_name];
+            } else {
+                $aliased_method_name = $method_name;
+            }
+
+            if (isset($storage->declaring_method_ids[$aliased_method_name])) {
+                continue;
+            }
+
+            $parent_method_id = $parent_class . '::' . $method_name;
+
+            $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
+        }
+    }
+
+    /**
+     * @param string $fq_class_name
+     * @param string $parent_class
+     *
+     * @return void
+     */
+    protected static function inheritPropertiesFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
+    {
+        // register where they appear (can never be in a trait)
+        foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
+            if (isset($storage->appearing_property_ids[$property_name])) {
+                continue;
+            }
+
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
+            $implemented_property_id = $storage->name . '::$' . $property_name;
+
+            $storage->appearing_property_ids[$property_name] =
+                $parent_storage->is_trait ? $implemented_property_id : $appearing_property_id;
+        }
+
+        // register where they're declared
+        foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
+            if (isset($storage->declaring_property_ids[$property_name])) {
+                continue;
+            }
+
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
+            $storage->declaring_property_ids[$property_name] = $declaring_property_id;
+        }
+
+        // register where they're declared
+        foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
+            if (!$parent_storage->is_trait
+                && isset($parent_storage->properties[$property_name])
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+            ) {
+                continue;
+            }
+
+            $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
+        }
+    }
+
+    /**
+     * @param  string  $fq_classlike_name
+     * @param  bool $analyze_too
+     *
+     * @return void
+     */
+    public function queueClassLikeForScanning($fq_classlike_name, $analyze_too = false)
+    {
+        if (!$this->config) {
+            throw new \UnexpectedValueException('Config should not be null here');
+        }
+
+        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
+            $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
+
+            if ($analyze_too) {
+                $this->classes_to_deep_scan[$fq_classlike_name_lc] = true;
+            }
+        }
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function queueFileForScanning($file_path)
+    {
+        $this->files_to_scan[$file_path] = $file_path;
     }
 
     /**
@@ -374,14 +804,69 @@ class ProjectChecker
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
-        foreach ($this->files_to_analyze as $file_path => $_) {
-            $file_checker = $this->visitFile($file_path, $filetype_handlers, true);
+        $analysis_worker =
+            /**
+             * @param int $i
+             * @param string $file_path
+             *
+             * @return void
+             */
+            function ($i, $file_path) use ($filetype_handlers) {
+                $file_checker = $this->getFile($file_path, $filetype_handlers, true);
 
-            if ($this->debug_output) {
-                echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
+                if ($this->debug_output) {
+                    echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
+                }
+
+                $file_checker->analyze(null, $this->update_docblocks);
+            };
+
+        $pool_size = $this->threads;
+
+        if ($pool_size > 1 && count($this->files_to_report) > $pool_size) {
+            $process_file_paths = [];
+
+            $i = 0;
+
+            foreach ($this->files_to_report as $file_path) {
+                $process_file_paths[$i % $pool_size][] = $file_path;
+                ++$i;
             }
 
-            $file_checker->analyze($this->update_docblocks);
+            // Run analysis one file at a time, splitting the set of
+            // files up among a given number of child processes.
+            $pool = new \Psalm\Fork\Pool(
+                $process_file_paths,
+                /** @return void */
+                function () {
+                },
+                $analysis_worker,
+                /** @return array */
+                function () {
+                    return IssueBuffer::getIssuesData();
+                }
+            );
+
+            // Wait for all tasks to complete and collect the results.
+            /**
+             * @var array<array<int, array{severity: string, line_number: string, type: string, message: string,
+             *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
+             *  snippet_to: int, column: int}>>
+             */
+            $forked_issues_data = $pool->wait();
+
+            foreach ($forked_issues_data as $issues_data) {
+                IssueBuffer::addIssues($issues_data);
+            }
+
+            $did_fork_pool_have_error = $pool->didHaveError();
+        } else {
+            $i = 0;
+
+            foreach ($this->files_to_report as $file_path => $_) {
+                $analysis_worker($i, $file_path);
+                ++$i;
+            }
         }
     }
 
@@ -453,15 +938,15 @@ class ProjectChecker
      */
     public function checkClassReferences()
     {
-        foreach ($this->existing_classlikes_ci as $fq_class_name_ci => $_) {
-            if (isset(ClassLikeChecker::$storage[$fq_class_name_ci])) {
-                $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_ci];
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            if (isset(ClassLikeChecker::$storage[$fq_class_name_lc])) {
+                $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_lc];
 
                 if ($classlike_storage->location &&
                     $this->config &&
                     $this->config->isInProjectDirs($classlike_storage->location->file_path)
                 ) {
-                    if (!isset($this->classlike_references[$fq_class_name_ci])) {
+                    if (!isset($this->classlike_references[$fq_class_name_lc])) {
                         if (IssueBuffer::accepts(
                             new UnusedClass(
                                 'Class ' . $classlike_storage->name . ' is never used',
@@ -535,10 +1020,10 @@ class ProjectChecker
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
-        $this->visitFiles();
+        $this->scanFiles();
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks, $this->visited_files);
+        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
     }
 
     /**
@@ -563,7 +1048,9 @@ class ProjectChecker
                     $file_path = (string)$iterator->getRealPath();
 
                     if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
-                        $this->files_to_analyze[$file_path] = true;
+                        $this->files_to_report[$file_path] = $file_path;
+                        $this->files_to_deep_scan[$file_path] = $file_path;
+                        $this->files_to_scan[$file_path] = $file_path;
                     }
                 }
             }
@@ -608,7 +1095,7 @@ class ProjectChecker
      *
      * @return array<string>
      */
-    protected static function getDiffFilesInDir($dir_name, Config $config)
+    protected function getDiffFilesInDir($dir_name, Config $config)
     {
         $file_extensions = $config->getFileExtensions();
         $filetype_handlers = $config->getFiletypeHandlers();
@@ -623,11 +1110,12 @@ class ProjectChecker
             if (!$iterator->isDot()) {
                 $extension = $iterator->getExtension();
                 if (in_array($extension, $file_extensions, true)) {
-                    $file_name = (string)$iterator->getRealPath();
+                    $file_path = (string)$iterator->getRealPath();
 
-                    if ($config->isInProjectDirs($file_name)) {
-                        if (FileProvider::hasFileChanged($file_name)) {
-                            $diff_files[] = $file_name;
+                    if ($config->isInProjectDirs($file_path)) {
+                        if ($this->file_provider->getModifiedTime($file_path) > $this->cache_provider->getLastGoodRun()
+                        ) {
+                            $diff_files[] = $file_path;
                         }
                     }
                 }
@@ -660,7 +1148,9 @@ class ProjectChecker
                 continue;
             }
 
-            $this->files_to_analyze[$file_path] = true;
+            $this->files_to_report[$file_path] = $file_path;
+            $this->files_to_deep_scan[$file_path] = $file_path;
+            $this->files_to_scan[$file_path] = $file_path;
         }
     }
 
@@ -684,21 +1174,19 @@ class ProjectChecker
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
-        $this->files_to_analyze[$file_path] = true;
+        $this->files_to_deep_scan[$file_path] = $file_path;
+        $this->files_to_scan[$file_path] = $file_path;
+        $this->files_to_report[$file_path] = $file_path;
 
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileReferenceProvider::loadReferenceCache();
 
-        $file_checker = $this->visitFile($file_path, $filetype_handlers, true);
+        $this->scanFiles();
 
-        if ($this->debug_output) {
-            echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
-        }
+        $this->analyzeFiles();
 
-        $file_checker->analyze($this->update_docblocks);
-
-        IssueBuffer::finish(false, $start_checks, $this->visited_files);
+        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
     }
 
     /**
@@ -708,7 +1196,7 @@ class ProjectChecker
      *
      * @return FileChecker
      */
-    private function visitFile($file_path, array $filetype_handlers, $will_analyze = false)
+    private function getFile($file_path, array $filetype_handlers, $will_analyze = false)
     {
         $extension = (string)pathinfo($file_path)['extension'];
 
@@ -716,17 +1204,51 @@ class ProjectChecker
             /** @var FileChecker */
             $file_checker = new $filetype_handlers[$extension]($file_path, $this);
         } else {
-            $file_checker = new FileChecker($file_path, $this, null, $will_analyze);
+            $file_checker = new FileChecker($file_path, $this, $will_analyze);
         }
 
         if ($this->debug_output) {
-            $rev_or_V = (isset($this->visited_files[$file_path]) ? 'Rev' : 'V');
-            echo $rev_or_V . 'isiting ' . $file_path . PHP_EOL;
+            echo 'Getting ' . $file_path . PHP_EOL;
         }
 
-        $this->visited_files[$file_path] = true;
+        return $file_checker;
+    }
 
-        $file_checker->visit();
+    /**
+     * @param  string $file_path
+     * @param  array  $filetype_handlers
+     * @param  bool   $will_analyze
+     *
+     * @return FileChecker
+     */
+    private function scanFile($file_path, array $filetype_handlers, $will_analyze = false)
+    {
+        $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
+        $file_name_parts = explode('.', array_pop($path_parts));
+        $extension = count($file_name_parts > 1) ? array_pop($file_name_parts) : null;
+
+        if (isset($filetype_handlers[$extension])) {
+            /** @var FileChecker */
+            $file_checker = new $filetype_handlers[$extension]($file_path, $this);
+        } else {
+            $file_checker = new FileChecker($file_path, $this, $will_analyze);
+        }
+
+        if (isset($this->scanned_files[$file_path])) {
+            throw new \UnexpectedValueException('Should not be rescanning ' . $file_path);
+        }
+
+        if ($this->debug_output) {
+            if (isset($this->files_to_deep_scan[$file_path])) {
+                echo 'Deep scanning ' . $file_path . PHP_EOL;
+            } else {
+                echo 'Scanning ' . $file_path . PHP_EOL;
+            }
+        }
+
+        $this->scanned_files[$file_path] = true;
+
+        $file_checker->scan();
 
         return $file_checker;
     }
@@ -742,30 +1264,20 @@ class ProjectChecker
      */
     public function fileExistsForClassLike($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (isset($this->existing_classlikes_ci[$fq_class_name_ci])) {
-            return $this->existing_classlikes_ci[$fq_class_name_ci];
-        }
-
-        if (!$this->config) {
-            throw new \UnexpectedValueException('Config should not be null here');
-        }
-
-        $predefined_classlikes = $this->config->getPredefinedClassLikes();
-
-        if (isset($predefined_classlikes[$fq_class_name_ci])) {
-            $this->visited_classes[$fq_class_name_ci] = true;
-            $reflected_class = new \ReflectionClass($fq_class_name);
-            ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
-
+        if (isset($this->classlike_files[$fq_class_name_lc])) {
             return true;
+        }
+
+        if (isset($this->existing_classlikes_lc[$fq_class_name_lc])) {
+            throw new \InvalidArgumentException('Why are you asking about a builtin class?');
         }
 
         $old_level = error_reporting();
 
         if (!$this->debug_output) {
-            error_reporting(0);
+            error_reporting(E_ERROR);
         }
 
         try {
@@ -788,7 +1300,7 @@ class ProjectChecker
         }
 
         $fq_class_name = $reflected_class->getName();
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
         $this->existing_classlikes[$fq_class_name] = true;
 
         if ($reflected_class->isInterface()) {
@@ -797,79 +1309,6 @@ class ProjectChecker
             $this->addFullyQualifiedTraitName($fq_class_name, $file_path);
         } else {
             $this->addFullyQualifiedClassName($fq_class_name, $file_path);
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  string       $fq_class_name
-     *
-     * @return bool
-     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
-     */
-    public function visitFileForClassLike($fq_class_name)
-    {
-        if (!$fq_class_name || strpos($fq_class_name, '::') !== false) {
-            throw new \InvalidArgumentException('Invalid class name ' . $fq_class_name);
-        }
-
-        $fq_class_name_ci = strtolower($fq_class_name);
-
-        if (isset($this->visited_classes[$fq_class_name_ci])) {
-            return $this->visited_classes[$fq_class_name_ci];
-        }
-
-        // this registers the class if it's not user defined
-        if (!$this->fileExistsForClassLike($fq_class_name)) {
-            return false;
-        }
-
-        $this->visited_classes[$fq_class_name_ci] = true;
-
-        if (isset($this->classlike_files[$fq_class_name_ci])) {
-            $file_path = $this->classlike_files[$fq_class_name_ci];
-
-            if (isset($this->visited_files[$file_path])) {
-                return true;
-            }
-
-            $this->visited_files[$file_path] = true;
-
-            $file_checker = new FileChecker(
-                $file_path,
-                $this,
-                null,
-                false
-            );
-
-            ClassLikeChecker::$file_classes[$file_path][] = $fq_class_name;
-
-            $fq_class_name_lower = strtolower($fq_class_name);
-
-            if ($this->debug_output) {
-                echo 'Visiting ' . $file_path . PHP_EOL;
-            }
-
-            $file_checker->visit();
-
-            $storage = ClassLikeChecker::$storage[$fq_class_name_lower];
-
-            if (ClassLikeChecker::inPropertyMap($fq_class_name)) {
-                $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_class_name)];
-
-                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
-                    $property_type = Type::parseString($public_mapped_property);
-                    $storage->properties[$property_name] = new PropertyStorage();
-                    $storage->properties[$property_name]->type = $property_type;
-                    $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
-
-                    $property_id = $fq_class_name . '::$' . $property_name;
-
-                    $storage->declaring_property_ids[$property_name] = $property_id;
-                    $storage->appearing_property_ids[$property_name] = $property_id;
-                }
-            }
         }
 
         return true;
@@ -909,7 +1348,7 @@ class ProjectChecker
     {
         list($fq_class_name) = explode('::', $original_method_id);
 
-        $file_checker = $this->getVisitedFileCheckerForClassLike($fq_class_name);
+        $file_checker = $this->getFileCheckerForClassLike($fq_class_name);
 
         $appearing_method_id = (string)MethodChecker::getAppearingMethodId($original_method_id);
         list($appearing_fq_class_name) = explode('::', $appearing_method_id);
@@ -921,10 +1360,12 @@ class ProjectChecker
         }
 
         if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
-            $file_checker = $this->getVisitedFileCheckerForClassLike($appearing_fq_class_name);
+            $file_checker = $this->getFileCheckerForClassLike($appearing_fq_class_name);
         }
 
-        $file_checker->analyze(false, true);
+        $stmts = $file_checker->getStatements();
+
+        $file_checker->populateCheckers($stmts);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
@@ -939,36 +1380,26 @@ class ProjectChecker
      *
      * @return FileChecker
      */
-    private function getVisitedFileCheckerForClassLike($fq_class_name)
+    private function getFileCheckerForClassLike($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!$this->fake_files) {
-            // this registers the class if it's not user defined
-            if (!$this->fileExistsForClassLike($fq_class_name)) {
-                throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
-            }
-
-            if (!isset($this->classlike_files[$fq_class_name_ci])) {
-                throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
-            }
-
-            $file_path = $this->classlike_files[$fq_class_name_ci];
-        } else {
-            $file_path = array_keys($this->fake_files)[0];
+        // this registers the class if it's not user defined
+        if (!$this->fileExistsForClassLike($fq_class_name)) {
+            throw new \UnexpectedValueException('File does not exist for ' . $fq_class_name);
         }
+
+        if (!isset($this->classlike_files[$fq_class_name_lc])) {
+            throw new \UnexpectedValueException('Class ' . $fq_class_name . ' is not user-defined');
+        }
+
+        $file_path = $this->classlike_files[$fq_class_name_lc];
 
         if ($this->cache && isset($this->file_checkers[$file_path])) {
             return $this->file_checkers[$file_path];
         }
 
-        $file_checker = new FileChecker($file_path, $this, null, true);
-
-        $file_checker->visit();
-
-        if ($this->debug_output) {
-            echo 'Visiting ' . $file_path . PHP_EOL;
-        }
+        $file_checker = new FileChecker($file_path, $this, true);
 
         if ($this->cache) {
             $this->file_checkers[$file_path] = $file_checker;
@@ -1094,24 +1525,38 @@ class ProjectChecker
 
     /**
      * @param  string $file_path
-     * @param  string $file_contents
-     *
-     * @return void
-     */
-    public function registerFile($file_path, $file_contents)
-    {
-        $this->fake_files[$file_path] = $file_contents;
-    }
-
-    /**
-     * @param  string $file_path
      *
      * @return void
      */
     public function registerAnalyzableFile($file_path)
     {
-        $this->visited_files[$file_path] = true;
-        $this->files_to_analyze[$file_path] = true;
+        $this->files_to_deep_scan[$file_path] = $file_path;
+        $this->files_to_report[$file_path] = $file_path;
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return array<int, \PhpParser\Node\Stmt>
+     */
+    public function getStatementsForFile($file_path)
+    {
+        return StatementsProvider::getStatementsForFile(
+            $file_path,
+            $this->file_provider,
+            $this->cache_provider,
+            $this->debug_output
+        );
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return bool
+     */
+    public function fileExists($file_path)
+    {
+        return $this->file_provider->fileExists($file_path);
     }
 
     /**
@@ -1121,11 +1566,7 @@ class ProjectChecker
      */
     public function getFileContents($file_path)
     {
-        if (isset($this->fake_files[$file_path])) {
-            return $this->fake_files[$file_path];
-        }
-
-        return (string)file_get_contents($file_path);
+        return $this->file_provider->getContents($file_path);
     }
 
     /**
@@ -1136,15 +1577,15 @@ class ProjectChecker
      */
     public function addFullyQualifiedClassName($fq_class_name, $file_path = null)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
-        $this->existing_classes_ci[$fq_class_name_ci] = true;
-        $this->existing_traits_ci[$fq_class_name_ci] = false;
-        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $fq_class_name_lc = strtolower($fq_class_name);
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
+        $this->existing_classes_lc[$fq_class_name_lc] = true;
+        $this->existing_traits_lc[$fq_class_name_lc] = false;
+        $this->existing_interfaces_lc[$fq_class_name_lc] = false;
         $this->existing_classes[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name_ci] = $file_path;
+            $this->classlike_files[$fq_class_name_lc] = $file_path;
         }
     }
 
@@ -1156,15 +1597,15 @@ class ProjectChecker
      */
     public function addFullyQualifiedInterfaceName($fq_class_name, $file_path = null)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
-        $this->existing_interfaces_ci[$fq_class_name_ci] = true;
-        $this->existing_classes_ci[$fq_class_name_ci] = false;
-        $this->existing_traits_ci[$fq_class_name_ci] = false;
+        $fq_class_name_lc = strtolower($fq_class_name);
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
+        $this->existing_interfaces_lc[$fq_class_name_lc] = true;
+        $this->existing_classes_lc[$fq_class_name_lc] = false;
+        $this->existing_traits_lc[$fq_class_name_lc] = false;
         $this->existing_interfaces[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name_ci] = $file_path;
+            $this->classlike_files[$fq_class_name_lc] = $file_path;
         }
     }
 
@@ -1176,15 +1617,15 @@ class ProjectChecker
      */
     public function addFullyQualifiedTraitName($fq_class_name, $file_path = null)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
-        $this->existing_classlikes_ci[$fq_class_name_ci] = true;
-        $this->existing_traits_ci[$fq_class_name_ci] = true;
-        $this->existing_classes_ci[$fq_class_name_ci] = false;
-        $this->existing_interfaces_ci[$fq_class_name_ci] = false;
+        $fq_class_name_lc = strtolower($fq_class_name);
+        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
+        $this->existing_traits_lc[$fq_class_name_lc] = true;
+        $this->existing_classes_lc[$fq_class_name_lc] = false;
+        $this->existing_interfaces_lc[$fq_class_name_lc] = false;
         $this->existing_traits[$fq_class_name] = true;
 
         if ($file_path) {
-            $this->classlike_files[$fq_class_name_ci] = $file_path;
+            $this->classlike_files[$fq_class_name_lc] = $file_path;
         }
     }
 
@@ -1195,20 +1636,42 @@ class ProjectChecker
      */
     public function hasFullyQualifiedClassName($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_classes_ci[$fq_class_name_ci]) ||
-            !$this->existing_classes_ci[$fq_class_name_ci]
+        if (!isset($this->existing_classes_lc[$fq_class_name_lc])
+            || !$this->existing_classes_lc[$fq_class_name_lc]
+            || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
         ) {
+            if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                )
+                && !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+            ) {
+                if ($this->debug_output) {
+                    echo 'Last-chance attempt to hydrate ' . $fq_class_name . PHP_EOL;
+                }
+                // attempt to load in the class
+                $this->queueClassLikeForScanning($fq_class_name);
+                $this->scanFiles();
+
+                if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
+                    $this->existing_classes_lc[$fq_class_name_lc] = false;
+
+                    return false;
+                }
+
+                return $this->existing_classes_lc[$fq_class_name_lc];
+            }
+
             return false;
         }
 
         if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                $this->classlike_references[$fq_class_name_ci] = 0;
+            if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                $this->classlike_references[$fq_class_name_lc] = 0;
             }
 
-            ++$this->classlike_references[$fq_class_name_ci];
+            ++$this->classlike_references[$fq_class_name_lc];
         }
 
         return true;
@@ -1221,20 +1684,43 @@ class ProjectChecker
      */
     public function hasFullyQualifiedInterfaceName($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_interfaces_ci[$fq_class_name_ci]) ||
-            !$this->existing_interfaces_ci[$fq_class_name_ci]
+        if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
+            || !$this->existing_interfaces_lc[$fq_class_name_lc]
+            || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
         ) {
+            if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                )
+                && !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+            ) {
+                if ($this->debug_output) {
+                    echo 'Last-chance attempt to hydrate ' . $fq_class_name . PHP_EOL;
+                }
+
+                // attempt to load in the class
+                $this->queueClassLikeForScanning($fq_class_name);
+                $this->scanFiles();
+
+                if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
+                    $this->existing_interfaces_lc[$fq_class_name_lc] = false;
+
+                    return false;
+                }
+
+                return $this->existing_interfaces_lc[$fq_class_name_lc];
+            }
+
             return false;
         }
 
         if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                $this->classlike_references[$fq_class_name_ci] = 0;
+            if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                $this->classlike_references[$fq_class_name_lc] = 0;
             }
 
-            ++$this->classlike_references[$fq_class_name_ci];
+            ++$this->classlike_references[$fq_class_name_lc];
         }
 
         return true;
@@ -1247,20 +1733,20 @@ class ProjectChecker
      */
     public function hasFullyQualifiedTraitName($fq_class_name)
     {
-        $fq_class_name_ci = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (!isset($this->existing_traits_ci[$fq_class_name_ci]) ||
-            !$this->existing_traits_ci[$fq_class_name_ci]
+        if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
+            !$this->existing_traits_lc[$fq_class_name_lc]
         ) {
             return false;
         }
 
         if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_ci])) {
-                $this->classlike_references[$fq_class_name_ci] = 0;
+            if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                $this->classlike_references[$fq_class_name_lc] = 0;
             }
 
-            ++$this->classlike_references[$fq_class_name_ci];
+            ++$this->classlike_references[$fq_class_name_lc];
         }
 
         return true;
@@ -1273,6 +1759,38 @@ class ProjectChecker
      */
     public function canReportIssues($file_path)
     {
-        return isset($this->files_to_analyze[$file_path]);
+        return isset($this->files_to_report[$file_path]);
+    }
+
+    /**
+     * @return void
+     */
+    public function collectPredefinedClassLikes()
+    {
+        /** @var array<int, string> */
+        $predefined_classes = get_declared_classes();
+
+        foreach ($predefined_classes as $predefined_class) {
+            $reflection_class = new \ReflectionClass($predefined_class);
+
+            if (!$reflection_class->isUserDefined()) {
+                $predefined_class_lc = strtolower($predefined_class);
+                $this->existing_classlikes_lc[$predefined_class_lc] = true;
+                $this->existing_classes_lc[$predefined_class_lc] = true;
+            }
+        }
+
+        /** @var array<int, string> */
+        $predefined_interfaces = get_declared_interfaces();
+
+        foreach ($predefined_interfaces as $predefined_interface) {
+            $reflection_class = new \ReflectionClass($predefined_interface);
+
+            if (!$reflection_class->isUserDefined()) {
+                $predefined_interface_lc = strtolower($predefined_interface);
+                $this->existing_classlikes_lc[$predefined_interface_lc] = true;
+                $this->existing_interfaces_lc[$predefined_interface_lc] = true;
+            }
+        }
     }
 }

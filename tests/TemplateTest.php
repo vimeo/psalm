@@ -70,6 +70,45 @@ class TemplateTest extends TestCase
                     '$dfoo' => 'Foo<mixed>',
                 ],
             ],
+            'classTemplateExternalClasses' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    class Foo {
+                        /** @var string */
+                        public $T;
+
+                        /**
+                         * @param string $T
+                         * @template-typeof T $T
+                         */
+                        public function __construct(string $T) {
+                            $this->T = $T;
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function bar() {
+                            $t = $this->T;
+                            return new $t();
+                        }
+                    }
+
+                    $efoo = new Foo(Exception::class)
+                    $efoo_bar = $efoo->bar();
+
+                    $ffoo = new Foo("LogicException");
+                    $ffoo_bar = $ffoo->bar();',
+                'assertions' => [
+                    '$efoo' => 'Foo<Exception>',
+                    '$efoo_bar' => 'Exception',
+
+                    '$ffoo' => 'Foo<LogicException>',
+                    '$ffoo_bar' => 'LogicException',
+                ],
+            ],
             'classTemplateContainer' => [
                 '<?php
                     class A {}
@@ -235,6 +274,8 @@ class TemplateTest extends TestCase
             ],
             'validTemplatedType' => [
                 '<?php
+                    namespace FooFoo;
+
                     /**
                      * @template T
                      * @param T $x
@@ -250,6 +291,8 @@ class TemplateTest extends TestCase
             ],
             'validTemplatedStaticMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T
@@ -267,6 +310,8 @@ class TemplateTest extends TestCase
             ],
             'validTemplatedInstanceMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T
@@ -294,7 +339,7 @@ class TemplateTest extends TestCase
                         return array_keys($arr);
                     }
 
-                    $a = my_array_keys(["hello" => 5, "goodbye" => new Exception()]);',
+                    $a = my_array_keys(["hello" => 5, "goodbye" => new \Exception()]);',
                 'assertions' => [
                     '$a' => 'array<int, string>',
                 ],
@@ -328,6 +373,8 @@ class TemplateTest extends TestCase
         return [
             'invalidTemplatedType' => [
                 '<?php
+                    namespace FooFoo;
+
                     /**
                      * @template T
                      * @param T $x
@@ -344,6 +391,8 @@ class TemplateTest extends TestCase
             ],
             'invalidTemplatedStaticMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T
@@ -362,6 +411,8 @@ class TemplateTest extends TestCase
             ],
             'invalidTemplatedInstanceMethodType' => [
                 '<?php
+                    namespace FooFoo;
+
                     class A {
                         /**
                          * @template T

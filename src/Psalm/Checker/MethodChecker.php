@@ -149,10 +149,11 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param \ReflectionMethod $method
+     * @param ProjectChecker $project_checker
      *
      * @return null
      */
-    public static function extractReflectionMethodInfo(\ReflectionMethod $method)
+    public static function extractReflectionMethodInfo(\ReflectionMethod $method, ProjectChecker $project_checker)
     {
         $method_name = strtolower($method->getName());
 
@@ -184,6 +185,13 @@ class MethodChecker extends FunctionLikeChecker
         $class_storage->appearing_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
         $class_storage->overridden_method_ids[$method_name] = [];
 
+        try {
+            $storage->return_type = FunctionChecker::getReturnTypeFromCallMap($method_id);
+            $storage->return_type->queueClassLikesForScanning($project_checker);
+        } catch (\InvalidArgumentException $e) {
+            // do nothing
+        }
+
         $storage->visibility = $method->isPrivate()
             ? ClassLikeChecker::VISIBILITY_PRIVATE
             : ($method->isProtected() ? ClassLikeChecker::VISIBILITY_PROTECTED : ClassLikeChecker::VISIBILITY_PUBLIC);
@@ -202,6 +210,10 @@ class MethodChecker extends FunctionLikeChecker
                 $storage->param_types[$param->name] = $param_array->type;
             }
         } else {
+            foreach ($possible_params[0] as $param) {
+                $param->type->queueClassLikesForScanning($project_checker);
+            }
+
             $storage->params = $possible_params[0];
         }
 

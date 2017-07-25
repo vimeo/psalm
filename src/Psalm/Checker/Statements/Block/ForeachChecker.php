@@ -226,11 +226,12 @@ class ForeachChecker
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $foreach_context,
-                $statements_checker->getSource()
+                $statements_checker->getSource(),
+                $statements_checker->getSource()->getAliases()
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $foreach_context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                $foreach_context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
             }
         }
 

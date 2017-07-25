@@ -606,7 +606,7 @@ class AssertionFinder
             if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $source
+                    $source->getAliases()
                 );
 
                 return $instanceof_class;

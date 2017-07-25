@@ -14,15 +14,15 @@ class ArrayAssignmentTest extends TestCase
      */
     public function testConditionalAssignment()
     {
-        $file_checker = new FileChecker(
+        $this->addFile(
             'somefile.php',
-            $this->project_checker,
-            self::$parser->parse('<?php
+            '<?php
                 if ($b) {
                     $foo["a"] = "hello";
-                }
-            ')
+                }'
         );
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
 
         $context = new Context();
         $context->vars_in_scope['$b'] = \Psalm\Type::getBool();
@@ -36,32 +36,31 @@ class ArrayAssignmentTest extends TestCase
      */
     public function testImplementsArrayAccess()
     {
-        $stmts = self::$parser->parse('<?php
-        class A implements \ArrayAccess {
-            public function offsetSet($offset, $value) : void {
-            }
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A implements \ArrayAccess {
+                    public function offsetSet($offset, $value) : void {
+                    }
 
-            public function offsetExists($offset) : bool {
-                return true;
-            }
+                    public function offsetExists($offset) : bool {
+                        return true;
+                    }
 
-            public function offsetUnset($offset) : void {
-            }
+                    public function offsetUnset($offset) : void {
+                    }
 
-            public function offsetGet($offset) : int {
-                return 1;
-            }
-        }
+                    public function offsetGet($offset) : int {
+                        return 1;
+                    }
+                }
 
-        $a = new A();
-        $a["bar"] = "cool";
-        ');
+                $a = new A();
+                $a["bar"] = "cool";'
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertSame('A', (string) $context->vars_in_scope['$a']);
-        $this->assertFalse(isset($context->vars_in_scope['$a[\'bar\']']));
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Checker;
 
+use Psalm\Aliases;
 use Psalm\ClassLikeDocblockComment;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -18,6 +19,7 @@ class CommentChecker
      * @param  string           $comment
      * @param  Context|null     $context
      * @param  StatementsSource $source
+     * @param  Aliases          $aliases
      * @param  array<string, string>|null   $template_types
      * @param  int|null         $var_line_number
      * @param  int|null         $came_from_line_number what line number in $source that $comment came from
@@ -31,6 +33,7 @@ class CommentChecker
         $comment,
         $context,
         StatementsSource $source,
+        Aliases $aliases,
         array $template_types = null,
         $var_line_number = null,
         $came_from_line_number = null
@@ -63,7 +66,7 @@ class CommentChecker
                 if ($line_parts && $line_parts[0]) {
                     $var_type_string = FunctionLikeChecker::fixUpLocalType(
                         $line_parts[0],
-                        $source,
+                        $aliases,
                         $template_types
                     );
 

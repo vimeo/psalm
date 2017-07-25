@@ -1,32 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Context;
-
 class InterfaceTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;
     use Traits\FileCheckerValidCodeParseTestTrait;
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedClass
-     *
-     * @return                   void
-     */
-    public function testInvalidImplements()
-    {
-        $this->project_checker->registerFile(
-            'somefile.php',
-            '<?php
-        class C2 implements A { }
-        '
-        );
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-    }
 
     /**
      * @return array
@@ -87,34 +65,22 @@ class InterfaceTest extends TestCase
             ],
             'isExtendedInterface' => [
                 '<?php
-                    interface A
-                    {
-                        /**
-                         * @return string
-                         */
-                        public function fooFoo();
-                    }
+                    interface A {}
+                    class B implements A {}
 
-                    interface B extends A
-                    {
-                        /**
-                         * @return string
-                         */
-                        public function baz();
-                    }
+                    /**
+                     * @param  A      $a
+                     * @return void
+                     */
+                    function qux(A $a) { }
 
-                    class C implements B
-                    {
-                        public function fooFoo()
-                        {
-                            return "hello";
-                        }
-
-                        public function baz()
-                        {
-                            return "goodbye";
-                        }
-                    }
+                    qux(new B());',
+            ],
+            'isDoubleExtendedInterface' => [
+                '<?php
+                    interface A {}
+                    interface B extends A {}
+                    class C implements B {}
 
                     /**
                      * @param  A      $a
@@ -308,6 +274,11 @@ class InterfaceTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
+            'invalidInterface' => [
+                '<?php
+                    class C2 implements A { }',
+                'error_message' => 'UndefinedClass',
+            ],
             'noInterfaceProperties' => [
                 '<?php
                     interface A { }

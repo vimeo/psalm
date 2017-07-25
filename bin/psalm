@@ -14,7 +14,7 @@ $options = getopt(
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
-        'find-dead-code', 'init', 'find-references-to:', 'root:',
+        'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:'
     ]
 );
 
@@ -84,6 +84,9 @@ Options:
     --find-references-to=[class|method]
         Searches the codebase for references to the given fully-qualified class or method,
         where method is in the format class::methodName
+
+    --threads=INT
+        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
 HELP;
 
@@ -298,10 +301,15 @@ $find_references_to = isset($options['find-references-to']) ? $options['find-ref
 
 $update_docblocks = isset($options['update-docblocks']);
 
+$threads = isset($options['threads']) ? (int)$options['threads'] : 1;
+
 $project_checker = new ProjectChecker(
+    new Psalm\Provider\FileProvider(),
+    new Psalm\Provider\CacheProvider(),
     $use_color,
     $show_info,
     $output_format,
+    $threads,
     $debug,
     $update_docblocks,
     $find_dead_code || $find_references_to !== null,
@@ -314,9 +322,7 @@ if ($path_to_config) {
 }
 
 // If XDebug is enabled, restart without it
-if (!$debug) {
-    (new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
-}
+(new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
 
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 

@@ -15,9 +15,12 @@ class VariadicTest extends TestCase
      */
     public function testVariadic($code)
     {
-        $stmts = self::$parser->parse($code);
+        $this->addFile(
+            'somefile.php',
+            $code
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
@@ -30,17 +33,20 @@ class VariadicTest extends TestCase
      */
     public function testVariadicArrayBadParam()
     {
-        $stmts = self::$parser->parse('<?php
-        /**
-         * @param array<int, int> $a_list
-         * @return void
-         */
-        function f(int ...$a_list) {
-        }
-        f(1, 2, "3");
-        ');
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<int, int> $a_list
+                 * @return void
+                 */
+                function f(int ...$a_list) {
+                }
+                f(1, 2, "3");
+                '
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $context = new Context();
         $file_checker->visitAndAnalyzeMethods($context);
     }
@@ -59,7 +65,7 @@ class VariadicTest extends TestCase
                 function f($req, $opt = null, ...$params) {
                     return $params;
                 }
-        
+
                 f(1);
                 f(1, 2);
                 f(1, 2, 3);
@@ -83,11 +89,11 @@ class VariadicTest extends TestCase
                             $a_list
                         );
                     }
-            
+
                     f(1);
                     f(1, 2);
                     f(1, 2, 3);
-            
+
                     /**
                      * @param string ...$a_list
                      * @return void

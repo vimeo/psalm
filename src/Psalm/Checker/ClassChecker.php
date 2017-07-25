@@ -7,34 +7,17 @@ use Psalm\StatementsSource;
 class ClassChecker extends ClassLikeChecker
 {
     /**
-     * @var int
-     */
-    protected static $anonymous_class_count = 0;
-
-    /**
-     * @param PhpParser\Node\Stmt\ClassLike $class
+     * @param PhpParser\Node\Stmt\Class_    $class
      * @param StatementsSource              $source
      * @param string|null                   $fq_class_name
      */
-    public function __construct(PhpParser\Node\Stmt\ClassLike $class, StatementsSource $source, $fq_class_name)
+    public function __construct(PhpParser\Node\Stmt\Class_ $class, StatementsSource $source, $fq_class_name)
     {
-        if (!$class instanceof PhpParser\Node\Stmt\Class_) {
-            throw new \InvalidArgumentException('Bad');
-        }
-
-        if ($fq_class_name === null) {
-            $fq_class_name = 'PsalmAnonymousClass' . (self::$anonymous_class_count++);
-            $class->name = $fq_class_name;
+        if (!$fq_class_name) {
+            $fq_class_name = self::getAnonymousClassName($class, $source->getFilePath());
         }
 
         parent::__construct($class, $source, $fq_class_name);
-
-        $fq_class_name_lower = strtolower($fq_class_name);
-
-        $storage = self::$storage[$fq_class_name_lower];
-
-        $project_checker = $source->getFileChecker()->project_checker;
-        $project_checker->addFullyQualifiedClassName($fq_class_name, $source->getFilePath());
 
         if (!$this->class instanceof PhpParser\Node\Stmt\Class_) {
             throw new \InvalidArgumentException('Bad');
@@ -43,18 +26,20 @@ class ClassChecker extends ClassLikeChecker
         if ($this->class->extends) {
             $this->parent_fq_class_name = self::getFQCLNFromNameObject(
                 $this->class->extends,
-                $this->source
+                $this->source->getAliases()
             );
         }
+    }
 
-        foreach ($class->implements as $interface_name) {
-            $fq_interface_name = self::getFQCLNFromNameObject(
-                $interface_name,
-                $this->source
-            );
-
-            $storage->class_implements[strtolower($fq_interface_name)] = $fq_interface_name;
-        }
+    /**
+     * @param  PhpParser\Node\Stmt\Class_ $class
+     * @param  string                     $file_path
+     *
+     * @return string
+     */
+    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path)
+    {
+        return preg_replace('/[^A-Za-z0-9]/', '_', $file_path . ':' . $class->getLine());
     }
 
     /**
@@ -73,10 +58,6 @@ class ClassChecker extends ClassLikeChecker
 
         if ($fq_class_name === 'Generator') {
             return true;
-        }
-
-        if ($file_checker->evaluateClassLike($fq_class_name) === false) {
-            return false;
         }
 
         return $file_checker->project_checker->hasFullyQualifiedClassName($fq_class_name);
@@ -163,13 +144,5 @@ class ClassChecker extends ClassLikeChecker
         $storage = self::$storage[$fq_class_name];
 
         return isset($storage->class_implements[$interface_id]);
-    }
-
-    /**
-     * @return void
-     */
-    public static function clearCache()
-    {
-        self::$anonymous_class_count = 0;
     }
 }

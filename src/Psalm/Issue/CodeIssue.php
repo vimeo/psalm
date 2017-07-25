@@ -2,6 +2,7 @@
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
+use Psalm\Config;
 
 abstract class CodeIssue
 {
@@ -72,5 +73,36 @@ abstract class CodeIssue
     public function getMessage()
     {
         return $this->message;
+    }
+
+    /**
+     * @param  string          $severity
+     *
+     * @return array{severity: string, line_number: string, type: string, message: string, file_name: string,
+     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column: int}
+     */
+    public function toArray($severity = Config::REPORT_ERROR)
+    {
+        $location = $this->getLocation();
+        $selection_bounds = $location->getSelectionBounds();
+        $snippet_bounds = $location->getSnippetBounds();
+
+        $fqcn_parts = explode('\\', get_called_class());
+        $issue_type = array_pop($fqcn_parts);
+
+        return [
+            'severity' => $severity,
+            'line_number' => $location->getLineNumber(),
+            'type' => $issue_type,
+            'message' => $this->getMessage(),
+            'file_name' => $location->file_name,
+            'file_path' => $location->file_path,
+            'snippet' => $location->getSnippet(),
+            'from' => $selection_bounds[0],
+            'to' => $selection_bounds[1],
+            'snippet_from' => $snippet_bounds[0],
+            'snippet_to' => $snippet_bounds[1],
+            'column' => $location->getColumn(),
+        ];
     }
 }

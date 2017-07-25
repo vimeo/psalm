@@ -10,18 +10,18 @@ class BadFormatTest extends TestCase
      */
     public function testMissingSemicolon()
     {
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             '<?php
-        class A {
-            /** @var int|null */
-            protected $hello;
+                class A {
+                    /** @var int|null */
+                    protected $hello;
 
-            /** @return void */
-            function foo() {
-                $this->hello = 5
-            }
-        }'
+                    /** @return void */
+                    function foo() {
+                        $this->hello = 5
+                    }
+                }'
         );
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);

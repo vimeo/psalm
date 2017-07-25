@@ -3,7 +3,6 @@ namespace Psalm\Tests;
 
 use Psalm\Checker\FileChecker;
 use Psalm\Config;
-use Psalm\Context;
 
 class UnusedCodeTest extends TestCase
 {
@@ -31,7 +30,14 @@ class UnusedCodeTest extends TestCase
     public function setUp()
     {
         FileChecker::clearCache();
-        $this->project_checker = new \Psalm\Checker\ProjectChecker();
+
+        $this->file_provider = new Provider\FakeFileProvider();
+
+        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+            $this->file_provider,
+            new Provider\FakeCacheProvider()
+        );
+
         $this->project_checker->setConfig(Config::loadFromXML(
             'psalm.xml',
             dirname(__DIR__),
@@ -63,11 +69,13 @@ class UnusedCodeTest extends TestCase
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessage($error_message);
 
-        $stmts = self::$parser->parse($code);
+        $this->addFile(
+            self::$project_dir . 'somefile.php',
+            $code
+        );
 
-        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker, $stmts);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
+        $file_checker = new FileChecker(self::$project_dir . 'somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
         $this->project_checker->checkClassReferences();
     }
 

@@ -15,7 +15,15 @@ class JsonOutputTest extends TestCase
         // `TestCase::setUp()` creates its own ProjectChecker and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
         FileChecker::clearCache();
-        $this->project_checker = new ProjectChecker(false, true, ProjectChecker::TYPE_JSON);
+        $this->file_provider = new Provider\FakeFileProvider();
+
+        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+            $this->file_provider,
+            new Provider\FakeCacheProvider(),
+            false,
+            true,
+            ProjectChecker::TYPE_JSON
+        );
 
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -35,14 +43,14 @@ class JsonOutputTest extends TestCase
      */
     public function testJsonOutputErrors($code, $message, $line_number, $error)
     {
-        $this->project_checker->registerFile('somefile.php', $code);
+        $this->addFile('somefile.php', $code);
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
-        $issue_data = IssueBuffer::getIssueData()[0];
+        $issue_data = IssueBuffer::getIssuesData()[0];
 
         $this->assertSame('somefile.php', $issue_data['file_path']);
-        $this->assertSame('error', $issue_data['type']);
+        $this->assertSame('error', $issue_data['severity']);
         $this->assertSame($message, $issue_data['message']);
         $this->assertSame($line_number, $issue_data['line_number']);
         $this->assertSame(
@@ -72,49 +80,62 @@ if (rand(0, 100) > 10) {
 
 echo $a;';
 
-        $this->project_checker->registerFile(
+        $this->addFile(
             'somefile.php',
             $file_contents
         );
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
-        $issue_data = IssueBuffer::getIssueData();
+        $issue_data = IssueBuffer::getIssuesData();
         $this->assertSame(
             [
                 [
-                    'type' => 'error',
+                    'severity' => 'error',
                     'line_number' => 7,
+                    'type' => 'UndefinedConstant',
                     'message' => 'Const CHANGE_ME is not defined',
                     'file_name' => 'somefile.php',
                     'file_path' => 'somefile.php',
                     'snippet' => 'echo CHANGE_ME;',
                     'from' => 126,
                     'to' => 135,
+                    'snippet_from' => 121,
+                    'snippet_to' => 136,
+                    'column' => 6,
                 ],
                 [
-                    'type' => 'error',
+                    'severity' => 'error',
                     'line_number' => 15,
+                    'type' => 'PossiblyUndefinedVariable',
                     'message' => 'Possibly undefined variable $a, first seen on line 10',
                     'file_name' => 'somefile.php',
                     'file_path' => 'somefile.php',
                     'snippet' => 'echo $a',
                     'from' => 202,
                     'to' => 204,
+                    'snippet_from' => 197,
+                    'snippet_to' => 204,
+                    'column' => 6,
                 ],
                 [
-                    'type' => 'error',
+                    'severity' => 'error',
                     'line_number' => 3,
+                    'type' => 'UndefinedVariable',
                     'message' => 'Cannot find referenced variable $as_you',
                     'file_name' => 'somefile.php',
                     'file_path' => 'somefile.php',
                     'snippet' => '  return $as_you . "type";',
                     'from' => 67,
                     'to' => 74,
+                    'snippet_from' => 58,
+                    'snippet_to' => 84,
+                    'column' => 10,
                 ],
                 [
-                    'type' => 'error',
+                    'severity' => 'error',
                     'line_number' => 2,
+                    'type' => 'MixedInferredReturnType',
                     'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
                     'file_name' => 'somefile.php',
                     'file_path' => 'somefile.php',
@@ -123,6 +144,9 @@ echo $a;';
 }',
                     'from' => 48,
                     'to' => 55,
+                    'snippet_from' => 6,
+                    'snippet_to' => 86,
+                    'column' => 43,
                 ],
             ],
             $issue_data

@@ -69,25 +69,25 @@ class FileReferenceProvider
 
     /**
      * @param string $source_file
-     * @param string $fq_class_name
+     * @param string $fq_class_name_lc
      *
      * @return void
      */
-    public static function addFileReferenceToClass($source_file, $fq_class_name)
+    public static function addFileReferenceToClass($source_file, $fq_class_name_lc)
     {
         self::$referencing_files[$source_file] = true;
-        self::$file_references_to_class[$fq_class_name][$source_file] = true;
+        self::$file_references_to_class[$fq_class_name_lc][$source_file] = true;
     }
 
     /**
      * @param string $source_file
-     * @param string $fq_class_name
+     * @param string $fq_class_name_lc
      *
      * @return void
      */
-    public static function addFileInheritanceToClass($source_file, $fq_class_name)
+    public static function addFileInheritanceToClass($source_file, $fq_class_name_lc)
     {
-        self::$files_inheriting_classes[$fq_class_name][$source_file] = true;
+        self::$files_inheriting_classes[$fq_class_name_lc][$source_file] = true;
     }
 
     /**

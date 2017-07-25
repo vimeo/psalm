@@ -4,8 +4,6 @@ namespace Psalm\Checker;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
-use Psalm\Issue\DuplicateClass;
-use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -65,7 +63,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     /**
      * @return  void
      */
-    public function visit()
+    public function collectAnalyzableInformation()
     {
         $leftover_stmts = [];
         $function_stmts = [];
@@ -79,7 +77,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
-                $this->visitClassLike($stmt);
+                $this->collectAnalyzableClassLike($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
@@ -122,30 +120,13 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function visitClassLike(PhpParser\Node\Stmt\ClassLike $stmt)
+    public function collectAnalyzableClassLike(PhpParser\Node\Stmt\ClassLike $stmt)
     {
         if (!$stmt->name) {
             throw new \UnexpectedValueException('Did not expect anonymous class here');
         }
 
-        $config = \Psalm\Config::getInstance();
-
-        $predefined_classlikes = $config->getPredefinedClassLikes();
-
-        $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this);
-
-        if (isset($predefined_classlikes[strtolower($fq_class_name)])) {
-            if (IssueBuffer::accepts(
-                new DuplicateClass(
-                    'Class ' . $fq_class_name . ' has already been defined internally',
-                    new \Psalm\CodeLocation($this, $stmt, null, true)
-                )
-            )) {
-                // fall through
-            }
-
-            return;
-        }
+        $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this->getAliases());
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             $this->source->addNamespacedClassChecker(
@@ -157,9 +138,6 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
                 $fq_class_name,
                 new InterfaceChecker($stmt, $this, $fq_class_name)
             );
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-            // register the trait checker
-            new TraitChecker($stmt, $this, $fq_class_name);
         }
     }
 

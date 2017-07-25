@@ -38,6 +38,16 @@ class FunctionLikeStorage
     public $return_type_location;
 
     /**
+     * @var Type\Union|null
+     */
+    public $signature_return_type;
+
+    /**
+     * @var CodeLocation|null
+     */
+    public $signature_return_type_location;
+
+    /**
      * @var string
      */
     public $cased_name;

@@ -1,6 +1,7 @@
 <?php
 
-class LogicException extends Exception {
+class LogicException extends Exception
+{
     /**
      * @param int $a
      */

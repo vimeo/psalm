@@ -19,26 +19,28 @@ class PropertyTypeTest extends TestCase
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
 
-        $stmts = self::$parser->parse('<?php
-        class X {
-            /** @var ?int **/
-            private $x;
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class X {
+                    /** @var ?int **/
+                    private $x;
 
-            public function getX(): int {
-                if ($this->x === null) {
-                    $this->x = 0;
-                }
-                $this->modifyX();
-                return $this->x;
-            }
+                    public function getX(): int {
+                        if ($this->x === null) {
+                            $this->x = 0;
+                        }
+                        $this->modifyX();
+                        return $this->x;
+                    }
 
-            private function modifyX(): void {
-                $this->x = null;
-            }
-        }
-        ');
+                    private function modifyX(): void {
+                        $this->x = null;
+                    }
+                }'
+        );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker, $stmts);
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
     }
 
@@ -498,23 +500,6 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
                     'declared type - consider null|int',
-            ],
-            // Skipped. Doesn't yet work.
-            'SKIPPED-missingPropertyTypeWithConstructorInitInPrivateMethod' => [
-                '<?php
-                    class A {
-                        public $foo;
-
-                        public function __construct() : void {
-                            $this->makeValue();
-                        }
-
-                        private function makeValue() : void {
-                            $this->foo = 5;
-                        }
-                    }',
-                'error_message' => 'MissingPropertyType - somefile.php:3 - Property A::$foo does not have a ' .
-                    'declared type - consider int',
             ],
             'missingPropertyTypeWithConstructorInitAndNullDefault' => [
                 '<?php

@@ -192,8 +192,6 @@ class Config
     protected function __construct()
     {
         self::$config = $this;
-
-        $this->collectPredefinedClassLikes();
     }
 
     /**
@@ -481,7 +479,7 @@ class Config
     {
         foreach ($this->filetype_handlers as &$path) {
             $plugin_file_checker = new FileChecker($path, $project_checker);
-            $plugin_file_checker->visit();
+            $plugin_file_checker->scan();
 
             $declared_classes = ClassLikeChecker::getClassesForFile($path);
 
@@ -618,14 +616,14 @@ class Config
                 $generic_stubs,
                 $project_checker
             );
-            $generic_stub_checker->visit();
+            $generic_stub_checker->scan();
         } else {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
         foreach ($this->stub_files as $stub_file) {
             $stub_checker = new FileChecker($stub_file, $project_checker);
-            $stub_checker->visit();
+            $stub_checker->scan();
         }
 
         $project_checker->register_global_functions = false;
@@ -673,14 +671,6 @@ class Config
     }
 
     /**
-     * @return array<string, bool>
-     */
-    public function getPredefinedClassLikes()
-    {
-        return $this->predefined_classlikes;
-    }
-
-    /**
      * @return void
      * @psalm-suppress InvalidPropertyAssignment
      * @psalm-suppress MixedAssignment
@@ -698,34 +688,6 @@ class Config
         if (isset($defined_functions['internal'])) {
             foreach ($defined_functions['internal'] as $function_name) {
                 $this->predefined_functions[$function_name] = true;
-            }
-        }
-    }
-
-    /**
-     * @return void
-     */
-    public function collectPredefinedClassLikes()
-    {
-        /** @var array<int, string> */
-        $predefined_classes = get_declared_classes();
-
-        foreach ($predefined_classes as $predefined_class) {
-            $reflection_class = new \ReflectionClass($predefined_class);
-
-            if (!$reflection_class->isUserDefined()) {
-                $this->predefined_classlikes[strtolower($predefined_class)] = true;
-            }
-        }
-
-        /** @var array<int, string> */
-        $predefined_interfaces = get_declared_interfaces();
-
-        foreach ($predefined_interfaces as $predefined_interface) {
-            $reflection_class = new \ReflectionClass($predefined_interface);
-
-            if (!$reflection_class->isUserDefined()) {
-                $this->predefined_classlikes[strtolower($predefined_interface)] = true;
             }
         }
     }

@@ -17,9 +17,6 @@ class FunctionChecker extends FunctionLikeChecker
      */
     protected static $call_map = null;
 
-    /** @var FileChecker|null */
-    protected static $callmap_file_checker = null;
-
     /**
      * @var array<string, FunctionLikeStorage>
      */
@@ -41,8 +38,6 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         parent::__construct($function, $source);
-
-        self::register($function, $this);
     }
 
     /**
@@ -53,7 +48,7 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function functionExists($function_id, $file_path)
     {
-        if (isset(FileChecker::$storage[$file_path]->functions[$function_id])) {
+        if (isset(FileChecker::$storage[strtolower($file_path)]->declaring_function_ids[$function_id])) {
             return true;
         }
 
@@ -92,15 +87,23 @@ class FunctionChecker extends FunctionLikeChecker
             return self::$builtin_functions[$function_id];
         }
 
-        $file_storage = FileChecker::$storage[$file_path];
+        $file_storage = FileChecker::$storage[strtolower($file_path)];
 
-        if (!isset($file_storage->functions[$function_id])) {
+        if (!isset($file_storage->declaring_function_ids[$function_id])) {
             throw new \UnexpectedValueException(
-                'Not expecting ' . $function_id . ' to not have storage in ' . $file_path
+                'Expecting ' . $function_id . ' to have storage in ' . $file_path
             );
         }
 
-        return $file_storage->functions[$function_id];
+        $declaring_file_path = $file_storage->declaring_function_ids[$function_id];
+
+        if (!isset(FileChecker::$storage[$declaring_file_path]->functions[$function_id])) {
+            throw new \UnexpectedValueException(
+                'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
+            );
+        }
+
+        return FileChecker::$storage[$declaring_file_path]->functions[$function_id];
     }
 
     /**
@@ -111,7 +114,7 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function isVariadic($function_id, $file_path)
     {
-        $file_storage = FileChecker::$storage[$file_path];
+        $file_storage = FileChecker::$storage[strtolower($file_path)];
 
         return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
     }
@@ -209,7 +212,7 @@ class FunctionChecker extends FunctionLikeChecker
      */
     public static function getCasedFunctionId($function_id, $file_path)
     {
-        $file_storage = FileChecker::$storage[$file_path];
+        $file_storage = FileChecker::$storage[strtolower($file_path)];
 
         if (!isset($file_storage->functions[$function_id])) {
             throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
@@ -271,15 +274,6 @@ class FunctionChecker extends FunctionLikeChecker
 
         $function_type_options = [];
 
-        if (!self::$callmap_file_checker) {
-            self::$callmap_file_checker = new FileChecker(
-                'callmap.php',
-                \Psalm\Checker\ProjectChecker::getInstance(),
-                [],
-                false
-            );
-        }
-
         foreach ($call_map_functions as $call_map_function_args) {
             array_shift($call_map_function_args);
 
@@ -306,7 +300,7 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 $param_type = $arg_type
-                    ? TypeChecker::simplifyUnionType(Type::parseString($arg_type), self::$callmap_file_checker)
+                    ? Type::parseString($arg_type)
                     : Type::getMixed();
 
                 $function_types[] = new FunctionLikeParameter(
@@ -697,8 +691,10 @@ class FunctionChecker extends FunctionLikeChecker
 
         $function_name_lcase = strtolower($function_name);
 
-        $imported_function_namespaces = $source->getAliasedFunctions();
-        $imported_namespaces = $source->getAliasedClasses();
+        $aliases = $source->getAliases();
+
+        $imported_function_namespaces = $aliases->functions;
+        $imported_namespaces = $aliases->uses;
 
         if (strpos($function_name, '\\') !== false) {
             $function_name_parts = explode('\\', $function_name);

@@ -13,17 +13,45 @@ class IncludeTest extends TestCase
      *
      * @return void
      */
-    public function testBasicRequire(array $files, array $files_to_check)
+    public function testValidInclude(array $files, array $files_to_check)
     {
         foreach ($files as $filename => $contents) {
-            $this->project_checker->registerFile($filename, $contents);
+            $this->addFile($filename, $contents);
+            $this->project_checker->registerAnalyzableFile($filename);
         }
 
-        foreach ($files_to_check as $filename) {
-            $contents = $files[$filename];
+        $this->project_checker->scanFiles();
 
+        foreach ($files_to_check as $filename) {
             $file_checker = new FileChecker($filename, $this->project_checker);
-            $file_checker->visitAndAnalyzeMethods();
+            $file_checker->analyze();
+        }
+    }
+
+    /**
+     * @dataProvider providerTestInvalidIncludes
+     *
+     * @param array<int, string> $files_to_check
+     * @param array<string, string> $files
+     * @param mixed $error_message
+     *
+     * @return void
+     */
+    public function testInvalidInclude(array $files, array $files_to_check, $error_message)
+    {
+        foreach ($files as $filename => $contents) {
+            $this->addFile($filename, $contents);
+            $this->project_checker->registerAnalyzableFile($filename);
+        }
+
+        $this->project_checker->scanFiles();
+
+        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectExceptionMessage($error_message);
+
+        foreach ($files_to_check as $filename) {
+            $file_checker = new FileChecker($filename, $this->project_checker);
+            $file_checker->analyze();
         }
     }
 
@@ -40,11 +68,15 @@ class IncludeTest extends TestCase
 
                         class B {
                             public function foo() : void {
-                                (new A);
+                                (new A)->fooFoo();
                             }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
-                        class A{}',
+                        class A{
+                            public function fooFoo() : void {
+
+                            }
+                        }',
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
@@ -169,6 +201,65 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
                 ],
+            ],
+            'analyzeAllClasses' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");
+                        class B extends A {
+                            public function doFoo() : void {
+                                $this->fooFoo();
+                            }
+                        }
+                        class C {
+                            public function barBar() : void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require_once("file1.php");
+                        class A{
+                            public function fooFoo() : void { }
+                        }
+                        class D extends C {
+                            public function doBar() : void {
+                                $this->barBar();
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerTestInvalidIncludes()
+    {
+        return [
+            'undefinedMethodInRequire' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require("file1.php");
+
+                        class B {
+                            public function foo() : void {
+                                (new A)->fooFo();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        class A{
+                            public function fooFoo() : void {
+
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }

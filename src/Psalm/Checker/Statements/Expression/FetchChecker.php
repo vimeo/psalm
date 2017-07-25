@@ -457,7 +457,7 @@ class FetchChecker
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 // edge case when evaluating single files
@@ -544,6 +544,8 @@ class FetchChecker
             return null;
         }
 
+        $stmt->inferredType = Type::getMixed();
+
         if ($stmt->class instanceof PhpParser\Node\Expr) {
             if (ExpressionChecker::analyze($statements_checker, $stmt->class, $context) === false) {
                 return false;
@@ -604,7 +606,7 @@ class FetchChecker
             } else {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker
+                    $statements_checker->getAliases()
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -625,8 +627,6 @@ class FetchChecker
 
             $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
-
-
 
         if ($fq_class_name &&
             $context->check_classes &&

@@ -357,7 +357,7 @@ class ExpressionChecker
                 if ($context->check_classes) {
                     $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                         $stmt->class,
-                        $statements_checker
+                        $statements_checker->getAliases()
                     );
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
@@ -1108,7 +1108,7 @@ class ExpressionChecker
     }
 
     /**
-     * @param  StatementsChecker     $statements_checker
+     * @param  StatementsSource     $statements_source
      * @param  PhpParser\Node\Expr   $left
      * @param  PhpParser\Node\Expr   $right
      * @param  PhpParser\Node        $parent
@@ -1117,7 +1117,7 @@ class ExpressionChecker
      * @return void
      */
     public static function analyzeNonDivArithmenticOp(
-        StatementsChecker $statements_checker,
+        StatementsSource $statements_source,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
@@ -1135,9 +1135,9 @@ class ExpressionChecker
                             if (IssueBuffer::accepts(
                                 new MixedOperand(
                                     'Left operand cannot be mixed',
-                                    new CodeLocation($statements_checker->getSource(), $left)
+                                    new CodeLocation($statements_source, $left)
                                 ),
-                                $statements_checker->getSuppressedIssues()
+                                $statements_source->getSuppressedIssues()
                             )) {
                                 // fall through
                             }
@@ -1145,9 +1145,9 @@ class ExpressionChecker
                             if (IssueBuffer::accepts(
                                 new MixedOperand(
                                     'Right operand cannot be mixed',
-                                    new CodeLocation($statements_checker->getSource(), $right)
+                                    new CodeLocation($statements_source, $right)
                                 ),
-                                $statements_checker->getSuppressedIssues()
+                                $statements_source->getSuppressedIssues()
                             )) {
                                 // fall through
                             }
@@ -1165,9 +1165,9 @@ class ExpressionChecker
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add an array to a non-array ' . $left_type_part,
-                                        new CodeLocation($statements_checker->getSource(), $left)
+                                        new CodeLocation($statements_source, $left)
                                     ),
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_source->getSuppressedIssues()
                                 )) {
                                     // fall through
                                 }
@@ -1175,9 +1175,9 @@ class ExpressionChecker
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add an array to a non-array ' . $right_type_part,
-                                        new CodeLocation($statements_checker->getSource(), $right)
+                                        new CodeLocation($statements_source, $right)
                                     ),
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_source->getSuppressedIssues()
                                 )) {
                                     // fall through
                                 }
@@ -1227,9 +1227,9 @@ class ExpressionChecker
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add ints to floats',
-                                        new CodeLocation($statements_checker->getSource(), $parent)
+                                        new CodeLocation($statements_source, $parent)
                                     ),
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_source->getSuppressedIssues()
                                 )) {
                                     // fall through
                                 }
@@ -1249,9 +1249,9 @@ class ExpressionChecker
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add numeric types together, please cast explicitly',
-                                        new CodeLocation($statements_checker->getSource(), $parent)
+                                        new CodeLocation($statements_source, $parent)
                                     ),
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_source->getSuppressedIssues()
                                 )) {
                                     // fall through
                                 }
@@ -1271,9 +1271,9 @@ class ExpressionChecker
                         if (IssueBuffer::accepts(
                             new InvalidOperand(
                                 'Cannot add a numeric type to a non-numeric type ' . $non_numeric_type,
-                                new CodeLocation($statements_checker->getSource(), $parent)
+                                new CodeLocation($statements_source, $parent)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_source->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -1458,7 +1458,7 @@ class ExpressionChecker
                 $fq_class_name = $source
                     ? ClassLikeChecker::getFQCLNFromNameObject(
                         $stmt->class,
-                        $source
+                        $source->getAliases()
                     )
                     : implode('\\', $stmt->class->parts);
             }
@@ -1674,11 +1674,12 @@ class ExpressionChecker
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $context,
-                $statements_checker
+                $statements_checker,
+                $statements_checker->getAliases()
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
             }
         }
 
@@ -1694,7 +1695,7 @@ class ExpressionChecker
             }
 
             if ($var_comment && !$var_comment->var_id) {
-                $stmt->inferredType = $var_comment->type;
+                $stmt->inferredType = Type::parseString($var_comment->type);
             } elseif (isset($stmt->value->inferredType)) {
                 $stmt->inferredType = $stmt->value->inferredType;
             } else {

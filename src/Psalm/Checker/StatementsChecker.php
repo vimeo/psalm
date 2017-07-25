@@ -296,18 +296,18 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 $class_checker = (new ClassChecker($stmt, $this->source, $stmt->name));
-                $class_checker->visit();
                 $class_checker->analyze(null, $global_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 if ((string)$stmt->getDocComment()) {
                     $var_comment = CommentChecker::getTypeFromComment(
                         (string)$stmt->getDocComment(),
                         $context,
-                        $this->getSource()
+                        $this->getSource(),
+                        $this->getSource()->getAliases()
                     );
 
                     if ($var_comment && $var_comment->var_id) {
-                        $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                        $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
@@ -496,11 +496,92 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param   PhpParser\Node\Expr $stmt
+     * @param   array<string, Type\Union> $existing_class_constants
      *
      * @return  Type\Union|null
      */
-    public static function getSimpleType(PhpParser\Node\Expr $stmt)
-    {
+    public static function getSimpleType(
+        PhpParser\Node\Expr $stmt,
+        StatementsSource $statements_source = null,
+        array $existing_class_constants = []
+    ) {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+                return Type::getString();
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+            ) {
+                return Type::getBool();
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
+                return null;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
+                return Type::getInt();
+            }
+
+            $stmt->left->inferredType = self::getSimpleType(
+                $stmt->left,
+                $statements_source,
+                $existing_class_constants
+            );
+            $stmt->right->inferredType = self::getSimpleType(
+                $stmt->right,
+                $statements_source,
+                $existing_class_constants
+            );
+
+            if (!$stmt->left->inferredType || !$stmt->right->inferredType) {
+                return null;
+            }
+
+            if (!$statements_source) {
+                return null;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
+            ) {
+                ExpressionChecker::analyzeNonDivArithmenticOp(
+                    $statements_source,
+                    $stmt->left,
+                    $stmt->right,
+                    $stmt,
+                    $result_type
+                );
+
+                if ($result_type) {
+                    return $result_type;
+                }
+
+                return null;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div
+                && ($stmt->left->inferredType->hasInt() || $stmt->left->inferredType->hasFloat())
+                && ($stmt->right->inferredType->hasInt() || $stmt->right->inferredType->hasFloat())
+            ) {
+                return Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             if (strtolower($stmt->name->parts[0]) === 'false') {
                 return Type::getFalse();
@@ -509,34 +590,68 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif (strtolower($stmt->name->parts[0]) === 'null') {
                 return Type::getNull();
             }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
-            // @todo support this as well
-        } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
+
+            return null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            if ($stmt->class instanceof PhpParser\Node\Name
+                && $stmt->class->parts !== ['static']
+                && is_string($stmt->name)
+                && isset($existing_class_constants[$stmt->name])
+            ) {
+                return $existing_class_constants[$stmt->name];
+            }
+
+            return null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\String_) {
             return Type::getString();
-        } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
             return Type::getInt();
-        } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             return Type::getFloat();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Array_) {
             if (count($stmt->items) === 0) {
                 return Type::getEmptyArray();
             }
 
             return Type::getArray();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             return Type::getInt();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             return Type::getFloat();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             return Type::getBool();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
             return Type::getString();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             return Type::getObject();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             return Type::getArray();
-        } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
-            return self::getSimpleType($stmt->expr);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+            return self::getSimpleType($stmt->expr, $statements_source, $existing_class_constants);
         }
 
         return null;
@@ -621,14 +736,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $fq_const_name = null;
 
-        $aliased_constants = $this->getAliasedConstants();
+        $aliased_constants = $this->getAliases()->constants;
 
         if (isset($aliased_constants[$const_name])) {
             $fq_const_name = $aliased_constants[$const_name];
         } elseif ($is_fully_qualified) {
             $fq_const_name = $const_name;
         } elseif (strpos($const_name, '\\')) {
-            $fq_const_name = ClassLikeChecker::getFQCLNFromString($const_name, $this);
+            $fq_const_name = ClassLikeChecker::getFQCLNFromString($const_name, $this->getAliases());
         }
 
         if ($fq_const_name) {
@@ -693,11 +808,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
                 $context,
-                $this->source
+                $this->source,
+                $this->source->getAliases()
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
             }
         }
 
@@ -707,7 +823,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($var_comment && !$var_comment->var_id) {
-                $stmt->inferredType = $var_comment->type;
+                $stmt->inferredType = Type::parseString($var_comment->type);
             } elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;
             } else {
@@ -810,36 +926,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             $current_file_checker = $this->getFileChecker();
 
-            $included_file_paths = $current_file_checker->getIncludedFilePaths();
-
-            if (isset($included_file_paths[$path_to_file])) {
-                return null;
-            }
-
-            if ($current_file_checker->fileExists($path_to_file)) {
-                $include_stmts = \Psalm\Provider\FileProvider::getStatementsForFile(
-                    $current_file_checker->project_checker,
-                    $path_to_file
-                );
-
-                $included_file_paths[$this->getFilePath()] = true;
-                $included_file_paths[$this->getCheckedFilePath()] = true;
-
-                if (is_subclass_of($current_file_checker, 'Psalm\\Checker\\FileChecker')) {
-                    $this->analyze($include_stmts, $context);
-                } else {
-                    $include_file_checker = new FileChecker(
-                        $path_to_file,
-                        $current_file_checker->project_checker,
-                        $include_stmts,
-                        true,
-                        $included_file_paths
-                    );
-                    $include_file_checker->setFileName($this->getFileName(), $this->getFilePath());
-                    $include_file_checker->visit($context);
-                    $include_file_checker->analyze();
-                }
-
+            if ($current_file_checker->project_checker->fileExists($path_to_file)) {
                 return null;
             }
         }
@@ -858,7 +945,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @return string|null
      * @psalm-suppress MixedAssignment
      */
-    protected static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
+    public static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
     {
         if ($file_name[0] !== DIRECTORY_SEPARATOR) {
             $file_name = getcwd() . DIRECTORY_SEPARATOR . $file_name;
@@ -911,7 +998,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      *
      * @return  string|null
      */
-    protected static function resolveIncludePath($file_name, $current_directory)
+    public static function resolveIncludePath($file_name, $current_directory)
     {
         if (!$current_directory) {
             return $file_name;

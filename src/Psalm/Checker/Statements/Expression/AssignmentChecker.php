@@ -82,13 +82,13 @@ class AssignmentChecker
                 $doc_comment,
                 $context,
                 $statements_checker->getSource(),
-                null,
+                $statements_checker->getAliases(),
                 null,
                 $came_from_line_number
             );
 
             if ($var_comment && $var_comment->var_id && $var_comment->var_id !== $var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = $var_comment->type;
+                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
             }
         }
 
@@ -101,7 +101,7 @@ class AssignmentChecker
                 // if we're not exiting immediately, make everything mixed
                 $context->vars_in_scope[$var_id] =
                     $var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id)
-                        ? $var_comment->type
+                        ? Type::parseString($var_comment->type)
                         : Type::getMixed();
             }
 

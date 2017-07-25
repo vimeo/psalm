@@ -5,21 +5,19 @@ use PhpParser;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use Psalm\Aliases;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;
-use Psalm\Exception\DocblockParseException;
 use Psalm\FunctionLikeParameter;
-use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
 use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
-use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
@@ -30,7 +28,6 @@ use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Mutator\FileMutator;
 use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -290,11 +287,18 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         } elseif ($this->function instanceof Function_) {
-            $storage = FileChecker::$storage[$this->source->getFilePath()]->functions[(string)$this->getMethodId()];
+            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
+
+            $storage = $file_storage->functions[(string)$this->getMethodId()];
 
             $cased_method_id = $this->function->name;
         } else { // Closure
-            $storage = self::register($this->function, $this->getSource());
+            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
+
+            $function_id = $cased_function_id =
+                $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
+
+            $storage = $file_storage->functions[$function_id];
 
             /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([
@@ -324,6 +328,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         foreach ($storage->params as $offset => $function_param) {
+            $signature_type = $function_param->signature_type;
             $param_type = clone $function_param->type;
 
             $param_type = ExpressionChecker::fleshOutTypes(
@@ -340,6 +345,28 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             $parser_param = $this->function->getParams()[$offset];
+
+            if ($signature_type) {
+                if (!TypeChecker::isContainedBy(
+                    $param_type,
+                    $signature_type,
+                    $statements_checker->getFileChecker()
+                )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Parameter $' . $function_param->name . ' has wrong type \'' . $param_type .
+                                '\', should be \'' . $signature_type . '\'',
+                            $function_param->location
+                        ),
+                        $storage->suppressed_issues
+                    )) {
+                        return false;
+                    }
+
+                    continue;
+                }
+            }
 
             if ($parser_param->default) {
                 $default_type = StatementsChecker::getSimpleType($parser_param->default);
@@ -404,6 +431,26 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 '$' . $function_param->name,
                 $function_param->location
             );
+        }
+
+        if ($storage->return_type && $storage->signature_return_type && $storage->return_type_location) {
+            if (!TypeChecker::isContainedBy(
+                $storage->return_type,
+                $storage->signature_return_type,
+                $statements_checker->getFileChecker()
+            )
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Return type has wrong type \'' . $storage->return_type .
+                            '\', should be \'' . $storage->signature_return_type . '\'',
+                        $storage->return_type_location
+                    ),
+                    $storage->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
         }
 
         $statements_checker->analyze($function_stmts, $context, null, $global_context);
@@ -514,351 +561,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         return null;
-    }
-
-    /**
-     * @param  Closure|Function_|ClassMethod    $function
-     * @param  StatementsSource                 $source
-     *
-     * @return FunctionLikeStorage
-     */
-    public static function register(
-        $function,
-        StatementsSource $source
-    ) {
-        $namespace = $source->getNamespace();
-
-        $class_storage = null;
-
-        if ($function instanceof PhpParser\Node\Stmt\Function_) {
-            $cased_function_id = ($namespace ? $namespace . '\\' : '') . $function->name;
-            $function_id = strtolower($cased_function_id);
-
-            $project_checker = $source->getFileChecker()->project_checker;
-
-            if ($project_checker->register_global_functions) {
-                $storage = FunctionChecker::$stubbed_functions[$function_id] = new FunctionLikeStorage();
-            } else {
-                $file_storage = FileChecker::$storage[$source->getFilePath()];
-
-                if (isset($file_storage->functions[$function_id])) {
-                    return $file_storage->functions[$function_id];
-                }
-
-                $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
-            }
-        } elseif ($function instanceof PhpParser\Node\Stmt\ClassMethod) {
-            $fq_class_name = (string)$source->getFQCLN();
-
-            $function_id = $fq_class_name . '::' . strtolower($function->name);
-            $cased_function_id = $fq_class_name . '::' . $function->name;
-
-            $fq_class_name_lower = strtolower($fq_class_name);
-
-            if (!isset(ClassLikeChecker::$storage[$fq_class_name_lower])) {
-                throw new \UnexpectedValueException('$class_storage cannot be empty for ' . $function_id);
-            }
-
-            $class_storage = ClassLikeChecker::$storage[$fq_class_name_lower];
-
-            if (isset($class_storage->methods[strtolower($function->name)])) {
-                throw new \InvalidArgumentException('Cannot re-register ' . $function_id);
-            }
-
-            $storage = $class_storage->methods[strtolower($function->name)] = new MethodStorage();
-
-            $class_name_parts = explode('\\', $fq_class_name);
-            $class_name = array_pop($class_name_parts);
-
-            if (strtolower((string)$function->name) === strtolower($class_name) &&
-                !isset($class_storage->methods['__construct']) &&
-                strpos($fq_class_name, '\\') === false
-            ) {
-                MethodChecker::setDeclaringMethodId($fq_class_name . '::__construct', $function_id);
-                MethodChecker::setAppearingMethodId($fq_class_name . '::__construct', $function_id);
-            }
-
-            $class_storage->declaring_method_ids[strtolower($function->name)] = $function_id;
-            $class_storage->appearing_method_ids[strtolower($function->name)] = $function_id;
-
-            if (!isset($class_storage->overridden_method_ids[strtolower($function->name)])) {
-                $class_storage->overridden_method_ids[strtolower($function->name)] = [];
-            }
-
-            /** @var bool */
-            $storage->is_static = $function->isStatic();
-
-            /** @var bool */
-            $storage->abstract = $function->isAbstract();
-
-            if ($function->isPrivate()) {
-                $storage->visibility = ClassLikeChecker::VISIBILITY_PRIVATE;
-            } elseif ($function->isProtected()) {
-                $storage->visibility = ClassLikeChecker::VISIBILITY_PROTECTED;
-            } else {
-                $storage->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
-            }
-        } else {
-            $function_id = $cased_function_id = 'closure';
-
-            $storage = new FunctionLikeStorage();
-        }
-
-        if ($function instanceof ClassMethod || $function instanceof Function_) {
-            $storage->cased_name = $function->name;
-        }
-
-        $storage->location = new CodeLocation($source, $function, null, true);
-        $storage->namespace = $source->getNamespace();
-
-        $required_param_count = 0;
-        $i = 0;
-        $has_optional_param = false;
-
-        /** @var PhpParser\Node\Param $param */
-        foreach ($function->getParams() as $param) {
-            $param_array = self::getTranslatedParam($param, $source);
-
-            if (isset($storage->param_types[$param_array->name])) {
-                if (IssueBuffer::accepts(
-                    new DuplicateParam(
-                        'Duplicate param $' . $param->name . ' in docblock for ' . $cased_function_id,
-                        new CodeLocation($source, $param, null, true)
-                    ),
-                    $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            $storage->param_types[$param_array->name] = $param_array->type;
-            $storage->params[] = $param_array;
-
-            if (!$param_array->is_optional) {
-                $required_param_count = $i + 1;
-
-                if (!$param->variadic && $has_optional_param) {
-                    if (IssueBuffer::accepts(
-                        new MisplacedRequiredParam(
-                            'Required param $' . $param->name . ' should come before any optional params in ' .
-                            $cased_function_id,
-                            new CodeLocation($source, $param, null, true)
-                        ),
-                        $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-            } else {
-                $has_optional_param = true;
-            }
-
-            ++$i;
-        }
-
-        $storage->required_param_count = $required_param_count;
-
-        if ($function->stmts) {
-            // look for constant declarations
-            foreach ($function->stmts as $stmt) {
-                if ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
-                    $stmt->name instanceof PhpParser\Node\Name &&
-                    $stmt->name->parts === ['define']
-                ) {
-                    $first_arg_value = isset($stmt->args[0]) ? $stmt->args[0]->value : null;
-                    $second_arg_value = isset($stmt->args[1]) ? $stmt->args[1]->value : null;
-
-                    if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
-                        $storage->defined_constants[$first_arg_value->value] =
-                            StatementsChecker::getSimpleType($second_arg_value) ?: Type::getMixed();
-                    }
-                }
-            }
-        }
-
-        $config = Config::getInstance();
-
-        if ($parser_return_type = $function->getReturnType()) {
-            $suffix = '';
-
-            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
-                $suffix = '|null';
-                $parser_return_type = $parser_return_type->type;
-            }
-
-            if (is_string($parser_return_type)) {
-                $return_type_string = $parser_return_type . $suffix;
-            } else {
-                $return_type_fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
-                    $parser_return_type,
-                    $source
-                );
-
-                $return_type_string = $return_type_fq_class_name . $suffix;
-            }
-
-            $storage->return_type = Type::parseString($return_type_string);
-            $storage->return_type_location = new CodeLocation(
-                $source,
-                $function,
-                null,
-                false,
-                self::RETURN_TYPE_REGEX
-            );
-        }
-
-        $docblock_info = null;
-        $doc_comment = $function->getDocComment();
-
-        if (!$doc_comment) {
-            return $storage;
-        }
-
-        try {
-            $docblock_info = CommentChecker::extractFunctionDocblockInfo(
-                (string)$doc_comment,
-                $doc_comment->getLine()
-            );
-        } catch (DocblockParseException $e) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($source, $function, null, true)
-                )
-            )) {
-                // fall through
-            }
-        }
-
-        if (!$docblock_info) {
-            return $storage;
-        }
-
-        if ($docblock_info->deprecated) {
-            $storage->deprecated = true;
-        }
-
-        if ($docblock_info->variadic) {
-            $storage->variadic = true;
-        }
-
-        if ($docblock_info->ignore_nullable_return && $storage->return_type) {
-            $storage->return_type->ignore_nullable_issues = true;
-        }
-
-        $storage->suppressed_issues = $docblock_info->suppress;
-
-        if (!$config->use_docblock_types) {
-            return $storage;
-        }
-
-        $template_types = $class_storage && $class_storage->template_types ? $class_storage->template_types : null;
-
-        if ($docblock_info->template_types) {
-            $storage->template_types = [];
-
-            foreach ($docblock_info->template_types as $template_type) {
-                if (count($template_type) === 3) {
-                    $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $source);
-                    $storage->template_types[$template_type[0]] = $as_type_string;
-                } else {
-                    $storage->template_types[$template_type[0]] = 'mixed';
-                }
-            }
-
-            $template_types = array_merge($template_types ?: [], $storage->template_types);
-        }
-
-        if ($docblock_info->template_typeofs) {
-            $storage->template_typeof_params = [];
-
-            foreach ($docblock_info->template_typeofs as $template_typeof) {
-                foreach ($storage->params as $i => $param) {
-                    if ($param->name === $template_typeof['param_name']) {
-                        $storage->template_typeof_params[$i] = $template_typeof['template_type'];
-                        break;
-                    }
-                }
-            }
-        }
-
-        if ($docblock_info->return_type) {
-            if (!$storage->return_type || (string)$docblock_info->return_type !== (string)$storage->return_type) {
-                $storage->has_template_return_type =
-                    $template_types !== null &&
-                    count(
-                        array_intersect(
-                            Type::tokenize($docblock_info->return_type),
-                            array_keys($template_types)
-                        )
-                    ) > 0;
-
-                try {
-                    $docblock_return_type = Type::parseString(
-                        self::fixUpLocalType(
-                            (string)$docblock_info->return_type,
-                            $source,
-                            $template_types
-                        )
-                    );
-                } catch (\Psalm\Exception\TypeParseTreeException $e) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                            new CodeLocation($source, $function, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
-                }
-
-                if (!$storage->return_type_location) {
-                    $storage->return_type_location = new CodeLocation($source, $function, null, true);
-                }
-
-                if ($storage->return_type &&
-                    !TypeChecker::hasIdenticalTypes(
-                        $storage->return_type,
-                        $docblock_return_type,
-                        $source->getFileChecker()
-                    )
-                ) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Docblock return type does not match method return type for ' . $cased_function_id,
-                            new CodeLocation($source, $function, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
-                } elseif ($docblock_return_type) {
-                    $storage->return_type = $docblock_return_type;
-                    $storage->return_type->setFromDocblock();
-                }
-
-                if ($storage->return_type && $docblock_info->ignore_nullable_return) {
-                    $storage->return_type->ignore_nullable_issues = true;
-                }
-
-                if ($docblock_info->return_type_line_number) {
-                    $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
-                }
-            }
-        }
-
-        if ($docblock_info->params) {
-            self::improveParamsFromDocblock(
-                $storage,
-                $docblock_info->params,
-                $template_types,
-                $function,
-                $source,
-                $source->getFQCLN(),
-                new CodeLocation($source, $function, null, true)
-            );
-        }
-
-        return $storage;
     }
 
     /**
@@ -1260,240 +962,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @param  array<int, array{type:string,name:string,line_number:int}>  $docblock_params
-     * @param  FunctionLikeStorage          $storage
-     * @param  array<string, string>|null   $template_types
-     * @param  Closure|Function_|ClassMethod $function
-     * @param  StatementsSource             $source
-     * @param  string|null                  $fq_class_name
-     * @param  CodeLocation                 $code_location
-     *
-     * @return false|null
-     */
-    protected static function improveParamsFromDocblock(
-        FunctionLikeStorage $storage,
-        array $docblock_params,
-        $template_types,
-        $function,
-        StatementsSource $source,
-        $fq_class_name,
-        CodeLocation $code_location
-    ) {
-        $docblock_param_vars = [];
-
-        $base = $fq_class_name ? $fq_class_name . '::' : '';
-
-        $cased_method_id = $base . $storage->cased_name;
-
-        $file_checker = $source->getFileChecker();
-
-        foreach ($docblock_params as $docblock_param) {
-            $param_name = $docblock_param['name'];
-            $line_number = $docblock_param['line_number'];
-            $docblock_param_variadic = false;
-
-            if (substr($param_name, 0, 3) === '...') {
-                $docblock_param_variadic = true;
-                $param_name = substr($param_name, 3);
-            }
-
-            $param_name = substr($param_name, 1);
-
-            if (!isset($storage->param_types[$param_name])) {
-                if ($line_number) {
-                    $code_location->setCommentLine($line_number);
-                }
-
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        'Parameter $' . $param_name . ' does not appear in the argument list for ' .
-                            $cased_method_id,
-                        $code_location
-                    ),
-                    $storage->suppressed_issues
-                )) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            $storage_param = null;
-
-            foreach ($storage->params as $function_signature_param) {
-                if ($function_signature_param->name === $param_name) {
-                    $storage_param = $function_signature_param;
-                    break;
-                }
-            }
-
-            if ($storage_param === null) {
-                throw new \UnexpectedValueException('This should not be possible');
-            }
-
-            $storage_param_type = $storage->param_types[$param_name];
-
-            $docblock_param_vars[$param_name] = true;
-
-            $new_param_type = Type::parseString(
-                self::fixUpLocalType(
-                    $docblock_param['type'],
-                    $source,
-                    $template_types
-                )
-            );
-
-            if ($docblock_param_variadic) {
-                $new_param_type = new Type\Union([
-                    new Type\Atomic\TArray([
-                        Type::getInt(),
-                        $new_param_type,
-                    ]),
-                ]);
-            }
-
-            $new_param_type->setFromDocblock();
-
-            if (!$storage_param_type->isMixed()) {
-                if (!TypeChecker::isContainedBy(
-                    $new_param_type,
-                    $storage->param_types[$param_name],
-                    $source->getFileChecker()
-                )
-                ) {
-                    $code_location->setCommentLine($line_number);
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Parameter $' . $param_name . ' has wrong type \'' . $new_param_type . '\', should be \'' .
-                                $storage_param_type . '\'',
-                            $code_location
-                        ),
-                        $storage->suppressed_issues
-                    )) {
-                        return false;
-                    }
-
-                    continue;
-                }
-            }
-
-            $existing_param_type_nullable = $storage_param->is_nullable;
-
-            if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->types['null'] = new Type\Atomic\TNull();
-            }
-
-            $new_param_type = TypeChecker::simplifyUnionType($new_param_type, $file_checker);
-
-            if ((string)$storage_param->type !== (string)$new_param_type) {
-                $storage_param->type = $new_param_type;
-            }
-
-            if ($file_checker->project_checker->collect_references) {
-                $storage_param->location = new CodeLocation($source, $function);
-                $storage_param->location->setCommentLine($line_number);
-            }
-        }
-
-        foreach ($storage->params as $function_signature_param) {
-            if (!isset($docblock_param_vars[$function_signature_param->name]) &&
-                $function_signature_param->location
-            ) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        'Parameter $' . $function_signature_param->name . ' does not appear in the docbock for ' .
-                            $cased_method_id,
-                        $function_signature_param->location
-                    ),
-                    $storage->suppressed_issues
-                )) {
-                    return false;
-                }
-
-                continue;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  PhpParser\Node\Param $param
-     * @param  StatementsSource     $source
-     *
-     * @return FunctionLikeParameter
-     */
-    public static function getTranslatedParam(
-        PhpParser\Node\Param $param,
-        StatementsSource $source
-    ) {
-        $param_type = null;
-
-        $is_nullable = $param->default !== null &&
-            $param->default instanceof \PhpParser\Node\Expr\ConstFetch &&
-            $param->default->name instanceof PhpParser\Node\Name &&
-            strtolower($param->default->name->parts[0]) === 'null';
-
-        $param_typehint = $param->type;
-
-        if ($param_typehint instanceof PhpParser\Node\NullableType) {
-            $is_nullable = true;
-            $param_typehint = $param_typehint->type;
-        }
-
-        if ($param_typehint) {
-            if (is_string($param_typehint)) {
-                $param_type_string = $param_typehint;
-            } elseif ($param_typehint instanceof PhpParser\Node\Name\FullyQualified) {
-                $param_type_string = implode('\\', $param_typehint->parts);
-            } elseif ($param_typehint->parts === ['self']) {
-                $param_type_string = $source->getFQCLN();
-            } else {
-                $param_type_string = ClassLikeChecker::getFQCLNFromString(
-                    implode('\\', $param_typehint->parts),
-                    $source
-                );
-            }
-
-            if ($param_type_string) {
-                if ($is_nullable) {
-                    $param_type_string .= '|null';
-                }
-
-                $param_type = Type::parseString($param_type_string);
-
-                if ($param->variadic) {
-                    $param_type = new Type\Union([
-                        new Type\Atomic\TArray([
-                            Type::getInt(),
-                            $param_type,
-                        ]),
-                    ]);
-                }
-            }
-        } elseif ($param->variadic) {
-            $param_type = new Type\Union([
-                new Type\Atomic\TArray([
-                    Type::getInt(),
-                    Type::getMixed(),
-                ]),
-            ]);
-        }
-
-        $is_optional = $param->default !== null;
-
-        return new FunctionLikeParameter(
-            $param->name,
-            $param->byRef,
-            $param_type ?: Type::getMixed(),
-            new CodeLocation($source, $param, null, false, self::PARAM_TYPE_REGEX),
-            $is_optional,
-            $is_nullable,
-            $param->variadic
-        );
-    }
-
-    /**
      * @param  \ReflectionParameter $param
      *
      * @return FunctionLikeParameter
@@ -1556,7 +1024,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public static function fixUpLocalType(
         $return_type,
-        StatementsSource $source,
+        Aliases $aliases,
         array $template_types = null
     ) {
         if (strpos($return_type, '[') !== false) {
@@ -1594,7 +1062,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 $return_type_token = ClassLikeChecker::getFQCLNFromString(
                     $return_type_token,
-                    $source
+                    $aliases
                 );
             }
         }
@@ -1732,18 +1200,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
-    }
-
-    /**
-     * Add suppressed issues
-     *
-     * @param  array<string> $suppressed_issues
-     *
-     * @return void
-     */
-    public function addSuppressedIssues(array $suppressed_issues)
-    {
-        $this->suppressed_issues = array_merge($this->suppressed_issues, $suppressed_issues);
     }
 
     /**
