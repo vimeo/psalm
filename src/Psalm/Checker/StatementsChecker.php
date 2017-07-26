@@ -41,6 +41,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public static $user_constants = [];
 
     /**
+     * @var array<string, Type\Union>
+     */
+    public static $stub_constants = [];
+
+    /**
      * @param StatementsSource $source
      */
     public function __construct(StatementsSource $source)
@@ -770,6 +775,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             return ClassLikeChecker::getTypeFromValue($predefined_constants[$fq_const_name ?: $const_name]);
         }
 
+        if (isset(self::$stub_constants[$fq_const_name ?: $const_name])) {
+            return self::$stub_constants[$fq_const_name ?: $const_name];
+        }
+
         return null;
     }
 
@@ -1054,6 +1063,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public static function clearCache()
     {
         self::$user_constants = [];
+        self::$stub_constants = [];
 
         ExpressionChecker::clearCache();
     }

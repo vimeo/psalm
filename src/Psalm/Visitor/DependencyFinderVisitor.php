@@ -355,6 +355,13 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $var_type->queueClassLikesForScanning($this->project_checker);
                 }
             }
+        } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
+            if ($this->project_checker->register_global_functions) {
+                foreach ($node->consts as $const) {
+                    StatementsChecker::$stub_constants[$const->name] =
+                        StatementsChecker::getSimpleType($const->value) ?: Type::getMixed();
+                }
+            }
         }
     }
 
