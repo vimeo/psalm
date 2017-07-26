@@ -2,7 +2,6 @@
 namespace Psalm\Tests;
 
 use Psalm\Checker\FileChecker;
-use Psalm\Config;
 use Psalm\Context;
 
 class UnusedCodeTest extends TestCase
