@@ -84,7 +84,7 @@ class StatementsProvider
         }
 
         /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = $parser->parse($file_contents);
+        $stmts = self::$parser->parse($file_contents);
 
         return $stmts;
     }
