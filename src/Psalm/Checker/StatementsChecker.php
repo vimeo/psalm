@@ -926,8 +926,17 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             $current_file_checker = $this->getFileChecker();
 
-            if ($current_file_checker->project_checker->fileExists($path_to_file)) {
+            if (!$current_file_checker->project_checker->fileExists($path_to_file)) {
                 return null;
+            }
+
+            if (is_subclass_of($current_file_checker, 'Psalm\\Checker\\FileChecker')) {
+                $include_file_checker = new FileChecker(
+                    $path_to_file,
+                    $current_file_checker->project_checker,
+                    false
+                );
+                $this->analyze($include_file_checker->getStatements(), $context);
             }
         }
 
