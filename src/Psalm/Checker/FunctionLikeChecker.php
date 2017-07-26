@@ -1203,6 +1203,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
+     * Adds a suppressed issue, useful when creating a method checker from scratch
+     *
+     * @return void
+     */
+    public function addSuppressedIssue(string $issue_name)
+    {
+        $this->suppressed_issues[] = $issue_name;
+    }
+
+    /**
      * @return void
      */
     public static function clearCache()
