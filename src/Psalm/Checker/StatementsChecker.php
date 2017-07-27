@@ -947,8 +947,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 return null;
             }
-
-
         }
 
         $context->check_classes = false;
