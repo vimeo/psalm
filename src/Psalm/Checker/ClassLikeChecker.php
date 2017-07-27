@@ -962,11 +962,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
         }
 
-        FileReferenceProvider::addFileReferenceToClass(
-            $code_location->file_path,
-            strtolower($fq_class_name)
-        );
-
         return true;
     }
 

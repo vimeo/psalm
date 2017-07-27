@@ -762,11 +762,12 @@ class ProjectChecker
 
     /**
      * @param  string  $fq_classlike_name
+     * @param  string|null  $referencing_file_path
      * @param  bool $analyze_too
      *
      * @return void
      */
-    public function queueClassLikeForScanning($fq_classlike_name, $analyze_too = false)
+    public function queueClassLikeForScanning($fq_classlike_name, $referencing_file_path = null, $analyze_too = false)
     {
         if (!$this->config) {
             throw new \UnexpectedValueException('Config should not be null here');
@@ -781,6 +782,11 @@ class ProjectChecker
                 $this->classes_to_deep_scan[$fq_classlike_name_lc] = true;
             }
         }
+
+        if ($referencing_file_path) {
+            FileReferenceProvider::addFileReferenceToClass($referencing_file_path, $fq_classlike_name_lc);
+        }
+
     }
 
     /**

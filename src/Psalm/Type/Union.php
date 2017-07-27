@@ -383,14 +383,22 @@ class Union
 
     /**
      * @param  ProjectChecker $project_checker
+     * @param  string $referencing_file_path
      * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */
-    public function queueClassLikesForScanning(ProjectChecker $project_checker, array $phantom_classes = [])
-    {
+    public function queueClassLikesForScanning(
+        ProjectChecker $project_checker,
+        $referencing_file_path = null,
+        array $phantom_classes = []
+    ) {
         foreach ($this->types as $atomic_type) {
-            $atomic_type->queueClassLikesForScanning($project_checker, $phantom_classes);
+            $atomic_type->queueClassLikesForScanning(
+                $project_checker,
+                $referencing_file_path,
+                $phantom_classes
+            );
         }
     }
 }

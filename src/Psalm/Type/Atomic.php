@@ -244,21 +244,29 @@ abstract class Atomic
 
     /**
      * @param  ProjectChecker $project_checker
+     * @param  string $referencing_file_path
      * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */
-    public function queueClassLikesForScanning(ProjectChecker $project_checker, array $phantom_classes = [])
-    {
+    public function queueClassLikesForScanning(
+        ProjectChecker $project_checker,
+        $referencing_file_path = null,
+        array $phantom_classes = []
+    ) {
         if ($this instanceof TNamedObject && !isset($phantom_classes[strtolower($this->value)])) {
-            $project_checker->queueClassLikeForScanning($this->value);
+            $project_checker->queueClassLikeForScanning($this->value, $referencing_file_path);
 
             return;
         }
 
         if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
             foreach ($this->type_params as $type_param) {
-                $type_param->queueClassLikesForScanning($project_checker, $phantom_classes);
+                $type_param->queueClassLikesForScanning(
+                    $project_checker,
+                    $referencing_file_path,
+                    $phantom_classes
+                );
             }
         }
     }
