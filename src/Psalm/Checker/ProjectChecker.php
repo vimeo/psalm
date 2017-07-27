@@ -786,7 +786,6 @@ class ProjectChecker
         if ($referencing_file_path) {
             FileReferenceProvider::addFileReferenceToClass($referencing_file_path, $fq_classlike_name_lc);
         }
-
     }
 
     /**
