@@ -791,7 +791,7 @@ class ProjectChecker
             }
 
             if ($analyze_too) {
-                $this->classes_to_deep_scan[$fq_classlike_name] = true;
+                $this->classes_to_deep_scan[$fq_classlike_name_lc] = true;
             }
 
             $this->store_scan_failure[$fq_classlike_name] = $store_failure;
