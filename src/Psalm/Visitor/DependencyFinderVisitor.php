@@ -340,7 +340,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $this->visitInclude($node);
         } elseif ($node instanceof PhpParser\Node\Scalar\String_ && $this->queue_strings_as_possible_type) {
             if (preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $node->value)) {
-                $this->project_checker->queueClassLikeForScanning($node->value, $this->file_path);
+                $this->project_checker->queueClassLikeForScanning($node->value, $this->file_path, false, false);
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Assign
             || $node instanceof PhpParser\Node\Expr\AssignOp

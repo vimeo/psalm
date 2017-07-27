@@ -149,6 +149,11 @@ class ProjectChecker
     private $classes_to_deep_scan = [];
 
     /**
+     * @var array<string, bool>
+     */
+    private $store_scan_failure = [];
+
+    /**
      * @var array<string, string>
      */
     private $files_to_deep_scan = [];
@@ -436,7 +441,7 @@ class ProjectChecker
                                 $this->files_to_deep_scan[$file_path] = $file_path;
                             }
                         }
-                    } else {
+                    } elseif ($this->store_scan_failure[$fq_classlike_name]) {
                         $this->existing_classlikes_lc[$fq_classlike_name_lc] = false;
                     }
                 }
@@ -764,11 +769,16 @@ class ProjectChecker
      * @param  string  $fq_classlike_name
      * @param  string|null  $referencing_file_path
      * @param  bool $analyze_too
+     * @param  bool $store_failure
      *
      * @return void
      */
-    public function queueClassLikeForScanning($fq_classlike_name, $referencing_file_path = null, $analyze_too = false)
-    {
+    public function queueClassLikeForScanning(
+        $fq_classlike_name,
+        $referencing_file_path = null,
+        $analyze_too = false,
+        $store_failure = true
+    ) {
         if (!$this->config) {
             throw new \UnexpectedValueException('Config should not be null here');
         }
@@ -776,11 +786,15 @@ class ProjectChecker
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
-            $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
+            if (!isset($this->classes_to_scan[$fq_classlike_name_lc]) || $store_failure) {
+                $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
+            }
 
             if ($analyze_too) {
-                $this->classes_to_deep_scan[$fq_classlike_name_lc] = true;
+                $this->classes_to_deep_scan[$fq_classlike_name] = true;
             }
+
+            $this->store_scan_failure[$fq_classlike_name] = $store_failure;
         }
 
         if ($referencing_file_path) {

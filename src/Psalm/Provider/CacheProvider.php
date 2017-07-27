@@ -52,7 +52,7 @@ class CacheProvider
             filemtime($cache_location) > $file_modified_time
         ) {
             /** @var array<int, \PhpParser\Node\Stmt> */
-            return unserialize((string)file_get_contents($cache_location));
+            return unserialize((string)file_get_contents($cache_location)) ?: null;
         }
     }
 
