@@ -12,12 +12,20 @@ class FileStorage
     public $file_path;
 
     /**
-     * @var array<FunctionLikeStorage>
+     * @var array<string, FunctionLikeStorage>
      */
     public $functions = [];
 
     /** @var array<string, string> */
     public $declaring_function_ids = [];
+
+    /**
+     * @var array<string, \Psalm\Type\Union>
+     */
+    public $constants = [];
+
+    /** @var array<string, string> */
+    public $declaring_constants = [];
 
     /** @var array<string, string> */
     public $included_file_paths = [];

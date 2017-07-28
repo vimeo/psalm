@@ -299,12 +299,20 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->queue_strings_as_possible_type = true;
                 }
 
-                if ($function_id === 'define' && $this->functionlike_storage) {
+                if ($function_id === 'define') {
                     $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
                     $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
                     if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
-                        $this->functionlike_storage->defined_constants[$first_arg_value->value] =
-                            StatementsChecker::getSimpleType($second_arg_value) ?: Type::getMixed();
+                        $const_type = StatementsChecker::getSimpleType($second_arg_value) ?: Type::getMixed();
+                        $const_name = $first_arg_value->value;
+
+                        if ($this->functionlike_storage) {
+                            $this->functionlike_storage->defined_constants[$const_name] = $const_type;
+                        } else {
+                            $file_storage = FileChecker::$storage[strtolower($this->file_path)];
+                            $file_storage->constants[$const_name] = $const_type;
+                            $file_storage->declaring_constants[$const_name] = $this->file_path;
+                        }
                     }
                 }
             }
@@ -363,10 +371,16 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
-            if ($this->project_checker->register_global_functions) {
-                foreach ($node->consts as $const) {
-                    StatementsChecker::$stub_constants[$const->name] =
-                        StatementsChecker::getSimpleType($const->value) ?: Type::getMixed();
+            foreach ($node->consts as $const) {
+                $const_type = StatementsChecker::getSimpleType($const->value) ?: Type::getMixed();
+
+                if ($this->project_checker->register_global_functions) {
+                    StatementsChecker::$stub_constants[$const->name] = $const_type;
+                } else {
+                    $file_storage = FileChecker::$storage[strtolower($this->file_path)];
+
+                    $file_storage->constants[$const->name] = $const_type;
+                    $file_storage->declaring_constants[$const->name] = $this->file_path;
                 }
             }
         }

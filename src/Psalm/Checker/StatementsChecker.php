@@ -36,11 +36,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     private $all_vars = [];
 
     /**
-     * @var array<string, array<string, Type\Union>>
-     */
-    public static $user_constants = [];
-
-    /**
      * @var array<string, Type\Union>
      */
     public static $stub_constants = [];
@@ -737,8 +732,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      *
      * @return  Type\Union|null
      */
-    public function getConstType($const_name, $is_fully_qualified, Context $context)
-    {
+    public function getConstType(
+        StatementsChecker $statements_checker,
+        $const_name,
+        $is_fully_qualified,
+        Context $context
+    ) {
         $fq_const_name = null;
 
         $aliased_constants = $this->getAliases()->constants;
@@ -769,6 +768,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             return $context->vars_in_scope[$const_name];
         }
 
+        $file_path = $statements_checker->getFilePath();
+
+        $file_storage = FileChecker::$storage[strtolower($file_path)];
+
+        if (isset($file_storage->declaring_constants[$const_name])) {
+            $constant_file_path = $file_storage->declaring_constants[$const_name];
+
+            return FileChecker::$storage[strtolower($constant_file_path)]->constants[$const_name];
+        }
+
         $predefined_constants = Config::getInstance()->getPredefinedConstants();
 
         if (isset($predefined_constants[$fq_const_name ?: $const_name])) {
@@ -796,8 +805,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         if ($this->source instanceof NamespaceChecker) {
             $this->source->setConstType($const_name, $const_type);
-        } else {
-            self::$user_constants[$this->getFilePath()][$const_name] = $const_type;
         }
     }
 
@@ -1060,7 +1067,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      */
     public static function clearCache()
     {
-        self::$user_constants = [];
         self::$stub_constants = [];
 
         ExpressionChecker::clearCache();

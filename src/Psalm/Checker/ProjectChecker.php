@@ -643,6 +643,11 @@ class ProjectChecker
                 $included_file_storage->declaring_function_ids,
                 $storage->declaring_function_ids
             );
+
+            $storage->declaring_constants = array_merge(
+                $included_file_storage->declaring_constants,
+                $storage->declaring_constants
+            );
         }
 
         $storage->populated = true;

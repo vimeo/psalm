@@ -392,6 +392,7 @@ class FetchChecker
 
             default:
                 $const_type = $statements_checker->getConstType(
+                    $statements_checker,
                     $const_name,
                     $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
                     $context
