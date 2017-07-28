@@ -46,9 +46,11 @@ class FunctionChecker extends FunctionLikeChecker
      *
      * @return bool
      */
-    public static function functionExists($function_id, $file_path)
+    public static function functionExists(ProjectChecker $project_checker, $function_id, $file_path)
     {
-        if (isset(FileChecker::$storage[strtolower($file_path)]->declaring_function_ids[$function_id])) {
+        $file_storage = $project_checker->file_storage_provider->get($file_path);
+
+        if (isset($file_storage->declaring_function_ids[$function_id])) {
             return true;
         }
 
@@ -77,7 +79,7 @@ class FunctionChecker extends FunctionLikeChecker
      *
      * @return FunctionLikeStorage
      */
-    public static function getStorage($function_id, $file_path)
+    public static function getStorage(ProjectChecker $project_checker, $function_id, $file_path)
     {
         if (isset(self::$stubbed_functions[$function_id])) {
             return self::$stubbed_functions[$function_id];
@@ -87,7 +89,7 @@ class FunctionChecker extends FunctionLikeChecker
             return self::$builtin_functions[$function_id];
         }
 
-        $file_storage = FileChecker::$storage[strtolower($file_path)];
+        $file_storage = $project_checker->file_storage_provider->get($file_path);
 
         if (!isset($file_storage->declaring_function_ids[$function_id])) {
             throw new \UnexpectedValueException(
@@ -97,13 +99,15 @@ class FunctionChecker extends FunctionLikeChecker
 
         $declaring_file_path = $file_storage->declaring_function_ids[$function_id];
 
-        if (!isset(FileChecker::$storage[$declaring_file_path]->functions[$function_id])) {
+        $declaring_file_storage = $project_checker->file_storage_provider->get($declaring_file_path);
+
+        if (!isset($declaring_file_storage->functions[$function_id])) {
             throw new \UnexpectedValueException(
                 'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
             );
         }
 
-        return FileChecker::$storage[$declaring_file_path]->functions[$function_id];
+        return $declaring_file_storage->functions[$function_id];
     }
 
     /**
@@ -112,9 +116,9 @@ class FunctionChecker extends FunctionLikeChecker
      *
      * @return bool
      */
-    public static function isVariadic($function_id, $file_path)
+    public static function isVariadic(ProjectChecker $project_checker, $function_id, $file_path)
     {
-        $file_storage = FileChecker::$storage[strtolower($file_path)];
+        $file_storage = $project_checker->file_storage_provider->get($file_path);
 
         return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
     }
@@ -202,23 +206,6 @@ class FunctionChecker extends FunctionLikeChecker
         } catch (\ReflectionException $e) {
             return false;
         }
-    }
-
-    /**
-     * @param  string $function_id
-     * @param  string $file_path
-     *
-     * @return string
-     */
-    public static function getCasedFunctionId($function_id, $file_path)
-    {
-        $file_storage = FileChecker::$storage[strtolower($file_path)];
-
-        if (!isset($file_storage->functions[$function_id])) {
-            throw new \InvalidArgumentException('Do not know function ' . $function_id . ' in file ' . $file_path);
-        }
-
-        return $file_storage->functions[$function_id]->cased_name;
     }
 
     /**

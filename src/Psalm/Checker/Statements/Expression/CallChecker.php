@@ -8,6 +8,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
@@ -60,6 +61,7 @@ class CallChecker
      * @return  false|null
      */
     public static function analyzeFunctionCall(
+        ProjectChecker $project_checker,
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context
@@ -234,6 +236,7 @@ class CallChecker
             if (!$in_call_map && !$is_stubbed) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
+                        $project_checker,
                         $statements_checker,
                         $method_id,
                         $code_location
@@ -244,6 +247,7 @@ class CallChecker
                 }
 
                 $function_exists = FunctionChecker::functionExists(
+                    $project_checker,
                     strtolower($method_id),
                     $statements_checker->getFilePath()
                 );
@@ -254,6 +258,7 @@ class CallChecker
             if ($function_exists) {
                 if (!$in_call_map || $is_stubbed) {
                     $function_storage = FunctionChecker::getStorage(
+                        $project_checker,
                         strtolower($method_id),
                         $statements_checker->getFilePath()
                     );
@@ -1605,7 +1610,12 @@ class CallChecker
 
         if ($method_id) {
             if ($in_call_map || !strpos($method_id, '::')) {
-                $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFilePath());
+                $project_checker = $statements_checker->getFileChecker()->project_checker;
+                $is_variadic = FunctionChecker::isVariadic(
+                    $project_checker,
+                    strtolower($method_id),
+                    $statements_checker->getFilePath()
+                );
             } else {
                 $fq_class_name = explode('::', $method_id)[0];
                 $is_variadic = MethodChecker::isVariadic($method_id);
@@ -2131,6 +2141,7 @@ class CallChecker
      * @return bool
      */
     protected static function checkFunctionExists(
+        ProjectChecker $project_checker,
         StatementsChecker $statements_checker,
         &$function_id,
         CodeLocation $code_location
@@ -2138,11 +2149,15 @@ class CallChecker
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 
-        if (!FunctionChecker::functionExists($function_id, $statements_checker->getFilePath())) {
+        if (!FunctionChecker::functionExists($project_checker, $function_id, $statements_checker->getFilePath())) {
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
             if ($function_id !== $root_function_id &&
-                FunctionChecker::functionExists($root_function_id, $statements_checker->getFilePath())
+                FunctionChecker::functionExists(
+                    $project_checker,
+                    $root_function_id,
+                    $statements_checker->getFilePath()
+                )
             ) {
                 $function_id = $root_function_id;
             } else {

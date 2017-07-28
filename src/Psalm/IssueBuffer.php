@@ -192,9 +192,9 @@ class IssueBuffer
      *
      * @return void
      */
-    public static function finish($is_full, $start_time, array $visited_files)
+    public static function finish(ProjectChecker $project_checker, $is_full, $start_time, array $visited_files)
     {
-        Provider\FileReferenceProvider::updateReferenceCache($visited_files);
+        Provider\FileReferenceProvider::updateReferenceCache($project_checker, $visited_files);
 
         $has_error = false;
 

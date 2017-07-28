@@ -62,6 +62,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     protected $source;
 
+    /** @var FileChecker */
+    public $file_checker;
+
     /**
      * @var array<string, array<string, Type\Union>>
      */
@@ -114,6 +117,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         }
+
+        $file_storage_provider = $this->file_checker->project_checker->file_storage_provider;
 
         if ($this->function instanceof ClassMethod) {
             $real_method_id = (string)$this->getMethodId();
@@ -287,13 +292,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         } elseif ($this->function instanceof Function_) {
-            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
+            $file_storage = $file_storage_provider->get($this->source->getFilePath());
 
             $storage = $file_storage->functions[(string)$this->getMethodId()];
 
             $cased_method_id = $this->function->name;
         } else { // Closure
-            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
+            $file_storage = $file_storage_provider->get($this->source->getFilePath());
 
             $function_id = $cased_function_id =
                 $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
@@ -1220,5 +1225,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public static function clearCache()
     {
         self::$no_effects_hashes = [];
+    }
+
+    public function getFileChecker()
+    {
+        return $this->file_checker;
     }
 }

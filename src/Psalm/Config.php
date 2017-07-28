@@ -481,7 +481,7 @@ class Config
             $plugin_file_checker = new FileChecker($path, $project_checker);
             $plugin_file_checker->scan();
 
-            $declared_classes = ClassLikeChecker::getClassesForFile($path);
+            $declared_classes = ClassLikeChecker::getClassesForFile($project_checker, $path);
 
             if (count($declared_classes) !== 1) {
                 throw new \InvalidArgumentException(

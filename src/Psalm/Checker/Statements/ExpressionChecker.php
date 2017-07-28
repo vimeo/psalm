@@ -195,7 +195,14 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
-            if (CallChecker::analyzeFunctionCall($statements_checker, $stmt, $context) === false) {
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+            if (CallChecker::analyzeFunctionCall(
+                $project_checker,
+                $statements_checker,
+                $stmt,
+                $context
+            ) === false
+            ) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Ternary) {

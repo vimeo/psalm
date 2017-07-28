@@ -12,6 +12,7 @@ use Psalm\IssueBuffer;
 use Psalm\Provider\CacheProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
+use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -35,6 +36,9 @@ class ProjectChecker
 
     /** @var FileProvider */
     private $file_provider;
+
+    /** @var FileStorageProvider */
+    public $file_storage_provider;
 
     /** @var CacheProvider */
     public $cache_provider;
@@ -265,6 +269,8 @@ class ProjectChecker
         self::$instance = $this;
 
         $this->collectPredefinedClassLikes();
+
+        $this->file_storage_provider = new FileStorageProvider();
     }
 
     /**
@@ -386,7 +392,7 @@ class ProjectChecker
             }
         }
 
-        IssueBuffer::finish(true, (int)$start_checks, $this->scanned_files);
+        IssueBuffer::finish($this, true, (int)$start_checks, $this->scanned_files);
     }
 
     /**
@@ -472,8 +478,10 @@ class ProjectChecker
             echo 'FileStorage is populating' . PHP_EOL;
         }
 
-        foreach (FileChecker::$storage as $storage) {
-            $this->populateFileStorage($storage);
+        $all_file_storage = $this->file_storage_provider->getAll();
+
+        foreach ($all_file_storage as $file_storage) {
+            $this->populateFileStorage($file_storage);
         }
 
         if ($this->debug_output) {
@@ -632,11 +640,12 @@ class ProjectChecker
         $dependent_file_paths[strtolower($storage->file_path)] = true;
 
         foreach ($storage->included_file_paths as $included_file_path => $_) {
-            if (!isset(FileChecker::$storage[$included_file_path])) {
+            try {
+                $included_file_storage = $this->file_storage_provider->get($included_file_path);
+            } catch (\InvalidArgumentException $e) {
                 continue;
             }
 
-            $included_file_storage = FileChecker::$storage[$included_file_path];
             $this->populateFileStorage($included_file_storage, $dependent_file_paths);
 
             $storage->declaring_function_ids = array_merge(
@@ -1056,7 +1065,7 @@ class ProjectChecker
         $this->scanFiles();
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
+        IssueBuffer::finish($this, false, $start_checks, $this->scanned_files);
     }
 
     /**
@@ -1219,7 +1228,7 @@ class ProjectChecker
 
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
+        IssueBuffer::finish($this, false, $start_checks, $this->scanned_files);
     }
 
     /**

@@ -61,6 +61,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected $source;
 
+    /** @var FileChecker */
+    public $file_checker;
+
     /**
      * @var string
      */
@@ -1633,11 +1636,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return  array<string>
      */
-    public static function getClassesForFile($file_path)
+    public static function getClassesForFile(ProjectChecker $project_checker, $file_path)
     {
-        return isset(FileChecker::$storage[strtolower($file_path)])
-            ? array_unique(FileChecker::$storage[strtolower($file_path)]->classes_in_file)
-            : [];
+        try {
+            return $project_checker->file_storage_provider->get($file_path)->classes_in_file;
+        } catch (\InvalidArgumentException $e) {
+            return [];
+        }
     }
 
     /**
@@ -1684,6 +1689,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public static function inPropertyMap($class_name)
     {
         return isset(self::getPropertyMap()[strtolower($class_name)]);
+    }
+
+    public function getFileChecker()
+    {
+        return $this->file_checker;
     }
 
     /**

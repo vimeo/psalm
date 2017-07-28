@@ -23,6 +23,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
@@ -74,6 +75,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var ?FunctionLikeStorage */
     protected $functionlike_storage;
 
+    /** @var FileStorage */
+    protected $file_storage;
+
     /**
      * @param ProjectChecker $project_checker
      * @param string $file_path
@@ -86,6 +90,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $this->scan_deep = $file_checker->will_analyze;
         $this->config = Config::getInstance();
         $this->aliases = $this->file_aliases = new Aliases();
+        $this->file_storage = $project_checker->file_storage_provider->get($this->file_path);
     }
 
     public function enterNode(PhpParser\Node $node)
@@ -147,7 +152,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             } else {
                 $fq_classlike_name = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name;
                 $fq_classlike_name_lc = strtolower($fq_classlike_name);
-                FileChecker::$storage[strtolower($this->file_path)]->classes_in_file[] = $fq_classlike_name_lc;
+                $this->file_storage->classes_in_file[] = $fq_classlike_name_lc;
             }
 
             $this->fq_classlike_name = $fq_classlike_name;
@@ -309,9 +314,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         if ($this->functionlike_storage) {
                             $this->functionlike_storage->defined_constants[$const_name] = $const_type;
                         } else {
-                            $file_storage = FileChecker::$storage[strtolower($this->file_path)];
-                            $file_storage->constants[$const_name] = $const_type;
-                            $file_storage->declaring_constants[$const_name] = $this->file_path;
+                            $this->file_storage->constants[$const_name] = $const_type;
+                            $this->file_storage->declaring_constants[$const_name] = $this->file_path;
                         }
                     }
                 }
@@ -377,10 +381,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 if ($this->project_checker->register_global_functions) {
                     StatementsChecker::$stub_constants[$const->name] = $const_type;
                 } else {
-                    $file_storage = FileChecker::$storage[strtolower($this->file_path)];
-
-                    $file_storage->constants[$const->name] = $const_type;
-                    $file_storage->declaring_constants[$const->name] = $this->file_path;
+                    $this->file_storage->constants[$const->name] = $const_type;
+                    $this->file_storage->declaring_constants[$const->name] = $this->file_path;
                 }
             }
         }
@@ -452,14 +454,12 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($project_checker->register_global_functions) {
                 $storage = FunctionChecker::$stubbed_functions[$function_id] = new FunctionLikeStorage();
             } else {
-                $file_storage = FileChecker::$storage[strtolower($this->file_path)];
-
-                if (isset($file_storage->functions[$function_id])) {
+                if (isset($this->file_storage->functions[$function_id])) {
                     return;
                 }
 
-                $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
-                $file_storage->declaring_function_ids[$function_id] = strtolower($this->file_path);
+                $storage = $this->file_storage->functions[$function_id] = new FunctionLikeStorage();
+                $this->file_storage->declaring_function_ids[$function_id] = strtolower($this->file_path);
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             if (!$this->fq_classlike_name) {
@@ -517,11 +517,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $storage->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
             }
         } else {
-            $file_storage = FileChecker::$storage[strtolower($this->file_path)];
-
             $function_id = $cased_function_id = $this->file_path . ':' . $stmt->getLine() . ':' . 'closure';
 
-            $storage = $file_storage->functions[$function_id] = new FunctionLikeStorage();
+            $storage = $this->file_storage->functions[$function_id] = new FunctionLikeStorage();
         }
 
         $this->functionlike_storage = $storage;
@@ -1140,8 +1138,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($this->project_checker->fileExists($path_to_file)) {
                 $this->project_checker->queueFileForScanning($path_to_file);
 
-                $file_storage = FileChecker::$storage[strtolower($this->file_path)];
-                $file_storage->included_file_paths[strtolower($path_to_file)] = $path_to_file;
+                $this->file_storage->included_file_paths[strtolower($path_to_file)] = $path_to_file;
 
                 return null;
             }
