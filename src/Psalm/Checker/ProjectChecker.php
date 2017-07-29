@@ -705,14 +705,14 @@ class ProjectChecker
             }
 
             if (isset($storage->declaring_method_ids[$aliased_method_name])) {
-                list($implementing_fq_class_name) = explode(
+                list($implementing_fq_class_name, $implementing_method_name) = explode(
                     '::',
                     $storage->declaring_method_ids[$aliased_method_name]
                 );
 
                 $implementing_class_storage = ClassLikeChecker::$storage[strtolower($implementing_fq_class_name)];
 
-                if (!$implementing_class_storage->abstract) {
+                if (!$implementing_class_storage->methods[$implementing_method_name]->abstract) {
                     continue;
                 }
             }
