@@ -15,11 +15,21 @@ class ClassLikeStorageProvider
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        if (!isset(ClassLikeChecker::$storage[$fq_classlike_name_lc])) {
+        if (!isset(ClassLikeChecker::$all_storage[$fq_classlike_name_lc])) {
             throw new \InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name);
         }
 
-        return ClassLikeChecker::$storage[$fq_classlike_name_lc];
+        return ClassLikeChecker::$all_storage[$fq_classlike_name_lc];
+    }
+
+    /**
+     * @param  string  $fq_classlike_name
+     *
+     * @return bool
+     */
+    public function has($fq_classlike_name)
+    {
+        return isset(ClassLikeChecker::$all_storage[strtolower($fq_classlike_name)]);
     }
 
     /**
@@ -27,7 +37,7 @@ class ClassLikeStorageProvider
      */
     public function getAll()
     {
-        return ClassLikeChecker::$storage;
+        return ClassLikeChecker::$all_storage;
     }
 
     /**
@@ -39,7 +49,7 @@ class ClassLikeStorageProvider
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        ClassLikeChecker::$storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage();
+        ClassLikeChecker::$all_storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage();
 
         $storage->name = $fq_classlike_name;
 

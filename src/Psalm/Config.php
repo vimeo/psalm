@@ -492,7 +492,12 @@ class Config
 
             require_once($path);
 
-            if (!\Psalm\Checker\ClassChecker::classExtends($declared_classes[0], 'Psalm\\Checker\\FileChecker')) {
+            if (!\Psalm\Checker\ClassChecker::classExtends(
+                $project_checker,
+                $declared_classes[0],
+                'Psalm\\Checker\\FileChecker'
+            )
+            ) {
                 throw new \InvalidArgumentException(
                     'Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not'
                 );

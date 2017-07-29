@@ -97,11 +97,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected static $property_map;
 
     /**
-     * @var array<string, ClassLikeStorage>
-     */
-    public static $storage = [];
-
-    /**
      * A lookup table of cached TraitCheckers
      *
      * @var array<string, TraitChecker>
@@ -125,6 +120,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     protected $leftover_stmts = [];
 
+    /** @var ClassLikeStorage */
+    protected $storage;
+
+    /** @var array<string, ClassLikeStorage> */
+    public static $all_storage;
+
     /**
      * @param PhpParser\Node\Stmt\ClassLike $class
      * @param StatementsSource              $source
@@ -139,10 +140,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $fq_class_name_lower = strtolower($fq_class_name);
 
-        $storage = self::$storage[$fq_class_name_lower];
+        $this->storage = $this->file_checker->project_checker->classlike_storage_provider->get($fq_class_name);
 
-        if ($storage->location) {
-            $storage_file_path = $storage->location->file_path;
+        if ($this->storage->location) {
+            $storage_file_path = $this->storage->location->file_path;
             $source_file_path = $this->source->getCheckedFilePath();
 
             if (!Config::getInstance()->use_case_sensitive_file_names) {
@@ -151,12 +152,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
 
             if ($storage_file_path !== $source_file_path ||
-                $storage->location->getLineNumber() !== $class->getLine()
+                $this->storage->location->getLineNumber() !== $class->getLine()
             ) {
                 if (IssueBuffer::accepts(
                     new DuplicateClass(
                         'Class ' . $fq_class_name . ' has already been defined at ' .
-                            $storage_file_path . ':' . $storage->location->getLineNumber(),
+                            $storage_file_path . ':' . $this->storage->location->getLineNumber(),
                         new \Psalm\CodeLocation($this, $class, null, true)
                     )
                 )) {
@@ -180,7 +181,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     ) {
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
 
-        $storage = self::$storage[strtolower($fq_class_name)];
+        $storage = $this->storage;
+
+        $project_checker = $this->file_checker->project_checker;
+
+        $classlike_storage_provider = $project_checker->classlike_storage_provider;
 
         if ($this->class instanceof PhpParser\Node\Stmt\Class_) {
             if ($this->class->extends) {
@@ -191,8 +196,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $parent_reference_location = new CodeLocation($this, $this->class->extends);
 
                 if (self::checkFullyQualifiedClassLikeName(
+                    $this->getFileChecker()->project_checker,
                     $this->parent_fq_class_name,
-                    $this->getFileChecker(),
                     $parent_reference_location,
                     $this->getSuppressedIssues()
                 ) === false) {
@@ -209,8 +214,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $interface_location = new CodeLocation($this, $interface_name);
 
                 if (self::checkFullyQualifiedClassLikeName(
+                    $this->getFileChecker()->project_checker,
                     $fq_interface_name,
-                    $this->getFileChecker(),
                     $interface_location,
                     $this->getSuppressedIssues()
                 ) === false) {
@@ -227,8 +232,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $parent_reference_location = new CodeLocation($this, $extended_interface);
 
                 if (!ClassLikeChecker::classOrInterfaceExists(
+                    $project_checker,
                     $extended_interface_name,
-                    $this->getFileChecker(),
                     $parent_reference_location
                 )) {
                     // we should not normally get here
@@ -238,15 +243,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         if ($this instanceof ClassChecker && $this->class instanceof PhpParser\Node\Stmt\Class_) {
-            $class_interfaces = ClassChecker::getInterfacesForClass($this->fq_class_name);
+            $class_interfaces = $storage->class_implements;
 
             if (!$this->class->isAbstract()) {
                 foreach ($class_interfaces as $interface_name) {
-                    if (!isset(self::$storage[strtolower($interface_name)])) {
+                    try {
+                        $interface_storage = $classlike_storage_provider->get($interface_name);
+                    } catch (\InvalidArgumentException $e) {
                         continue;
                     }
-
-                    $interface_storage = self::$storage[strtolower($interface_name)];
 
                     $storage->public_class_constants += $interface_storage->public_class_constants;
 
@@ -254,14 +259,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         if ($method->visibility === self::VISIBILITY_PUBLIC) {
                             $implemented_method_id = $this->fq_class_name . '::' . $method_name;
                             $mentioned_method_id = $interface_name . '::' . $method_name;
-                            $declaring_method_id = MethodChecker::getDeclaringMethodId($implemented_method_id);
+                            $declaring_method_id = MethodChecker::getDeclaringMethodId(
+                                $project_checker,
+                                $implemented_method_id
+                            );
 
                             $method_storage = $declaring_method_id
-                                ? MethodChecker::getStorage($declaring_method_id)
+                                ? MethodChecker::getStorage($project_checker, $declaring_method_id)
                                 : null;
 
                             if (!$method_storage) {
-                                $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
+                                $cased_method_id = MethodChecker::getCasedMethodId(
+                                    $project_checker,
+                                    $mentioned_method_id
+                                );
 
                                 if (IssueBuffer::accepts(
                                     new UnimplementedInterfaceMethod(
@@ -281,7 +292,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                                 return null;
                             } elseif ($method_storage->visibility !== self::VISIBILITY_PUBLIC) {
-                                $cased_method_id = MethodChecker::getCasedMethodId($mentioned_method_id);
+                                $cased_method_id = MethodChecker::getCasedMethodId(
+                                    $project_checker,
+                                    $mentioned_method_id
+                                );
 
                                 if (IssueBuffer::accepts(
                                     new InaccessibleMethod(
@@ -319,7 +333,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if (!$storage->abstract) {
             foreach ($storage->declaring_method_ids as $method_name => $declaring_method_id) {
-                $method_storage = MethodChecker::getStorage($declaring_method_id);
+                $method_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
 
                 list($declaring_class_name, $method_name) = explode('::', $declaring_method_id);
 
@@ -344,9 +358,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-            $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
-            $property_class_storage = self::$storage[strtolower((string)$property_class_name)];
-            $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
+            $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
+            $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
+            $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
 
             $property = $property_class_storage->properties[$property_name];
 
@@ -369,7 +383,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             }
 
             if ($property->type_location && !$property_type->isMixed()) {
-                $fleshed_out_type = ExpressionChecker::fleshOutTypes(clone $property_type, $this->fq_class_name, null);
+                $fleshed_out_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    $property_type,
+                    $this->fq_class_name,
+                    null
+                );
                 $fleshed_out_type->check($this, $property->type_location, $this->getSuppressedIssues(), [], false);
             }
 
@@ -468,9 +487,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $uninitialized_properties = [];
 
             foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-                $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
-                $property_class_storage = self::$storage[strtolower((string)$property_class_name)];
-                $property_class_name = self::getDeclaringClassForProperty($appearing_property_id);
+                $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
+                $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
+                $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
 
                 $property = $property_class_storage->properties[$property_name];
 
@@ -483,7 +502,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 } elseif (!empty($property_class_storage->overridden_method_ids['__construct'])) {
                     list($construct_fqcln) =
                         explode('::', $property_class_storage->overridden_method_ids['__construct'][0]);
-                    $constructor_class_storage = self::$storage[strtolower($construct_fqcln)];
+                    $constructor_class_storage = $classlike_storage_provider->get($construct_fqcln);
                 }
 
                 if ((!$constructor_class_storage
@@ -508,11 +527,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 ) {
                     list($construct_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
 
-                    $constructor_class_storage = self::$storage[strtolower($construct_fqcln)];
+                    $constructor_class_storage = $classlike_storage_provider->get($construct_fqcln);
 
                     // ignore oldstyle constructors and classes without any declared properties
                     if (isset($constructor_class_storage->methods['__construct'])) {
-                        $constructor_storage = self::$storage[strtolower($construct_fqcln)]->methods['__construct'];
+                        $constructor_storage = $constructor_class_storage->methods['__construct'];
 
                         $fake_constructor_params = array_map(
                             /** @return PhpParser\Node\Param */
@@ -642,7 +661,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                $this->checkForMissingPropertyType($stmt);
+                $this->checkForMissingPropertyType($project_checker, $stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -658,7 +677,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     foreach ($trait_checker->class->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($trait_stmt);
+                            $this->checkForMissingPropertyType($project_checker, $trait_stmt);
                         }
                     }
                 }
@@ -688,10 +707,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $actual_method_id = (string)$method_checker->getMethodId();
 
+        $project_checker = $source->getFileChecker()->project_checker;
+
         if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
             $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
 
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $analyzed_method_id);
 
             if ($actual_method_id !== $declaring_method_id) {
                 return;
@@ -707,17 +728,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $return_type_location = null;
             $secondary_return_type_location = null;
 
-            $actual_method_storage = MethodChecker::getStorage($actual_method_id);
+            $actual_method_storage = MethodChecker::getStorage($project_checker, $actual_method_id);
 
             if (!$actual_method_storage->has_template_return_type) {
                 if ($actual_method_id) {
                     $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                        $project_checker,
                         $actual_method_id,
                         $secondary_return_type_location
                     );
                 }
 
-                $return_type = MethodChecker::getMethodReturnType($actual_method_id);
+                $return_type = MethodChecker::getMethodReturnType($project_checker, $actual_method_id);
 
                 $method_checker->verifyReturnType(
                     $update_docblocks,
@@ -742,6 +764,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $method_name,
         Context $context
     ) {
+        $project_checker = $this->getFileChecker()->project_checker;
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name) === strtolower($method_name)
@@ -784,7 +808,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                             if ($context->self && $context->self !== $this->fq_class_name) {
                                 $analyzed_method_id = (string)$method_checker->getMethodId($context->self);
-                                $declaring_method_id = MethodChecker::getDeclaringMethodId($analyzed_method_id);
+                                $declaring_method_id = MethodChecker::getDeclaringMethodId(
+                                    $project_checker,
+                                    $analyzed_method_id
+                                );
 
                                 if ($actual_method_id !== $declaring_method_id) {
                                     break;
@@ -804,17 +831,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return  void
      */
-    private function checkForMissingPropertyType(PhpParser\Node\Stmt\Property $stmt)
+    private function checkForMissingPropertyType(ProjectChecker $project_checker, PhpParser\Node\Stmt\Property $stmt)
     {
         $comment = $stmt->getDocComment();
         $property_type_line_number = null;
-        $storage = self::$storage[strtolower($this->fq_class_name)];
+        $storage = $this->storage;
 
         if (!$comment || !$comment->getText()) {
             $fq_class_name = $this->fq_class_name;
             $property_name = $stmt->props[0]->name;
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+                $project_checker,
                 $fq_class_name . '::$' . $property_name
             );
 
@@ -828,7 +856,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $message = 'Property ' . $fq_class_name . '::$' . $property_name . ' does not have a declared type';
 
-            $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
             $property_storage = $class_storage->properties[$property_name];
 
@@ -855,29 +883,29 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * Check whether a class/interface exists
      *
-     * @param  string       $fq_class_name
-     * @param  FileChecker  $file_checker
+     * @param  string          $fq_class_name
+     * @param  ProjectChecker  $project_checker
      * @param  CodeLocation $code_location
      *
      * @return bool
      */
     public static function classOrInterfaceExists(
+        ProjectChecker $project_checker,
         $fq_class_name,
-        FileChecker $file_checker,
         CodeLocation $code_location = null
     ) {
-        if (!ClassChecker::classExists($fq_class_name, $file_checker) &&
-            !InterfaceChecker::interfaceExists($fq_class_name, $file_checker)
+        if (!ClassChecker::classExists($project_checker, $fq_class_name) &&
+            !InterfaceChecker::interfaceExists($project_checker, $fq_class_name)
         ) {
             return false;
         }
 
-        if ($file_checker->project_checker->collect_references && $code_location) {
-            $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+        if ($project_checker->collect_references && $code_location) {
+            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
             if ($class_storage->referencing_locations === null) {
                 $class_storage->referencing_locations = [];
             }
-            $class_storage->referencing_locations[$file_checker->getFilePath()][] = $code_location;
+            $class_storage->referencing_locations[$code_location->file_path][] = $code_location;
         }
 
         return true;
@@ -890,16 +918,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @return bool
      */
     public static function classExtendsOrImplements(
+        ProjectChecker $project_checker,
         $fq_class_name,
         $possible_parent
     ) {
-        return ClassChecker::classExtends($fq_class_name, $possible_parent) ||
-            ClassChecker::classImplements($fq_class_name, $possible_parent);
+        return ClassChecker::classExtends($project_checker, $fq_class_name, $possible_parent) ||
+            ClassChecker::classImplements($project_checker, $fq_class_name, $possible_parent);
     }
 
     /**
      * @param  string           $fq_class_name
-     * @param  FileChecker      $file_checker
+     * @param  ProjectChecker   $project_checker
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @param  bool             $inferred - whether or not the type was inferred
@@ -907,8 +936,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
+        ProjectChecker $project_checker,
         $fq_class_name,
-        FileChecker $file_checker,
         CodeLocation $code_location,
         array $suppressed_issues,
         $inferred = true
@@ -923,8 +952,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return true;
         }
 
-        $class_exists = ClassChecker::classExists($fq_class_name, $file_checker);
-        $interface_exists = InterfaceChecker::interfaceExists($fq_class_name, $file_checker);
+        $class_exists = ClassChecker::classExists($project_checker, $fq_class_name);
+        $interface_exists = InterfaceChecker::interfaceExists($project_checker, $fq_class_name);
 
         if (!$class_exists && !$interface_exists) {
             if (IssueBuffer::accepts(
@@ -940,18 +969,18 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        if ($file_checker->project_checker->collect_references && !$inferred) {
-            $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+        if ($project_checker->collect_references && !$inferred) {
+            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
             if ($class_storage->referencing_locations === null) {
                 $class_storage->referencing_locations = [];
             }
-            $class_storage->referencing_locations[$file_checker->getFilePath()][] = $code_location;
+            $class_storage->referencing_locations[$code_location->file_path][] = $code_location;
         }
 
-        if (($class_exists && !ClassChecker::hasCorrectCasing($fq_class_name, $file_checker)) ||
-            ($interface_exists && !InterfaceChecker::hasCorrectCasing($fq_class_name, $file_checker))
+        if (($class_exists && !ClassChecker::hasCorrectCasing($project_checker, $fq_class_name)) ||
+            ($interface_exists && !InterfaceChecker::hasCorrectCasing($project_checker, $fq_class_name))
         ) {
-            if (ClassLikeChecker::isUserDefined($fq_class_name)) {
+            if (ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)) {
                 if (IssueBuffer::accepts(
                     new InvalidClass(
                         'Class or interface ' . $fq_class_name . ' has wrong casing',
@@ -1105,24 +1134,29 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $class_name_lower = strtolower($class_name);
 
-        if (isset(self::$storage[$class_name_lower]) && self::$storage[$class_name_lower]->reflected) {
+        $storage_provider = $project_checker->classlike_storage_provider;
+
+        try {
+            $storage_provider->get($class_name_lower);
+
             return;
+        } catch (\Exception $e) {
+            // this is fine
         }
 
         $reflected_parent_class = $reflected_class->getParentClass();
 
-        $storage = self::$storage[$class_name_lower] = new ClassLikeStorage();
-        $storage->name = $class_name;
+        $storage = $storage_provider->create($class_name);
         $storage->abstract = $reflected_class->isAbstract();
 
         if ($reflected_parent_class) {
             $parent_class_name = $reflected_parent_class->getName();
             self::registerReflectedClass($parent_class_name, $reflected_parent_class, $project_checker);
 
-            $parent_storage = self::$storage[strtolower($parent_class_name)];
+            $parent_storage = $storage_provider->get($parent_class_name);
 
-            self::registerInheritedMethods($class_name, $parent_class_name);
-            self::registerInheritedProperties($class_name, $parent_class_name);
+            self::registerInheritedMethods($project_checker, $class_name, $parent_class_name);
+            self::registerInheritedProperties($project_checker, $class_name, $parent_class_name);
 
             $storage->class_implements = $parent_storage->class_implements;
 
@@ -1227,11 +1261,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             if ($reflection_method->class !== $class_name) {
                 MethodChecker::setDeclaringMethodId(
+                    $project_checker,
                     $class_name . '::' . strtolower($reflection_method->name),
                     $reflection_method->class . '::' . strtolower($reflection_method->name)
                 );
 
                 MethodChecker::setAppearingMethodId(
+                    $project_checker,
                     $class_name . '::' . strtolower($reflection_method->name),
                     $reflection_method->class . '::' . strtolower($reflection_method->name)
                 );
@@ -1247,10 +1283,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return void
      */
-    protected static function registerInheritedMethods($fq_class_name, $parent_class)
+    protected static function registerInheritedMethods(ProjectChecker $project_checker, $fq_class_name, $parent_class)
     {
-        $parent_storage = self::$storage[strtolower($parent_class)];
-        $storage = self::$storage[strtolower($fq_class_name)];
+        $parent_storage = $project_checker->classlike_storage_provider->get($parent_class);
+        $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
@@ -1269,7 +1305,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
 
-            MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
+            MethodChecker::setOverriddenMethodId($project_checker, $implemented_method_id, $declaring_method_id);
         }
     }
 
@@ -1279,10 +1315,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return void
      */
-    protected static function registerInheritedProperties($fq_class_name, $parent_class)
-    {
-        $parent_storage = self::$storage[strtolower($parent_class)];
-        $storage = self::$storage[strtolower($fq_class_name)];
+    protected static function registerInheritedProperties(
+        ProjectChecker $project_checker,
+        $fq_class_name,
+        $parent_class
+    ) {
+        $parent_storage = $project_checker->classlike_storage_provider->get($parent_class);
+        $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
@@ -1327,15 +1366,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return array<string, PropertyStorage>
      */
-    public static function getPropertiesForClass($class_name, $visibility)
+    public static function getPropertiesForClass(ProjectChecker $project_checker, $class_name, $visibility)
     {
-        $class_name = strtolower($class_name);
-
-        if (!isset(self::$storage[$class_name])) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $class_name);
-        }
-
-        $storage = self::$storage[$class_name];
+        $storage = $project_checker->classlike_storage_provider->get($class_name);
 
         $properties = [];
 
@@ -1393,17 +1426,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return array<string,Type\Union>
      */
-    public static function getConstantsForClass($class_name, $visibility)
+    public static function getConstantsForClass(ProjectChecker $project_checker, $class_name, $visibility)
     {
         $class_name = strtolower($class_name);
 
         $class_name = strtolower($class_name);
 
-        if (!isset(self::$storage[$class_name])) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $class_name);
-        }
-
-        $storage = self::$storage[$class_name];
+        $storage = $project_checker->classlike_storage_provider->get($class_name);
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
             return $storage->public_class_constants;
@@ -1435,9 +1464,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return  void
      */
-    public static function setConstantType($class_name, $const_name, Type\Union $type, $visibility)
-    {
-        $storage = self::$storage[strtolower($class_name)];
+    public static function setConstantType(
+        ProjectChecker $project_checker,
+        $class_name,
+        $const_name,
+        Type\Union $type,
+        $visibility
+    ) {
+        $storage = $project_checker->classlike_storage_provider->get($class_name);
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
             $storage->public_class_constants[$const_name] = $type;
@@ -1455,20 +1489,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return bool
      */
-    public static function propertyExists($property_id)
+    public static function propertyExists(ProjectChecker $project_checker, $property_id)
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
-        if (!isset(self::$storage[strtolower($fq_class_name)])) {
-            throw new \UnexpectedValueException(
-                'Storage not defined for ' . $fq_class_name
-            );
-        }
-
-        $class_storage = self::$storage[strtolower($fq_class_name)];
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             return true;
@@ -1493,8 +1521,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        $declaring_property_class = self::getDeclaringClassForProperty($property_id);
-        $appearing_property_class = self::getAppearingClassForProperty($property_id);
+        $project_checker = $source->getFileChecker()->project_checker;
+
+        $declaring_property_class = self::getDeclaringClassForProperty($project_checker, $property_id);
+        $appearing_property_class = self::getAppearingClassForProperty($project_checker, $property_id);
 
         if (!$declaring_property_class || !$appearing_property_class) {
             throw new \UnexpectedValueException(
@@ -1513,11 +1543,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        $class_storage = self::$storage[strtolower($declaring_property_class)];
-
-        if (!$class_storage) {
-            throw new \UnexpectedValueException('$class_storage should not be null for ' . $declaring_property_class);
-        }
+        $class_storage = $project_checker->classlike_storage_provider->get($declaring_property_class);
 
         $storage = $class_storage->properties[$property_name];
 
@@ -1563,11 +1589,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     return null;
                 }
 
-                if (ClassChecker::classExtends($appearing_property_class, $calling_context)) {
+                if (ClassChecker::classExtends($project_checker, $appearing_property_class, $calling_context)) {
                     return null;
                 }
 
-                if (!ClassChecker::classExtends($calling_context, $appearing_property_class)) {
+                if (!ClassChecker::classExtends($project_checker, $calling_context, $appearing_property_class)) {
                     if (IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access protected property ' . $property_id . ' from context ' . $calling_context,
@@ -1588,14 +1614,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return string|null
      */
-    public static function getDeclaringClassForProperty($property_id)
+    public static function getDeclaringClassForProperty(ProjectChecker $project_checker, $property_id)
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
         $fq_class_name = strtolower($fq_class_name);
 
-        if (isset(ClassLikeChecker::$storage[$fq_class_name]->declaring_property_ids[$property_name])) {
-            $declaring_property_id = ClassLikeChecker::$storage[$fq_class_name]->declaring_property_ids[$property_name];
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->declaring_property_ids[$property_name])) {
+            $declaring_property_id = $class_storage->declaring_property_ids[$property_name];
 
             return explode('::$', $declaring_property_id)[0];
         }
@@ -1608,14 +1636,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return string|null
      */
-    public static function getAppearingClassForProperty($property_id)
+    public static function getAppearingClassForProperty(ProjectChecker $project_checker, $property_id)
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
         $fq_class_name = strtolower($fq_class_name);
 
-        if (isset(ClassLikeChecker::$storage[$fq_class_name]->appearing_property_ids[$property_name])) {
-            $appearing_property_id = ClassLikeChecker::$storage[$fq_class_name]->appearing_property_ids[$property_name];
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->appearing_property_ids[$property_name])) {
+            $appearing_property_id = $class_storage->appearing_property_ids[$property_name];
 
             return explode('::$', $appearing_property_id)[0];
         }
@@ -1650,9 +1680,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return bool
      */
-    public static function isUserDefined($fq_class_name)
+    public static function isUserDefined(ProjectChecker $project_checker, $fq_class_name)
     {
-        return self::$storage[strtolower($fq_class_name)]->user_defined;
+        return $project_checker->classlike_storage_provider->get($fq_class_name)->user_defined;
     }
 
     /**
@@ -1707,6 +1737,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         self::$class_checkers = [];
 
-        self::$storage = [];
+        self::$all_storage = [];
     }
 }

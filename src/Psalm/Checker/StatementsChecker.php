@@ -82,6 +82,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
         }
 
+        $project_checker = $this->getFileChecker()->project_checker;
+
         foreach ($stmts as $stmt) {
             $plugins = Config::getInstance()->getPlugins();
 
@@ -196,8 +198,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $project_checker = $this->getFileChecker()->project_checker;
-
                 if (!$project_checker->register_global_functions) {
                     $function_context = new Context($context->self);
                     $function_context->collect_references = $project_checker->collect_references;
@@ -296,6 +296,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                     if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
                         ClassLikeChecker::setConstantType(
+                            $project_checker,
                             (string)$this->getFQCLN(),
                             $const->name,
                             $const->value->inferredType,

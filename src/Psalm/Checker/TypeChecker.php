@@ -66,6 +66,8 @@ class TypeChecker
             return $existing_types;
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         foreach ($keys as $key) {
             if (!isset($new_types[$key])) {
                 continue;
@@ -75,7 +77,7 @@ class TypeChecker
 
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
-                : self::getValueForKey($key, $existing_types, $statements_checker->getFileChecker());
+                : self::getValueForKey($project_checker, $key, $existing_types);
 
             if ($result_type && empty($result_type->types)) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -152,7 +154,7 @@ class TypeChecker
         array $suppressed_issues = [],
         &$failed_reconciliation = false
     ) {
-        $file_checker = $statements_checker->getFileChecker();
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($existing_var_type === null) {
             if ($new_var_type === '^isset') {
@@ -363,7 +365,7 @@ class TypeChecker
         if ($new_type->hasObjectType()) {
             foreach ($new_type->types as $new_type_part) {
                 if ($new_type_part instanceof TNamedObject &&
-                    InterfaceChecker::interfaceExists($new_type_part->value, $file_checker)
+                    InterfaceChecker::interfaceExists($project_checker, $new_type_part->value)
                 ) {
                     $has_interface = true;
                     break;
@@ -378,9 +380,9 @@ class TypeChecker
 
             foreach ($existing_var_type->types as $existing_var_type_part) {
                 if (TypeChecker::isAtomicContainedBy(
+                    $project_checker,
                     $existing_var_type_part,
                     $new_type_part,
-                    $file_checker,
                     $scalar_type_match_found,
                     $type_coerced,
                     $atomic_to_string_cast
@@ -390,7 +392,7 @@ class TypeChecker
                 }
 
                 if ($existing_var_type_part instanceof TNamedObject &&
-                    ClassChecker::classExists($existing_var_type_part->value, $file_checker)
+                    ClassChecker::classExists($project_checker, $existing_var_type_part->value)
                 ) {
                     $existing_var_type_part->addIntersectionType($new_type_part);
                     $acceptable_atomic_types[] = $existing_var_type_part;
@@ -411,9 +413,9 @@ class TypeChecker
 
                 foreach ($existing_var_type->types as $existing_var_type_part) {
                     if (TypeChecker::isAtomicContainedBy(
+                        $project_checker,
                         $new_type_part,
                         $existing_var_type_part,
-                        $file_checker,
                         $scalar_type_match_found,
                         $type_coerced,
                         $atomic_to_string_cast
@@ -471,7 +473,7 @@ class TypeChecker
      *
      * @param  Type\Union   $input_type
      * @param  Type\Union   $container_type
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker  $project_checker
      * @param  bool         $ignore_null
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
@@ -480,9 +482,9 @@ class TypeChecker
      * @return bool
      */
     public static function isContainedBy(
+        ProjectChecker $project_checker,
         Type\Union $input_type,
         Type\Union $container_type,
-        FileChecker $file_checker,
         $ignore_null = false,
         &$has_scalar_match = null,
         &$type_coerced = null,
@@ -508,9 +510,9 @@ class TypeChecker
 
             foreach ($container_type->types as $container_type_part) {
                 $is_atomic_contained_by = self::isAtomicContainedBy(
+                    $project_checker,
                     $input_type_part,
                     $container_type_part,
-                    $file_checker,
                     $scalar_type_match_found,
                     $type_coerced,
                     $atomic_to_string_cast
@@ -524,9 +526,9 @@ class TypeChecker
                 ) {
                     foreach ($intersection_types as $intersection_type) {
                         $is_atomic_contained_by = self::isAtomicContainedBy(
+                            $project_checker,
                             $intersection_type,
                             $container_type_part,
-                            $file_checker,
                             $scalar_type_match_found,
                             $type_coerced,
                             $atomic_to_string_cast
@@ -568,14 +570,14 @@ class TypeChecker
      *
      * @param  Type\Union   $type1
      * @param  Type\Union   $type2
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker  $project_checker
      *
      * @return bool
      */
     public static function canBeIdenticalTo(
+        ProjectChecker $project_checker,
         Type\Union $type1,
-        Type\Union $type2,
-        FileChecker $file_checker
+        Type\Union $type2
     ) {
         if ($type1->isMixed() || $type2->isMixed()) {
             return true;
@@ -598,13 +600,13 @@ class TypeChecker
                 }
 
                 $either_contains = self::isAtomicContainedBy(
+                    $project_checker,
                     $type1_part,
-                    $type2_part,
-                    $file_checker
+                    $type2_part
                 ) || self::isAtomicContainedBy(
+                    $project_checker,
                     $type2_part,
-                    $type1_part,
-                    $file_checker
+                    $type1_part
                 );
 
                 if ($either_contains) {
@@ -621,7 +623,7 @@ class TypeChecker
      *
      * @param  Type\Atomic  $input_type_part
      * @param  Type\Atomic  $container_type_part
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker  $project_checker
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
      * @param  bool         &$to_string_cast
@@ -629,9 +631,9 @@ class TypeChecker
      * @return bool
      */
     private static function isAtomicContainedBy(
+        ProjectChecker $project_checker,
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
-        FileChecker $file_checker,
         &$has_scalar_match = null,
         &$type_coerced = null,
         &$to_string_cast = null
@@ -650,17 +652,18 @@ class TypeChecker
                 $input_type_part instanceof TNamedObject &&
                 $container_type_part instanceof TNamedObject &&
                 (
-                    (ClassChecker::classExists($input_type_part->value, $file_checker) &&
+                    (ClassChecker::classExists($project_checker, $input_type_part->value) &&
                         ClassChecker::classExtendsOrImplements(
+                            $project_checker,
                             $input_type_part->value,
                             $container_type_part->value
                         )
                     ) ||
-                    (InterfaceChecker::interfaceExists($input_type_part->value, $file_checker) &&
+                    (InterfaceChecker::interfaceExists($project_checker, $input_type_part->value) &&
                         InterfaceChecker::interfaceExtends(
+                            $project_checker,
                             $input_type_part->value,
-                            $container_type_part->value,
-                            $file_checker
+                            $container_type_part->value
                         )
                     ) ||
                     ExpressionChecker::isMock($input_type_part->value)
@@ -675,15 +678,15 @@ class TypeChecker
 
                     if (!$input_param->isEmpty() &&
                         !self::isContainedBy(
+                            $project_checker,
                             $input_param,
                             $container_param,
-                            $file_checker,
                             false,
                             $has_scalar_match,
                             $type_coerced
                         )
                     ) {
-                        if (self::isContainedBy($container_param, $input_param, $file_checker)) {
+                        if (self::isContainedBy($project_checker, $container_param, $input_param)) {
                             $type_coerced = true;
                         }
 
@@ -736,6 +739,7 @@ class TypeChecker
                 ($input_type_part instanceof TNamedObject &&
                     (strtolower($input_type_part->value) === 'traversable' ||
                         ClassChecker::classExtendsOrImplements(
+                            $project_checker,
                             $input_type_part->value,
                             'Traversable'
                         )
@@ -754,8 +758,8 @@ class TypeChecker
             $input_type_part instanceof TNamedObject
         ) {
             // check whether the object has a __toString method
-            if (ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
-                MethodChecker::methodExists($input_type_part->value . '::__toString', $file_checker)
+            if (ClassChecker::classOrInterfaceExists($project_checker, $input_type_part->value) &&
+                MethodChecker::methodExists($project_checker, $input_type_part->value . '::__toString')
             ) {
                 $to_string_cast = true;
 
@@ -767,8 +771,8 @@ class TypeChecker
             ($input_type_part instanceof TString ||
                 $input_type_part instanceof TArray ||
                 ($input_type_part instanceof TNamedObject &&
-                    ClassChecker::classExists($input_type_part->value, $file_checker) &&
-                    MethodChecker::methodExists($input_type_part->value . '::__invoke', $file_checker)
+                    ClassChecker::classExists($project_checker, $input_type_part->value) &&
+                    MethodChecker::methodExists($project_checker, $input_type_part->value . '::__invoke')
                 )
             )
         ) {
@@ -795,19 +799,20 @@ class TypeChecker
             $type_coerced = true;
         } elseif ($container_type_part instanceof TNamedObject &&
             $input_type_part instanceof TNamedObject &&
-            ClassChecker::classOrInterfaceExists($input_type_part->value, $file_checker) &&
+            ClassChecker::classOrInterfaceExists($project_checker, $input_type_part->value) &&
             ((
-                ClassChecker::classExists($container_type_part->value, $file_checker) &&
+                ClassChecker::classExists($project_checker, $container_type_part->value) &&
                     ClassChecker::classExtendsOrImplements(
+                        $project_checker,
                         $container_type_part->value,
                         $input_type_part->value
                     )
                 ) ||
-                (InterfaceChecker::interfaceExists($container_type_part->value, $file_checker) &&
+                (InterfaceChecker::interfaceExists($project_checker, $container_type_part->value) &&
                     InterfaceChecker::interfaceExtends(
+                        $project_checker,
                         $container_type_part->value,
-                        $input_type_part->value,
-                        $file_checker
+                        $input_type_part->value
                     )
                 )
             )
@@ -823,11 +828,11 @@ class TypeChecker
      *
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
-     * @param  FileChecker               $file_checker
+     * @param  ProjectChecker            $project_checker
      *
      * @return Type\Union|null
      */
-    protected static function getValueForKey($key, array &$existing_keys, FileChecker $file_checker)
+    protected static function getValueForKey(ProjectChecker $project_checker, $key, array &$existing_keys)
     {
         $key_parts = preg_split('/(->|\[|\])/', $key, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
@@ -902,21 +907,26 @@ class TypeChecker
                             $class_property_type = Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TNamedObject) {
                             if (!ClassLikeChecker::classOrInterfaceExists(
-                                $existing_key_type_part->value,
-                                $file_checker
+                                $project_checker,
+                                $existing_key_type_part->value
                             )) {
                                 continue;
                             }
 
                             $property_id = $existing_key_type_part->value . '::$' . $property_name;
 
-                            if (!ClassLikeChecker::propertyExists($property_id)) {
+                            if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                                 return null;
                             }
 
-                            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
+                            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+                                $project_checker,
+                                $property_id
+                            );
 
-                            $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
+                            $class_storage = $project_checker->classlike_storage_provider->get(
+                                (string)$declaring_property_class
+                            );
 
                             $class_property_type = $class_storage->properties[$property_name]->type;
 
@@ -1036,14 +1046,14 @@ class TypeChecker
     /**
      * @param  Type\Union   $declared_type
      * @param  Type\Union   $inferred_type
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker  $project_checker
      *
      * @return bool
      */
     public static function hasIdenticalTypes(
+        ProjectChecker $project_checker,
         Type\Union $declared_type,
-        Type\Union $inferred_type,
-        FileChecker $file_checker
+        Type\Union $inferred_type
     ) {
         if ($declared_type->isMixed() || $inferred_type->isEmpty()) {
             return true;
@@ -1113,7 +1123,7 @@ class TypeChecker
                         continue;
                     }
 
-                    if (!ClassLikeChecker::classOrInterfaceExists($differing_type, $file_checker)) {
+                    if (!ClassLikeChecker::classOrInterfaceExists($project_checker, $differing_type)) {
                         break;
                     }
 
@@ -1122,17 +1132,22 @@ class TypeChecker
                         break;
                     }
 
-                    if (!ClassLikeChecker::classOrInterfaceExists($simple_declared_type, $file_checker)) {
+                    if (!ClassLikeChecker::classOrInterfaceExists($project_checker, $simple_declared_type)) {
                         break;
                     }
 
-                    if (ClassChecker::classExtendsOrImplements($differing_type, $simple_declared_type)) {
+                    if (ClassChecker::classExtendsOrImplements(
+                        $project_checker,
+                        $differing_type,
+                        $simple_declared_type
+                    )
+                    ) {
                         $is_match = true;
                         break;
                     }
 
-                    if (InterfaceChecker::interfaceExists($differing_type, $file_checker) &&
-                        InterfaceChecker::interfaceExtends($differing_type, $simple_declared_type, $file_checker)
+                    if (InterfaceChecker::interfaceExists($project_checker, $differing_type) &&
+                        InterfaceChecker::interfaceExtends($project_checker, $differing_type, $simple_declared_type)
                     ) {
                         $is_match = true;
                         break;
@@ -1167,9 +1182,9 @@ class TypeChecker
 
             foreach ($declared_atomic_type->type_params as $offset => $type_param) {
                 if (!self::hasIdenticalTypes(
+                    $project_checker,
                     $declared_atomic_type->type_params[$offset],
-                    $inferred_atomic_type->type_params[$offset],
-                    $file_checker
+                    $inferred_atomic_type->type_params[$offset]
                 )) {
                     return false;
                 }
@@ -1198,9 +1213,9 @@ class TypeChecker
                 }
 
                 if (!self::hasIdenticalTypes(
+                    $project_checker,
                     $type_param,
-                    $inferred_atomic_type->properties[$property_name],
-                    $file_checker
+                    $inferred_atomic_type->properties[$property_name]
                 )) {
                     return false;
                 }
@@ -1212,11 +1227,11 @@ class TypeChecker
 
     /**
      * @param  Type\Union  $union
-     * @param  FileChecker $file_checker
+     * @param  ProjectChecker $project_checker
      *
      * @return Type\Union
      */
-    public static function simplifyUnionType(Type\Union $union, FileChecker $file_checker)
+    public static function simplifyUnionType(ProjectChecker $project_checker, Type\Union $union)
     {
         $union_type_count = count($union->types);
 
@@ -1236,9 +1251,9 @@ class TypeChecker
                 if ($type_part !== $container_type_part &&
                     !($type_part instanceof TInt && $container_type_part instanceof TFloat) &&
                     TypeChecker::isAtomicContainedBy(
+                        $project_checker,
                         $type_part,
                         $container_type_part,
-                        $file_checker,
                         $has_scalar_match,
                         $type_coerced,
                         $to_string_cast

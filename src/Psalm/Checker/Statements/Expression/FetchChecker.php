@@ -197,15 +197,15 @@ class FetchChecker
                 continue;
             }
 
-            $file_checker = $statements_checker->getFileChecker();
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
 
             if (!$lhs_type_part instanceof TNamedObject) {
                 // @todo deal with this
                 continue;
             }
 
-            if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
-                if (InterfaceChecker::interfaceExists($lhs_type_part->value, $file_checker)) {
+            if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
+                if (InterfaceChecker::interfaceExists($project_checker, $lhs_type_part->value)) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -233,9 +233,9 @@ class FetchChecker
             }
 
             if ($stmt_var_id !== '$this' &&
-                MethodChecker::methodExists($lhs_type_part->value . '::__get', $file_checker)
+                MethodChecker::methodExists($project_checker, $lhs_type_part->value . '::__get')
             ) {
-                $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
+                $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name])) {
                     $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name];
@@ -248,7 +248,7 @@ class FetchChecker
 
             $property_id = $lhs_type_part->value . '::$' . $stmt->name;
 
-            if (!ClassLikeChecker::propertyExists($property_id)) {
+            if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                 if ($stmt_var_id === '$this') {
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
@@ -284,9 +284,11 @@ class FetchChecker
                 return false;
             }
 
-            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
+            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($project_checker, $property_id);
 
-            $declaring_class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
+            $declaring_class_storage = $project_checker->classlike_storage_provider->get(
+                (string)$declaring_property_class
+            );
 
             $property_storage = $declaring_class_storage->properties[$stmt->name];
 
@@ -320,7 +322,7 @@ class FetchChecker
                 $class_property_type = clone $class_property_type;
 
                 if ($lhs_type_part instanceof TGenericObject) {
-                    $class_storage = ClassLikeChecker::$storage[strtolower($lhs_type_part->value)];
+                    $class_storage = $project_checker->classlike_storage_provider->get($lhs_type_part->value);
 
                     if ($class_storage->template_types) {
                         $class_template_params = [];
@@ -471,8 +473,8 @@ class FetchChecker
                 }
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                    $statements_checker->getFileChecker()->project_checker,
                     $fq_class_name,
-                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt->class),
                     $statements_checker->getSuppressedIssues()
                 ) === false) {
@@ -486,8 +488,10 @@ class FetchChecker
                 return null;
             }
 
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
             // if we're ignoring that the class doesn't exist, exit anyway
-            if (!ClassLikeChecker::classOrInterfaceExists($fq_class_name, $statements_checker->getFileChecker())) {
+            if (!ClassLikeChecker::classOrInterfaceExists($project_checker, $fq_class_name)) {
                 $stmt->inferredType = Type::getMixed();
 
                 return null;
@@ -503,20 +507,25 @@ class FetchChecker
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
-                ClassChecker::classExtends($context->self, $fq_class_name)
+                ClassChecker::classExtends($project_checker, $context->self, $fq_class_name)
             ) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {
                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
             }
 
-            $class_constants = ClassLikeChecker::getConstantsForClass($fq_class_name, $class_visibility);
+            $class_constants = ClassLikeChecker::getConstantsForClass(
+                $project_checker,
+                $fq_class_name,
+                $class_visibility
+            );
 
             if (!isset($class_constants[$stmt->name])) {
                 $all_class_constants = [];
 
                 if ($fq_class_name !== $context->self) {
                     $all_class_constants = ClassLikeChecker::getConstantsForClass(
+                        $project_checker,
                         $fq_class_name,
                         \ReflectionProperty::IS_PRIVATE
                     );
@@ -577,6 +586,8 @@ class FetchChecker
 
         $fq_class_name = null;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->parts) === 1
                 && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
@@ -616,8 +627,8 @@ class FetchChecker
 
                 if ($context->check_classes) {
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $project_checker,
                         $fq_class_name,
-                        $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     ) !== true) {
@@ -650,7 +661,7 @@ class FetchChecker
 
             $property_id = $fq_class_name . '::$' . $stmt->name;
 
-            if (!ClassLikeChecker::propertyExists($property_id)) {
+            if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                 if (IssueBuffer::accepts(
                     new UndefinedPropertyFetch(
                         'Static property ' . $property_id . ' is not defined',
@@ -675,11 +686,12 @@ class FetchChecker
             }
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+                $project_checker,
                 $fq_class_name . '::$' . $stmt->name
             );
 
-            $property =
-                ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
+            $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
+            $property = $class_storage->properties[$stmt->name];
 
             if ($var_id) {
                 $context->vars_in_scope[$var_id] = $property->type
@@ -864,6 +876,8 @@ class FetchChecker
         }
 
         $inferred_key_type = null;
+
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if (isset($stmt->var->inferredType)) {
             /** @var Type\Union */
@@ -1150,8 +1164,8 @@ class FetchChecker
 
                 if (!$type instanceof TNamedObject ||
                     (strtolower($type->value) !== 'simplexmlelement' &&
-                        ClassChecker::classExists($type->value, $statements_checker->getFileChecker()) &&
-                        !ClassChecker::classImplements($type->value, 'ArrayAccess')
+                        ClassChecker::classExists($project_checker, $type->value) &&
+                        !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess')
                     )
                 ) {
                     if (IssueBuffer::accepts(
@@ -1202,7 +1216,7 @@ class FetchChecker
                         )) {
                             return false;
                         }
-                    } elseif (!$at->isIn($key_type, $statements_checker->getFileChecker())) {
+                    } elseif (!$at->isIn($project_checker, $key_type)) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
                                 'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
@@ -1257,8 +1271,11 @@ class FetchChecker
             return null;
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if (!$type instanceof TArray &&
-            (!$type instanceof TNamedObject || !ClassChecker::classImplements($type->value, 'ArrayAccess'))
+            (!$type instanceof TNamedObject
+                || !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess'))
         ) {
             if (IssueBuffer::accepts(
                 new InvalidArrayAssignment(

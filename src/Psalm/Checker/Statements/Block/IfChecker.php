@@ -295,13 +295,15 @@ class IfChecker
         }
 
         if ($if_context->byref_constraints !== null) {
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
             foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null &&
                     isset($outer_context->byref_constraints[$var_id]) &&
                     !TypeChecker::isContainedBy(
+                        $project_checker,
                         $byref_constraint->type,
-                        $outer_context->byref_constraints[$var_id]->type,
-                        $statements_checker->getFileChecker()
+                        $outer_context->byref_constraints[$var_id]->type
                     )
                 ) {
                     if (IssueBuffer::accepts(
@@ -535,13 +537,15 @@ class IfChecker
         }
 
         if ($elseif_context->byref_constraints !== null) {
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
             foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null &&
                     isset($outer_context->byref_constraints[$var_id]) &&
                     !TypeChecker::isContainedBy(
+                        $project_checker,
                         $byref_constraint->type,
-                        $outer_context->byref_constraints[$var_id]->type,
-                        $statements_checker->getFileChecker()
+                        $outer_context->byref_constraints[$var_id]->type
                     )
                 ) {
                     if (IssueBuffer::accepts(
@@ -776,13 +780,15 @@ class IfChecker
         }
 
         if ($else_context->byref_constraints !== null) {
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
             foreach ($else_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null &&
                     isset($outer_context->byref_constraints[$var_id]) &&
                     !TypeChecker::isContainedBy(
+                        $project_checker,
                         $byref_constraint->type,
-                        $outer_context->byref_constraints[$var_id]->type,
-                        $statements_checker->getFileChecker()
+                        $outer_context->byref_constraints[$var_id]->type
                     )
                 ) {
                     if (IssueBuffer::accepts(
