@@ -10,6 +10,7 @@ use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Provider\CacheProvider;
+use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
@@ -39,6 +40,9 @@ class ProjectChecker
 
     /** @var FileStorageProvider */
     public $file_storage_provider;
+
+    /** @var ClassLikeStorageProvider */
+    public $classlike_storage_provider;
 
     /** @var CacheProvider */
     public $cache_provider;
@@ -271,6 +275,7 @@ class ProjectChecker
         $this->collectPredefinedClassLikes();
 
         $this->file_storage_provider = new FileStorageProvider();
+        $this->classlike_storage_provider = new ClassLikeStorageProvider();
     }
 
     /**
@@ -1279,6 +1284,8 @@ class ProjectChecker
         if (isset($this->scanned_files[$file_path])) {
             throw new \UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
+
+        $this->file_storage_provider->create($file_path);
 
         if ($this->debug_output) {
             if (isset($this->files_to_deep_scan[$file_path])) {

@@ -16,7 +16,7 @@ class FileStorageProvider
         $file_path = strtolower($file_path);
 
         if (!isset(FileChecker::$storage[$file_path])) {
-            throw new \InvalidArgumentException('Could not get storage for ' . $file_path);
+            throw new \InvalidArgumentException('Could not get file storage for ' . $file_path);
         }
 
         return FileChecker::$storage[$file_path];

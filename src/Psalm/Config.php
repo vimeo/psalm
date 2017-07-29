@@ -616,6 +616,7 @@ class Config
                 $generic_stubs,
                 $project_checker
             );
+            $project_checker->file_storage_provider->create($generic_stubs);
             $generic_stub_checker->scan();
         } else {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
@@ -623,6 +624,7 @@ class Config
 
         foreach ($this->stub_files as $stub_file) {
             $stub_checker = new FileChecker($stub_file, $project_checker);
+            $project_checker->file_storage_provider->create($stub_file);
             $stub_checker->scan();
         }
 
