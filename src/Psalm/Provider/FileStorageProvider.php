@@ -1,11 +1,17 @@
 <?php
 namespace Psalm\Provider;
 
-use Psalm\Checker\FileChecker;
 use Psalm\Storage\FileStorage;
 
 class FileStorageProvider
 {
+    /**
+     * A list of data useful to analyse files
+     *
+     * @var array<string, FileStorage>
+     */
+    private static $storage = [];
+
     /**
      * @param  string $file_path
      *
@@ -15,11 +21,11 @@ class FileStorageProvider
     {
         $file_path = strtolower($file_path);
 
-        if (!isset(FileChecker::$storage[$file_path])) {
+        if (!isset(self::$storage[$file_path])) {
             throw new \InvalidArgumentException('Could not get file storage for ' . $file_path);
         }
 
-        return FileChecker::$storage[$file_path];
+        return self::$storage[$file_path];
     }
 
     /**
@@ -27,7 +33,7 @@ class FileStorageProvider
      */
     public function getAll()
     {
-        return FileChecker::$storage;
+        return self::$storage;
     }
 
     /**
@@ -39,10 +45,18 @@ class FileStorageProvider
     {
         $file_path = strtolower($file_path);
 
-        FileChecker::$storage[$file_path] = $storage = new FileStorage();
+        self::$storage[$file_path] = $storage = new FileStorage();
 
         $storage->file_path = $file_path;
 
         return $storage;
+    }
+
+    /**
+     * @return void
+     */
+    public function deleteAll()
+    {
+        self::$storage = [];
     }
 }

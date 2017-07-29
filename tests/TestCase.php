@@ -49,6 +49,15 @@ class TestCase extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return void
+     */
+    public function tearDown()
+    {
+        $this->project_checker->classlike_storage_provider->deleteAll();
+        $this->project_checker->file_storage_provider->deleteAll();
+    }
+
+    /**
      * @param string $file_path
      * @param string $contents
      *

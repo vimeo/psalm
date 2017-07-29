@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Provider;
 
-use Psalm\Checker\ClassLikeChecker;
 use Psalm\Storage\ClassLikeStorage;
 
 class ClassLikeStorageProvider
 {
+    /** @var array<string, ClassLikeStorage> */
+    private static $storage = [];
+
     /**
      * @param  string $fq_classlike_name
      *
@@ -15,11 +17,11 @@ class ClassLikeStorageProvider
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        if (!isset(ClassLikeChecker::$all_storage[$fq_classlike_name_lc])) {
+        if (!isset(self::$storage[$fq_classlike_name_lc])) {
             throw new \InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name);
         }
 
-        return ClassLikeChecker::$all_storage[$fq_classlike_name_lc];
+        return self::$storage[$fq_classlike_name_lc];
     }
 
     /**
@@ -29,7 +31,7 @@ class ClassLikeStorageProvider
      */
     public function has($fq_classlike_name)
     {
-        return isset(ClassLikeChecker::$all_storage[strtolower($fq_classlike_name)]);
+        return isset(self::$storage[strtolower($fq_classlike_name)]);
     }
 
     /**
@@ -37,7 +39,7 @@ class ClassLikeStorageProvider
      */
     public function getAll()
     {
-        return ClassLikeChecker::$all_storage;
+        return self::$storage;
     }
 
     /**
@@ -49,10 +51,18 @@ class ClassLikeStorageProvider
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        ClassLikeChecker::$all_storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage();
+        self::$storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage();
 
         $storage->name = $fq_classlike_name;
 
         return $storage;
+    }
+
+    /**
+     * @return void
+     */
+    public function deleteAll()
+    {
+        self::$storage = [];
     }
 }

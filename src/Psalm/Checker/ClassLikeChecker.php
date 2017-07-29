@@ -123,9 +123,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /** @var ClassLikeStorage */
     protected $storage;
 
-    /** @var array<string, ClassLikeStorage> */
-    public static $all_storage;
-
     /**
      * @param PhpParser\Node\Stmt\ClassLike $class
      * @param StatementsSource              $source
@@ -1736,7 +1733,5 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         self::$trait_checkers = [];
 
         self::$class_checkers = [];
-
-        self::$all_storage = [];
     }
 }

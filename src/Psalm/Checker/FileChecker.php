@@ -6,7 +6,6 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
-use Psalm\Storage\FileStorage;
 use Psalm\Type;
 
 class FileChecker extends SourceChecker implements StatementsSource
@@ -57,13 +56,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @var bool
      */
     public static $show_notices = true;
-
-    /**
-     * A list of data useful to analyse files
-     *
-     * @var array<string, FileStorage>
-     */
-    public static $storage = [];
 
     /**
      * @var array<string, ClassLikeChecker>
@@ -433,8 +425,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public static function clearCache()
     {
-        self::$storage = [];
-
         ClassLikeChecker::clearCache();
         FunctionChecker::clearCache();
         StatementsChecker::clearCache();
