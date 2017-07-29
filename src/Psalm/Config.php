@@ -481,7 +481,7 @@ class Config
             $plugin_file_checker = new FileChecker($path, $project_checker);
             $plugin_file_checker->scan();
 
-            $declared_classes = ClassLikeChecker::getClassesForFile($path);
+            $declared_classes = ClassLikeChecker::getClassesForFile($project_checker, $path);
 
             if (count($declared_classes) !== 1) {
                 throw new \InvalidArgumentException(
@@ -492,7 +492,12 @@ class Config
 
             require_once($path);
 
-            if (!\Psalm\Checker\ClassChecker::classExtends($declared_classes[0], 'Psalm\\Checker\\FileChecker')) {
+            if (!\Psalm\Checker\ClassChecker::classExtends(
+                $project_checker,
+                $declared_classes[0],
+                'Psalm\\Checker\\FileChecker'
+            )
+            ) {
                 throw new \InvalidArgumentException(
                     'Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not'
                 );
@@ -616,6 +621,7 @@ class Config
                 $generic_stubs,
                 $project_checker
             );
+            $project_checker->file_storage_provider->create($generic_stubs);
             $generic_stub_checker->scan();
         } else {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
@@ -623,6 +629,7 @@ class Config
 
         foreach ($this->stub_files as $stub_file) {
             $stub_checker = new FileChecker($stub_file, $project_checker);
+            $project_checker->file_storage_provider->create($stub_file);
             $stub_checker->scan();
         }
 

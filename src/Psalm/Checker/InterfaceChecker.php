@@ -22,13 +22,13 @@ class InterfaceChecker extends ClassLikeChecker
      *
      * @return bool
      */
-    public static function interfaceExists($fq_interface_name, FileChecker $file_checker)
+    public static function interfaceExists(ProjectChecker $project_checker, $fq_interface_name)
     {
         if (isset(self::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
 
-        return $file_checker->project_checker->hasFullyQualifiedInterfaceName($fq_interface_name);
+        return $project_checker->hasFullyQualifiedInterfaceName($fq_interface_name);
     }
 
     /**
@@ -37,9 +37,9 @@ class InterfaceChecker extends ClassLikeChecker
      *
      * @return bool
      */
-    public static function hasCorrectCasing($fq_interface_name, FileChecker $file_checker)
+    public static function hasCorrectCasing(ProjectChecker $project_checker, $fq_interface_name)
     {
-        return isset($file_checker->project_checker->existing_interfaces[$fq_interface_name]);
+        return isset($project_checker->existing_interfaces[$fq_interface_name]);
     }
 
     /**
@@ -49,9 +49,9 @@ class InterfaceChecker extends ClassLikeChecker
      *
      * @return bool
      */
-    public static function interfaceExtends($interface_name, $possible_parent, FileChecker $file_checker)
+    public static function interfaceExtends(ProjectChecker $project_checker, $interface_name, $possible_parent)
     {
-        return in_array($possible_parent, self::getParentInterfaces($interface_name, $file_checker), true);
+        return in_array($possible_parent, self::getParentInterfaces($project_checker, $interface_name), true);
     }
 
     /**
@@ -60,31 +60,14 @@ class InterfaceChecker extends ClassLikeChecker
      *
      * @return array<string>   all interfaces extended by $interface_name
      */
-    public static function getParentInterfaces($fq_interface_name, FileChecker $file_checker)
+    public static function getParentInterfaces(ProjectChecker $project_checker, $fq_interface_name)
     {
         $fq_interface_name = strtolower($fq_interface_name);
 
-        if (!isset(self::$storage[$fq_interface_name])) {
-            throw new \UnexpectedValueException('Invalid storage for ' . $fq_interface_name);
-        }
-
         $extended_interfaces = [];
 
-        $storage = self::$storage[$fq_interface_name];
+        $storage = $project_checker->classlike_storage_provider->get($fq_interface_name);
 
-        foreach ($storage->parent_interfaces as $extended_interface_name) {
-            $extended_interfaces[] = $extended_interface_name;
-
-            if (!self::interfaceExists($extended_interface_name, $file_checker)) {
-                continue;
-            }
-
-            $extended_interfaces = array_merge(
-                self::getParentInterfaces($extended_interface_name, $file_checker),
-                $extended_interfaces
-            );
-        }
-
-        return $extended_interfaces;
+        return $storage->parent_interfaces;
     }
 }

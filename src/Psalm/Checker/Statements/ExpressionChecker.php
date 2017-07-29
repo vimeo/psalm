@@ -8,6 +8,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\MethodChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\Checker\Statements\Expression\FetchChecker;
@@ -195,7 +196,14 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
-            if (CallChecker::analyzeFunctionCall($statements_checker, $stmt, $context) === false) {
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+            if (CallChecker::analyzeFunctionCall(
+                $project_checker,
+                $statements_checker,
+                $stmt,
+                $context
+            ) === false
+            ) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Ternary) {
@@ -225,6 +233,7 @@ class ExpressionChecker
                 if ($context->collect_mutations &&
                     $context->self &&
                     ClassChecker::classExtends(
+                        $statements_checker->getFileChecker()->project_checker,
                         $context->self,
                         (string)$statements_checker->getFQCLN()
                     )
@@ -361,8 +370,8 @@ class ExpressionChecker
                     );
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $statements_checker->getFileChecker()->project_checker,
                         $fq_class_name,
-                        $statements_checker->getFileChecker(),
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
@@ -1382,18 +1391,20 @@ class ExpressionChecker
                 }
             }
 
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
             $left_type_match = TypeChecker::isContainedBy(
+                $project_checker,
                 $left_type,
                 Type::getString(),
-                $statements_checker->getFileChecker(),
                 true,
                 $left_has_scalar_match
             );
 
             $right_type_match = TypeChecker::isContainedBy(
+                $project_checker,
                 $right_type,
                 Type::getString(),
-                $statements_checker->getFileChecker(),
                 true,
                 $right_has_scalar_match
             );
@@ -1523,14 +1534,23 @@ class ExpressionChecker
      *
      * @return Type\Union
      */
-    public static function fleshOutTypes(Type\Union $return_type, $calling_class = null, $method_id = null)
-    {
+    public static function fleshOutType(
+        ProjectChecker $project_checker,
+        Type\Union $return_type,
+        $calling_class = null,
+        $method_id = null
+    ) {
         $return_type = clone $return_type;
 
         $new_return_type_parts = [];
 
         foreach ($return_type->types as $return_type_part) {
-            $new_return_type_parts[] = self::fleshOutAtomicType($return_type_part, $calling_class, $method_id);
+            $new_return_type_parts[] = self::fleshOutAtomicType(
+                $project_checker,
+                $return_type_part,
+                $calling_class,
+                $method_id
+            );
         }
 
         $fleshed_out_type = new Type\Union($new_return_type_parts);
@@ -1548,8 +1568,12 @@ class ExpressionChecker
      *
      * @return Type\Atomic
      */
-    protected static function fleshOutAtomicType(Type\Atomic $return_type, $calling_class, $method_id)
-    {
+    protected static function fleshOutAtomicType(
+        ProjectChecker $project_checker,
+        Type\Atomic $return_type,
+        $calling_class,
+        $method_id
+    ) {
         if ($return_type instanceof TNamedObject) {
             if ($return_type->value === '$this' ||
                 $return_type->value === 'static' ||
@@ -1566,7 +1590,10 @@ class ExpressionChecker
                 } else {
                     list(, $method_name) = explode('::', $method_id);
 
-                    $appearing_method_id = MethodChecker::getAppearingMethodId($calling_class . '::' . $method_name);
+                    $appearing_method_id = MethodChecker::getAppearingMethodId(
+                        $project_checker,
+                        $calling_class . '::' . $method_name
+                    );
 
                     $return_type->value = explode('::', (string)$appearing_method_id)[0];
                 }
@@ -1575,7 +1602,7 @@ class ExpressionChecker
 
         if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
             foreach ($return_type->type_params as &$type_param) {
-                $type_param = self::fleshOutTypes($type_param, $calling_class, $method_id);
+                $type_param = self::fleshOutType($project_checker, $type_param, $calling_class, $method_id);
             }
         }
 

@@ -31,6 +31,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     protected $source;
 
     /**
+     * @var FileChecker
+     */
+    protected $file_checker;
+
+    /**
      * @var array<string, CodeLocation>
      */
     private $all_vars = [];
@@ -76,6 +81,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $function_checkers[$stmt->name] = $function_checker;
             }
         }
+
+        $project_checker = $this->getFileChecker()->project_checker;
 
         foreach ($stmts as $stmt) {
             $plugins = Config::getInstance()->getPlugins();
@@ -191,8 +198,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $project_checker = $this->getFileChecker()->project_checker;
-
                 if (!$project_checker->register_global_functions) {
                     $function_context = new Context($context->self);
                     $function_context->collect_references = $project_checker->collect_references;
@@ -204,7 +209,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         /** @var string */
                         $method_id = $function_checkers[$stmt->name]->getMethodId();
 
-                        $function_storage = FunctionChecker::getStorage($method_id, $this->getFilePath());
+                        $function_storage = FunctionChecker::getStorage(
+                            $project_checker,
+                            $method_id,
+                            $this->getFilePath()
+                        );
 
                         $return_type = $function_storage->return_type;
                         $return_type_location = $function_storage->return_type_location;
@@ -287,6 +296,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                     if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
                         ClassLikeChecker::setConstantType(
+                            $project_checker,
                             (string)$this->getFQCLN(),
                             $const->name,
                             $const->value->inferredType,
@@ -770,12 +780,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         $file_path = $statements_checker->getFilePath();
 
-        $file_storage = FileChecker::$storage[strtolower($file_path)];
+        $file_storage_provider = $statements_checker->getFileChecker()->project_checker->file_storage_provider;
+
+        $file_storage = $file_storage_provider->get($file_path);
 
         if (isset($file_storage->declaring_constants[$const_name])) {
             $constant_file_path = $file_storage->declaring_constants[$const_name];
 
-            return FileChecker::$storage[strtolower($constant_file_path)]->constants[$const_name];
+            return $file_storage_provider->get($constant_file_path)->constants[$const_name];
         }
 
         $predefined_constants = Config::getInstance()->getPredefinedConstants();
@@ -1060,6 +1072,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public function getFirstAppearance($var_name)
     {
         return isset($this->all_vars[$var_name]) ? $this->all_vars[$var_name] : null;
+    }
+
+    public function getFileChecker()
+    {
+        return $this->file_checker;
     }
 
     /**

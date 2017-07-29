@@ -79,6 +79,8 @@ class ForeachChecker
                 }
             }
 
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
             foreach ($iterator_type->types as $iterator_type) {
                 // if it's an empty array, we cannot iterate over it
                 if ((string) $iterator_type === 'array<empty, empty>') {
@@ -131,8 +133,8 @@ class ForeachChecker
                         $iterator_type->value !== $statements_checker->getClassName()
                     ) {
                         if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                            $project_checker,
                             $iterator_type->value,
-                            $statements_checker->getFileChecker(),
                             new CodeLocation($statements_checker->getSource(), $stmt->expr),
                             $statements_checker->getSuppressedIssues()
                         ) === false) {
@@ -144,6 +146,7 @@ class ForeachChecker
                         (strtolower($iterator_type->value) === 'iterable' ||
                             strtolower($iterator_type->value) === 'traversable' ||
                             ClassChecker::classImplements(
+                                $project_checker,
                                 $iterator_type->value,
                                 'Traversable'
                             ))
@@ -170,15 +173,17 @@ class ForeachChecker
                     }
 
                     if (ClassChecker::classImplements(
+                        $project_checker,
                         $iterator_type->value,
                         'Iterator'
                     )) {
                         $iterator_method = $iterator_type->value . '::current';
-                        $iterator_class_type = MethodChecker::getMethodReturnType($iterator_method);
+                        $iterator_class_type = MethodChecker::getMethodReturnType($project_checker, $iterator_method);
 
                         if ($iterator_class_type) {
-                            $value_type_part = ExpressionChecker::fleshOutTypes(
-                                clone $iterator_class_type,
+                            $value_type_part = ExpressionChecker::fleshOutType(
+                                $project_checker,
+                                $iterator_class_type,
                                 $iterator_type->value,
                                 $iterator_method
                             );

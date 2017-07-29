@@ -62,6 +62,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     protected $source;
 
+    /** @var FileChecker */
+    public $file_checker;
+
     /**
      * @var array<string, array<string, Type\Union>>
      */
@@ -115,6 +118,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
+        $project_checker = $this->file_checker->project_checker;
+
+        $file_storage_provider = $project_checker->file_storage_provider;
+
         if ($this->function instanceof ClassMethod) {
             $real_method_id = (string)$this->getMethodId();
 
@@ -140,7 +147,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $context->vars_possibly_in_scope['$this'] = true;
             }
 
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
 
             if (!is_string($declaring_method_id)) {
                 throw new \UnexpectedValueException('$declaring_method_id should be a string');
@@ -148,13 +155,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $fq_class_name = (string)$context->self;
 
-            $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+            $project_checker = $this->file_checker->project_checker;
 
-            $storage = MethodChecker::getStorage($declaring_method_id);
+            $classlike_storage_provider = $project_checker->classlike_storage_provider;
+
+            $class_storage = $classlike_storage_provider->get($fq_class_name);
+
+            $storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
 
             $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
 
-            $implemented_method_ids = MethodChecker::getOverriddenMethodIds($method_id);
+            $implemented_method_ids = MethodChecker::getOverriddenMethodIds($project_checker, $method_id);
 
             if ($this->function->name === '__construct') {
                 $context->inside_constructor = true;
@@ -170,12 +181,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                     list($implemented_fq_class_name) = explode('::', $implemented_method_id);
 
-                    $class_storage = ClassLikeChecker::$storage[strtolower($implemented_fq_class_name)];
+                    $class_storage = $classlike_storage_provider->get($implemented_fq_class_name);
 
-                    $implemented_storage = MethodChecker::getStorage($implemented_method_id);
+                    $implemented_storage = MethodChecker::getStorage($project_checker, $implemented_method_id);
 
                     if ($implemented_storage->visibility < $storage->visibility) {
-                        $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+                        $parent_method_id = MethodChecker::getCasedMethodId(
+                            $project_checker,
+                            $implemented_method_id
+                        );
+
                         if (IssueBuffer::accepts(
                             new OverriddenMethodAccess(
                                 'Method ' . $cased_method_id . ' has different access level than ' . $parent_method_id,
@@ -192,7 +207,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                     foreach ($implemented_params as $i => $implemented_param) {
                         if (!isset($storage->params[$i])) {
-                            $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+                            $parent_method_id = MethodChecker::getCasedMethodId(
+                                $project_checker,
+                                $implemented_method_id
+                            );
 
                             if (IssueBuffer::accepts(
                                 new MethodSignatureMismatch(
@@ -211,8 +229,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         if ($class_storage->user_defined &&
                             (string)$storage->params[$i]->signature_type !== (string)$implemented_param->signature_type
                         ) {
-                            $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
-                            $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+                            $cased_method_id = MethodChecker::getCasedMethodId(
+                                $project_checker,
+                                (string)$this->getMethodId()
+                            );
+                            $parent_method_id = MethodChecker::getCasedMethodId(
+                                $project_checker,
+                                $implemented_method_id
+                            );
 
                             if (IssueBuffer::accepts(
                                 new MethodSignatureMismatch(
@@ -240,8 +264,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             !$implemented_param->type->isMixed() &&
                             (string)$storage->params[$i]->type !== (string)$implemented_param->type
                         ) {
-                            $cased_method_id = MethodChecker::getCasedMethodId((string)$this->getMethodId());
-                            $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+                            $cased_method_id = MethodChecker::getCasedMethodId(
+                                $project_checker,
+                                (string)$this->getMethodId()
+                            );
+                            $parent_method_id = MethodChecker::getCasedMethodId(
+                                $project_checker,
+                                $implemented_method_id
+                            );
 
                             if (IssueBuffer::accepts(
                                 new MethodSignatureMismatch(
@@ -269,7 +299,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     if ($storage->cased_name !== '__construct' &&
                         $storage->required_param_count > $implemented_storage->required_param_count
                     ) {
-                        $parent_method_id = MethodChecker::getCasedMethodId($implemented_method_id);
+                        $parent_method_id = MethodChecker::getCasedMethodId($project_checker, $implemented_method_id);
 
                         if (IssueBuffer::accepts(
                             new MethodSignatureMismatch(
@@ -287,13 +317,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
         } elseif ($this->function instanceof Function_) {
-            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
+            $file_storage = $file_storage_provider->get($this->source->getFilePath());
 
             $storage = $file_storage->functions[(string)$this->getMethodId()];
 
             $cased_method_id = $this->function->name;
         } else { // Closure
-            $file_storage = FileChecker::$storage[strtolower($this->source->getFilePath())];
+            $file_storage = $file_storage_provider->get($this->source->getFilePath());
 
             $function_id = $cased_function_id =
                 $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
@@ -331,7 +361,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $signature_type = $function_param->signature_type;
             $param_type = clone $function_param->type;
 
-            $param_type = ExpressionChecker::fleshOutTypes(
+            $param_type = ExpressionChecker::fleshOutType(
+                $project_checker,
                 $param_type,
                 $context->self,
                 $this->getMethodId()
@@ -348,9 +379,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if ($signature_type) {
                 if (!TypeChecker::isContainedBy(
+                    $project_checker,
                     $param_type,
-                    $signature_type,
-                    $statements_checker->getFileChecker()
+                    $signature_type
                 )
                 ) {
                     if (IssueBuffer::accepts(
@@ -373,9 +404,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 if ($default_type &&
                     !TypeChecker::isContainedBy(
+                        $project_checker,
                         $default_type,
-                        $param_type,
-                        $statements_checker->getFileChecker()
+                        $param_type
                     )
                 ) {
                     $method_id = $this->getMethodId();
@@ -435,9 +466,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($storage->return_type && $storage->signature_return_type && $storage->return_type_location) {
             if (!TypeChecker::isContainedBy(
+                $project_checker,
                 $storage->return_type,
-                $storage->signature_return_type,
-                $statements_checker->getFileChecker()
+                $storage->signature_return_type
             )
             ) {
                 if (IssueBuffer::accepts(
@@ -717,7 +748,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $cased_method_id = null;
 
         if ($this instanceof MethodChecker) {
-            $cased_method_id = MethodChecker::getCasedMethodId($method_id);
+            $cased_method_id = MethodChecker::getCasedMethodId($this->file_checker->project_checker, $method_id);
         } elseif ($this->function instanceof Function_) {
             $cased_method_id = $this->function->name;
         }
@@ -748,13 +779,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return null;
         }
 
+        $project_checker = $this->getFileChecker()->project_checker;
+
         $inferred_return_type = TypeChecker::simplifyUnionType(
-            ExpressionChecker::fleshOutTypes(
+            $project_checker,
+            ExpressionChecker::fleshOutType(
+                $project_checker,
                 $inferred_return_type,
                 $this->source->getFQCLN(),
                 ''
-            ),
-            $this->getFileChecker()
+            )
         );
 
         if (!$return_type && !$update_docblock && !$is_to_string) {
@@ -812,7 +846,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         // passing it through fleshOutTypes eradicates errant $ vars
-        $declared_return_type = ExpressionChecker::fleshOutTypes(
+        $declared_return_type = ExpressionChecker::fleshOutType(
+            $project_checker,
             $return_type,
             $fq_class_name ?: $this->source->getFQCLN(),
             $method_id
@@ -873,9 +908,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             if (!TypeChecker::isContainedBy(
+                $this->source->getFileChecker()->project_checker,
                 $inferred_return_type,
                 $declared_return_type,
-                $this->getFileChecker(),
                 $ignore_nullable_issues,
                 $has_scalar_match,
                 $type_coerced
@@ -1073,21 +1108,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  FileChecker                      $file_checker
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getMethodParamsById($method_id, array $args, FileChecker $file_checker)
+    public static function getMethodParamsById(ProjectChecker $project_checker, $method_id, array $args)
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
-        if ($fq_class_name && ClassLikeChecker::isUserDefined($fq_class_name)) {
-            $method_params = MethodChecker::getMethodParams($method_id);
+        if ($fq_class_name && ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)) {
+            $method_params = MethodChecker::getMethodParams($project_checker, $method_id);
 
             return $method_params;
         }
 
-        $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+        $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
 
         if (FunctionChecker::inCallMap($declaring_method_id ?: $method_id)) {
             $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
@@ -1096,20 +1130,19 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
             }
 
-            return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
+            return self::getMatchingParamsFromCallMapOptions($project_checker, $function_param_options, $args);
         }
 
-        return MethodChecker::getMethodParams($method_id);
+        return MethodChecker::getMethodParams($project_checker, $method_id);
     }
 
     /**
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  FileChecker                      $file_checker
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getFunctionParamsFromCallMapById($method_id, array $args, FileChecker $file_checker)
+    public static function getFunctionParamsFromCallMapById(ProjectChecker $project_checker, $method_id, array $args)
     {
         $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
 
@@ -1117,20 +1150,19 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
         }
 
-        return self::getMatchingParamsFromCallMapOptions($function_param_options, $args, $file_checker);
+        return self::getMatchingParamsFromCallMapOptions($project_checker, $function_param_options, $args);
     }
 
     /**
      * @param  array<int, array<int, FunctionLikeParameter>>  $function_param_options
      * @param  array<int, PhpParser\Node\Arg>                 $args
-     * @param  FileChecker                                    $file_checker
      *
      * @return array<int, FunctionLikeParameter>
      */
     protected static function getMatchingParamsFromCallMapOptions(
+        ProjectChecker $project_checker,
         array $function_param_options,
-        array $args,
-        FileChecker $file_checker
+        array $args
     ) {
         if (count($function_param_options) === 1) {
             return $function_param_options[0];
@@ -1175,7 +1207,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     continue;
                 }
 
-                if (TypeChecker::isContainedBy($arg->value->inferredType, $param_type, $file_checker)) {
+                if (TypeChecker::isContainedBy($project_checker, $arg->value->inferredType, $param_type)) {
                     continue;
                 }
 
@@ -1220,5 +1252,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public static function clearCache()
     {
         self::$no_effects_hashes = [];
+    }
+
+    public function getFileChecker()
+    {
+        return $this->file_checker;
     }
 }

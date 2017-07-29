@@ -8,6 +8,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
@@ -60,6 +61,7 @@ class CallChecker
      * @return  false|null
      */
     public static function analyzeFunctionCall(
+        ProjectChecker $project_checker,
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context
@@ -184,12 +186,12 @@ class CallChecker
                         // handled above
                     } elseif (!$var_type_part instanceof TNamedObject ||
                         !ClassLikeChecker::classOrInterfaceExists(
-                            $var_type_part->value,
-                            $statements_checker->getFileChecker()
+                            $project_checker,
+                            $var_type_part->value
                         ) ||
                         !MethodChecker::methodExists(
-                            $var_type_part->value . '::__invoke',
-                            $statements_checker->getFileChecker()
+                            $project_checker,
+                            $var_type_part->value . '::__invoke'
                         )
                     ) {
                         $var_id = ExpressionChecker::getVarId(
@@ -234,6 +236,7 @@ class CallChecker
             if (!$in_call_map && !$is_stubbed) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
+                        $project_checker,
                         $statements_checker,
                         $method_id,
                         $code_location
@@ -244,6 +247,7 @@ class CallChecker
                 }
 
                 $function_exists = FunctionChecker::functionExists(
+                    $project_checker,
                     strtolower($method_id),
                     $statements_checker->getFilePath()
                 );
@@ -254,6 +258,7 @@ class CallChecker
             if ($function_exists) {
                 if (!$in_call_map || $is_stubbed) {
                     $function_storage = FunctionChecker::getStorage(
+                        $project_checker,
                         strtolower($method_id),
                         $statements_checker->getFilePath()
                     );
@@ -267,9 +272,9 @@ class CallChecker
 
                 if ($in_call_map && !$is_stubbed) {
                     $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
+                        $statements_checker->getFileChecker()->project_checker,
                         $method_id,
-                        $stmt->args,
-                        $statements_checker->getFileChecker()
+                        $stmt->args
                     );
                 }
             }
@@ -292,9 +297,9 @@ class CallChecker
             if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
                 if (!$is_stubbed && $in_call_map) {
                     $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
+                        $statements_checker->getFileChecker()->project_checker,
                         $method_id,
-                        $stmt->args,
-                        $statements_checker->getFileChecker()
+                        $stmt->args
                     );
                 }
             }
@@ -445,7 +450,7 @@ class CallChecker
     ) {
         $fq_class_name = null;
 
-        $file_checker = $statements_checker->getFileChecker();
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $late_static = false;
 
@@ -462,8 +467,8 @@ class CallChecker
                     }
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $project_checker,
                         $fq_class_name,
-                        $file_checker,
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
@@ -499,9 +504,9 @@ class CallChecker
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $context->check_classes &&
-                ClassChecker::classExists($fq_class_name, $file_checker)
+                ClassChecker::classExists($project_checker, $fq_class_name)
             ) {
-                $storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+                $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                 // if we're not calling this constructor via new static()
                 if ($storage->abstract && !$late_static) {
@@ -529,8 +534,8 @@ class CallChecker
                 }
 
                 if (MethodChecker::methodExists(
+                    $project_checker,
                     $fq_class_name . '::__construct',
-                    $file_checker,
                     $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
                 )) {
                     $method_id = $fq_class_name . '::__construct';
@@ -731,7 +736,7 @@ class CallChecker
         }
 
         $config = Config::getInstance();
-        $file_checker = $statements_checker->getFileChecker();
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($class_type && is_string($stmt->name)) {
             $return_type = null;
@@ -800,8 +805,8 @@ class CallChecker
                     $does_class_exist = true;
                 } else {
                     $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $project_checker,
                         $fq_class_name,
-                        $file_checker,
                         new CodeLocation($statements_checker->getSource(), $stmt),
                         $statements_checker->getSuppressedIssues()
                     );
@@ -811,7 +816,11 @@ class CallChecker
                     return $does_class_exist;
                 }
 
-                if (MethodChecker::methodExists($fq_class_name . '::__call', $statements_checker->getFileChecker())) {
+                if (MethodChecker::methodExists(
+                    $project_checker,
+                    $fq_class_name . '::__call'
+                )
+                ) {
                     $return_type = Type::getMixed();
                     continue;
                 }
@@ -821,18 +830,18 @@ class CallChecker
                 if ($var_id === '$this' &&
                     $context->self &&
                     $fq_class_name !== $context->self &&
-                    MethodChecker::methodExists($context->self . '::' . strtolower($stmt->name), $file_checker)
+                    MethodChecker::methodExists($project_checker, $context->self . '::' . strtolower($stmt->name))
                 ) {
                     $method_id = $context->self . '::' . strtolower($stmt->name);
                     $fq_class_name = $context->self;
                 }
 
-                if ($intersection_types && !MethodChecker::methodExists($method_id, $file_checker)) {
+                if ($intersection_types && !MethodChecker::methodExists($project_checker, $method_id)) {
                     foreach ($intersection_types as $intersection_type) {
                         $method_id = $intersection_type->value . '::' . strtolower($stmt->name);
                         $fq_class_name = $intersection_type->value;
 
-                        if (MethodChecker::methodExists($method_id, $file_checker)) {
+                        if (MethodChecker::methodExists($project_checker, $method_id)) {
                             break;
                         }
                     }
@@ -841,8 +850,8 @@ class CallChecker
                 $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
                 $does_method_exist = MethodChecker::checkMethodExists(
+                    $project_checker,
                     $cased_method_id,
-                    $statements_checker->getFileChecker(),
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
@@ -862,7 +871,7 @@ class CallChecker
                     self::collectSpecialInformation($source, $stmt->name, $context);
                 }
 
-                $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+                $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                 if ($class_storage->template_types) {
                     $class_template_params = [];
@@ -899,7 +908,7 @@ class CallChecker
                 }
 
                 $return_type_location = null;
-                $file_checker = $source->getFileChecker();
+                $project_checker = $source->getFileChecker()->project_checker;
 
                 if (FunctionChecker::inCallMap($cased_method_id)) {
                     $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
@@ -915,6 +924,7 @@ class CallChecker
                     }
 
                     if (MethodChecker::checkMethodNotDeprecated(
+                        $project_checker,
                         $method_id,
                         new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
@@ -922,7 +932,7 @@ class CallChecker
                         return false;
                     }
 
-                    $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
+                    $return_type_candidate = MethodChecker::getMethodReturnType($project_checker, $method_id);
 
                     if ($return_type_candidate) {
                         if ($class_template_params) {
@@ -934,13 +944,15 @@ class CallChecker
                             $return_type_candidate = clone $return_type_candidate;
                         }
 
-                        $return_type_candidate = ExpressionChecker::fleshOutTypes(
+                        $return_type_candidate = ExpressionChecker::fleshOutType(
+                            $project_checker,
                             $return_type_candidate,
                             $fq_class_name,
                             $method_id
                         );
 
                         $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                            $project_checker,
                             $method_id,
                             $secondary_return_type_location
                         );
@@ -1005,26 +1017,28 @@ class CallChecker
     ) {
         $fq_class_name = (string)$source->getFQCLN();
 
+        $project_checker = $source->getFileChecker()->project_checker;
+
         if ($context->collect_mutations &&
             $context->self &&
             (
                 $context->self === $fq_class_name ||
                 ClassChecker::classExtends(
+                    $project_checker,
                     $context->self,
                     $fq_class_name
                 )
             )
         ) {
-            $file_checker = $source->getFileChecker();
-
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-            $file_checker->project_checker->getMethodMutations($method_id, $context);
+            $project_checker->getMethodMutations($method_id, $context);
         } elseif ($context->collect_initializations &&
             $context->self &&
             (
                 $context->self === $fq_class_name ||
                 ClassChecker::classExtends(
+                    $project_checker,
                     $context->self,
                     $fq_class_name
                 )
@@ -1033,9 +1047,9 @@ class CallChecker
         ) {
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($method_id);
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
 
-            $method_storage = MethodChecker::getStorage((string)$declaring_method_id);
+            $method_storage = MethodChecker::getStorage($project_checker, (string)$declaring_method_id);
 
             $class_checker = $source->getSource();
 
@@ -1096,6 +1110,7 @@ class CallChecker
         $lhs_type = null;
 
         $file_checker = $statements_checker->getFileChecker();
+        $project_checker = $file_checker->project_checker;
         $source = $statements_checker->getSource();
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
@@ -1121,7 +1136,7 @@ class CallChecker
                         return;
                     }
 
-                    $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+                    $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                     if (is_string($stmt->name) && $class_storage->user_defined) {
                         $method_id = $fq_class_name . '::' . strtolower($stmt->name);
@@ -1187,9 +1202,9 @@ class CallChecker
                 $does_class_exist = false;
 
                 if ($context->self) {
-                    if (isset(
-                        ClassLikeChecker::$storage[strtolower($context->self)]->used_traits[strtolower($fq_class_name)]
-                    )) {
+                    $self_storage = $project_checker->classlike_storage_provider->get($context->self);
+
+                    if (isset($self_storage->used_traits[strtolower($fq_class_name)])) {
                         $fq_class_name = $context->self;
                         $does_class_exist = true;
                     }
@@ -1197,8 +1212,8 @@ class CallChecker
 
                 if (!$does_class_exist) {
                     $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $project_checker,
                         $fq_class_name,
-                        $file_checker,
                         new CodeLocation($source, $stmt->class),
                         $statements_checker->getSuppressedIssues(),
                         false
@@ -1243,15 +1258,15 @@ class CallChecker
             $method_id = null;
 
             if (is_string($stmt->name) &&
-                !MethodChecker::methodExists($fq_class_name . '::__callStatic', $file_checker) &&
+                !MethodChecker::methodExists($project_checker, $fq_class_name . '::__callStatic') &&
                 !$is_mock
             ) {
                 $method_id = $fq_class_name . '::' . strtolower($stmt->name);
                 $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
                 $does_method_exist = MethodChecker::checkMethodExists(
+                    $project_checker,
                     $cased_method_id,
-                    $file_checker,
                     new CodeLocation($source, $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
@@ -1260,7 +1275,7 @@ class CallChecker
                     return $does_method_exist;
                 }
 
-                $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+                $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                 if ($class_storage->deprecated) {
                     if (IssueBuffer::accepts(
@@ -1288,12 +1303,13 @@ class CallChecker
                     && ($stmt->class->parts[0] !== 'parent' || $statements_checker->isStatic())
                     && (!$context->self
                         || $statements_checker->isStatic()
-                        || !ClassChecker::classExtends($context->self, $fq_class_name)
+                        || !ClassChecker::classExtends($project_checker, $context->self, $fq_class_name)
                     )
                 ) {
                     if (MethodChecker::checkStatic(
                         $method_id,
                         $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
+                        $project_checker,
                         new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
@@ -1302,6 +1318,7 @@ class CallChecker
                 }
 
                 if (MethodChecker::checkMethodNotDeprecated(
+                    $project_checker,
                     $method_id,
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
@@ -1326,7 +1343,7 @@ class CallChecker
 
                 $class_template_params = [];
 
-                $return_type_candidate = MethodChecker::getMethodReturnType($method_id);
+                $return_type_candidate = MethodChecker::getMethodReturnType($project_checker, $method_id);
 
                 if ($return_type_candidate) {
                     if ($found_generic_params) {
@@ -1338,13 +1355,15 @@ class CallChecker
                         $return_type_candidate = clone $return_type_candidate;
                     }
 
-                    $return_type_candidate = ExpressionChecker::fleshOutTypes(
+                    $return_type_candidate = ExpressionChecker::fleshOutType(
+                        $project_checker,
                         $return_type_candidate,
                         $fq_class_name,
                         $method_id
                     );
 
                     $return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                        $project_checker,
                         $method_id,
                         $secondary_return_type_location
                     );
@@ -1408,10 +1427,10 @@ class CallChecker
         CodeLocation $code_location,
         StatementsChecker $statements_checker
     ) {
-        $file_checker = $statements_checker->getFileChecker();
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $method_params = $method_id
-            ? FunctionLikeChecker::getMethodParamsById($method_id, $args, $file_checker)
+            ? FunctionLikeChecker::getMethodParamsById($project_checker, $method_id, $args)
             : null;
 
         if (self::checkFunctionArguments(
@@ -1429,7 +1448,7 @@ class CallChecker
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
         $method_storage = isset($class_storage->methods[strtolower($method_name)])
             ? $class_storage->methods[strtolower($method_name)]
             : null;
@@ -1437,9 +1456,9 @@ class CallChecker
         if (!$class_storage->user_defined) {
             // check again after we've processed args
             $method_params = FunctionLikeChecker::getMethodParamsById(
+                $project_checker,
                 $method_id,
-                $args,
-                $file_checker
+                $args
             );
         }
 
@@ -1603,17 +1622,23 @@ class CallChecker
 
         $fq_class_name = null;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if ($method_id) {
             if ($in_call_map || !strpos($method_id, '::')) {
-                $is_variadic = FunctionChecker::isVariadic(strtolower($method_id), $statements_checker->getFilePath());
+                $is_variadic = FunctionChecker::isVariadic(
+                    $project_checker,
+                    strtolower($method_id),
+                    $statements_checker->getFilePath()
+                );
             } else {
                 $fq_class_name = explode('::', $method_id)[0];
-                $is_variadic = MethodChecker::isVariadic($method_id);
+                $is_variadic = MethodChecker::isVariadic($project_checker, $method_id);
             }
         }
 
         if ($method_id && strpos($method_id, '::') && !$in_call_map) {
-            $cased_method_id = MethodChecker::getCasedMethodId($method_id);
+            $cased_method_id = MethodChecker::getCasedMethodId($project_checker, $method_id);
         }
 
         if ($function_params) {
@@ -1688,8 +1713,8 @@ class CallChecker
                                     // register class if the class exists
                                     if ($offset_value_type_part instanceof TNamedObject) {
                                         ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                            $project_checker,
                                             $offset_value_type_part->value,
-                                            $statements_checker->getFileChecker(),
                                             new CodeLocation($statements_checker->getSource(), $arg->value),
                                             $statements_checker->getSuppressedIssues()
                                         );
@@ -1720,7 +1745,8 @@ class CallChecker
                         break;
                     }
 
-                    $fleshed_out_type = ExpressionChecker::fleshOutTypes(
+                    $fleshed_out_type = ExpressionChecker::fleshOutType(
+                        $project_checker,
                         $param_type,
                         $fq_class_name,
                         $method_id
@@ -1883,6 +1909,8 @@ class CallChecker
 
                 $i = 0;
 
+                $project_checker = $statements_checker->getFileChecker()->project_checker;
+
                 foreach ($closure_params as $closure_param) {
                     if (!isset($array_arg_types[$i])) {
                         ++$i;
@@ -1902,9 +1930,9 @@ class CallChecker
                     $closure_param_type = $closure_param->type;
 
                     $type_match_found = TypeChecker::isContainedBy(
+                        $project_checker,
                         $input_type,
                         $closure_param_type,
-                        $statements_checker->getFileChecker(),
                         false,
                         $scalar_type_match_found,
                         $coerced_type
@@ -1925,9 +1953,9 @@ class CallChecker
 
                     if (!$type_match_found) {
                         $types_can_be_identical = TypeChecker::canBeIdenticalTo(
+                            $project_checker,
                             $input_type,
-                            $closure_param_type,
-                            $statements_checker->getFileChecker()
+                            $closure_param_type
                         );
 
                         if ($scalar_type_match_found) {
@@ -2039,12 +2067,17 @@ class CallChecker
             }
         }
 
-        $param_type = TypeChecker::simplifyUnionType($param_type, $statements_checker->getFileChecker());
+        $param_type = TypeChecker::simplifyUnionType(
+            $statements_checker->getFileChecker()->project_checker,
+            $param_type
+        );
+
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $type_match_found = TypeChecker::isContainedBy(
+            $project_checker,
             $input_type,
             $param_type,
-            $statements_checker->getFileChecker(),
             true,
             $scalar_type_match_found,
             $coerced_type,
@@ -2079,9 +2112,9 @@ class CallChecker
 
         if (!$type_match_found && !$coerced_type) {
             $types_can_be_identical = TypeChecker::canBeIdenticalTo(
+                $project_checker,
                 $param_type,
-                $input_type,
-                $statements_checker->getFileChecker()
+                $input_type
             );
 
             if ($scalar_type_match_found) {
@@ -2131,6 +2164,7 @@ class CallChecker
      * @return bool
      */
     protected static function checkFunctionExists(
+        ProjectChecker $project_checker,
         StatementsChecker $statements_checker,
         &$function_id,
         CodeLocation $code_location
@@ -2138,11 +2172,15 @@ class CallChecker
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 
-        if (!FunctionChecker::functionExists($function_id, $statements_checker->getFilePath())) {
+        if (!FunctionChecker::functionExists($project_checker, $function_id, $statements_checker->getFilePath())) {
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
             if ($function_id !== $root_function_id &&
-                FunctionChecker::functionExists($root_function_id, $statements_checker->getFilePath())
+                FunctionChecker::functionExists(
+                    $project_checker,
+                    $root_function_id,
+                    $statements_checker->getFilePath()
+                )
             ) {
                 $function_id = $root_function_id;
             } else {

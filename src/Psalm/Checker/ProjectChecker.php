@@ -10,8 +10,10 @@ use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Provider\CacheProvider;
+use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
+use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -35,6 +37,12 @@ class ProjectChecker
 
     /** @var FileProvider */
     private $file_provider;
+
+    /** @var FileStorageProvider */
+    public $file_storage_provider;
+
+    /** @var ClassLikeStorageProvider */
+    public $classlike_storage_provider;
 
     /** @var CacheProvider */
     public $cache_provider;
@@ -265,6 +273,9 @@ class ProjectChecker
         self::$instance = $this;
 
         $this->collectPredefinedClassLikes();
+
+        $this->file_storage_provider = new FileStorageProvider();
+        $this->classlike_storage_provider = new ClassLikeStorageProvider();
     }
 
     /**
@@ -386,7 +397,7 @@ class ProjectChecker
             }
         }
 
-        IssueBuffer::finish(true, (int)$start_checks, $this->scanned_files);
+        IssueBuffer::finish($this, true, (int)$start_checks, $this->scanned_files);
     }
 
     /**
@@ -456,7 +467,7 @@ class ProjectChecker
             echo 'ClassLikeStorage is populating' . PHP_EOL;
         }
 
-        foreach (ClassLikeChecker::$storage as $storage) {
+        foreach ($this->classlike_storage_provider->getAll() as $storage) {
             if (!$storage->user_defined) {
                 continue;
             }
@@ -472,8 +483,10 @@ class ProjectChecker
             echo 'FileStorage is populating' . PHP_EOL;
         }
 
-        foreach (FileChecker::$storage as $storage) {
-            $this->populateFileStorage($storage);
+        $all_file_storage = $this->file_storage_provider->getAll();
+
+        foreach ($all_file_storage as $file_storage) {
+            $this->populateFileStorage($file_storage);
         }
 
         if ($this->debug_output) {
@@ -499,28 +512,40 @@ class ProjectChecker
             );
         }
 
+        $storage_provider = $this->classlike_storage_provider;
+
         $dependent_classlikes[strtolower($storage->name)] = true;
 
-        if (isset($storage->parent_classes[0]) && isset(ClassLikeChecker::$storage[$storage->parent_classes[0]])) {
-            $parent_storage = ClassLikeChecker::$storage[$storage->parent_classes[0]];
+        if (isset($storage->parent_classes[0])) {
+            try {
+                $parent_storage = $storage_provider->get($storage->parent_classes[0]);
+            } catch (\InvalidArgumentException $e) {
+                $parent_storage = null;
+            }
 
-            $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
+            if ($parent_storage) {
+                $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
-            $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
+                $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-            $this->inheritMethodsFromParent($storage, $parent_storage);
-            $this->inheritPropertiesFromParent($storage, $parent_storage);
+                $this->inheritMethodsFromParent($storage, $parent_storage);
+                $this->inheritPropertiesFromParent($storage, $parent_storage);
 
-            $storage->class_implements += $parent_storage->class_implements;
+                $storage->class_implements += $parent_storage->class_implements;
 
-            $storage->public_class_constants += $parent_storage->public_class_constants;
-            $storage->protected_class_constants += $parent_storage->protected_class_constants;
+                $storage->public_class_constants += $parent_storage->public_class_constants;
+                $storage->protected_class_constants += $parent_storage->protected_class_constants;
+            }
         }
 
         $parent_interfaces = [];
 
         foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
-            $parent_interface_storage = ClassLikeChecker::$storage[$parent_interface_lc];
+            try {
+                $parent_interface_storage = $storage_provider->get($parent_interface_lc);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
 
             $this->populateClassLikeStorage($parent_interface_storage, $dependent_classlikes);
 
@@ -540,10 +565,11 @@ class ProjectChecker
         $extra_interfaces = [];
 
         foreach ($storage->class_implements as $implemented_interface_lc => $_) {
-            if (!isset(ClassLikeChecker::$storage[$implemented_interface_lc])) {
+            try {
+                $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
+            } catch (\InvalidArgumentException $e) {
                 continue;
             }
-            $implemented_interface_storage = ClassLikeChecker::$storage[$implemented_interface_lc];
 
             $this->populateClassLikeStorage($implemented_interface_storage, $dependent_classlikes);
 
@@ -561,28 +587,28 @@ class ProjectChecker
         $storage->class_implements = array_merge($extra_interfaces, $storage->class_implements);
 
         foreach ($storage->class_implements as $implemented_interface) {
-            if (!isset(ClassLikeChecker::$storage[strtolower($implemented_interface)])) {
+            try {
+                $implemented_interface_storage = $storage_provider->get($implemented_interface);
+            } catch (\InvalidArgumentException $e) {
                 continue;
             }
-
-            $implemented_interface_storage = ClassLikeChecker::$storage[strtolower($implemented_interface)];
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
                 if ($method->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
                     $mentioned_method_id = $implemented_interface . '::' . $method_name;
                     $implemented_method_id = $storage->name . '::' . $method_name;
 
-                    MethodChecker::setOverriddenMethodId($implemented_method_id, $mentioned_method_id);
+                    MethodChecker::setOverriddenMethodId($this, $implemented_method_id, $mentioned_method_id);
                 }
             }
         }
 
         foreach ($storage->used_traits as $used_trait_lc => $used_trait) {
-            if (!isset(ClassLikeChecker::$storage[$used_trait_lc])) {
+            try {
+                $trait_storage = $storage_provider->get($used_trait_lc);
+            } catch (\InvalidArgumentException $e) {
                 continue;
             }
-
-            $trait_storage = ClassLikeChecker::$storage[$used_trait_lc];
 
             $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
@@ -632,11 +658,12 @@ class ProjectChecker
         $dependent_file_paths[strtolower($storage->file_path)] = true;
 
         foreach ($storage->included_file_paths as $included_file_path => $_) {
-            if (!isset(FileChecker::$storage[$included_file_path])) {
+            try {
+                $included_file_storage = $this->file_storage_provider->get($included_file_path);
+            } catch (\InvalidArgumentException $e) {
                 continue;
             }
 
-            $included_file_storage = FileChecker::$storage[$included_file_path];
             $this->populateFileStorage($included_file_storage, $dependent_file_paths);
 
             $storage->declaring_function_ids = array_merge(
@@ -659,7 +686,7 @@ class ProjectChecker
      *
      * @return void
      */
-    protected static function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
+    protected function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
     {
         $fq_class_name = $storage->name;
         $parent_class = $parent_storage->name;
@@ -692,7 +719,7 @@ class ProjectChecker
             if (!$parent_storage->is_trait) {
                 $implemented_method_id = $fq_class_name . '::' . $method_name;
 
-                MethodChecker::setOverriddenMethodId($implemented_method_id, $declaring_method_id);
+                MethodChecker::setOverriddenMethodId($this, $implemented_method_id, $declaring_method_id);
             }
 
             if ($parent_storage->is_trait
@@ -710,7 +737,7 @@ class ProjectChecker
                     $storage->declaring_method_ids[$aliased_method_name]
                 );
 
-                $implementing_class_storage = ClassLikeChecker::$storage[strtolower($implementing_fq_class_name)];
+                $implementing_class_storage = $this->classlike_storage_provider->get($implementing_fq_class_name);
 
                 if (!$implementing_class_storage->methods[$implementing_method_name]->abstract) {
                     continue;
@@ -729,7 +756,7 @@ class ProjectChecker
      *
      * @return void
      */
-    protected static function inheritPropertiesFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
+    protected function inheritPropertiesFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
     {
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
@@ -912,11 +939,11 @@ class ProjectChecker
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        if (!isset(ClassLikeChecker::$storage[strtolower($fq_class_name)])) {
+        try {
+            $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        } catch (\InvalidArgumentException $e) {
             die('Class ' . $fq_class_name . ' cannot be found' . PHP_EOL);
         }
-
-        $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
 
         if (!isset($class_storage->methods[strtolower($method_name)])) {
             die('Method ' . $method_id . ' cannot be found' . PHP_EOL);
@@ -938,11 +965,11 @@ class ProjectChecker
      */
     public function findReferencesToClassLike($fq_class_name)
     {
-        if (!isset(ClassLikeChecker::$storage[strtolower($fq_class_name)])) {
+        try {
+            $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        } catch (\InvalidArgumentException $e) {
             die('Class ' . $fq_class_name . ' cannot be found' . PHP_EOL);
         }
-
-        $class_storage = ClassLikeChecker::$storage[strtolower($fq_class_name)];
 
         if ($class_storage->referencing_locations === null) {
             die('No references found for ' . $fq_class_name . PHP_EOL);
@@ -972,25 +999,27 @@ class ProjectChecker
     public function checkClassReferences()
     {
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
-            if (isset(ClassLikeChecker::$storage[$fq_class_name_lc])) {
-                $classlike_storage = ClassLikeChecker::$storage[$fq_class_name_lc];
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
 
-                if ($classlike_storage->location &&
-                    $this->config &&
-                    $this->config->isInProjectDirs($classlike_storage->location->file_path)
-                ) {
-                    if (!isset($this->classlike_references[$fq_class_name_lc])) {
-                        if (IssueBuffer::accepts(
-                            new UnusedClass(
-                                'Class ' . $classlike_storage->name . ' is never used',
-                                $classlike_storage->location
-                            )
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        self::checkMethodReferences($classlike_storage);
+            if ($classlike_storage->location &&
+                $this->config &&
+                $this->config->isInProjectDirs($classlike_storage->location->file_path)
+            ) {
+                if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                    if (IssueBuffer::accepts(
+                        new UnusedClass(
+                            'Class ' . $classlike_storage->name . ' is never used',
+                            $classlike_storage->location
+                        )
+                    )) {
+                        // fall through
                     }
+                } else {
+                    self::checkMethodReferences($classlike_storage);
                 }
             }
         }
@@ -1056,7 +1085,7 @@ class ProjectChecker
         $this->scanFiles();
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
+        IssueBuffer::finish($this, false, $start_checks, $this->scanned_files);
     }
 
     /**
@@ -1219,7 +1248,7 @@ class ProjectChecker
 
         $this->analyzeFiles();
 
-        IssueBuffer::finish(false, $start_checks, $this->scanned_files);
+        IssueBuffer::finish($this, false, $start_checks, $this->scanned_files);
     }
 
     /**
@@ -1270,6 +1299,8 @@ class ProjectChecker
         if (isset($this->scanned_files[$file_path])) {
             throw new \UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
+
+        $this->file_storage_provider->create($file_path);
 
         if ($this->debug_output) {
             if (isset($this->files_to_deep_scan[$file_path])) {
@@ -1383,10 +1414,10 @@ class ProjectChecker
 
         $file_checker = $this->getFileCheckerForClassLike($fq_class_name);
 
-        $appearing_method_id = (string)MethodChecker::getAppearingMethodId($original_method_id);
+        $appearing_method_id = (string)MethodChecker::getAppearingMethodId($this, $original_method_id);
         list($appearing_fq_class_name) = explode('::', $appearing_method_id);
 
-        $appearing_class_storage = ClassLikeChecker::$storage[strtolower($appearing_fq_class_name)];
+        $appearing_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
 
         if (!$appearing_class_storage->user_defined) {
             return;
@@ -1673,12 +1704,12 @@ class ProjectChecker
 
         if (!isset($this->existing_classes_lc[$fq_class_name_lc])
             || !$this->existing_classes_lc[$fq_class_name_lc]
-            || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+            || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
             if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
                     || $this->existing_classes_lc[$fq_class_name_lc] === true
                 )
-                && !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+                && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
                 if ($this->debug_output) {
                     echo 'Last-chance attempt to hydrate ' . $fq_class_name . PHP_EOL;
@@ -1721,12 +1752,12 @@ class ProjectChecker
 
         if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
             || !$this->existing_interfaces_lc[$fq_class_name_lc]
-            || !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+            || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
             if ((!isset($this->existing_classes_lc[$fq_class_name_lc])
                     || $this->existing_classes_lc[$fq_class_name_lc] === true
                 )
-                && !isset(ClassLikeChecker::$storage[$fq_class_name_lc])
+                && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
                 if ($this->debug_output) {
                     echo 'Last-chance attempt to hydrate ' . $fq_class_name . PHP_EOL;

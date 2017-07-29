@@ -3,7 +3,6 @@ namespace Psalm\Type;
 
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\ReservedWord;
@@ -112,11 +111,10 @@ abstract class Atomic
 
     /**
      * @param   Union        $parent
-     * @param   FileChecker  $file_checker
      *
      * @return  bool
      */
-    public function isIn(Union $parent, FileChecker $file_checker)
+    public function isIn(ProjectChecker $project_checker, Union $parent)
     {
         if ($parent->isMixed()) {
             return true;
@@ -124,7 +122,7 @@ abstract class Atomic
 
         if ($parent->hasType('object') &&
             $this instanceof TNamedObject &&
-            ClassLikeChecker::classOrInterfaceExists($this->value, $file_checker)
+            ClassLikeChecker::classOrInterfaceExists($project_checker, $this->value)
         ) {
             return true;
         }
@@ -147,12 +145,12 @@ abstract class Atomic
         }
 
         // last check to see if class is subclass
-        if ($this instanceof TNamedObject && ClassChecker::classExists($this->value, $file_checker)) {
+        if ($this instanceof TNamedObject && ClassChecker::classExists($project_checker, $this->value)) {
             $this_is_subclass = false;
 
             foreach ($parent->types as $parent_type) {
                 if ($parent_type instanceof TNamedObject &&
-                    ClassChecker::classExtendsOrImplements($this->value, $parent_type->value)
+                    ClassChecker::classExtendsOrImplements($project_checker, $this->value, $parent_type->value)
                 ) {
                     $this_is_subclass = true;
                     break;
@@ -211,8 +209,8 @@ abstract class Atomic
         if ($this instanceof TNamedObject &&
             !isset($phantom_classes[strtolower($this->value)]) &&
             ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                $source->getFileChecker()->project_checker,
                 $this->value,
-                $source->getFileChecker(),
                 $code_location,
                 $suppressed_issues,
                 $inferred

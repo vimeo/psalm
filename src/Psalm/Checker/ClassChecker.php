@@ -50,7 +50,7 @@ class ClassChecker extends ClassLikeChecker
      *
      * @return bool
      */
-    public static function classExists($fq_class_name, FileChecker $file_checker)
+    public static function classExists(ProjectChecker $project_checker, $fq_class_name)
     {
         if (isset(self::$SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -60,24 +60,23 @@ class ClassChecker extends ClassLikeChecker
             return true;
         }
 
-        return $file_checker->project_checker->hasFullyQualifiedClassName($fq_class_name);
+        return $project_checker->hasFullyQualifiedClassName($fq_class_name);
     }
 
     /**
      * Determine whether or not a class has the correct casing
      *
      * @param  string       $fq_class_name
-     * @param  FileChecker  $file_checker
      *
      * @return bool
      */
-    public static function hasCorrectCasing($fq_class_name, FileChecker $file_checker)
+    public static function hasCorrectCasing(ProjectChecker $project_checker, $fq_class_name)
     {
         if ($fq_class_name === 'Generator') {
             return true;
         }
 
-        return isset($file_checker->project_checker->existing_classes[$fq_class_name]);
+        return isset($project_checker->existing_classes[$fq_class_name]);
     }
 
     /**
@@ -88,7 +87,7 @@ class ClassChecker extends ClassLikeChecker
      *
      * @return bool
      */
-    public static function classExtends($fq_class_name, $possible_parent)
+    public static function classExtends(ProjectChecker $project_checker, $fq_class_name, $possible_parent)
     {
         $fq_class_name = strtolower($fq_class_name);
 
@@ -96,23 +95,9 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        if (!isset(self::$storage[$fq_class_name])) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $fq_class_name);
-        }
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
-        return in_array(strtolower($possible_parent), self::$storage[$fq_class_name]->parent_classes, true);
-    }
-
-    /**
-     * Get all the interfaces a given class implements
-     *
-     * @param  string $fq_class_name
-     *
-     * @return array<string>
-     */
-    public static function getInterfacesForClass($fq_class_name)
-    {
-        return self::$storage[strtolower($fq_class_name)]->class_implements;
+        return in_array(strtolower($possible_parent), $class_storage->parent_classes, true);
     }
 
     /**
@@ -123,7 +108,7 @@ class ClassChecker extends ClassLikeChecker
      *
      * @return bool
      */
-    public static function classImplements($fq_class_name, $interface)
+    public static function classImplements(ProjectChecker $project_checker, $fq_class_name, $interface)
     {
         $interface_id = strtolower($interface);
 
@@ -141,8 +126,8 @@ class ClassChecker extends ClassLikeChecker
             return false;
         }
 
-        $storage = self::$storage[$fq_class_name];
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
-        return isset($storage->class_implements[$interface_id]);
+        return isset($class_storage->class_implements[$interface_id]);
     }
 }

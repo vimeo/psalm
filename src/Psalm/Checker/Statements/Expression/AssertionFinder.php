@@ -34,6 +34,8 @@ class AssertionFinder
     ) {
         $if_types = [];
 
+        $project_checker = $source->getFileChecker()->project_checker;
+
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
             $instanceof_type = self::getInstanceOfTypes($conditional, $this_class_name, $source);
 
@@ -126,13 +128,13 @@ class AssertionFinder
                     $null_type = Type::getNull();
 
                     if (!TypeChecker::isContainedBy(
+                        $project_checker,
                         $var_type,
-                        $null_type,
-                        $source->getFileChecker()
+                        $null_type
                     ) && !TypeChecker::isContainedBy(
+                        $project_checker,
                         $null_type,
-                        $var_type,
-                        $source->getFileChecker()
+                        $var_type
                     )) {
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainNull(
@@ -198,13 +200,13 @@ class AssertionFinder
                     $false_type = Type::getFalse();
 
                     if (!TypeChecker::isContainedBy(
+                        $project_checker,
                         $var_type,
-                        $false_type,
-                        $source->getFileChecker()
+                        $false_type
                     ) && !TypeChecker::isContainedBy(
+                        $project_checker,
                         $false_type,
-                        $var_type,
-                        $source->getFileChecker()
+                        $var_type
                     )) {
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainType(
@@ -284,14 +286,14 @@ class AssertionFinder
                         $if_types[$var_name] = '^' . $var_type;
                     } elseif ($other_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                         if (!TypeChecker::isContainedBy(
+                            $project_checker,
                             $var_type,
                             $other_type,
-                            $source->getFileChecker(),
                             true
                         ) && !TypeChecker::isContainedBy(
+                            $project_checker,
                             $other_type,
                             $var_type,
-                            $source->getFileChecker(),
                             true
                         )) {
                             if (IssueBuffer::accepts(
@@ -314,7 +316,7 @@ class AssertionFinder
             $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
 
             if ($var_type && $other_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                if (!TypeChecker::canBeIdenticalTo($var_type, $other_type, $source->getFileChecker())) {
+                if (!TypeChecker::canBeIdenticalTo($project_checker, $var_type, $other_type)) {
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             $var_type . ' does not contain ' . $other_type,

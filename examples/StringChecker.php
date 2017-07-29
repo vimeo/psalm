@@ -39,10 +39,10 @@ class StringChecker extends \Psalm\Plugin
             if (preg_match($class_or_class_method, $stmt->value)) {
                 $fq_class_name = preg_split('/[:]/', $stmt->value)[0];
 
-                $file_checker = $statements_checker->getFileChecker();
+                $project_checker = $statements_checker->getFileChecker()->project_checker;
                 if (Checker\ClassChecker::checkFullyQualifiedClassLikeName(
+                    $project_checker,
                     $fq_class_name,
-                    $file_checker,
                     $code_location,
                     $suppressed_issues
                 ) === false
@@ -52,8 +52,8 @@ class StringChecker extends \Psalm\Plugin
 
                 if ($fq_class_name !== $stmt->value) {
                     if (Checker\MethodChecker::checkMethodExists(
+                        $project_checker,
                         $stmt->value,
-                        $file_checker,
                         $code_location,
                         $suppressed_issues
                     )

@@ -6,7 +6,6 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
-use Psalm\Storage\FileStorage;
 use Psalm\Type;
 
 class FileChecker extends SourceChecker implements StatementsSource
@@ -57,13 +56,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @var bool
      */
     public static $show_notices = true;
-
-    /**
-     * A list of data useful to analyse files
-     *
-     * @var array<string, FileStorage>
-     */
-    public static $storage = [];
 
     /**
      * @var array<string, ClassLikeChecker>
@@ -121,11 +113,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         $this->file_name = Config::getInstance()->shortenFileName($this->file_path);
         $this->project_checker = $project_checker;
         $this->will_analyze = $will_analyze;
-
-        if (!isset(self::$storage[strtolower($file_path)])) {
-            self::$storage[strtolower($file_path)] = new FileStorage();
-            self::$storage[strtolower($file_path)]->file_path = $file_path;
-        }
     }
 
     /**
@@ -219,7 +206,11 @@ class FileChecker extends SourceChecker implements StatementsSource
                 /** @var string */
                 $method_id = $function_checker->getMethodId();
 
-                $function_storage = FunctionChecker::getStorage($method_id, $this->file_path);
+                $function_storage = FunctionChecker::getStorage(
+                    $this->project_checker,
+                    $method_id,
+                    $this->file_path
+                );
 
                 if (!$function_storage->has_template_return_type) {
                     $return_type = $function_storage->return_type;
@@ -434,8 +425,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public static function clearCache()
     {
-        self::$storage = [];
-
         ClassLikeChecker::clearCache();
         FunctionChecker::clearCache();
         StatementsChecker::clearCache();

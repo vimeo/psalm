@@ -74,9 +74,9 @@ class TypeReconciliationTest extends TestCase
     {
         $this->assertTrue(
             TypeChecker::isContainedBy(
+                $this->project_checker,
                 Type::parseString($input),
-                Type::parseString($container),
-                $this->file_checker
+                Type::parseString($container)
             )
         );
     }

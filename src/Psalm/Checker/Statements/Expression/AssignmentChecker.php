@@ -141,9 +141,9 @@ class AssignmentChecker
             }
         } elseif ($var_id && isset($context->byref_constraints[$var_id])) {
             if (!TypeChecker::isContainedBy(
+                $statements_checker->getFileChecker()->project_checker,
                 $assign_value_type,
-                $context->byref_constraints[$var_id]->type,
-                $statements_checker->getFileChecker()
+                $context->byref_constraints[$var_id]->type
             )
             ) {
                 if (IssueBuffer::accepts(
@@ -432,7 +432,7 @@ class AssignmentChecker
     ) {
         $class_property_types = [];
 
-        $file_checker = $statements_checker->getFileChecker();
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
@@ -441,13 +441,13 @@ class AssignmentChecker
 
             $property_id = $context->self . '::$' . $prop_name;
 
-            if (!ClassLikeChecker::propertyExists($property_id)) {
+            if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                 return null;
             }
 
-            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($property_id);
+            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($project_checker, $property_id);
 
-            $class_storage = ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)];
+            $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
 
             $class_property_type = $class_storage->properties[$prop_name]->type;
 
@@ -573,8 +573,8 @@ class AssignmentChecker
                     return null;
                 }
 
-                if (!ClassChecker::classExists($lhs_type_part->value, $file_checker)) {
-                    if (InterfaceChecker::interfaceExists($lhs_type_part->value, $file_checker)) {
+                if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
+                    if (InterfaceChecker::interfaceExists($project_checker, $lhs_type_part->value)) {
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
@@ -602,10 +602,10 @@ class AssignmentChecker
                 }
 
                 if ($lhs_var_id !== '$this' &&
-                    MethodChecker::methodExists($lhs_type_part . '::__set', $file_checker)
+                    MethodChecker::methodExists($project_checker, $lhs_type_part . '::__set')
                 ) {
                     if ($var_id) {
-                        $class_storage = ClassLikeChecker::$storage[strtolower((string)$lhs_type_part)];
+                        $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
                         if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
                             $class_property_types[] =
@@ -626,7 +626,7 @@ class AssignmentChecker
                 ) {
                     $class_visibility = \ReflectionProperty::IS_PRIVATE;
                 } elseif ($context->self &&
-                    ClassChecker::classExtends($lhs_type_part->value, $context->self)
+                    ClassChecker::classExtends($project_checker, $lhs_type_part->value, $context->self)
                 ) {
                     $class_visibility = \ReflectionProperty::IS_PROTECTED;
                 } else {
@@ -635,7 +635,7 @@ class AssignmentChecker
 
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
-                if (!ClassLikeChecker::propertyExists($property_id)) {
+                if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
@@ -672,11 +672,13 @@ class AssignmentChecker
                 }
 
                 $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+                    $project_checker,
                     $lhs_type_part->value . '::$' . $prop_name
                 );
 
-                $property_storage =
-                    ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
+                $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
+
+                $property_storage = $class_storage->properties[$stmt->name];
 
                 if ($property_storage->deprecated) {
                     if (IssueBuffer::accepts(
@@ -710,8 +712,9 @@ class AssignmentChecker
                         }
                     }
                 } else {
-                    $class_property_type = ExpressionChecker::fleshOutTypes(
-                        clone $class_property_type,
+                    $class_property_type = ExpressionChecker::fleshOutType(
+                        $project_checker,
+                        $class_property_type,
                         $lhs_type_part->value
                     );
                 }
@@ -759,9 +762,9 @@ class AssignmentChecker
             }
 
             if (!TypeChecker::isContainedBy(
+                $project_checker,
                 $assignment_value_type,
                 $class_property_type,
-                $file_checker,
                 $assignment_value_type->ignore_nullable_issues
             )) {
                 if (IssueBuffer::accepts(
@@ -808,12 +811,14 @@ class AssignmentChecker
 
         $fq_class_name = (string)$stmt->class->inferredType;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') ||
             $fq_class_name === $context->self
         ) {
             $class_visibility = \ReflectionProperty::IS_PRIVATE;
         } elseif ($context->self &&
-            ClassChecker::classExtends($fq_class_name, $context->self)
+            ClassChecker::classExtends($project_checker, $fq_class_name, $context->self)
         ) {
             $class_visibility = \ReflectionProperty::IS_PROTECTED;
         } else {
@@ -828,7 +833,7 @@ class AssignmentChecker
 
         $property_id = $fq_class_name . '::$' . $prop_name;
 
-        if (!ClassLikeChecker::propertyExists($property_id)) {
+        if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
             if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
                 if (IssueBuffer::accepts(
                     new UndefinedThisPropertyAssignment(
@@ -865,11 +870,13 @@ class AssignmentChecker
         }
 
         $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
+            $project_checker,
             $fq_class_name . '::$' . $prop_name
         );
 
-        $property_storage =
-            ClassLikeChecker::$storage[strtolower((string)$declaring_property_class)]->properties[$stmt->name];
+        $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
+
+        $property_storage = $class_storage->properties[$stmt->name];
 
         if ($var_id) {
             $context->vars_in_scope[$var_id] = $assignment_value_type;
@@ -905,12 +912,16 @@ class AssignmentChecker
             return null;
         }
 
-        $class_property_type = ExpressionChecker::fleshOutTypes($class_property_type, $fq_class_name);
+        $class_property_type = ExpressionChecker::fleshOutType(
+            $project_checker,
+            $class_property_type,
+            $fq_class_name
+        );
 
         if (!TypeChecker::isContainedBy(
+            $project_checker,
             $assignment_value_type,
-            $class_property_type,
-            $statements_checker->getFileChecker()
+            $class_property_type
         )) {
             if (IssueBuffer::accepts(
                 new InvalidPropertyAssignment(
@@ -1009,12 +1020,14 @@ class AssignmentChecker
                 ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
                 : null;
 
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
             if ($return_type->hasObjectType()) {
                 foreach ($return_type->types as $left_type_part) {
                     if ($left_type_part instanceof TNamedObject &&
                         (strtolower($left_type_part->value) !== 'simplexmlelement' &&
-                            ClassChecker::classExists($left_type_part->value, $statements_checker->getFileChecker()) &&
-                            !ClassChecker::classImplements($left_type_part->value, 'ArrayAccess')
+                            ClassChecker::classExists($project_checker, $left_type_part->value) &&
+                            !ClassChecker::classImplements($project_checker, $left_type_part->value, 'ArrayAccess')
                         )
                     ) {
                         if (IssueBuffer::accepts(

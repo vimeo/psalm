@@ -2,6 +2,7 @@
 namespace Psalm\Provider;
 
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
 
 /**
@@ -95,11 +96,11 @@ class FileReferenceProvider
      *
      * @return  array
      */
-    public static function calculateFilesReferencingFile($file)
+    public static function calculateFilesReferencingFile(ProjectChecker $project_checker, $file)
     {
         $referenced_files = [];
 
-        $file_classes = ClassLikeChecker::getClassesForFile($file);
+        $file_classes = ClassLikeChecker::getClassesForFile($project_checker, $file);
 
         foreach ($file_classes as $file_class) {
             if (isset(self::$file_references_to_class[$file_class])) {
@@ -118,11 +119,11 @@ class FileReferenceProvider
      *
      * @return  array
      */
-    public static function calculateFilesInheritingFile($file)
+    public static function calculateFilesInheritingFile(ProjectChecker $project_checker, $file)
     {
         $referenced_files = [];
 
-        $file_classes = ClassLikeChecker::getClassesForFile($file);
+        $file_classes = ClassLikeChecker::getClassesForFile($project_checker, $file);
 
         foreach ($file_classes as $file_class) {
             if (isset(self::$files_inheriting_classes[$file_class])) {
@@ -210,7 +211,7 @@ class FileReferenceProvider
      *
      * @return void
      */
-    public static function updateReferenceCache(array $visited_files)
+    public static function updateReferenceCache(ProjectChecker $project_checker, array $visited_files)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -221,14 +222,14 @@ class FileReferenceProvider
                 $all_file_references = array_unique(
                     array_merge(
                         isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [],
-                        FileReferenceProvider::calculateFilesReferencingFile($file)
+                        FileReferenceProvider::calculateFilesReferencingFile($project_checker, $file)
                     )
                 );
 
                 $inheritance_references = array_unique(
                     array_merge(
                         isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [],
-                        FileReferenceProvider::calculateFilesInheritingFile($file)
+                        FileReferenceProvider::calculateFilesInheritingFile($project_checker, $file)
                     )
                 );
 
