@@ -705,7 +705,16 @@ class ProjectChecker
             }
 
             if (isset($storage->declaring_method_ids[$aliased_method_name])) {
-                continue;
+                list($implementing_fq_class_name) = explode(
+                    '::',
+                    $storage->declaring_method_ids[$aliased_method_name]
+                );
+
+                $implementing_class_storage = ClassLikeChecker::$storage[strtolower($implementing_fq_class_name)];
+
+                if (!$implementing_class_storage->abstract) {
+                    continue;
+                }
             }
 
             $parent_method_id = $parent_class . '::' . $method_name;
