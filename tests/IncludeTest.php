@@ -245,6 +245,24 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
+            'loopWithInterdependencies' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");
+                        class A {}
+                        class D extends C {}
+                        new B();',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require_once("file1.php");
+                        class C {}
+                        class B extends A {}
+                        new D();',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+            ],
         ];
     }
 
