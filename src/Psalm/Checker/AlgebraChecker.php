@@ -215,7 +215,9 @@ class AlgebraChecker
                     continue;
                 }
 
-                if ($clause_a->impossibilities == $clause_b->possibilities) {
+                if ($clause_a->impossibilities == $clause_b->possibilities
+                    && count($clause_a->impossibilities) === 1
+                ) {
                     if (IssueBuffer::accepts(
                         new ParadoxicalCondition(
                             'Encountered a paradox when evaluating the conditional',
