@@ -168,7 +168,7 @@ class AlgebraChecker
             $impossibility = [];
 
             foreach ($possiblity as $type) {
-                if ($type[0] !== '^') {
+                if ($type[0] !== '^' && (!isset($type[1]) || $type[1] !== '^')) {
                     $impossibility[] = TypeChecker::negateType($type);
                 }
             }
@@ -202,22 +202,34 @@ class AlgebraChecker
         StatementsChecker $statements_checker,
         PhpParser\Node $stmt
     ) {
+        $negated_formula2 = self::negateFormula($formula2);
+
         // remove impossible types
-        foreach ($formula1 as $clause_a) {
+        foreach ($negated_formula2 as $clause_a) {
             if (!$clause_a->reconcilable || $clause_a->wedge) {
                 continue;
             }
 
-            self::calculateNegation($clause_a);
-
-            foreach ($formula2 as $clause_b) {
+            foreach ($formula1 as $clause_b) {
                 if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
                     continue;
                 }
 
-                if ($clause_a->impossibilities == $clause_b->possibilities
-                    && count($clause_a->impossibilities) === 1
-                ) {
+                $clause_a_contains_b_possibilities = true;
+
+                foreach ($clause_b->possibilities as $key => $keyed_possibilities) {
+                    if (!isset($clause_a->possibilities[$key])) {
+                        $clause_a_contains_b_possibilities = false;
+                        break;
+                    }
+
+                    if ($clause_a->possibilities[$key] != $keyed_possibilities) {
+                        $clause_a_contains_b_possibilities = false;
+                        break;
+                    }
+                }
+
+                if ($clause_a_contains_b_possibilities) {
                     if (IssueBuffer::accepts(
                         new ParadoxicalCondition(
                             'Encountered a paradox when evaluating the conditional',

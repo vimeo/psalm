@@ -122,8 +122,7 @@ class ForeachChecker
                     }
 
                     $value_type = Type::getMixed();
-                } elseif ($iterator_type instanceof Type\Atomic\TArray ||
-                    $iterator_type instanceof Type\Atomic\TObject ||
+                } elseif ($iterator_type instanceof Type\Atomic\TObject ||
                     $iterator_type instanceof Type\Atomic\TMixed ||
                     $iterator_type instanceof Type\Atomic\TEmpty
                 ) {

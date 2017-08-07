@@ -15,7 +15,7 @@ class TypeAlgebraTest extends TestCase
             'twoVarLogic' => [
                 '<?php
                     function takesString(string $s) : void {}
-            
+
                     function foo(?string $a, ?string $b) : void {
                         if ($a !== null || $b !== null) {
                             if ($a !== null) {
@@ -23,7 +23,7 @@ class TypeAlgebraTest extends TestCase
                             } else {
                                 $c = $b;
                             }
-            
+
                             takesString($c);
                         }
                     }',
@@ -31,7 +31,7 @@ class TypeAlgebraTest extends TestCase
             'threeVarLogic' => [
                 '<?php
                     function takesString(string $s) : void {}
-            
+
                     function foo(?string $a, ?string $b, ?string $c) : void {
                         if ($a !== null || $b !== null || $c !== null) {
                             if ($a !== null) {
@@ -41,7 +41,7 @@ class TypeAlgebraTest extends TestCase
                             } else {
                                 $d = $c;
                             }
-            
+
                             takesString($d);
                         }
                     }',
@@ -75,12 +75,12 @@ class TypeAlgebraTest extends TestCase
                             $a = 5;
                             return "bad";
                         }
-            
+
                         if (!$a) {
                             $a = 7;
                             return $b;
                         }
-            
+
                         return $a;
                     }',
             ],
@@ -92,7 +92,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -106,7 +106,7 @@ class TypeAlgebraTest extends TestCase
                             $a = 5;
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -121,7 +121,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -138,7 +138,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a && !$b) return $c;
                         if (!$a) return $b;
                         return $a;
@@ -154,7 +154,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a && !$b) return $c;
                         if (!$a) return $b;
                         return $a;
@@ -170,7 +170,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -182,9 +182,9 @@ class TypeAlgebraTest extends TestCase
                             $a = "blah-blah";
                         } else {
                             $a = rand(0, 1) ? "blah" : null;
-            
+
                             if ($a === null) {
-            
+
                             }
                         }
                     }',
@@ -193,7 +193,7 @@ class TypeAlgebraTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {}
-            
+
                     function foo(?A $a, ?A $b) : A {
                         if ($a) {
                             $a = new B;
@@ -202,7 +202,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return new A;
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -223,12 +223,12 @@ class TypeAlgebraTest extends TestCase
                         if ($a = rand(0, 1) ? "" : null) {
                             return;
                         }
-            
+
                         if (rand(0, 1)) {
                             $a = rand(0, 1) ? "hello" : null;
-            
+
                             if ($a) {
-            
+
                             }
                         }
                     }',
@@ -242,9 +242,9 @@ class TypeAlgebraTest extends TestCase
                             while (rand(0, 1)) {
                                 $a = rand(0, 1) ? "hello" : null;
                             }
-            
+
                             if ($a) {
-            
+
                             }
                         }
                     }',
@@ -253,15 +253,44 @@ class TypeAlgebraTest extends TestCase
                 '<?php
                     function foo() : void {
                         preg_match("/hello/", "hello molly", $matches);
-            
+
                         if (!$matches) {
                             return;
                         }
-            
+
                         preg_match("/hello/", "hello dolly", $matches);
-            
+
                         if (!$matches) {
-            
+
+                        }
+                    }',
+            ],
+            'orConditionalAfterAndConditional' => [
+                '<?php
+                    function foo(string $a, string $b) : void {
+                        if ($a && $b) {
+                            echo "a";
+                        } elseif ($a || $b) {
+                            echo "b";
+                        }
+                    }',
+            ],
+            'issetOnOneStringAfterAnother' => [
+                '<?php
+                    /** @param string[] $arr */
+                    function foo(array $arr) : void {
+                        $a = "a";
+
+                        if (!isset($arr[$a])) {
+                            return;
+                        }
+
+                        foreach ([0, 1, 2, 3] as $i) {
+                            if (!isset($arr[$a . $i])) {
+                                echo "a";
+                            }
+
+                            $a = "hello";
                         }
                     }',
             ],
@@ -277,11 +306,11 @@ class TypeAlgebraTest extends TestCase
             'threeVarLogicWithChange' => [
                 '<?php
                     function takesString(string $s) : void {}
-            
+
                     function foo(?string $a, ?string $b, ?string $c) : void {
                         if ($a !== null || $b !== null || $c !== null) {
                             $c = null;
-            
+
                             if ($a !== null) {
                                 $d = $a;
                             } elseif ($b !== null) {
@@ -289,7 +318,7 @@ class TypeAlgebraTest extends TestCase
                             } else {
                                 $d = $c;
                             }
-            
+
                             takesString($d);
                         }
                     }',
@@ -298,13 +327,13 @@ class TypeAlgebraTest extends TestCase
             'threeVarLogicWithException' => [
                 '<?php
                     function takesString(string $s) : void {}
-            
+
                     function foo(?string $a, ?string $b, ?string $c) : void {
                         if ($a !== null || $b !== null || $c !== null) {
                             if ($c !== null) {
                                 throw new \Exception("bad");
                             }
-            
+
                             if ($a !== null) {
                                 $d = $a;
                             } elseif ($b !== null) {
@@ -312,7 +341,7 @@ class TypeAlgebraTest extends TestCase
                             } else {
                                 $d = $c;
                             }
-            
+
                             takesString($d);
                         }
                     }',
@@ -326,7 +355,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -342,7 +371,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -358,7 +387,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a && !$b) return $c;
                         if (!$a) return $b;
                         return $a;
@@ -375,7 +404,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -391,7 +420,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             return "bad";
                         }
-            
+
                         if (!$a) return $b;
                         return $a;
                     }',
@@ -404,9 +433,9 @@ class TypeAlgebraTest extends TestCase
                         if ($a) {
                             return $a;
                         }
-            
+
                         if ($a) {
-            
+
                         }
                     }',
                 'error_message' => 'ParadoxicalCondition',
@@ -418,6 +447,39 @@ class TypeAlgebraTest extends TestCase
                             // do something
                         } elseif ($a) {
                             // can never get here
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'repeatedAndConditional' => [
+                '<?php
+                    function foo(string $a, string $b) : void {
+                        if ($a && $b) {
+                            echo "a";
+                        } elseif ($a && $b) {
+                            echo "b";
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'andConditionalAfterOrConditional' => [
+                '<?php
+                    function foo(string $a, string $b) : void {
+                        if ($a || $b) {
+                            echo "a";
+                        } elseif ($a && $b) {
+                            echo "b";
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'repeatedVarFromOrConditional' => [
+                '<?php
+                    function foo(string $a, string $b) : void {
+                        if ($a || $b) {
+                            echo "a";
+                        } elseif ($a) {
+                            echo "b";
                         }
                     }',
                 'error_message' => 'ParadoxicalCondition',
