@@ -478,6 +478,7 @@ class Config
     public function initializePlugins(ProjectChecker $project_checker)
     {
         foreach ($this->filetype_handlers as &$path) {
+            $project_checker->file_storage_provider->create($path);
             $plugin_file_checker = new FileChecker($path, $project_checker);
             $plugin_file_checker->scan();
 
