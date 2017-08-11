@@ -103,6 +103,24 @@ class ClosureTest extends TestCase
                     $take_string = function(string $s) : string { return $s; };
                     $take_string("string");',
             ],
+            'callableMethod' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a) : string {
+                            return $a . "b";
+                        }
+                    }
+
+                    public function foo(callable $c) : void {}
+
+                    foo("A::bar");',
+            ],
+            'callableFunction' => [
+                '<?php
+                    function foo(callable $c) : void {}
+
+                    foo("trim");',
+            ],
         ];
     }
 
@@ -150,6 +168,26 @@ class ClosureTest extends TestCase
                     }',
                 'error_message' => 'InvalidFunctionCall',
                 'error_levels' => ['UndefinedClass'],
+            ],
+            'undefinedCallableMethod' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a) : string {
+                            return $a . "b";
+                        }
+                    }
+
+                    public function foo(callable $c) : void {}
+
+                    foo("A::barr");',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'undefinedCallableFunction' => [
+                '<?php
+                    function foo(callable $c) : void {}
+
+                    foo("trime");',
+                'error_message' => 'UndefinedFunction',
             ],
             'possiblyNullFunctionCall' => [
                 '<?php

@@ -1759,7 +1759,8 @@ class CallChecker
                             $fleshed_out_type,
                             $cased_method_id,
                             $argument_offset,
-                            new CodeLocation($statements_checker->getSource(), $arg->value)
+                            new CodeLocation($statements_checker->getSource(), $arg->value),
+                            $arg->value
                         ) === false) {
                             return false;
                         }
@@ -2014,7 +2015,8 @@ class CallChecker
         Type\Union $param_type,
         $cased_method_id,
         $argument_offset,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        PhpParser\Node\Expr $input_expr = null
     ) {
         if ($param_type->isMixed()) {
             return null;
@@ -2150,6 +2152,34 @@ class CallChecker
                 $statements_checker->getSuppressedIssues()
             )) {
                 return false;
+            }
+        } elseif ($input_expr instanceof PhpParser\Node\Scalar\String_) {
+            foreach ($param_type->types as $param_type_part) {
+                if ($param_type_part instanceof TCallable) {
+                    $function_name = $input_expr->value;
+
+                    if (strpos($function_name, '::') !== false) {
+                        if (MethodChecker::checkMethodExists(
+                                $project_checker,
+                                $function_name,
+                                $code_location,
+                                $statements_checker->getSuppressedIssues()
+                            ) === false
+                        ) {
+                            return false;
+                        }
+                    } else {
+                        if (self::checkFunctionExists(
+                                $project_checker,
+                                $statements_checker,
+                                $function_name,
+                                $code_location
+                            ) === false
+                        ) {
+                            return false;
+                        }
+                    }
+                }
             }
         }
 

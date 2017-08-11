@@ -398,7 +398,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $this->aliases = $this->file_aliases;
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if (!$this->fq_classlike_name) {
-                throw new \LogicException('$this->fq_classlike_name should bot be null');
+                throw new \LogicException('$this->fq_classlike_name should not be null');
             }
 
             $fq_classlike_name = $this->fq_classlike_name;
@@ -473,7 +473,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             if (!$this->fq_classlike_name) {
-                throw new \LogicException('$this->fq_classlike_name should bot be null');
+                throw new \LogicException('$this->fq_classlike_name should not be null');
             }
 
             $fq_classlike_name = $this->fq_classlike_name;
@@ -978,7 +978,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         Config $config
     ) {
         if (!$this->fq_classlike_name) {
-            throw new \LogicException('$this->fq_classlike_name should bot be null');
+            throw new \LogicException('$this->fq_classlike_name should not be null');
         }
 
         $comment = $stmt->getDocComment();
