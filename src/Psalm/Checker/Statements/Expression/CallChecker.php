@@ -2159,14 +2159,28 @@ class CallChecker
                     $function_name = $input_expr->value;
 
                     if (strpos($function_name, '::') !== false) {
-                        if (MethodChecker::checkMethodExists(
-                                $project_checker,
-                                $function_name,
-                                $code_location,
-                                $statements_checker->getSuppressedIssues()
-                            ) === false
-                        ) {
-                            return false;
+                        list($callable_fq_class_name) = explode('::', $function_name);
+
+                        if ($callable_fq_class_name !== 'parent') {
+                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                    $project_checker,
+                                    $callable_fq_class_name,
+                                    $code_location,
+                                    $statements_checker->getSuppressedIssues()
+                                ) === false
+                            ) {
+                                return false;
+                            }
+
+                            if (MethodChecker::checkMethodExists(
+                                    $project_checker,
+                                    $function_name,
+                                    $code_location,
+                                    $statements_checker->getSuppressedIssues()
+                                ) === false
+                            ) {
+                                return false;
+                            }
                         }
                     } else {
                         if (self::checkFunctionExists(

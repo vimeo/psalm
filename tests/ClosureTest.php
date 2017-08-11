@@ -182,6 +182,19 @@ class ClosureTest extends TestCase
                     foo("A::barr");',
                 'error_message' => 'UndefinedMethod',
             ],
+            'undefinedCallableMethodClass' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a) : string {
+                            return $a . "b";
+                        }
+                    }
+
+                    public function foo(callable $c) : void {}
+
+                    foo("B::bar");',
+                'error_message' => 'UndefinedClass',
+            ],
             'undefinedCallableFunction' => [
                 '<?php
                     function foo(callable $c) : void {}
