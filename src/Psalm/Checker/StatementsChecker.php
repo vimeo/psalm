@@ -46,6 +46,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public static $stub_constants = [];
 
     /**
+     * @var array<string, FunctionChecker>
+     */
+    private $function_checkers = [];
+
+    /**
      * @param StatementsSource $source
      */
     public function __construct(StatementsSource $source)
@@ -72,13 +77,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     ) {
         $has_returned = false;
 
-        $function_checkers = [];
-
         // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checker = new FunctionChecker($stmt, $this->source);
-                $function_checkers[$stmt->name] = $function_checker;
+                $this->function_checkers[$stmt->name] = $function_checker;
             }
         }
 
@@ -201,13 +204,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 if (!$project_checker->register_global_functions) {
                     $function_context = new Context($context->self);
                     $function_context->collect_references = $project_checker->collect_references;
-                    $function_checkers[$stmt->name]->analyze($function_context, $context);
+                    $this->function_checkers[$stmt->name]->analyze($function_context, $context);
 
                     $config = Config::getInstance();
 
                     if ($config->reportIssueInFile('InvalidReturnType', $this->getFilePath())) {
                         /** @var string */
-                        $method_id = $function_checkers[$stmt->name]->getMethodId();
+                        $method_id = $this->function_checkers[$stmt->name]->getMethodId();
 
                         $function_storage = FunctionChecker::getStorage(
                             $project_checker,
@@ -218,7 +221,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $return_type = $function_storage->return_type;
                         $return_type_location = $function_storage->return_type_location;
 
-                        $function_checkers[$stmt->name]->verifyReturnType(
+                        $this->function_checkers[$stmt->name]->verifyReturnType(
                             false,
                             $return_type,
                             $this->getFQCLN(),
@@ -1077,6 +1080,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public function getFileChecker()
     {
         return $this->file_checker;
+    }
+
+    /**
+     * @return array<string, FunctionChecker>
+     */
+    public function getFunctionCheckers()
+    {
+        return $this->function_checkers;
     }
 
     /**

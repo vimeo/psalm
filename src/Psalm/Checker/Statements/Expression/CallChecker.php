@@ -2228,17 +2228,22 @@ class CallChecker
             ) {
                 $function_id = $root_function_id;
             } else {
-                if (IssueBuffer::accepts(
-                    new UndefinedFunction(
-                        'Function ' . $cased_function_id . ' does not exist',
-                        $code_location
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                $existing_function_checkers = $statements_checker->getFunctionCheckers();
 
-                return false;
+                // check whether it was defined inline
+                if (!isset($existing_function_checkers[$function_id])) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedFunction(
+                            'Function ' . $cased_function_id . ' does not exist',
+                            $code_location
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    return false;
+                }
             }
         }
 
