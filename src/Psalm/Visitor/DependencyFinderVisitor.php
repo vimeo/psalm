@@ -44,9 +44,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     protected $in_classlike = false;
 
     /**
-     * @var ?string
+     * @var string[]
      */
-    protected $fq_classlike_name = null;
+    protected $fq_classlike_names = [];
 
     /** @var ProjectChecker */
     protected $project_checker;
@@ -72,14 +72,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var array<string, string> */
     protected $function_template_types = [];
 
-    /** @var ?FunctionLikeStorage */
-    protected $functionlike_storage;
+    /** @var FunctionLikeStorage[] */
+    protected $functionlike_storages = [];
 
     /** @var FileStorage */
     protected $file_storage;
 
-    /** @var ?ClassLikeStorage */
-    protected $classlike_storage;
+    /** @var ClassLikeStorage[] */
+    protected $classlike_storages = [];
 
     /**
      * @param ProjectChecker $project_checker
@@ -158,15 +158,16 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $this->file_storage->classes_in_file[] = $fq_classlike_name_lc;
             }
 
-            $this->fq_classlike_name = $fq_classlike_name;
+            $this->fq_classlike_names[] = $fq_classlike_name;
 
-            $storage = $this->classlike_storage =
-                $this->project_checker->classlike_storage_provider->create($fq_classlike_name);
+            $storage = $this->project_checker->classlike_storage_provider->create($fq_classlike_name);
 
             $storage->location = new CodeLocation($this->file_checker, $node, null, true);
             $storage->user_defined = true;
 
             $doc_comment = $node->getDocComment();
+
+            $this->classlike_storages[] = $storage;
 
             if ($doc_comment) {
                 $docblock_info = null;
@@ -179,7 +180,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 } catch (DocblockParseException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
-                            $e->getMessage() . ' in docblock for ' . $this->fq_classlike_name,
+                            $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
                             new CodeLocation($this->file_checker, $node, null, true)
                         )
                     )) {
@@ -315,8 +316,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $const_type = StatementsChecker::getSimpleType($second_arg_value) ?: Type::getMixed();
                         $const_name = $first_arg_value->value;
 
-                        if ($this->functionlike_storage) {
-                            $this->functionlike_storage->defined_constants[$const_name] = $const_type;
+                        if ($this->functionlike_storages) {
+                            $functionlike_storage =
+                                $this->functionlike_storages[count($this->functionlike_storages) - 1];
+                            $functionlike_storage->defined_constants[$const_name] = $const_type;
                         } else {
                             $this->file_storage->constants[$const_name] = $const_type;
                             $this->file_storage->declaring_constants[$const_name] = $this->file_path;
@@ -325,11 +328,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
-            if (!$this->classlike_storage) {
-                throw new \LogicException('$this->classlike_storage should not be null');
+            if (!$this->classlike_storages) {
+                throw new \LogicException('$this->classlike_storages should not be empty');
             }
 
-            $storage = $this->classlike_storage;
+            $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
             $method_map = [];
 
@@ -397,20 +400,20 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->aliases = $this->file_aliases;
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
-            if (!$this->fq_classlike_name) {
-                throw new \LogicException('$this->fq_classlike_name should not be null');
+            if (!$this->fq_classlike_names) {
+                throw new \LogicException('$this->fq_classlike_names should not be empty');
             }
 
-            $fq_classlike_name = $this->fq_classlike_name;
+            $fq_classlike_name = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
 
             if (ClassLikeChecker::inPropertyMap($fq_classlike_name)) {
                 $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_classlike_name)];
 
-                if (!$this->classlike_storage) {
-                    throw new \UnexpectedValueException('$this->classlike_storage cannot be null here');
+                if (!$this->classlike_storages) {
+                    throw new \UnexpectedValueException('$this->classlike_storages cannot be empty');
                 }
 
-                $storage = $this->classlike_storage;
+                $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
                 foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
                     $property_type = Type::parseString($public_mapped_property);
@@ -431,8 +434,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
             }
 
-            $this->fq_classlike_name = null;
-            $this->classlike_storage = null;
+            array_pop($this->classlike_storages);
 
             $this->class_template_types = [];
         } elseif ($node instanceof PhpParser\Node\Stmt\Function_
@@ -442,7 +444,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $this->function_template_types = [];
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
-            $this->functionlike_storage = null;
+            array_pop($this->functionlike_storages);
         }
     }
 
@@ -472,22 +474,22 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $this->file_storage->declaring_function_ids[$function_id] = strtolower($this->file_path);
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-            if (!$this->fq_classlike_name) {
-                throw new \LogicException('$this->fq_classlike_name should not be null');
+            if (!$this->fq_classlike_names) {
+                throw new \LogicException('$this->fq_classlike_names should not be null');
             }
 
-            $fq_classlike_name = $this->fq_classlike_name;
+            $fq_classlike_name = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
 
             $function_id = $fq_classlike_name . '::' . strtolower($stmt->name);
             $cased_function_id = $fq_classlike_name . '::' . $stmt->name;
 
             $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-            if (!$this->classlike_storage) {
-                throw new \UnexpectedValueException('$class_storage cannot be empty for ' . $function_id);
+            if (!$this->classlike_storages) {
+                throw new \UnexpectedValueException('$class_storages cannot be empty for ' . $function_id);
             }
 
-            $class_storage = $this->classlike_storage;
+            $class_storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
             if (isset($class_storage->methods[strtolower($stmt->name)])) {
                 throw new \InvalidArgumentException('Cannot re-register ' . $function_id);
@@ -540,7 +542,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage = $this->file_storage->functions[$function_id] = new FunctionLikeStorage();
         }
 
-        $this->functionlike_storage = $storage;
+        $this->functionlike_storages[] = $storage;
 
         if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod || $stmt instanceof PhpParser\Node\Stmt\Function_) {
             $storage->cased_name = $stmt->name;
@@ -800,7 +802,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $param_type_string = (string)$param_typehint;
                 $this->project_checker->queueClassLikeForScanning($param_type_string, $this->file_path);
             } elseif ($param_typehint->parts === ['self']) {
-                $param_type_string = $this->fq_classlike_name;
+                $param_type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
             } else {
                 $param_type_string = ClassLikeChecker::getFQCLNFromNameObject($param_typehint, $this->aliases);
                 if (!in_array($param_type_string, ['self', 'static', 'parent'], true)) {
@@ -865,7 +867,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     ) {
         $docblock_param_vars = [];
 
-        $base = $this->fq_classlike_name ? $this->fq_classlike_name . '::' : '';
+        $base = $this->fq_classlike_names
+            ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1] . '::'
+            : '';
 
         $cased_method_id = $base . $storage->cased_name;
 
@@ -977,19 +981,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         PhpParser\Node\Stmt\Property $stmt,
         Config $config
     ) {
-        if (!$this->fq_classlike_name) {
-            throw new \LogicException('$this->fq_classlike_name should not be null');
+        if (!$this->fq_classlike_names) {
+            throw new \LogicException('$this->fq_classlike_names should not be empty');
         }
 
         $comment = $stmt->getDocComment();
         $var_comment = null;
         $property_type_line_number = null;
 
-        if (!$this->classlike_storage) {
-            throw new \UnexpectedValueException('$this->classlike_storage should not be null here');
+        if (!$this->classlike_storages) {
+            throw new \UnexpectedValueException('$this->classlike_storages should not be empty');
         }
 
-        $storage = $this->classlike_storage;
+        $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
         if ($comment && $comment->getText() && $config->use_docblock_types) {
             try {
@@ -1063,7 +1067,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $property_storage->visibility = ClassLikeChecker::VISIBILITY_PRIVATE;
             }
 
-            $property_id = $this->fq_classlike_name . '::$' . $property->name;
+            $fq_classlike_name = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+
+            $property_id = $fq_classlike_name . '::$' . $property->name;
 
             $storage->declaring_property_ids[$property->name] = $property_id;
             $storage->appearing_property_ids[$property->name] = $property_id;
@@ -1082,11 +1088,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
      */
     private function visitClassConstDeclaration(PhpParser\Node\Stmt\ClassConst $stmt)
     {
-        if (!$this->classlike_storage) {
-            throw new \LogicException('$this->classlike_storage should not be null');
+        if (!$this->classlike_storages) {
+            throw new \LogicException('$this->classlike_storages should not be empty');
         }
 
-        $storage = $this->classlike_storage;
+        $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
         $existing_constants = $storage->protected_class_constants
             + $storage->private_class_constants

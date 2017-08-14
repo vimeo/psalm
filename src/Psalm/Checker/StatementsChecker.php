@@ -81,7 +81,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $function_checker = new FunctionChecker($stmt, $this->source);
-                $this->function_checkers[$stmt->name] = $function_checker;
+                $this->function_checkers[strtolower($stmt->name)] = $function_checker;
             }
         }
 
@@ -202,15 +202,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 if (!$project_checker->register_global_functions) {
+                    $function_id = strtolower($stmt->name);
                     $function_context = new Context($context->self);
                     $function_context->collect_references = $project_checker->collect_references;
-                    $this->function_checkers[$stmt->name]->analyze($function_context, $context);
+                    $this->function_checkers[$function_id]->analyze($function_context, $context);
 
                     $config = Config::getInstance();
 
                     if ($config->reportIssueInFile('InvalidReturnType', $this->getFilePath())) {
                         /** @var string */
-                        $method_id = $this->function_checkers[$stmt->name]->getMethodId();
+                        $method_id = $this->function_checkers[$function_id]->getMethodId();
 
                         $function_storage = FunctionChecker::getStorage(
                             $project_checker,
@@ -221,7 +222,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $return_type = $function_storage->return_type;
                         $return_type_location = $function_storage->return_type_location;
 
-                        $this->function_checkers[$stmt->name]->verifyReturnType(
+                        $this->function_checkers[$function_id]->verifyReturnType(
                             false,
                             $return_type,
                             $this->getFQCLN(),

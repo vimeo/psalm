@@ -124,6 +124,27 @@ class Php70Test extends TestCase
 
                     $x = g($class->f());',
             ],
+
+            'anonymousClassStatement' => [
+                '<?php
+                    new class {};',
+            ],
+            'returnAnonymousClass' => [
+                '<?php
+                    /** @return object */
+                    function getNewAnonymousClass() {
+                        return new class {};
+                    }',
+            ],
+            'returnAnonymousClassInClass' => [
+                '<?php
+                    class A {
+                        /** @return object */
+                        public function getNewAnonymousClass() {
+                            return new class {};
+                        }
+                    }',
+            ],
             'generatorWithReturn' => [
                 '<?php
                     /**
