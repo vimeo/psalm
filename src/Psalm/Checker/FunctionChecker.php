@@ -42,13 +42,14 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
-     * @param  string $file_path
      *
      * @return bool
      */
-    public static function functionExists(ProjectChecker $project_checker, $function_id, $file_path)
+    public static function functionExists(StatementsChecker $statements_checker, $function_id)
     {
-        $file_storage = $project_checker->file_storage_provider->get($file_path);
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        $file_storage = $project_checker->file_storage_provider->get($statements_checker->getFilePath());
 
         if (isset($file_storage->declaring_function_ids[$function_id])) {
             return true;
@@ -66,6 +67,10 @@ class FunctionChecker extends FunctionLikeChecker
             return true;
         }
 
+        if (isset($statements_checker->getFunctionCheckers()[$function_id])) {
+            return true;
+        }
+
         if (self::extractReflectionInfo($function_id) === false) {
             return false;
         }
@@ -75,11 +80,10 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  string $function_id
-     * @param  string $file_path
      *
      * @return FunctionLikeStorage
      */
-    public static function getStorage(ProjectChecker $project_checker, $function_id, $file_path)
+    public static function getStorage(StatementsChecker $statements_checker, $function_id)
     {
         if (isset(self::$stubbed_functions[$function_id])) {
             return self::$stubbed_functions[$function_id];
@@ -89,7 +93,24 @@ class FunctionChecker extends FunctionLikeChecker
             return self::$builtin_functions[$function_id];
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $file_path = $statements_checker->getFilePath();
+
         $file_storage = $project_checker->file_storage_provider->get($file_path);
+
+        $function_checkers = $statements_checker->getFunctionCheckers();
+
+        if (isset($function_checkers[$function_id])) {
+            $function_id = $function_checkers[$function_id]->getMethodId();
+
+            if (!isset($file_storage->functions[$function_id])) {
+                throw new \UnexpectedValueException(
+                    'Expecting ' . $function_id . ' to have storage in ' . $file_path
+                );
+            }
+
+            return $file_storage->functions[$function_id];
+        }
 
         if (!isset($file_storage->declaring_function_ids[$function_id])) {
             throw new \UnexpectedValueException(
@@ -338,6 +359,7 @@ class FunctionChecker extends FunctionLikeChecker
      * @return Type\Union
      */
     public static function getReturnTypeFromCallMapWithArgs(
+        StatementsChecker $statements_checker,
         $function_id,
         array $call_args,
         CodeLocation $code_location,
@@ -376,6 +398,7 @@ class FunctionChecker extends FunctionLikeChecker
 
             if (substr($call_map_key, 0, 6) === 'array_') {
                 $array_return_type = self::getArrayReturnType(
+                    $statements_checker,
                     $call_map_key,
                     $call_args,
                     $code_location,
@@ -433,13 +456,20 @@ class FunctionChecker extends FunctionLikeChecker
      * @return Type\Union|null
      */
     protected static function getArrayReturnType(
+        StatementsChecker $statements_checker,
         $call_map_key,
         $call_args,
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
         if ($call_map_key === 'array_map') {
-            return self::getArrayMapReturnType($call_map_key, $call_args, $code_location, $suppressed_issues);
+            return self::getArrayMapReturnType(
+                $statements_checker,
+                $call_map_key,
+                $call_args,
+                $code_location,
+                $suppressed_issues
+            );
         }
 
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
@@ -538,6 +568,7 @@ class FunctionChecker extends FunctionLikeChecker
      * @return Type\Union
      */
     protected static function getArrayMapReturnType(
+        StatementsChecker $statements_checker,
         $call_map_key,
         $call_args,
         CodeLocation $code_location,
@@ -599,24 +630,77 @@ class FunctionChecker extends FunctionLikeChecker
                         ]),
                     ]);
                 }
-            } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                $mapped_function_id = strtolower($function_call_arg->value->value);
+            } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
+                || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
+            ) {
+                $mapping_function_ids = Statements\Expression\CallChecker::getFunctionIdsFromCallableArg(
+                    $statements_checker,
+                    $function_call_arg->value
+                );
 
                 $call_map = self::getCallMap();
 
-                if (isset($call_map[$mapped_function_id][0])) {
-                    if ($call_map[$mapped_function_id][0]) {
-                        $mapped_function_return = Type::parseString($call_map[$mapped_function_id][0]);
+                $mapping_return_type = null;
 
-                        return new Type\Union([
-                            new Type\Atomic\TArray([
-                                Type::getInt(),
-                                $mapped_function_return,
-                            ]),
-                        ]);
+                $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+                foreach ($mapping_function_ids as $mapping_function_id) {
+                    if (isset($call_map[$mapping_function_id][0])) {
+                        if ($call_map[$mapping_function_id][0]) {
+                            $mapped_function_return = Type::parseString($call_map[$mapping_function_id][0]);
+
+                            if ($mapping_return_type) {
+                                $mapping_return_type = Type::combineUnionTypes(
+                                    $mapping_return_type,
+                                    $mapped_function_return
+                                );
+                            } else {
+                                $mapping_return_type = $mapped_function_return;
+                            }
+                        }
+                    } else {
+                        if (strpos($mapping_function_id, '::') !== false) {
+                            $return_type = MethodChecker::getMethodReturnType(
+                                $project_checker,
+                                $mapping_function_id
+                            ) ?: Type::getMixed();
+
+                            if ($mapping_return_type) {
+                                $mapping_return_type = Type::combineUnionTypes(
+                                    $mapping_return_type,
+                                    $return_type
+                                );
+                            } else {
+                                $mapping_return_type = $return_type;
+                            }
+                        } else {
+                            $function_storage = FunctionChecker::getStorage(
+                                $statements_checker,
+                                $mapping_function_id
+                            );
+
+                            $return_type = $function_storage->return_type ?: Type::getMixed();
+
+                            if ($mapping_return_type) {
+                                $mapping_return_type = Type::combineUnionTypes(
+                                    $mapping_return_type,
+                                    $return_type
+                                );
+                            } else {
+                                $mapping_return_type = $return_type;
+                            }
+                        }
                     }
                 }
-                    // @todo handle array_map('some_custom_function', $arr)
+
+                if ($mapping_return_type) {
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getInt(),
+                            $mapping_return_type,
+                        ]),
+                    ]);
+                }
             }
         }
 

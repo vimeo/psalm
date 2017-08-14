@@ -214,9 +214,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $method_id = $this->function_checkers[$function_id]->getMethodId();
 
                         $function_storage = FunctionChecker::getStorage(
-                            $project_checker,
-                            $method_id,
-                            $this->getFilePath()
+                            $this,
+                            $method_id
                         );
 
                         $return_type = $function_storage->return_type;

@@ -113,7 +113,51 @@ class ClosureTest extends TestCase
 
                     public function foo(callable $c) : void {}
 
-                    foo("A::bar");',
+                    foo("A::bar");
+                    foo(["A", "bar"]);
+                    foo([A::class, "bar"]);
+                    $a = new A();
+                    foo([$a, "bar"]);',
+            ],
+            'arrayMapCallableMethod' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a) : string {
+                            return $a . "b";
+                        }
+                    }
+
+                    function baz(string $a) : string {
+                        return $a . "b";
+                    }
+
+                    $a = array_map("A::bar", ["one", "two"]);
+                    $b = array_map(["A", "bar"], ["one", "two"]);
+                    $c = array_map([A::class, "bar"], ["one", "two"]);
+                    $d = array_map([new A(), "bar"], ["one", "two"]);
+                    $a_instance = new A();
+                    $e = array_map([$a_instance, "bar"], ["one", "two"]);
+                    $f = array_map("baz", ["one", "two"]);',
+                'assertions' => [
+                    '$a' => 'array<int, string>',
+                    '$b' => 'array<int, string>',
+                    '$c' => 'array<int, string>',
+                    '$d' => 'array<int, string>',
+                    '$e' => 'array<int, string>',
+                    '$f' => 'array<int, string>',
+                ],
+            ],
+            'arrayCallableMethod' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a) : string {
+                            return $a . "b";
+                        }
+                    }
+
+                    public function foo(callable $c) : void {}
+
+                    foo(["A", "bar"]);',
             ],
             'callableFunction' => [
                 '<?php

@@ -247,9 +247,8 @@ class CallChecker
                 }
 
                 $function_exists = FunctionChecker::functionExists(
-                    $project_checker,
-                    strtolower($method_id),
-                    $statements_checker->getFilePath()
+                    $statements_checker,
+                    strtolower($method_id)
                 );
             } else {
                 $function_exists = true;
@@ -258,9 +257,8 @@ class CallChecker
             if ($function_exists) {
                 if (!$in_call_map || $is_stubbed) {
                     $function_storage = FunctionChecker::getStorage(
-                        $project_checker,
-                        strtolower($method_id),
-                        $statements_checker->getFilePath()
+                        $statements_checker,
+                        strtolower($method_id)
                     );
 
                     $function_params = $function_storage->params;
@@ -363,6 +361,7 @@ class CallChecker
                     }
                 } else {
                     $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
+                        $statements_checker,
                         $method_id,
                         $stmt->args,
                         $code_location,
@@ -1867,6 +1866,10 @@ class CallChecker
                 ? $closure_arg->value->inferredType
                 : null;
 
+        $file_checker = $statements_checker->getFileChecker();
+
+        $project_checker = $file_checker->project_checker;
+
         if ($closure_arg_type) {
             $min_closure_param_count = $max_closure_param_count = count($array_arg_types);
 
@@ -1909,8 +1912,6 @@ class CallChecker
                 $closure_params = $closure_type->params;
 
                 $i = 0;
-
-                $project_checker = $statements_checker->getFileChecker()->project_checker;
 
                 foreach ($closure_params as $closure_param) {
                     if (!isset($array_arg_types[$i])) {
@@ -2153,44 +2154,51 @@ class CallChecker
             )) {
                 return false;
             }
-        } elseif ($input_expr instanceof PhpParser\Node\Scalar\String_) {
+        } elseif ($input_expr instanceof PhpParser\Node\Scalar\String_
+            || $input_expr instanceof PhpParser\Node\Expr\Array_
+        ) {
             foreach ($param_type->types as $param_type_part) {
                 if ($param_type_part instanceof TCallable) {
-                    $function_name = $input_expr->value;
+                    $function_ids = self::getFunctionIdsFromCallableArg(
+                        $statements_checker,
+                        $input_expr
+                    );
 
-                    if (strpos($function_name, '::') !== false) {
-                        list($callable_fq_class_name) = explode('::', $function_name);
+                    foreach ($function_ids as $function_id) {
+                        if (strpos($function_id, '::') !== false) {
+                            list($callable_fq_class_name) = explode('::', $function_id);
 
-                        if ($callable_fq_class_name !== 'parent' && $callable_fq_class_name !== 'self') {
-                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                            if ($callable_fq_class_name !== 'parent' && $callable_fq_class_name !== 'self') {
+                                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                        $project_checker,
+                                        $callable_fq_class_name,
+                                        $code_location,
+                                        $statements_checker->getSuppressedIssues()
+                                    ) === false
+                                ) {
+                                    return false;
+                                }
+
+                                if (MethodChecker::checkMethodExists(
+                                        $project_checker,
+                                        $function_id,
+                                        $code_location,
+                                        $statements_checker->getSuppressedIssues()
+                                    ) === false
+                                ) {
+                                    return false;
+                                }
+                            }
+                        } else {
+                            if (self::checkFunctionExists(
                                     $project_checker,
-                                    $callable_fq_class_name,
-                                    $code_location,
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_checker,
+                                    $function_id,
+                                    $code_location
                                 ) === false
                             ) {
                                 return false;
                             }
-
-                            if (MethodChecker::checkMethodExists(
-                                    $project_checker,
-                                    $function_name,
-                                    $code_location,
-                                    $statements_checker->getSuppressedIssues()
-                                ) === false
-                            ) {
-                                return false;
-                            }
-                        }
-                    } else {
-                        if (self::checkFunctionExists(
-                                $project_checker,
-                                $statements_checker,
-                                $function_name,
-                                $code_location
-                            ) === false
-                        ) {
-                            return false;
                         }
                     }
                 }
@@ -2198,6 +2206,62 @@ class CallChecker
         }
 
         return null;
+    }
+
+    /**
+     * @param  PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_ $callable_arg
+     *
+     * @return string[]
+     */
+    public static function getFunctionIdsFromCallableArg(
+        StatementsChecker $statements_checker,
+        $callable_arg
+    ) {
+        if ($callable_arg instanceof PhpParser\Node\Scalar\String_) {
+            return [$callable_arg->value];
+        }
+
+        if (count($callable_arg->items) !== 2) {
+            return [];
+        }
+
+        $class_arg = $callable_arg->items[0]->value;
+        $method_name_arg = $callable_arg->items[1]->value;
+
+        if (!$method_name_arg instanceof PhpParser\Node\Scalar\String_) {
+            return [];
+        }
+
+        if ($class_arg instanceof PhpParser\Node\Scalar\String_) {
+            return [$class_arg->value . '::' . $method_name_arg->value];
+        }
+
+        if ($class_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+            && is_string($class_arg->name)
+            && strtolower($class_arg->name) === 'class'
+            && $class_arg->class instanceof PhpParser\Node\Name
+        ) {
+            $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
+                $class_arg->class,
+                $statements_checker->getAliases()
+            );
+
+            return [$fq_class_name . '::' . $method_name_arg->value];
+        }
+
+        if (!isset($class_arg->inferredType) || !$class_arg->inferredType->hasObjectType()) {
+            return [];
+        }
+
+        $method_ids = [];
+
+        foreach ($class_arg->inferredType->types as $type_part) {
+            if ($type_part instanceof TNamedObject) {
+                $method_ids[] = $type_part . '::' . $method_name_arg->value;
+            }
+        }
+
+        return $method_ids;
     }
 
     /**
@@ -2216,34 +2280,25 @@ class CallChecker
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 
-        if (!FunctionChecker::functionExists($project_checker, $function_id, $statements_checker->getFilePath())) {
+        if (!FunctionChecker::functionExists($statements_checker, $function_id)) {
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
             if ($function_id !== $root_function_id &&
-                FunctionChecker::functionExists(
-                    $project_checker,
-                    $root_function_id,
-                    $statements_checker->getFilePath()
-                )
+                FunctionChecker::functionExists($statements_checker, $root_function_id)
             ) {
                 $function_id = $root_function_id;
             } else {
-                $existing_function_checkers = $statements_checker->getFunctionCheckers();
-
-                // check whether it was defined inline
-                if (!isset($existing_function_checkers[$function_id])) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedFunction(
-                            'Function ' . $cased_function_id . ' does not exist',
-                            $code_location
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-
-                    return false;
+                if (IssueBuffer::accepts(
+                    new UndefinedFunction(
+                        'Function ' . $cased_function_id . ' does not exist',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
+
+                return false;
             }
         }
 

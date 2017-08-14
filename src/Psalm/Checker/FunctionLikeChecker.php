@@ -325,8 +325,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         } else { // Closure
             $file_storage = $file_storage_provider->get($this->source->getFilePath());
 
-            $function_id = $cased_function_id =
-                $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
+            $function_id = $cased_function_id = $this->getMethodId();
 
             if (!isset($file_storage->functions[$function_id])) {
                 throw new \UnexpectedValueException('Closure function ' . $function_id . ' should exist');
@@ -640,7 +639,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @param string|null $context_self
      *
-     * @return null|string
+     * @return string
      */
     public function getMethodId($context_self = null)
     {
@@ -655,7 +654,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 strtolower($this->function->name);
         }
 
-        return null;
+        return $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
     }
 
     /**
