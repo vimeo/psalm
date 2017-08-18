@@ -206,7 +206,7 @@ class Pool
             // For each stream that was ready, read the content.
             foreach ($needs_read as $file) {
                 $buffer = fread($file, 1024);
-                if ($buffer && strlen($buffer) > 0) {
+                if ($buffer) {
                     $content[intval($file)] .= $buffer;
                 }
 
