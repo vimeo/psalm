@@ -660,6 +660,13 @@ class FunctionChecker extends FunctionLikeChecker
                         }
                     } else {
                         if (strpos($mapping_function_id, '::') !== false) {
+                            list($callable_fq_class_name) = explode('::', $mapping_function_id);
+
+                            if (in_array($callable_fq_class_name, ['self', 'static', 'parent'])) {
+                                $mapping_return_type = Type::getMixed();
+                                continue;
+                            }
+
                             $return_type = MethodChecker::getMethodReturnType(
                                 $project_checker,
                                 $mapping_function_id
