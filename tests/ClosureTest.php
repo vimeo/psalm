@@ -111,7 +111,7 @@ class ClosureTest extends TestCase
                         }
                     }
 
-                    public function foo(callable $c) : void {}
+                    function foo(callable $c) : void {}
 
                     foo("A::bar");
                     foo(["A", "bar"]);
@@ -155,7 +155,7 @@ class ClosureTest extends TestCase
                         }
                     }
 
-                    public function foo(callable $c) : void {}
+                    function foo(callable $c) : void {}
 
                     foo(["A", "bar"]);',
             ],
@@ -235,7 +235,7 @@ class ClosureTest extends TestCase
                         }
                     }
 
-                    public function foo(callable $c) : void {}
+                    function foo(callable $c) : void {}
 
                     foo("A::barr");',
                 'error_message' => 'UndefinedMethod',
@@ -248,7 +248,7 @@ class ClosureTest extends TestCase
                         }
                     }
 
-                    public function foo(callable $c) : void {}
+                    function foo(callable $c) : void {}
 
                     foo("B::bar");',
                 'error_message' => 'UndefinedClass',
