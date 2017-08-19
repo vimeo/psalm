@@ -69,6 +69,7 @@ class AssignmentChecker
             $statements_checker
         );
 
+        // gets a variable id that *may* contain array keys
         $array_var_id = ExpressionChecker::getArrayVarId(
             $assign_var,
             $statements_checker->getFQCLN(),
@@ -234,26 +235,33 @@ class AssignmentChecker
                         );
                     }
 
+                    $new_assign_type = null;
+
                     if (isset($assign_value_type->types['array'])) {
                         if ($assign_value_type->types['array'] instanceof Type\Atomic\TArray) {
-                            $context->vars_in_scope[$list_var_id] =
-                                clone $assign_value_type->types['array']->type_params[1];
-
-                            continue;
+                            $new_assign_type = clone $assign_value_type->types['array']->type_params[1];
                         } elseif ($assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike) {
                             if ($assign_var_item->key
                                 && $assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                                 && isset($assign_value_type->types['array']->properties[$assign_var_item->key->value])
                             ) {
-                                $context->vars_in_scope[$list_var_id] =
+                                $new_assign_type =
                                     clone $assign_value_type->types['array']->properties[$assign_var_item->key->value];
-
-                                continue;
                             }
                         }
                     }
 
-                    $context->vars_in_scope[$list_var_id] = Type::getMixed();
+                    if ($context->hasVariable($list_var_id)) {
+                        // removes dependennt vars from $context
+                        $context->removeDescendents(
+                            $list_var_id,
+                            $context->vars_in_scope[$list_var_id],
+                            $new_assign_type,
+                            $statements_checker
+                        );
+                    }
+
+                    $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {

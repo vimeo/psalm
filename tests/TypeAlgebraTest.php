@@ -305,8 +305,18 @@ class TypeAlgebraTest extends TestCase
                                 $condition = true;
                             }
                         }
-                    }'
-            ]
+                    }',
+            ],
+            'noParadoxInListAssignment' => [
+                '<?php
+                    function foo(string $a) : void {
+                        if (!$a) {
+                            list($a) = explode(":", "a:b");
+
+                            if ($a) { }
+                        }
+                    }',
+            ],
         ];
     }
 
