@@ -913,7 +913,7 @@ return [
 'cosh' => ['float', 'number'=>'float'],
 'Countable::count' => ['int'],
 'count_chars' => ['', 'input'=>'string', 'mode='=>'int'],
-'count' => ['int', 'var'=>'', 'mode='=>'int'],
+'count' => ['int', 'var'=>'array|Countable|null', 'mode='=>'int'],
 'crack_check' => ['bool', 'dictionary'=>'', 'password'=>'string'],
 'crack_closedict' => ['bool', 'dictionary='=>''],
 'crack_getlastmessage' => ['string'],
