@@ -415,6 +415,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                                 $loop_context->vars_in_scope[$var_id],
                                 $outer_context->vars_in_scope[$var_id]
                             );
+
+                            // if there's a change, invalidate related clauses
+                            $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
                     } else {
                         $vars_to_remove[] = $var_id;
