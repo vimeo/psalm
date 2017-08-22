@@ -903,7 +903,10 @@ class ProjectChecker
                 $analysis_worker,
                 /** @return array */
                 function () {
-                    return IssueBuffer::getIssuesData();
+                    return [
+                        'issues' => IssueBuffer::getIssuesData(),
+                        'file_references' => FileReferenceProvider::getAllFileReferences(),
+                    ];
                 }
             );
 
@@ -913,10 +916,11 @@ class ProjectChecker
              *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
              *  snippet_to: int, column: int}>>
              */
-            $forked_issues_data = $pool->wait();
+            $forked_pool_data = $pool->wait();
 
-            foreach ($forked_issues_data as $issues_data) {
-                IssueBuffer::addIssues($issues_data);
+            foreach ($forked_pool_data as $pool_data) {
+                IssueBuffer::addIssues($pool_data['issues']);
+                FileReferenceProvider::addFileReferences($pool_data['file_references']);
             }
 
             $did_fork_pool_have_error = $pool->didHaveError();

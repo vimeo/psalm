@@ -81,6 +81,25 @@ class FileReferenceProvider
     }
 
     /**
+     * @return array<string, array<string,bool>>
+     */
+    public static function getAllFileReferences()
+    {
+        return self::$file_references_to_class;
+    }
+
+    /**
+     * @param array<string, array<string,bool>> $references
+     * @psalm-suppress InvalidPropertyAssignment
+     *
+     * @return void
+     */
+    public static function addFileReferences(array $references)
+    {
+        self::$file_references_to_class = array_merge_recursive($references, self::$file_references_to_class);
+    }
+
+    /**
      * @param string $source_file
      * @param string $fq_class_name_lc
      *

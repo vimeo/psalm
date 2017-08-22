@@ -662,7 +662,7 @@ class FunctionChecker extends FunctionLikeChecker
                         if (strpos($mapping_function_id, '::') !== false) {
                             list($callable_fq_class_name) = explode('::', $mapping_function_id);
 
-                            if (in_array($callable_fq_class_name, ['self', 'static', 'parent'])) {
+                            if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
                                 $mapping_return_type = Type::getMixed();
                                 continue;
                             }

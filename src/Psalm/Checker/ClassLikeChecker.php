@@ -19,6 +19,7 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
+use Psalm\Provider\FileReferenceProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
@@ -989,6 +990,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
             }
         }
+
+        FileReferenceProvider::addFileReferenceToClass(
+            $code_location->file_path,
+            strtolower($fq_class_name)
+        );
 
         return true;
     }

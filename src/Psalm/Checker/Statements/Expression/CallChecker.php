@@ -2168,7 +2168,7 @@ class CallChecker
                         if (strpos($function_id, '::') !== false) {
                             list($callable_fq_class_name) = explode('::', $function_id);
 
-                            if (!in_array($callable_fq_class_name, ['self', 'static', 'parent'])) {
+                            if (!in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
                                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                         $project_checker,
                                         $callable_fq_class_name,
