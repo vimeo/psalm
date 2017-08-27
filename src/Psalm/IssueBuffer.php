@@ -242,7 +242,7 @@ class IssueBuffer
         if ($format === ProjectChecker::TYPE_JSON) {
             return json_encode(self::$issues_data) . PHP_EOL;
         } elseif ($format === ProjectChecker::TYPE_XML) {
-            $xml = new A2X(self::$issues_data);
+            $xml = new A2X(array('report' => self::$issues_data));
 
             return $xml->asXml();
         } elseif ($format === ProjectChecker::TYPE_EMACS) {
