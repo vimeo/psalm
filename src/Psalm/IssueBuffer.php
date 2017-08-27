@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use fillup\A2X;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Issue\CodeIssue;
 
@@ -201,24 +202,18 @@ class IssueBuffer
         $project_checker = ProjectChecker::getInstance();
 
         if (self::$issues_data) {
-            if ($project_checker->output_format === ProjectChecker::TYPE_JSON) {
-                echo json_encode(self::$issues_data) . PHP_EOL;
-            } elseif ($project_checker->output_format === ProjectChecker::TYPE_EMACS) {
-                foreach (self::$issues_data as $issue_data) {
-                    if ($issue_data['severity'] === Config::REPORT_ERROR) {
-                        $has_error = true;
-                    }
-
-                    echo self::getEmacsOutput($issue_data) . PHP_EOL;
+            foreach (self::$issues_data as $issue_data) {
+                if ($issue_data['severity'] === Config::REPORT_ERROR) {
+                    $has_error = true;
                 }
-            } else {
-                foreach (self::$issues_data as $issue_data) {
-                    if ($issue_data['severity'] === Config::REPORT_ERROR) {
-                        $has_error = true;
-                    }
+            }
 
-                    echo self::getConsoleOutput($issue_data, $project_checker->use_color) . PHP_EOL . PHP_EOL;
-                }
+            echo self::resultOutput($project_checker->output_format, $project_checker->use_color);
+            foreach ($project_checker->reports as $format => $path) {
+                file_put_contents(
+                    $path,
+                    self::resultOutput($format, $project_checker->use_color)
+                );
             }
         }
 
@@ -234,6 +229,37 @@ class IssueBuffer
         if ($is_full && $start_time) {
             $project_checker->cache_provider->processSuccessfulRun($start_time);
         }
+    }
+
+    /**
+     * @param string $format
+     * @param bool   $useColor
+     *
+     * @return string
+     */
+    protected static function resultOutput($format, $useColor)
+    {
+        if ($format === ProjectChecker::TYPE_JSON) {
+            return json_encode(self::$issues_data) . PHP_EOL;
+        } elseif ($format === ProjectChecker::TYPE_XML) {
+            $xml = new A2X(self::$issues_data);
+
+            return $xml->asXml();
+        } elseif ($format === ProjectChecker::TYPE_EMACS) {
+            $output = '';
+            foreach (self::$issues_data as $issue_data) {
+                $output .= self::getEmacsOutput($issue_data) . PHP_EOL;
+            }
+
+            return $output;
+        }
+
+        $output = '';
+        foreach (self::$issues_data as $issue_data) {
+            $output .= self::getConsoleOutput($issue_data, $useColor) . PHP_EOL . PHP_EOL;
+        }
+
+        return $output;
     }
 
     /**
