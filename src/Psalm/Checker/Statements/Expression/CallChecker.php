@@ -2218,7 +2218,7 @@ class CallChecker
         $callable_arg
     ) {
         if ($callable_arg instanceof PhpParser\Node\Scalar\String_) {
-            return [$callable_arg->value];
+            return [preg_replace('/^\\\/', '', $callable_arg->value)];
         }
 
         if (count($callable_arg->items) !== 2) {
@@ -2233,7 +2233,7 @@ class CallChecker
         }
 
         if ($class_arg instanceof PhpParser\Node\Scalar\String_) {
-            return [$class_arg->value . '::' . $method_name_arg->value];
+            return [preg_replace('/^\\\/', '', $class_arg->value) . '::' . $method_name_arg->value];
         }
 
         if ($class_arg instanceof PhpParser\Node\Expr\ClassConstFetch
