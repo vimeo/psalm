@@ -385,6 +385,7 @@ class AssignmentChecker
                 $statements_checker,
                 $stmt->var,
                 $stmt->expr,
+                $context,
                 $result_type
             );
 

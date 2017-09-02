@@ -112,6 +112,11 @@ class FunctionChecker extends FunctionLikeChecker
             return $file_storage->functions[$function_id];
         }
 
+        // closures can be returned here
+        if (isset($file_storage->functions[$function_id])) {
+            return $file_storage->functions[$function_id];
+        }
+
         if (!isset($file_storage->declaring_function_ids[$function_id])) {
             throw new \UnexpectedValueException(
                 'Expecting ' . $function_id . ' to have storage in ' . $file_path

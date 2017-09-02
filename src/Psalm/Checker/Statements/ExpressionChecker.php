@@ -7,6 +7,8 @@ use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
+use Psalm\Checker\FunctionChecker;
+use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
@@ -1084,6 +1086,7 @@ class ExpressionChecker
                     $statements_checker,
                     $stmt->left,
                     $stmt->right,
+                    $context,
                     $result_type
                 );
 
@@ -1304,11 +1307,78 @@ class ExpressionChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
+        Context $context,
         Type\Union &$result_type = null
     ) {
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
+
+        if ($project_checker->infer_types_from_usage
+            && $left_type
+            && $right_type
+            && ($left_type->isMixed() || $right_type->isMixed())
+        ) {
+            $source_checker = $statements_checker->getSource();
+
+            if ($source_checker instanceof FunctionLikeChecker) {
+                $function_id = $source_checker->getMethodId();
+
+                if (strpos($function_id, '::')) {
+                    $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
+
+                    if (!$declaring_method_id) {
+                        throw new \UnexpectedValueException('This should never happen');
+                    }
+
+                    $function_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
+                } else {
+                    $function_storage = FunctionChecker::getStorage($statements_checker, $function_id);
+                }
+
+                if ($function_storage->param_types) {
+                    if ($left_type
+                        && $left_type->isMixed()
+                        && $left instanceof PhpParser\Node\Expr\Variable
+                        && is_string($left->name)
+                        && !isset($context->assigned_vars['$' . $left->name])
+                        && array_key_exists($left->name, $function_storage->param_types)
+                        && !$function_storage->param_types[$left->name]
+                    ) {
+                        if (isset($context->possible_param_types[$left->name])) {
+                            $context->possible_param_types[$left->name] = Type::combineUnionTypes(
+                                $context->possible_param_types[$left->name],
+                                Type::getString()
+                            );
+                        } else {
+                            $context->possible_param_types[$left->name] = Type::getString();
+                            $context->vars_in_scope['$' . $left->name] = Type::getString();
+                        }
+                    }
+
+                    if ($right_type
+                        && $right_type->isMixed()
+                        && $right instanceof PhpParser\Node\Expr\Variable
+                        && is_string($right->name)
+                        && !isset($context->assigned_vars['$' . $right->name])
+                        && array_key_exists($right->name, $function_storage->param_types)
+                        && !$function_storage->param_types[$right->name]
+                    ) {
+                        if (isset($context->possible_param_types[$right->name])) {
+                            $context->possible_param_types[$right->name] = Type::combineUnionTypes(
+                                $context->possible_param_types[$right->name],
+                                Type::getString()
+                            );
+                        } else {
+                            $context->possible_param_types[$right->name] = Type::getString();
+                            $context->vars_in_scope['$' . $right->name] = Type::getString();
+                        }
+                    }
+                }
+            }
+        }
 
         if ($left_type && $right_type) {
             $result_type = Type::getString();
