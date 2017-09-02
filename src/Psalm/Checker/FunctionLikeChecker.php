@@ -518,10 +518,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $possible_type = $context->possible_param_types[$function_param->name];
                 }
 
+                $infer_text = $project_checker->infer_types_from_usage
+                    ? ', ' . ($possible_type ? 'should be ' . $possible_type : 'could not infer type')
+                    : '';
+
                 IssueBuffer::accepts(
                     new UntypedParam(
-                        'Parameter $' . $function_param->name . ' has no provided type, '
-                            . ($possible_type ? 'should be ' . $possible_type : 'could not infer'),
+                        'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
                         $function_param->location
                     ),
                     $storage->suppressed_issues
