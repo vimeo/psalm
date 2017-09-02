@@ -2013,10 +2013,57 @@ class ExpressionChecker
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ) {
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        $function_storage = null;
+
+        if ($project_checker->infer_types_from_usage) {
+            $source_checker = $statements_checker->getSource();
+
+            if ($source_checker instanceof FunctionLikeChecker) {
+                $function_id = $source_checker->getMethodId();
+
+                if (strpos($function_id, '::')) {
+                    $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
+
+                    if (!$declaring_method_id) {
+                        throw new \UnexpectedValueException('This should never happen');
+                    }
+
+                    $function_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
+                } else {
+                    $function_storage = FunctionChecker::getStorage($statements_checker, $function_id);
+                }
+            }
+        }
+
         /** @var PhpParser\Node\Expr $part */
         foreach ($stmt->parts as $part) {
             if (self::analyze($statements_checker, $part, $context) === false) {
                 return false;
+            }
+
+            if ($function_storage
+                && $function_storage->param_types
+                && $part->inferredType
+                && $part->inferredType->isMixed()
+             ) {
+                if ($part instanceof PhpParser\Node\Expr\Variable
+                    && is_string($part->name)
+                    && !isset($context->assigned_vars['$' . $part->name])
+                    && array_key_exists($part->name, $function_storage->param_types)
+                    && !$function_storage->param_types[$part->name]
+                ) {
+                    if (isset($context->possible_param_types[$part->name])) {
+                        $context->possible_param_types[$part->name] = Type::combineUnionTypes(
+                            $context->possible_param_types[$part->name],
+                            Type::getString()
+                        );
+                    } else {
+                        $context->possible_param_types[$part->name] = Type::getString();
+                        $context->vars_in_scope['$' . $part->name] = Type::getString();
+                    }
+                }
             }
         }
 

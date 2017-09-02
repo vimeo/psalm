@@ -399,6 +399,15 @@ class AnnotationTest extends TestCase
                     . ' should be string',
                 'error_levels' => ['MixedOperand'],
             ],
+            'noParamTypeButTemplatedString' => [
+                '<?php
+                    function fooFoo($a) : void {
+                        echo "$a";
+                    }',
+                'error_message' => 'UntypedParam - src/somefile.php:2 - Parameter $a has no provided type,'
+                    . ' should be string',
+                'error_levels' => ['MixedOperand'],
+            ],
             'noStringIntParamType' => [
                 '<?php
                     function fooFoo($a) : void {
