@@ -1506,9 +1506,13 @@ class CallChecker
                     $by_ref_type = null;
 
                     if ($by_ref && $last_param) {
-                        $by_ref_type = $argument_offset < count($function_params)
-                            ? clone $function_params[$argument_offset]->type
-                            : clone $last_param->type;
+                        if ($argument_offset < count($function_params)) {
+                            $by_ref_type = $function_params[$argument_offset]->type;
+                        } else {
+                            $by_ref_type = $last_param->type;
+                        }
+
+                        $by_ref_type = $by_ref_type ? clone $by_ref_type : Type::getMixed();
                     }
 
                     if ($by_ref && $by_ref_type) {
@@ -1548,9 +1552,13 @@ class CallChecker
                     $by_ref_type = null;
 
                     if ($by_ref && $last_param) {
-                        $by_ref_type = $argument_offset < count($function_params)
-                            ? clone $function_params[$argument_offset]->type
-                            : clone $last_param->type;
+                        if ($argument_offset < count($function_params)) {
+                            $by_ref_type = $function_params[$argument_offset]->type;
+                        } else {
+                            $by_ref_type = $last_param->type;
+                        }
+
+                        $by_ref_type = $by_ref_type ? clone $by_ref_type : Type::getMixed();
                     }
 
                     if (ExpressionChecker::analyzeVariable(
@@ -1675,7 +1683,7 @@ class CallChecker
                     ? $function_params[$argument_offset]
                     : ($last_param && $last_param->is_variadic ? $last_param : null);
 
-                if ($function_param) {
+                if ($function_param && $function_param->type) {
                     $param_type = clone $function_param->type;
 
                     if ($function_param->is_variadic) {
@@ -1930,6 +1938,11 @@ class CallChecker
                     }
 
                     $closure_param_type = $closure_param->type;
+
+                    if (!$closure_param_type) {
+                        ++$i;
+                        continue;
+                    }
 
                     $type_match_found = TypeChecker::isContainedBy(
                         $project_checker,

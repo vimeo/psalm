@@ -131,14 +131,19 @@ class AnnotationTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                         public function __get($name) : ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        /** @param string $name */
+                        public function __get($name) : ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
 
-                         public function __set($name, $value) : void {
-                         }
+                        /**
+                         * @param string $name
+                         * @param mixed $value
+                         */
+                        public function __set($name, $value) : void {
+                        }
                     }
 
                     $a = new A();
@@ -193,6 +198,28 @@ class AnnotationTest extends TestCase
                     $a = [];
 
                     $a[0]->getMessage();',
+            ],
+            'mixedDocblockParamTypeDefinedInParent' => [
+                '<?php
+                    class A {
+                        /** @param mixed $a */
+                        public function foo($a) : void {}
+                    }
+
+                    class B extends A {
+                        public function foo($a) : void {}
+                    }',
+            ],
+            'intDocblockParamTypeDefinedInParent' => [
+                '<?php
+                    class A {
+                        /** @param int $a */
+                        public function foo($a) : void {}
+                    }
+
+                    class B extends A {
+                        public function foo($a) : void {}
+                    }',
             ],
         ];
     }
@@ -353,6 +380,25 @@ class AnnotationTest extends TestCase
                     $a = new A();
                     $a->foo = 5;',
                 'error_message' => 'InvalidPropertyAssignment',
+            ],
+            'noParamType' => [
+                '<?php
+                    function fooFoo($a) : void {
+                        if ($a) {}
+                    }',
+                'error_message' => 'UntypedParam',
+            ],
+            'intParamTypeDefinedInParent' => [
+                '<?php
+                    class A {
+                        public function foo(int $a) : void {}
+                    }
+
+                    class B extends A {
+                        public function foo($a) : void {}
+                    }',
+                'error_message' => 'UntypedParam',
+                'error_levels' => ['MethodSignatureMismatch'],
             ],
         ];
     }

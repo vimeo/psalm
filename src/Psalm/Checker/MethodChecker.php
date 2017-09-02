@@ -220,7 +220,9 @@ class MethodChecker extends FunctionLikeChecker
             }
         } else {
             foreach ($possible_params[0] as $param) {
-                $param->type->queueClassLikesForScanning($project_checker);
+                if ($param->type) {
+                    $param->type->queueClassLikesForScanning($project_checker);
+                }
             }
 
             $storage->params = $possible_params[0];

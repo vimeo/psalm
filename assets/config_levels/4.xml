@@ -24,6 +24,7 @@
 
         <PropertyNotSetInConstructor errorLevel="info" />
         <MissingConstructor errorLevel="info" />
+        <UntypedParam errorLevel="info" />
 
         <!-- level 4 issues - points to possible deficiencies in logic, higher false-positives -->
 

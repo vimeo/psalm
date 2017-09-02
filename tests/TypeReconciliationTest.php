@@ -244,6 +244,7 @@ class TypeReconciliationTest extends TestCase
         return [
             'intIsMixed' => [
                 '<?php
+                    /** @param mixed $a */
                     function foo($a) : void {
                         $b = 5;
 

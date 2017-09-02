@@ -293,10 +293,12 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 if ($function_params) {
                     foreach ($function_params as $function_param_group) {
                         foreach ($function_param_group as $function_param) {
-                            $function_param->type->queueClassLikesForScanning(
-                                $this->project_checker,
-                                $this->file_path
-                            );
+                            if ($function_param->type) {
+                                $function_param->type->queueClassLikesForScanning(
+                                    $this->project_checker,
+                                    $this->file_path
+                                );
+                            }
                         }
                     }
                 }
@@ -554,21 +556,24 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $i = 0;
         $has_optional_param = false;
 
+        $existing_params = [];
+
         /** @var PhpParser\Node\Param $param */
         foreach ($stmt->getParams() as $param) {
             $param_array = $this->getTranslatedFunctionParam($param);
 
-            if (isset($storage->param_types[$param_array->name])) {
+            if (isset($existing_params[$param_array->name])) {
                 if (IssueBuffer::accepts(
                     new DuplicateParam(
                         'Duplicate param $' . $param->name . ' in docblock for ' . $cased_function_id,
                         new CodeLocation($this->file_checker, $param, null, true)
                     )
                 )) {
-                    // fall through
+                    continue;
                 }
             }
 
+            $existing_params[$param_array->name] = true;
             $storage->param_types[$param_array->name] = $param_array->type;
             $storage->params[] = $param_array;
 
@@ -840,7 +845,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         return new FunctionLikeParameter(
             $param->name,
             $param->byRef,
-            $param_type ?: Type::getMixed(),
+            $param_type,
             new CodeLocation($this->file_checker, $param, null, false, FunctionLikeChecker::PARAM_TYPE_REGEX),
             $is_optional,
             $is_nullable,
@@ -887,10 +892,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $param_name = substr($param_name, 1);
 
-            if (!isset($storage->param_types[$param_name])) {
-                continue;
-            }
-
             $storage_param = null;
 
             foreach ($storage->params as $function_signature_param) {
@@ -901,10 +902,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             if ($storage_param === null) {
-                throw new \UnexpectedValueException('This should not be possible');
+                continue;
             }
-
-            $storage_param_type = $storage->param_types[$param_name];
 
             $docblock_param_vars[$param_name] = true;
 
@@ -935,7 +934,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $new_param_type->setFromDocblock();
 
-            if ($storage_param->type->isMixed() || $storage->template_types) {
+            if (!$storage_param->type || $storage_param->type->isMixed() || $storage->template_types) {
                 if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
                     $new_param_type->types['null'] = new Type\Atomic\TNull();
                 }

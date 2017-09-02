@@ -338,8 +338,12 @@ class FunctionCallTest extends TestCase
             ],
             'duplicateParam' => [
                 '<?php
+                    /**
+                     * @return void
+                     */
                     function f($p, $p) {}',
                 'error_message' => 'DuplicateParam',
+                'error_levels' => ['UntypedParam'],
             ],
             'invalidParamDefault' => [
                 '<?php

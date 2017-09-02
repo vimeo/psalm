@@ -534,9 +534,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $fake_constructor_params = array_map(
                             /** @return PhpParser\Node\Param */
                             function (\Psalm\FunctionLikeParameter $param) {
-                                return (new PhpParser\Builder\Param($param->name))
-                                    ->setTypehint((string)$param->signature_type)
-                                    ->getNode();
+                                $fake_param = (new PhpParser\Builder\Param($param->name));
+                                if ($param->signature_type) {
+                                    $fake_param->setTypehint((string)$param->signature_type);
+                                }
+
+                                return $fake_param->getNode();
                             },
                             $constructor_storage->params
                         );

@@ -60,6 +60,9 @@ class VariadicTest extends TestCase
             'variadic' => [
                 '<?php
                 /**
+                 * @param mixed $req
+                 * @param mixed $opt
+                 * @param array<int, mixed> $params
                  * @return array<mixed>
                  */
                 function f($req, $opt = null, ...$params) {

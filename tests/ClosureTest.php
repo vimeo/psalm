@@ -219,6 +219,11 @@ class ClosureTest extends TestCase
                             return new Foo([]);
                         }
 
+                        /**
+                         * @param  mixed $argOne
+                         * @param  mixed $argTwo
+                         * @return void
+                         */
                         public function bar($argOne, $argTwo)
                         {
                             $this->getFoo()($argOne, $argTwo);
@@ -267,14 +272,17 @@ class ClosureTest extends TestCase
                      */
                     $foo = null;
 
-                    $foo = function ($bar) use (&$foo) : string
-                    {
-                        if (is_array($bar)) {
-                            return $foo($bar);
-                        }
 
-                        return $bar;
-                    };',
+                    $foo =
+                        /** @param mixed $bar */
+                        function ($bar) use (&$foo) : string
+                        {
+                            if (is_array($bar)) {
+                                return $foo($bar);
+                            }
+
+                            return $bar;
+                        };',
                 'error_message' => 'PossiblyNullFunctionCall',
             ],
             'stringFunctionCall' => [

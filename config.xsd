@@ -180,6 +180,7 @@
             <xs:element name="UndefinedThisPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedTrait" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UntypedParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedAbstractMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedInterfaceMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedExpression" type="IssueHandlerType" minOccurs="0" />

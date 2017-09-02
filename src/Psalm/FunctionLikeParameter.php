@@ -14,12 +14,12 @@ class FunctionLikeParameter
     public $by_ref;
 
     /**
-     * @var Type\Union
+     * @var Type\Union|null
      */
     public $type;
 
     /**
-     * @var Type\Union
+     * @var Type\Union|null
      */
     public $signature_type;
 
@@ -51,8 +51,8 @@ class FunctionLikeParameter
     /**
      * @param string        $name
      * @param bool       $by_ref
-     * @param Type\Union    $type
-     * @param CodeLocation  $location
+     * @param Type\Union|null    $type
+     * @param CodeLocation|null  $location
      * @param bool       $is_optional
      * @param bool       $is_nullable
      * @param bool       $is_variadic
@@ -60,7 +60,7 @@ class FunctionLikeParameter
     public function __construct(
         $name,
         $by_ref,
-        Type\Union $type,
+        Type\Union $type = null,
         CodeLocation $location = null,
         $is_optional = true,
         $is_nullable = false,

@@ -24,6 +24,7 @@ use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\PossiblyUnusedVariable;
+use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Mutator\FileMutator;
@@ -171,6 +172,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $context->inside_constructor = true;
             }
 
+            $implemented_docblock_param_types = [];
+
             if ($implemented_method_ids) {
                 $have_emitted = false;
 
@@ -260,7 +263,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             break 2;
                         }
 
+                        if ($implemented_param->type
+                            && (!$implemented_param->signature_type || !$class_storage->user_defined)
+                        ) {
+                            $implemented_docblock_param_types[$i] = true;
+                        }
+
                         if (!$class_storage->user_defined &&
+                            $implemented_param->type &&
                             !$implemented_param->type->isMixed() &&
                             (string)$storage->params[$i]->type !== (string)$implemented_param->type
                         ) {
@@ -362,14 +372,30 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         foreach ($storage->params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
-            $param_type = clone $function_param->type;
 
-            $param_type = ExpressionChecker::fleshOutType(
-                $project_checker,
-                $param_type,
-                $context->self,
-                $this->getMethodId()
-            );
+            if ($function_param->type) {
+                $param_type = clone $function_param->type;
+
+                $param_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    $param_type,
+                    $context->self,
+                    $this->getMethodId()
+                );
+            } else {
+                // only complain if there's no type defined by a parent type
+                if ($function_param->location && !isset($implemented_docblock_param_types[$offset])) {
+                    IssueBuffer::accepts(
+                        new UntypedParam(
+                            'Parameter $' . $function_param->name . ' has no provided type',
+                            $function_param->location
+                        ),
+                        $storage->suppressed_issues
+                    );
+                }
+
+                $param_type = Type::getMixed();
+            }
 
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
@@ -1201,6 +1227,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
 
                 $param_type = $possible_function_params[$argument_offset]->type;
+
+                if (!$param_type) {
+                    continue;
+                }
 
                 if (!isset($arg->value->inferredType)) {
                     continue;

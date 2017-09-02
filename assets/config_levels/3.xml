@@ -23,5 +23,6 @@
 
         <PropertyNotSetInConstructor errorLevel="info" />
         <MissingConstructor errorLevel="info" />
+        <UntypedParam errorLevel="info" />
     </issueHandlers>
 </psalm>
