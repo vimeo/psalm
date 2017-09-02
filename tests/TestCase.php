@@ -46,6 +46,7 @@ class TestCase extends PHPUnit_Framework_TestCase
             new Provider\FakeCacheProvider()
         );
         $this->project_checker->setConfig(new TestConfig());
+        $this->project_checker->infer_types_from_usage = true;
     }
 
     /**

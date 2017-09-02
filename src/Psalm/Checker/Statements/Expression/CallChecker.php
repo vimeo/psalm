@@ -312,7 +312,7 @@ class CallChecker
                 null,
                 $generic_params,
                 $code_location,
-                $context->check_variables
+                $context
             ) === false) {
                 // fall through
             }
@@ -1470,7 +1470,7 @@ class CallChecker
             $class_storage,
             $generic_params,
             $code_location,
-            $context->check_variables
+            $context
         ) === false) {
             return false;
         }
@@ -1606,7 +1606,7 @@ class CallChecker
      * @param   ClassLikeStorage|null                   $class_storage
      * @param   array<string, Type\Union>|null          $generic_params
      * @param   CodeLocation                            $code_location
-     * @param   bool                                    $check_variables
+     * @param   Context                                 $context
      *
      * @return  false|null
      */
@@ -1619,7 +1619,7 @@ class CallChecker
         $class_storage,
         &$generic_params,
         CodeLocation $code_location,
-        $check_variables
+        Context $context
     ) {
         $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
 
@@ -1759,7 +1759,7 @@ class CallChecker
                         $method_id
                     );
 
-                    if ($check_variables) {
+                    if ($context->check_variables) {
                         if (self::checkFunctionArgumentType(
                             $statements_checker,
                             $arg->value->inferredType,
@@ -1767,7 +1767,8 @@ class CallChecker
                             $cased_method_id,
                             $argument_offset,
                             new CodeLocation($statements_checker->getSource(), $arg->value),
-                            $arg->value
+                            $arg->value,
+                            $context
                         ) === false) {
                             return false;
                         }
@@ -2030,13 +2031,55 @@ class CallChecker
         $cased_method_id,
         $argument_offset,
         CodeLocation $code_location,
-        PhpParser\Node\Expr $input_expr = null
+        PhpParser\Node\Expr $input_expr = null,
+        Context $context = null
     ) {
         if ($param_type->isMixed()) {
             return null;
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
+
+        if ($project_checker->infer_types_from_usage
+            && $input_expr
+            && $input_expr instanceof PhpParser\Node\Expr\Variable
+            && is_string($input_expr->name)
+            && $context
+            && !isset($context->assigned_vars['$' . $input_expr->name])
+        ) {
+            $source_checker = $statements_checker->getSource();
+
+            if ($source_checker instanceof FunctionLikeChecker) {
+                $function_id = $source_checker->getMethodId();
+
+                if (strpos($function_id, '::')) {
+                    $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
+                    $function_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
+                } else {
+                    $function_storage = FunctionChecker::getStorage($statements_checker, $function_id);
+                }
+
+                if ($function_storage->param_types
+                    && array_key_exists($input_expr->name, $function_storage->param_types)
+                    && !$function_storage->param_types[$input_expr->name]
+                ) {
+                    if (isset($context->possible_param_types[$input_expr->name])) {
+                        $context->possible_param_types[$input_expr->name] = Type::combineUnionTypes(
+                            $context->possible_param_types[$input_expr->name],
+                            $param_type
+                        );
+                    } else {
+                        $context->possible_param_types[$input_expr->name] = $param_type;
+                    }
+                }
+            }
+
+            if ($input_type->isMixed()) {
+                $context->vars_in_scope['$' . $input_expr->name] = clone $param_type;
+            }
+        }
 
         if ($input_type->isMixed()) {
             if (IssueBuffer::accepts(
@@ -2084,11 +2127,9 @@ class CallChecker
         }
 
         $param_type = TypeChecker::simplifyUnionType(
-            $statements_checker->getFileChecker()->project_checker,
+            $project_checker,
             $param_type
         );
-
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $type_match_found = TypeChecker::isContainedBy(
             $project_checker,

@@ -139,6 +139,18 @@ class Context
     public $parent_context;
 
     /**
+     * @var array<string, Type\Union>
+     */
+    public $possible_param_types = [];
+
+    /**
+     * A list of vars that have been assigned to
+     *
+     * @var array<string, bool>
+     */
+    public $assigned_vars = [];
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

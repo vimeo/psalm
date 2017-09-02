@@ -60,6 +60,8 @@ class IfChecker
 
         $context->inside_conditional = true;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if ($first_if_cond_expr &&
             ExpressionChecker::analyze($statements_checker, $first_if_cond_expr, $context) === false
         ) {
@@ -214,6 +216,13 @@ class IfChecker
             $if_scope->new_vars_possibly_in_scope
         );
 
+        if ($project_checker->infer_types_from_usage) {
+            $context->assigned_vars = array_merge(
+                $context->assigned_vars,
+                $if_context->assigned_vars
+            );
+        }
+
         $updated_loop_vars = [];
 
         // vars can only be defined/redefined if there was an else (defined in every block)
@@ -233,6 +242,12 @@ class IfChecker
                 foreach ($if_scope->redefined_loop_vars as $var => $type) {
                     $loop_context->vars_in_scope[$var] = $type;
                     $updated_loop_vars[$var] = true;
+                }
+            }
+
+            if ($if_scope->possible_param_types) {
+                foreach ($if_scope->possible_param_types as $var => $type) {
+                    $context->possible_param_types[$var] = $type;
                 }
             }
         } else {
@@ -290,13 +305,13 @@ class IfChecker
 
         $has_leaving_statements = $has_ending_statements || ScopeChecker::doesAlwaysBreakOrContinue($stmt->stmts);
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if ($statements_checker->analyze($stmt->stmts, $if_context, $if_scope->loop_context) === false) {
             return false;
         }
 
         if ($if_context->byref_constraints !== null) {
-            $project_checker = $statements_checker->getFileChecker()->project_checker;
-
             foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null &&
                     isset($outer_context->byref_constraints[$var_id]) &&
@@ -343,6 +358,10 @@ class IfChecker
             $if_scope->redefined_vars = $if_context->getRedefinedVars($outer_context);
             $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
             $if_scope->reasonable_clauses = $if_context->clauses;
+
+            if ($project_checker->infer_types_from_usage) {
+                $if_scope->possible_param_types = $if_context->possible_param_types;
+            }
         } elseif (!$stmt->else && !$stmt->elseifs) {
             if ($if_scope->negated_types) {
                 $changed_vars = [];
@@ -434,6 +453,8 @@ class IfChecker
         Context $elseif_context,
         Context $outer_context
     ) {
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         $original_context = clone $elseif_context;
 
         if ($if_scope->negated_types) {
@@ -537,8 +558,6 @@ class IfChecker
         }
 
         if ($elseif_context->byref_constraints !== null) {
-            $project_checker = $statements_checker->getFileChecker()->project_checker;
-
             foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null &&
                     isset($outer_context->byref_constraints[$var_id]) &&
@@ -628,6 +647,29 @@ class IfChecker
                 }
             } else {
                 $if_scope->reasonable_clauses = [];
+            }
+
+            if ($project_checker->infer_types_from_usage) {
+                $elseif_possible_param_types = $elseif_context->possible_param_types;
+
+                if ($if_scope->possible_param_types) {
+                    $vars_to_remove = [];
+
+                    foreach ($if_scope->possible_param_types as $var => $type) {
+                        if (isset($elseif_possible_param_types[$var])) {
+                            $if_scope->possible_param_types[$var] = Type::combineUnionTypes(
+                                $elseif_possible_param_types[$var],
+                                $type
+                            );
+                        } else {
+                            $vars_to_remove[] = $var;
+                        }
+                    }
+
+                    foreach ($vars_to_remove as $var) {
+                        unset($if_scope->possible_param_types[$var]);
+                    }
+                }
             }
 
             if ($negated_elseif_types) {
@@ -743,6 +785,8 @@ class IfChecker
         Context $else_context,
         Context $outer_context
     ) {
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         $original_context = clone $else_context;
 
         $else_context->clauses = AlgebraChecker::simplifyCNF(
@@ -926,6 +970,29 @@ class IfChecker
                     );
                 } elseif (!$has_leaving_statements) {
                     $if_scope->new_vars_possibly_in_scope = array_merge($vars, $if_scope->new_vars_possibly_in_scope);
+                }
+            }
+        }
+
+        if ($project_checker->infer_types_from_usage) {
+            $else_possible_param_types = $else_context->possible_param_types;
+
+            if ($if_scope->possible_param_types) {
+                $vars_to_remove = [];
+
+                foreach ($if_scope->possible_param_types as $var => $type) {
+                    if (isset($else_possible_param_types[$var])) {
+                        $if_scope->possible_param_types[$var] = Type::combineUnionTypes(
+                            $else_possible_param_types[$var],
+                            $type
+                        );
+                    } else {
+                        $vars_to_remove[] = $var;
+                    }
+                }
+
+                foreach ($vars_to_remove as $var) {
+                    unset($if_scope->possible_param_types[$var]);
                 }
             }
         }

@@ -383,17 +383,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $this->getMethodId()
                 );
             } else {
-                // only complain if there's no type defined by a parent type
-                if ($function_param->location && !isset($implemented_docblock_param_types[$offset])) {
-                    IssueBuffer::accepts(
-                        new UntypedParam(
-                            'Parameter $' . $function_param->name . ' has no provided type',
-                            $function_param->location
-                        ),
-                        $storage->suppressed_issues
-                    );
-                }
-
                 $param_type = Type::getMixed();
             }
 
@@ -514,6 +503,31 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         $statements_checker->analyze($function_stmts, $context, null, $global_context);
+
+        foreach ($storage->params as $offset => $function_param) {
+            $signature_type = $function_param->signature_type;
+
+            // only complain if there's no type defined by a parent type
+            if (!$function_param->type
+                && $function_param->location
+                && !isset($implemented_docblock_param_types[$offset])
+            ) {
+                $possible_type = null;
+
+                if (isset($context->possible_param_types[$function_param->name])) {
+                    $possible_type = $context->possible_param_types[$function_param->name];
+                }
+
+                IssueBuffer::accepts(
+                    new UntypedParam(
+                        'Parameter $' . $function_param->name . ' has no provided type, '
+                            . ($possible_type ? 'should be ' . $possible_type : 'could not infer'),
+                        $function_param->location
+                    ),
+                    $storage->suppressed_issues
+                );
+            }
+        }
 
         if ($this->function instanceof Closure) {
             $closure_yield_types = [];

@@ -173,6 +173,7 @@ class AssignmentChecker
         if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
+            $context->assigned_vars[$var_id] = true;
 
             if (!$statements_checker->hasVariable($var_id)) {
                 $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $assign_var));

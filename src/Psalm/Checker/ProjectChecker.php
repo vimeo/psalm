@@ -223,6 +223,13 @@ class ProjectChecker
     public $threads;
 
     /**
+     * Whether or not to infer types from usage. Computationally expensive, so turned off by default
+     *
+     * @var bool
+     */
+    public $infer_types_from_usage = false;
+
+    /**
      * Whether to log functions just at the file level or globally (for stubs)
      *
      * @var bool
@@ -1037,10 +1044,11 @@ class ProjectChecker
     protected static function checkMethodReferences($classlike_storage)
     {
         foreach ($classlike_storage->methods as $method_name => $method_storage) {
-            if (count($method_storage->referencing_locations) === 0 &&
-                !$classlike_storage->overridden_method_ids[$method_name] &&
-                (substr($method_name, 0, 2) !== '__' || $method_name === '__construct') &&
-                $method_storage->location
+            if (($method_storage->referencing_locations === null
+                    || count($method_storage->referencing_locations) === 0)
+                && !$classlike_storage->overridden_method_ids[$method_name]
+                && (substr($method_name, 0, 2) !== '__' || $method_name === '__construct')
+                && $method_storage->location
             ) {
                 $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
 

@@ -72,4 +72,11 @@ class IfScope
      * @var array<int, Clause>
      */
     public $reasonable_clauses = [];
+
+    /**
+     * Variables that were mixed, but are no longer
+     *
+     * @var array<string, Type\Union>
+     */
+    public $possible_param_types = null;
 }
