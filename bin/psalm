@@ -15,7 +15,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report-xml:', 'report-json:', 'report-emacs:'
+        'report:'
     ]
 );
 
@@ -89,11 +89,9 @@ Options:
     --threads=INT
         If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
-    --report-xml=PATH
-        The path where to output the XML report file
-
-    --report-json=PATH
-        The path where to output the JSON report file
+    --report=PATH
+        The path where to output report file. The output format is base on the file extension.
+        (Currently supported format: ".json", ".xml", ".txt")
 
 HELP;
 
@@ -233,17 +231,6 @@ if (isset($options['f'])) {
 
 $output_format = isset($options['output-format']) ? $options['output-format'] : ProjectChecker::TYPE_CONSOLE;
 
-$reports = array();
-if (isset($options['report-xml'])) {
-    $reports['xml'] = $options['report-xml'];
-}
-if (isset($options['report-json'])) {
-    $reports['json'] = $options['report-json'];
-}
-if (isset($options['report-emacs'])) {
-    $reports['emacs'] = $options['report-emacs'];
-}
-
 $paths_to_check = null;
 
 if ($input_paths) {
@@ -332,7 +319,7 @@ $project_checker = new ProjectChecker(
     $update_docblocks,
     $find_dead_code || $find_references_to !== null,
     $find_references_to,
-    $reports
+    isset($options['report'])?$options['report']:null
 );
 
 // initialise custom config, if passed

@@ -232,7 +232,7 @@ class ProjectChecker
     /**
      * @var array<string,string>
      */
-    public $reports;
+    public $reports = [];
 
     /**
      * Whether to log functions just at the file level or globally (for stubs)
@@ -247,17 +247,17 @@ class ProjectChecker
     const TYPE_XML = 'xml';
 
     /**
-     * @param FileProvider         $file_provider
-     * @param CacheProvider        $cache_provider
-     * @param bool                 $use_color
-     * @param bool                 $show_info
-     * @param string               $output_format
-     * @param int                  $threads
-     * @param bool                 $debug_output
-     * @param bool                 $update_docblocks
-     * @param bool                 $collect_references
-     * @param string               $find_references_to
-     * @param array<string,string> $reports
+     * @param FileProvider  $file_provider
+     * @param CacheProvider $cache_provider
+     * @param bool          $use_color
+     * @param bool          $show_info
+     * @param string        $output_format
+     * @param int           $threads
+     * @param bool          $debug_output
+     * @param bool          $update_docblocks
+     * @param bool          $collect_references
+     * @param string        $find_references_to
+     * @param string        $reports
      */
     public function __construct(
         FileProvider $file_provider,
@@ -270,7 +270,7 @@ class ProjectChecker
         $update_docblocks = false,
         $collect_references = false,
         $find_references_to = null,
-        $reports = []
+        $reports = null
     ) {
         $this->file_provider = $file_provider;
         $this->cache_provider = $cache_provider;
@@ -286,8 +286,28 @@ class ProjectChecker
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
         }
 
+        if ($reports) {
+            /**
+             * @var array<string,string>
+             */
+            $mapping = [
+                '.xml' => self::TYPE_XML,
+                '.json' => self::TYPE_JSON,
+                '.txt' => self::TYPE_EMACS,
+                '.emacs' => self::TYPE_EMACS,
+            ];
+            foreach ($mapping as $extension => $type) {
+                if (substr($reports, -strlen($extension)) === $extension) {
+                    $this->reports[$type] = $reports;
+                    break;
+                }
+            }
+            if (empty($this->reports)) {
+                throw new \UnexpectedValueException('Unrecognised report format ' . $reports);
+            }
+        }
+
         $this->output_format = $output_format;
-        $this->reports = $reports;
         self::$instance = $this;
 
         $this->collectPredefinedClassLikes();

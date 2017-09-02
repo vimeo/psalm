@@ -1,7 +1,6 @@
 <?php
 namespace Psalm;
 
-use fillup\A2X;
 use LSS\Array2XML;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Issue\CodeIssue;
@@ -209,11 +208,11 @@ class IssueBuffer
                 }
             }
 
-            echo self::resultOutput($project_checker->output_format, $project_checker->use_color);
+            echo self::getOutput($project_checker->output_format, $project_checker->use_color);
             foreach ($project_checker->reports as $format => $path) {
                 file_put_contents(
                     $path,
-                    self::resultOutput($format, $project_checker->use_color)
+                    self::getOutput($format, $project_checker->use_color)
                 );
             }
         }
@@ -238,7 +237,7 @@ class IssueBuffer
      *
      * @return string
      */
-    protected static function resultOutput($format, $useColor)
+    public static function getOutput($format, $useColor)
     {
         if ($format === ProjectChecker::TYPE_JSON) {
             return json_encode(self::$issues_data) . PHP_EOL;
