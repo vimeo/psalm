@@ -2056,6 +2056,11 @@ class CallChecker
 
                 if (strpos($function_id, '::')) {
                     $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
+
+                    if (!$declaring_method_id) {
+                        throw new \UnexpectedValueException('This should never happen');
+                    }
+
                     $function_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
                 } else {
                     $function_storage = FunctionChecker::getStorage($statements_checker, $function_id);
