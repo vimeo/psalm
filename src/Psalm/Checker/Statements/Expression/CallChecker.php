@@ -2240,32 +2240,32 @@ class CallChecker
 
                             if (!in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
                                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                        $project_checker,
-                                        $callable_fq_class_name,
-                                        $code_location,
-                                        $statements_checker->getSuppressedIssues()
-                                    ) === false
+                                    $project_checker,
+                                    $callable_fq_class_name,
+                                    $code_location,
+                                    $statements_checker->getSuppressedIssues()
+                                ) === false
                                 ) {
                                     return false;
                                 }
 
                                 if (MethodChecker::checkMethodExists(
-                                        $project_checker,
-                                        $function_id,
-                                        $code_location,
-                                        $statements_checker->getSuppressedIssues()
-                                    ) === false
+                                    $project_checker,
+                                    $function_id,
+                                    $code_location,
+                                    $statements_checker->getSuppressedIssues()
+                                ) === false
                                 ) {
                                     return false;
                                 }
                             }
                         } else {
                             if (self::checkFunctionExists(
-                                    $project_checker,
-                                    $statements_checker,
-                                    $function_id,
-                                    $code_location
-                                ) === false
+                                $project_checker,
+                                $statements_checker,
+                                $function_id,
+                                $code_location
+                            ) === false
                             ) {
                                 return false;
                             }
