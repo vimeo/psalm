@@ -1,7 +1,9 @@
 <?php
 namespace Psalm;
 
+use PhpParser;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Union;
 
 class Context
@@ -246,6 +248,40 @@ class Context
         }
 
         return $redefined_vars;
+    }
+
+    /**
+     * @return void
+     */
+    public function inferType(
+        PhpParser\Node\Expr $expr,
+        FunctionLikeStorage $function_storage,
+        Type\Union $inferred_type
+    ) {
+        if (!isset($expr->inferredType)) {
+            return;
+        }
+
+        $expr_type = $expr->inferredType;
+
+        if ($expr_type
+            && ($expr_type->isMixed() || (string)$expr_type === (string)$inferred_type)
+            && $expr instanceof PhpParser\Node\Expr\Variable
+            && is_string($expr->name)
+            && !isset($this->assigned_vars['$' . $expr->name])
+            && array_key_exists($expr->name, $function_storage->param_types)
+            && !$function_storage->param_types[$expr->name]
+        ) {
+            if (isset($this->possible_param_types[$expr->name])) {
+                $this->possible_param_types[$expr->name] = Type::combineUnionTypes(
+                    $this->possible_param_types[$expr->name],
+                    $inferred_type
+                );
+            } else {
+                $this->possible_param_types[$expr->name] = $inferred_type;
+                $this->vars_in_scope['$' . $expr->name] = clone $inferred_type;
+            }
+        }
     }
 
     /**

@@ -2043,46 +2043,14 @@ class CallChecker
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
         if ($project_checker->infer_types_from_usage
-            && $input_expr
-            && $input_expr instanceof PhpParser\Node\Expr\Variable
-            && is_string($input_expr->name)
             && $context
-            && !isset($context->assigned_vars['$' . $input_expr->name])
+            && $input_expr
+            && $input_expr->inferredType
         ) {
             $source_checker = $statements_checker->getSource();
 
             if ($source_checker instanceof FunctionLikeChecker) {
-                $function_id = $source_checker->getMethodId();
-
-                if (strpos($function_id, '::')) {
-                    $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
-
-                    if (!$declaring_method_id) {
-                        throw new \UnexpectedValueException('This should never happen');
-                    }
-
-                    $function_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
-                } else {
-                    $function_storage = FunctionChecker::getStorage($statements_checker, $function_id);
-                }
-
-                if ($function_storage->param_types
-                    && array_key_exists($input_expr->name, $function_storage->param_types)
-                    && !$function_storage->param_types[$input_expr->name]
-                ) {
-                    if (isset($context->possible_param_types[$input_expr->name])) {
-                        $context->possible_param_types[$input_expr->name] = Type::combineUnionTypes(
-                            $context->possible_param_types[$input_expr->name],
-                            $param_type
-                        );
-                    } else {
-                        $context->possible_param_types[$input_expr->name] = $param_type;
-                    }
-                }
-            }
-
-            if ($input_type->isMixed()) {
-                $context->vars_in_scope['$' . $input_expr->name] = clone $param_type;
+                $context->inferType($input_expr, $source_checker->getFunctionLikeStorage(), $param_type);
             }
         }
 

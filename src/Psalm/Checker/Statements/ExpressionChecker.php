@@ -7,7 +7,6 @@ use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
-use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
@@ -1324,59 +1323,10 @@ class ExpressionChecker
             $source_checker = $statements_checker->getSource();
 
             if ($source_checker instanceof FunctionLikeChecker) {
-                $function_id = $source_checker->getMethodId();
+                $function_storage = $source_checker->getFunctionLikeStorage();
 
-                if (strpos($function_id, '::')) {
-                    $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
-
-                    if (!$declaring_method_id) {
-                        throw new \UnexpectedValueException('This should never happen');
-                    }
-
-                    $function_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
-                } else {
-                    $function_storage = FunctionChecker::getStorage($statements_checker, $function_id);
-                }
-
-                if ($function_storage->param_types) {
-                    if ($left_type
-                        && $left_type->isMixed()
-                        && $left instanceof PhpParser\Node\Expr\Variable
-                        && is_string($left->name)
-                        && !isset($context->assigned_vars['$' . $left->name])
-                        && array_key_exists($left->name, $function_storage->param_types)
-                        && !$function_storage->param_types[$left->name]
-                    ) {
-                        if (isset($context->possible_param_types[$left->name])) {
-                            $context->possible_param_types[$left->name] = Type::combineUnionTypes(
-                                $context->possible_param_types[$left->name],
-                                Type::getString()
-                            );
-                        } else {
-                            $context->possible_param_types[$left->name] = Type::getString();
-                            $context->vars_in_scope['$' . $left->name] = Type::getString();
-                        }
-                    }
-
-                    if ($right_type
-                        && $right_type->isMixed()
-                        && $right instanceof PhpParser\Node\Expr\Variable
-                        && is_string($right->name)
-                        && !isset($context->assigned_vars['$' . $right->name])
-                        && array_key_exists($right->name, $function_storage->param_types)
-                        && !$function_storage->param_types[$right->name]
-                    ) {
-                        if (isset($context->possible_param_types[$right->name])) {
-                            $context->possible_param_types[$right->name] = Type::combineUnionTypes(
-                                $context->possible_param_types[$right->name],
-                                Type::getString()
-                            );
-                        } else {
-                            $context->possible_param_types[$right->name] = Type::getString();
-                            $context->vars_in_scope['$' . $right->name] = Type::getString();
-                        }
-                    }
-                }
+                $context->inferType($left, $function_storage, Type::getString());
+                $context->inferType($right, $function_storage, Type::getString());
             }
         }
 
@@ -2021,19 +1971,7 @@ class ExpressionChecker
             $source_checker = $statements_checker->getSource();
 
             if ($source_checker instanceof FunctionLikeChecker) {
-                $function_id = $source_checker->getMethodId();
-
-                if (strpos($function_id, '::')) {
-                    $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
-
-                    if (!$declaring_method_id) {
-                        throw new \UnexpectedValueException('This should never happen');
-                    }
-
-                    $function_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
-                } else {
-                    $function_storage = FunctionChecker::getStorage($statements_checker, $function_id);
-                }
+                $function_storage = $source_checker->getFunctionLikeStorage();
             }
         }
 
@@ -2043,27 +1981,8 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($function_storage
-                && $function_storage->param_types
-                && $part->inferredType
-                && $part->inferredType->isMixed()
-             ) {
-                if ($part instanceof PhpParser\Node\Expr\Variable
-                    && is_string($part->name)
-                    && !isset($context->assigned_vars['$' . $part->name])
-                    && array_key_exists($part->name, $function_storage->param_types)
-                    && !$function_storage->param_types[$part->name]
-                ) {
-                    if (isset($context->possible_param_types[$part->name])) {
-                        $context->possible_param_types[$part->name] = Type::combineUnionTypes(
-                            $context->possible_param_types[$part->name],
-                            Type::getString()
-                        );
-                    } else {
-                        $context->possible_param_types[$part->name] = Type::getString();
-                        $context->vars_in_scope['$' . $part->name] = Type::getString();
-                    }
-                }
+            if ($function_storage) {
+                $context->inferType($part, $function_storage, Type::getString());
             }
         }
 

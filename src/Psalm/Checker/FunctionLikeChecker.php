@@ -29,6 +29,7 @@ use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Mutator\FileMutator;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -364,6 +365,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $statements_checker = new StatementsChecker($this);
 
+        // this increases memory, so only do it if running under this flag
+        if ($project_checker->infer_types_from_usage) {
+            $this->statements_checker = $statements_checker;
+        }
+
         $template_types = $storage->template_types;
 
         if ($class_storage && $class_storage->template_types) {
@@ -698,6 +704,32 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         return $this->getFilePath() . ':' . $this->function->getLine() . ':' . 'closure';
+    }
+
+    /**
+     * @return FunctionLikeStorage
+     */
+    public function getFunctionLikeStorage()
+    {
+        $function_id = $this->getMethodId();
+
+        $project_checker = $this->getFileChecker()->project_checker;
+
+        if (strpos($function_id, '::')) {
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
+
+            if (!$declaring_method_id) {
+                throw new \UnexpectedValueException('This should never happen');
+            }
+
+            return MethodChecker::getStorage($project_checker, $declaring_method_id);
+        }
+
+        if (!$this->statements_checker) {
+            throw new \UnexpectedValueException('This should not happen either');
+        }
+
+        return FunctionChecker::getStorage($this->statements_checker, $function_id);
     }
 
     /**
