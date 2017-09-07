@@ -1069,17 +1069,32 @@ class ExpressionChecker
                     $stmt->left,
                     $stmt->right,
                     $stmt,
-                    $result_type
+                    $result_type,
+                    $context
                 );
 
                 if ($result_type) {
                     $stmt->inferredType = $result_type;
                 }
-            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div
-                && ($stmt->left->inferredType->hasInt() || $stmt->left->inferredType->hasFloat())
-                && ($stmt->right->inferredType->hasInt() || $stmt->right->inferredType->hasFloat())
-            ) {
-                $stmt->inferredType = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+                $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+                if ($project_checker->infer_types_from_usage
+                    && isset($stmt->left->inferredType)
+                    && isset($stmt->right->inferredType)
+                    && ($stmt->left->inferredType->isMixed() || $stmt->right->inferredType->isMixed())
+                ) {
+                    $source_checker = $statements_checker->getSource();
+
+                    if ($source_checker instanceof FunctionLikeChecker) {
+                        $function_storage = $source_checker->getFunctionLikeStorage();
+
+                        $context->inferType($stmt->left, $function_storage, new Type\Union([new TInt, new TFloat]));
+                        $context->inferType($stmt->right, $function_storage, new Type\Union([new TInt, new TFloat]));
+                    }
+                }
+
+                $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 self::analyzeConcatOp(
                     $statements_checker,
@@ -1132,11 +1147,30 @@ class ExpressionChecker
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
-        Type\Union &$result_type = null
+        Type\Union &$result_type = null,
+        Context $context = null
     ) {
+        $project_checker = $statements_source->getFileChecker()->project_checker;
+
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
+
+        if ($project_checker->infer_types_from_usage
+            && $context
+            && $left_type
+            && $right_type
+            && ($left_type->isMixed() || $right_type->isMixed())
+            && ($left_type->hasNumericType() || $right_type->hasNumericType())
+        ) {
+            $source_checker = $statements_source->getSource();
+            if ($source_checker instanceof FunctionLikeChecker) {
+                $function_storage = $source_checker->getFunctionLikeStorage();
+
+                $context->inferType($left, $function_storage, new Type\Union([new TInt, new TFloat]));
+                $context->inferType($right, $function_storage, new Type\Union([new TInt, new TFloat]));
+            }
+        }
 
         if ($left_type && $right_type) {
             foreach ($left_type->types as $left_type_part) {

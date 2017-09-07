@@ -366,7 +366,8 @@ class AssignmentChecker
                 $stmt->var,
                 $stmt->expr,
                 $stmt,
-                $result_type
+                $result_type,
+                $context
             );
 
             if ($result_type && $var_id) {
