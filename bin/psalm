@@ -14,7 +14,8 @@ $options = getopt(
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
-        'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:'
+        'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
+        'report:'
     ]
 );
 
@@ -87,6 +88,10 @@ Options:
 
     --threads=INT
         If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+
+    --report=PATH
+        The path where to output report file. The output format is base on the file extension.
+        (Currently supported format: ".json", ".xml", ".txt")
 
 HELP;
 
@@ -313,7 +318,8 @@ $project_checker = new ProjectChecker(
     $debug,
     $update_docblocks,
     $find_dead_code || $find_references_to !== null,
-    $find_references_to
+    $find_references_to,
+    isset($options['report'])?$options['report']:null
 );
 
 // initialise custom config, if passed

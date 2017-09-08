@@ -230,6 +230,11 @@ class ProjectChecker
     public $infer_types_from_usage = false;
 
     /**
+     * @var array<string,string>
+     */
+    public $reports = [];
+
+    /**
      * Whether to log functions just at the file level or globally (for stubs)
      *
      * @var bool
@@ -239,16 +244,20 @@ class ProjectChecker
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
+    const TYPE_XML = 'xml';
 
     /**
-     * @param bool $use_color
-     * @param bool $show_info
-     * @param bool $debug_output
-     * @param string  $output_format
-     * @param int     $threads
-     * @param bool    $update_docblocks
-     * @param bool    $collect_references
-     * @param string  $find_references_to
+     * @param FileProvider  $file_provider
+     * @param CacheProvider $cache_provider
+     * @param bool          $use_color
+     * @param bool          $show_info
+     * @param string        $output_format
+     * @param int           $threads
+     * @param bool          $debug_output
+     * @param bool          $update_docblocks
+     * @param bool          $collect_references
+     * @param string        $find_references_to
+     * @param string        $reports
      */
     public function __construct(
         FileProvider $file_provider,
@@ -260,7 +269,8 @@ class ProjectChecker
         $debug_output = false,
         $update_docblocks = false,
         $collect_references = false,
-        $find_references_to = null
+        $find_references_to = null,
+        $reports = null
     ) {
         $this->file_provider = $file_provider;
         $this->cache_provider = $cache_provider;
@@ -272,8 +282,29 @@ class ProjectChecker
         $this->collect_references = $collect_references;
         $this->find_references_to = $find_references_to;
 
-        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS], true)) {
+        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS, self::TYPE_XML], true)) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
+        }
+
+        if ($reports) {
+            /**
+             * @var array<string,string>
+             */
+            $mapping = [
+                '.xml' => self::TYPE_XML,
+                '.json' => self::TYPE_JSON,
+                '.txt' => self::TYPE_EMACS,
+                '.emacs' => self::TYPE_EMACS,
+            ];
+            foreach ($mapping as $extension => $type) {
+                if (substr($reports, -strlen($extension)) === $extension) {
+                    $this->reports[$type] = $reports;
+                    break;
+                }
+            }
+            if (empty($this->reports)) {
+                throw new \UnexpectedValueException('Unrecognised report format ' . $reports);
+            }
         }
 
         $this->output_format = $output_format;
