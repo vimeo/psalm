@@ -101,12 +101,15 @@ class SwitchChecker
                     $file_checker = $statements_checker->getFileChecker();
 
                     if ($type_type instanceof Type\Atomic\GetClassT) {
-                        ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                            $file_checker->project_checker,
-                            $fq_classlike_name,
-                            new CodeLocation($file_checker, $case->cond),
-                            $statements_checker->getSuppressedIssues()
-                        );
+                        if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                $file_checker->project_checker,
+                                $fq_classlike_name,
+                                new CodeLocation($file_checker, $case->cond),
+                                $statements_checker->getSuppressedIssues()
+                            ) === false
+                        ) {
+                            return false;
+                        }
                     } elseif (!isset(ClassLikeChecker::$GETTYPE_TYPES[$fq_classlike_name])) {
                         if (IssueBuffer::accepts(
                             new UnevaluatedCode(
