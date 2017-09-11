@@ -428,7 +428,11 @@ class CallChecker
             $var = $stmt->args[0]->value;
 
             if ($var instanceof PhpParser\Node\Expr\Variable && is_string($var->name)) {
-                $stmt->inferredType = new Type\Union([new Type\Atomic\T('$' . $var->name)]);
+                $atomic_type = $stmt->name->parts === ['get_class']
+                    ? new Type\Atomic\GetClassT('$' . $var->name)
+                    : new Type\Atomic\GetTypeT('$' . $var->name);
+
+                $stmt->inferredType = new Type\Union([$atomic_type]);
             }
         }
 

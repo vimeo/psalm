@@ -53,6 +53,21 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     ];
 
     /**
+     * @var array
+     */
+    public static $GETTYPE_TYPES = [
+        'boolean' => true,
+        'integer' => true,
+        'double' => true,
+        'string' => true,
+        'array' => true,
+        'object' => true,
+        'resource' => true,
+        'NULL' => true,
+        'unknown type' => true,
+    ];
+
+    /**
      * @var PhpParser\Node\Stmt\ClassLike
      */
     protected $class;

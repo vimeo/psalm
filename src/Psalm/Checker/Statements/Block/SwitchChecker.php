@@ -2,12 +2,14 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
+use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
+use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -33,11 +35,14 @@ class SwitchChecker
             return false;
         }
 
+        $type_type = null;
+
         if (isset($stmt->cond->inferredType) &&
             array_values($stmt->cond->inferredType->types)[0] instanceof Type\Atomic\T
         ) {
             /** @var Type\Atomic\T */
             $type_type = array_values($stmt->cond->inferredType->types)[0];
+
             $type_candidate_var = $type_type->typeof;
         }
 
@@ -78,27 +83,54 @@ class SwitchChecker
             $case = $stmt->cases[$i];
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
-            $case_type = null;
+
+            $case_context = clone $original_context;
+            $case_context->parent_context = $context;
 
             if ($case->cond) {
                 if (ExpressionChecker::analyze($statements_checker, $case->cond, $context) === false) {
                     return false;
                 }
 
-                if ($type_candidate_var && $case->cond instanceof PhpParser\Node\Scalar\String_) {
-                    $case_type = $case->cond->value;
+                if ($type_type
+                    && $type_candidate_var
+                    && $case->cond instanceof PhpParser\Node\Scalar\String_
+                ) {
+                    $fq_classlike_name = $case->cond->value;
+
+                    $file_checker = $statements_checker->getFileChecker();
+
+                    if ($type_type instanceof Type\Atomic\GetClassT) {
+                        ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                            $file_checker->project_checker,
+                            $fq_classlike_name,
+                            new CodeLocation($file_checker, $case->cond),
+                            $statements_checker->getSuppressedIssues()
+                        );
+                    } elseif (!isset(ClassLikeChecker::$GETTYPE_TYPES[$fq_classlike_name])) {
+                        if (IssueBuffer::accepts(
+                            new UnevaluatedCode(
+                                'gettype cannot return this value',
+                                new CodeLocation($file_checker, $case->cond)
+                            )
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    $switch_vars = [$type_candidate_var => Type::parseString($fq_classlike_name)];
+
+                    $case_context->vars_in_scope = array_merge(
+                        $case_context->vars_in_scope,
+                        $switch_vars
+                    );
+
+                    $case_context->vars_possibly_in_scope = array_merge(
+                        $case_context->vars_possibly_in_scope,
+                        $switch_vars
+                    );
                 }
             }
-
-            $switch_vars = $type_candidate_var && $case_type
-                            ? [$type_candidate_var => Type::parseString($case_type)]
-                            : [];
-
-            $case_context = clone $original_context;
-            $case_context->parent_context = $context;
-
-            $case_context->vars_in_scope = array_merge($case_context->vars_in_scope, $switch_vars);
-            $case_context->vars_possibly_in_scope = array_merge($case_context->vars_possibly_in_scope, $switch_vars);
 
             $case_stmts = $case->stmts;
 

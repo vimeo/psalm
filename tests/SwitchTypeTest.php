@@ -95,7 +95,7 @@ class SwitchTypeTest extends TestCase
                             testString($a);
                             break;
 
-                        case "int":
+                        case "integer":
                             testInt($a);
                             break;
                     }',
@@ -134,6 +134,29 @@ class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod',
             ],
+            'getClassMissingClass' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    $a = rand(0, 10) ? new A() : new B();
+
+                    switch (get_class($a)) {
+                        case "C":
+                            break;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'getTypeNotAType' => [
+                '<?php
+                    $a = rand(0, 10) ? 1 : "two";
+
+                    switch (gettype($a)) {
+                        case "int":
+                            break;
+                    }',
+                'error_message' => 'UnevaluatedCode',
+            ],
             'getTypeArgWrongArgs' => [
                 '<?php
                     function testInt(int $var) : void {
@@ -150,7 +173,7 @@ class SwitchTypeTest extends TestCase
                         case "string":
                             testInt($a);
 
-                        case "int":
+                        case "integer":
                             testString($a);
                     }',
                 'error_message' => 'InvalidScalarArgument',

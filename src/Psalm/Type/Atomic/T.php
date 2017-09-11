@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class T extends TString
+abstract class T extends TString
 {
     /**
      * Used to hold information as to what this refers to
