@@ -4481,7 +4481,7 @@ return [
 'join' => ['string', 'glue'=>'string', 'pieces'=>'array'],
 'jpeg2wbmp' => ['bool', 'jpegname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
 'json_decode' => ['mixed', 'json'=>'string', 'assoc='=>'bool', 'depth='=>'int', 'options='=>'int'],
-'json_encode' => ['string', 'data'=>'', 'options='=>'int', 'depth='=>'int'],
+'json_encode' => ['string|false', 'data'=>'', 'options='=>'int', 'depth='=>'int'],
 'json_last_error' => ['int'],
 'json_last_error_msg' => ['string'],
 'JsonSerializable::jsonSerialize' => ['mixed'],
