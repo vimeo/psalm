@@ -1026,7 +1026,20 @@ class ExpressionChecker
             $lhs_type = null;
 
             if (isset($stmt->left->inferredType)) {
-                $lhs_type = $stmt->left->inferredType;
+                $if_return_type_reconciled = TypeChecker::reconcileTypes(
+                    '!null',
+                    $stmt->left->inferredType,
+                    '',
+                    $statements_checker,
+                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    $statements_checker->getSuppressedIssues()
+                );
+
+                if ($if_return_type_reconciled === false) {
+                    return false;
+                }
+
+                $lhs_type = $if_return_type_reconciled;
             }
 
             if (!$lhs_type || !isset($stmt->right->inferredType)) {
