@@ -407,6 +407,16 @@ class PropertyTypeTest extends TestCase
 
                     class E extends \Exception{}',
             ],
+            'notSetInEmptyConstructor' => [
+                '<?php
+                    /** @psalm-suppress PropertyNotSetInConstructor */
+                    class A {
+                        /** @var int */
+                        public $a;
+
+                        public function __construct() { }
+                    }',
+            ],
         ];
     }
 

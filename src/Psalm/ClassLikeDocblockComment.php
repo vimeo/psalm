@@ -19,4 +19,9 @@ class ClassLikeDocblockComment
      * @var array<int, array{name:string, type:string}>
      */
     public $properties = [];
+
+    /**
+     * @var array<int, string>
+     */
+    public $suppressed_issues = [];
 }
