@@ -788,10 +788,6 @@ class CallChecker
 
                 $fq_class_name = $class_type_part->value;
 
-                if ($fq_class_name === 'iterable') {
-
-                }
-
                 $intersection_types = $class_type_part->getIntersectionTypes();
 
                 $is_mock = ExpressionChecker::isMock($fq_class_name);
