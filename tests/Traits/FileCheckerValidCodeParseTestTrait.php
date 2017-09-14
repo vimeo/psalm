@@ -18,7 +18,7 @@ trait FileCheckerValidCodeParseTestTrait
      *
      * @param string $code
      * @param array<string, string> $assertions
-     * @param array<string> $error_levels
+     * @param array<string|int, string> $error_levels
      * @param array<string, Union> $scope_vars
      *
      * @return void
@@ -36,8 +36,15 @@ trait FileCheckerValidCodeParseTestTrait
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        foreach ($error_levels as $error_level) {
-            Config::getInstance()->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+        foreach ($error_levels as $error_level_key => $error_level) {
+            if (is_integer($error_level_key)) {
+                $issue_name = $error_level;
+                $error_level = Config::REPORT_SUPPRESS;
+            } else {
+                $issue_name = $error_level_key;
+            }
+
+            Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
 
         $context = new Context();

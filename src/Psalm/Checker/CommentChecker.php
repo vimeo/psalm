@@ -285,6 +285,13 @@ class CommentChecker
             $info->deprecated = true;
         }
 
+        if (isset($comments['specials']['psalm-suppress'])) {
+            /** @var string $suppress_entry */
+            foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
+                $info->suppressed_issues[] = preg_split('/[\s]+/', $suppress_entry)[0];
+            }
+        }
+
         if (isset($comments['specials']['property'])) {
             /** @var string $property */
             foreach ($comments['specials']['property'] as $line_number => $property) {

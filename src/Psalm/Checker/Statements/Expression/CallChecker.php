@@ -39,6 +39,7 @@ use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\TypeCoercion;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
@@ -817,6 +818,20 @@ class CallChecker
 
                 if (!$does_class_exist) {
                     return $does_class_exist;
+                }
+
+                if ($fq_class_name === 'iterable') {
+                    if (IssueBuffer::accepts(
+                        new UndefinedMethod(
+                            $fq_class_name . ' has no defined methods',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    return;
                 }
 
                 if (MethodChecker::methodExists(

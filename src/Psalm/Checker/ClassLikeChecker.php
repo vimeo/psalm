@@ -639,7 +639,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                         $this->fq_class_name . ' or in any private methods called in the constructor',
                                     $error_location
                                 ),
-                                $this->source->getSuppressedIssues()
+                                array_merge($this->source->getSuppressedIssues(), $storage->suppressed_issues)
                             )) {
                                 continue;
                             }
