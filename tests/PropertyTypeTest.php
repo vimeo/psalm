@@ -417,6 +417,32 @@ class PropertyTypeTest extends TestCase
                         public function __construct() { }
                     }',
             ],
+            'setInAbstractMethod' => [
+                '<?php
+                    interface I {
+                        public function foo() : void;
+                    }
+
+                    abstract class A implements I {
+                        /** @var string */
+                        public $bar;
+
+                        public function __construct() {
+                            $this->foo();
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo() : void
+                        {
+                            $this->bar = "hello";
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => [
+                    'PropertyNotSetInConstructor' => Config::REPORT_INFO,
+                ],
+            ],
         ];
     }
 

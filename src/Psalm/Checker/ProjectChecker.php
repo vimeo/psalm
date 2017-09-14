@@ -1457,7 +1457,13 @@ class ProjectChecker
 
         $file_checker = $this->getFileCheckerForClassLike($fq_class_name);
 
-        $appearing_method_id = (string)MethodChecker::getAppearingMethodId($this, $original_method_id);
+        $appearing_method_id = MethodChecker::getAppearingMethodId($this, $original_method_id);
+
+        if (!$appearing_method_id) {
+            // this can happen for some abstract classes implementing (but not fully) interfaces
+            return;
+        }
+
         list($appearing_fq_class_name) = explode('::', $appearing_method_id);
 
         $appearing_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
