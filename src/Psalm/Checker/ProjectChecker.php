@@ -5,6 +5,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
@@ -970,6 +971,33 @@ class ProjectChecker
                 ++$i;
             }
         }
+
+        if ($this->update_docblocks) {
+            foreach ($this->files_to_report as $file_path) {
+                $this->updateFile($file_path);
+            }
+        }
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function updateFile($file_path)
+    {
+        $file_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
+
+        $existing_contents = $this->getFileContents($file_path);
+
+        foreach (array_reverse($file_manipulations) as $manipulation) {
+            $existing_contents
+                = substr($existing_contents, 0, $manipulation->start)
+                    . $manipulation->insertion_text
+                    . substr($existing_contents, $manipulation->end);
+        }
+
+        $this->file_provider->setContents($file_path, $existing_contents);
     }
 
     /**

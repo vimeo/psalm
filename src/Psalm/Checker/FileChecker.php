@@ -132,12 +132,11 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  bool $update_docblocks
      * @param  bool $preserve_checkers
      *
      * @return void
      */
-    public function analyze(Context $file_context = null, $update_docblocks = false, $preserve_checkers = false)
+    public function analyze(Context $file_context = null, $preserve_checkers = false)
     {
         if ($file_context) {
             $this->context = $file_context;
@@ -192,7 +191,7 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         // check any leftover classes not already evaluated
         foreach ($this->class_checkers_to_analyze as $class_checker) {
-            $class_checker->analyze(null, $this->context, $update_docblocks);
+            $class_checker->analyze(null, $this->context);
         }
 
         $config = Config::getInstance();
@@ -217,7 +216,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                     $return_type_location = $function_storage->return_type_location;
 
                     $function_checker->verifyReturnType(
-                        false,
+                        $statements_checker->getFileChecker()->project_checker,
                         $return_type,
                         null,
                         $return_type_location
@@ -229,10 +228,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         if (!$preserve_checkers) {
             $this->class_checkers_to_analyze = [];
             $this->function_checkers = [];
-        }
-
-        if ($update_docblocks) {
-            \Psalm\Mutator\FileMutator::updateDocblocks($this->file_path);
         }
     }
 
@@ -366,15 +361,14 @@ class FileChecker extends SourceChecker implements StatementsSource
 
     /**
      * @param  Context|null $file_context
-     * @param  bool      $update_docblocks
      *
      * @return void
      */
-    public function visitAndAnalyzeMethods(Context $file_context = null, $update_docblocks = false)
+    public function visitAndAnalyzeMethods(Context $file_context = null)
     {
         $this->project_checker->registerAnalyzableFile($this->file_path);
         $this->project_checker->scanFiles();
-        $this->analyze($file_context, $update_docblocks);
+        $this->analyze($file_context);
     }
 
     /**

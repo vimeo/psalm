@@ -222,7 +222,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $return_type_location = $function_storage->return_type_location;
 
                         $this->function_checkers[$function_id]->verifyReturnType(
-                            false,
+                            $project_checker,
                             $return_type,
                             $this->getFQCLN(),
                             $return_type_location
