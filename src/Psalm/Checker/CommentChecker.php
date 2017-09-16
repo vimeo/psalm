@@ -520,9 +520,15 @@ class CommentChecker
             /** @var int */
             $special_type_width = max($special_type_lengths) + 1;
 
+            $special_types = count($parsed_doc_comment['specials']);
+
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
                 foreach ($lines as $line) {
                     $doc_comment_text .= $left_padding . ' * @' . str_pad($type, $special_type_width) . $line . PHP_EOL;
+                }
+
+                if ($special_types-- > 1) {
+                    $doc_comment_text .= $left_padding . ' *'. PHP_EOL;
                 }
             }
         }
