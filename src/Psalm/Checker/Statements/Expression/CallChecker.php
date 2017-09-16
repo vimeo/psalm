@@ -1704,8 +1704,12 @@ class CallChecker
 
             if ($function_param
                 && $function_param->by_ref
-                && !($arg->value instanceof PhpParser\Node\Expr\Variable)
-                && !($arg->value instanceof PhpParser\Node\Expr\PropertyFetch)
+                && ($arg->value instanceof PhpParser\Node\Scalar
+                    || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                    || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                )
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidPassByReference(
