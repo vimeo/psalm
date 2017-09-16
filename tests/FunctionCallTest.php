@@ -266,6 +266,21 @@ class FunctionCallTest extends TestCase
 
                   foo($a3);',
             ],
+            'goodByRef' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+                    }
+
+                    $a = new A();
+                    $b = "goodbye";
+
+                    function fooFoo(string &$v) : void {}
+
+                    fooFoo($a->foo);
+                    fooFoo($b);',
+            ],
         ];
     }
 
@@ -359,8 +374,7 @@ class FunctionCallTest extends TestCase
                     function f($p = false) {}',
                 'error_message' => 'InvalidParamDefault',
             ],
-            // Skipped. Does not throw an error.
-            'SKIPPED-badByRef' => [
+            'badByRef' => [
                 '<?php
                     function fooFoo(string &$v) : void {}
                     fooFoo("a");',
