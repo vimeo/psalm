@@ -23,6 +23,7 @@ class TraitChecker extends ClassLikeChecker
         $this->file_checker = $trait_source->getFileChecker();
         $this->class = $class;
         $this->fq_class_name = $fq_class_name;
+        $this->storage = $this->file_checker->project_checker->classlike_storage_provider->get($fq_class_name);
 
         self::$trait_checkers[strtolower($fq_class_name)] = $this;
     }

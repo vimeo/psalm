@@ -505,7 +505,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $constructor_class_storage = null;
 
-                if (isset($property_class_storage->methods['__construct'])
+                if (isset($storage->methods['__construct'])) {
+                    $constructor_class_storage = $storage;
+                } elseif (isset($property_class_storage->methods['__construct'])
                     && $property_class_storage !== $storage
                 ) {
                     $constructor_class_storage = $property_class_storage;
@@ -515,18 +517,23 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $constructor_class_storage = $classlike_storage_provider->get($construct_fqcln);
                 }
 
-                if ((!$constructor_class_storage
-                        || !$constructor_class_storage->all_properties_set_in_constructor
-                        || $constructor_class_storage->methods['__construct']->visibility === self::VISIBILITY_PRIVATE)
-                    && !$property->has_default
-                    && $property->type
-                    && !$property->type->isMixed()
-                    && !$property->type->isNullable()
-                    && !$property->is_static
+                if ($constructor_class_storage
+                    && $constructor_class_storage->all_properties_set_in_constructor
+                    && $constructor_class_storage->methods['__construct']->visibility !== self::VISIBILITY_PRIVATE
                 ) {
-                    $uninitialized_variables[] = '$this->' . $property_name;
-                    $uninitialized_properties[$property_name] = $property;
+                    continue;
                 }
+
+                if ($property->has_default || $property->is_static || !$property->type) {
+                    continue;
+                }
+
+                if ($property->type->isMixed() || $property->type->isNullable()) {
+                    continue;
+                }
+
+                $uninitialized_variables[] = '$this->' . $property_name;
+                    $uninitialized_properties[$property_name] = $property;
             }
 
             if ($uninitialized_properties) {
