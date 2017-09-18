@@ -23,6 +23,7 @@ use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\InvalidMethodCall;
+use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedArgument;
@@ -1697,11 +1698,33 @@ class CallChecker
         }
 
         foreach ($args as $argument_offset => $arg) {
-            if (isset($arg->value->inferredType)) {
-                $function_param = count($function_params) > $argument_offset
-                    ? $function_params[$argument_offset]
-                    : ($last_param && $last_param->is_variadic ? $last_param : null);
+            $function_param = count($function_params) > $argument_offset
+                ? $function_params[$argument_offset]
+                : ($last_param && $last_param->is_variadic ? $last_param : null);
 
+            if ($function_param
+                && $function_param->by_ref
+                && ($arg->value instanceof PhpParser\Node\Scalar
+                    || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                    || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                )
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidPassByReference(
+                        'Parameter ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects a variable',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                break;
+            }
+
+            if (isset($arg->value->inferredType)) {
                 if ($function_param && $function_param->type) {
                     $param_type = clone $function_param->type;
 

@@ -5,6 +5,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
@@ -969,6 +970,42 @@ class ProjectChecker
                 $analysis_worker($i, $file_path);
                 ++$i;
             }
+        }
+
+        if ($this->update_docblocks) {
+            foreach ($this->files_to_report as $file_path) {
+                $this->updateFile($file_path, true);
+            }
+        }
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  bool   $output_changes to console
+     *
+     * @return void
+     */
+    public function updateFile($file_path, $output_changes = false)
+    {
+        $file_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
+
+        $docblock_update_count = count($file_manipulations);
+
+        $existing_contents = $this->getFileContents($file_path);
+
+        foreach (array_reverse($file_manipulations) as $manipulation) {
+            $existing_contents
+                = substr($existing_contents, 0, $manipulation->start)
+                    . $manipulation->insertion_text
+                    . substr($existing_contents, $manipulation->end);
+        }
+
+        if ($docblock_update_count) {
+            if ($output_changes) {
+                echo 'Adding/updating ' . $docblock_update_count . ' docblocks in ' . $file_path . PHP_EOL;
+            }
+
+            $this->file_provider->setContents($file_path, $existing_contents);
         }
     }
 

@@ -14,6 +14,17 @@ class FileProvider
     }
 
     /**
+     * @param  string  $file_path
+     * @param  string  $file_contents
+     *
+     * @return void
+     */
+    public function setContents($file_path, $file_contents)
+    {
+        file_put_contents($file_path, $file_contents);
+    }
+
+    /**
      * @param  string $file_path
      *
      * @return int

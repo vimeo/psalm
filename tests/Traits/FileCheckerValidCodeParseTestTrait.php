@@ -37,7 +37,7 @@ trait FileCheckerValidCodeParseTestTrait
         }
 
         foreach ($error_levels as $error_level_key => $error_level) {
-            if (is_integer($error_level_key)) {
+            if (is_int($error_level_key)) {
                 $issue_name = $error_level;
                 $error_level = Config::REPORT_SUPPRESS;
             } else {

@@ -493,11 +493,11 @@ class CommentChecker
      * @param  array{description:string,specials:array<string,array<string>>} $parsed_doc_comment
      * @param  string                                                         $left_padding
      *
-     * @return array<int, string>
+     * @return string
      */
     public static function renderDocComment(array $parsed_doc_comment, $left_padding)
     {
-        $doc_comment_text = [$left_padding . '/**'];
+        $doc_comment_text = '/**' . PHP_EOL;
 
         $description_lines = null;
 
@@ -507,12 +507,12 @@ class CommentChecker
             $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
 
             foreach ($description_lines as $line) {
-                $doc_comment_text[] = $left_padding . ' * ' . $line;
+                $doc_comment_text .= $left_padding . ' * ' . $line . PHP_EOL;
             }
         }
 
         if ($description_lines && $parsed_doc_comment['specials']) {
-            $doc_comment_text[] = $left_padding . ' *';
+            $doc_comment_text .= $left_padding . ' *' . PHP_EOL;
         }
 
         if ($parsed_doc_comment['specials']) {
@@ -520,14 +520,22 @@ class CommentChecker
             /** @var int */
             $special_type_width = max($special_type_lengths) + 1;
 
+            $last_type = null;
+
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
-                foreach ($lines as $line) {
-                    $doc_comment_text[] = $left_padding . ' * @' . str_pad($type, $special_type_width) . $line;
+                if ($last_type !== null && ($last_type !== 'return' || $type !== 'psalm-return')) {
+                    $doc_comment_text .= $left_padding . ' *' . PHP_EOL;
                 }
+
+                foreach ($lines as $line) {
+                    $doc_comment_text .= $left_padding . ' * @' . str_pad($type, $special_type_width) . $line . PHP_EOL;
+                }
+
+                $last_type = $type;
             }
         }
 
-        $doc_comment_text[] = $left_padding . ' */';
+        $doc_comment_text .= $left_padding . ' */' . PHP_EOL . $left_padding;
 
         return $doc_comment_text;
     }

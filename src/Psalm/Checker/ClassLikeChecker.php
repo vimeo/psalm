@@ -183,14 +183,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     /**
      * @param Context|null  $class_context
      * @param Context|null  $global_context
-     * @param bool          $update_docblocks
      *
      * @return null|false
      */
     public function analyze(
         Context $class_context = null,
-        Context $global_context = null,
-        $update_docblocks = false
+        Context $global_context = null
     ) {
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
 
@@ -422,8 +420,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $stmt,
                     $this,
                     $class_context,
-                    $global_context,
-                    $update_docblocks
+                    $global_context
                 );
 
                 if ($stmt->name === '__construct') {
@@ -593,8 +590,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                             $fake_stmt,
                             $this,
                             $class_context,
-                            $global_context,
-                            $update_docblocks
+                            $global_context
                         );
                     }
                 }
@@ -706,7 +702,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  StatementsSource                $source
      * @param  Context                         $class_context
      * @param  Context|null                    $global_context
-     * @param  bool                         $update_docblocks
      *
      * @return MethodChecker|null
      */
@@ -714,8 +709,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         PhpParser\Node\Stmt\ClassMethod $stmt,
         StatementsSource $source,
         Context $class_context,
-        Context $global_context = null,
-        $update_docblocks = false
+        Context $global_context = null
     ) {
         $config = Config::getInstance();
 
@@ -758,7 +752,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $return_type = MethodChecker::getMethodReturnType($project_checker, $actual_method_id);
 
                 $method_checker->verifyReturnType(
-                    $update_docblocks,
+                    $project_checker,
                     $return_type ? clone $return_type : null,
                     $class_context->self,
                     $return_type_location,

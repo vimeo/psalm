@@ -38,6 +38,17 @@ class FakeFileProvider extends \Psalm\Provider\FileProvider
     }
 
     /**
+     * @param  string  $file_path
+     * @param  string  $file_contents
+     *
+     * @return void
+     */
+    public function setContents($file_path, $file_contents)
+    {
+        $this->fake_files[$file_path] = $file_contents;
+    }
+
+    /**
      * @param  string $file_path
      *
      * @return int

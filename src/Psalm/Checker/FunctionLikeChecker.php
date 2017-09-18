@@ -11,6 +11,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;
+use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
@@ -27,7 +28,6 @@ use Psalm\Issue\PossiblyUnusedVariable;
 use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
-use Psalm\Mutator\FileMutator;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -542,7 +542,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $closure_yield_types = [];
 
             $this->verifyReturnType(
-                false,
+                $project_checker,
                 $storage->return_type,
                 $this->source->getFQCLN(),
                 $storage->return_type_location
@@ -788,7 +788,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
-     * @param   bool                $update_docblock
      * @param   Type\Union|null     $return_type
      * @param   string              $fq_class_name
      * @param   CodeLocation|null   $return_type_location
@@ -797,7 +796,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @return  false|null
      */
     public function verifyReturnType(
-        $update_docblock = false,
+        ProjectChecker $project_checker,
         Type\Union $return_type = null,
         $fq_class_name = null,
         CodeLocation $return_type_location = null,
@@ -869,7 +868,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             )
         );
 
-        if (!$return_type && !$update_docblock && !$is_to_string) {
+        if (!$return_type && !$project_checker->update_docblocks && !$is_to_string) {
             if ($this->function instanceof Closure) {
                 if (IssueBuffer::accepts(
                     new MissingClosureReturnType(
@@ -910,14 +909,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            if (!$return_type && !$update_docblock) {
+            if (!$return_type && !$project_checker->update_docblocks) {
                 return null;
             }
         }
 
         if (!$return_type) {
             if ($inferred_return_type && !$inferred_return_type->isMixed()) {
-                $this->addDocblockReturnType($inferred_return_type);
+                $this->addDocblockReturnType($project_checker, $inferred_return_type);
             }
 
             return null;
@@ -993,9 +992,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $has_scalar_match,
                 $type_coerced
             )) {
-                if ($update_docblock) {
+                if ($project_checker->update_docblocks) {
                     if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
-                        $this->addDocblockReturnType($inferred_return_type);
+                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
                     }
 
                     return null;
@@ -1026,9 +1025,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
                 }
             } elseif (!$inferred_return_type->isNullable() && $declared_return_type->isNullable()) {
-                if ($update_docblock) {
+                if ($project_checker->update_docblocks) {
                     if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
-                        $this->addDocblockReturnType($inferred_return_type);
+                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
                     }
 
                     return null;
@@ -1055,12 +1054,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      *
      * @return void
      */
-    private function addDocblockReturnType(Type\Union $inferred_return_type)
+    private function addDocblockReturnType(ProjectChecker $project_checker, Type\Union $inferred_return_type)
     {
-        FileMutator::addDocblockReturnType(
+        $manipulator = FunctionDocblockManipulator::getForFunction(
+            $project_checker,
             $this->source->getFilePath(),
-            $this->function->getLine(),
-            (string)$this->function->getDocComment(),
+            $this->getMethodId(),
+            $this->function
+        );
+
+        $manipulator->setDocblockReturnType(
             $inferred_return_type->toNamespacedString(
                 $this->source->getAliasedClassesFlipped(),
                 $this->source->getFQCLN(),
