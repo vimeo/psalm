@@ -87,7 +87,12 @@ class Clause
             sort($possible_types);
         }
 
-        return md5(json_encode($this->possibilities)) .
+        $possibility_string = json_encode($this->possibilities);
+        if (!$possibility_string) {
+            throw new \LogicException('Error converting possibilities to json');
+        }
+
+        return md5($possibility_string) .
             ($this->wedge || !$this->reconcilable ? spl_object_hash($this) : '');
     }
 }
