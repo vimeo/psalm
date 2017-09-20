@@ -152,7 +152,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
 
             if (!is_string($declaring_method_id)) {
-                throw new \UnexpectedValueException('$declaring_method_id should be a string');
+                throw new \UnexpectedValueException('The declaring method of ' . $method_id . ' should not be null');
             }
 
             $fq_class_name = (string)$context->self;
@@ -719,14 +719,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
 
             if (!$declaring_method_id) {
-                throw new \UnexpectedValueException('This should never happen');
+                throw new \UnexpectedValueException('The declaring method of ' . $function_id . ' should not be null');
             }
 
             return MethodChecker::getStorage($project_checker, $declaring_method_id);
         }
 
         if (!$this->statements_checker) {
-            throw new \UnexpectedValueException('This should not happen either');
+            throw new \UnexpectedValueException(
+                '$this->statements_checker should be defined when getting storage for ' . $function_id
+            );
         }
 
         return FunctionChecker::getStorage($this->statements_checker, $function_id);
@@ -1208,7 +1210,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
 
             if ($function_param_options === null) {
-                throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
+                throw new \UnexpectedValueException(
+                    'Not expecting $function_param_options to be null for ' . $method_id
+                );
             }
 
             return self::getMatchingParamsFromCallMapOptions($project_checker, $function_param_options, $args);
@@ -1228,7 +1232,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
 
         if ($function_param_options === null) {
-            throw new \UnexpectedValueException('Not expecting $function_param_options to be null');
+            throw new \UnexpectedValueException(
+                'Not expecting $function_param_options to be null for ' . $method_id
+            );
         }
 
         return self::getMatchingParamsFromCallMapOptions($project_checker, $function_param_options, $args);

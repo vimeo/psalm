@@ -85,7 +85,7 @@ class MethodChecker extends FunctionLikeChecker
         $storage = self::getStorage($project_checker, $method_id);
 
         if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null');
+            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 
         if ($storage->return_type) {
@@ -129,7 +129,7 @@ class MethodChecker extends FunctionLikeChecker
         $storage = self::getStorage($project_checker, $method_id);
 
         if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null');
+            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 
         if (!$storage->return_type_location) {
@@ -498,7 +498,7 @@ class MethodChecker extends FunctionLikeChecker
         $storage = self::getStorage($project_checker, $declaring_method_id);
 
         if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null');
+            throw new \UnexpectedValueException('$storage should not be null for ' . $declaring_method_id);
         }
 
         switch ($storage->visibility) {
@@ -684,7 +684,7 @@ class MethodChecker extends FunctionLikeChecker
         $storage = self::getStorage($project_checker, $method_id);
 
         if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null');
+            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 
         list($fq_class_name) = explode('::', $method_id);

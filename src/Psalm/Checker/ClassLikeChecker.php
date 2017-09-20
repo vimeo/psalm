@@ -201,7 +201,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if ($this->class instanceof PhpParser\Node\Stmt\Class_) {
             if ($this->class->extends) {
                 if (!$this->parent_fq_class_name) {
-                    throw new \UnexpectedValueException('Parent class should be filled in');
+                    throw new \UnexpectedValueException('Parent class should be filled in for ' . $fq_class_name);
                 }
 
                 $parent_reference_location = new CodeLocation($this, $this->class->extends);
@@ -462,7 +462,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         }
 
                         if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
-                            throw new \UnexpectedValueException('Expecting trait statements to exist');
+                            throw new \UnexpectedValueException(
+                                'Expecting trait statements to exist for ' . $fq_trait_name
+                            );
                         }
 
                         $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
@@ -689,7 +691,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     );
 
                     if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
-                        throw new \UnexpectedValueException('Expecting trait statements to exist');
+                        throw new \UnexpectedValueException(
+                            'Expecting trait statements to exist for ' . $fq_trait_name
+                        );
                     }
 
                     $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
@@ -810,7 +814,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     );
 
                     if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
-                        throw new \UnexpectedValueException('Expecting trait statements to exist');
+                        throw new \UnexpectedValueException(
+                            'Expecting trait statements to exist for ' . $fq_trait_name
+                        );
                     }
 
                     $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
