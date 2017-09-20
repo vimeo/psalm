@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 
@@ -1186,8 +1187,61 @@ class ExpressionChecker
         }
 
         if ($left_type && $right_type) {
+            if ($left_type->isNullable()) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullOperand(
+                        'Left operand cannot be nullable, got ' . $left_type,
+                        new CodeLocation($statements_source, $left)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($left_type->isNull()) {
+                if (IssueBuffer::accepts(
+                    new NullOperand(
+                        'Left operand cannot be null',
+                        new CodeLocation($statements_source, $left)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
+            if ($right_type->isNullable()) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullOperand(
+                        'Left operand cannot be nullable, got ' . $right_type,
+                        new CodeLocation($statements_source, $right)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($right_type->isNull()) {
+                if (IssueBuffer::accepts(
+                    new NullOperand(
+                        'Left operand cannot be null',
+                        new CodeLocation($statements_source, $right)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
             foreach ($left_type->types as $left_type_part) {
                 foreach ($right_type->types as $right_type_part) {
+                    if ($left_type_part instanceof TNull) {
+                        // null case is handled above
+                        continue;
+                    }
+
                     if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
                         if ($left_type_part instanceof TMixed) {
                             if (IssueBuffer::accepts(

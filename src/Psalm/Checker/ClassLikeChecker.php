@@ -505,6 +505,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $property = $property_class_storage->properties[$property_name];
 
+                if ($property->has_default || $property->is_static || !$property->type) {
+                    continue;
+                }
+
+                if ($property->type->isMixed() || $property->type->isNullable()) {
+                    continue;
+                }
+
                 $constructor_class_storage = null;
 
                 if (isset($storage->methods['__construct'])) {
@@ -523,14 +531,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     && $constructor_class_storage->all_properties_set_in_constructor
                     && $constructor_class_storage->methods['__construct']->visibility !== self::VISIBILITY_PRIVATE
                 ) {
-                    continue;
-                }
-
-                if ($property->has_default || $property->is_static || !$property->type) {
-                    continue;
-                }
-
-                if ($property->type->isMixed() || $property->type->isNullable()) {
                     continue;
                 }
 
