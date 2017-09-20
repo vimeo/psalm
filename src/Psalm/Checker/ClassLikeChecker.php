@@ -1279,6 +1279,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         /** @var \ReflectionMethod $reflection_method */
         foreach ($reflection_methods as $reflection_method) {
+            $method_reflection_class = $reflection_method->getDeclaringClass();
+            $method_class_name = $method_reflection_class->getName();
+
+            self::registerReflectedClass($method_class_name, $method_reflection_class, $project_checker);
+
             MethodChecker::extractReflectionMethodInfo($reflection_method, $project_checker);
 
             if ($reflection_method->class !== $class_name) {
