@@ -1136,7 +1136,7 @@ return [
 'DateTimeImmutable::getLastErrors' => ['array'],
 'DateTimeImmutable::getOffset' => ['int'],
 'DateTimeImmutable::getTimestamp' => ['int'],
-'DateTimeImmutable::getTimezone' => ['DateTimeZone', 'object'=>'DateTime'],
+'DateTimeImmutable::getTimezone' => ['DateTimeZone'],
 'DateTimeImmutable::modify' => ['DateTimeImmutable', 'modify'=>'string'],
 'DateTimeImmutable::setDate' => ['DateTimeImmutable', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
 'DateTimeImmutable::setISODate' => ['DateTimeImmutable', 'year'=>'int', 'week'=>'int', 'day='=>'int'],
