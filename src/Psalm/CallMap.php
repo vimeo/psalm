@@ -1126,7 +1126,7 @@ return [
 'DateTime::getLastErrors' => ['array'],
 'DateTime::getOffset' => ['int'],
 'DateTime::getTimestamp' => ['int'],
-'DateTime::getTimezone' => ['DateTimeZone', 'object='=>'DateTime'],
+'DateTime::getTimezone' => ['DateTimeZone'],
 'DateTimeImmutable::add' => ['DateTimeImmutable', 'interval'=>'DateInterval'],
 'DateTimeImmutable::__construct' => ['DateTimeImmutable', 'time='=>'string', 'timezone='=>'DateTimeZone'],
 'DateTimeImmutable::createFromFormat' => ['DateTimeImmutable', 'format'=>'string', 'time'=>'string', 'timezone='=>'DateTimeZone'],

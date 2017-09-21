@@ -559,6 +559,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $has_optional_param = false;
 
         $existing_params = [];
+        $param_name_map
 
         /** @var PhpParser\Node\Param $param */
         foreach ($stmt->getParams() as $param) {
@@ -575,7 +576,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
             }
 
-            $existing_params[$param_array->name] = true;
+            $existing_params[$param_array->name] = $i;
             $storage->param_types[$param_array->name] = $param_array->type;
             $storage->params[] = $param_array;
 
@@ -601,6 +602,44 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         }
 
         $storage->required_param_count = $required_param_count;
+
+        if (strpos($stmt->name, 'assert') === 0) {
+            $var_assertions = [];
+
+            foreach ($stmt->stmts as $function_stmt) {
+                if ($function_stmt instanceof PhpParser\Node\Stmt\If_
+                    && $function_stmt->stmts[0] instanceof PhpParser\Node\Stmt\Throw_
+                ) {
+                    $conditional = $function_stmt->cond;
+
+                    if ($conditional instanceof PhpParser\Node\Expr\BooleanNot
+                        && $conditional->expr instanceof PhpParser\Node\Expr\Instanceof_
+                        && $conditional->expr->expr instanceof PhpParser\Node\Expr\Variable
+                        && is_string($conditional->expr->expr->name)
+                        && isset($existing_params[$conditional->expr->expr->name])
+                    ) {
+                        $param_offset = $existing_params[$conditional->expr->expr->name];
+
+                        if ($conditional->expr->class instanceof PhpParser\Node\Expr\Variable
+                            && is_string($conditional->expr->class->name)
+                            && isset($existing_params[$conditional->expr->class->name])
+                        ) {
+                            $var_assertions[$param_offset]
+                                = $existing_params[$conditional->expr->class->name];
+                        } elseif ($conditional->expr->class instanceof PhpParser\Node\Name) {
+                            $instanceof_class = ClassLikeChecker::getFQCLNFromNameObject(
+                                $conditional->expr->class,
+                                $this->aliases
+                            );
+
+                            $var_assertions[$param_offset] = $instanceof_class;
+                        }
+                    }
+                }
+            }
+
+            $storage->assertions = $var_assertions;
+        }
 
         if ($parser_return_type = $stmt->getReturnType()) {
             $suffix = '';

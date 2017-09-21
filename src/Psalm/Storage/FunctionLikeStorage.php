@@ -101,4 +101,7 @@ class FunctionLikeStorage
      * @var array<string, array<int, CodeLocation>>|null
      */
     public $referencing_locations;
+
+    /** @var array<string, string|int> */
+    public $assertions = [];
 }
