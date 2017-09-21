@@ -559,7 +559,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $has_optional_param = false;
 
         $existing_params = [];
-        $param_name_map
 
         /** @var PhpParser\Node\Param $param */
         foreach ($stmt->getParams() as $param) {
@@ -603,7 +602,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $storage->required_param_count = $required_param_count;
 
-        if (strpos($stmt->name, 'assert') === 0) {
+        if (($stmt instanceof PhpParser\Node\Stmt\Function_
+                || $stmt instanceof PhpParser\Node\Stmt\ClassMethod)
+            && strpos($stmt->name, 'assert') === 0
+            && $stmt->stmts
+        ) {
             $var_assertions = [];
 
             foreach ($stmt->stmts as $function_stmt) {
