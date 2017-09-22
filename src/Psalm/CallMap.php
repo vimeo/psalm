@@ -46,6 +46,10 @@ namespace Psalm;
  *
  * The <arg_name> can also be '...' to indicate the arg is variadic.
  * '...=' indicates it is both variadic and optional.
+ *
+ * Constructors have the class they belong to as a return type.
+ *
+ * Void types are declared as 'void' or ''.
  */
 
 return [
@@ -1106,20 +1110,20 @@ return [
 'DateInterval::createFromDateString' => ['DateInterval', 'time'=>'string'],
 'DateInterval::format' => ['string', 'format'=>'string'],
 'DateInterval::__set_state' => ['DateInterval', 'array'=>'array'],
-'DateInterval::__wakeup' => ['DateInterval'],
+'DateInterval::__wakeup' => ['void'],
 'date_offset_get' => ['int', 'obj'=>'DateTime'],
 'date_parse' => ['array', 'date'=>'string'],
 'date_parse_from_format' => ['array', 'format'=>'string', 'date'=>'string'],
 'DatePeriod::__construct\'1' => ['DatePeriod', 'start'=>'DateTimeInterface', 'interval'=>'DateInterval', 'end'=>'DateTimeInterface', 'options='=>'int'],
 'DatePeriod::__construct\'2' => ['DatePeriod', 'iso'=>'string', 'options='=>'int'],
 'DatePeriod::__construct' => ['DatePeriod', 'start'=>'DateTimeInterface', 'interval'=>'DateInterval', 'recur'=>'int', 'options='=>'int'],
-'DatePeriod::__wakeup' => ['DatePeriod'],
+'DatePeriod::__wakeup' => ['void'],
 'date' => ['string', 'format'=>'string', 'timestamp='=>'int'],
 'date_sun_info' => ['array', 'time'=>'int', 'latitude'=>'float', 'longitude'=>'float'],
 'date_sunrise' => ['', 'time'=>'', 'format='=>'int', 'latitude='=>'float', 'longitude='=>'float', 'zenith='=>'float', 'gmt_offset='=>'float'],
 'date_sunset' => ['', 'time'=>'', 'format='=>'int', 'latitude='=>'float', 'longitude='=>'float', 'zenith='=>'float', 'gmt_offset='=>'float'],
 'DateTime::add' => ['DateTime', 'interval'=>'DateInterval'],
-'DateTime::__construct' => ['DateTime', 'time='=>'string|null', 'timezone='=>'DateTimeZone|null'],
+'DateTime::__construct' => ['DateTime', 'time='=>'string', 'timezone='=>'DateTimeZone'],
 'DateTime::createFromFormat' => ['DateTime', 'format'=>'string', 'time'=>'string', 'timezone='=>'DateTimeZone'],
 'DateTime::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
 'DateTime::format' => ['string|false', 'format'=>'string'],
@@ -1145,7 +1149,7 @@ return [
 'DateTimeImmutable::setTimestamp' => ['DateTimeImmutable', 'unixtimestamp'=>'int'],
 'DateTimeImmutable::setTimezone' => ['DateTimeImmutable', 'timezone'=>'DateTimeZone'],
 'DateTimeImmutable::sub' => ['DateTimeImmutable', 'interval'=>'DateInterval'],
-'DateTimeImmutable::__wakeup' => ['DateTimeImmutable'],
+'DateTimeImmutable::__wakeup' => ['void'],
 'DateTimeInterface::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
 'DateTimeInterface::getOffset' => ['int'],
 'DateTimeInterface::format' => ['string|false', 'format'=>'string'],
@@ -1160,17 +1164,17 @@ return [
 'DateTime::setTimezone' => ['DateTime', 'timezone'=>'DateTimeZone'],
 'date_timestamp_get' => ['int', 'obj'=>'DateTime'],
 'DateTime::sub' => ['DateTime', 'interval'=>'DateInterval'],
-'DateTime::__wakeup' => ['DateTime'],
+'DateTime::__wakeup' => ['void'],
 'DateTimeZone::__construct' => ['DateTimeZone', 'timezone'=>'string'],
 'date_timezone_get' => ['DateTimeZone', 'obj'=>'DateTime'],
-'DateTimeZone::getLocation' => ['array', 'object='=>'DateTimeZone'],
-'DateTimeZone::getName' => ['string', 'object='=>'DateTimeZone'],
+'DateTimeZone::getLocation' => ['array'],
+'DateTimeZone::getName' => ['string'],
 'DateTimeZone::getOffset' => ['int', 'datetime'=>'DateTime'],
-'DateTimeZone::getTransitions' => ['array', 'timestamp_begin='=>'int', 'timestamp_end='=>'int', 'object='=>'DateTimeZone'],
+'DateTimeZone::getTransitions' => ['array', 'timestamp_begin='=>'int', 'timestamp_end='=>'int'],
 'DateTimeZone::listAbbreviations' => ['array'],
 'DateTimeZone::listIdentifiers' => ['array', 'what='=>'int', 'country='=>'string'],
 'DateTimeZone::__set_state' => ['DateTimeZone', 'array'=>'array'],
-'DateTimeZone::__wakeup' => ['DateTimeZone'],
+'DateTimeZone::__wakeup' => ['void'],
 'db2_autocommit' => ['', 'connection'=>'', 'value='=>'bool'],
 'db2_bind_param' => ['bool', 'stmt'=>'', 'parameter-number'=>'int', 'variable-name'=>'string', 'parameter-type='=>'int', 'data-type='=>'int', 'precision='=>'int', 'scale='=>'int'],
 'db2_client_info' => ['object', 'connection'=>''],
