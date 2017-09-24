@@ -648,6 +648,11 @@ class AssignmentChecker
 
                 if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
+                        // if this is a proper error, we'll see it on the first pass
+                        if ($context->collect_mutations) {
+                            return;
+                        }
+
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
                                 'Instance property ' . $property_id . ' is not defined',

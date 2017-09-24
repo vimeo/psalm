@@ -417,6 +417,52 @@ class PropertyTypeTest extends TestCase
                         public function __construct() { }
                     }',
             ],
+            'extendsClassWithPrivateConstructorSet' => [
+                '<?php
+namespace Q;
+
+class Base
+{
+    /**
+     * @var string
+     */
+    private $aString;
+
+    public function __construct()
+    {
+        $this->aString = "aa";
+        echo($this->aString);
+    }
+}
+
+class Descendant extends Base
+{
+    /**
+     * @var bool
+     */
+    private $aBool;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->aBool = true;
+    }
+}',
+            ],
+            'extendsClassWithPrivateAndException' => [
+                '<?php
+abstract class A extends \Exception {
+    /** @var string **/
+    private $p;
+
+    /** @param string $p **/
+    final public function __construct($p) {
+        $this->p = $p;
+    }
+}
+
+final class B extends A {}',
+            ],
             'setInAbstractMethod' => [
                 '<?php
                     interface I {

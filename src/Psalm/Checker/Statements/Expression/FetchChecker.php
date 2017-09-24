@@ -250,6 +250,10 @@ class FetchChecker
 
             if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                 if ($stmt_var_id === '$this') {
+                    if ($context->collect_mutations) {
+                        return;
+                    }
+
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
