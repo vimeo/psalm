@@ -73,8 +73,8 @@ return [
     ],
     'ziparchive' => [
         'status' => 'int',
-        'statussys' => 'int',
-        'numfiles' => 'int',
+        'statusSys' => 'int',
+        'numFiles' => 'int',
         'filename' => 'string',
         'comment' => 'string',
     ],
