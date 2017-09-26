@@ -213,5 +213,11 @@ somefile.php:2:43:error - Could not verify return type \'string|null\' for psalm
 ',
             IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false)
         );
+
+        IssueBuffer::finish($this->project_checker, true, null, ['somefile.php']);
+        $this->assertFileExists(__DIR__ . '/test-report.json');
+        $this->assertSame('[]
+', file_get_contents(__DIR__ . '/test-report.json'));
+        unlink(__DIR__ . '/test-report.json');
     }
 }
