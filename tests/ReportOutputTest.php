@@ -183,4 +183,35 @@ somefile.php:2:43:error - Could not verify return type \'string|null\' for psalm
         //    XML2Array::createArray(IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false), LIBXML_NOCDATA)
         //);
     }
+
+    /**
+     * @return void
+     */
+    public function testEmptyReportIfNotError()
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php ?>'
+        );
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->assertSame(
+            '[]
+',
+            IssueBuffer::getOutput(ProjectChecker::TYPE_JSON, false)
+        );
+        $this->assertSame(
+            '',
+            IssueBuffer::getOutput(ProjectChecker::TYPE_EMACS, false)
+        );
+        $this->assertSame(
+            '<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <item/>
+</report>
+',
+            IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false)
+        );
+    }
 }
