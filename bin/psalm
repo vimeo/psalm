@@ -8,8 +8,6 @@ ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '2048M');
 ini_set('xdebug.max_nesting_level', 512);
 
-define('PSALM_VERSION', '0.2.63');
-
 // get options from command line
 $options = getopt(
     'f:mhvc:ir:',
@@ -43,12 +41,6 @@ if (isset($options['config'])) {
 
 if (isset($options['c']) && is_array($options['c'])) {
     die('Too many config files provided' . PHP_EOL);
-}
-
-
-if (array_key_exists('v', $options)) {
-    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
-    exit;
 }
 
 if (array_key_exists('h', $options)) {
@@ -173,6 +165,12 @@ foreach ($autoload_roots as $autoload_root) {
 
 foreach ($autoload_files as $file) {
     require_once $file;
+}
+
+if (array_key_exists('v', $options)) {
+    $version = \PackageVersions\Versions::getVersion('vimeo/psalm');
+    echo 'Psalm ' . $version . PHP_EOL;
+    exit;
 }
 
 if (isset($options['i'])) {
