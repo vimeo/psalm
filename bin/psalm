@@ -8,19 +8,25 @@ ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '2048M');
 ini_set('xdebug.max_nesting_level', 512);
 
+define('PSALM_VERSION', '0.2.63');
+
 // get options from command line
 $options = getopt(
-    'f:mhc:ir:',
+    'f:mhvc:ir:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report:'
+        'report:', 'version'
     ]
 );
 
 if (array_key_exists('help', $options)) {
     $options['h'] = false;
+}
+
+if (array_key_exists('version', $options)) {
+    $options['v'] = false;
 }
 
 if (array_key_exists('init', $options)) {
@@ -39,6 +45,12 @@ if (isset($options['c']) && is_array($options['c'])) {
     die('Too many config files provided' . PHP_EOL);
 }
 
+
+if (array_key_exists('v', $options)) {
+    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
+    exit;
+}
+
 if (array_key_exists('h', $options)) {
     echo <<< HELP
 Usage:
@@ -47,6 +59,9 @@ Usage:
 Options:
     -h, --help
         Display this help message
+
+    -v, --version
+        Display the Psalm version
 
     -i, --init [source_dir=src] [--level=3]
         Create a psalm config file in the current directory that points to [source_dir]
