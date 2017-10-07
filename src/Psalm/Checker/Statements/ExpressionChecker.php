@@ -19,6 +19,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidScope;
@@ -312,7 +313,31 @@ class ExpressionChecker
                 return false;
             }
 
-            $stmt->inferredType = Type::getString();
+            $container_type = Type::getString();
+
+            if ($stmt->expr->inferredType
+                && !$stmt->expr->inferredType->isMixed()
+                && !TypeChecker::isContainedBy(
+                    $statements_checker->getFileChecker()->project_checker,
+                    $stmt->expr->inferredType,
+                    $container_type,
+                    true,
+                    $has_scalar_match
+                )
+                && !$has_scalar_match
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidCast(
+                        $stmt->expr->inferredType . ' cannot be cast to ' . $container_type,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+
+            $stmt->inferredType = $container_type;
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
                 return false;
