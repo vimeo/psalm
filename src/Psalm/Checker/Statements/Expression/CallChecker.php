@@ -1820,6 +1820,28 @@ class CallChecker
         }
 
         if ($method_id === 'array_map' || $method_id === 'array_filter') {
+            if ($method_id === 'array_map' && count($args) < 2) {
+                if (IssueBuffer::accepts(
+                    new TooFewArguments(
+                        'Too few arguments for ' . $method_id,
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            } elseif ($method_id === 'array_filter' && count($args) < 1) {
+                if (IssueBuffer::accepts(
+                    new TooFewArguments(
+                        'Too few arguments for ' . $method_id,
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+
             if (self::checkArrayFunctionArgumentsMatch(
                 $statements_checker,
                 $args,
