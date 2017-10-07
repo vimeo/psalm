@@ -238,11 +238,11 @@ class CallChecker
             if (!$in_call_map && !$is_stubbed) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
-                        $project_checker,
-                        $statements_checker,
-                        $method_id,
-                        $code_location
-                    ) === false
+                            $project_checker,
+                            $statements_checker,
+                            $method_id,
+                            $code_location
+                        ) === false
                     ) {
                         return false;
                     }
@@ -281,11 +281,11 @@ class CallChecker
         }
 
         if (self::checkFunctionArguments(
-            $statements_checker,
-            $stmt->args,
-            $function_params,
-            $context
-        ) === false) {
+                $statements_checker,
+                $stmt->args,
+                $function_params,
+                $context
+            ) === false) {
             // fall through
         }
 
@@ -306,16 +306,16 @@ class CallChecker
 
             // do this here to allow closure param checks
             if (self::checkFunctionArgumentsMatch(
-                $statements_checker,
-                $stmt->args,
-                $method_id,
-                $function_params ?: [],
-                $function_storage,
-                null,
-                $generic_params,
-                $code_location,
-                $context
-            ) === false) {
+                    $statements_checker,
+                    $stmt->args,
+                    $method_id,
+                    $function_params ?: [],
+                    $function_storage,
+                    null,
+                    $generic_params,
+                    $code_location,
+                    $context
+                ) === false) {
                 // fall through
             }
 
@@ -472,11 +472,11 @@ class CallChecker
                     }
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $project_checker,
-                        $fq_class_name,
-                        new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues()
-                    ) === false) {
+                            $project_checker,
+                            $fq_class_name,
+                            new CodeLocation($statements_checker->getSource(), $stmt->class),
+                            $statements_checker->getSuppressedIssues()
+                        ) === false) {
                         return false;
                     }
                 }
@@ -546,23 +546,23 @@ class CallChecker
                     $method_id = $fq_class_name . '::__construct';
 
                     if (self::checkMethodArgs(
-                        $method_id,
-                        $stmt->args,
-                        $found_generic_params,
-                        $context,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker
-                    ) === false) {
+                            $method_id,
+                            $stmt->args,
+                            $found_generic_params,
+                            $context,
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $statements_checker
+                        ) === false) {
                         return false;
                     }
 
                     if (MethodChecker::checkMethodVisibility(
-                        $method_id,
-                        $context->self,
-                        $statements_checker->getSource(),
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker->getSuppressedIssues()
-                    ) === false) {
+                            $method_id,
+                            $context->self,
+                            $statements_checker->getSource(),
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $statements_checker->getSuppressedIssues()
+                        ) === false) {
                         return false;
                     }
 
@@ -789,6 +789,11 @@ class CallChecker
 
                 $fq_class_name = $class_type_part->value;
 
+                // Since ReflectionClass class names reflect a non-global namespace (`Namespace\Class`), and some
+                // instances in an application might be global (`\Namespace\Class`), let's trim any preceding slashes
+                // so the ClassLikeChecker can find it in its storage.
+                $fq_class_name = ltrim($fq_class_name, '\\');
+
                 $intersection_types = $class_type_part->getIntersectionTypes();
 
                 $is_mock = ExpressionChecker::isMock($fq_class_name);
@@ -916,13 +921,13 @@ class CallChecker
                 }
 
                 if (self::checkMethodArgs(
-                    $method_id,
-                    $stmt->args,
-                    $class_template_params,
-                    $context,
-                    new CodeLocation($source, $stmt),
-                    $statements_checker
-                ) === false) {
+                        $method_id,
+                        $stmt->args,
+                        $class_template_params,
+                        $context,
+                        new CodeLocation($source, $stmt),
+                        $statements_checker
+                    ) === false) {
                     return false;
                 }
 
@@ -933,21 +938,21 @@ class CallChecker
                     $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
                 } else {
                     if (MethodChecker::checkMethodVisibility(
-                        $method_id,
-                        $context->self,
-                        $statements_checker->getSource(),
-                        new CodeLocation($source, $stmt),
-                        $statements_checker->getSuppressedIssues()
-                    ) === false) {
+                            $method_id,
+                            $context->self,
+                            $statements_checker->getSource(),
+                            new CodeLocation($source, $stmt),
+                            $statements_checker->getSuppressedIssues()
+                        ) === false) {
                         return false;
                     }
 
                     if (MethodChecker::checkMethodNotDeprecated(
-                        $project_checker,
-                        $method_id,
-                        new CodeLocation($source, $stmt),
-                        $statements_checker->getSuppressedIssues()
-                    ) === false) {
+                            $project_checker,
+                            $method_id,
+                            new CodeLocation($source, $stmt),
+                            $statements_checker->getSuppressedIssues()
+                        ) === false) {
                         return false;
                     }
 
@@ -1309,12 +1314,12 @@ class CallChecker
                 }
 
                 if (MethodChecker::checkMethodVisibility(
-                    $method_id,
-                    $context->self,
-                    $statements_checker->getSource(),
-                    new CodeLocation($source, $stmt),
-                    $statements_checker->getSuppressedIssues()
-                ) === false) {
+                        $method_id,
+                        $context->self,
+                        $statements_checker->getSource(),
+                        new CodeLocation($source, $stmt),
+                        $statements_checker->getSuppressedIssues()
+                    ) === false) {
                     return false;
                 }
 
@@ -1326,33 +1331,33 @@ class CallChecker
                     )
                 ) {
                     if (MethodChecker::checkStatic(
-                        $method_id,
-                        $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
-                        $project_checker,
-                        new CodeLocation($source, $stmt),
-                        $statements_checker->getSuppressedIssues()
-                    ) === false) {
+                            $method_id,
+                            $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
+                            $project_checker,
+                            new CodeLocation($source, $stmt),
+                            $statements_checker->getSuppressedIssues()
+                        ) === false) {
                         // fall through
                     }
                 }
 
                 if (MethodChecker::checkMethodNotDeprecated(
-                    $project_checker,
-                    $method_id,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker->getSuppressedIssues()
-                ) === false) {
+                        $project_checker,
+                        $method_id,
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues()
+                    ) === false) {
                     // fall through
                 }
 
                 if (self::checkMethodArgs(
-                    $method_id,
-                    $stmt->args,
-                    $found_generic_params,
-                    $context,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker
-                ) === false) {
+                        $method_id,
+                        $stmt->args,
+                        $found_generic_params,
+                        $context,
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker
+                    ) === false) {
                     return false;
                 }
 
@@ -1453,11 +1458,11 @@ class CallChecker
             : null;
 
         if (self::checkFunctionArguments(
-            $statements_checker,
-            $args,
-            $method_params,
-            $context
-        ) === false) {
+                $statements_checker,
+                $args,
+                $method_params,
+                $context
+            ) === false) {
             return false;
         }
 
@@ -1482,16 +1487,16 @@ class CallChecker
         }
 
         if (self::checkFunctionArgumentsMatch(
-            $statements_checker,
-            $args,
-            $method_id,
-            $method_params,
-            $method_storage,
-            $class_storage,
-            $generic_params,
-            $code_location,
-            $context
-        ) === false) {
+                $statements_checker,
+                $args,
+                $method_id,
+                $method_params,
+                $method_storage,
+                $class_storage,
+                $generic_params,
+                $code_location,
+                $context
+            ) === false) {
             return false;
         }
 
@@ -1582,12 +1587,12 @@ class CallChecker
                     }
 
                     if (ExpressionChecker::analyzeVariable(
-                        $statements_checker,
-                        $arg->value,
-                        $context,
-                        $by_ref,
-                        $by_ref_type
-                    ) === false) {
+                            $statements_checker,
+                            $arg->value,
+                            $context,
+                            $by_ref,
+                            $by_ref_type
+                        ) === false) {
                         return false;
                     }
                 } elseif (is_string($arg->value->name)) {
@@ -1803,15 +1808,15 @@ class CallChecker
 
                     if ($context->check_variables) {
                         if (self::checkFunctionArgumentType(
-                            $statements_checker,
-                            $arg->value->inferredType,
-                            $fleshed_out_type,
-                            $cased_method_id,
-                            $argument_offset,
-                            new CodeLocation($statements_checker->getSource(), $arg->value),
-                            $arg->value,
-                            $context
-                        ) === false) {
+                                $statements_checker,
+                                $arg->value->inferredType,
+                                $fleshed_out_type,
+                                $cased_method_id,
+                                $argument_offset,
+                                new CodeLocation($statements_checker->getSource(), $arg->value),
+                                $arg->value,
+                                $context
+                            ) === false) {
                             return false;
                         }
                     }
@@ -1843,10 +1848,10 @@ class CallChecker
             }
 
             if (self::checkArrayFunctionArgumentsMatch(
-                $statements_checker,
-                $args,
-                $method_id
-            ) === false
+                    $statements_checker,
+                    $args,
+                    $method_id
+                ) === false
             ) {
                 return false;
             }
@@ -1919,8 +1924,8 @@ class CallChecker
 
             /** @var ObjectLike|TArray|null */
             $array_arg_type = $array_arg
-                    && isset($array_arg->inferredType)
-                    && isset($array_arg->inferredType->types['array'])
+            && isset($array_arg->inferredType)
+            && isset($array_arg->inferredType->types['array'])
                 ? $array_arg->inferredType->types['array']
                 : null;
 
@@ -1936,8 +1941,8 @@ class CallChecker
 
         /** @var Type\Union|null */
         $closure_arg_type = $closure_arg && isset($closure_arg->value->inferredType)
-                ? $closure_arg->value->inferredType
-                : null;
+            ? $closure_arg->value->inferredType
+            : null;
 
         $file_checker = $statements_checker->getFileChecker();
 
@@ -2022,7 +2027,7 @@ class CallChecker
                         if (IssueBuffer::accepts(
                             new TypeCoercion(
                                 'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                    $closure_param_type . ', parent type ' . $input_type . ' provided',
+                                $closure_param_type . ', parent type ' . $input_type . ' provided',
                                 new CodeLocation($statements_checker->getSource(), $closure_arg)
                             ),
                             $statements_checker->getSuppressedIssues()
@@ -2042,7 +2047,7 @@ class CallChecker
                             if (IssueBuffer::accepts(
                                 new InvalidScalarArgument(
                                     'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                        $closure_param_type . ', ' . $input_type . ' provided',
+                                    $closure_param_type . ', ' . $input_type . ' provided',
                                     new CodeLocation($statements_checker->getSource(), $closure_arg)
                                 ),
                                 $statements_checker->getSuppressedIssues()
@@ -2053,7 +2058,7 @@ class CallChecker
                             if (IssueBuffer::accepts(
                                 new PossiblyInvalidArgument(
                                     'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                        $closure_param_type . ', possibly different type ' . $input_type . ' provided',
+                                    $closure_param_type . ', possibly different type ' . $input_type . ' provided',
                                     new CodeLocation($statements_checker->getSource(), $closure_arg)
                                 ),
                                 $statements_checker->getSuppressedIssues()
@@ -2063,7 +2068,7 @@ class CallChecker
                         } elseif (IssueBuffer::accepts(
                             new InvalidArgument(
                                 'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                    $closure_param_type . ', ' . $input_type . ' provided',
+                                $closure_param_type . ', ' . $input_type . ' provided',
                                 new CodeLocation($statements_checker->getSource(), $closure_arg)
                             ),
                             $statements_checker->getSuppressedIssues()
@@ -2122,7 +2127,7 @@ class CallChecker
             if (IssueBuffer::accepts(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be mixed, expecting ' .
-                        $param_type,
+                    $param_type,
                     $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
@@ -2138,7 +2143,7 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new NullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
-                            'null value provided',
+                        'null value provided',
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -2153,7 +2158,7 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new PossiblyNullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
-                            'null value provided',
+                        'null value provided',
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -2182,7 +2187,7 @@ class CallChecker
             if (IssueBuffer::accepts(
                 new TypeCoercion(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                        ', parent type ' . $input_type . ' provided',
+                    ', parent type ' . $input_type . ' provided',
                     $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
@@ -2195,7 +2200,7 @@ class CallChecker
             if (IssueBuffer::accepts(
                 new ImplicitToStringCast(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                        $param_type . ', ' . $input_type . ' provided with a __toString method',
+                    $param_type . ', ' . $input_type . ' provided with a __toString method',
                     $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
@@ -2216,7 +2221,7 @@ class CallChecker
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                                $param_type . ', ' . $input_type . ' provided',
+                            $param_type . ', ' . $input_type . ' provided',
                             $code_location
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -2228,7 +2233,7 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                            ', possibly different type ' . $input_type . ' provided',
+                        ', possibly different type ' . $input_type . ' provided',
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -2238,7 +2243,7 @@ class CallChecker
             } elseif (IssueBuffer::accepts(
                 new InvalidArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                        ', ' . $input_type . ' provided',
+                    ', ' . $input_type . ' provided',
                     $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
