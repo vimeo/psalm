@@ -1,12 +1,15 @@
 #!/usr/bin/env php
 <?php
 
+use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
+use Psalm\Config;
+
 // show all errors
 error_reporting(-1);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '2048M');
-ini_set('xdebug.max_nesting_level', 512);
 
 // get options from command line
 $options = getopt(
@@ -15,7 +18,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report:'
+        'report:', 'clear-cache',
     ]
 );
 
@@ -93,6 +96,9 @@ Options:
         The path where to output report file. The output format is base on the file extension.
         (Currently supported format: ".json", ".xml", ".txt")
 
+    --clear-cache
+        Clears all cache files that Psalm uses
+
 HELP;
 
     exit;
@@ -160,6 +166,9 @@ foreach ($autoload_files as $file) {
     require_once $file;
 }
 
+// If XDebug is enabled, restart without it
+(new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
+
 if (isset($options['i'])) {
     $args = array_slice($argv, 2);
 
@@ -216,9 +225,6 @@ if (isset($options['i'])) {
 
     exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
 }
-
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
 
 // get vars from options
 $debug = array_key_exists('debug', $options);
@@ -327,8 +333,41 @@ if ($path_to_config) {
     $project_checker->setConfigXML($path_to_config, $current_dir);
 }
 
-// If XDebug is enabled, restart without it
-(new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
+/**
+ * @param string $dir
+ * @return void
+ */
+function rrmdir($dir)
+{
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                if (filetype($dir."/".$object) == "dir") {
+                    rrmdir($dir."/".$object);
+                } else {
+                    unlink($dir."/".$object);
+                }
+            }
+        }
+
+        reset($objects);
+        rmdir($dir);
+    }
+}
+
+if (isset($options['clear-cache'])) {
+    // initialise config if it hasn't already been
+    if (!$path_to_config) {
+         $project_checker->getConfigForPath($current_dir, $current_dir);
+    }
+
+    $cache_directory = Config::getInstance()->getCacheDirectory();
+
+    rrmdir($cache_directory);
+    echo 'Cache directory deleted' . PHP_EOL;
+    exit;
+}
 
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 

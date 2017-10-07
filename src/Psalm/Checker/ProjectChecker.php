@@ -1570,7 +1570,7 @@ class ProjectChecker
      *
      * @return Config
      */
-    private function getConfigForPath($path, $base_dir)
+    public function getConfigForPath($path, $base_dir)
     {
         $dir_path = realpath($path);
 
