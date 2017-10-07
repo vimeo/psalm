@@ -315,7 +315,7 @@ class ExpressionChecker
 
             $container_type = Type::getString();
 
-            if ($stmt->expr->inferredType
+            if (isset($stmt->expr->inferredType)
                 && !$stmt->expr->inferredType->isMixed()
                 && !TypeChecker::isContainedBy(
                     $statements_checker->getFileChecker()->project_checker,
