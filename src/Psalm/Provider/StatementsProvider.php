@@ -26,7 +26,7 @@ class StatementsProvider
 
         $from_cache = false;
 
-        $version = 'parsercache4';
+        $version = 'parsercache5';
 
         $file_contents = $file_provider->getContents($file_path);
         $modified_time = $file_provider->getModifiedTime($file_path);
