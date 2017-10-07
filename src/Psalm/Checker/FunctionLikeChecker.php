@@ -1152,11 +1152,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $return_type_tokens = Type::tokenize($return_type);
 
         foreach ($return_type_tokens as $i => &$return_type_token) {
-            if ($return_type_token[0] === '\\') {
-                $return_type_token = substr($return_type_token, 1);
-                continue;
-            }
-
             if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'], true)) {
                 continue;
             }

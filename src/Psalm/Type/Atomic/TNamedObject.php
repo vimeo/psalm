@@ -20,6 +20,10 @@ class TNamedObject extends Atomic
      */
     public function __construct($value)
     {
+        if ($value[0] === '\\') {
+            $value = substr($value, 1);
+        }
+
         $this->value = $value;
     }
 
