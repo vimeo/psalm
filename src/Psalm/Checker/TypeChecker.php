@@ -773,6 +773,13 @@ class TypeChecker
 
                 return true;
             }
+
+            // PHP 5.6 doesn't support this natively, so this introduces a bug *just* when checking PHP 5.6 code
+            if ($input_type_part->value === 'ReflectionType') {
+                $to_string_cast = true;
+
+                return true;
+            }
         }
 
         if ($container_type_part instanceof TCallable &&
