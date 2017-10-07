@@ -497,7 +497,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Return type has wrong type \'' . $storage->return_type .
+                        'Docblock has incorrect return type \'' . $storage->return_type .
                             '\', should be \'' . $storage->signature_return_type . '\'',
                         $storage->return_type_location
                     ),

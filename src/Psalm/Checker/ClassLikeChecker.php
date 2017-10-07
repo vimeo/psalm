@@ -535,7 +535,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
 
                 $uninitialized_variables[] = '$this->' . $property_name;
-                    $uninitialized_properties[$property_name] = $property;
+                $uninitialized_properties[$property_name] = $property;
             }
 
             if ($uninitialized_properties) {

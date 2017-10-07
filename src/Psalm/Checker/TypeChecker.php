@@ -715,6 +715,14 @@ class TypeChecker
             return true;
         }
 
+        if ($input_type_part instanceof TNamedObject
+            && $input_type_part->value === 'static'
+            && $container_type_part instanceof TNamedObject
+            && $container_type_part->value === 'self'
+        ) {
+            return true;
+        }
+
         if ($input_type_part instanceof TNamedObject &&
             $input_type_part->value === 'Closure' &&
             $container_type_part instanceof TCallable

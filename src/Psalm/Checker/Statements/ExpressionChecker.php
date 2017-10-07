@@ -1827,7 +1827,13 @@ class ExpressionChecker
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+                $comment_type = ExpressionChecker::fleshOutType(
+                    $statements_checker->getFileChecker()->project_checker,
+                    Type::parseString($var_comment->type),
+                    $context->self
+                );
+
+                $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
 

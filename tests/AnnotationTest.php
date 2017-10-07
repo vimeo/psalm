@@ -221,6 +221,19 @@ class AnnotationTest extends TestCase
                         public function foo($a) : void {}
                     }',
             ],
+            'varSelf' => [
+                '<?php
+                    class A
+                    {
+                        public function foo() : void {}
+
+                        public function getMeAgain() : void {
+                            /** @var self */
+                            $me = $this;
+                            $me->foo();
+                        }
+                    }',
+            ],
         ];
     }
 

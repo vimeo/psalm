@@ -159,7 +159,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
-                $this->analyzeReturn($stmt, $context);
+                $this->analyzeReturn($project_checker, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $has_returned = true;
                 $this->analyzeThrow($stmt, $context);
@@ -320,7 +320,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     );
 
                     if ($var_comment && $var_comment->var_id) {
-                        $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+                        $comment_type = ExpressionChecker::fleshOutType(
+                            $project_checker,
+                            Type::parseString($var_comment->type),
+                            $context->self
+                        );
+
+                        $context->vars_in_scope[$var_comment->var_id] = $comment_type;
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
@@ -832,8 +838,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      *
      * @return false|null
      */
-    private function analyzeReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
-    {
+    private function analyzeReturn(
+        ProjectChecker $project_checker,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Context $context
+    ) {
         $doc_comment_text = (string)$stmt->getDocComment();
 
         $var_comment = null;
@@ -847,7 +856,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+                $comment_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    Type::parseString($var_comment->type),
+                    $context->self
+                );
+
+                $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
 
