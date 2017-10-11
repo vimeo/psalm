@@ -1649,6 +1649,39 @@ class ExpressionChecker
      *
      * @return string|null
      */
+    public static function getRootVarId(
+        PhpParser\Node\Expr $stmt,
+        $this_class_name,
+        StatementsSource $source = null
+    ) {
+        if ($stmt instanceof PhpParser\Node\Expr\Variable
+            || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return self::getVarId($stmt, $this_class_name, $source);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->name)) {
+            $property_root = self::getRootVarId($stmt->var, $this_class_name, $source);
+
+            if ($property_root) {
+                return $property_root . '->' . $stmt->name;
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            return self::getRootVarId($stmt->var, $this_class_name, $source);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr      $stmt
+     * @param  string|null              $this_class_name
+     * @param  StatementsSource|null    $source
+     *
+     * @return string|null
+     */
     public static function getArrayVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,

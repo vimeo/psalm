@@ -139,6 +139,20 @@ class AssignmentChecker
                 $assign_value_type,
                 $statements_checker
             );
+        } else {
+            $root_var_id = ExpressionChecker::getRootVarId(
+                $assign_var,
+                $statements_checker->getFQCLN(),
+                $statements_checker
+            );
+
+            if ($root_var_id && isset($context->vars_in_scope[$root_var_id])) {
+                $context->removeVarFromConflictingClauses(
+                    $root_var_id,
+                    $context->vars_in_scope[$root_var_id],
+                    $statements_checker
+                );
+            }
         }
 
         if ($assign_value_type->isMixed()) {

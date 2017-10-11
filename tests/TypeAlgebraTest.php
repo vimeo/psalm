@@ -334,7 +334,35 @@ class TypeAlgebraTest extends TestCase
                         }
                         return true;
                     }'
-            ]
+            ],
+            'noParadoxAfterArrayAppending' => [
+                '<?php
+                    /** @return array|false */
+                    function array_append2(array $errors) {
+                        if ($errors) {
+                            return $errors;
+                        }
+                        $errors[] = "deterministic";
+                        if ($errors) {
+                            return false;
+                        }
+                        return $errors;
+                    }
+
+                    /** @return array|false */
+                    function array_append(array $errors) {
+                        if ($errors) {
+                            return $errors;
+                        }
+                        if (rand() % 2 > 0) {
+                            $errors[] = "unlucky";
+                        }
+                        if ($errors) {
+                            return false;
+                        }
+                        return $errors;
+                    }'
+            ],
         ];
     }
 
