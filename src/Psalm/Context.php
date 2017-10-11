@@ -364,6 +364,12 @@ class Context
                         break;
                     }
 
+                    // special case because we don't have a `true` type
+                    if ($type === '!false' && isset($new_type->types['bool'])) {
+                        $type_changed = true;
+                        break;
+                    }
+
                     $result_type = \Psalm\Checker\TypeChecker::reconcileTypes(
                         $type,
                         clone $new_type,
