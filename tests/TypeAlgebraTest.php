@@ -333,7 +333,7 @@ class TypeAlgebraTest extends TestCase
                             return false;
                         }
                         return true;
-                    }'
+                    }',
             ],
             'noParadoxAfterArrayAppending' => [
                 '<?php
@@ -361,7 +361,7 @@ class TypeAlgebraTest extends TestCase
                             return false;
                         }
                         return $errors;
-                    }'
+                    }',
             ],
             'noParadoxInCatch' => [
                 '<?php
@@ -384,8 +384,8 @@ class TypeAlgebraTest extends TestCase
                             if (!$arr) { return []; }
                         }
                         return $arr;
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
