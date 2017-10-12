@@ -1011,7 +1011,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     ),
                     $suppressed_issues
                 )) {
-                    return false;
+                    // fall through here
                 }
             }
         }
