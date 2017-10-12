@@ -1239,7 +1239,7 @@ class ExpressionChecker
             if ($right_type->isNullable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
-                        'Left operand cannot be nullable, got ' . $right_type,
+                        'Right operand cannot be nullable, got ' . $right_type,
                         new CodeLocation($statements_source, $right)
                     ),
                     $statements_source->getSuppressedIssues()
@@ -1249,7 +1249,7 @@ class ExpressionChecker
             } elseif ($right_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullOperand(
-                        'Left operand cannot be null',
+                        'Right operand cannot be null',
                         new CodeLocation($statements_source, $right)
                     ),
                     $statements_source->getSuppressedIssues()
