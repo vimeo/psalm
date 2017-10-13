@@ -52,7 +52,7 @@ class CacheProvider
             filemtime($cache_location) > $file_modified_time
         ) {
             /** @var array<int, \PhpParser\Node\Stmt> */
-            return unserialize((string)file_get_contents($cache_location)) ?: null;
+            return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
         }
     }
 
@@ -103,7 +103,7 @@ class CacheProvider
                 mkdir($parser_cache_directory, 0777, true);
             }
 
-            file_put_contents($cache_location, serialize($stmts));
+            file_put_contents($cache_location, igbinary_serialize($stmts));
 
             $this->file_content_hashes[$file_cache_key] = $file_content_hash;
 
