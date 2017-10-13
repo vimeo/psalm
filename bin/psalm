@@ -80,7 +80,7 @@ Options:
         Adds correct return types to the given file(s)
 
     --output-format=console
-        Changes the output format
+        Changes the output format. Possible values: console, json, xml
 
     --find-dead-code
         Look for dead code
