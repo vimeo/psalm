@@ -170,11 +170,16 @@ foreach ($autoload_files as $file) {
 (new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
 
 if (isset($options['i'])) {
-    $args = array_slice($argv, 2);
-
     if (file_exists('psalm.xml')) {
         die('A config file already exists in the current directory' . PHP_EOL);
     }
+
+    $args = array_filter(
+        array_slice($argv, 2),
+        function ($arg) {
+            return $arg !== '--ansi' && $arg !== '--no-ansi';
+        }
+    );
 
     $level = 3;
     $source_dir = 'src';
