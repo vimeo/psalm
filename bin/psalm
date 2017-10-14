@@ -18,7 +18,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report:', 'clear-cache',
+        'report:', 'clear-cache', 'no-cache',
     ]
 );
 
@@ -98,6 +98,9 @@ Options:
 
     --clear-cache
         Clears all cache files that Psalm uses
+
+    --no-cache
+        Runs Psalm without using cache
 
 HELP;
 
@@ -319,9 +322,13 @@ $update_docblocks = isset($options['update-docblocks']);
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
+$cache_provider = isset($options['no-cache'])
+    ? new Psalm\Provider\Cache\NoCacheProvider()
+    : new Psalm\Provider\CacheProvider();
+
 $project_checker = new ProjectChecker(
     new Psalm\Provider\FileProvider(),
-    new Psalm\Provider\CacheProvider(),
+    $cache_provider,
     $use_color,
     $show_info,
     $output_format,
