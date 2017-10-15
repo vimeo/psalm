@@ -43,7 +43,7 @@ class TestCase extends PHPUnit_Framework_TestCase
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
-            new Provider\FakeCacheProvider()
+            new Provider\FakeParserCacheProvider()
         );
         $this->project_checker->setConfig(new TestConfig());
         $this->project_checker->infer_types_from_usage = true;

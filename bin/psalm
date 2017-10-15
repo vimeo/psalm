@@ -323,8 +323,8 @@ $update_docblocks = isset($options['update-docblocks']);
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
 $cache_provider = isset($options['no-cache'])
-    ? new Psalm\Provider\Cache\NoCacheProvider()
-    : new Psalm\Provider\CacheProvider();
+    ? new Psalm\Provider\Cache\NoParserCacheProvider()
+    : new Psalm\Provider\ParserCacheProvider();
 
 $project_checker = new ProjectChecker(
     new Psalm\Provider\FileProvider(),

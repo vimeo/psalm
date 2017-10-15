@@ -4,7 +4,7 @@ namespace Psalm\Provider;
 use PhpParser;
 use Psalm\Config;
 
-class CacheProvider
+class ParserCacheProvider
 {
     const FILE_HASHES = 'file_hashes_json';
     const PARSER_CACHE_DIRECTORY = 'php-parser';

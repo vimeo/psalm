@@ -1,9 +1,9 @@
 <?php
-namespace Psalm\Tests\Provider;
+namespace Psalm\Provider\Cache;
 
 use PhpParser;
 
-class FakeCacheProvider extends \Psalm\Provider\CacheProvider
+class NoParserCacheProvider extends \Psalm\Provider\ParserCacheProvider
 {
     /**
      * @param  string   $file_path

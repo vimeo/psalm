@@ -10,11 +10,11 @@ use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
 use Psalm\IssueBuffer;
-use Psalm\Provider\CacheProvider;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
+use Psalm\Provider\ParserCacheProvider;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -45,7 +45,7 @@ class ProjectChecker
     /** @var ClassLikeStorageProvider */
     public $classlike_storage_provider;
 
-    /** @var CacheProvider */
+    /** @var ParserCacheProvider */
     public $cache_provider;
 
     /**
@@ -249,7 +249,7 @@ class ProjectChecker
 
     /**
      * @param FileProvider  $file_provider
-     * @param CacheProvider $cache_provider
+     * @param ParserCacheProvider $cache_provider
      * @param bool          $use_color
      * @param bool          $show_info
      * @param string        $output_format
@@ -262,7 +262,7 @@ class ProjectChecker
      */
     public function __construct(
         FileProvider $file_provider,
-        CacheProvider $cache_provider,
+        ParserCacheProvider $cache_provider,
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,

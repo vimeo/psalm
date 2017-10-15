@@ -20,7 +20,7 @@ class ReportOutputTest extends TestCase
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
-            new Provider\FakeCacheProvider(),
+            new Provider\FakeParserCacheProvider(),
             false
         );
         $this->project_checker->reports['json'] = __DIR__ . '/test-report.json';
@@ -40,7 +40,7 @@ class ReportOutputTest extends TestCase
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
             $checker = new \Psalm\Checker\ProjectChecker(
                 $this->file_provider,
-                new Provider\FakeCacheProvider(),
+                new Provider\FakeParserCacheProvider(),
                 false,
                 true,
                 \Psalm\Checker\ProjectChecker::TYPE_CONSOLE,
@@ -63,7 +63,7 @@ class ReportOutputTest extends TestCase
     {
         $checker = new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
-            new Provider\FakeCacheProvider(),
+            new Provider\FakeParserCacheProvider(),
             false,
             true,
             \Psalm\Checker\ProjectChecker::TYPE_CONSOLE,

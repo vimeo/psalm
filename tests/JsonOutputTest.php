@@ -19,7 +19,7 @@ class JsonOutputTest extends TestCase
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
-            new Provider\FakeCacheProvider(),
+            new Provider\FakeParserCacheProvider(),
             false,
             true,
             ProjectChecker::TYPE_JSON
