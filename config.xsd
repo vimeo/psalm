@@ -27,6 +27,7 @@
         <xs:attribute name="useAssertForType" type="xs:string" />
         <xs:attribute name="cacheFileContentHashes" type="xs:string" />
         <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:string" />
+        <xs:attribute name="serializer" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

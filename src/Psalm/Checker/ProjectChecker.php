@@ -1605,6 +1605,8 @@ class ProjectChecker
 
         $this->config = $config;
 
+        $this->cache_provider->use_igbinary = $config->use_igbinary;
+
         $config->visitStubFiles($this);
         $config->initializePlugins($this);
 
@@ -1619,6 +1621,8 @@ class ProjectChecker
     public function setConfig(Config $config)
     {
         $this->config = $config;
+
+        $this->cache_provider->use_igbinary = $config->use_igbinary;
 
         $config->visitStubFiles($this);
         $config->initializePlugins($this);

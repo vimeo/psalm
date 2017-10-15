@@ -173,6 +173,9 @@ class Config
      */
     public $remember_property_assignments_after_call = true;
 
+    /** @var bool */
+    public $use_igbinary = false;
+
     /**
      * Psalm plugins
      *
@@ -335,6 +338,11 @@ class Config
         if (isset($config_xml['rememberPropertyAssignmentsAfterCall'])) {
             $attribute_text = (string) $config_xml['rememberPropertyAssignmentsAfterCall'];
             $config->remember_property_assignments_after_call = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['serializer'])) {
+            $attribute_text = (string) $config_xml['serializer'];
+            $config->use_igbinary = $attribute_text === 'igbinary';
         }
 
         if (isset($config_xml->projectFiles)) {
