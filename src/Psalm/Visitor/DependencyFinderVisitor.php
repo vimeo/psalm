@@ -408,7 +408,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 throw new \LogicException('$this->fq_classlike_names should not be empty');
             }
 
-            $fq_classlike_name = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+            $fq_classlike_name = array_pop($this->fq_classlike_names);
 
             if (ClassLikeChecker::inPropertyMap($fq_classlike_name)) {
                 $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_classlike_name)];

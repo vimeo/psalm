@@ -135,10 +135,26 @@ class Php70Test extends TestCase
 
                     $x = g($class->f());',
             ],
-
             'anonymousClassStatement' => [
                 '<?php
                     new class {};',
+            ],
+            'anonymousClassTwoFunctions' => [
+                '<?php
+                    interface I {}
+
+                    class A
+                    {
+                        /** @var ?I */
+                        protected $i;
+
+                        public function foo(): void
+                        {
+                            $this->i = new class implements I {};
+                        }
+
+                        public function foo2() : void {} // commenting this line out fixes
+                    }',
             ],
             'returnAnonymousClass' => [
                 '<?php
