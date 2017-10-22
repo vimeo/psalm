@@ -2,14 +2,14 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
-use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -92,45 +92,43 @@ class SwitchChecker
                     return false;
                 }
 
-                if ($type_type
-                    && $type_candidate_var
-                    && $case->cond instanceof PhpParser\Node\Scalar\String_
-                ) {
-                    $fq_classlike_name = $case->cond->value;
+                $fake_equality = new PhpParser\Node\Expr\BinaryOp\Equal($stmt->cond, $case->cond);
 
-                    $file_checker = $statements_checker->getFileChecker();
+                $case_clauses = AlgebraChecker::getFormula(
+                    $fake_equality,
+                    $context->self,
+                    $statements_checker
+                );
 
-                    if ($type_type instanceof Type\Atomic\GetClassT) {
-                        if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                $file_checker->project_checker,
-                                $fq_classlike_name,
-                                new CodeLocation($file_checker, $case->cond),
-                                $statements_checker->getSuppressedIssues()
-                            ) === false
-                        ) {
-                            return false;
-                        }
-                    } elseif (!isset(ClassLikeChecker::$GETTYPE_TYPES[$fq_classlike_name])) {
-                        if (IssueBuffer::accepts(
-                            new UnevaluatedCode(
-                                'gettype cannot return this value',
-                                new CodeLocation($file_checker, $case->cond)
-                            )
-                        )) {
-                            return false;
-                        }
+                // this will see whether any of the clauses in set A conflict with the clauses in set B
+                AlgebraChecker::checkForParadox($context->clauses, $case_clauses, $statements_checker, $stmt->cond);
+
+                $case_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $case_clauses));
+
+                $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($case_context->clauses);
+
+                // if the if has an || in the conditional, we cannot easily reason about it
+                if ($reconcilable_if_types) {
+                    $changed_vars = [];
+
+                    $case_vars_in_scope_reconciled =
+                        TypeChecker::reconcileKeyedTypes(
+                            $reconcilable_if_types,
+                            $case_context->vars_in_scope,
+                            $changed_vars,
+                            $statements_checker,
+                            new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
+                            $statements_checker->getSuppressedIssues()
+                        );
+
+                    if ($case_vars_in_scope_reconciled === false) {
+                        return false;
                     }
 
-                    $switch_vars = [$type_candidate_var => Type::parseString($fq_classlike_name)];
-
-                    $case_context->vars_in_scope = array_merge(
-                        $case_context->vars_in_scope,
-                        $switch_vars
-                    );
-
+                    $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
                     $case_context->vars_possibly_in_scope = array_merge(
-                        $case_context->vars_possibly_in_scope,
-                        $switch_vars
+                        $reconcilable_if_types,
+                        $case_context->vars_possibly_in_scope
                     );
                 }
             }
