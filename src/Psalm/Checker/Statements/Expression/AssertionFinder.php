@@ -93,6 +93,7 @@ class AssertionFinder
         ) {
             $null_position = self::hasNullVariable($conditional);
             $false_position = self::hasFalseVariable($conditional);
+            $true_position = self::hasTrueVariable($conditional);
             $gettype_position = self::hasGetTypeCheck($conditional);
             $typed_value_position = self::hasTypedValueComparison($conditional);
 
@@ -146,6 +147,52 @@ class AssertionFinder
                             // fall through
                         }
                     }
+                }
+
+                return $if_types;
+            }
+
+            if ($true_position && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
+                if ($true_position === self::ASSIGNMENT_TO_RIGHT) {
+                    if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall) {
+                        self::processFunctionCall(
+                            $conditional->left,
+                            $if_types,
+                            $this_class_name,
+                            $source,
+                            true
+                        );
+                    } else {
+                        $var_name = ExpressionChecker::getArrayVarId(
+                            $conditional->left,
+                            $this_class_name,
+                            $source
+                        );
+
+                        $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    }
+                } elseif ($true_position === self::ASSIGNMENT_TO_LEFT) {
+                    if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall) {
+                        self::processFunctionCall(
+                            $conditional->right,
+                            $if_types,
+                            $this_class_name,
+                            $source,
+                            true
+                        );
+                    } else {
+                        $var_name = ExpressionChecker::getArrayVarId(
+                            $conditional->right,
+                            $this_class_name,
+                            $source
+                        );
+
+                        $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                    }
+                }
+
+                if ($var_name) {
+                    $if_types[$var_name] = '!falsy';
                 }
 
                 return $if_types;

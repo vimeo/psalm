@@ -620,6 +620,16 @@ class TypeReconciliationTest extends TestCase
                         public function bat() : void {}
                     }',
             ],
+            'isTruthy' => [
+                '<?php
+                    function f(string $s = null): string {
+                      if ($s == true) {
+                          return $s;
+                      }
+
+                      return "backup";
+                    }',
+            ],
         ];
     }
 
