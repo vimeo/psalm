@@ -357,7 +357,7 @@ class Context
                 // if the clause contains any possibilities that would be altered
                 foreach ($clause->possibilities[$remove_var_id] as $type) {
                     // empty and !empty are not definitive for arrays and scalar types
-                    if (($type === '!empty' || $type === 'empty') &&
+                    if (($type === '!falsy' || $type === 'falsy') &&
                         ($new_type->hasArray() || $new_type->hasNumericType())
                     ) {
                         $type_changed = true;

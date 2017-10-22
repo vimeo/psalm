@@ -59,7 +59,7 @@ class AssertionFinder
             $this_class_name,
             $source
         )) {
-            $if_types[$var_name] = '!empty';
+            $if_types[$var_name] = '!falsy';
 
             return $if_types;
         }
@@ -72,7 +72,7 @@ class AssertionFinder
             );
 
             if ($var_name) {
-                $if_types[$var_name] = '!empty';
+                $if_types[$var_name] = '!falsy';
             }
 
             return $if_types;
@@ -122,7 +122,7 @@ class AssertionFinder
                     if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                         $if_types[$var_name] = 'null';
                     } else {
-                        $if_types[$var_name] = 'empty';
+                        $if_types[$var_name] = 'falsy';
                     }
                 } elseif ($var_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                     $null_type = Type::getNull();
@@ -194,7 +194,7 @@ class AssertionFinder
                     if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                         $if_types[$var_name] = 'false';
                     } else {
-                        $if_types[$var_name] = 'empty';
+                        $if_types[$var_name] = 'falsy';
                     }
                 } elseif ($var_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                     $false_type = Type::getFalse();
@@ -360,7 +360,7 @@ class AssertionFinder
                     if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                         $if_types[$var_name] = '!null';
                     } else {
-                        $if_types[$var_name] = '!empty';
+                        $if_types[$var_name] = '!falsy';
                     }
                 }
 
@@ -388,7 +388,7 @@ class AssertionFinder
                     if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                         $if_types[$var_name] = '!false';
                     } else {
-                        $if_types[$var_name] = '!empty';
+                        $if_types[$var_name] = '!falsy';
                     }
                 }
 
@@ -440,7 +440,7 @@ class AssertionFinder
             );
 
             if ($var_name) {
-                $if_types[$var_name] = 'empty';
+                $if_types[$var_name] = 'falsy';
             }
 
             return $if_types;

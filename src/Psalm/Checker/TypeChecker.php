@@ -165,7 +165,7 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if ($new_var_type[0] !== '!' && $new_var_type !== 'empty') {
+            if ($new_var_type[0] !== '!' && $new_var_type !== 'falsy') {
                 if ($new_var_type[0] === '^') {
                     $new_var_type = substr($new_var_type, 1);
                 }
@@ -173,7 +173,7 @@ class TypeChecker
                 return Type::parseString($new_var_type);
             }
 
-            return $new_var_type === '!empty' ? Type::getMixed() : null;
+            return $new_var_type === '!falsy' ? Type::getMixed() : null;
         }
 
         if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
@@ -217,10 +217,10 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if (in_array($new_var_type, ['!empty', '!null'], true)) {
+            if (in_array($new_var_type, ['!falsy', '!null'], true)) {
                 $existing_var_type->removeType('null');
 
-                if ($new_var_type === '!empty') {
+                if ($new_var_type === '!falsy') {
                     $existing_var_type->removeType('false');
 
                     if ($existing_var_type->hasType('array') &&
@@ -292,7 +292,7 @@ class TypeChecker
             $new_var_type = substr($new_var_type, 1);
         }
 
-        if ($new_var_type === 'empty') {
+        if ($new_var_type === 'falsy') {
             if ($existing_var_type->hasType('bool')) {
                 $existing_var_type->removeType('bool');
                 $existing_var_type->types['false'] = new TFalse;

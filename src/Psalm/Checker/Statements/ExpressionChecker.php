@@ -929,7 +929,7 @@ class ExpressionChecker
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
                     $left_inferred_reconciled = TypeChecker::reconcileTypes(
-                        '!empty',
+                        '!falsy',
                         $context->vars_in_scope[$var_id],
                         '',
                         $statements_checker,
@@ -2057,7 +2057,7 @@ class ExpressionChecker
         } elseif ($stmt->cond) {
             if (isset($stmt->cond->inferredType)) {
                 $if_return_type_reconciled = TypeChecker::reconcileTypes(
-                    '!empty',
+                    '!falsy',
                     $stmt->cond->inferredType,
                     '',
                     $statements_checker,
