@@ -795,6 +795,19 @@ class TypeChecker
             return true;
         }
 
+        if ($input_type_part instanceof TCallable &&
+            ($container_type_part instanceof TString ||
+                $container_type_part instanceof TArray ||
+                ($container_type_part instanceof TNamedObject &&
+                    ClassChecker::classExists($project_checker, $container_type_part->value) &&
+                    MethodChecker::methodExists($project_checker, $container_type_part->value . '::__invoke')
+                )
+            )
+        ) {
+            // @todo add value checks if possible here
+            return true;
+        }
+
         if ($input_type_part instanceof TNumeric) {
             if ($container_type_part->isNumericType()) {
                 $has_scalar_match = true;
