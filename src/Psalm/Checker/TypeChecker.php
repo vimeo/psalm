@@ -475,6 +475,7 @@ class TypeChecker
      * @param  Type\Union   $container_type
      * @param  ProjectChecker  $project_checker
      * @param  bool         $ignore_null
+     * @param  bool         $ignore_false
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
      * @param  bool         &$to_string_cast
@@ -486,6 +487,7 @@ class TypeChecker
         Type\Union $input_type,
         Type\Union $container_type,
         $ignore_null = false,
+        $ignore_false = false,
         &$has_scalar_match = null,
         &$type_coerced = null,
         &$to_string_cast = null
@@ -500,6 +502,10 @@ class TypeChecker
 
         foreach ($input_type->types as $input_type_part) {
             if ($input_type_part instanceof TNull && $ignore_null) {
+                continue;
+            }
+
+            if ($input_type_part instanceof TFalse && $ignore_false) {
                 continue;
             }
 
@@ -681,6 +687,7 @@ class TypeChecker
                             $project_checker,
                             $input_param,
                             $container_param,
+                            false,
                             false,
                             $has_scalar_match,
                             $type_coerced

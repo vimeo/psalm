@@ -398,6 +398,14 @@ class FunctionCallTest extends TestCase
                     'MixedArrayAccess',
                 ],
             ],
+            'undefinedFunctionInArrayMap' => [
+                '<?php
+                    array_map(
+                        "undefined_function",
+                        [1, 2, 3]
+                    );',
+                'error_message' => 'UndefinedFunction',
+            ],
         ];
     }
 }

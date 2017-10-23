@@ -322,6 +322,7 @@ class ExpressionChecker
                     $stmt->expr->inferredType,
                     $container_type,
                     true,
+                    false,
                     $has_scalar_match
                 )
                 && !$has_scalar_match
@@ -1544,6 +1545,7 @@ class ExpressionChecker
                 $left_type,
                 Type::getString(),
                 true,
+                false,
                 $left_has_scalar_match
             );
 
@@ -1552,6 +1554,7 @@ class ExpressionChecker
                 $right_type,
                 Type::getString(),
                 true,
+                false,
                 $right_has_scalar_match
             );
 

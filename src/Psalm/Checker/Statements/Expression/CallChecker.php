@@ -32,6 +32,8 @@ use Psalm\Issue\NullArgument;
 use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\PossiblyFalseArgument;
+use Psalm\Issue\PossiblyFalseReference;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\Issue\PossiblyNullFunctionCall;
@@ -740,6 +742,21 @@ class CallChecker
             }
         }
 
+        if ($class_type &&
+            is_string($stmt->name) &&
+            $class_type->isFalsable()
+        ) {
+            if (IssueBuffer::accepts(
+                new PossiblyFalseReference(
+                    'Cannot call method ' . $stmt->name . ' on possibly false variable ' . $var_id,
+                    new CodeLocation($statements_checker->getSource(), $stmt->var)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                return false;
+            }
+        }
+
         $config = Config::getInstance();
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
@@ -750,12 +767,12 @@ class CallChecker
                 if (!$class_type_part instanceof TNamedObject) {
                     switch (get_class($class_type_part)) {
                         case 'Psalm\\Type\\Atomic\\TNull':
+                        case 'Psalm\\Type\\Atomic\\TFalse':
                             // handled above
                             break;
 
                         case 'Psalm\\Type\\Atomic\\TInt':
                         case 'Psalm\\Type\\Atomic\\TBool':
-                        case 'Psalm\\Type\\Atomic\\TFalse':
                         case 'Psalm\\Type\\Atomic\\TArray':
                         case 'Psalm\\Type\\Atomic\\TString':
                         case 'Psalm\\Type\\Atomic\\TNumericString':
@@ -2014,6 +2031,7 @@ class CallChecker
                         $input_type,
                         $closure_param_type,
                         false,
+                        false,
                         $scalar_type_match_found,
                         $coerced_type
                     );
@@ -2163,6 +2181,19 @@ class CallChecker
             }
         }
 
+        if ($input_type->isFalsable() && !$param_type->hasBool()) {
+            if (IssueBuffer::accepts(
+                new PossiblyFalseArgument(
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
+                        'false value provided',
+                    $code_location
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                return false;
+            }
+        }
+
         $param_type = TypeChecker::simplifyUnionType(
             $project_checker,
             $param_type
@@ -2172,6 +2203,7 @@ class CallChecker
             $project_checker,
             $input_type,
             $param_type,
+            true,
             true,
             $scalar_type_match_found,
             $coerced_type,

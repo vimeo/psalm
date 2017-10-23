@@ -991,6 +991,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $inferred_return_type,
                 $declared_return_type,
                 $ignore_nullable_issues,
+                false,
                 $has_scalar_match,
                 $type_coerced
             )) {
