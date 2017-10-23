@@ -1279,6 +1279,10 @@ class TypeChecker
 
             foreach ($union->types as $container_type_part) {
                 if ($type_part !== $container_type_part &&
+                    !($container_type_part instanceof TInt
+                        || $container_type_part instanceof TFloat
+                        || $container_type_part instanceof TCallable
+                    ) &&
                     !isset($inverse_contains[(string)$type_part][(string)$container_type_part]) &&
                     TypeChecker::isAtomicContainedBy(
                         $project_checker,

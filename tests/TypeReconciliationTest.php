@@ -656,13 +656,22 @@ class TypeReconciliationTest extends TestCase
                     function f($param): void {}
                     f("is_array");',
             ],
+            'stringOrCallableOrObjectArg' => [
+                '<?php
+                    /**
+                     * @param string|callable|object $param
+                     */
+                    function f($param): void {}
+                    f("is_array");',
+            ],
             'intOrFloatArg' => [
                 '<?php
                     /**
                      * @param int|float $param
                      */
                     function f($param): void {}
-                    f(5.0);',
+                    f(5.0);
+                    f(5);',
             ],
         ];
     }
