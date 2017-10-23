@@ -430,6 +430,34 @@ class TypeAlgebraTest extends TestCase
                       }
                     }',
             ],
+            'ifGetClass' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                      public function foo() : void {}
+                    }
+
+                    function takesA(A $a) : void {
+                      if (get_class($a) === "B") {
+                        $a->foo();
+                      }
+                    }',
+            ],
+            'ifNotEqualsGetClass' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                      public function foo() : void {}
+                    }
+
+                    function takesA(A $a) : void {
+                      if (get_class($a) !== "B") {
+                        // do nothing
+                      } else {
+                        $a->foo();
+                      }
+                    }',
+            ],
         ];
     }
 

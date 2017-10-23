@@ -426,6 +426,8 @@ class AssertionFinder
             $null_position = self::hasNullVariable($conditional);
             $false_position = self::hasFalseVariable($conditional);
             $true_position = self::hasTrueVariable($conditional);
+            $gettype_position = self::hasGetTypeCheck($conditional);
+            $getclass_position = self::hasGetClassCheck($conditional);
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -503,6 +505,91 @@ class AssertionFinder
                 }
 
                 return [];
+            }
+
+            if ($gettype_position) {
+                $var_type = null;
+
+                if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $string_expr = $conditional->left;
+                    $gettype_expr = $conditional->right;
+                } elseif ($gettype_position === self::ASSIGNMENT_TO_LEFT) {
+                    $string_expr = $conditional->right;
+                    $gettype_expr = $conditional->left;
+                } else {
+                    throw new \UnexpectedValueException('$gettype_position value');
+                }
+
+                /** @var PhpParser\Node\Expr\FuncCall $gettype_expr */
+                $var_name = ExpressionChecker::getArrayVarId(
+                    $gettype_expr->args[0]->value,
+                    $this_class_name,
+                    $source
+                );
+
+                /** @var PhpParser\Node\Scalar\String_ $string_expr */
+                $var_type = $string_expr->value;
+
+                $file_checker = $source->getFileChecker();
+
+                if (!isset(ClassLikeChecker::$GETTYPE_TYPES[$var_type])) {
+                    if (IssueBuffer::accepts(
+                        new UnevaluatedCode(
+                            'gettype cannot return this value',
+                            new CodeLocation($file_checker, $string_expr)
+                        )
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if ($var_name && $var_type) {
+                        $if_types[$var_name] = '!' . $var_type;
+                    }
+                }
+
+                return $if_types;
+            }
+
+            if ($getclass_position) {
+                $var_type = null;
+
+                if ($getclass_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $string_expr = $conditional->left;
+                    $getclass_expr = $conditional->right;
+                } elseif ($getclass_position === self::ASSIGNMENT_TO_LEFT) {
+                    $string_expr = $conditional->right;
+                    $getclass_expr = $conditional->left;
+                } else {
+                    throw new \UnexpectedValueException('$getclass_position value');
+                }
+
+                /** @var PhpParser\Node\Expr\FuncCall $getclass_expr */
+                $var_name = ExpressionChecker::getArrayVarId(
+                    $getclass_expr->args[0]->value,
+                    $this_class_name,
+                    $source
+                );
+
+                /** @var PhpParser\Node\Scalar\String_ $string_expr */
+                $var_type = $string_expr->value;
+
+                $file_checker = $source->getFileChecker();
+
+                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                    $file_checker->project_checker,
+                    $var_type,
+                    new CodeLocation($file_checker, $string_expr),
+                    $source->getSuppressedIssues()
+                ) === false
+                ) {
+                    // fall through
+                } else {
+                    if ($var_name && $var_type) {
+                        $if_types[$var_name] = '!' . $var_type;
+                    }
+                }
+
+                return $if_types;
             }
 
             return [];
