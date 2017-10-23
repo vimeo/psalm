@@ -9438,7 +9438,7 @@ return [
 'tan' => ['float', 'number'=>'float'],
 'tanh' => ['float', 'number'=>'float'],
 'tcpwrap_check' => ['bool', 'daemon'=>'string', 'address'=>'string', 'user='=>'string', 'nodns='=>'bool'],
-'tempnam' => ['string', 'dir'=>'string', 'prefix'=>'string'],
+'tempnam' => ['string|false', 'dir'=>'string', 'prefix'=>'string'],
 'textdomain' => ['string', 'domain'=>'string'],
 'Thread::detach' => ['void'],
 'Threaded::chunk' => ['array', 'size'=>'int', 'preserve'=>'bool'],
