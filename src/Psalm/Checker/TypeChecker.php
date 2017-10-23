@@ -1272,12 +1272,14 @@ class TypeChecker
 
         $unique_types = [];
 
+        $inverse_contains = [];
+
         foreach ($union->types as $type_part) {
             $is_contained_by_other = false;
 
             foreach ($union->types as $container_type_part) {
                 if ($type_part !== $container_type_part &&
-                    !($type_part instanceof TInt && $container_type_part instanceof TFloat) &&
+                    !isset($inverse_contains[(string)$type_part][(string)$container_type_part]) &&
                     TypeChecker::isAtomicContainedBy(
                         $project_checker,
                         $type_part,
@@ -1288,6 +1290,7 @@ class TypeChecker
                     ) &&
                     !$to_string_cast
                 ) {
+                    $inverse_contains[(string)$container_type_part][(string)$type_part] = true;
                     $is_contained_by_other = true;
                     break;
                 }
