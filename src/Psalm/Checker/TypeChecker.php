@@ -456,7 +456,9 @@ class TypeChecker
                     )) {
                         // fall through
                     }
-                } else {
+                } elseif ($key !== '$this'
+                    || !($statements_checker->getSource()->getSource() instanceof TraitChecker)
+                ) {
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
