@@ -88,24 +88,36 @@ class TypeChecker
             $failed_reconciliation = false;
 
             foreach ($new_type_parts as $new_type_part) {
-                $result_type = self::reconcileTypes(
-                    (string) $new_type_part,
-                    $result_type,
-                    $key,
-                    $statements_checker,
-                    $code_location,
-                    $suppressed_issues,
-                    $failed_reconciliation
-                );
+                $new_type_part_parts = explode('|', $new_type_part);
 
-                // special case if result is just a simple array
-                if ((string) $result_type === 'array') {
-                    $result_type = Type::getArray();
+                $orred_type = null;
+
+                foreach ($new_type_part_parts as $new_type_part_part) {
+                    $result_type_candidate = self::reconcileTypes(
+                        $new_type_part_part,
+                        $result_type,
+                        $key,
+                        $statements_checker,
+                        $code_location,
+                        $suppressed_issues,
+                        $failed_reconciliation
+                    );
+
+                    // special case if result is just a simple array
+                    if ((string) $result_type_candidate === 'array') {
+                        $result_type_candidate = Type::getArray();
+                    }
+
+                    if ($result_type_candidate === false) {
+                        return false;
+                    }
+
+                    $orred_type = $orred_type && $result_type_candidate
+                        ? Type::combineUnionTypes($result_type_candidate, $orred_type)
+                        : $result_type_candidate;
                 }
 
-                if ($result_type === false) {
-                    return false;
-                }
+                $result_type = $orred_type;
             }
 
             if ($result_type === null) {

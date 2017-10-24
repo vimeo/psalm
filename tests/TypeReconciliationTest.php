@@ -673,6 +673,12 @@ class TypeReconciliationTest extends TestCase
                     f(5.0);
                     f(5);',
             ],
+            'noFalsyLeak' => [
+                '<?php
+                    function foo(string $s) : void {
+                      if (empty($s) || $s === "hello") {}
+                    }',
+            ],
         ];
     }
 
