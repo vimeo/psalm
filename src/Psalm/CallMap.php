@@ -2703,7 +2703,7 @@ return [
 'gmp_gcdext' => ['array', 'a'=>'', 'b'=>''],
 'gmp_gcd' => ['GMP', 'a'=>'', 'b'=>''],
 'gmp_hamdist' => ['int', 'a'=>'', 'b'=>''],
-'gmp_import' => ['GMP', 'data'=>'string', 'word_size'=>'int', 'options'=>'int'],
+'gmp_import' => ['GMP', 'data'=>'string', 'word_size='=>'int', 'options='=>'int'],
 'gmp_init' => ['GMP', 'number'=>'', 'base='=>'int'],
 'gmp_intval' => ['int', 'gmpnumber'=>''],
 'gmp_invert' => ['GMP', 'a'=>'', 'b'=>''],
