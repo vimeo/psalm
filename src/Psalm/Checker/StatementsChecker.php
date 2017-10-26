@@ -129,6 +129,33 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
             */
 
+            $new_issues = null;
+
+            if ($docblock = $stmt->getDocComment()) {
+                $comments = CommentChecker::parseDocComment((string)$docblock);
+                if (isset($comments['specials']['psalm-suppress'])) {
+                    $suppressed = array_filter(
+                        array_map(
+                            /**
+                             * @param string $line
+                             *
+                             * @return string
+                             */
+                            function ($line) {
+                                return explode(' ', trim($line))[0];
+                            },
+                            $comments['specials']['psalm-suppress']
+                        )
+                    );
+
+                    if ($suppressed) {
+                        $new_issues = array_diff($suppressed, $this->source->getSuppressedIssues());
+                        /** @psalm-suppress TypeCoercion */
+                        $this->addSuppressedIssues($new_issues);
+                    }
+                }
+            }
+
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 IfChecker::analyze($this, $stmt, $context, $loop_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -347,6 +374,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 )) {
                     return false;
                 }
+            }
+
+            if ($new_issues) {
+                /** @psalm-suppress TypeCoercion */
+                $this->removeSuppressedIssues($new_issues);
             }
         }
 

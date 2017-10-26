@@ -33,7 +33,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $actual_file_path;
 
     /**
-     * @var array<string, string>
+     * @var array<int, string>
      */
     protected $suppressed_issues = [];
 
@@ -495,6 +495,26 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
+    }
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function addSuppressedIssues(array $new_issues)
+    {
+        $this->suppressed_issues = array_merge($new_issues, $this->suppressed_issues);
+    }
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function removeSuppressedIssues(array $new_issues)
+    {
+        $this->suppressed_issues = array_diff($this->suppressed_issues, $new_issues);
     }
 
     public function getFQCLN()

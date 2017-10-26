@@ -162,6 +162,34 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function addSuppressedIssues(array $new_issues)
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->addSuppressedIssues($new_issues);
+    }
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function removeSuppressedIssues(array $new_issues)
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->removeSuppressedIssues($new_issues);
+    }
+
+    /**
      * @return string
      */
     public function getNamespace()
