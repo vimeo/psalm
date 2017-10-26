@@ -1303,6 +1303,8 @@ class TypeChecker
                     !($container_type_part instanceof TInt
                         || $container_type_part instanceof TFloat
                         || $container_type_part instanceof TCallable
+                        || ($container_type_part instanceof TString && $type_part instanceof TCallable)
+                        || ($container_type_part instanceof TArray && $type_part instanceof TCallable)
                     ) &&
                     !isset($inverse_contains[(string)$type_part][(string)$container_type_part]) &&
                     TypeChecker::isAtomicContainedBy(
