@@ -44,6 +44,38 @@ class SwitchTypeTest extends TestCase
                             break;
                     }',
             ],
+            'getClassConstArg' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        public function fooFoo() {
+
+                        }
+                    }
+
+                    class B {
+                        /**
+                         * @return void
+                         */
+                        public function barBar() {
+
+                        }
+                    }
+
+                    $a = rand(0, 10) ? new A() : new B();
+
+                    switch (get_class($a)) {
+                        case A::class:
+                            $a->fooFoo();
+                            break;
+
+                        case B::class:
+                            $a->barBar();
+                            break;
+                    }',
+            ],
             'getClassExteriorArgClassConsts' => [
                 '<?php
                     /** @return void */
