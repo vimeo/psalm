@@ -12,7 +12,7 @@ class AssertTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'assertInstanceOfB' => [
+            'SKIPPED-assertInstanceOfB' => [
                 '<?php
                     class A {}
                     class B extends A {
