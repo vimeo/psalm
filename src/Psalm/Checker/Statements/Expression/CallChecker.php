@@ -1675,6 +1675,18 @@ class CallChecker
                         }
                     }
 
+                    if ($method_id === 'socket_select') {
+                        if (ExpressionChecker::analyze(
+                            $statements_checker,
+                            $arg->value,
+                            $context
+                        ) === false) {
+                            return false;
+                        }
+
+                        continue;
+                    }
+
                     ExpressionChecker::assignByRefParam(
                         $statements_checker,
                         $arg->value,
