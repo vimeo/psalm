@@ -636,6 +636,7 @@ class ExpressionChecker
      * @param  StatementsChecker    $statements_checker
      * @param  PhpParser\Node\Expr  $stmt
      * @param  Type\Union           $by_ref_type
+     * @param  bool                 $constrain_type
      * @param  Context              $context
      *
      * @return void
@@ -644,7 +645,8 @@ class ExpressionChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $stmt,
         Type\Union $by_ref_type,
-        Context $context
+        Context $context,
+        $constrain_type = true
     ) {
         $var_id = self::getVarId(
             $stmt,
@@ -653,7 +655,7 @@ class ExpressionChecker
         );
 
         if ($var_id) {
-            if (!$by_ref_type->isMixed()) {
+            if (!$by_ref_type->isMixed() && $constrain_type) {
                 $context->byref_constraints[$var_id] = new \Psalm\ReferenceConstraint($by_ref_type);
             }
 

@@ -1593,7 +1593,8 @@ class CallChecker
                     $statements_checker,
                     $array_arg,
                     $by_ref_type,
-                    $context
+                    $context,
+                    false
                 );
             }
 
@@ -1628,7 +1629,8 @@ class CallChecker
                                 'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
                                 'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
                                 'end', 'next', 'prev', 'array_pop', 'array_shift',
-                            ], true
+                            ],
+                            true
                         )
                     ) {
                         if (ExpressionChecker::analyze(
@@ -1665,7 +1667,8 @@ class CallChecker
                                 $statements_checker,
                                 $arg->value,
                                 $by_ref_type,
-                                $context
+                                $context,
+                                false
                             );
 
                             continue;
