@@ -1579,7 +1579,7 @@ class CallChecker
                                 new TArray(
                                     [
                                         Type::getInt(),
-                                        $arg->value->inferredType
+                                        isset($arg->value->inferredType)
                                             ? clone $arg->value->inferredType
                                             : Type::getMixed(),
                                         ]
