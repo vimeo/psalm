@@ -17,6 +17,30 @@ class ArgTest extends TestCase
                     $m = new ReflectionMethod("hello", "goodbye");
                     $m->invoke("cool");',
             ],
+            'sortFunctions' => [
+                '<?php
+                    $a = ["b" => 5, "a" => 8];
+                    ksort($a);
+                    $b = ["b" => 5, "a" => 8];
+                    sort($b);
+                ',
+                'assertions' => [
+                    '$a' => 'array<string, int>',
+                    '$b' => 'array<int, int>',
+                ],
+            ],
+            'arrayModificationFunctions' => [
+                '<?php
+                    $a = ["b" => 5, "a" => 8];
+                    array_unshift($a, true);
+                    $b = ["b" => 5, "a" => 8];
+                    array_push($b, true);
+                ',
+                'assertions' => [
+                    '$a' => 'array<string|int, int|bool>',
+                    '$b' => 'array<string|int, int|bool>',
+                ],
+            ],
         ];
     }
 
@@ -32,7 +56,7 @@ class ArgTest extends TestCase
                         "a",
                         ["b"],
                     ];
-            
+
                     $a = array_map(
                         function (string $uuid) : string {
                             return $uuid;
