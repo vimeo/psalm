@@ -1149,7 +1149,7 @@ return [
 'DateTime::getTimestamp' => ['int'],
 'DateTime::getTimezone' => ['DateTimeZone'],
 'DateTimeImmutable::add' => ['DateTimeImmutable', 'interval'=>'DateInterval'],
-'DateTimeImmutable::__construct' => ['void', 'time='=>'string', 'timezone='=>'DateTimeZone'],
+'DateTimeImmutable::__construct' => ['void', 'time='=>'string', 'timezone='=>'?DateTimeZone'],
 'DateTimeImmutable::createFromFormat' => ['DateTimeImmutable', 'format'=>'string', 'time'=>'string', 'timezone='=>'DateTimeZone'],
 'DateTimeImmutable::createFromMutable' => ['DateTimeImmutable', 'datetime'=>'DateTime'],
 'DateTimeImmutable::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
