@@ -171,7 +171,7 @@ class FetchChecker
                 continue;
             }
 
-            if (!$lhs_type_part instanceof TNamedObject) {
+            if (!$lhs_type_part instanceof TNamedObject && !$lhs_type_part instanceof TObject) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyFetch(
                         'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
