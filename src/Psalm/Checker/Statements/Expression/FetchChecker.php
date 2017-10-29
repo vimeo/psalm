@@ -171,7 +171,7 @@ class FetchChecker
                 continue;
             }
 
-            if (!$lhs_type_part->isObjectType()) {
+            if (!$lhs_type_part instanceof TNamedObject) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyFetch(
                         'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
@@ -197,12 +197,12 @@ class FetchChecker
                 continue;
             }
 
-            $project_checker = $statements_checker->getFileChecker()->project_checker;
-
-            if (!$lhs_type_part instanceof TNamedObject) {
-                // @todo deal with this
+            if (ExpressionChecker::isMock($lhs_type_part->value)) {
+                $stmt->inferredType = Type::getMixed();
                 continue;
             }
+
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
 
             if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
                 if (InterfaceChecker::interfaceExists($project_checker, $lhs_type_part->value)) {
