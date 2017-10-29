@@ -17,7 +17,7 @@ use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidGlobal;
-use Psalm\Issue\MissingInclude;
+use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnresolvableInclude;
@@ -1025,7 +1025,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if (IssueBuffer::accepts(
-                new MissingInclude(
+                new MissingFile(
                     'Cannot find file ' . $path_to_file . ' to include',
                     new CodeLocation($this->source, $stmt)
                 ),
