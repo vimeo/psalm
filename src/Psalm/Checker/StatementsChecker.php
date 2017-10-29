@@ -17,8 +17,10 @@ use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidGlobal;
+use Psalm\Issue\MissingInclude;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
+use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -1020,6 +1022,26 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
 
                 return null;
+            }
+
+            if (IssueBuffer::accepts(
+                new MissingInclude(
+                    'Cannot find file ' . $path_to_file . ' to include',
+                    new CodeLocation($this->source, $stmt)
+                ),
+                $this->source->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } else {
+            if (IssueBuffer::accepts(
+                new UnresolvableInclude(
+                    'Cannot resolve the given expression to a file path',
+                    new CodeLocation($this->source, $stmt)
+                ),
+                $this->source->getSuppressedIssues()
+            )) {
+                // fall through
             }
         }
 

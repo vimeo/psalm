@@ -389,6 +389,7 @@ class Config
                     throw new \InvalidArgumentException('Cannot find file ' . $path);
                 }
 
+                /** @psalm-suppress UnresolvableInclude */
                 $loaded_plugin = require($path);
 
                 if (!$loaded_plugin) {
@@ -417,6 +418,7 @@ class Config
         }
 
         if ($config->autoloader) {
+            /** @psalm-suppress UnresolvableInclude */
             require_once($base_dir . DIRECTORY_SEPARATOR . $config->autoloader);
         }
 
@@ -499,6 +501,7 @@ class Config
                 );
             }
 
+            /** @psalm-suppress UnresolvableInclude */
             require_once($path);
 
             if (!\Psalm\Checker\ClassChecker::classExtends(
