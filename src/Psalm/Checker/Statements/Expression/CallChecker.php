@@ -1487,9 +1487,26 @@ class CallChecker
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-        $method_storage = isset($class_storage->methods[strtolower($method_name)])
-            ? $class_storage->methods[strtolower($method_name)]
-            : null;
+
+        $method_storage = null;
+
+        if (isset($class_storage->declaring_method_ids[strtolower($method_name)])) {
+            $declaring_method_id = $class_storage->declaring_method_ids[strtolower($method_name)];
+
+            list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+
+            if ($declaring_fq_class_name !== $fq_class_name) {
+                $declaring_class_storage = $project_checker->classlike_storage_provider->get($declaring_fq_class_name);
+            } else {
+                $declaring_class_storage = $class_storage;
+            }
+
+            if (!isset($declaring_class_storage->methods[strtolower($declaring_method_name)])) {
+                throw new \UnexpectedValueException('Storage should not be empty here');
+            }
+
+            $method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
+        }
 
         if (!$class_storage->user_defined) {
             // check again after we've processed args
