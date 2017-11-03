@@ -127,7 +127,6 @@
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MissingPropertyDeclaration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArgument" type="IssueHandlerType" minOccurs="0" />

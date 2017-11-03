@@ -532,17 +532,6 @@ final class B extends A {}',
                     }',
                 'error_message' => 'UndefinedThisPropertyFetch',
             ],
-            'missingPropertyDeclaration' => [
-                '<?php
-                    class A {
-                    }
-
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    function fooDo() : void {
-                        (new A)->foo = "cool";
-                    }',
-                'error_message' => 'MissingPropertyDeclaration',
-            ],
             'missingPropertyType' => [
                 '<?php
                     class A {

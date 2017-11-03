@@ -19,7 +19,6 @@ use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidScope;
-use Psalm\Issue\MissingPropertyDeclaration;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedStringOffsetAssignment;
@@ -470,6 +469,8 @@ class AssignmentChecker
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
+        $property_exists = false;
+
         if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
                 return null;
@@ -480,6 +481,8 @@ class AssignmentChecker
             if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                 return null;
             }
+
+            $property_exists = true;
 
             $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty($project_checker, $property_id);
 
@@ -647,6 +650,7 @@ class AssignmentChecker
                             $class_property_types[] =
                                 clone $class_storage->pseudo_property_set_types['$' . $prop_name];
                             $has_regular_setter = true;
+                            $property_exists = true;
                             continue;
                         }
 
@@ -672,10 +676,12 @@ class AssignmentChecker
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
                 if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
+                    $has_regular_setter = true;
+
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         // if this is a proper error, we'll see it on the first pass
                         if ($context->collect_mutations) {
-                            return;
+                            continue;
                         }
 
                         if (IssueBuffer::accepts(
@@ -701,6 +707,8 @@ class AssignmentChecker
 
                     continue;
                 }
+
+                $property_exists = true;
 
                 if (ClassLikeChecker::checkPropertyVisibility(
                     $property_id,
@@ -779,17 +787,7 @@ class AssignmentChecker
             return null;
         }
 
-        if (!$class_property_types) {
-            if (IssueBuffer::accepts(
-                new MissingPropertyDeclaration(
-                    'Missing property declaration for ' . $var_id,
-                    new CodeLocation($statements_checker->getSource(), $stmt)
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
+        if (!$property_exists) {
             return null;
         }
 

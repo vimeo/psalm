@@ -406,13 +406,14 @@ class AnnotationTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                         public function __get($name) : ?string {
+                         public function __get(string $name) : ?string {
                               if ($name === "foo") {
                                    return "hello";
                               }
                          }
 
-                         public function __set($name, $value) : void {
+                         /** @param mixed $value */
+                         public function __set(string $name, $value) : void {
                          }
                     }
 
