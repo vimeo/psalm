@@ -181,6 +181,7 @@ class ScopeTest extends TestCase
                 'assertions' => [
                     '$a' => 'string|null',
                 ],
+                'error_levels' => ['PossiblyFalseArgument'],
             ],
             'refineOredType' => [
                 '<?php

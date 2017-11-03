@@ -77,6 +77,7 @@ class AssignmentChecker
         );
 
         $var_comment = null;
+        $comment_type = null;
 
         if ($doc_comment) {
             $var_comment = CommentChecker::getTypeFromComment(
@@ -88,8 +89,18 @@ class AssignmentChecker
                 $came_from_line_number
             );
 
-            if ($var_comment && $var_comment->var_id && $var_comment->var_id !== $var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+            if ($var_comment) {
+                $comment_type = ExpressionChecker::fleshOutType(
+                    $statements_checker->getFileChecker()->project_checker,
+                    Type::parseString($var_comment->type),
+                    $context->self
+                );
+
+                $comment_type->setFromDocblock();
+
+                if ($var_comment->var_id && $var_comment->var_id !== $var_id) {
+                    $context->vars_in_scope[$var_comment->var_id] = $comment_type;
+                }
             }
         }
 
@@ -101,16 +112,16 @@ class AssignmentChecker
 
                 // if we're not exiting immediately, make everything mixed
                 $context->vars_in_scope[$var_id] =
-                    $var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id)
-                        ? Type::parseString($var_comment->type)
+                    $var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id) && $comment_type
+                        ? $comment_type
                         : Type::getMixed();
             }
 
             return false;
         }
 
-        if ($var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id)) {
-            $assign_value_type = $var_comment->type;
+        if ($var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id) && $comment_type) {
+            $assign_value_type = $comment_type;
         } elseif (!$assign_value_type) {
             if (isset($assign_value->inferredType)) {
                 /** @var Type\Union */
@@ -128,6 +139,20 @@ class AssignmentChecker
                 $assign_value_type,
                 $statements_checker
             );
+        } else {
+            $root_var_id = ExpressionChecker::getRootVarId(
+                $assign_var,
+                $statements_checker->getFQCLN(),
+                $statements_checker
+            );
+
+            if ($root_var_id && isset($context->vars_in_scope[$root_var_id])) {
+                $context->removeVarFromConflictingClauses(
+                    $root_var_id,
+                    $context->vars_in_scope[$root_var_id],
+                    $statements_checker
+                );
+            }
         }
 
         if ($assign_value_type->isMixed()) {

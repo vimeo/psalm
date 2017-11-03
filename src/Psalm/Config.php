@@ -173,6 +173,9 @@ class Config
      */
     public $remember_property_assignments_after_call = true;
 
+    /** @var bool */
+    public $use_igbinary = false;
+
     /**
      * Psalm plugins
      *
@@ -337,6 +340,11 @@ class Config
             $config->remember_property_assignments_after_call = $attribute_text === 'true' || $attribute_text === '1';
         }
 
+        if (isset($config_xml['serializer'])) {
+            $attribute_text = (string) $config_xml['serializer'];
+            $config->use_igbinary = $attribute_text === 'igbinary';
+        }
+
         if (isset($config_xml->projectFiles)) {
             $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
         }
@@ -381,6 +389,7 @@ class Config
                     throw new \InvalidArgumentException('Cannot find file ' . $path);
                 }
 
+                /** @psalm-suppress UnresolvableInclude */
                 $loaded_plugin = require($path);
 
                 if (!$loaded_plugin) {
@@ -409,6 +418,7 @@ class Config
         }
 
         if ($config->autoloader) {
+            /** @psalm-suppress UnresolvableInclude */
             require_once($base_dir . DIRECTORY_SEPARATOR . $config->autoloader);
         }
 
@@ -491,6 +501,7 @@ class Config
                 );
             }
 
+            /** @psalm-suppress UnresolvableInclude */
             require_once($path);
 
             if (!\Psalm\Checker\ClassChecker::classExtends(

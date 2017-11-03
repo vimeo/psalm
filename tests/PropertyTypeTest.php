@@ -120,7 +120,7 @@ class PropertyTypeTest extends TestCase
                         $b = $a->foo;
                     }',
                 'assertions' => [
-                    '$b' => 'null|string|int',
+                    '$b' => 'null|int|string',
                 ],
             ],
             'sharedPropertyInElseIf' => [
@@ -144,7 +144,7 @@ class PropertyTypeTest extends TestCase
                         $b = $a->foo;
                     }',
                 'assertions' => [
-                    '$b' => 'null|string|int',
+                    '$b' => 'null|int|string',
                 ],
             ],
             'nullablePropertyCheck' => [

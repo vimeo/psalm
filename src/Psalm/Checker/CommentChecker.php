@@ -44,13 +44,16 @@ class CommentChecker
 
         $comments = self::parseDocComment($comment, $var_line_number);
 
-        if (!isset($comments['specials']['var'])) {
+        if (!isset($comments['specials']['var']) && !isset($comments['specials']['psalm-var'])) {
             return;
         }
 
         if ($comments) {
+            $all_vars = (isset($comments['specials']['var']) ? $comments['specials']['var'] : [])
+                + (isset($comments['specials']['psalm-var']) ? $comments['specials']['psalm-var'] : []);
+
             /** @var int $line_number */
-            foreach ($comments['specials']['var'] as $line_number => $var_line) {
+            foreach ($all_vars as $line_number => $var_line) {
                 $var_line = trim($var_line);
 
                 if (!$var_line) {
@@ -165,9 +168,12 @@ class CommentChecker
             }
         }
 
-        if (isset($comments['specials']['param'])) {
+        if (isset($comments['specials']['param']) || isset($comments['specials']['psalm-param'])) {
+            $all_params = (isset($comments['specials']['param']) ? $comments['specials']['param'] : [])
+                + (isset($comments['specials']['psalm-param']) ? $comments['specials']['psalm-param'] : []);
+
             /** @var string $param */
-            foreach ($comments['specials']['param'] as $line_number => $param) {
+            foreach ($all_params as $line_number => $param) {
                 try {
                     $line_parts = self::splitDocLine($param);
                 } catch (DocblockParseException $e) {

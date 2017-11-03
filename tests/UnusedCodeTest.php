@@ -20,7 +20,7 @@ class UnusedCodeTest extends TestCase
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
-            new Provider\FakeCacheProvider()
+            new Provider\FakeParserCacheProvider()
         );
 
         $this->project_checker->setConfig(new TestConfig());

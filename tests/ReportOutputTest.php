@@ -20,7 +20,7 @@ class ReportOutputTest extends TestCase
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
-            new Provider\FakeCacheProvider(),
+            new Provider\FakeParserCacheProvider(),
             false
         );
         $this->project_checker->reports['json'] = __DIR__ . '/test-report.json';
@@ -40,7 +40,7 @@ class ReportOutputTest extends TestCase
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
             $checker = new \Psalm\Checker\ProjectChecker(
                 $this->file_provider,
-                new Provider\FakeCacheProvider(),
+                new Provider\FakeParserCacheProvider(),
                 false,
                 true,
                 \Psalm\Checker\ProjectChecker::TYPE_CONSOLE,
@@ -63,7 +63,7 @@ class ReportOutputTest extends TestCase
     {
         $checker = new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
-            new Provider\FakeCacheProvider(),
+            new Provider\FakeParserCacheProvider(),
             false,
             true,
             \Psalm\Checker\ProjectChecker::TYPE_CONSOLE,
@@ -182,5 +182,42 @@ somefile.php:2:43:error - Could not verify return type \'string|null\' for psalm
         //    ['report' => ['item' => $issue_data]],
         //    XML2Array::createArray(IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false), LIBXML_NOCDATA)
         //);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEmptyReportIfNotError()
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php ?>'
+        );
+
+        $file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $file_checker->visitAndAnalyzeMethods();
+        $this->assertSame(
+            '[]
+',
+            IssueBuffer::getOutput(ProjectChecker::TYPE_JSON, false)
+        );
+        $this->assertSame(
+            '',
+            IssueBuffer::getOutput(ProjectChecker::TYPE_EMACS, false)
+        );
+        $this->assertSame(
+            '<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <item/>
+</report>
+',
+            IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false)
+        );
+
+        IssueBuffer::finish($this->project_checker, true, null, ['somefile.php' => true]);
+        $this->assertFileExists(__DIR__ . '/test-report.json');
+        $this->assertSame('[]
+', file_get_contents(__DIR__ . '/test-report.json'));
+        unlink(__DIR__ . '/test-report.json');
     }
 }

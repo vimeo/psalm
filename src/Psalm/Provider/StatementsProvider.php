@@ -11,7 +11,7 @@ class StatementsProvider
     /**
      * @param  string  $file_path
      * @param  FileProvider $file_provider
-     * @param  CacheProvider $cache_provider
+     * @param  ParserCacheProvider $cache_provider
      * @param  bool    $debug_output
      *
      * @return array<int, \PhpParser\Node\Stmt>
@@ -19,14 +19,14 @@ class StatementsProvider
     public static function getStatementsForFile(
         $file_path,
         FileProvider $file_provider,
-        CacheProvider $cache_provider,
+        ParserCacheProvider $cache_provider,
         $debug_output = false
     ) {
         $stmts = [];
 
         $from_cache = false;
 
-        $version = 'parsercache4';
+        $version = 'parsercache5';
 
         $file_contents = $file_provider->getContents($file_path);
         $modified_time = $file_provider->getModifiedTime($file_path);

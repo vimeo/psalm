@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 class IssueSuppressionTest extends TestCase
 {
     use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
 
     /**
      * @return array
@@ -24,11 +25,60 @@ class IssueSuppressionTest extends TestCase
                         }
                     }',
             ],
+            'undefinedClassOneLine' => [
+                '<?php
+                    class A {
+                        public function b() : void {
+                            /**
+                             * @psalm-suppress UndefinedClass
+                             */
+                            new B();
+                        }
+                    }',
+            ],
+            'undefinedClassOneLineInFile' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     */
+                    new B();',
+            ],
             'excludeIssue' => [
                 '<?php
                     fooFoo();',
                 'assertions' => [],
                 'error_levels' => ['UndefinedFunction'],
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerInvalidCodeParse()
+    {
+        return [
+            'undefinedClassOneLineWithLineAfter' => [
+                '<?php
+                    class A {
+                        public function b() {
+                            /**
+                             * @psalm-suppress UndefinedClass
+                             */
+                            new B();
+                            new C();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src/somefile.php:8 - Class or interface C',
+            ],
+            'undefinedClassOneLineInFileAfter' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     */
+                    new B();
+                    new C();',
+                'error_message' => 'UndefinedClass - src/somefile.php:6 - Class or interface C',
             ],
         ];
     }

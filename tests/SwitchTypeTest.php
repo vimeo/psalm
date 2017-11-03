@@ -44,6 +44,38 @@ class SwitchTypeTest extends TestCase
                             break;
                     }',
             ],
+            'getClassConstArg' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        public function fooFoo() {
+
+                        }
+                    }
+
+                    class B {
+                        /**
+                         * @return void
+                         */
+                        public function barBar() {
+
+                        }
+                    }
+
+                    $a = rand(0, 10) ? new A() : new B();
+
+                    switch (get_class($a)) {
+                        case A::class:
+                            $a->fooFoo();
+                            break;
+
+                        case B::class:
+                            $a->barBar();
+                            break;
+                    }',
+            ],
             'getClassExteriorArgClassConsts' => [
                 '<?php
                     /** @return void */
@@ -98,6 +130,52 @@ class SwitchTypeTest extends TestCase
                         case "integer":
                             testInt($a);
                             break;
+                    }',
+            ],
+            'switchTruthy' => [
+                '<?php
+                    class A {
+                       /**
+                        * @var ?string
+                        */
+                       public $a = null;
+                       /**
+                        * @var ?string
+                        */
+                       public $b = null;
+                    }
+                    function f(A $obj): string {
+                      switch (true) {
+                        case $obj->a !== null:
+                          return $obj->a; // definitely not null
+                        case !is_null($obj->b):
+                          return $obj->b; // definitely not null
+                        default:
+                          throw new \InvalidArgumentException("$obj->a or $obj->b must be set");
+                      }
+                    }',
+            ],
+            'switchMoTruthy' => [
+                '<?php
+                    class A {
+                       /**
+                        * @var ?string
+                        */
+                       public $a = null;
+                       /**
+                        * @var ?string
+                        */
+                       public $b = null;
+                    }
+                    function f(A $obj): string {
+                      switch (true) {
+                        case $obj->a:
+                          return $obj->a; // definitely not null
+                        case $obj->b:
+                          return $obj->b; // definitely not null
+                        default:
+                          throw new \InvalidArgumentException("$obj->a or $obj->b must be set");
+                      }
                     }',
             ],
         ];

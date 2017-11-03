@@ -188,6 +188,22 @@ class Union
     /**
      * @return bool
      */
+    public function isFalsable()
+    {
+        return isset($this->types['false']);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasBool()
+    {
+        return isset($this->types['bool']) || isset($this->types['false']);
+    }
+
+    /**
+     * @return bool
+     */
     public function hasString()
     {
         return isset($this->types['string']);

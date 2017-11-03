@@ -27,6 +27,7 @@
         <xs:attribute name="useAssertForType" type="xs:string" />
         <xs:attribute name="cacheFileContentHashes" type="xs:string" />
         <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:string" />
+        <xs:attribute name="serializer" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
@@ -101,6 +102,7 @@
             <xs:element name="InvalidArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidParamDefault" type="IssueHandlerType" minOccurs="0" />
@@ -124,6 +126,7 @@
             <xs:element name="MisplacedRequiredParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyDeclaration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -151,6 +154,8 @@
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyFalseArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyFalseReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArrayAccess" type="IssueHandlerType" minOccurs="0" />
@@ -186,6 +191,7 @@
             <xs:element name="UnimplementedInterfaceMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedExpression" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedStatement" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnevaluatedCode" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClass" type="IssueHandlerType" minOccurs="0" />

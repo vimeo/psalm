@@ -209,12 +209,12 @@ class IssueBuffer
             }
 
             echo self::getOutput($project_checker->output_format, $project_checker->use_color);
-            foreach ($project_checker->reports as $format => $path) {
-                file_put_contents(
-                    $path,
-                    self::getOutput($format, $project_checker->use_color)
-                );
-            }
+        }
+        foreach ($project_checker->reports as $format => $path) {
+            file_put_contents(
+                $path,
+                self::getOutput($format, $project_checker->use_color)
+            );
         }
 
         if ($start_time) {

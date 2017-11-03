@@ -123,6 +123,13 @@ class ClassTest extends TestCase
                     (new foo());',
                 'error_message' => 'InvalidClass',
             ],
+            'wrongCaseClassWithCall' => [
+                '<?php
+                    class A {}
+                    needsA(new A);
+                    function needsA(a $x) : void {}',
+                'error_message' => 'InvalidClass',
+            ],
             'invalidThisFetch' => [
                 '<?php
                     echo $this;',

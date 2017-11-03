@@ -221,6 +221,45 @@ class AnnotationTest extends TestCase
                         public function foo($a) : void {}
                     }',
             ],
+            'varSelf' => [
+                '<?php
+                    class A
+                    {
+                        public function foo() : void {}
+
+                        public function getMeAgain() : void {
+                            /** @var self */
+                            $me = $this;
+                            $me->foo();
+                        }
+                    }',
+            ],
+            'psalmVar' => [
+                '<?php
+                    class A
+                    {
+                        /** @psalm-var array<int, string> */
+                        public $foo = [];
+
+                        public function updateFoo() : void {
+                            $this->foo[5] = "hello";
+                        }
+                    }',
+            ],
+            'psalmParam' => [
+                '<?php
+                    function takesInt(int $a) : void {}
+
+                    /**
+                     * @psalm-param  array<int, string> $a
+                     * @param string[] $a
+                     */
+                    function foo(array $a) : void {
+                        foreach ($a as $key => $value) {
+                            takesInt($key);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -476,6 +515,19 @@ class AnnotationTest extends TestCase
                 'error_message' => 'UntypedParam - src/somefile.php:7 - Parameter $s has no provided type,'
                     . ' could not infer',
                 'error_levels' => ['MixedArgument', 'InvalidReturnType', 'MixedAssignment'],
+            ],
+            'psalmInvalidVar' => [
+                '<?php
+                    class A
+                    {
+                        /** @psalm-var array<int, string> */
+                        public $foo = [];
+
+                        public function updateFoo() : void {
+                            $this->foo["boof"] = "hello";
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignment',
             ],
         ];
     }

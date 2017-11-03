@@ -88,24 +88,36 @@ class TypeChecker
             $failed_reconciliation = false;
 
             foreach ($new_type_parts as $new_type_part) {
-                $result_type = self::reconcileTypes(
-                    (string) $new_type_part,
-                    $result_type,
-                    $key,
-                    $statements_checker,
-                    $code_location,
-                    $suppressed_issues,
-                    $failed_reconciliation
-                );
+                $new_type_part_parts = explode('|', $new_type_part);
 
-                // special case if result is just a simple array
-                if ((string) $result_type === 'array') {
-                    $result_type = Type::getArray();
+                $orred_type = null;
+
+                foreach ($new_type_part_parts as $new_type_part_part) {
+                    $result_type_candidate = self::reconcileTypes(
+                        $new_type_part_part,
+                        $result_type,
+                        $key,
+                        $statements_checker,
+                        $code_location,
+                        $suppressed_issues,
+                        $failed_reconciliation
+                    );
+
+                    // special case if result is just a simple array
+                    if ((string) $result_type_candidate === 'array') {
+                        $result_type_candidate = Type::getArray();
+                    }
+
+                    if ($result_type_candidate === false) {
+                        return false;
+                    }
+
+                    $orred_type = $orred_type && $result_type_candidate
+                        ? Type::combineUnionTypes($result_type_candidate, $orred_type)
+                        : $result_type_candidate;
                 }
 
-                if ($result_type === false) {
-                    return false;
-                }
+                $result_type = $orred_type;
             }
 
             if ($result_type === null) {
@@ -165,7 +177,7 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if ($new_var_type[0] !== '!' && $new_var_type !== 'empty') {
+            if ($new_var_type[0] !== '!' && $new_var_type !== 'falsy') {
                 if ($new_var_type[0] === '^') {
                     $new_var_type = substr($new_var_type, 1);
                 }
@@ -173,7 +185,7 @@ class TypeChecker
                 return Type::parseString($new_var_type);
             }
 
-            return $new_var_type === '!empty' ? Type::getMixed() : null;
+            return $new_var_type === '!falsy' ? Type::getMixed() : null;
         }
 
         if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
@@ -217,10 +229,10 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if (in_array($new_var_type, ['!empty', '!null'], true)) {
+            if (in_array($new_var_type, ['!falsy', '!null'], true)) {
                 $existing_var_type->removeType('null');
 
-                if ($new_var_type === '!empty') {
+                if ($new_var_type === '!falsy') {
                     $existing_var_type->removeType('false');
 
                     if ($existing_var_type->hasType('array') &&
@@ -292,7 +304,7 @@ class TypeChecker
             $new_var_type = substr($new_var_type, 1);
         }
 
-        if ($new_var_type === 'empty') {
+        if ($new_var_type === 'falsy') {
             if ($existing_var_type->hasType('bool')) {
                 $existing_var_type->removeType('bool');
                 $existing_var_type->types['false'] = new TFalse;
@@ -444,7 +456,9 @@ class TypeChecker
                     )) {
                         // fall through
                     }
-                } else {
+                } elseif ($key !== '$this'
+                    || !($statements_checker->getSource()->getSource() instanceof TraitChecker)
+                ) {
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
@@ -475,6 +489,7 @@ class TypeChecker
      * @param  Type\Union   $container_type
      * @param  ProjectChecker  $project_checker
      * @param  bool         $ignore_null
+     * @param  bool         $ignore_false
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
      * @param  bool         &$to_string_cast
@@ -486,6 +501,7 @@ class TypeChecker
         Type\Union $input_type,
         Type\Union $container_type,
         $ignore_null = false,
+        $ignore_false = false,
         &$has_scalar_match = null,
         &$type_coerced = null,
         &$to_string_cast = null
@@ -500,6 +516,10 @@ class TypeChecker
 
         foreach ($input_type->types as $input_type_part) {
             if ($input_type_part instanceof TNull && $ignore_null) {
+                continue;
+            }
+
+            if ($input_type_part instanceof TFalse && $ignore_false) {
                 continue;
             }
 
@@ -682,6 +702,7 @@ class TypeChecker
                             $input_param,
                             $container_param,
                             false,
+                            false,
                             $has_scalar_match,
                             $type_coerced
                         )
@@ -712,6 +733,14 @@ class TypeChecker
         //
         // > int types can resolve a parameter type of float
         if ($input_type_part instanceof TInt && $container_type_part instanceof TFloat) {
+            return true;
+        }
+
+        if ($input_type_part instanceof TNamedObject
+            && $input_type_part->value === 'static'
+            && $container_type_part instanceof TNamedObject
+            && $container_type_part->value === 'self'
+        ) {
             return true;
         }
 
@@ -765,6 +794,13 @@ class TypeChecker
 
                 return true;
             }
+
+            // PHP 5.6 doesn't support this natively, so this introduces a bug *just* when checking PHP 5.6 code
+            if ($input_type_part->value === 'ReflectionType') {
+                $to_string_cast = true;
+
+                return true;
+            }
         }
 
         if ($container_type_part instanceof TCallable &&
@@ -773,6 +809,19 @@ class TypeChecker
                 ($input_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($project_checker, $input_type_part->value) &&
                     MethodChecker::methodExists($project_checker, $input_type_part->value . '::__invoke')
+                )
+            )
+        ) {
+            // @todo add value checks if possible here
+            return true;
+        }
+
+        if ($input_type_part instanceof TCallable &&
+            ($container_type_part instanceof TString ||
+                $container_type_part instanceof TArray ||
+                ($container_type_part instanceof TNamedObject &&
+                    ClassChecker::classExists($project_checker, $container_type_part->value) &&
+                    MethodChecker::methodExists($project_checker, $container_type_part->value . '::__invoke')
                 )
             )
         ) {
@@ -1244,12 +1293,20 @@ class TypeChecker
 
         $unique_types = [];
 
+        $inverse_contains = [];
+
         foreach ($union->types as $type_part) {
             $is_contained_by_other = false;
 
             foreach ($union->types as $container_type_part) {
                 if ($type_part !== $container_type_part &&
-                    !($type_part instanceof TInt && $container_type_part instanceof TFloat) &&
+                    !($container_type_part instanceof TInt
+                        || $container_type_part instanceof TFloat
+                        || $container_type_part instanceof TCallable
+                        || ($container_type_part instanceof TString && $type_part instanceof TCallable)
+                        || ($container_type_part instanceof TArray && $type_part instanceof TCallable)
+                    ) &&
+                    !isset($inverse_contains[(string)$type_part][(string)$container_type_part]) &&
                     TypeChecker::isAtomicContainedBy(
                         $project_checker,
                         $type_part,
@@ -1260,6 +1317,7 @@ class TypeChecker
                     ) &&
                     !$to_string_cast
                 ) {
+                    $inverse_contains[(string)$container_type_part][(string)$type_part] = true;
                     $is_contained_by_other = true;
                     break;
                 }

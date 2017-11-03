@@ -73,6 +73,9 @@ class TryChecker
                 )
             );
 
+            // discard all clauses because crazy stuff may have happened in try block
+            $catch_context->clauses = [];
+
             $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
 
             if (!$statements_checker->hasVariable($catch_var_id)) {

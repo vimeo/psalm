@@ -56,6 +56,8 @@ class ForeachChecker
             $iterator_type = null;
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if ($iterator_type) {
             if ($iterator_type->isNull()) {
                 if (IssueBuffer::accepts(
@@ -78,8 +80,6 @@ class ForeachChecker
                     return false;
                 }
             }
-
-            $project_checker = $statements_checker->getFileChecker()->project_checker;
 
             foreach ($iterator_type->types as $iterator_type) {
                 // if it's an empty array, we cannot iterate over it
@@ -235,7 +235,13 @@ class ForeachChecker
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $foreach_context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+                $comment_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    Type::parseString($var_comment->type),
+                    $context->self
+                );
+
+                $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
 

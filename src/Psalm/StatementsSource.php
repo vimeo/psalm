@@ -82,4 +82,18 @@ interface StatementsSource
      * @return array<int, string>
      */
     public function getSuppressedIssues();
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function addSuppressedIssues(array $new_issues);
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function removeSuppressedIssues(array $new_issues);
 }

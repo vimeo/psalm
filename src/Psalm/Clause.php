@@ -6,8 +6,8 @@ class Clause
     /**
      * An array of strings of the form
      * [
-     *     '$a' => ['empty'],
-     *     '$b' => ['!empty'],
+     *     '$a' => ['falsy'],
+     *     '$b' => ['!falsy'],
      *     '$c' => ['!null'],
      *     '$d' => ['string', 'int']
      * ]
@@ -23,8 +23,8 @@ class Clause
     /**
      * An array of things that are not true
      * [
-     *     '$a' => ['!empty'],
-     *     '$b' => ['empty'],
+     *     '$a' => ['!falsy'],
+     *     '$b' => ['falsy'],
      *     '$c' => ['null'],
      *     '$d' => ['!string', '!int']
      * ]

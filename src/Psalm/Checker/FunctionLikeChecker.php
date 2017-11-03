@@ -497,7 +497,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Return type has wrong type \'' . $storage->return_type .
+                        'Docblock has incorrect return type \'' . $storage->return_type .
                             '\', should be \'' . $storage->signature_return_type . '\'',
                         $storage->return_type_location
                     ),
@@ -991,6 +991,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $inferred_return_type,
                 $declared_return_type,
                 $ignore_nullable_issues,
+                false,
                 $has_scalar_match,
                 $type_coerced
             )) {
@@ -1152,11 +1153,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $return_type_tokens = Type::tokenize($return_type);
 
         foreach ($return_type_tokens as $i => &$return_type_token) {
-            if ($return_type_token[0] === '\\') {
-                $return_type_token = substr($return_type_token, 1);
-                continue;
-            }
-
             if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'], true)) {
                 continue;
             }
@@ -1323,6 +1319,26 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
+    }
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function addSuppressedIssues(array $new_issues)
+    {
+        $this->suppressed_issues = array_merge($new_issues, $this->suppressed_issues);
+    }
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function removeSuppressedIssues(array $new_issues)
+    {
+        $this->suppressed_issues = array_diff($this->suppressed_issues, $new_issues);
     }
 
     /**

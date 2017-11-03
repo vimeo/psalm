@@ -17,8 +17,10 @@ use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidGlobal;
+use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
+use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -129,6 +131,33 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
             */
 
+            $new_issues = null;
+
+            if ($docblock = $stmt->getDocComment()) {
+                $comments = CommentChecker::parseDocComment((string)$docblock);
+                if (isset($comments['specials']['psalm-suppress'])) {
+                    $suppressed = array_filter(
+                        array_map(
+                            /**
+                             * @param string $line
+                             *
+                             * @return string
+                             */
+                            function ($line) {
+                                return explode(' ', trim($line))[0];
+                            },
+                            $comments['specials']['psalm-suppress']
+                        )
+                    );
+
+                    if ($suppressed) {
+                        $new_issues = array_diff($suppressed, $this->source->getSuppressedIssues());
+                        /** @psalm-suppress TypeCoercion */
+                        $this->addSuppressedIssues($new_issues);
+                    }
+                }
+            }
+
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 IfChecker::analyze($this, $stmt, $context, $loop_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -159,7 +188,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
-                $this->analyzeReturn($stmt, $context);
+                $this->analyzeReturn($project_checker, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $has_returned = true;
                 $this->analyzeThrow($stmt, $context);
@@ -230,7 +259,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr) {
-                ExpressionChecker::analyze($this, $stmt, $context);
+                if (ExpressionChecker::analyze($this, $stmt, $context) === false) {
+                    return false;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
@@ -320,7 +351,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     );
 
                     if ($var_comment && $var_comment->var_id) {
-                        $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+                        $comment_type = ExpressionChecker::fleshOutType(
+                            $project_checker,
+                            Type::parseString($var_comment->type),
+                            $context->self
+                        );
+
+                        $context->vars_in_scope[$var_comment->var_id] = $comment_type;
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
@@ -339,6 +376,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 )) {
                     return false;
                 }
+            }
+
+            if ($new_issues) {
+                /** @psalm-suppress TypeCoercion */
+                $this->removeSuppressedIssues($new_issues);
             }
         }
 
@@ -832,8 +874,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      *
      * @return false|null
      */
-    private function analyzeReturn(PhpParser\Node\Stmt\Return_ $stmt, Context $context)
-    {
+    private function analyzeReturn(
+        ProjectChecker $project_checker,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Context $context
+    ) {
         $doc_comment_text = (string)$stmt->getDocComment();
 
         $var_comment = null;
@@ -847,7 +892,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+                $comment_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    Type::parseString($var_comment->type),
+                    $context->self
+                );
+
+                $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
 
@@ -971,6 +1022,26 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
 
                 return null;
+            }
+
+            if (IssueBuffer::accepts(
+                new MissingFile(
+                    'Cannot find file ' . $path_to_file . ' to include',
+                    new CodeLocation($this->source, $stmt)
+                ),
+                $this->source->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } else {
+            if (IssueBuffer::accepts(
+                new UnresolvableInclude(
+                    'Cannot resolve the given expression to a file path',
+                    new CodeLocation($this->source, $stmt)
+                ),
+                $this->source->getSuppressedIssues()
+            )) {
+                // fall through
             }
         }
 

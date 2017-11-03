@@ -17,6 +17,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
@@ -408,7 +409,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 throw new \LogicException('$this->fq_classlike_names should not be empty');
             }
 
-            $fq_classlike_name = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+            $fq_classlike_name = array_pop($this->fq_classlike_names);
 
             if (ClassLikeChecker::inPropertyMap($fq_classlike_name)) {
                 $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_classlike_name)];
@@ -790,7 +791,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $storage->return_type = Type::parseString($fixed_type_string);
                         $storage->return_type->setFromDocblock();
                         $storage->return_type->queueClassLikesForScanning($this->project_checker, $this->file_path);
-                    } catch (\Psalm\Exception\TypeParseTreeException $e) {
+                    } catch (TypeParseTreeException $e) {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(
                                 $e->getMessage() . ' in docblock for ' . $cased_function_id,
@@ -951,13 +952,26 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $docblock_param_vars[$param_name] = true;
 
-            $new_param_type = Type::parseString(
-                FunctionLikeChecker::fixUpLocalType(
-                    $docblock_param['type'],
-                    $this->aliases,
-                    $this->function_template_types + $this->class_template_types
-                )
-            );
+            try {
+                $new_param_type = Type::parseString(
+                    FunctionLikeChecker::fixUpLocalType(
+                        $docblock_param['type'],
+                        $this->aliases,
+                        $this->function_template_types + $this->class_template_types
+                    )
+                );
+            } catch (TypeParseTreeException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $cased_method_id,
+                        $code_location
+                    )
+                )) {
+                    // fall through
+                }
+
+                continue;
+            }
 
             $new_param_type->queueClassLikesForScanning(
                 $this->project_checker,

@@ -87,36 +87,36 @@ class TypeReconciliationTest extends TestCase
     public function testNegateFormula()
     {
         $formula = [
-            new Clause(['$a' => ['!empty']]),
+            new Clause(['$a' => ['!falsy']]),
         ];
 
         $negated_formula = AlgebraChecker::negateFormula($formula);
 
         $this->assertSame(1, count($negated_formula));
-        $this->assertSame(['$a' => ['empty']], $negated_formula[0]->possibilities);
+        $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['!empty'], '$b' => ['!empty']]),
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']]),
         ];
 
         $negated_formula = AlgebraChecker::negateFormula($formula);
 
         $this->assertSame(2, count($negated_formula));
-        $this->assertSame(['$a' => ['empty']], $negated_formula[0]->possibilities);
-        $this->assertSame(['$b' => ['empty']], $negated_formula[1]->possibilities);
+        $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
+        $this->assertSame(['$b' => ['falsy']], $negated_formula[1]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['!empty']]),
-            new Clause(['$b' => ['!empty']]),
+            new Clause(['$a' => ['!falsy']]),
+            new Clause(['$b' => ['!falsy']]),
         ];
 
         $negated_formula = AlgebraChecker::negateFormula($formula);
 
         $this->assertSame(1, count($negated_formula));
-        $this->assertSame(['$a' => ['empty'], '$b' => ['empty']], $negated_formula[0]->possibilities);
+        $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $negated_formula[0]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['int', 'string'], '$b' => ['!empty']]),
+            new Clause(['$a' => ['int', 'string'], '$b' => ['!falsy']]),
         ];
 
         $negated_formula = AlgebraChecker::negateFormula($formula);
@@ -124,7 +124,7 @@ class TypeReconciliationTest extends TestCase
         $this->assertSame(3, count($negated_formula));
         $this->assertSame(['$a' => ['!int']], $negated_formula[0]->possibilities);
         $this->assertSame(['$a' => ['!string']], $negated_formula[1]->possibilities);
-        $this->assertSame(['$b' => ['empty']], $negated_formula[2]->possibilities);
+        $this->assertSame(['$b' => ['falsy']], $negated_formula[2]->possibilities);
     }
 
     /**
@@ -135,13 +135,13 @@ class TypeReconciliationTest extends TestCase
         $this->assertTrue(
             (new Clause(
                 [
-                    '$a' => ['!empty'],
-                    '$b' => ['!empty'],
+                    '$a' => ['!falsy'],
+                    '$b' => ['!falsy'],
                 ]
             ))->contains(
                 new Clause(
                     [
-                        '$a' => ['!empty'],
+                        '$a' => ['!falsy'],
                     ]
                 )
             )
@@ -150,13 +150,13 @@ class TypeReconciliationTest extends TestCase
         $this->assertFalse(
             (new Clause(
                 [
-                    '$a' => ['!empty'],
+                    '$a' => ['!falsy'],
                 ]
             ))->contains(
                 new Clause(
                     [
-                        '$a' => ['!empty'],
-                        '$b' => ['!empty'],
+                        '$a' => ['!falsy'],
+                        '$b' => ['!falsy'],
                     ]
                 )
             )
@@ -169,15 +169,15 @@ class TypeReconciliationTest extends TestCase
     public function testSimplifyCNF()
     {
         $formula = [
-            new Clause(['$a' => ['!empty']]),
-            new Clause(['$a' => ['empty'], '$b' => ['empty']]),
+            new Clause(['$a' => ['!falsy']]),
+            new Clause(['$a' => ['falsy'], '$b' => ['falsy']]),
         ];
 
         $simplified_formula = AlgebraChecker::simplifyCNF($formula);
 
         $this->assertSame(2, count($simplified_formula));
-        $this->assertSame(['$a' => ['!empty']], $simplified_formula[0]->possibilities);
-        $this->assertSame(['$b' => ['empty']], $simplified_formula[1]->possibilities);
+        $this->assertSame(['$a' => ['!falsy']], $simplified_formula[0]->possibilities);
+        $this->assertSame(['$b' => ['falsy']], $simplified_formula[1]->possibilities);
     }
 
     /**
@@ -191,21 +191,21 @@ class TypeReconciliationTest extends TestCase
             'notNullWithMyObjectPipeFalse' => ['MyObject|false', '!null', 'MyObject|false'],
             'notNullWithMixed' => ['mixed', '!null', 'mixed'],
 
-            'notEmptyWithMyObject' => ['MyObject', '!empty', 'MyObject'],
-            'notEmptyWithMyObjectPipeNull' => ['MyObject', '!empty', 'MyObject|null'],
-            'notEmptyWithMyObjectPipeFalse' => ['MyObject', '!empty', 'MyObject|false'],
-            'notEmptyWithMixed' => ['mixed', '!empty', 'mixed'],
+            'notEmptyWithMyObject' => ['MyObject', '!falsy', 'MyObject'],
+            'notEmptyWithMyObjectPipeNull' => ['MyObject', '!falsy', 'MyObject|null'],
+            'notEmptyWithMyObjectPipeFalse' => ['MyObject', '!falsy', 'MyObject|false'],
+            'notEmptyWithMixed' => ['mixed', '!falsy', 'mixed'],
             // @todo in the future this should also work
-            //'notEmptyWithMyObjectFalseTrue' => ['MyObject|true', '!empty', 'MyObject|bool'],
+            //'notEmptyWithMyObjectFalseTrue' => ['MyObject|true', '!falsy', 'MyObject|bool'],
 
             'notEmptyWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
             'notEmptyWithMixed' => ['null', 'null', 'mixed'],
 
-            'emptyWithMyObject' => ['null', 'empty', 'MyObject'],
-            'emptyWithMyObjectPipeFalse' => ['false', 'empty', 'MyObject|false'],
-            'emptyWithMyObjectPipeBool' => ['false', 'empty', 'MyObject|bool'],
-            'emptyWithMixed' => ['mixed', 'empty', 'mixed'],
-            'emptyWithBool' => ['false', 'empty', 'bool'],
+            'emptyWithMyObject' => ['null', 'falsy', 'MyObject'],
+            'emptyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],
+            'emptyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
+            'emptyWithMixed' => ['mixed', 'falsy', 'mixed'],
+            'emptyWithBool' => ['false', 'falsy', 'bool'],
 
             'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],
             'notMyObjectWithMyObjectPipeNull' => ['null', '!MyObject', 'MyObject|null'],
@@ -618,6 +618,65 @@ class TypeReconciliationTest extends TestCase
 
                     class B extends A implements I {
                         public function bat() : void {}
+                    }',
+            ],
+            'isTruthy' => [
+                '<?php
+                    function f(string $s = null): string {
+                      if ($s == true) {
+                          return $s;
+                      }
+
+                      return "backup";
+                    }',
+            ],
+            'isCallableArray' => [
+                '<?php
+                    class A
+                    {
+                        public function callMeMaybe(string $method) : void
+                        {
+                            $handleMethod = [$this, $method];
+
+                            if (is_callable($handleMethod)) {
+                                $handleMethod();
+                            }
+                        }
+
+                        public function foo() : void {}
+                    }
+                    $a = new A();
+                    $a->callMeMaybe("foo");',
+            ],
+            'stringOrCallableArg' => [
+                '<?php
+                    /**
+                     * @param string|callable $param
+                     */
+                    function f($param): void {}
+                    f("is_array");',
+            ],
+            'stringOrCallableOrObjectArg' => [
+                '<?php
+                    /**
+                     * @param string|callable|object $param
+                     */
+                    function f($param): void {}
+                    f("is_array");',
+            ],
+            'intOrFloatArg' => [
+                '<?php
+                    /**
+                     * @param int|float $param
+                     */
+                    function f($param): void {}
+                    f(5.0);
+                    f(5);',
+            ],
+            'noFalsyLeak' => [
+                '<?php
+                    function foo(string $s) : void {
+                      if (empty($s) || $s === "hello") {}
                     }',
             ],
         ];

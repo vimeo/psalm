@@ -19,6 +19,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidScope;
@@ -312,7 +313,32 @@ class ExpressionChecker
                 return false;
             }
 
-            $stmt->inferredType = Type::getString();
+            $container_type = Type::getString();
+
+            if (isset($stmt->expr->inferredType)
+                && !$stmt->expr->inferredType->isMixed()
+                && !TypeChecker::isContainedBy(
+                    $statements_checker->getFileChecker()->project_checker,
+                    $stmt->expr->inferredType,
+                    $container_type,
+                    true,
+                    false,
+                    $has_scalar_match
+                )
+                && !$has_scalar_match
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidCast(
+                        $stmt->expr->inferredType . ' cannot be cast to ' . $container_type,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+
+            $stmt->inferredType = $container_type;
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
                 return false;
@@ -610,6 +636,7 @@ class ExpressionChecker
      * @param  StatementsChecker    $statements_checker
      * @param  PhpParser\Node\Expr  $stmt
      * @param  Type\Union           $by_ref_type
+     * @param  bool                 $constrain_type
      * @param  Context              $context
      *
      * @return void
@@ -618,7 +645,8 @@ class ExpressionChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $stmt,
         Type\Union $by_ref_type,
-        Context $context
+        Context $context,
+        $constrain_type = true
     ) {
         $var_id = self::getVarId(
             $stmt,
@@ -627,7 +655,7 @@ class ExpressionChecker
         );
 
         if ($var_id) {
-            if (!$by_ref_type->isMixed()) {
+            if (!$by_ref_type->isMixed() && $constrain_type) {
                 $context->byref_constraints[$var_id] = new \Psalm\ReferenceConstraint($by_ref_type);
             }
 
@@ -904,7 +932,7 @@ class ExpressionChecker
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
                     $left_inferred_reconciled = TypeChecker::reconcileTypes(
-                        '!empty',
+                        '!falsy',
                         $context->vars_in_scope[$var_id],
                         '',
                         $statements_checker,
@@ -1214,7 +1242,7 @@ class ExpressionChecker
             if ($right_type->isNullable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
-                        'Left operand cannot be nullable, got ' . $right_type,
+                        'Right operand cannot be nullable, got ' . $right_type,
                         new CodeLocation($statements_source, $right)
                     ),
                     $statements_source->getSuppressedIssues()
@@ -1224,7 +1252,7 @@ class ExpressionChecker
             } elseif ($right_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullOperand(
-                        'Left operand cannot be null',
+                        'Right operand cannot be null',
                         new CodeLocation($statements_source, $right)
                     ),
                     $statements_source->getSuppressedIssues()
@@ -1519,6 +1547,7 @@ class ExpressionChecker
                 $left_type,
                 Type::getString(),
                 true,
+                false,
                 $left_has_scalar_match
             );
 
@@ -1527,6 +1556,7 @@ class ExpressionChecker
                 $right_type,
                 Type::getString(),
                 true,
+                false,
                 $right_has_scalar_match
             );
 
@@ -1612,6 +1642,39 @@ class ExpressionChecker
             ++$nesting;
 
             return self::getVarId($stmt->var, $this_class_name, $source, $nesting);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr      $stmt
+     * @param  string|null              $this_class_name
+     * @param  StatementsSource|null    $source
+     *
+     * @return string|null
+     */
+    public static function getRootVarId(
+        PhpParser\Node\Expr $stmt,
+        $this_class_name,
+        StatementsSource $source = null
+    ) {
+        if ($stmt instanceof PhpParser\Node\Expr\Variable
+            || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return self::getVarId($stmt, $this_class_name, $source);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->name)) {
+            $property_root = self::getRootVarId($stmt->var, $this_class_name, $source);
+
+            if ($property_root) {
+                return $property_root . '->' . $stmt->name;
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            return self::getRootVarId($stmt->var, $this_class_name, $source);
         }
 
         return null;
@@ -1827,7 +1890,13 @@ class ExpressionChecker
             );
 
             if ($var_comment && $var_comment->var_id) {
-                $context->vars_in_scope[$var_comment->var_id] = Type::parseString($var_comment->type);
+                $comment_type = ExpressionChecker::fleshOutType(
+                    $statements_checker->getFileChecker()->project_checker,
+                    Type::parseString($var_comment->type),
+                    $context->self
+                );
+
+                $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
 
@@ -1993,7 +2062,7 @@ class ExpressionChecker
         } elseif ($stmt->cond) {
             if (isset($stmt->cond->inferredType)) {
                 $if_return_type_reconciled = TypeChecker::reconcileTypes(
-                    '!empty',
+                    '!falsy',
                     $stmt->cond->inferredType,
                     '',
                     $statements_checker,

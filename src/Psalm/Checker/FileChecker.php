@@ -33,7 +33,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $actual_file_path;
 
     /**
-     * @var array<string, string>
+     * @var array<int, string>
      */
     protected $suppressed_issues = [];
 
@@ -242,20 +242,8 @@ class FileChecker extends SourceChecker implements StatementsSource
         $leftover_stmts = [];
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassLike && $stmt->name) {
-                if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                    $class_checker = new ClassChecker($stmt, $this, $stmt->name);
-
-                    $fq_class_name = $class_checker->getFQCLN();
-
-                    $this->class_checkers_to_analyze[strtolower($fq_class_name)] = $class_checker;
-                } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
-                    $class_checker = new InterfaceChecker($stmt, $this, $stmt->name);
-
-                    $fq_class_name = $class_checker->getFQCLN();
-
-                    $this->interface_checkers_to_analyze[$fq_class_name] = $class_checker;
-                }
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+                $this->populateClassLikeCheckers($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
 
@@ -270,11 +258,43 @@ class FileChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
                 $this->visitGroupUse($stmt);
             } elseif (!($stmt instanceof PhpParser\Node\Stmt\Function_)) {
+                if ($stmt instanceof PhpParser\Node\Stmt\If_) {
+                    foreach ($stmt->stmts as $if_stmt) {
+                        if ($if_stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+                            $this->populateClassLikeCheckers($if_stmt);
+                        }
+                    }
+                }
+
                 $leftover_stmts[] = $stmt;
             }
         }
 
         return $leftover_stmts;
+    }
+
+    /**
+     * @return void
+     */
+    private function populateClassLikeCheckers(PhpParser\Node\Stmt\ClassLike $stmt)
+    {
+        if (!$stmt->name) {
+            return;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+            $class_checker = new ClassChecker($stmt, $this, $stmt->name);
+
+            $fq_class_name = $class_checker->getFQCLN();
+
+            $this->class_checkers_to_analyze[strtolower($fq_class_name)] = $class_checker;
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+            $class_checker = new InterfaceChecker($stmt, $this, $stmt->name);
+
+            $fq_class_name = $class_checker->getFQCLN();
+
+            $this->interface_checkers_to_analyze[$fq_class_name] = $class_checker;
+        }
     }
 
     /**
@@ -475,6 +495,26 @@ class FileChecker extends SourceChecker implements StatementsSource
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
+    }
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function addSuppressedIssues(array $new_issues)
+    {
+        $this->suppressed_issues = array_merge($new_issues, $this->suppressed_issues);
+    }
+
+    /**
+     * @param array<int, string> $new_issues
+     *
+     * @return void
+     */
+    public function removeSuppressedIssues(array $new_issues)
+    {
+        $this->suppressed_issues = array_diff($this->suppressed_issues, $new_issues);
     }
 
     public function getFQCLN()

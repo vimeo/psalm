@@ -4,7 +4,7 @@ namespace Psalm\Provider;
 use PhpParser;
 use Psalm\Config;
 
-class CacheProvider
+class ParserCacheProvider
 {
     const FILE_HASHES = 'file_hashes_json';
     const PARSER_CACHE_DIRECTORY = 'php-parser';
@@ -22,6 +22,9 @@ class CacheProvider
      */
     protected $file_content_hashes = null;
 
+    /** @var bool */
+    public $use_igbinary = false;
+
     /**
      * @param  string   $file_path
      * @param  string   $file_content_hash
@@ -29,6 +32,8 @@ class CacheProvider
      * @param mixed $file_modified_time
      *
      * @return array<int, PhpParser\Node\Stmt>|null
+     *
+     * @psalm-suppress UndefinedFunction
      */
     public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash, $file_cache_key)
     {
@@ -51,6 +56,11 @@ class CacheProvider
             is_readable($cache_location) &&
             filemtime($cache_location) > $file_modified_time
         ) {
+            if ($this->use_igbinary) {
+                /** @var array<int, \PhpParser\Node\Stmt> */
+                return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
+            }
+
             /** @var array<int, \PhpParser\Node\Stmt> */
             return unserialize((string)file_get_contents($cache_location)) ?: null;
         }
@@ -83,6 +93,8 @@ class CacheProvider
      * @param  bool                             $touch_only
      *
      * @return void
+     *
+     * @psalm-suppress UndefinedFunction
      */
     public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
     {
@@ -103,7 +115,11 @@ class CacheProvider
                 mkdir($parser_cache_directory, 0777, true);
             }
 
-            file_put_contents($cache_location, serialize($stmts));
+            if ($this->use_igbinary) {
+                file_put_contents($cache_location, igbinary_serialize($stmts));
+            } else {
+                file_put_contents($cache_location, serialize($stmts));
+            }
 
             $this->file_content_hashes[$file_cache_key] = $file_content_hash;
 

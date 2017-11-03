@@ -272,6 +272,26 @@ class TraitTest extends TestCase
 
                     class A {
                       use T;
+                    }
+
+                    class B {
+                      use T;
+                    }',
+            ],
+            'getClassTraitUser' => [
+                '<?php
+                    trait T {
+                      public function f() : void {
+                        if (get_class($this) === "B") { }
+                      }
+                    }
+
+                    class A {
+                      use T;
+                    }
+
+                    class B {
+                      use T;
                     }',
             ],
             'useTraitInClassWithAbstractMethod' => [

@@ -672,6 +672,11 @@ class FunctionChecker extends FunctionLikeChecker
                                 continue;
                             }
 
+                            if (!MethodChecker::methodExists($project_checker, $mapping_function_id)) {
+                                $mapping_return_type = Type::getMixed();
+                                continue;
+                            }
+
                             $return_type = MethodChecker::getMethodReturnType(
                                 $project_checker,
                                 $mapping_function_id
@@ -686,6 +691,11 @@ class FunctionChecker extends FunctionLikeChecker
                                 $mapping_return_type = $return_type;
                             }
                         } else {
+                            if (!FunctionChecker::functionExists($statements_checker, $mapping_function_id)) {
+                                $mapping_return_type = Type::getMixed();
+                                continue;
+                            }
+
                             $function_storage = FunctionChecker::getStorage(
                                 $statements_checker,
                                 $mapping_function_id
