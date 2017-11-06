@@ -1263,7 +1263,7 @@ class CallChecker
             /** @var Type\Union */
             $lhs_type = $stmt->class->inferredType;
 
-            if ($lhs_type->hasString()) {
+            if (!isset($lhs_type) || $lhs_type->hasString()) {
                 return null;
             }
         }
