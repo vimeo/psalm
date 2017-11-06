@@ -1133,14 +1133,6 @@ class CallChecker
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context
     ) {
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable ||
-            $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch
-        ) {
-            // this is when calling $some_class::staticMethod() - which is a shitty way of doing things
-            // because it can't be statically type-checked
-            return null;
-        }
-
         $method_id = null;
         $fq_class_name = null;
 
@@ -1270,6 +1262,10 @@ class CallChecker
 
             /** @var Type\Union */
             $lhs_type = $stmt->class->inferredType;
+
+            if ($lhs_type->hasString()) {
+                return null;
+            }
         }
 
         if (!$context->check_methods || !$lhs_type) {

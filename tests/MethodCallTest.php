@@ -50,6 +50,16 @@ class MethodCallTest extends TestCase
 
                     B::fooFoo();',
             ],
+            'staticCallOnVar' => [
+                '<?php
+                    class A {
+                        public static function bar() : int {
+                            return 5;
+                        }
+                    }
+                    $foo = new A;
+                    $b = $foo::bar();',
+            ],
         ];
     }
 
@@ -143,6 +153,22 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'MoreSpecificReturnType',
                 'error_levels' => ['MixedInferredReturnType'],
+            ],
+            'undefinedVariableStaticCall' => [
+                '<?php
+                    $foo::bar();',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'staticCallOnString' => [
+                '<?php
+                    class A {
+                        public static function bar() : int {
+                            return 5;
+                        }
+                    }
+                    $foo = "A";
+                    $b = $foo::bar();',
+                'error_message' => 'MixedAssignment',
             ],
         ];
     }
