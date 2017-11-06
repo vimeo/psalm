@@ -574,10 +574,10 @@ class AssertionFinder
                 $var_type = null;
 
                 if ($getclass_position === self::ASSIGNMENT_TO_RIGHT) {
-                    $string_expr = $conditional->left;
+                    $whichclass_expr = $conditional->left;
                     $getclass_expr = $conditional->right;
                 } elseif ($getclass_position === self::ASSIGNMENT_TO_LEFT) {
-                    $string_expr = $conditional->right;
+                    $whichclass_expr = $conditional->right;
                     $getclass_expr = $conditional->left;
                 } else {
                     throw new \UnexpectedValueException('$getclass_position value');
@@ -590,15 +590,25 @@ class AssertionFinder
                     $source
                 );
 
-                /** @var PhpParser\Node\Scalar\String_ $string_expr */
-                $var_type = $string_expr->value;
+                if ($whichclass_expr instanceof PhpParser\Node\Scalar\String_) {
+                    $var_type = $whichclass_expr->value;
+                } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $whichclass_expr->class instanceof PhpParser\Node\Name
+                ) {
+                    $var_type = ClassLikeChecker::getFQCLNFromNameObject(
+                        $whichclass_expr->class,
+                        $source->getAliases()
+                    );
+                } else {
+                    throw new \UnexpectedValueException('Shouldn’t get here');
+                }
 
                 $file_checker = $source->getFileChecker();
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $file_checker->project_checker,
                     $var_type,
-                    new CodeLocation($file_checker, $string_expr),
+                    new CodeLocation($file_checker, $whichclass_expr),
                     $source->getSuppressedIssues()
                 ) === false
                 ) {
@@ -911,7 +921,9 @@ class AssertionFinder
             strtolower($conditional->right->name->parts[0]) === 'get_class' &&
             ($conditional->left instanceof PhpParser\Node\Scalar\String_
                 || ($conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $conditional->left->class instanceof PhpParser\Node\Name)
+                    && $conditional->left->class instanceof PhpParser\Node\Name
+                    && is_string($conditional->left->name)
+                    && strtolower($conditional->left->name) === 'class')
             )
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
@@ -922,7 +934,9 @@ class AssertionFinder
             strtolower($conditional->left->name->parts[0]) === 'get_class' &&
             ($conditional->right instanceof PhpParser\Node\Scalar\String_
                 || ($conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $conditional->right->class instanceof PhpParser\Node\Name)
+                    && $conditional->right->class instanceof PhpParser\Node\Name
+                    && is_string($conditional->right->name)
+                    && strtolower($conditional->right->name) === 'class')
             )
         ) {
             return self::ASSIGNMENT_TO_LEFT;
