@@ -637,7 +637,7 @@ final class B extends A {}',
                     $a = (new Foo());
 
                     $a->foo = "hello";',
-                'error_message' => '',
+                'error_message' => 'MixedPropertyAssignment',
                 'error_levels' => [
                     'MissingPropertyType',
                     'MixedAssignment',
