@@ -3,7 +3,7 @@ namespace Psalm\FileManipulation;
 
 class FileManipulationBuffer
 {
-    /** @var array<string, FileManipulation> */
+    /** @var array<string, FileManipulation[]> */
     private static $file_manipulations = [];
 
     /**
@@ -32,7 +32,7 @@ class FileManipulationBuffer
     }
 
     /**
-     * @return array<string, FileManipulation>
+     * @return array<string, FileManipulation[]>
      */
     public static function getAll()
     {
