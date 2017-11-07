@@ -15,6 +15,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\MissingFile;
@@ -89,25 +90,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         $project_checker = $this->getFileChecker()->project_checker;
 
+        $file_replacements = [];
+
+        $plugins = Config::getInstance()->getPlugins();
+
         foreach ($stmts as $stmt) {
-            $plugins = Config::getInstance()->getPlugins();
-
-            if ($plugins) {
-                $code_location = new CodeLocation($this->source, $stmt);
-
-                foreach ($plugins as $plugin) {
-                    if ($plugin->checkStatement(
-                        $this,
-                        $stmt,
-                        $context,
-                        $code_location,
-                        $this->getSuppressedIssues()
-                    ) === false) {
-                        return false;
-                    }
-                }
-            }
-
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
                 !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             ) {
@@ -375,6 +362,28 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     $this->getSuppressedIssues()
                 )) {
                     return false;
+                }
+            }
+
+            if ($plugins) {
+                $file_manipulations = [];
+                $code_location = new CodeLocation($this->source, $stmt);
+
+                foreach ($plugins as $plugin) {
+                    if ($plugin->afterStatementCheck(
+                        $this,
+                        $stmt,
+                        $context,
+                        $code_location,
+                        $this->getSuppressedIssues(),
+                        $file_manipulations
+                    ) === false) {
+                        return false;
+                    }
+                }
+
+                if ($file_manipulations) {
+                    FileManipulationBuffer::add($this->getFilePath(), $file_manipulations);
                 }
             }
 

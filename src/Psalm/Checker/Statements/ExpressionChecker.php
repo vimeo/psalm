@@ -18,6 +18,7 @@ use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
@@ -463,18 +464,24 @@ class ExpressionChecker
         $plugins = Config::getInstance()->getPlugins();
 
         if ($plugins) {
+            $file_manipulations = [];
             $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
 
             foreach ($plugins as $plugin) {
-                if ($plugin->checkExpression(
+                if ($plugin->afterExpressionCheck(
                     $statements_checker,
                     $stmt,
                     $context,
                     $code_location,
-                    $statements_checker->getSuppressedIssues()
+                    $statements_checker->getSuppressedIssues(),
+                    $file_manipulations
                 ) === false) {
                     return false;
                 }
+            }
+
+            if ($file_manipulations) {
+                FileManipulationBuffer::add($statements_checker->getFilePath(), $file_manipulations);
             }
         }
 

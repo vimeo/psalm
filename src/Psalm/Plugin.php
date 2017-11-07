@@ -2,68 +2,70 @@
 namespace Psalm;
 
 use PhpParser;
-use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\FileChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\FileManipulation\FileManipulation;
 use Psalm\Storage\ClassLikeStorage;
 
 abstract class Plugin
 {
     /**
-     * Checks an expression
+     * Called after an expression has been checked
      *
      * @param  StatementsChecker    $statements_checker
      * @param  PhpParser\Node\Expr  $stmt
      * @param  Context              $context
      * @param  CodeLocation         $code_location
-     * @param  array                $suppressed_issues
+     * @param  string[]             $suppressed_issues
+     * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false
      */
-    public function checkExpression(
+    public function afterExpressionCheck(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $stmt,
         Context $context,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
+        array &$file_replacements = []
     ) {
         return null;
     }
 
     /**
-     * Checks a statement
+     * Called after a statement has been checked
      *
      * @param  StatementsChecker                        $statements_checker
      * @param  PhpParser\Node\Stmt|PhpParser\Node\Expr  $stmt
      * @param  Context                                  $context
      * @param  CodeLocation                             $code_location
-     * @param  array                                    $suppressed_issues
+     * @param  string[]                                 $suppressed_issues
+     * @param  FileManipulation[]                       $file_replacements
      *
      * @return null|false
      */
-    public function checkStatement(
+    public function afterStatementCheck(
         StatementsChecker $statements_checker,
         PhpParser\Node $stmt,
         Context $context,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
+        array &$file_replacements = []
     ) {
         return null;
     }
 
     /**
-     * @param  ClassLikeChecker $statements_checker
-     * @param  ClassLikeStorage $storage
-     * @param  PhpParser\Node\Stmt\ClassLike $stmt
-     * @param  CodeLocation     $code_location
+     * @param  FileManipulation[] $file_replacements
      *
-     * @return null|false
+     * @return void
      */
     public function visitClassLike(
-        ClassLikeChecker $statements_checker,
         PhpParser\Node\Stmt\ClassLike $stmt,
         ClassLikeStorage $storage,
-        CodeLocation $code_location
+        FileChecker $file_checker,
+        Aliases $aliases,
+        array &$file_replacements = []
     ) {
-        return null;
     }
 }
