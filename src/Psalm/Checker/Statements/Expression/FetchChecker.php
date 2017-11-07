@@ -1130,6 +1130,8 @@ class FetchChecker
                             )) {
                                 return false;
                             }
+                        } elseif ($key_type->hasString()) {
+                            $stmt->inferredType = $type->getGenericTypeParam();
                         }
                     }
                     continue;
