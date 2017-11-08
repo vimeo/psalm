@@ -27,8 +27,8 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     public function enterNode(PhpParser\Node $node)
     {
         if ($node instanceof PhpParser\Node\Expr\Assign) {
-            $left_var_id = ExpressionChecker::getVarId($node->var, $this->this_class_name);
-            $right_var_id = ExpressionChecker::getVarId($node->expr, $this->this_class_name);
+            $left_var_id = ExpressionChecker::getRootVarId($node->var, $this->this_class_name);
+            $right_var_id = ExpressionChecker::getRootVarId($node->expr, $this->this_class_name);
 
             if ($left_var_id) {
                 $this->assignment_map[$left_var_id][(string)$right_var_id] = true;
