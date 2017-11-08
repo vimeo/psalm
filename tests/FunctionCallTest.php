@@ -293,6 +293,12 @@ class FunctionCallTest extends TestCase
                     '$d' => 'string',
                 ],
             ],
+            'compact' => [
+                '<?php
+                    function test() : array {
+                        return compact(["val"]);
+                    }',
+            ],
         ];
     }
 

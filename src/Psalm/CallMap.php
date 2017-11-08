@@ -906,7 +906,7 @@ return [
 'com_isenum' => ['bool', 'com_module'=>'variant'],
 'com_load_typelib' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'int'],
 'com_message_pump' => ['bool', 'timeoutms='=>'int'],
-'compact' => ['array', '...var_names='=>'string|string[]'],
+'compact' => ['array', '...var_names='=>'mixed'],
 'COMPersistHelper::__construct' => ['void', 'com_object'=>'object'],
 'COMPersistHelper::GetCurFile' => ['string'],
 'COMPersistHelper::GetMaxStreamSize' => ['int'],
