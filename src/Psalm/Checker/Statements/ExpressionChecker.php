@@ -344,7 +344,7 @@ class ExpressionChecker
                 return false;
             }
 
-            $stmt->inferredType = Type::getObject();
+            $stmt->inferredType = new Type\Union([new TNamedObject('stdClass')]);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
                 return false;
