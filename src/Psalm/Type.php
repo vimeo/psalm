@@ -563,7 +563,7 @@ abstract class Type
             }
         }
 
-        foreach ($combination->value_types as $generic_type => $type) {
+        foreach ($combination->value_types as $type) {
             if (!($type instanceof TEmpty)
                 || (count($combination->value_types) === 1
                     && !count($new_types))

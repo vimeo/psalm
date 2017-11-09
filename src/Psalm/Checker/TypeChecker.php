@@ -607,8 +607,6 @@ class TypeChecker
             return true;
         }
 
-        $type_match_found = false;
-
         foreach ($type1->types as $type1_part) {
             if ($type1_part instanceof TNull) {
                 continue;
@@ -995,7 +993,6 @@ class TypeChecker
                     }
                 }
 
-                $base_type = $existing_keys[$new_base_key];
                 $base_key = $new_base_key;
             } else {
                 throw new \InvalidArgumentException('Unexpected divider ' . $divider);

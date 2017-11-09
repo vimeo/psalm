@@ -484,7 +484,7 @@ class FunctionChecker extends FunctionLikeChecker
             $inner_value_types = [];
             $inner_key_types = [];
 
-            foreach ($call_args as $offset => $call_arg) {
+            foreach ($call_args as $call_arg) {
                 if (!isset($call_arg->value->inferredType)) {
                     return Type::getArray();
                 }
