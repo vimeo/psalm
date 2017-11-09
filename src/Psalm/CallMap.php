@@ -8263,7 +8263,7 @@ return [
 'sodium_crypto_sign_ed25519_sk_to_curve25519' => ['string', 'ed25519sk'=>'string'],
 'sodium_crypto_sign_keypair' => ['string'],
 'sodium_crypto_sign_keypair_from_secretkey_and_publickey' => ['string', 'secret_key'=>'string', 'public_key'=>'string'],
-'sodium_crypto_sign_open' => ['string|false', 'string'=>'message', 'publickey'=>'string'],
+'sodium_crypto_sign_open' => ['string|false', 'message'=>'string', 'publickey'=>'string'],
 'sodium_crypto_sign_publickey' => ['string', 'keypair'=>'string'],
 'sodium_crypto_sign_secretkey' => ['string', 'keypair'=>'string'],
 'sodium_crypto_sign_publickey_from_secretkey' => ['string', 'secretkey'=>'string'],
