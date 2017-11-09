@@ -433,8 +433,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         $param_type
                     )
                 ) {
-                    $method_id = $this->getMethodId();
-
                     if (IssueBuffer::accepts(
                         new InvalidParamDefault(
                             'Default value for argument ' . ($offset + 1) . ' of method ' . $cased_method_id .

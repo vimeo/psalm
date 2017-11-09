@@ -122,8 +122,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function scan()
     {
-        $config = Config::getInstance();
-
         $stmts = $this->getStatements();
 
         $traverser = new PhpParser\NodeTraverser();

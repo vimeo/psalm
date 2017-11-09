@@ -151,8 +151,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $this->file_checker = $source->getFileChecker();
         $this->fq_class_name = $fq_class_name;
 
-        $fq_class_name_lower = strtolower($fq_class_name);
-
         $this->storage = $this->file_checker->project_checker->classlike_storage_provider->get($fq_class_name);
 
         if ($this->storage->location) {
@@ -857,8 +855,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     private function checkForMissingPropertyType(ProjectChecker $project_checker, PhpParser\Node\Stmt\Property $stmt)
     {
         $comment = $stmt->getDocComment();
-        $property_type_line_number = null;
-        $storage = $this->storage;
 
         if (!$comment || !$comment->getText()) {
             $fq_class_name = $this->fq_class_name;
@@ -1323,8 +1319,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
-            $parent_method_id = $parent_class . '::' . $method_name;
-
             $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->appearing_method_ids[$method_name] = $appearing_method_id;
@@ -1332,8 +1326,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
-            $parent_method_id = $parent_class . '::' . $method_name;
-
             $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
