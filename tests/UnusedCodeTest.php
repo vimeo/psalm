@@ -107,7 +107,6 @@ class UnusedCodeTest extends TestCase
 
                         unset($arr[$a]);
                     }',
-                'check_unused_references' => true,
             ],
             'usedVariables' => [
                 '<?php
@@ -117,7 +116,6 @@ class UnusedCodeTest extends TestCase
                         $b = [];
                         return $a . implode(",", $b);
                     }',
-                'check_unused_references' => true,
             ],
             'ifInFunction' => [
                 '<?php
@@ -131,7 +129,12 @@ class UnusedCodeTest extends TestCase
                         }
                         return $a . $b;
                     }',
-                'check_unused_references' => true,
+            ],
+            'booleanOr' => [
+                '<?php
+                    function foo(int $a, int $b): bool {
+                        return $a || $b;
+                    }',
             ],
         ];
     }
@@ -151,7 +154,6 @@ class UnusedCodeTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'UnusedVariable',
-                'check_unused_references' => true,
             ],
             'ifInFunction' => [
                 '<?php
@@ -166,13 +168,11 @@ class UnusedCodeTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'UnusedVariable',
-                'check_unused_references' => true,
             ],
             'unusedClass' => [
                 '<?php
                     class A { }',
                 'error_message' => 'UnusedClass',
-                'check_unused_references' => true,
             ],
             'publicUnusedMethod' => [
                 '<?php
@@ -183,7 +183,6 @@ class UnusedCodeTest extends TestCase
 
                     new A();',
                 'error_message' => 'PossiblyUnusedMethod',
-                'check_unused_references' => true,
             ],
             'privateUnusedMethod' => [
                 '<?php
@@ -194,7 +193,6 @@ class UnusedCodeTest extends TestCase
 
                     new A();',
                 'error_message' => 'UnusedMethod',
-                'check_unused_references' => true,
             ],
         ];
     }

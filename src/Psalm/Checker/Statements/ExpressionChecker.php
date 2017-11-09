@@ -954,17 +954,17 @@ class ExpressionChecker
 
             if ($context->inside_conditional) {
                 $context->updateChecks($op_context);
-
-                $context->referenced_vars = array_merge(
-                    $op_context->referenced_vars,
-                    $context->referenced_vars
-                );
-
-                $context->vars_possibly_in_scope = array_merge(
-                    $op_context->vars_possibly_in_scope,
-                    $context->vars_possibly_in_scope
-                );
             }
+
+            $context->referenced_vars = array_merge(
+                $op_context->referenced_vars,
+                $context->referenced_vars
+            );
+
+            $context->vars_possibly_in_scope = array_merge(
+                $op_context->vars_possibly_in_scope,
+                $context->vars_possibly_in_scope
+            );
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             $stmt->inferredType = Type::getString();
 
