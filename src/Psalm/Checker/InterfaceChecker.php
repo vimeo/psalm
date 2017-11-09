@@ -17,8 +17,8 @@ class InterfaceChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string       $fq_interface_name
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker $project_checker
+     * @param  string         $fq_interface_name
      *
      * @return bool
      */
@@ -32,8 +32,8 @@ class InterfaceChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string       $fq_interface_name
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker $project_checker
+     * @param  string         $fq_interface_name
      *
      * @return bool
      */
@@ -43,9 +43,9 @@ class InterfaceChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string       $interface_name
-     * @param  string       $possible_parent
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker $project_checker
+     * @param  string         $interface_name
+     * @param  string         $possible_parent
      *
      * @return bool
      */
@@ -55,8 +55,8 @@ class InterfaceChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string       $fq_interface_name
-     * @param  FileChecker  $file_checker
+     * @param  ProjectChecker $project_checker
+     * @param  string         $fq_interface_name
      *
      * @return array<string>   all interfaces extended by $interface_name
      */

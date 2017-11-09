@@ -87,7 +87,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
     /**
      * @param ProjectChecker $project_checker
-     * @param string $file_path
+     * @param FileChecker    $file_checker
      */
     public function __construct(ProjectChecker $project_checker, FileChecker $file_checker)
     {
@@ -925,7 +925,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
      * @param  FunctionLikeStorage          $storage
      * @param  array<string, string>|null   $template_types
      * @param  PhpParser\Node\FunctionLike  $function
-     * @param  string|null                  $fq_classlike_name
      * @param  CodeLocation                 $code_location
      *
      * @return void
@@ -1044,7 +1043,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
     /**
      * @param   PhpParser\Node\Stmt\Property    $stmt
-     * @param   Context                         $class_context
      * @param   Config                          $config
      *
      * @return  void
@@ -1153,7 +1151,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
     /**
      * @param   PhpParser\Node\Stmt\ClassConst  $stmt
-     * @param   Config                          $config
      *
      * @return  void
      */
