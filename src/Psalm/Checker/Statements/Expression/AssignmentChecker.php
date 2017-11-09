@@ -47,7 +47,6 @@ class AssignmentChecker
      * @param  Type\Union|null          $assign_value_type
      * @param  Context                  $context
      * @param  string                   $doc_comment
-     * @param  bool                     $by_reference
      * @param  int|null                 $came_from_line_number
      *
      * @return false|Type\Union
@@ -59,7 +58,6 @@ class AssignmentChecker
         $assign_value_type,
         Context $context,
         $doc_comment,
-        $by_reference = false,
         $came_from_line_number = null
     ) {
         $var_id = ExpressionChecker::getVarId(
@@ -81,7 +79,6 @@ class AssignmentChecker
         if ($doc_comment) {
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment,
-                $context,
                 $statements_checker->getSource(),
                 $statements_checker->getAliases(),
                 null,
@@ -440,8 +437,7 @@ class AssignmentChecker
             $stmt->expr,
             null,
             $context,
-            (string)$stmt->getDocComment(),
-            true
+            (string)$stmt->getDocComment()
         ) === false) {
             return false;
         }

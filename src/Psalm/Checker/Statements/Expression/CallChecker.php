@@ -240,7 +240,6 @@ class CallChecker
             if (!$in_call_map && !$is_stubbed) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
-                        $project_checker,
                         $statements_checker,
                         $method_id,
                         $code_location
@@ -2441,7 +2440,6 @@ class CallChecker
                             }
                         } else {
                             if (self::checkFunctionExists(
-                                    $project_checker,
                                     $statements_checker,
                                     $function_id,
                                     $code_location
@@ -2522,7 +2520,6 @@ class CallChecker
      * @return bool
      */
     protected static function checkFunctionExists(
-        ProjectChecker $project_checker,
         StatementsChecker $statements_checker,
         &$function_id,
         CodeLocation $code_location

@@ -721,14 +721,12 @@ class ProjectChecker
 
     /**
      * @param string $fq_class_name
-     * @param string $parent_class
      *
      * @return void
      */
     protected function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
     {
         $fq_class_name = $storage->name;
-        $parent_class = $parent_storage->name;
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {

@@ -336,7 +336,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         } else { // Closure
             $file_storage = $file_storage_provider->get($this->source->getFilePath());
 
-            $function_id = $cased_function_id = $this->getMethodId();
+            $function_id = $this->getMethodId();
 
             if (!isset($file_storage->functions[$function_id])) {
                 throw new \UnexpectedValueException('Closure function ' . $function_id . ' should exist');

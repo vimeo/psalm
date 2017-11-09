@@ -377,7 +377,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($doc_comment = $node->getDocComment()) {
                 $var_comment = CommentChecker::getTypeFromComment(
                     (string)$doc_comment,
-                    null,
                     $this->file_checker,
                     $this->aliases,
                     null,
@@ -1073,7 +1072,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $property_type_line_number = $comment->getLine();
                 $var_comment = CommentChecker::getTypeFromComment(
                     $comment->getText(),
-                    null,
                     $this->file_checker,
                     $this->aliases,
                     $this->function_template_types + $this->class_template_types,
