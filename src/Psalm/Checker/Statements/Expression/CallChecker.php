@@ -240,7 +240,6 @@ class CallChecker
             if (!$in_call_map && !$is_stubbed) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
-                        $project_checker,
                         $statements_checker,
                         $method_id,
                         $code_location
@@ -1374,8 +1373,6 @@ class CallChecker
                     ? $statements_checker->getFQCLN()
                     : $fq_class_name;
 
-                $class_template_params = [];
-
                 $return_type_candidate = MethodChecker::getMethodReturnType($project_checker, $method_id);
 
                 if ($return_type_candidate) {
@@ -1670,7 +1667,7 @@ class CallChecker
                             }
 
                             if (in_array($method_id, ['shuffle', 'sort', 'rsort', 'usort'], true)) {
-                                list($tkey, $tvalue) = $array_type->type_params;
+                                $tvalue = $array_type->type_params[1];
                                 $by_ref_type = new Type\Union([new TArray([Type::getInt(), clone $tvalue])]);
                             } else {
                                 $by_ref_type = new Type\Union([clone $array_type]);
@@ -2443,7 +2440,6 @@ class CallChecker
                             }
                         } else {
                             if (self::checkFunctionExists(
-                                    $project_checker,
                                     $statements_checker,
                                     $function_id,
                                     $code_location
@@ -2524,7 +2520,6 @@ class CallChecker
      * @return bool
      */
     protected static function checkFunctionExists(
-        ProjectChecker $project_checker,
         StatementsChecker $statements_checker,
         &$function_id,
         CodeLocation $code_location

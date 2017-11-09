@@ -101,13 +101,11 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @param string                                $file_path
      * @param ProjectChecker                        $project_checker
      * @param bool                                  $will_analyze
-     * @param array<string, bool>                   $included_file_paths
      */
     public function __construct(
         $file_path,
         ProjectChecker $project_checker,
-        $will_analyze = true,
-        array $included_file_paths = []
+        $will_analyze = true
     ) {
         $this->file_path = $file_path;
         $this->file_name = Config::getInstance()->shortenFileName($this->file_path);
@@ -120,8 +118,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function scan()
     {
-        $config = Config::getInstance();
-
         $stmts = $this->getStatements();
 
         $traverser = new PhpParser\NodeTraverser();

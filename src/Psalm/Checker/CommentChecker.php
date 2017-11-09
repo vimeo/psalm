@@ -17,7 +17,6 @@ class CommentChecker
 
     /**
      * @param  string           $comment
-     * @param  Context|null     $context
      * @param  StatementsSource $source
      * @param  Aliases          $aliases
      * @param  array<string, string>|null   $template_types
@@ -31,7 +30,6 @@ class CommentChecker
      */
     public static function getTypeFromComment(
         $comment,
-        $context,
         StatementsSource $source,
         Aliases $aliases,
         array $template_types = null,

@@ -38,7 +38,7 @@ class ReportOutputTest extends TestCase
     {
         // No exception
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
-            $checker = new \Psalm\Checker\ProjectChecker(
+            new \Psalm\Checker\ProjectChecker(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider(),
                 false,
@@ -61,7 +61,7 @@ class ReportOutputTest extends TestCase
      */
     public function testReportFormatException()
     {
-        $checker = new \Psalm\Checker\ProjectChecker(
+        new \Psalm\Checker\ProjectChecker(
             $this->file_provider,
             new Provider\FakeParserCacheProvider(),
             false,

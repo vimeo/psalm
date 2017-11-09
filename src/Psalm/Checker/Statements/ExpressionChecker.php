@@ -84,7 +84,6 @@ class ExpressionChecker
                 null,
                 $context,
                 (string)$stmt->getDocComment(),
-                false,
                 $stmt->getLine()
             );
 
@@ -1891,7 +1890,6 @@ class ExpressionChecker
         if ($doc_comment_text) {
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
-                $context,
                 $statements_checker,
                 $statements_checker->getAliases()
             );

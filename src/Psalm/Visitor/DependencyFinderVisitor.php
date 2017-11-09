@@ -377,7 +377,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($doc_comment = $node->getDocComment()) {
                 $var_comment = CommentChecker::getTypeFromComment(
                     (string)$doc_comment,
-                    null,
                     $this->file_checker,
                     $this->aliases,
                     null,
@@ -508,8 +507,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $function_id = $fq_classlike_name . '::' . strtolower($stmt->name);
             $cased_function_id = $fq_classlike_name . '::' . $stmt->name;
-
-            $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
             if (!$this->classlike_storages) {
                 throw new \UnexpectedValueException('$class_storages cannot be empty for ' . $function_id);
@@ -939,19 +936,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $function,
         CodeLocation $code_location
     ) {
-        $docblock_param_vars = [];
-
         $base = $this->fq_classlike_names
             ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1] . '::'
             : '';
 
         $cased_method_id = $base . $storage->cased_name;
 
-        $file_checker = $this->file_checker;
-
         foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
-            $line_number = $docblock_param['line_number'];
             $docblock_param_variadic = false;
 
             if (substr($param_name, 0, 3) === '...') {
@@ -973,8 +965,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($storage_param === null) {
                 continue;
             }
-
-            $docblock_param_vars[$param_name] = true;
 
             try {
                 $new_param_type = Type::parseString(
@@ -1080,7 +1070,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $property_type_line_number = $comment->getLine();
                 $var_comment = CommentChecker::getTypeFromComment(
                     $comment->getText(),
-                    null,
                     $this->file_checker,
                     $this->aliases,
                     $this->function_template_types + $this->class_template_types,

@@ -229,7 +229,6 @@ class ForeachChecker
         if ($doc_comment_text) {
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
-                $foreach_context,
                 $statements_checker->getSource(),
                 $statements_checker->getSource()->getAliases()
             );

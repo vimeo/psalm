@@ -90,8 +90,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         $project_checker = $this->getFileChecker()->project_checker;
 
-        $file_replacements = [];
-
         $plugins = Config::getInstance()->getPlugins();
 
         foreach ($stmts as $stmt) {
@@ -332,7 +330,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 if ((string)$stmt->getDocComment()) {
                     $var_comment = CommentChecker::getTypeFromComment(
                         (string)$stmt->getDocComment(),
-                        $context,
                         $this->getSource(),
                         $this->getSource()->getAliases()
                     );
@@ -895,7 +892,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         if ($doc_comment_text) {
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment_text,
-                $context,
                 $this->source,
                 $this->source->getAliases()
             );

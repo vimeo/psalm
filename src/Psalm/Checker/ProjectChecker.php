@@ -728,7 +728,6 @@ class ProjectChecker
     protected function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
     {
         $fq_class_name = $storage->name;
-        $parent_class = $parent_storage->name;
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
@@ -744,8 +743,6 @@ class ProjectChecker
             if (isset($storage->appearing_method_ids[$aliased_method_name])) {
                 continue;
             }
-
-            $parent_method_id = $parent_class . '::' . $method_name;
 
             $implemented_method_id = $fq_class_name . '::' . $aliased_method_name;
 
@@ -782,8 +779,6 @@ class ProjectChecker
                     continue;
                 }
             }
-
-            $parent_method_id = $parent_class . '::' . $method_name;
 
             $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
             $storage->inheritable_method_ids[$aliased_method_name] = $declaring_method_id;
@@ -963,7 +958,8 @@ class ProjectChecker
                 FileReferenceProvider::addFileReferences($pool_data['file_references']);
             }
 
-            $did_fork_pool_have_error = $pool->didHaveError();
+            // TODO: Tell the caller that the fork pool encountered an error in another PR?
+            // $did_fork_pool_have_error = $pool->didHaveError();
         } else {
             $i = 0;
 
@@ -1241,7 +1237,6 @@ class ProjectChecker
     protected function getDiffFilesInDir($dir_name, Config $config)
     {
         $file_extensions = $config->getFileExtensions();
-        $filetype_handlers = $config->getFiletypeHandlers();
 
         /** @var RecursiveDirectoryIterator */
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
@@ -1320,8 +1315,6 @@ class ProjectChecker
         $this->files_to_deep_scan[$file_path] = $file_path;
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_report[$file_path] = $file_path;
-
-        $filetype_handlers = $this->config->getFiletypeHandlers();
 
         FileReferenceProvider::loadReferenceCache();
 

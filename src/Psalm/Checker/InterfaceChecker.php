@@ -64,8 +64,6 @@ class InterfaceChecker extends ClassLikeChecker
     {
         $fq_interface_name = strtolower($fq_interface_name);
 
-        $extended_interfaces = [];
-
         $storage = $project_checker->classlike_storage_provider->get($fq_interface_name);
 
         return $storage->parent_interfaces;

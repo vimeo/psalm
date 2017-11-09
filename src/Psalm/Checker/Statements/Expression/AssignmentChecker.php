@@ -47,7 +47,6 @@ class AssignmentChecker
      * @param  Type\Union|null          $assign_value_type
      * @param  Context                  $context
      * @param  string                   $doc_comment
-     * @param  bool                     $by_reference
      * @param  int|null                 $came_from_line_number
      *
      * @return false|Type\Union
@@ -59,7 +58,6 @@ class AssignmentChecker
         $assign_value_type,
         Context $context,
         $doc_comment,
-        $by_reference = false,
         $came_from_line_number = null
     ) {
         $var_id = ExpressionChecker::getVarId(
@@ -81,7 +79,6 @@ class AssignmentChecker
         if ($doc_comment) {
             $var_comment = CommentChecker::getTypeFromComment(
                 $doc_comment,
-                $context,
                 $statements_checker->getSource(),
                 $statements_checker->getAliases(),
                 null,
@@ -440,8 +437,7 @@ class AssignmentChecker
             $stmt->expr,
             null,
             $context,
-            (string)$stmt->getDocComment(),
-            true
+            (string)$stmt->getDocComment()
         ) === false) {
             return false;
         }
@@ -661,18 +657,6 @@ class AssignmentChecker
 
                 $has_regular_setter = true;
 
-                if (($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this')
-                    || $lhs_type_part->value === $context->self
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self &&
-                    ClassChecker::classExtends($project_checker, $lhs_type_part->value, $context->self)
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
-                } else {
-                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
-                }
-
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
                 if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
@@ -851,18 +835,6 @@ class AssignmentChecker
         $fq_class_name = (string)$stmt->class->inferredType;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
-
-        if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') ||
-            $fq_class_name === $context->self
-        ) {
-            $class_visibility = \ReflectionProperty::IS_PRIVATE;
-        } elseif ($context->self &&
-            ClassChecker::classExtends($project_checker, $fq_class_name, $context->self)
-        ) {
-            $class_visibility = \ReflectionProperty::IS_PROTECTED;
-        } else {
-            $class_visibility = \ReflectionProperty::IS_PUBLIC;
-        }
 
         $prop_name = $stmt->name;
 

@@ -94,8 +94,6 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             }
         }
 
-        $function_checkers = [];
-
         // hoist functions to the top
         foreach ($function_stmts as $stmt) {
             $function_checker = new FunctionChecker($stmt, $this);
