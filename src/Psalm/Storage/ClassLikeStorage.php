@@ -136,6 +136,11 @@ class ClassLikeStorage
     public $overridden_method_ids = [];
 
     /**
+     * @var array<string, string>
+     */
+    public $inheritable_method_ids = [];
+
+    /**
      * @var array<string, PropertyStorage>
      */
     public $properties = [];

@@ -754,7 +754,7 @@ class ProjectChecker
         }
 
         // register where they're declared
-        foreach ($parent_storage->declaring_method_ids as $method_name => $declaring_method_id) {
+        foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
             if (!$parent_storage->is_trait) {
                 $implemented_method_id = $fq_class_name . '::' . $method_name;
 
@@ -786,6 +786,7 @@ class ProjectChecker
             $parent_method_id = $parent_class . '::' . $method_name;
 
             $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
+            $storage->inheritable_method_ids[$aliased_method_name] = $declaring_method_id;
         }
     }
 

@@ -176,7 +176,7 @@ class ClassScopeTest extends TestCase
                             $this->fooFoo();
                         }
                     }',
-                'error_message' => 'InaccessibleMethod',
+                'error_message' => 'UndefinedMethod',
             ],
             'inaccessibleProtectredMethodFromOtherSubclass' => [
                 '<?php

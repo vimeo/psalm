@@ -191,6 +191,7 @@ class MethodChecker extends FunctionLikeChecker
         $class_storage->declaring_method_ids[$method_name] =
             $declaring_class->name . '::' . strtolower((string)$method->getName());
 
+        $class_storage->inheritable_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
         $class_storage->appearing_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
         $class_storage->overridden_method_ids[$method_name] = [];
 
@@ -569,8 +570,11 @@ class MethodChecker extends FunctionLikeChecker
      *
      * @return void
      */
-    public static function setDeclaringMethodId(ProjectChecker $project_checker, $method_id, $declaring_method_id)
-    {
+    public static function setDeclaringMethodId(
+        ProjectChecker $project_checker,
+        $method_id,
+        $declaring_method_id
+    ) {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);

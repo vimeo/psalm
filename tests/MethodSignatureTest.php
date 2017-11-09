@@ -5,6 +5,7 @@ use Psalm\Checker\FileChecker;
 
 class MethodSignatureTest extends TestCase
 {
+    use Traits\FileCheckerValidCodeParseTestTrait;
     use Traits\FileCheckerInvalidCodeParseTestTrait;
 
     /**
@@ -90,6 +91,24 @@ class MethodSignatureTest extends TestCase
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
         $this->project_checker->checkClassReferences();
+    }
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerValidCodeParse()
+    {
+        return [
+            'privateArgs' => [
+                '<?php
+                    class A {
+                        private function foo() : void {}
+                    }
+                    class B extends A {
+                        private function foo(int $arg) : void {}
+                    }',
+            ],
+        ];
     }
 
     /**

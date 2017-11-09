@@ -1331,12 +1331,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         // register where they're declared
-        foreach ($parent_storage->declaring_method_ids as $method_name => $declaring_method_id) {
+        foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
             $parent_method_id = $parent_class . '::' . $method_name;
 
             $implemented_method_id = $fq_class_name . '::' . $method_name;
 
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
+            $storage->inheritable_method_ids[$method_name] = $declaring_method_id;
 
             MethodChecker::setOverriddenMethodId($project_checker, $implemented_method_id, $declaring_method_id);
         }

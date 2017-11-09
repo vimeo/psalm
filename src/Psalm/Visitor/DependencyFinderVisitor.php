@@ -545,6 +545,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $class_storage->declaring_method_ids[strtolower($stmt->name)] = $function_id;
             $class_storage->appearing_method_ids[strtolower($stmt->name)] = $function_id;
 
+            if (!$stmt->isPrivate() || $stmt->name === '__construct' || $class_storage->is_trait) {
+                $class_storage->inheritable_method_ids[strtolower($stmt->name)] = $function_id;
+            }
+
             if (!isset($class_storage->overridden_method_ids[strtolower($stmt->name)])) {
                 $class_storage->overridden_method_ids[strtolower($stmt->name)] = [];
             }
