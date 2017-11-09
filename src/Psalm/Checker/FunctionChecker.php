@@ -561,6 +561,47 @@ class FunctionChecker extends FunctionLikeChecker
             ]);
         }
 
+        if ($call_map_key === 'array_rand') {
+            $first_arg_array = $first_arg
+                && isset($first_arg->inferredType)
+                && isset($first_arg->inferredType->types['array'])
+                && ($first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray ||
+                    $first_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike)
+            ? $first_arg->inferredType->types['array']
+            : null;
+
+            if (!$first_arg_array) {
+                return Type::getMixed();
+            }
+
+            $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+
+            if ($first_arg_array instanceof Type\Atomic\TArray) {
+                $key_type = clone $first_arg_array->type_params[0];
+            } else {
+                $key_type = Type::getString();
+            }
+
+            if (!$second_arg
+                || ($second_arg instanceof PhpParser\Node\Scalar\LNumber && $second_arg->value === 1)
+            ) {
+                return $key_type;
+            }
+
+            $arr_type = new Type\Union([
+                new Type\Atomic\TArray([
+                    Type::getInt(),
+                    $key_type,
+                ]),
+            ]);
+
+            if ($second_arg instanceof PhpParser\Node\Scalar\LNumber) {
+                return $arr_type;
+            }
+
+            return Type::combineUnionTypes($key_type, $arr_type);
+        }
+
         return null;
     }
 

@@ -107,11 +107,3 @@ function array_pop(array $arr) {}
  * @return array<TKey, TValue>
  */
 function array_reverse(array $arr) {}
-
-/**
- * @template TKey
- *
- * @param array<TKey, mixed> $arr
- * @return TKey
- */
-function array_rand(array $arr) {}
