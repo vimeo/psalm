@@ -700,8 +700,6 @@ class IfChecker
                         $if_scope->updated_vars
                     );
                 } else {
-                    $negated_keys = [];
-
                     $outer_context->update(
                         $old_elseif_context,
                         $elseif_context,

@@ -29,8 +29,6 @@ class SwitchChecker
         Context $context,
         Context $loop_context = null
     ) {
-        $type_candidate_var = null;
-
         if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;
         }
@@ -42,8 +40,6 @@ class SwitchChecker
         ) {
             /** @var Type\Atomic\T */
             $type_type = array_values($stmt->cond->inferredType->types)[0];
-
-            $type_candidate_var = $type_type->typeof;
         }
 
         $original_context = clone $context;
@@ -141,7 +137,6 @@ class SwitchChecker
 
             if (!$case_stmts || (!$has_ending_statements && !$has_leaving_statements)) {
                 $case_stmts = array_merge($case_stmts, $leftover_statements);
-                $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
             } else {
                 $leftover_statements = [];
             }
@@ -154,9 +149,6 @@ class SwitchChecker
                     $case_context->referenced_vars
                 );
             }
-
-            // has a return/throw at end
-            $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
 
             if ($case_exit_type !== 'return_throw') {
                 $vars = array_diff_key(

@@ -378,7 +378,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         foreach ($storage->params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
-
             if ($function_param->type) {
                 $param_type = clone $function_param->type;
 
@@ -845,10 +844,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : Type::getVoid();
         $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
 
-        $inferred_generator_return_type = null;
-
         if ($inferred_yield_type) {
-            $inferred_generator_return_type = $inferred_return_type;
             $inferred_return_type = $inferred_yield_type;
         }
 

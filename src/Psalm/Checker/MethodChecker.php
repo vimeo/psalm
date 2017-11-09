@@ -468,7 +468,7 @@ class MethodChecker extends FunctionLikeChecker
         $declaring_method_id = self::getDeclaringMethodId($project_checker, $method_id);
 
         if (!$declaring_method_id) {
-            list($method_class, $method_name) = explode('::', $method_id);
+            $method_name = explode('::', $method_id)[1];
 
             if ($method_name === '__construct') {
                 return null;
