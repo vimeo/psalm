@@ -116,8 +116,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param   Context|null    $file_context
-     *
      * @return  void
      */
     public function scan()

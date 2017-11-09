@@ -720,8 +720,8 @@ class ProjectChecker
     }
 
     /**
-     * @param string $fq_class_name
-     * @param string $parent_class
+     * @param ClassLikeStorage $storage
+     * @param ClassLikeStorage $parent_storage
      *
      * @return void
      */
@@ -791,8 +791,8 @@ class ProjectChecker
     }
 
     /**
-     * @param string $fq_class_name
-     * @param string $parent_class
+     * @param ClassLikeStorage $storage
+     * @param ClassLikeStorage $parent_storage
      *
      * @return void
      */

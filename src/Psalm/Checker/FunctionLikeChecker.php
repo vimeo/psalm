@@ -1136,7 +1136,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
     /**
      * @param  string                       $return_type
-     * @param  StatementsSource             $source
+     * @param  Aliases                      $aliases
      * @param  array<string, string>|null   $template_types
      *
      * @return string
