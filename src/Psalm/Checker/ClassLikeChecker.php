@@ -654,15 +654,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $first_uninitialized_property = array_shift($uninitialized_properties);
 
                     if ($first_uninitialized_property->location) {
-                        if (!$config->reportIssueInFile(
-                            'PropertyNotSetInConstructor',
-                            $first_uninitialized_property->location->file_path
-                        ) && $this->class->extends) {
-                            $error_location = new CodeLocation($this, $this->class->extends);
-                        } else {
-                            $error_location = $first_uninitialized_property->location;
-                        }
-
                         if (IssueBuffer::accepts(
                             new MissingConstructor(
                                 $fq_class_name . ' has an uninitialized variable ' . $uninitialized_variables[0] .

@@ -661,18 +661,6 @@ class AssignmentChecker
 
                 $has_regular_setter = true;
 
-                if (($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this')
-                    || $lhs_type_part->value === $context->self
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self &&
-                    ClassChecker::classExtends($project_checker, $lhs_type_part->value, $context->self)
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
-                } else {
-                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
-                }
-
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
                 if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
@@ -851,18 +839,6 @@ class AssignmentChecker
         $fq_class_name = (string)$stmt->class->inferredType;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
-
-        if (($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') ||
-            $fq_class_name === $context->self
-        ) {
-            $class_visibility = \ReflectionProperty::IS_PRIVATE;
-        } elseif ($context->self &&
-            ClassChecker::classExtends($project_checker, $fq_class_name, $context->self)
-        ) {
-            $class_visibility = \ReflectionProperty::IS_PROTECTED;
-        } else {
-            $class_visibility = \ReflectionProperty::IS_PUBLIC;
-        }
 
         $prop_name = $stmt->name;
 

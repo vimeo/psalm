@@ -33,15 +33,6 @@ class SwitchChecker
             return false;
         }
 
-        $type_type = null;
-
-        if (isset($stmt->cond->inferredType) &&
-            array_values($stmt->cond->inferredType->types)[0] instanceof Type\Atomic\T
-        ) {
-            /** @var Type\Atomic\T */
-            $type_type = array_values($stmt->cond->inferredType->types)[0];
-        }
-
         $original_context = clone $context;
 
         $new_vars_in_scope = null;

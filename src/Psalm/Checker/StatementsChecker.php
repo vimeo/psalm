@@ -90,8 +90,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         $project_checker = $this->getFileChecker()->project_checker;
 
-        $file_replacements = [];
-
         $plugins = Config::getInstance()->getPlugins();
 
         foreach ($stmts as $stmt) {

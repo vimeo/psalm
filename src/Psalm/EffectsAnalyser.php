@@ -202,8 +202,6 @@ class EffectsAnalyser
 
             return [new Atomic\TMixed()];
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
-            $key_type = null;
-
             if (isset($stmt->inferredType)) {
                 return array_values($stmt->inferredType->types);
             }
