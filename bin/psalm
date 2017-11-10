@@ -177,12 +177,12 @@ if (isset($options['i'])) {
         die('A config file already exists in the current directory' . PHP_EOL);
     }
 
-    $args = array_filter(
+    $args = array_values(array_filter(
         array_slice($argv, 2),
         function ($arg) {
             return $arg !== '--ansi' && $arg !== '--no-ansi';
         }
-    );
+    ));
 
     $level = 3;
     $source_dir = 'src';
