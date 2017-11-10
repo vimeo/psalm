@@ -852,16 +852,24 @@ class CallChecker
                     return;
                 }
 
+                $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+
                 if (MethodChecker::methodExists(
                     $project_checker,
                     $fq_class_name . '::__call'
                 )
                 ) {
-                    $return_type = Type::getMixed();
-                    continue;
+                    if (!MethodChecker::methodExists($project_checker, $method_id)
+                        || !MethodChecker::isMethodVisible(
+                            $method_id,
+                            $context->self,
+                            $statements_checker->getSource()
+                        )
+                    ) {
+                        $return_type = Type::getMixed();
+                        continue;
+                    }
                 }
-
-                $method_id = $fq_class_name . '::' . strtolower($stmt->name);
 
                 if ($var_id === '$this' &&
                     $context->self &&

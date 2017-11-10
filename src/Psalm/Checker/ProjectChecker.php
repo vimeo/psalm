@@ -1126,7 +1126,7 @@ class ProjectChecker
                     )) {
                         // fall through
                     }
-                } else {
+                } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
                     if (IssueBuffer::accepts(
                         new UnusedMethod(
                             'Method ' . $method_id . ' is never used',

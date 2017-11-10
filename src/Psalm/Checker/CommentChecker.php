@@ -3,7 +3,6 @@ namespace Psalm\Checker;
 
 use Psalm\Aliases;
 use Psalm\ClassLikeDocblockComment;
-use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FunctionDocblockComment;

@@ -2,7 +2,6 @@
 namespace Psalm\Checker;
 
 use PhpParser;
-use Psalm\StatementsSource;
 use Psalm\TraitSource;
 
 class TraitChecker extends ClassLikeChecker

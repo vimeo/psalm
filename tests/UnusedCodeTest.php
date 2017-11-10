@@ -136,6 +136,32 @@ class UnusedCodeTest extends TestCase
                         return $a || $b;
                     }',
             ],
+            'magicCall' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        private $value = "default";
+
+                        /** @param string[] $args */
+                        public function __call(string $name, array $args) {
+                            if (count($args) == 1) {
+                                $this->modify($name, $args[0]);
+                            }
+                        }
+
+                        private function modify(string $name, string $value) : void {
+                            call_user_func(array($this, "modify_" . $name), $value);
+                        }
+
+                        public function modifyFoo(string $value) : void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    $m = new A();
+                    $m->foo("value");
+                    $m->modifyFoo("value2");',
+            ],
         ];
     }
 

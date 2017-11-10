@@ -454,6 +454,91 @@ class MethodChecker extends FunctionLikeChecker
      * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
      *
+     * @return bool
+     */
+    public static function isMethodVisible(
+        $method_id,
+        $calling_context,
+        StatementsSource $source
+    ) {
+        $project_checker = $source->getFileChecker()->project_checker;
+
+        $declaring_method_id = self::getDeclaringMethodId($project_checker, $method_id);
+
+        if (!$declaring_method_id) {
+            $method_name = explode('::', $method_id)[1];
+
+            if ($method_name === '__construct') {
+                return true;
+            }
+
+            throw new \UnexpectedValueException('$declaring_method_id not expected to be null here');
+        }
+
+        $appearing_method_id = self::getAppearingMethodId($project_checker, $method_id);
+
+        $appearing_method_class = null;
+
+        if ($appearing_method_id) {
+            list($appearing_method_class) = explode('::', $appearing_method_id);
+
+            // if the calling class is the same, we know the method exists, so it must be visible
+            if ($appearing_method_class === $calling_context) {
+                return true;
+            }
+        }
+
+        list($declaring_method_class) = explode('::', $declaring_method_id);
+
+        if ($source->getSource() instanceof TraitChecker && $declaring_method_class === $source->getFQCLN()) {
+            return true;
+        }
+
+        $storage = self::getStorage($project_checker, $declaring_method_id);
+
+        if (!$storage) {
+            throw new \UnexpectedValueException('$storage should not be null for ' . $declaring_method_id);
+        }
+
+        switch ($storage->visibility) {
+            case ClassLikeChecker::VISIBILITY_PUBLIC:
+                return true;
+
+            case ClassLikeChecker::VISIBILITY_PRIVATE:
+                if (!$calling_context || $appearing_method_class !== $calling_context) {
+                    return false;
+                }
+
+                return true;
+
+            case ClassLikeChecker::VISIBILITY_PROTECTED:
+                if (!$calling_context) {
+                    return false;
+                }
+
+                if ($appearing_method_class
+                    && ClassChecker::classExtends($project_checker, $appearing_method_class, $calling_context)
+                ) {
+                    return true;
+                }
+
+                if ($appearing_method_class
+                    && !ClassChecker::classExtends($project_checker, $calling_context, $appearing_method_class)
+                ) {
+                    return false;
+                }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  string           $method_id
+     * @param  string|null      $calling_context
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array            $suppressed_issues
+     *
      * @return false|null
      */
     public static function checkMethodVisibility(
