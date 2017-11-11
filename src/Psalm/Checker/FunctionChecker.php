@@ -484,6 +484,8 @@ class FunctionChecker extends FunctionLikeChecker
             $inner_value_types = [];
             $inner_key_types = [];
 
+            $generic_properties = [];
+
             foreach ($call_args as $call_arg) {
                 if (!isset($call_arg->value->inferredType)) {
                     return Type::getArray();
@@ -492,6 +494,10 @@ class FunctionChecker extends FunctionLikeChecker
                 foreach ($call_arg->value->inferredType->types as $type_part) {
                     if (!$type_part instanceof Type\Atomic\TArray) {
                         if ($type_part instanceof Type\Atomic\ObjectLike) {
+                            if ($generic_properties !== null) {
+                                $generic_properties = array_merge($type_part->properties, $generic_properties);
+                            }
+
                             $type_part = new Type\Atomic\TArray([
                                 Type::getString(),
                                 $type_part->getGenericTypeParam(),
@@ -499,6 +505,8 @@ class FunctionChecker extends FunctionLikeChecker
                         } else {
                             return Type::getArray();
                         }
+                    } elseif (!$type_part->type_params[0]->isEmpty()) {
+                        $generic_properties = null;
                     }
 
                     if ($type_part->type_params[1]->isEmpty()) {
@@ -511,6 +519,12 @@ class FunctionChecker extends FunctionLikeChecker
                         $inner_value_types
                     );
                 }
+            }
+
+            if ($generic_properties) {
+                return new Type\Union([
+                    new Type\Atomic\ObjectLike($generic_properties),
+                ]);
             }
 
             if ($inner_value_types) {

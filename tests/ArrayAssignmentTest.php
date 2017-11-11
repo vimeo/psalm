@@ -464,6 +464,15 @@ class ArrayAssignmentTest extends TestCase
                     '$e' => 'int',
                 ],
             ],
+            'objectLikeArrayAddition' => [
+                '<?php
+                    $foo = [];
+                    $foo["a"] = 1;
+                    $foo += ["b" => [2, 3]];',
+                'assertions' => [
+                    '$foo' => 'array{a:int, b:array<int, int>}',
+                ],
+            ],
         ];
     }
 

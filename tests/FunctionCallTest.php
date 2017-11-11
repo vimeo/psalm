@@ -265,6 +265,9 @@ class FunctionCallTest extends TestCase
                   $a3 = array_merge($a1, $a2);
 
                   foo($a3);',
+                'assertions' => [
+                    '$a3' => 'array{bye:int, hi:int}'
+                ],
             ],
             'goodByRef' => [
                 '<?php

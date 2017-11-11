@@ -1304,7 +1304,11 @@ class ExpressionChecker
                         return;
                     }
 
-                    if ($left_type_part instanceof TArray || $right_type_part instanceof TArray) {
+                    if ($left_type_part instanceof TArray
+                        || $right_type_part instanceof TArray
+                        || $left_type_part instanceof ObjectLike
+                        || $right_type_part instanceof ObjectLike
+                    ) {
                         if ((!$right_type_part instanceof TArray && !$right_type_part instanceof ObjectLike) ||
                             (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)) {
                             if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
