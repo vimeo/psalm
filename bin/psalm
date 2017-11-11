@@ -13,17 +13,21 @@ ini_set('memory_limit', '2048M');
 
 // get options from command line
 $options = getopt(
-    'f:mhc:ir:',
+    'f:mhvc:ir:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report:', 'clear-cache', 'no-cache',
+        'report:', 'clear-cache', 'no-cache', 'version'
     ]
 );
 
 if (array_key_exists('help', $options)) {
     $options['h'] = false;
+}
+
+if (array_key_exists('version', $options)) {
+    $options['v'] = false;
 }
 
 if (array_key_exists('init', $options)) {
@@ -50,6 +54,9 @@ Usage:
 Options:
     -h, --help
         Display this help message
+
+    -v, --version
+        Display the Psalm version
 
     -i, --init [source_dir=src] [--level=3]
         Create a psalm config file in the current directory that points to [source_dir]
@@ -167,6 +174,12 @@ foreach ($autoload_roots as $autoload_root) {
 
 foreach ($autoload_files as $file) {
     require_once $file;
+}
+
+if (array_key_exists('v', $options)) {
+    $version = \PackageVersions\Versions::getVersion('vimeo/psalm');
+    echo 'Psalm ' . $version . PHP_EOL;
+    exit;
 }
 
 // If XDebug is enabled, restart without it
