@@ -164,6 +164,7 @@
             <xs:element name="PossiblyNullPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullReference" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUndefinedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedMethod" type="IssueHandlerType" minOccurs="0" />

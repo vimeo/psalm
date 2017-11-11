@@ -38,6 +38,7 @@ use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\Issue\PossiblyNullReference;
+use Psalm\Issue\PossiblyUndefinedMethod;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\TypeCoercion;
@@ -760,6 +761,11 @@ class CallChecker
         $config = Config::getInstance();
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
+        $non_existent_method_ids = [];
+        $existent_method_ids = [];
+
+        $code_location = new CodeLocation($source, $stmt);
+
         if ($class_type && is_string($stmt->name)) {
             $return_type = null;
 
@@ -779,7 +785,7 @@ class CallChecker
                             if (IssueBuffer::accepts(
                                 new InvalidMethodCall(
                                     'Cannot call method ' . $stmt->name . ' on ' . $class_type . ' variable ' . $var_id,
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                    $code_location
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
@@ -792,7 +798,7 @@ class CallChecker
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
                                     'Cannot call method ' . $stmt->name . ' on a mixed variable ' . $var_id,
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                    $code_location
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
@@ -829,7 +835,7 @@ class CallChecker
                     $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $project_checker,
                         $fq_class_name,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $code_location,
                         $statements_checker->getSuppressedIssues()
                     );
                 }
@@ -842,7 +848,7 @@ class CallChecker
                     if (IssueBuffer::accepts(
                         new UndefinedMethod(
                             $fq_class_name . ' has no defined methods',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            $code_location
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -893,16 +899,12 @@ class CallChecker
 
                 $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
-                $does_method_exist = MethodChecker::checkMethodExists(
-                    $project_checker,
-                    $cased_method_id,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker->getSuppressedIssues()
-                );
-
-                if (!$does_method_exist) {
-                    return $does_method_exist;
+                if (!MethodChecker::methodExists($project_checker, $method_id, $code_location)) {
+                    $non_existent_method_ids[] = $method_id;
+                    continue;
                 }
+
+                $existent_method_ids[] = $method_id;
 
                 $class_template_params = null;
 
@@ -945,7 +947,7 @@ class CallChecker
                     $stmt->args,
                     $class_template_params,
                     $context,
-                    new CodeLocation($source, $stmt),
+                    $code_location,
                     $statements_checker
                 ) === false) {
                     return false;
@@ -961,7 +963,7 @@ class CallChecker
                         $method_id,
                         $context->self,
                         $statements_checker->getSource(),
-                        new CodeLocation($source, $stmt),
+                        $code_location,
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
@@ -970,7 +972,7 @@ class CallChecker
                     if (MethodChecker::checkMethodNotDeprecated(
                         $project_checker,
                         $method_id,
-                        new CodeLocation($source, $stmt),
+                        $code_location,
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
                         return false;
@@ -1026,6 +1028,32 @@ class CallChecker
                 } else {
                     $return_type = Type::getMixed();
                 }
+            }
+
+            if ($non_existent_method_ids) {
+                if ($existent_method_ids) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUndefinedMethod(
+                            'Method ' . $non_existent_method_ids[0] . ' does not exist',
+                            $code_location
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new UndefinedMethod(
+                            'Method ' . $non_existent_method_ids[0] . ' does not exist',
+                            $code_location
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+
+                return null;
             }
 
             $stmt->inferredType = $return_type;
