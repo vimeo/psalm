@@ -232,21 +232,21 @@ class FetchChecker
                 continue;
             }
 
-            if ($stmt_var_id !== '$this' &&
-                MethodChecker::methodExists($project_checker, $lhs_type_part->value . '::__get')
-            ) {
-                $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
-
-                if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name])) {
-                    $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name];
-                } else {
-                    $stmt->inferredType = Type::getMixed();
-                }
-
-                continue;
-            }
-
             $property_id = $lhs_type_part->value . '::$' . $stmt->name;
+
+            if (MethodChecker::methodExists($project_checker, $lhs_type_part->value . '::__get')) {
+                if ($stmt_var_id !== '$this' || !ClassLikeChecker::propertyExists($project_checker, $property_id)) {
+                    $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
+
+                    if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name])) {
+                        $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name];
+                    } else {
+                        $stmt->inferredType = Type::getMixed();
+                    }
+
+                    continue;
+                }
+            }
 
             if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                 if ($stmt_var_id === '$this') {
