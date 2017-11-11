@@ -335,6 +335,17 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         }
                     }
                 }
+
+                if ($function_id === 'func_get_arg'
+                    || $function_id === 'func_get_args'
+                    || $function_id === 'func_num_args'
+                ) {
+                    $function_like_storage = end($this->functionlike_storages);
+
+                    if ($function_like_storage) {
+                        $function_like_storage->variadic = true;
+                    }
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if (!$this->classlike_storages) {

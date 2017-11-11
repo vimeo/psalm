@@ -75,6 +75,13 @@ class VariadicTest extends TestCase
                 f(1, 2, 3, 4);
                 f(1, 2, 3, 4, 5);',
             ],
+            'funcNumArgsVariadic' => [
+                '<?php
+                    function test() : array {
+                        return func_get_args();
+                    }
+                    var_export(test(2));',
+            ],
             'variadicArray' => [
                 '<?php
                     /**
