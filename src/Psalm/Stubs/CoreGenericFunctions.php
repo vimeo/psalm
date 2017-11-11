@@ -113,7 +113,7 @@ function array_reverse(array $arr) {}
  * @template TValue
  *
  * @param array<TKey, TValue> $arr
- * @return ?TValue
+ * @return TValue|false
  */
 function reset(array &$arr) {}
 
@@ -122,6 +122,6 @@ function reset(array &$arr) {}
  * @template TValue
  *
  * @param array<TKey, TValue> $arr
- * @return ?TValue
+ * @return TValue|false
  */
 function end(array &$arr) {}
