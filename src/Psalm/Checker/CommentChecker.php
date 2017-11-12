@@ -187,7 +187,7 @@ class CommentChecker
                         && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
                         && !strpos($line_parts[0], '::')
                         && $line_parts[0][0] !== '{'
-                        && !in_array($line_parts[0], ['null', 'false', 'true'])
+                        && !in_array($line_parts[0], ['null', 'false', 'true'], true)
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
@@ -198,8 +198,6 @@ class CommentChecker
                         }
 
                         $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
-
-
 
                         $info->params[] = [
                             'name' => $line_parts[1],

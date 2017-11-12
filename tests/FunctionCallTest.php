@@ -266,7 +266,7 @@ class FunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{bye:int, hi:int}'
+                    '$a3' => 'array{bye:int, hi:int}',
                 ],
             ],
             'goodByRef' => [

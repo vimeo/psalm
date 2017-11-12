@@ -26,6 +26,7 @@ use Psalm\Issue\NullArrayAccess;
 use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\PossiblyNullReference;
@@ -907,6 +908,9 @@ class FetchChecker
                 return;
             }
 
+            $has_array_access = false;
+            $non_array_types = [];
+
             foreach ($var_type->types as &$type) {
                 if ($type instanceof TNull) {
                     if (IssueBuffer::accepts(
@@ -931,6 +935,7 @@ class FetchChecker
 
                 if ($type instanceof Type\Atomic\TArray || $type instanceof Type\Atomic\ObjectLike) {
                     $value_index = null;
+                    $has_array_access = true;
 
                     if ($type instanceof Type\Atomic\TArray) {
                         // create a union type to pass back to the statement
@@ -1174,17 +1179,36 @@ class FetchChecker
                         !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess')
                     )
                 ) {
+                    $non_array_types[] = $var_type;
+                }
+            }
+
+            if ($non_array_types) {
+                if ($has_array_access) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidArrayAccess(
+                            'Cannot access array value on non-array variable ' .
+                            $array_var_id . ' of type ' . $non_array_types[0],
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )
+                    ) {
+                        // do nothing
+                    }
+                } else {
                     if (IssueBuffer::accepts(
                         new InvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            $array_var_id . ' of type ' . $var_type,
+                            $array_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        $stmt->inferredType = Type::getMixed();
-                        break;
+                        // fall through
                     }
+
+                    $stmt->inferredType = Type::getMixed();
                 }
             }
         }

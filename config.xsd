@@ -156,6 +156,7 @@
             <xs:element name="PossiblyFalseArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyInvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullFunctionCall" type="IssueHandlerType" minOccurs="0" />
