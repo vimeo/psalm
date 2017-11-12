@@ -1738,7 +1738,7 @@ class CallChecker
                         $arg->value,
                         $by_ref_type,
                         $context,
-                        $method_id && (strpos('::', $method_id) !== false || !FunctionChecker::inCallMap($method_id))
+                        $method_id && (strpos($method_id, '::') !== false || !FunctionChecker::inCallMap($method_id))
                     );
                 } else {
                     if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
