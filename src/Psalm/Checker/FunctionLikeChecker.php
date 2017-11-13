@@ -230,8 +230,18 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             break 2;
                         }
 
-                        if ($class_storage->user_defined &&
-                            (string)$storage->params[$i]->signature_type !== (string)$implemented_param->signature_type
+                        $or_null_implemented_type = $implemented_param->signature_type
+                            ? clone $implemented_param->signature_type
+                            : null;
+
+                        if ($or_null_implemented_type) {
+                            $or_null_implemented_type->types['null'] = new Type\Atomic\TNull;
+                        }
+
+
+                        if ($class_storage->user_defined
+                            && (string)$storage->params[$i]->signature_type !== (string)$implemented_param->signature_type
+                            && (string)$storage->params[$i]->signature_type !== (string)$or_null_implemented_type
                         ) {
                             $cased_method_id = MethodChecker::getCasedMethodId(
                                 $project_checker,

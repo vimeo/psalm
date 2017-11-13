@@ -108,6 +108,38 @@ class MethodSignatureTest extends TestCase
                         private function foo(int $arg) : void {}
                     }',
             ],
+            'nullableSubclassParam' => [
+                '<?php
+                    class A {
+                        public function foo(string $s) : string {
+                            return $s;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo(?string $s) : string {
+                            return $s ?: "hello";
+                        }
+                    }
+
+                    echo (new B)->foo(null);',
+            ],
+            'nullableSubclassParamWithDefault' => [
+                '<?php
+                    class A {
+                        public function foo(string $s) : string {
+                            return $s;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo(string $s = null) : string {
+                            return $s ?: "hello";
+                        }
+                    }
+
+                    echo (new B)->foo();',
+            ],
         ];
     }
 
@@ -162,6 +194,21 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'Argument 1 of B::fooFoo has wrong type \'bool\', expecting \'int\' as defined ' .
                     'by A::foo',
+            ],
+            'nonNullableSubclassParam' => [
+                '<?php
+                    class A {
+                        public function foo(?string $s) : string {
+                            return $s ?: "hello";
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo(string $s) : string {
+                            return $s;
+                        }
+                    }',
+                'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'string|null\'',
             ],
         ];
     }
