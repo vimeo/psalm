@@ -238,10 +238,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             $or_null_implemented_type->types['null'] = new Type\Atomic\TNull;
                         }
 
-
                         if ($class_storage->user_defined
-                            && (string)$storage->params[$i]->signature_type !== (string)$implemented_param->signature_type
-                            && (string)$storage->params[$i]->signature_type !== (string)$or_null_implemented_type
+                            && (string)$storage->params[$i]->signature_type
+                                !== (string)$implemented_param->signature_type
+                            && (string)$storage->params[$i]->signature_type
+                                !== (string)$or_null_implemented_type
                         ) {
                             $cased_method_id = MethodChecker::getCasedMethodId(
                                 $project_checker,
