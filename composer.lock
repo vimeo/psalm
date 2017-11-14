@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "5743013585991b7a7b2664b78ab3c7d9",
+    "content-hash": "3a45e2004ea79ef80509f58bfc01aaae",
     "packages": [
         {
             "name": "composer/ca-bundle",
@@ -334,16 +334,16 @@
         },
         {
             "name": "muglug/package-versions",
-            "version": "1.2.0",
+            "version": "1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/muglug/PackageVersions.git",
-                "reference": "f4b85268d71cbde6502a0035e4fd262cce4c9014"
+                "reference": "d899b8c0178104b51522d4c8e813b66f6f7ae2cd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/muglug/PackageVersions/zipball/f4b85268d71cbde6502a0035e4fd262cce4c9014",
-                "reference": "f4b85268d71cbde6502a0035e4fd262cce4c9014",
+                "url": "https://api.github.com/repos/muglug/PackageVersions/zipball/d899b8c0178104b51522d4c8e813b66f6f7ae2cd",
+                "reference": "d899b8c0178104b51522d4c8e813b66f6f7ae2cd",
                 "shasum": ""
             },
             "require": {
@@ -389,7 +389,7 @@
                 }
             ],
             "description": "A backport of ocramius/package-versions that supports php ^5.6. Composer plugin that provides efficient querying for installed package versions (no runtime IO)",
-            "time": "2017-11-14T02:35:22+00:00"
+            "time": "2017-11-14T02:58:18+00:00"
         },
         {
             "name": "nikic/php-parser",
