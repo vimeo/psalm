@@ -14,9 +14,11 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\FailedTypeResolution;
 use Psalm\Issue\InvalidArrayAssignment;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedAssignment;
@@ -77,13 +79,26 @@ class AssignmentChecker
         $comment_type = null;
 
         if ($doc_comment) {
-            $var_comment = CommentChecker::getTypeFromComment(
-                $doc_comment,
-                $statements_checker->getSource(),
-                $statements_checker->getAliases(),
-                null,
-                $came_from_line_number
-            );
+            $var_comment = null;
+            try {
+                // TODO: Make sure emitted issues for line doc comments are on the same line? E.g. "$a = \nexpr($b);";
+                $var_comment = CommentChecker::getTypeFromComment(
+                    $doc_comment,
+                    $statements_checker->getSource(),
+                    $statements_checker->getAliases(),
+                    null,
+                    $came_from_line_number
+                );
+            } catch (DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        (string)$e->getMessage(),
+                        new CodeLocation($statements_checker->getFileChecker(), $assign_var, null, true)
+                    )
+                )) {
+                    // fall through
+                }
+            }
 
             if ($var_comment) {
                 $comment_type = ExpressionChecker::fleshOutType(

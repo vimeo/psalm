@@ -386,13 +386,25 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             || $node instanceof PhpParser\Node\Expr\AssignRef
         ) {
             if ($doc_comment = $node->getDocComment()) {
-                $var_comment = CommentChecker::getTypeFromComment(
-                    (string)$doc_comment,
-                    $this->file_checker,
-                    $this->aliases,
-                    null,
-                    null
-                );
+                $var_comment = null;
+                try {
+                    $var_comment = CommentChecker::getTypeFromComment(
+                        (string)$doc_comment,
+                        $this->file_checker,
+                        $this->aliases,
+                        null,
+                        null
+                    );
+                } catch (DocblockParseException $e) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            (string)$e->getMessage(),
+                            new CodeLocation($this->file_checker, $node, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
 
                 if ($var_comment) {
                     $var_type = Type::parseString($var_comment->type);
