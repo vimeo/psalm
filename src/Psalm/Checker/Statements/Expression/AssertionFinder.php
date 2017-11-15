@@ -804,14 +804,14 @@ class AssertionFinder
         StatementsSource $source
     ) {
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
+            if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $source->getAliases()
                 );
 
                 return $instanceof_class;
-            } elseif ($stmt->class->parts === ['self'] && $this_class_name) {
+            } elseif (strtolower($stmt->class->parts[0]) === 'self' && $this_class_name) {
                 return $this_class_name;
             }
         }

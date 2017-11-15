@@ -437,10 +437,10 @@ class FetchChecker
     ) {
         if ($context->check_consts &&
             $stmt->class instanceof PhpParser\Node\Name &&
-            $stmt->class->parts !== ['static'] &&
+            strtolower($stmt->class->parts[0]) !== 'static' &&
             is_string($stmt->name)
         ) {
-            if ($stmt->class->parts === ['self']) {
+            if (strtolower($stmt->class->parts[0]) === 'self') {
                 if (!$context->self) {
                     throw new \UnexpectedValueException('$context->self cannot be null');
                 }
@@ -595,7 +595,7 @@ class FetchChecker
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->parts) === 1
-                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+                && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
             ) {
                 if ($stmt->class->parts[0] === 'parent') {
                     $fq_class_name = $statements_checker->getParentFQCLN();

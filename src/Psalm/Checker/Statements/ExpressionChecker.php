@@ -391,7 +391,7 @@ class ExpressionChecker
             }
 
             if ($stmt->class instanceof PhpParser\Node\Name &&
-                !in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+                !in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
             ) {
                 if ($context->check_classes) {
                     $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
@@ -1621,7 +1621,7 @@ class ExpressionChecker
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
             if (count($stmt->class->parts) === 1
-                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+                && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
             ) {
                 if (!$this_class_name) {
                     $fq_class_name = $stmt->class->parts[0];
@@ -1771,17 +1771,14 @@ class ExpressionChecker
         $method_id
     ) {
         if ($return_type instanceof TNamedObject) {
-            if ($return_type->value === '$this' ||
-                $return_type->value === 'static' ||
-                $return_type->value === 'self'
-            ) {
+            if (in_array(strtolower($return_type->value), ['$this', 'static', 'self'], true)) {
                 if (!$calling_class) {
                     throw new \InvalidArgumentException(
                         'Cannot handle ' . $return_type->value . ' when $calling_class is empty'
                     );
                 }
 
-                if ($return_type->value === 'static' || !$method_id) {
+                if (strtolower($return_type->value) === 'static' || !$method_id) {
                     $return_type->value = $calling_class;
                 } else {
                     list(, $method_name) = explode('::', $method_id);

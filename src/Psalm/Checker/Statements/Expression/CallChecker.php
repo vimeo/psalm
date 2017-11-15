@@ -463,7 +463,7 @@ class CallChecker
         $late_static = false;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)) {
+            if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
                 $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
                     $stmt->class,
                     $statements_checker->getAliases()
@@ -1181,7 +1181,7 @@ class CallChecker
             $fq_class_name = null;
 
             if (count($stmt->class->parts) === 1
-                && in_array($stmt->class->parts[0], ['self', 'static', 'parent'], true)
+                && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
             ) {
                 if ($stmt->class->parts[0] === 'parent') {
                     $fq_class_name = $statements_checker->getParentFQCLN();
@@ -1376,7 +1376,7 @@ class CallChecker
                 ) {
                     if (MethodChecker::checkStatic(
                         $method_id,
-                        $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'self',
+                        $stmt->class instanceof PhpParser\Node\Name && strtolower($stmt->class->parts[0]) === 'self',
                         $project_checker,
                         new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
@@ -2453,7 +2453,7 @@ class CallChecker
                         if (strpos($function_id, '::') !== false) {
                             list($callable_fq_class_name) = explode('::', $function_id);
 
-                            if (!in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
+                            if (!in_array(strtolower($callable_fq_class_name), ['self', 'static', 'parent'], true)) {
                                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                         $project_checker,
                                         $callable_fq_class_name,

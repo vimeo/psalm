@@ -275,7 +275,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         ) {
             $fq_classlike_name = ClassLikeChecker::getFQCLNFromNameObject($node->class, $this->aliases);
 
-            if (!in_array($fq_classlike_name, ['self', 'static', 'parent'], true)) {
+            if (!in_array(strtolower($fq_classlike_name), ['self', 'static', 'parent'], true)) {
                 $this->project_checker->queueClassLikeForScanning($fq_classlike_name, $this->file_path);
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -283,7 +283,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 foreach ($catch->types as $catch_type) {
                     $catch_fqcln = ClassLikeChecker::getFQCLNFromNameObject($catch_type, $this->aliases);
 
-                    if (!in_array($catch_fqcln, ['self', 'static', 'parent'], true)) {
+                    if (!in_array(strtolower($catch_fqcln), ['self', 'static', 'parent'], true)) {
                         $this->project_checker->queueClassLikeForScanning($catch_fqcln, $this->file_path);
                     }
                 }
@@ -702,7 +702,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->aliases
                 );
 
-                if (!in_array($return_type_fq_classlike_name, ['self', 'static', 'parent'], true)) {
+                if (!in_array(strtolower($return_type_fq_classlike_name), ['self', 'static', 'parent'], true)) {
                     $this->project_checker->queueClassLikeForScanning(
                         $return_type_fq_classlike_name,
                         $this->file_path
@@ -901,11 +901,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             } elseif ($param_typehint instanceof PhpParser\Node\Name\FullyQualified) {
                 $param_type_string = (string)$param_typehint;
                 $this->project_checker->queueClassLikeForScanning($param_type_string, $this->file_path);
-            } elseif ($param_typehint->parts === ['self']) {
+            } elseif (strtolower($param_typehint->parts[0]) === 'self') {
                 $param_type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
             } else {
                 $param_type_string = ClassLikeChecker::getFQCLNFromNameObject($param_typehint, $this->aliases);
-                if (!in_array($param_type_string, ['self', 'static', 'parent'], true)) {
+                if (!in_array(strtolower($param_type_string), ['self', 'static', 'parent'], true)) {
                     $this->project_checker->queueClassLikeForScanning($param_type_string, $this->file_path);
                 }
             }
