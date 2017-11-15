@@ -28,6 +28,7 @@ use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedStringOffsetAssignment;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
+use Psalm\Issue\PossiblyInvalidPropertyAssignment;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\UndefinedClass;
@@ -578,25 +579,22 @@ class AssignmentChecker
 
             $has_regular_setter = false;
 
+            $invalid_assignment_types = [];
+
+            $has_valid_assignment_type = false;
+
             foreach ($lhs_type->types as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNull) {
                     continue;
                 }
 
                 if (!$lhs_type_part instanceof TObject && !$lhs_type_part instanceof TNamedObject) {
-                    if (IssueBuffer::accepts(
-                        new InvalidPropertyAssignment(
-                            $lhs_var_id . ' with possible non-object type \'' . $lhs_type_part .
-                            '\' cannot treated as an object',
-                            new CodeLocation($statements_checker->getSource(), $stmt->var)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
+                    $invalid_assignment_types[] = (string)$lhs_type_part;
 
                     continue;
                 }
+
+                $has_valid_assignment_type = true;
 
                 // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
                 // but we don't want to throw an error
@@ -779,6 +777,34 @@ class AssignmentChecker
                 $class_property_types[] = $class_property_type;
             }
 
+            if ($invalid_assignment_types) {
+                $invalid_assignment_type = $invalid_assignment_types[0];
+
+                if (!$has_valid_assignment_type) {
+                    if (IssueBuffer::accepts(
+                        new InvalidPropertyAssignment(
+                            $lhs_var_id . ' with non-object type \'' . $invalid_assignment_type .
+                            '\' cannot treated as an object',
+                            new CodeLocation($statements_checker->getSource(), $stmt->var)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidPropertyAssignment(
+                            $lhs_var_id . ' with possible non-object type \'' . $invalid_assignment_type .
+                            '\' cannot treated as an object',
+                            new CodeLocation($statements_checker->getSource(), $stmt->var)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+            }
+
             if (!$has_regular_setter) {
                 return null;
             }
@@ -803,6 +829,10 @@ class AssignmentChecker
             return null;
         }
 
+        $invalid_assignment_value_types = [];
+
+        $has_valid_assignment_value_type = false;
+
         foreach ($class_property_types as $class_property_type) {
             if ($class_property_type->isMixed()) {
                 continue;
@@ -814,10 +844,40 @@ class AssignmentChecker
                 $class_property_type,
                 $assignment_value_type->ignore_nullable_issues
             )) {
+                $invalid_assignment_value_types[] = [
+                    (string)$class_property_type,
+                    (string)$assignment_value_type,
+                ];
+            } else {
+                $has_valid_assignment_value_type = true;
+            }
+        }
+
+        if ($invalid_assignment_value_types) {
+            list($class_property_type, $invalid_assignment_value_type)
+                = $invalid_assignment_value_types[0];
+
+            if (!$has_valid_assignment_value_type) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignment(
-                        $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
-                            $assignment_value_type . '\'',
+                        $var_id . ' with declared type \'' . $class_property_type .
+                            '\' cannot be assigned type \'' . $invalid_assignment_value_type . '\'',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt,
+                            $context->include_location
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidPropertyAssignment(
+                        $var_id . ' with declared type \'' . $class_property_type .
+                            '\' cannot be assigned possibly different type \'' .
+                            $invalid_assignment_value_type . '\'',
                         new CodeLocation(
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,
