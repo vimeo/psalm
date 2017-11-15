@@ -16,6 +16,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
 use Psalm\Issue\NullIterator;
 use Psalm\Issue\PossiblyNullIterator;
+use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -196,6 +197,16 @@ class ForeachChecker
                             }
                         } else {
                             $value_type = Type::getMixed();
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new RawObjectIteration(
+                                'Possibly undesired iteration over regular object ' . $iterator_type->value,
+                                new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
                         }
                     }
                 }
