@@ -118,6 +118,26 @@ class MethodCallTest extends TestCase
                     'MixedAssignment',
                 ],
             ],
+            'invalidMethodCall' => [
+                '<?php
+                    ("hello")->someMethod();',
+                'error_message' => 'InvalidMethodCall',
+            ],
+            'possiblyInvalidMethodCall' => [
+                '<?php
+                    class A1 {
+                        public function methodOfA(): void {
+                        }
+                    }
+
+                    /** @param A1|string $x */
+                    function example($x, bool $isObject) {
+                        if ($isObject) {
+                            $x->methodOfA();
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidMethodCall',
+            ],
             'selfNonStaticInvocation' => [
                 '<?php
                     class A {
