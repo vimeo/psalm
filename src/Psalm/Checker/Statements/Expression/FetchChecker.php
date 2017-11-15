@@ -903,7 +903,6 @@ class FetchChecker
         ) === false) {
             return false;
         }
-
         $inferred_key_type = null;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
@@ -972,6 +971,7 @@ class FetchChecker
                                     $type->type_params[0] = $key_type;
                                 }
                             } else {
+                                // TODO: What are inferred_key_type and key_type meant to be?
                                 if ($key_type) {
                                     $key_type = Type::combineUnionTypes($key_type, $type->type_params[0]);
                                 } else {
@@ -1253,7 +1253,7 @@ class FetchChecker
         }
 
         if ($stmt->dim) {
-            if (isset($stmt->dim->inferredType) && $key_type && !$key_type->isEmpty()) {
+            if (isset($stmt->dim->inferredType) && $inferred_key_type && !$inferred_key_type->isEmpty()) {
                 foreach ($stmt->dim->inferredType->types as $at) {
                     if (($at instanceof TMixed || $at instanceof TEmpty) &&
                         $inferred_key_type &&
@@ -1270,11 +1270,11 @@ class FetchChecker
                         )) {
                             return false;
                         }
-                    } elseif (!$at->isIn($project_checker, $key_type)) {
+                    } elseif (!$at->isIn($project_checker, $inferred_key_type)) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
                                 'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
-                                    'expecting ' . $key_type,
+                                    'expecting ' . $inferred_key_type,
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
