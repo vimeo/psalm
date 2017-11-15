@@ -11,6 +11,8 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\DocblockParseException;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
 use Psalm\Issue\NullIterator;
 use Psalm\Issue\PossiblyNullIterator;
@@ -227,11 +229,22 @@ class ForeachChecker
         $doc_comment_text = (string)$stmt->getDocComment();
 
         if ($doc_comment_text) {
-            $var_comment = CommentChecker::getTypeFromComment(
-                $doc_comment_text,
-                $statements_checker->getSource(),
-                $statements_checker->getSource()->getAliases()
-            );
+            try {
+                $var_comment = CommentChecker::getTypeFromComment(
+                    $doc_comment_text,
+                    $statements_checker->getSource(),
+                    $statements_checker->getSource()->getAliases()
+                );
+            } catch (DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        (string)$e->getMessage(),
+                        new CodeLocation($statements_checker, $stmt)
+                    )
+                )) {
+                    // fall through
+                }
+            }
 
             if ($var_comment && $var_comment->var_id) {
                 $comment_type = ExpressionChecker::fleshOutType(

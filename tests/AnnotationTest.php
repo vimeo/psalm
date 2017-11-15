@@ -277,7 +277,7 @@ class AnnotationTest extends TestCase
                          */
                         public static function barBar();
                     }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'MissingDocblockType',
             ],
             'invalidReturnClass' => [
                 '<?php
@@ -529,6 +529,39 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignment',
+            ],
+            'incorrectDocblockOrder' => [
+                '<?php
+                    class MyClass {
+                        /**
+                         * Comment
+                         * @var $fooPropTypo string
+                         */
+                        public $fooProp = "/tmp/file.txt";
+                    }',
+                'error_message' => 'MissingDocblockType',
+            ],
+            'badlyFormattedVar' => [
+                '<?php
+                    /**
+                     * @return string[]
+                     */
+                    function returns_strings() {
+                        /** @var array(string) $result */
+                        $result = ["example"];
+                        return $result;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'badlyWrittenVar' => [
+                '<?php
+                    /** @param mixed $x */
+                    function myvalue($x) : void {
+                        /** @var $myVar MyNS\OtherClass */
+                        $myVar = $x->conn()->method();
+                        $myVar->otherMethod();
+                    }',
+                'error_message' => 'MissingDocblockType',
             ],
         ];
     }

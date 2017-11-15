@@ -18,10 +18,12 @@ use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\InvalidStaticVariable;
@@ -1892,11 +1894,22 @@ class ExpressionChecker
         $var_comment = null;
 
         if ($doc_comment_text) {
-            $var_comment = CommentChecker::getTypeFromComment(
-                $doc_comment_text,
-                $statements_checker,
-                $statements_checker->getAliases()
-            );
+            try {
+                $var_comment = CommentChecker::getTypeFromComment(
+                    $doc_comment_text,
+                    $statements_checker,
+                    $statements_checker->getAliases()
+                );
+            } catch (DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        (string)$e->getMessage(),
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    )
+                )) {
+                    // fall through
+                }
+            }
 
             if ($var_comment && $var_comment->var_id) {
                 $comment_type = ExpressionChecker::fleshOutType(

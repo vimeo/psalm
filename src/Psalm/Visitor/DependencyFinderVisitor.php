@@ -17,11 +17,13 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
+use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MisplacedRequiredParam;
+use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -386,13 +388,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             || $node instanceof PhpParser\Node\Expr\AssignRef
         ) {
             if ($doc_comment = $node->getDocComment()) {
-                $var_comment = CommentChecker::getTypeFromComment(
-                    (string)$doc_comment,
-                    $this->file_checker,
-                    $this->aliases,
-                    null,
-                    null
-                );
+                $var_comment = null;
+
+                try {
+                    $var_comment = CommentChecker::getTypeFromComment(
+                        (string)$doc_comment,
+                        $this->file_checker,
+                        $this->aliases,
+                        null,
+                        null
+                    );
+                } catch (DocblockParseException $e) {
+                    // do nothing
+                }
 
                 if ($var_comment) {
                     $var_type = Type::parseString($var_comment->type);
@@ -731,6 +739,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 (string)$doc_comment,
                 $doc_comment->getLine()
             );
+        } catch (IncorrectDocblockException $e) {
+            if (IssueBuffer::accepts(
+                new MissingDocblockType(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_checker, $stmt, null, true)
+                )
+            )) {
+                // fall through
+            }
         } catch (DocblockParseException $e) {
             if (IssueBuffer::accepts(
                 new InvalidDocblock(
@@ -1086,10 +1103,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->function_template_types + $this->class_template_types,
                     $property_type_line_number
                 );
+            } catch (IncorrectDocblockException $e) {
+                if (IssueBuffer::accepts(
+                    new MissingDocblockType(
+                        $e->getMessage(),
+                        new CodeLocation($this->file_checker, $stmt, null, true)
+                    )
+                )) {
+                    // fall through
+                }
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        (string)$e->getMessage(),
+                        $e->getMessage(),
                         new CodeLocation($this->file_checker, $stmt, null, true)
                     )
                 )) {
