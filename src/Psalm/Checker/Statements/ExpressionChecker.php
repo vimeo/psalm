@@ -1961,7 +1961,8 @@ class ExpressionChecker
         }
 
         if (isset($stmt->expr->inferredType)) {
-            $stmt->inferredType = $stmt->expr->inferredType;
+            // this should be whatever the generator above returns, but *not* the return type
+            $stmt->inferredType = Type::getMixed();
         }
 
         return null;

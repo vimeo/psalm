@@ -243,6 +243,7 @@ class Php70Test extends TestCase
                       return 1;
                     }
                     function foo() : Generator {
+                      /** @var int */
                       $value = yield from other_generator();
                       var_export($value);
                     }',
