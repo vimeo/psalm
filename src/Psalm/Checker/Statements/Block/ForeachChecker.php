@@ -198,6 +198,12 @@ class ForeachChecker
                         } else {
                             $value_type = Type::getMixed();
                         }
+                    } elseif (ClassChecker::classImplements(
+                        $project_checker,
+                        $iterator_type->value,
+                        'Traversable'
+                    )) {
+                        // @todo try and get value type
                     } else {
                         if (IssueBuffer::accepts(
                             new RawObjectIteration(
