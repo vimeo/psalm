@@ -51,6 +51,11 @@ class EffectsAnalyser
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
+            } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
+                $return_types = array_merge(
+                    $return_types,
+                    self::getReturnTypes([$stmt->expr], $yield_types, $ignore_nullable_issues)
+                );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge(
                     $return_types,

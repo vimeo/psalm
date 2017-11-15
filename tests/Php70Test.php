@@ -236,6 +236,17 @@ class Php70Test extends TestCase
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
+            'generatorWithNestedYield' => [
+                '<?php
+                    function other_generator() : Generator {
+                      yield "traffic";
+                      return 1;
+                    }
+                    function foo() : Generator {
+                      $value = yield from other_generator();
+                      var_export($value);
+                    }',
+            ],
             'multipleUse' => [
                 '<?php
                     namespace Name\Space {
