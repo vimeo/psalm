@@ -27,6 +27,7 @@ use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
+use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\PossiblyNullReference;
@@ -167,24 +168,21 @@ class FetchChecker
             return null;
         }
 
+        $invalid_fetch_types = [];
+        $has_valid_fetch_type = false;
+
         foreach ($stmt_var_type->types as $lhs_type_part) {
             if ($lhs_type_part instanceof TNull) {
                 continue;
             }
 
             if (!$lhs_type_part instanceof TNamedObject && !$lhs_type_part instanceof TObject) {
-                if (IssueBuffer::accepts(
-                    new InvalidPropertyFetch(
-                        'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                $invalid_fetch_types[] = (string)$lhs_type_part;
 
                 continue;
             }
+
+            $has_valid_fetch_type = true;
 
             // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
             // but we don't want to throw an error
@@ -362,6 +360,32 @@ class FetchChecker
                 $stmt->inferredType = Type::combineUnionTypes($class_property_type, $stmt->inferredType);
             } else {
                 $stmt->inferredType = $class_property_type;
+            }
+        }
+
+        if ($invalid_fetch_types) {
+            $lhs_type_part = $invalid_fetch_types[0];
+
+            if ($has_valid_fetch_type) {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidPropertyFetch(
+                        'Cannot fetch property on possible non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new InvalidPropertyFetch(
+                        'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 

@@ -609,6 +609,12 @@ final class B extends A {}',
                     echo $a->foo;',
                 'error_message' => 'InvalidPropertyFetch',
             ],
+            'possiblyBadFetch' => [
+                '<?php
+                    $a = rand(0, 5) > 3 ? "hello" : new stdClass;
+                    echo $a->foo;',
+                'error_message' => 'PossiblyInvalidPropertyFetch',
+            ],
             'mixedPropertyFetch' => [
                 '<?php
                     class Foo {
