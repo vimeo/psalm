@@ -787,7 +787,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * Gets the method/function call map
      *
-     * @return array<string, array<string, string>>
+     * @return array<string, array<int, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MoreSpecificReturnType

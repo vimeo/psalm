@@ -366,7 +366,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $c = ["a" => "foo", "b"=> "bar"];
                     $d = "a";
-                    $e = $a[$d];',
+                    $e = $c[$d];',
                 'assertions' => [
                     '$b' => 'string',
                     '$e' => 'string',
