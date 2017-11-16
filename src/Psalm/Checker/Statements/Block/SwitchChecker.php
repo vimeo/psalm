@@ -172,6 +172,8 @@ class SwitchChecker
                     if ($possibly_redefined_vars === null) {
                         $possibly_redefined_vars = $case_redefined_vars;
                     } else {
+                        $possibly_redefined_vars = [];
+
                         foreach ($case_redefined_vars as $var_id => $type) {
                             if (!isset($possibly_redefined_vars[$var_id])) {
                                 $possibly_redefined_vars[$var_id] = $type;

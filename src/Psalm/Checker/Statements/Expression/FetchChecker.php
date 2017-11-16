@@ -1113,7 +1113,15 @@ class FetchChecker
                             }
                         }
                     } elseif ($type instanceof Type\Atomic\TArray && $value_index !== null) {
-                        $stmt->inferredType = $type->type_params[$value_index];
+                        if (!isset($stmt->inferredType)) {
+                            $stmt->inferredType = $type->type_params[$value_index];
+                        } else {
+                            $stmt->inferredType = Type::combineUnionTypes(
+                                $stmt->inferredType,
+                                $type->type_params[$value_index]
+                            );
+                        }
+
                         if ($stmt->inferredType->isEmpty()) {
                             if (IssueBuffer::accepts(
                                 new EmptyArrayAccess(
@@ -1133,10 +1141,26 @@ class FetchChecker
                         if ($string_key_value || $int_key_value !== null) {
                             if ($string_key_value && isset($type->properties[$string_key_value])) {
                                 $has_valid_offset = true;
-                                $stmt->inferredType = clone $type->properties[$string_key_value];
+
+                                if (!isset($stmt->inferredType)) {
+                                    $stmt->inferredType = clone $type->properties[$string_key_value];
+                                } else {
+                                    $stmt->inferredType = Type::combineUnionTypes(
+                                        $stmt->inferredType,
+                                        $type->properties[$string_key_value]
+                                    );
+                                }
                             } elseif ($int_key_value !== null && isset($type->properties[(string)$int_key_value])) {
                                 $has_valid_offset = true;
-                                $stmt->inferredType = clone $type->properties[(string)$int_key_value];
+
+                                if (!isset($stmt->inferredType)) {
+                                    $stmt->inferredType = clone $type->properties[(string)$int_key_value];
+                                } else {
+                                    $stmt->inferredType = Type::combineUnionTypes(
+                                        $stmt->inferredType,
+                                        $type->properties[(string)$int_key_value]
+                                    );
+                                }
                             } else {
                                 $invalid_offset_types[] = '"' . ($string_key_value ?: $int_key_value) . '"';
                             }
@@ -1145,8 +1169,16 @@ class FetchChecker
                             $used_key_type,
                             Type::getString()
                         )) {
+                            if (!isset($stmt->inferredType)) {
+                                $stmt->inferredType = $type->getGenericTypeParam();
+                            } else {
+                                $stmt->inferredType = Type::combineUnionTypes(
+                                    $stmt->inferredType,
+                                    $type->getGenericTypeParam()
+                                );
+                            }
+
                             $has_valid_offset = true;
-                            $stmt->inferredType = $type->getGenericTypeParam();
                         } else {
                             $invalid_offset_types[] = 'string';
                         }
@@ -1165,7 +1197,15 @@ class FetchChecker
                         $has_valid_offset = true;
                     }
 
-                    $stmt->inferredType = Type::getString();
+                    if (!isset($stmt->inferredType)) {
+                        $stmt->inferredType = Type::getString();
+                    } else {
+                        $stmt->inferredType = Type::combineUnionTypes(
+                            $stmt->inferredType,
+                            Type::getString()
+                        );
+                    }
+
                     continue;
                 }
 
@@ -1240,7 +1280,7 @@ class FetchChecker
                 if ($has_valid_offset) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArrayOffset(
-                            'Cannot access value on array variable ' . $var_id . ' using ' . $used_key_type
+                            'Cannot access value on variable ' . $var_id . ' using ' . $used_key_type
                                 . ' offset, expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
@@ -1251,7 +1291,7 @@ class FetchChecker
                 } else {
                     if (IssueBuffer::accepts(
                         new InvalidArrayOffset(
-                            'Cannot access value on array variable ' . $var_id . ' using ' . $used_key_type
+                            'Cannot access value on variable ' . $var_id . ' using ' . $used_key_type
                                 . ' offset, expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),

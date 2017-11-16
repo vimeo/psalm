@@ -119,6 +119,19 @@ class ArrayAccessTest extends TestCase
                     $y = $x["a"];',
                 'error_message' => 'PossiblyInvalidArrayOffset',
             ],
+            'possiblyInvalidArrayAccessWithNestedArray' => [
+                '<?php
+                    /**
+                     * @return array<int,array<string,float>>|string
+                     * @return string
+                     */
+                    function return_array() {
+                        return rand() % 5 > 3 ? [["key" => 3.5]] : "key:3.5";
+                    }
+                    $result = return_array();
+                    $v = $result[0]["key"];',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
             'possiblyInvalidArrayAccess' => [
                 '<?php
                     $a = rand(0, 10) > 5 ? 5 : ["hello"];
