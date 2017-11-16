@@ -697,7 +697,7 @@ class CallChecker
             $statements_checker
         );
 
-        $class_type = $context->hasVariable($var_id) ? $context->vars_in_scope[$var_id] : null;
+        $class_type = $var_id && $context->hasVariable($var_id) ? $context->vars_in_scope[$var_id] : null;
 
         if (isset($stmt->var->inferredType)) {
             /** @var Type\Union */

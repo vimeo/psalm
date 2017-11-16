@@ -292,6 +292,7 @@ class FunctionChecker extends FunctionLikeChecker
 
             $function_types = [];
 
+            /** @var string $arg_name - key type changed with above array_shift */
             foreach ($call_map_function_args as $arg_name => $arg_type) {
                 $by_reference = false;
                 $optional = false;
@@ -787,7 +788,7 @@ class FunctionChecker extends FunctionLikeChecker
     /**
      * Gets the method/function call map
      *
-     * @return array<string, array<string, string>>
+     * @return array<string, array<int|string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MoreSpecificReturnType

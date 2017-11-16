@@ -757,7 +757,7 @@ class FetchChecker
         $assignment_key_value = null
     ) {
         $var_type = null;
-        $key_type = null;
+        $used_key_type = null;
         $string_key_value = null;
         $int_key_value = null;
 
@@ -793,7 +793,7 @@ class FetchChecker
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType)) {
                 /** @var Type\Union */
-                $key_type = $stmt->dim->inferredType;
+                $used_key_type = $stmt->dim->inferredType;
 
                 if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
                     $string_key_value = $stmt->dim->value;
@@ -801,10 +801,10 @@ class FetchChecker
                     $int_key_value = $stmt->dim->value;
                 }
             } else {
-                $key_type = Type::getMixed();
+                $used_key_type = Type::getMixed();
             }
         } else {
-            $key_type = Type::getInt();
+            $used_key_type = Type::getInt();
         }
 
         $keyed_assignment_type = null;
@@ -897,13 +897,15 @@ class FetchChecker
             $stmt->var,
             $context,
             $array_assignment,
-            $key_type,
+            $used_key_type,
             $keyed_assignment_type,
             $string_key_value
         ) === false) {
             return false;
         }
 
+        // this is the key type that we infer from the array/string/object/whatever
+        // later we'll check it against $used_key_type
         $inferred_key_type = null;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
@@ -968,16 +970,8 @@ class FetchChecker
                         if ($value_index) {
                             // if we're assigning to an empty array with a key offset, refashion that array
                             if ($array_assignment && $type->type_params[0]->isEmpty()) {
-                                if ($key_type) {
-                                    $type->type_params[0] = $key_type;
-                                }
-                            } else {
-                                if ($key_type) {
-                                    $key_type = Type::combineUnionTypes($key_type, $type->type_params[0]);
-                                } else {
-                                    $key_type = $type->type_params[0];
-                                }
-
+                                $type->type_params[0] = $used_key_type;
+                            } elseif (!$type->type_params[0]->isEmpty()) {
                                 if ($inferred_key_type) {
                                     $inferred_key_type = Type::combineUnionTypes(
                                         $inferred_key_type,
@@ -1017,7 +1011,7 @@ class FetchChecker
                             if ($type instanceof Type\Atomic\ObjectLike ||
                                 (
                                     $type instanceof TArray &&
-                                    !$key_type->hasInt() &&
+                                    !$used_key_type->hasInt() &&
                                     $type->type_params[1]->isEmpty()
                                 )
                             ) {
@@ -1036,7 +1030,7 @@ class FetchChecker
 
                                     $assignment_type = new Type\Union([
                                         new Type\Atomic\TArray([
-                                            $key_type,
+                                            $used_key_type,
                                             $keyed_assignment_type,
                                         ]),
                                     ]);
@@ -1048,7 +1042,7 @@ class FetchChecker
 
                                 $assignment_type = new Type\Union([
                                     new Type\Atomic\TArray([
-                                        $key_type,
+                                        $used_key_type,
                                         $keyed_assignment_type,
                                     ]),
                                 ]);
@@ -1066,8 +1060,10 @@ class FetchChecker
                             }
                         }
 
-                        if ($type instanceof Type\Atomic\TArray &&
-                            $type->type_params[$value_index]->isEmpty()
+                        if ($type instanceof Type\Atomic\TArray
+                            && $value_index
+                            && $var_id
+                            && $type->type_params[$value_index]->isEmpty()
                         ) {
                             $empty_type = Type::getEmptyArray();
 
@@ -1092,7 +1088,7 @@ class FetchChecker
                                             $new_empty = clone $empty_type;
                                             /** @var Type\Atomic\TArray */
                                             $new_atomic_empty = $new_empty->types['array'];
-                                            $new_atomic_empty->type_params[0] = $key_type;
+                                            $new_atomic_empty->type_params[0] = $used_key_type;
 
                                             $atomic_array->type_params[1] = $new_empty;
                                             continue;
@@ -1100,7 +1096,7 @@ class FetchChecker
 
                                         $array_type = $atomic_array->type_params[1];
                                     } else {
-                                        $atomic_array->type_params[0] = $key_type;
+                                        $atomic_array->type_params[0] = $used_key_type;
 
                                         if ($nesting === 0 && $keyed_assignment_type) {
                                             $atomic_array->type_params[1] = $keyed_assignment_type;
@@ -1146,9 +1142,9 @@ class FetchChecker
 
                         if ($string_key_value && isset($type->properties[$string_key_value])) {
                             $stmt->inferredType = clone $type->properties[$string_key_value];
-                        } elseif ($int_key_value !== null && isset($type->properties[$int_key_value])) {
-                            $stmt->inferredType = clone $type->properties[$int_key_value];
-                        } elseif ($key_type->hasInt()) {
+                        } elseif ($int_key_value !== null && isset($type->properties[(string)$int_key_value])) {
+                            $stmt->inferredType = clone $type->properties[(string)$int_key_value];
+                        } elseif ($used_key_type->hasInt()) {
                             if (IssueBuffer::accepts(
                                 new InvalidArrayAccess(
                                     'Cannot access value on array variable ' . $var_id . ' using int offset - ' .
@@ -1159,7 +1155,7 @@ class FetchChecker
                             )) {
                                 return false;
                             }
-                        } elseif ($key_type->hasString()) {
+                        } elseif ($used_key_type->hasString()) {
                             $stmt->inferredType = $type->getGenericTypeParam();
                         }
                     }
@@ -1167,12 +1163,6 @@ class FetchChecker
                 }
 
                 if ($type instanceof TString) {
-                    if ($key_type) {
-                        $key_type = Type::combineUnionTypes($key_type, Type::getInt());
-                    } else {
-                        $key_type = Type::getInt();
-                    }
-
                     if (!$inferred_key_type) {
                         $inferred_key_type = Type::getInt();
                     } else {
@@ -1245,20 +1235,12 @@ class FetchChecker
             $stmt->inferredType = Type::getMixed();
         }
 
-        if (!$key_type) {
-            $key_type = new Type\Union([
-                new TInt,
-                new TString,
-            ]);
-        }
-
         if ($stmt->dim) {
-            if (isset($stmt->dim->inferredType) && $key_type && !$key_type->isEmpty()) {
-                foreach ($stmt->dim->inferredType->types as $at) {
-                    if (($at instanceof TMixed || $at instanceof TEmpty) &&
-                        $inferred_key_type &&
-                        !$inferred_key_type->isMixed() &&
-                        !$inferred_key_type->isEmpty()
+            if (isset($stmt->dim->inferredType) && $inferred_key_type) {
+                foreach ($used_key_type->types as $at) {
+                    if (($at instanceof TMixed || $at instanceof TEmpty)
+                        && $inferred_key_type
+                        && !$inferred_key_type->isMixed()
                     ) {
                         if (IssueBuffer::accepts(
                             new MixedArrayOffset(
@@ -1270,11 +1252,11 @@ class FetchChecker
                         )) {
                             return false;
                         }
-                    } elseif (!$at->isIn($project_checker, $key_type)) {
+                    } elseif (!$at->isIn($project_checker, $inferred_key_type)) {
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
                                 'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
-                                    'expecting ' . $key_type,
+                                    'expecting ' . $inferred_key_type,
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()

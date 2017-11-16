@@ -947,9 +947,9 @@ class ProjectChecker
 
             // Wait for all tasks to complete and collect the results.
             /**
-             * @var array<array<int, array{severity: string, line_number: string, type: string, message: string,
-             *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
-             *  snippet_to: int, column: int}>>
+             * @var array<array{issues: array<int, array{severity: string, line_number: string, type: string,
+             *  message: string, file_name: string, file_path: string, snippet: string, from: int, to: int,
+             *  snippet_from: int, snippet_to: int, column: int}>, file_references: array<string, array<string,bool>>}>
              */
             $forked_pool_data = $pool->wait();
 

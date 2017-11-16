@@ -73,9 +73,10 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',
+                'assertions' => [],
                 'error_levels' => ['PossiblyNullArrayAccess'],
             ],
-            'ignorePossiblyNullArrayAccess' => [
+            'ignoreEmptyArrayAccess' => [
                 '<?php
                     $arr = [];
                     $x = $arr[0];

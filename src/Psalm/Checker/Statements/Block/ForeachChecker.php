@@ -53,7 +53,7 @@ class ForeachChecker
         if (isset($stmt->expr->inferredType)) {
             /** @var Type\Union */
             $iterator_type = $stmt->expr->inferredType;
-        } elseif ($foreach_context->hasVariable($var_id)) {
+        } elseif ($var_id && $foreach_context->hasVariable($var_id)) {
             $iterator_type = $foreach_context->vars_in_scope[$var_id];
         } else {
             $iterator_type = null;
