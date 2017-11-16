@@ -107,6 +107,18 @@ class ArrayAccessTest extends TestCase
                     $y = $x["b"];',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'possiblyInvalidArrayOffsetWithInt' => [
+                '<?php
+                    $x = rand(0, 5) > 2 ? ["a" => 5] : "hello";
+                    $y = $x[0];',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'possiblyInvalidArrayOffsetWithString' => [
+                '<?php
+                    $x = rand(0, 5) > 2 ? ["a" => 5] : "hello";
+                    $y = $x["a"];',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
             'possiblyInvalidArrayAccess' => [
                 '<?php
                     $a = rand(0, 10) > 5 ? 5 : ["hello"];

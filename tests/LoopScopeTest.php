@@ -338,7 +338,7 @@ class LoopScopeTest extends TestCase
             'loopWithArrayKey' => [
                 '<?php
                     /**
-                     * @param array[][] $args
+                     * @param array<array<int, array<string, string>>> $args
                      * @return array[]
                      */
                     function get_merged_dict(array $args) {

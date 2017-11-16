@@ -9,6 +9,7 @@ use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
+use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -28,6 +29,7 @@ use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
+use Psalm\Issue\PossiblyInvalidArrayOffset;
 use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyNullPropertyFetch;
@@ -905,10 +907,6 @@ class FetchChecker
             return false;
         }
 
-        // this is the key type that we infer from the array/string/object/whatever
-        // later we'll check it against $used_key_type
-        $inferred_key_type = null;
-
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if (isset($stmt->var->inferredType)) {
@@ -937,6 +935,9 @@ class FetchChecker
 
             $has_array_access = false;
             $non_array_types = [];
+
+            $has_valid_offset = false;
+            $invalid_offset_types = [];
 
             foreach ($var_type->types as &$type) {
                 if ($type instanceof TNull) {
@@ -973,13 +974,14 @@ class FetchChecker
                             if ($array_assignment && $type->type_params[0]->isEmpty()) {
                                 $type->type_params[0] = $used_key_type;
                             } elseif (!$type->type_params[0]->isEmpty()) {
-                                if ($inferred_key_type) {
-                                    $inferred_key_type = Type::combineUnionTypes(
-                                        $inferred_key_type,
-                                        $type->type_params[0]
-                                    );
+                                if (!TypeChecker::isContainedBy(
+                                    $project_checker,
+                                    $used_key_type,
+                                    $type->type_params[0]
+                                )) {
+                                    $invalid_offset_types[] = (string)$type->type_params[0];
                                 } else {
-                                    $inferred_key_type = $type->type_params[0];
+                                    $has_valid_offset = true;
                                 }
                             }
                         }
@@ -1128,46 +1130,39 @@ class FetchChecker
                             }
                         }
                     } elseif ($type instanceof Type\Atomic\ObjectLike) {
-                        $object_like_keys = array_keys($type->properties);
-                        if ($object_like_keys) {
-                            if (count($object_like_keys) === 1) {
-                                $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
+                        if ($string_key_value || $int_key_value !== null) {
+                            if ($string_key_value && isset($type->properties[$string_key_value])) {
+                                $has_valid_offset = true;
+                                $stmt->inferredType = clone $type->properties[$string_key_value];
+                            } elseif ($int_key_value !== null && isset($type->properties[(string)$int_key_value])) {
+                                $has_valid_offset = true;
+                                $stmt->inferredType = clone $type->properties[(string)$int_key_value];
                             } else {
-                                $last_key = array_pop($object_like_keys);
-                                $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) .
-                                    '\' or \'' . $last_key . '\'';
+                                $invalid_offset_types[] = '"' . ($string_key_value ?: $int_key_value) . '"';
                             }
-                        } else {
-                            $expected_keys_string = 'string';
-                        }
-
-                        if ($string_key_value && isset($type->properties[$string_key_value])) {
-                            $stmt->inferredType = clone $type->properties[$string_key_value];
-                        } elseif ($int_key_value !== null && isset($type->properties[(string)$int_key_value])) {
-                            $stmt->inferredType = clone $type->properties[(string)$int_key_value];
-                        } elseif ($used_key_type->hasInt()) {
-                            if (IssueBuffer::accepts(
-                                new InvalidArrayOffset(
-                                    'Cannot access value on array variable ' . $var_id . ' using int offset - ' .
-                                        'expecting ' . $expected_keys_string,
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-                        } elseif ($used_key_type->hasString()) {
+                        } elseif (TypeChecker::isContainedBy(
+                            $project_checker,
+                            $used_key_type,
+                            Type::getString()
+                        )) {
+                            $has_valid_offset = true;
                             $stmt->inferredType = $type->getGenericTypeParam();
+                        } else {
+                            $invalid_offset_types[] = 'string';
                         }
                     }
                     continue;
                 }
 
                 if ($type instanceof TString) {
-                    if (!$inferred_key_type) {
-                        $inferred_key_type = Type::getInt();
+                    if (!TypeChecker::isContainedBy(
+                        $project_checker,
+                        $used_key_type,
+                        Type::getInt()
+                    )) {
+                        $invalid_offset_types[] = 'int';
                     } else {
-                        $inferred_key_type = Type::combineUnionTypes($inferred_key_type, Type::getInt());
+                        $has_valid_offset = true;
                     }
 
                     $stmt->inferredType = Type::getString();
@@ -1226,6 +1221,46 @@ class FetchChecker
                     $stmt->inferredType = Type::getMixed();
                 }
             }
+
+            if ($used_key_type->isMixed()) {
+                if (IssueBuffer::accepts(
+                    new MixedArrayOffset(
+                        'Cannot access value on variable ' . $var_id . ' using mixed offset',
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+
+            if ($invalid_offset_types) {
+                $invalid_offset_type = $invalid_offset_types[0];
+
+                if ($has_valid_offset) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidArrayOffset(
+                            'Cannot access value on array variable ' . $var_id . ' using ' . $used_key_type
+                                . ' offset, expecting ' . $invalid_offset_type,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayOffset(
+                            'Cannot access value on array variable ' . $var_id . ' using ' . $used_key_type
+                                . ' offset, expecting ' . $invalid_offset_type,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+            }
         }
 
         if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id)) {
@@ -1234,39 +1269,6 @@ class FetchChecker
 
         if (!isset($stmt->inferredType)) {
             $stmt->inferredType = Type::getMixed();
-        }
-
-        if ($stmt->dim) {
-            if (isset($stmt->dim->inferredType) && $inferred_key_type) {
-                foreach ($used_key_type->types as $at) {
-                    if (($at instanceof TMixed || $at instanceof TEmpty)
-                        && $inferred_key_type
-                        && !$inferred_key_type->isMixed()
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new MixedArrayOffset(
-                                'Cannot access value on variable ' . $var_id . ' using mixed offset - expecting ' .
-                                    $inferred_key_type,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    } elseif (!$at->isIn($project_checker, $inferred_key_type)) {
-                        if (IssueBuffer::accepts(
-                            new InvalidArrayOffset(
-                                'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
-                                    'expecting ' . $inferred_key_type,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-                }
-            }
         }
 
         return null;
