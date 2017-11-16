@@ -101,11 +101,11 @@ class ArrayAccessTest extends TestCase
                     echo $a[0];',
                 'error_message' => 'InvalidArrayAccess',
             ],
-            'invalidArrayAccess2' => [
+            'invalidArrayOffset' => [
                 '<?php
                     $x = ["a"];
                     $y = $x["b"];',
-                'error_message' => 'InvalidArrayAccess',
+                'error_message' => 'InvalidArrayOffset',
             ],
             'possiblyInvalidArrayAccess' => [
                 '<?php

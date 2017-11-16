@@ -16,6 +16,7 @@ use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedArrayAccess;
@@ -1146,7 +1147,7 @@ class FetchChecker
                             $stmt->inferredType = clone $type->properties[(string)$int_key_value];
                         } elseif ($used_key_type->hasInt()) {
                             if (IssueBuffer::accepts(
-                                new InvalidArrayAccess(
+                                new InvalidArrayOffset(
                                     'Cannot access value on array variable ' . $var_id . ' using int offset - ' .
                                         'expecting ' . $expected_keys_string,
                                     new CodeLocation($statements_checker->getSource(), $stmt)
@@ -1254,7 +1255,7 @@ class FetchChecker
                         }
                     } elseif (!$at->isIn($project_checker, $inferred_key_type)) {
                         if (IssueBuffer::accepts(
-                            new InvalidArrayAccess(
+                            new InvalidArrayOffset(
                                 'Cannot access value on variable ' . $var_id . ' using ' . $at . ' offset - ' .
                                     'expecting ' . $inferred_key_type,
                                 new CodeLocation($statements_checker->getSource(), $stmt)
