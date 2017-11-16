@@ -486,7 +486,7 @@ class TypeAlgebraTest extends TestCase
                             takesString($d);
                         }
                     }',
-                'error_message' => 'NullArgument',
+                'error_message' => 'PossiblyNullArgument',
             ],
             'threeVarLogicWithException' => [
                 '<?php
@@ -509,7 +509,7 @@ class TypeAlgebraTest extends TestCase
                             takesString($d);
                         }
                     }',
-                'error_message' => 'NullArgument',
+                'error_message' => 'PossiblyNullArgument',
             ],
             'invertedTwoVarLogicNotNestedWithVarChange' => [
                 '<?php

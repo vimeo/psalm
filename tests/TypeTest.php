@@ -1194,7 +1194,7 @@ class TypeTest extends TestCase
                     }
 
                     $one->barBar();',
-                'error_message' => 'UndefinedMethod',
+                'error_message' => 'PossiblyUndefinedMethod',
             ],
             'unnecessaryInstanceof' => [
                 '<?php

@@ -101,6 +101,12 @@ class ArrayAccessTest extends TestCase
                     echo $a[0];',
                 'error_message' => 'InvalidArrayAccess',
             ],
+            'invalidArrayAccess2' => [
+                '<?php
+                    $x = ["a"];
+                    $y = $x["b"];',
+                'error_message' => 'InvalidArrayAccess',
+            ],
             'possiblyInvalidArrayAccess' => [
                 '<?php
                     $a = rand(0, 10) > 5 ? 5 : ["hello"];

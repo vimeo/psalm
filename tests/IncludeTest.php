@@ -47,7 +47,7 @@ class IncludeTest extends TestCase
         $this->project_checker->scanFiles();
 
         $this->expectException('\Psalm\Exception\CodeException');
-        $this->expectExceptionMessage($error_message);
+        $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         foreach ($files_to_check as $filename) {
             $file_checker = new FileChecker($filename, $this->project_checker);

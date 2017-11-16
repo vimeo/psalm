@@ -37,7 +37,7 @@ trait FileCheckerInvalidCodeParseTestTrait
         }
 
         $this->expectException('\Psalm\Exception\CodeException');
-        $this->expectExceptionMessage($error_message);
+        $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '/');
 
         $this->addFile(
             self::$src_dir_path . 'somefile.php',
