@@ -1278,9 +1278,7 @@ class FetchChecker
                 )) {
                     return false;
                 }
-            }
-
-            if ($invalid_offset_types) {
+            } elseif ($invalid_offset_types) {
                 $invalid_offset_type = $invalid_offset_types[0];
 
                 if ($has_valid_offset) {
