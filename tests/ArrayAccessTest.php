@@ -101,7 +101,7 @@ class ArrayAccessTest extends TestCase
                         takesBool($b[2]);
                     }',
             ],
-            'updateObjectLike' => [
+            'updateStringIntKey' => [
                 '<?php
                     $string = "c";
                     $int = 5;
@@ -136,6 +136,94 @@ class ArrayAccessTest extends TestCase
                     '$c' => 'array<int|string, int>',
                     '$d' => 'array<int|string, int>',
                     '$e' => 'array<int|string, int>',
+                ],
+            ],
+            'updateStringIntKeyWithIntRootAndNumberOffset' => [
+                '<?php
+                    $string = "c";
+                    $int = 5;
+
+                    $a = [];
+
+                    $a[0]["a"] = 5;
+                    $a[0][0] = 3;',
+                'assertions' => [
+                    '$a' => 'array<int, array<string|int, int>>',
+                ],
+            ],
+            'updateStringIntKeyWithIntRoot' => [
+                '<?php
+                    $string = "c";
+                    $int = 5;
+
+                    $b = [];
+
+                    $b[0][$string] = 5;
+                    $b[0][0] = 3;
+
+                    $c = [];
+
+                    $c[0][0] = 3;
+                    $c[0][$string] = 5;
+
+                    $d = [];
+
+                    $d[0][$int] = 3;
+                    $d[0]["a"] = 5;
+
+                    $e = [];
+
+                    $e[0][$int] = 3;
+                    $e[0][$string] = 5;',
+                'assertions' => [
+                    '$b' => 'array<int, array<string|int, int>>',
+                    '$c' => 'array<int, array<int|string, int>>',
+                    '$d' => 'array<int, array<int|string, int>>',
+                    '$e' => 'array<int, array<int|string, int>>',
+                ],
+            ],
+            'updateStringIntKeyWithObjectLikeRootAndNumberOffset' => [
+                '<?php
+                    $string = "c";
+                    $int = 5;
+
+                    $a = [];
+
+                    $a["root"]["a"] = 5;
+                    $a["root"][0] = 3;',
+                'assertions' => [
+                    '$a' => 'array{root:array<string|int, int>}',
+                ],
+            ],
+            'updateStringIntKeyWithObjectLikeRoot' => [
+                '<?php
+                    $string = "c";
+                    $int = 5;
+
+                    $b = [];
+
+                    $b["root"][$string] = 5;
+                    $b["root"][0] = 3;
+
+                    $c = [];
+
+                    $c["root"][0] = 3;
+                    $c["root"][$string] = 5;
+
+                    $d = [];
+
+                    $d["root"][$int] = 3;
+                    $d["root"]["a"] = 5;
+
+                    $e = [];
+
+                    $e["root"][$int] = 3;
+                    $e["root"][$string] = 5;',
+                'assertions' => [
+                    '$b' => 'array{root:array<string|int, int>}',
+                    '$c' => 'array{root:array<int|string, int>}',
+                    '$d' => 'array{root:array<int|string, int>}',
+                    '$e' => 'array{root:array<int|string, int>}',
                 ],
             ],
         ];

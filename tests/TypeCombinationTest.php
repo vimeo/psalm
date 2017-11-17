@@ -154,6 +154,34 @@ class TypeCombinationTest extends TestCase
                     'array{a:string,b:string}',
                 ],
             ],
+            'combineObjectTypeWithIntKeyedArray' => [
+                'array<int|string, string|int>',
+                [
+                    'array{a:int}',
+                    'array<int, string>',
+                ],
+            ],
+            'combineNestedObjectTypeWithObjectLikeIntKeyedArray' => [
+                'array{a:array<int|string, string|int>}',
+                [
+                    'array{a:array{a:int}}',
+                    'array{a:array<int, string>}',
+                ],
+            ],
+            'combineIntKeyedObjectTypeWithNestedIntKeyedArray' => [
+                'array<int, array<int|string, string|int>>',
+                [
+                    'array<int, array{a:int}>',
+                    'array<int, array<int, string>>',
+                ],
+            ],
+            'combineNestedObjectTypeWithNestedIntKeyedArray' => [
+                'array<int|string, array<int|string, string|int>>',
+                [
+                    'array{a:array{a:int}}',
+                    'array<int, array<int, string>>',
+                ],
+            ],
         ];
     }
 
