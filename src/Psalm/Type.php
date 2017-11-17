@@ -186,12 +186,21 @@ abstract class Type
 
             $type = array_shift($parse_tree->children);
 
-            foreach ($parse_tree->children as $property_branch) {
-                $property_type = self::getTypeFromTree($property_branch->children[1]);
+            foreach ($parse_tree->children as $i => $property_branch) {
+                if (!count($property_branch->children)) {
+                    $property_type = self::getTypeFromTree($property_branch);
+                    $property_key = (string)$i;
+                } elseif (count($property_branch->children) === 2) {
+                    $property_type = self::getTypeFromTree($property_branch->children[1]);
+                    $property_key = (string)($property_branch->children[0]->value);
+                } else {
+                    throw new \InvalidArgumentException('Unexpected number of property parts');
+                }
+
                 if (!$property_type instanceof Union) {
                     $property_type = new Union([$property_type]);
                 }
-                $properties[(string)($property_branch->children[0]->value)] = $property_type;
+                $properties[$property_key] = $property_type;
             }
 
             if ($type->value !== 'array') {
