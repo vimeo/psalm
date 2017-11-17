@@ -1214,27 +1214,36 @@ class AssignmentChecker
                 }
 
                 if (!$nesting) {
-                    /** @var Type\Atomic\TArray|null */
+                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike|null */
                     $array_type = $var_id
-                                    && isset($context->vars_in_scope[$var_id]->types['array'])
-                                    && $context->vars_in_scope[$var_id]->types['array'] instanceof Type\Atomic\TArray
-                                    ? $context->vars_in_scope[$var_id]->types['array']
-                                    : null;
+                        && isset($context->vars_in_scope[$var_id]->types['array'])
+                        && ($context->vars_in_scope[$var_id]->types['array'] instanceof Type\Atomic\TArray
+                            || $context->vars_in_scope[$var_id]->types['array'] instanceof Type\Atomic\ObjectLike)
+                        ? $context->vars_in_scope[$var_id]->types['array']
+                        : null;
 
                     if ($assignment_key_type->hasString()
-                        && $assignment_key_value
+                        && $assignment_key_value !== null
                         && (!$var_id
                             || !$context->hasVariable($var_id)
-                            || $context->vars_in_scope[$var_id]->hasObjectLike()
-                            || ($array_type && $array_type->type_params[0]->isEmpty()))
+                            || $array_type instanceof Type\Atomic\ObjectLike
+                            || ($array_type instanceof Type\Atomic\TArray
+                                && $array_type->type_params[0]->isEmpty()))
                     ) {
-                        $assignment_value_type = new Type\Union([
+                        $new_array_type = new Type\Union([
                             new Type\Atomic\ObjectLike([
                                 $assignment_key_value => $assignment_value_type,
                             ]),
                         ]);
                     } else {
-                        $assignment_value_type = new Type\Union([
+                        if ($array_type instanceof Type\Atomic\ObjectLike) {
+                            $assignment_key_type = Type::combineUnionTypes(
+                                Type::getString(),
+                                $assignment_key_type
+                            );
+                        }
+
+                        $new_array_type = new Type\Union([
                             new Type\Atomic\TArray([
                                 $assignment_key_type,
                                 $assignment_value_type,
@@ -1242,23 +1251,25 @@ class AssignmentChecker
                         ]);
                     }
 
+                    //var_dump($new_array_type);
+
                     if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->var->name)) {
                         self::analyzePropertyAssignment(
                             $statements_checker,
                             $stmt->var,
                             $stmt->var->name,
                             null,
-                            $assignment_value_type,
+                            $new_array_type,
                             $context
                         );
                     } elseif ($var_id) {
                         if ($context->hasVariable($var_id)) {
                             $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $context->vars_in_scope[$var_id],
-                                $assignment_value_type
+                                $new_array_type
                             );
                         } else {
-                            $context->vars_in_scope[$var_id] = $assignment_value_type;
+                            $context->vars_in_scope[$var_id] = $new_array_type;
                         }
                     }
                 }

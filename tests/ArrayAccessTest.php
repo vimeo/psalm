@@ -101,6 +101,43 @@ class ArrayAccessTest extends TestCase
                         takesBool($b[2]);
                     }',
             ],
+            'updateObjectLike' => [
+                '<?php
+                    $string = "c";
+                    $int = 5;
+
+                    $a = [];
+
+                    $a["a"] = 5;
+                    $a[0] = 3;
+
+                    $b = [];
+
+                    $b[$string] = 5;
+                    $b[0] = 3;
+
+                    $c = [];
+
+                    $c[0] = 3;
+                    $c[$string] = 5;
+
+                    $d = [];
+
+                    $d[$int] = 3;
+                    $d["a"] = 5;
+
+                    $e = [];
+
+                    $e[$int] = 3;
+                    $e[$string] = 5;',
+                'assertions' => [
+                    '$a' => 'array<string|int, int>',
+                    '$b' => 'array<string|int, int>',
+                    '$c' => 'array<int|string, int>',
+                    '$d' => 'array<int|string, int>',
+                    '$e' => 'array<int|string, int>',
+                ],
+            ],
         ];
     }
 
