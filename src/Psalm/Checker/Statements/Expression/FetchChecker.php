@@ -242,16 +242,16 @@ class FetchChecker
 
                     if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name])) {
                         $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name];
+                        continue;
                     } else {
                         $stmt->inferredType = Type::getMixed();
-                    }
-
-                    /*
-                     * If we have an explicit list of all allowed magic properties on the class, and we're
-                     * not in that list, fall through
-                     */
-                    if (!$class_storage->sealed_properties) {
-                        continue;
+                        /*
+                         * If we have an explicit list of all allowed magic properties on the class, and we're
+                         * not in that list, fall through
+                         */
+                        if (!$class_storage->sealed_properties) {
+                            continue;
+                        }
                     }
                 }
             }

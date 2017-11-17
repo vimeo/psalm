@@ -150,6 +150,27 @@ class AnnotationTest extends TestCase
                     $a->foo = "hello";
                     $a->bar = "hello"; // not a property',
             ],
+            'propertySealedDocblockDefinedPropertyFetch' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                         public function __get(string $name) : ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         /** @param mixed $value */
+                         public function __set(string $name, $value) : void {
+                         }
+                    }
+
+                    $a = new A();
+                    echo $a->foo;',
+            ],
             'ignoreNullableReturn' => [
                 '<?php
                     class A {
@@ -443,6 +464,28 @@ class AnnotationTest extends TestCase
                     $a = new A();
                     $a->bar = 5;',
                 'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'propertySealedDocblockDefinedPropertyAssignment' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                         public function __get(string $name) : ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         /** @param mixed $value */
+                         public function __set(string $name, $value) : void {
+                         }
+                    }
+
+                    $a = new A();
+                    $a->foo = 5;',
+                'error_message' => 'InvalidPropertyAssignment',
             ],
             'propertySealedDocblockUndefinedPropertyFetch' => [
                 '<?php
