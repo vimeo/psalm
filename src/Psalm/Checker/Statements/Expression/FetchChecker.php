@@ -1168,7 +1168,17 @@ class FetchChecker
                                     );
                                 }
                             } else {
-                                $invalid_offset_types[] = '"' . ($string_key_value ?: $int_key_value) . '"';
+                                $object_like_keys = array_keys($type->properties);
+
+                                if (count($object_like_keys) === 1) {
+                                    $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
+                                } else {
+                                    $last_key = array_pop($object_like_keys);
+                                    $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) .
+                                        '\' or \'' . $last_key . '\'';
+                                }
+
+                                $invalid_offset_types[] = $expected_keys_string;
                             }
                         } elseif (TypeChecker::isContainedBy(
                             $project_checker,
