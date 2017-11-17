@@ -48,6 +48,11 @@ class ClassLikeStorage
     public $deprecated = false;
 
     /**
+     * @var bool
+     */
+    public $sealed_properties = false;
+
+    /**
      * @var array<int, string>
      */
     public $suppressed_issues = [];

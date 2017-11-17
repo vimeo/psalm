@@ -21,6 +21,11 @@ class ClassLikeDocblockComment
     public $properties = [];
 
     /**
+     * @var bool
+     */
+    public $sealed_properties = false;
+
+    /**
      * @var array<int, string>
      */
     public $suppressed_issues = [];

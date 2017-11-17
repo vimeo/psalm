@@ -147,7 +147,8 @@ class AnnotationTest extends TestCase
                     }
 
                     $a = new A();
-                    $a->foo = "hello";',
+                    $a->foo = "hello";
+                    $a->bar = "hello"; // not a property',
             ],
             'ignoreNullableReturn' => [
                 '<?php
@@ -420,6 +421,50 @@ class AnnotationTest extends TestCase
                     $a = new A();
                     $a->foo = 5;',
                 'error_message' => 'InvalidPropertyAssignment',
+            ],
+            'propertySealedDocblockUndefinedPropertyAssignment' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                         public function __get(string $name) : ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         /** @param mixed $value */
+                         public function __set(string $name, $value) : void {
+                         }
+                    }
+
+                    $a = new A();
+                    $a->bar = 5;',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'propertySealedDocblockUndefinedPropertyFetch' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                         public function __get(string $name) : ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         /** @param mixed $value */
+                         public function __set(string $name, $value) : void {
+                         }
+                    }
+
+                    $a = new A();
+                    echo $a->bar;',
+                'error_message' => 'UndefinedPropertyFetch',
             ],
             'noStringParamType' => [
                 '<?php

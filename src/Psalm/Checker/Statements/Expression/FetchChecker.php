@@ -246,7 +246,13 @@ class FetchChecker
                         $stmt->inferredType = Type::getMixed();
                     }
 
-                    continue;
+                    /*
+                     * If we have an explicit list of all allowed magic properties on the class, and we're
+                     * not in that list, fall through
+                     */
+                    if (!$class_storage->sealed_properties) {
+                        continue;
+                    }
                 }
             }
 

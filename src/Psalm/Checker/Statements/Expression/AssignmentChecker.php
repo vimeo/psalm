@@ -661,9 +661,9 @@ class AssignmentChecker
                 if ($lhs_var_id !== '$this' &&
                     MethodChecker::methodExists($project_checker, $lhs_type_part . '::__set')
                 ) {
-                    if ($var_id) {
-                        $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
+                    $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
+                    if ($var_id) {
                         if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
                             $class_property_types[] =
                                 clone $class_storage->pseudo_property_set_types['$' . $prop_name];
@@ -674,7 +674,14 @@ class AssignmentChecker
 
                         $context->vars_in_scope[$var_id] = Type::getMixed();
                     }
-                    continue;
+
+                    /*
+                     * If we have an explicit list of all allowed magic properties on the class, and we're
+                     * not in that list, fall through
+                     */
+                    if (!$var_id || !$class_storage->sealed_properties) {
+                        continue;
+                    }
                 }
 
                 $has_regular_setter = true;

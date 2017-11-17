@@ -296,6 +296,10 @@ class CommentChecker
             $info->deprecated = true;
         }
 
+        if (isset($comments['specials']['psalm-seal-properties'])) {
+            $info->sealed_properties = true;
+        }
+
         if (isset($comments['specials']['psalm-suppress'])) {
             /** @var string $suppress_entry */
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
