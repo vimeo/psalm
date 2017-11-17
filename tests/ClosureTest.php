@@ -179,6 +179,21 @@ class ClosureTest extends TestCase
                         }
                     }',
             ],
+            'closureSelf' => [
+                '<?php
+                    class A
+                    {
+                        /**
+                         * @param self[] $in
+                         */
+                        public function __construct(array $in = [])
+                        {
+                            array_map(function(self $i): self { return $i; }, $in);
+                        }
+                    }
+
+                    new A([new A, new A]);',
+            ],
         ];
     }
 

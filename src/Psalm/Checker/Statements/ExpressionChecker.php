@@ -1783,12 +1783,16 @@ class ExpressionChecker
                 } else {
                     list(, $method_name) = explode('::', $method_id);
 
-                    $appearing_method_id = MethodChecker::getAppearingMethodId(
-                        $project_checker,
-                        $calling_class . '::' . $method_name
-                    );
+                    if ($method_name === '-closure') {
+                        $return_type->value = $calling_class;
+                    } else {
+                        $appearing_method_id = MethodChecker::getAppearingMethodId(
+                            $project_checker,
+                            $calling_class . '::' . $method_name
+                        );
 
-                    $return_type->value = explode('::', (string)$appearing_method_id)[0];
+                        $return_type->value = explode('::', (string)$appearing_method_id)[0];
+                    }
                 }
             }
         }
