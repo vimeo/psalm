@@ -958,11 +958,9 @@ class FetchChecker
                                 $replacement_type
                             );
 
-                            $type = new Type\Union([
-                                new TArray([
-                                    Type::getString(),
-                                    $generic_params,
-                                ]),
+                            $type = new TArray([
+                                Type::getString(),
+                                $generic_params,
                             ]);
 
                             if (!$array_access_type) {
