@@ -11,7 +11,7 @@ class TypeCombinationTest extends TestCase
      * @dataProvider providerTestValidTypeCombination
      *
      * @param string $expected
-     * @param array<string> $types
+     * @param array<int, string> $types
      *
      * @return void
      */

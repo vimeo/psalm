@@ -693,6 +693,7 @@ class Config
      * @return void
      * @psalm-suppress InvalidPropertyAssignment
      * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedArrayOffset
      */
     public function collectPredefinedFunctions()
     {

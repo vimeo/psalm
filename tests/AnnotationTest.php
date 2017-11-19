@@ -100,6 +100,8 @@ class AnnotationTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'error_level' => ['MixedArrayOffset'],
             ],
             'goodDocblock' => [
                 '<?php
