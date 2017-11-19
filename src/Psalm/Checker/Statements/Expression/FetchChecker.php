@@ -946,6 +946,8 @@ class FetchChecker
                             }
 
                             $invalid_offset_types[] = $expected_keys_string;
+
+                            $array_access_type = Type::getMixed();
                         }
                     } elseif (TypeChecker::isContainedBy(
                         $project_checker,
