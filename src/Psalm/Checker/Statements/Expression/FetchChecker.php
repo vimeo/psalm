@@ -21,19 +21,20 @@ use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedArrayAccess;
+use Psalm\Issue\MixedArrayAssignment;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\MixedPropertyFetch;
+use Psalm\Issue\MixedStringOffsetAssignment;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullArrayAccess;
 use Psalm\Issue\NullPropertyFetch;
-use Psalm\Issue\NullReference;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
+use Psalm\Issue\PossiblyInvalidArrayAssignment;
 use Psalm\Issue\PossiblyInvalidArrayOffset;
 use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyNullPropertyFetch;
-use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedPropertyFetch;
@@ -41,13 +42,9 @@ use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TEmpty;
-use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -747,24 +744,442 @@ class FetchChecker
     }
 
     /**
+     * @param  Type\Union $array_type
+     * @param  Type\Union $offset_type
+     * @param  ?string    $array_var_id
+     * @param  bool       $in_assignment
+     *
+     * @return Type\Union
+     */
+    public static function getArrayAccessTypeGivenOffset(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Type\Union $array_type,
+        Type\Union $offset_type,
+        $in_assignment,
+        $array_var_id,
+        Type\Union $replacement_type = null
+    ) {
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        $has_array_access = false;
+        $non_array_types = [];
+
+        $has_valid_offset = false;
+        $invalid_offset_types = [];
+
+        $string_key_value = null;
+        $int_key_value = null;
+
+        if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+            $string_key_value = $stmt->dim->value;
+        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+            $int_key_value = (string)$stmt->dim->value;
+        }
+
+        $array_access_type = null;
+
+        foreach ($array_type->types as &$type) {
+            if ($type instanceof TNull) {
+                if ($in_assignment) {
+                    if ($replacement_type) {
+                        if ($array_access_type) {
+                            $array_access_type = Type::combineUnionTypes($array_access_type, $replacement_type);
+                        } else {
+                            $array_access_type = clone $replacement_type;
+                        }
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new PossiblyNullArrayAccess(
+                            'Cannot access array value on possibly null variable ' . $array_var_id .
+                                ' of type ' . $array_type,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    if ($array_access_type) {
+                        $array_access_type = Type::combineUnionTypes($array_access_type, Type::getNull());
+                    } else {
+                        $array_access_type = Type::getNull();
+                    }
+                }
+
+                continue;
+            }
+
+            if ($type instanceof TArray || $type instanceof ObjectLike) {
+                $has_array_access = true;
+
+                if ($in_assignment
+                    && $type instanceof TArray
+                    && $type->type_params[0]->isEmpty()
+                    && $string_key_value
+                ) {
+                    // ok, type becomes an ObjectLike
+
+                    $type = new ObjectLike([$string_key_value => new Type\Union([new TEmpty])]);
+                }
+
+                if ($type instanceof TArray) {
+                    // if we're assigning to an empty array with a key offset, refashion that array
+                    if ($in_assignment) {
+                        if ($type->type_params[0]->isEmpty()) {
+                            $type->type_params[0] = $offset_type;
+                        }
+                    } elseif (!$type->type_params[0]->isEmpty()) {
+                        if (!TypeChecker::isContainedBy(
+                            $project_checker,
+                            $offset_type,
+                            $type->type_params[0]
+                        )) {
+                            $invalid_offset_types[] = (string)$type->type_params[0];
+                        } else {
+                            $has_valid_offset = true;
+                        }
+                    }
+
+                    if ($in_assignment && $replacement_type) {
+                        $type->type_params[1] = Type::combineUnionTypes(
+                            $type->type_params[1],
+                            $replacement_type
+                        );
+                    }
+
+                    if (!$array_access_type) {
+                        $array_access_type = $type->type_params[1];
+                    } else {
+                        $array_access_type = Type::combineUnionTypes(
+                            $array_access_type,
+                            $type->type_params[1]
+                        );
+                    }
+
+                    if ($array_access_type->isEmpty() && !$in_assignment) {
+                        if (IssueBuffer::accepts(
+                            new EmptyArrayAccess(
+                                'Cannot access value on empty array variable ' . $array_var_id,
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return Type::getMixed();
+                        }
+
+                        if (!IssueBuffer::isRecording()) {
+                            $array_access_type = Type::getMixed();
+                        }
+                    }
+                } elseif ($type instanceof ObjectLike) {
+                    if ($string_key_value || $int_key_value !== null) {
+                        if ($string_key_value
+                            && (isset($type->properties[$string_key_value]) || $replacement_type)
+                        ) {
+                            $has_valid_offset = true;
+
+                            if ($replacement_type) {
+                                if (isset($type->properties[$string_key_value])) {
+                                    $type->properties[$string_key_value] = Type::combineUnionTypes(
+                                        $type->properties[$string_key_value],
+                                        $replacement_type
+                                    );
+                                } else {
+                                    $type->properties[$string_key_value] = $replacement_type;
+                                }
+                            }
+
+                            if (!$array_access_type) {
+                                $array_access_type = clone $type->properties[$string_key_value];
+                            } else {
+                                $array_access_type = Type::combineUnionTypes(
+                                    $array_access_type,
+                                    $type->properties[$string_key_value]
+                                );
+                            }
+                        } elseif ($int_key_value !== null
+                             && (isset($type->properties[$int_key_value]) || $replacement_type)
+                        ) {
+                            $has_valid_offset = true;
+
+                            if ($replacement_type) {
+                                if (isset($type->properties[$int_key_value])) {
+                                    $type->properties[$int_key_value] = Type::combineUnionTypes(
+                                        $type->properties[$int_key_value],
+                                        $replacement_type
+                                    );
+                                } else {
+                                    $type->properties[$int_key_value] = $replacement_type;
+                                }
+                            }
+
+                            if (!$array_access_type) {
+                                $array_access_type = clone $type->properties[$int_key_value];
+                            } else {
+                                $array_access_type = Type::combineUnionTypes(
+                                    $array_access_type,
+                                    $type->properties[$int_key_value]
+                                );
+                            }
+                        } elseif ($string_key_value && $in_assignment && $string_key_value) {
+                            $type->properties[$string_key_value] = new Type\Union([new TEmpty]);
+
+                            if (!$array_access_type) {
+                                $array_access_type = clone $type->properties[$string_key_value];
+                            } else {
+                                $array_access_type = Type::combineUnionTypes(
+                                    $array_access_type,
+                                    $type->properties[$string_key_value]
+                                );
+                            }
+                        } else {
+                            $object_like_keys = array_keys($type->properties);
+
+                            if (count($object_like_keys) === 1) {
+                                $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
+                            } else {
+                                $last_key = array_pop($object_like_keys);
+                                $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) .
+                                    '\' or \'' . $last_key . '\'';
+                            }
+
+                            $invalid_offset_types[] = $expected_keys_string;
+                        }
+                    } elseif (TypeChecker::isContainedBy(
+                        $project_checker,
+                        $offset_type,
+                        Type::getString()
+                    )) {
+                        if ($replacement_type) {
+                            $generic_params = Type::combineUnionTypes(
+                                $type->getGenericTypeParam(),
+                                $replacement_type
+                            );
+
+                            $type = new Type\Union([
+                                new TArray([
+                                    Type::getString(),
+                                    $generic_params,
+                                ]),
+                            ]);
+
+                            if (!$array_access_type) {
+                                $array_access_type = clone $generic_params;
+                            } else {
+                                $array_access_type = Type::combineUnionTypes(
+                                    $array_access_type,
+                                    $generic_params
+                                );
+                            }
+                        } else {
+                            if (!$array_access_type) {
+                                $array_access_type = $type->getGenericTypeParam();
+                            } else {
+                                $array_access_type = Type::combineUnionTypes(
+                                    $array_access_type,
+                                    $type->getGenericTypeParam()
+                                );
+                            }
+                        }
+
+                        $has_valid_offset = true;
+                    } else {
+                        $invalid_offset_types[] = 'string';
+                    }
+                }
+                continue;
+            }
+
+            if ($type instanceof TString) {
+                if ($in_assignment && $replacement_type && $replacement_type->isMixed()) {
+                    if (IssueBuffer::accepts(
+                        new MixedStringOffsetAssignment(
+                            'Right-hand-side of string offset assignment cannot be mixed',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if (!TypeChecker::isContainedBy(
+                    $project_checker,
+                    $offset_type,
+                    Type::getInt()
+                )) {
+                    $invalid_offset_types[] = 'int';
+                } else {
+                    $has_valid_offset = true;
+                }
+
+                if (!$array_access_type) {
+                    $array_access_type = Type::getString();
+                } else {
+                    $array_access_type = Type::combineUnionTypes(
+                        $array_access_type,
+                        Type::getString()
+                    );
+                }
+
+                continue;
+            }
+
+            if ($type instanceof TMixed || $type instanceof TEmpty) {
+                if ($in_assignment) {
+                    if (IssueBuffer::accepts(
+                        new MixedArrayAssignment(
+                            'Cannot access array value on mixed variable ' . $array_var_id,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new MixedArrayAccess(
+                            'Cannot access array value on mixed variable ' . $array_var_id,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                $array_access_type = Type::getMixed();
+                break;
+            }
+
+            if ($type instanceof TNamedObject) {
+                if (strtolower($type->value) !== 'simplexmlelement'
+                    && ClassChecker::classExists($project_checker, $type->value)
+                    && !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess')
+                ) {
+                    $non_array_types[] = (string)$type;
+                } else {
+                    $array_access_type = Type::getMixed();
+                }
+            } else {
+                $non_array_types[] = (string)$type;
+            }
+        }
+
+        if ($non_array_types) {
+            if ($has_array_access) {
+                if ($in_assignment) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidArrayAssignment(
+                            'Cannot access array value on non-array variable ' .
+                            $array_var_id . ' of type ' . $non_array_types[0],
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )
+                    ) {
+                        // do nothing
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidArrayAccess(
+                            'Cannot access array value on non-array variable ' .
+                            $array_var_id . ' of type ' . $non_array_types[0],
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )
+                    ) {
+                        // do nothing
+                    }
+                }
+            } else {
+                if ($in_assignment) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayAssignment(
+                            'Cannot access array value on non-array variable ' .
+                            $array_var_id . ' of type ' . $non_array_types[0],
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayAccess(
+                            'Cannot access array value on non-array variable ' .
+                            $array_var_id . ' of type ' . $non_array_types[0],
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                $array_access_type = Type::getMixed();
+            }
+        }
+
+        if ($offset_type->isMixed()) {
+            if (IssueBuffer::accepts(
+                new MixedArrayOffset(
+                    'Cannot access value on variable ' . $array_var_id . ' using mixed offset',
+                    new CodeLocation($statements_checker->getSource(), $stmt)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } elseif ($invalid_offset_types) {
+            $invalid_offset_type = $invalid_offset_types[0];
+
+            if ($has_valid_offset) {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidArrayOffset(
+                        'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
+                            . ' offset, expecting ' . $invalid_offset_type,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new InvalidArrayOffset(
+                        'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
+                            . ' offset, expecting ' . $invalid_offset_type,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        }
+
+        if ($array_access_type === null) {
+            throw new \InvalidArgumentException('This is a bad place');
+        }
+
+        return $array_access_type;
+    }
+
+    /**
      * @param   StatementsChecker                   $statements_checker
      * @param   PhpParser\Node\Expr\ArrayDimFetch   $stmt
      * @param   Context                             $context
-     * @param   bool                                $array_assignment
-     * @param   Type\Union|null                     $assignment_key_type
-     * @param   Type\Union|null                     $assignment_value_type
-     * @param   string|null                         $assignment_key_value
      *
      * @return  false|null
      */
     public static function analyzeArrayAccess(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Context $context,
-        $array_assignment = false,
-        Type\Union $assignment_key_type = null,
-        Type\Union $assignment_value_type = null,
-        $assignment_key_value = null
+        Context $context
     ) {
         $var_type = null;
         $used_key_type = null;
@@ -804,12 +1219,6 @@ class FetchChecker
             if (isset($stmt->dim->inferredType)) {
                 /** @var Type\Union */
                 $used_key_type = $stmt->dim->inferredType;
-
-                if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-                    $string_key_value = $stmt->dim->value;
-                } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
-                    $int_key_value = $stmt->dim->value;
-                }
             } else {
                 $used_key_type = Type::getMixed();
             }
@@ -817,120 +1226,10 @@ class FetchChecker
             $used_key_type = Type::getInt();
         }
 
-        $keyed_assignment_type = null;
-
-        if ($array_assignment && $assignment_key_type && $assignment_value_type) {
-            $keyed_assignment_type =
-                $keyed_array_var_id && $context->hasVariable($keyed_array_var_id)
-                    ? $context->vars_in_scope[$keyed_array_var_id]
-                    : null;
-
-            if (!$keyed_assignment_type || $keyed_assignment_type->isEmpty()) {
-                if (!$assignment_key_type->isMixed() && !$assignment_key_type->hasInt() && $assignment_key_value) {
-                    $keyed_assignment_type = new Type\Union([
-                        new ObjectLike([
-                            $assignment_key_value => $assignment_value_type,
-                        ]),
-                    ]);
-                } else {
-                    $keyed_assignment_type = Type::getEmptyArray();
-                    /** @var Type\Atomic\TArray */
-                    $keyed_assignment_type_array = $keyed_assignment_type->types['array'];
-                    $keyed_assignment_type_array->type_params[0] = $assignment_key_type;
-                    $keyed_assignment_type_array->type_params[1] = $assignment_value_type;
-                }
-            } else {
-                if ($keyed_assignment_type->isNull()) {
-                    if (IssueBuffer::accepts(
-                        new NullReference(
-                            'Cannot assign value on null array' . ($var_id ? ' ' . $var_id : ''),
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return;
-                }
-
-                foreach ($keyed_assignment_type->types as &$type) {
-                    if ($type instanceof TInt || $type instanceof TFloat || $type instanceof TBool) {
-                        if (IssueBuffer::accepts(
-                            new InvalidArrayAssignment(
-                                'Cannot assign value on variable ' . $var_id . ' of scalar type ' . $type->getKey(),
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        continue;
-                    }
-
-                    if ($type instanceof TString || $type instanceof Type\Atomic\TArray) {
-                        $refined_type = self::refineArrayType(
-                            $statements_checker,
-                            $type,
-                            $assignment_key_type,
-                            $assignment_value_type,
-                            $var_id,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        );
-
-                        if ($refined_type === false) {
-                            return false;
-                        }
-
-                        if ($refined_type === null) {
-                            continue;
-                        }
-
-                        $type = $refined_type;
-                    } elseif ($type instanceof ObjectLike) {
-                        if ($assignment_key_value) {
-                            if (isset($type->properties[$assignment_key_value])) {
-                                $type->properties[$assignment_key_value] = Type::combineUnionTypes(
-                                    $type->properties[$assignment_key_value],
-                                    $assignment_value_type
-                                );
-                            } else {
-                                $type->properties[$assignment_key_value] = $assignment_value_type;
-                            }
-                        } else {
-                            $refined_type = self::refineArrayType(
-                                $statements_checker,
-                                $type,
-                                $assignment_key_type,
-                                $assignment_value_type,
-                                $var_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            );
-
-                            if ($refined_type === false) {
-                                return false;
-                            }
-
-                            if ($refined_type === null) {
-                                continue;
-                            }
-
-                            $type = $refined_type;
-                        }
-                    }
-                }
-            }
-        }
-
         if (ExpressionChecker::analyze(
             $statements_checker,
             $stmt->var,
-            $context,
-            $array_assignment,
-            $used_key_type,
-            $keyed_assignment_type,
-            $string_key_value
+            $context
         ) === false) {
             return false;
         }
@@ -961,382 +1260,14 @@ class FetchChecker
                 return;
             }
 
-            $has_array_access = false;
-            $non_array_types = [];
-
-            $has_valid_offset = false;
-            $invalid_offset_types = [];
-
-            foreach ($var_type->types as &$type) {
-                if ($type instanceof TNull) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyNullArrayAccess(
-                            'Cannot access array value on possibly null variable ' . $array_var_id .
-                                ' of type ' . $var_type,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-
-                    if (isset($stmt->inferredType)) {
-                        $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, Type::getNull());
-                    } else {
-                        $stmt->inferredType = Type::getNull();
-                    }
-
-                    continue;
-                }
-
-                if ($type instanceof TArray || $type instanceof ObjectLike) {
-                    $value_index = null;
-                    $has_array_access = true;
-
-                    if ($type instanceof TArray) {
-                        // create a union type to pass back to the statement
-                        $value_index = count($type->type_params) - 1;
-
-                        if ($value_index) {
-                            // if we're assigning to an empty array with a key offset, refashion that array
-                            if ($array_assignment && $type->type_params[0]->isEmpty()) {
-                                $type->type_params[0] = $used_key_type;
-                            } elseif (!$type->type_params[0]->isEmpty()) {
-                                if (!TypeChecker::isContainedBy(
-                                    $project_checker,
-                                    $used_key_type,
-                                    $type->type_params[0]
-                                )) {
-                                    $invalid_offset_types[] = (string)$type->type_params[0];
-                                } else {
-                                    $has_valid_offset = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if ($array_assignment && !$is_object) {
-                        // if we're in an array assignment then we need to create some variables
-                        // e.g.
-                        // $a = [];
-                        // $a['b']['c']['d'] = 3;
-                        //
-                        // means we need add $a['b'], $a['b']['c'] to the current context
-                        // (but not $a['b']['c']['d'], which is handled in checkArrayAssignment)
-                        if ($keyed_assignment_type) {
-                            if ($keyed_array_var_id) {
-                                if ($context->hasVariable($keyed_array_var_id)) {
-                                    $context->vars_in_scope[$keyed_array_var_id] = Type::combineUnionTypes(
-                                        $keyed_assignment_type,
-                                        $context->vars_in_scope[$keyed_array_var_id]
-                                    );
-                                } else {
-                                    $context->vars_in_scope[$keyed_array_var_id] = $keyed_assignment_type;
-                                }
-                            }
-
-                            $stmt->inferredType = $keyed_assignment_type;
-                        }
-
-                        if ($array_var_id === $var_id) {
-                            if ($type instanceof ObjectLike ||
-                                (
-                                    $type instanceof TArray &&
-                                    !$used_key_type->hasInt() &&
-                                    $type->type_params[1]->isEmpty()
-                                )
-                            ) {
-                                $properties = $keyed_assignment_type && $string_key_value
-                                    ? [$string_key_value => $keyed_assignment_type]
-                                    : [];
-
-                                if ($properties) {
-                                    $assignment_type = new Type\Union([
-                                        new ObjectLike($properties),
-                                    ]);
-                                } else {
-                                    if (!$keyed_assignment_type) {
-                                        throw new \UnexpectedValueException('$keyed_assignment_type cannot be null');
-                                    }
-
-                                    $assignment_type = new Type\Union([
-                                        new Type\Atomic\TArray([
-                                            $used_key_type,
-                                            $keyed_assignment_type,
-                                        ]),
-                                    ]);
-                                }
-                            } else {
-                                if (!$keyed_assignment_type) {
-                                    throw new \UnexpectedValueException('$keyed_assignment_type cannot be null');
-                                }
-
-                                $assignment_type = new Type\Union([
-                                    new Type\Atomic\TArray([
-                                        $used_key_type,
-                                        $keyed_assignment_type,
-                                    ]),
-                                ]);
-                            }
-
-                            if ($var_id) {
-                                if ($context->hasVariable($var_id)) {
-                                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                        $context->vars_in_scope[$var_id],
-                                        $assignment_type
-                                    );
-                                } else {
-                                    $context->vars_in_scope[$var_id] = $assignment_type;
-                                }
-                            }
-                        }
-
-                        if ($type instanceof Type\Atomic\TArray
-                            && $value_index
-                            && $var_id
-                            && $type->type_params[$value_index]->isEmpty()
-                        ) {
-                            $empty_type = Type::getEmptyArray();
-
-                            if (!isset($stmt->inferredType)) {
-                                // if in array assignment and the referenced variable does not have
-                                // an array at this level, create one
-                                $stmt->inferredType = $empty_type;
-                            }
-
-                            $context_type = clone $context->vars_in_scope[$var_id];
-
-                            $array_type = $context_type;
-
-                            for ($i = 0; $i < (int)$nesting + 1; ++$i) {
-                                if (isset($array_type->types['array']) &&
-                                    $array_type->types['array'] instanceof Type\Atomic\TArray
-                                ) {
-                                    $atomic_array = $array_type->types['array'];
-
-                                    if ($i < $nesting) {
-                                        if ($atomic_array->type_params[1]->isEmpty()) {
-                                            $new_empty = clone $empty_type;
-                                            /** @var Type\Atomic\TArray */
-                                            $new_atomic_empty = $new_empty->types['array'];
-                                            $new_atomic_empty->type_params[0] = $used_key_type;
-
-                                            $atomic_array->type_params[1] = $new_empty;
-                                            continue;
-                                        }
-
-                                        $array_type = $atomic_array->type_params[1];
-                                    } else {
-                                        $atomic_array->type_params[0] = $used_key_type;
-
-                                        if ($nesting === 0 && $keyed_assignment_type) {
-                                            $atomic_array->type_params[1] = $keyed_assignment_type;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if ($var_id) {
-                                $context->vars_in_scope[$var_id] = $context_type;
-                            }
-                        }
-                    } elseif ($type instanceof Type\Atomic\TArray && $value_index !== null) {
-                        if (!isset($stmt->inferredType)) {
-                            $stmt->inferredType = $type->type_params[$value_index];
-                        } else {
-                            $stmt->inferredType = Type::combineUnionTypes(
-                                $stmt->inferredType,
-                                $type->type_params[$value_index]
-                            );
-                        }
-
-                        if ($stmt->inferredType->isEmpty()) {
-                            if (IssueBuffer::accepts(
-                                new EmptyArrayAccess(
-                                    'Cannot access value on empty array variable ' . $var_id,
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-
-                            if (!IssueBuffer::isRecording()) {
-                                $stmt->inferredType = Type::getMixed();
-                            }
-                        }
-                    } elseif ($type instanceof ObjectLike) {
-                        if ($string_key_value || $int_key_value !== null) {
-                            if ($string_key_value && isset($type->properties[$string_key_value])) {
-                                $has_valid_offset = true;
-
-                                if (!isset($stmt->inferredType)) {
-                                    $stmt->inferredType = clone $type->properties[$string_key_value];
-                                } else {
-                                    $stmt->inferredType = Type::combineUnionTypes(
-                                        $stmt->inferredType,
-                                        $type->properties[$string_key_value]
-                                    );
-                                }
-                            } elseif ($int_key_value !== null && isset($type->properties[(string)$int_key_value])) {
-                                $has_valid_offset = true;
-
-                                if (!isset($stmt->inferredType)) {
-                                    $stmt->inferredType = clone $type->properties[(string)$int_key_value];
-                                } else {
-                                    $stmt->inferredType = Type::combineUnionTypes(
-                                        $stmt->inferredType,
-                                        $type->properties[(string)$int_key_value]
-                                    );
-                                }
-                            } else {
-                                $object_like_keys = array_keys($type->properties);
-
-                                if (count($object_like_keys) === 1) {
-                                    $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
-                                } else {
-                                    $last_key = array_pop($object_like_keys);
-                                    $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) .
-                                        '\' or \'' . $last_key . '\'';
-                                }
-
-                                $invalid_offset_types[] = $expected_keys_string;
-                            }
-                        } elseif (TypeChecker::isContainedBy(
-                            $project_checker,
-                            $used_key_type,
-                            Type::getString()
-                        )) {
-                            if (!isset($stmt->inferredType)) {
-                                $stmt->inferredType = $type->getGenericTypeParam();
-                            } else {
-                                $stmt->inferredType = Type::combineUnionTypes(
-                                    $stmt->inferredType,
-                                    $type->getGenericTypeParam()
-                                );
-                            }
-
-                            $has_valid_offset = true;
-                        } else {
-                            $invalid_offset_types[] = 'string';
-                        }
-                    }
-                    continue;
-                }
-
-                if ($type instanceof TString) {
-                    if (!TypeChecker::isContainedBy(
-                        $project_checker,
-                        $used_key_type,
-                        Type::getInt()
-                    )) {
-                        $invalid_offset_types[] = 'int';
-                    } else {
-                        $has_valid_offset = true;
-                    }
-
-                    if (!isset($stmt->inferredType)) {
-                        $stmt->inferredType = Type::getString();
-                    } else {
-                        $stmt->inferredType = Type::combineUnionTypes(
-                            $stmt->inferredType,
-                            Type::getString()
-                        );
-                    }
-
-                    continue;
-                }
-
-                if ($type instanceof TMixed || $type instanceof TEmpty) {
-                    if (IssueBuffer::accepts(
-                        new MixedArrayAccess(
-                            'Cannot access array value on mixed variable ' . $array_var_id,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        $stmt->inferredType = Type::getMixed();
-                        break;
-                    }
-                    continue;
-                }
-
-                if (!$type instanceof TNamedObject ||
-                    (strtolower($type->value) !== 'simplexmlelement' &&
-                        ClassChecker::classExists($project_checker, $type->value) &&
-                        !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess')
-                    )
-                ) {
-                    $non_array_types[] = $var_type;
-                }
-            }
-
-            if ($non_array_types) {
-                if ($has_array_access) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyInvalidArrayAccess(
-                            'Cannot access array value on non-array variable ' .
-                            $array_var_id . ' of type ' . $non_array_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )
-                    ) {
-                        // do nothing
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new InvalidArrayAccess(
-                            'Cannot access array value on non-array variable ' .
-                            $array_var_id . ' of type ' . $non_array_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-
-                    $stmt->inferredType = Type::getMixed();
-                }
-            }
-
-            if ($used_key_type->isMixed()) {
-                if (IssueBuffer::accepts(
-                    new MixedArrayOffset(
-                        'Cannot access value on variable ' . $var_id . ' using mixed offset',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            } elseif ($invalid_offset_types) {
-                $invalid_offset_type = $invalid_offset_types[0];
-
-                if ($has_valid_offset) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyInvalidArrayOffset(
-                            'Cannot access value on variable ' . $var_id . ' using ' . $used_key_type
-                                . ' offset, expecting ' . $invalid_offset_type,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new InvalidArrayOffset(
-                            'Cannot access value on variable ' . $var_id . ' using ' . $used_key_type
-                                . ' offset, expecting ' . $invalid_offset_type,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-                }
-            }
+            $stmt->inferredType = self::getArrayAccessTypeGivenOffset(
+                $statements_checker,
+                $stmt,
+                $stmt->var->inferredType,
+                $used_key_type,
+                false,
+                $array_var_id
+            );
         }
 
         if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id)) {
@@ -1348,89 +1279,5 @@ class FetchChecker
         }
 
         return null;
-    }
-
-    /**
-     * @param   StatementsChecker       $statements_checker
-     * @param   Type\Atomic             $type
-     * @param   Type\Union              $assignment_key_type
-     * @param   Type\Union              $assignment_value_type
-     * @param   string|null             $var_id
-     * @param   CodeLocation           $code_location
-     *
-     * @return  Type\Atomic|null|false
-     */
-    protected static function refineArrayType(
-        StatementsChecker $statements_checker,
-        Type\Atomic $type,
-        Type\Union $assignment_key_type,
-        Type\Union $assignment_value_type,
-        $var_id,
-        CodeLocation $code_location
-    ) {
-        if ($type instanceof TNull) {
-            if (IssueBuffer::accepts(
-                new PossiblyNullReference(
-                    'Cannot assign value on possibly null array' . ($var_id ? ' ' . $var_id : ''),
-                    $code_location
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return $type;
-        }
-
-        if ($type instanceof TString && $assignment_value_type->hasString() && !$assignment_key_type->hasString()) {
-            return null;
-        }
-
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
-
-        if (!$type instanceof TArray
-            && !$type instanceof ObjectLike
-            && (!$type instanceof TNamedObject
-                || !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess'))
-        ) {
-            if (IssueBuffer::accepts(
-                new InvalidArrayAssignment(
-                    'Cannot assign value on variable' . ($var_id ? ' ' . $var_id : '') . ' of type ' . $type .
-                        ' that does not implement ArrayAccess',
-                    $code_location
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return $type;
-        }
-
-        if ($type instanceof ObjectLike) {
-            $type = new TArray([
-                Type::getString(),
-                $type->getGenericTypeParam(),
-            ]);
-        }
-
-        if ($type instanceof Type\Atomic\Generic && $type instanceof TArray) {
-            if ($type->type_params[1]->isEmpty()) {
-                $type->type_params[0] = $assignment_key_type;
-                $type->type_params[1] = $assignment_value_type;
-
-                return $type;
-            }
-
-            if ((string) $type->type_params[0] !== (string) $assignment_key_type) {
-                $type->type_params[0] = Type::combineUnionTypes($type->type_params[0], $assignment_key_type);
-            }
-
-            if ((string) $type->type_params[1] !== (string) $assignment_value_type) {
-                $type->type_params[1] = Type::combineUnionTypes($type->type_params[1], $assignment_value_type);
-            }
-        }
-
-        return $type;
     }
 }

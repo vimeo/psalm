@@ -133,6 +133,7 @@
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArrayAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedArrayAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedInferredReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -159,6 +160,7 @@
             <xs:element name="PossiblyFalseReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyInvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
