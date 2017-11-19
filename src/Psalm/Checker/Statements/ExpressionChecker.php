@@ -59,9 +59,6 @@ class ExpressionChecker
      * @param   PhpParser\Node\Expr $stmt
      * @param   Context             $context
      * @param   bool                $array_assignment
-     * @param   Type\Union|null     $assignment_key_type
-     * @param   Type\Union|null     $assignment_value_type
-     * @param   string|null         $assignment_key_value
      *
      * @return  false|null
      */
@@ -69,10 +66,7 @@ class ExpressionChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $stmt,
         Context $context,
-        $array_assignment = false,
-        Type\Union $assignment_key_type = null,
-        Type\Union $assignment_value_type = null,
-        $assignment_key_value = null
+        $array_assignment = false
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             if (self::analyzeVariable($statements_checker, $stmt, $context, false, null, $array_assignment) === false) {
@@ -284,11 +278,7 @@ class ExpressionChecker
             if (FetchChecker::analyzeArrayAccess(
                 $statements_checker,
                 $stmt,
-                $context,
-                $array_assignment,
-                $assignment_key_type,
-                $assignment_value_type,
-                $assignment_key_value
+                $context
             ) === false) {
                 return false;
             }
@@ -1346,6 +1336,18 @@ class ExpressionChecker
                             $result_type = $result_type_member;
                         } else {
                             $result_type = Type::combineUnionTypes($result_type_member, $result_type);
+                        }
+
+                        if ($left instanceof PhpParser\Node\Expr\ArrayDimFetch
+                            && $context
+                            && $statements_source instanceof StatementsChecker
+                        ) {
+                            AssignmentChecker::updateArrayType(
+                                $statements_source,
+                                $left,
+                                $result_type,
+                                $context
+                            );
                         }
 
                         continue;

@@ -18,14 +18,12 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\FailedTypeResolution;
-use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
-use Psalm\Issue\MixedStringOffsetAssignment;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
 use Psalm\Issue\PossiblyInvalidPropertyAssignment;
@@ -36,12 +34,11 @@ use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TString;
 
 class AssignmentChecker
 {
@@ -392,7 +389,7 @@ class AssignmentChecker
             return false;
         }
 
-        $var_id = ExpressionChecker::getVarId(
+        $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
             $statements_checker
@@ -416,17 +413,17 @@ class AssignmentChecker
                 $context
             );
 
-            if ($result_type && $var_id) {
-                $context->vars_in_scope[$var_id] = $result_type;
+            if ($result_type && $array_var_id) {
+                $context->vars_in_scope[$array_var_id] = $result_type;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div
             && $var_type
             && $expr_type
             && $var_type->hasNumericType()
             && $expr_type->hasNumericType()
-            && $var_id
+            && $array_var_id
         ) {
-            $context->vars_in_scope[$var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+            $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
             ExpressionChecker::analyzeConcatOp(
                 $statements_checker,
@@ -436,8 +433,8 @@ class AssignmentChecker
                 $result_type
             );
 
-            if ($result_type && $var_id) {
-                $context->vars_in_scope[$var_id] = $result_type;
+            if ($result_type && $array_var_id) {
+                $context->vars_in_scope[$array_var_id] = $result_type;
             }
         }
 
@@ -1062,28 +1059,6 @@ class AssignmentChecker
         Context $context,
         Type\Union $assignment_value_type
     ) {
-        if ($stmt->dim && ExpressionChecker::analyze($statements_checker, $stmt->dim, $context, false) === false) {
-            return false;
-        }
-
-        $assignment_key_type = null;
-        $assignment_key_value = null;
-
-        if ($stmt->dim) {
-            if (isset($stmt->dim->inferredType)) {
-                /** @var Type\Union */
-                $assignment_key_type = $stmt->dim->inferredType;
-
-                if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-                    $assignment_key_value = $stmt->dim->value;
-                }
-            } else {
-                $assignment_key_type = Type::getMixed();
-            }
-        } else {
-            $assignment_key_type = Type::getInt();
-        }
-
         $nesting = 0;
         $var_id = ExpressionChecker::getVarId(
             $stmt->var,
@@ -1092,190 +1067,216 @@ class AssignmentChecker
             $nesting
         );
 
-        // checks whether or not the thing we're looking at implements ArrayAccess
-        $is_object = $var_id
-            && $context->hasVariable($var_id)
-            && $context->vars_in_scope[$var_id]->hasObjectType();
+        AssignmentChecker::updateArrayType(
+            $statements_checker,
+            $stmt,
+            $assignment_value_type,
+            $context
+        );
+
+        if (!isset($stmt->var->inferredType) && $var_id) {
+            $context->vars_in_scope[$var_id] = Type::getMixed();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  StatementsChecker                 $statements_checker
+     * @param  PhpParser\Node\Expr\ArrayDimFetch $stmt
+     * @param  Type\Union                        $assignment_type
+     * @param  Context                           $context
+     *
+     * @return false|null
+     */
+    public static function updateArrayType(
+        StatementsChecker $statements_checker,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Type\Union $assignment_type,
+        Context $context
+    ) {
+        $root_array_expr = $stmt;
+
+        $child_stmts = [];
+
+        while ($root_array_expr->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $child_stmts[] = $root_array_expr;
+            $root_array_expr = $root_array_expr->var;
+        }
+
+        $child_stmts[] = $root_array_expr;
+        $root_array_expr = $root_array_expr->var;
 
         if (ExpressionChecker::analyze(
             $statements_checker,
-            $stmt->var,
+            $root_array_expr,
             $context,
-            !$is_object,
-            $assignment_key_type,
-            $assignment_value_type,
-            $assignment_key_value
+            true
         ) === false) {
-            return false;
+            // fall through
         }
 
-        $array_var_id = ExpressionChecker::getArrayVarId(
-            $stmt->var,
+        $root_type = isset($root_array_expr->inferredType) ? $root_array_expr->inferredType : Type::getMixed();
+
+        if ($root_type->isMixed()) {
+            return null;
+        }
+
+        $child_stmts = array_reverse($child_stmts);
+
+        $current_type = $root_type;
+
+        $current_dim = $stmt->dim;
+
+        $reversed_child_stmts = [];
+
+        // gets a variable id that *may* contain array keys
+        $root_var_id = ExpressionChecker::getRootVarId(
+            $root_array_expr,
             $statements_checker->getFQCLN(),
             $statements_checker
         );
 
-        if (isset($stmt->var->inferredType)) {
-            $return_type = $stmt->var->inferredType;
+        $var_id_additions = [];
 
-            $keyed_array_var_id = $array_var_id && $stmt->dim instanceof PhpParser\Node\Scalar\String_
-                ? $array_var_id . '[\'' . $stmt->dim->value . '\']'
-                : null;
+        // First go from the root element up, and go as far as we can to figure out what
+        // array types there are
+        while ($child_stmts) {
+            $child_stmt = array_shift($child_stmts);
 
-            $project_checker = $statements_checker->getFileChecker()->project_checker;
+            if (count($child_stmts)) {
+                array_unshift($reversed_child_stmts, $child_stmt);
+            }
 
-            if ($return_type->hasObjectType()) {
-                foreach ($return_type->types as $left_type_part) {
-                    if ($left_type_part instanceof TNamedObject &&
-                        (strtolower($left_type_part->value) !== 'simplexmlelement' &&
-                            ClassChecker::classExists($project_checker, $left_type_part->value) &&
-                            !ClassChecker::classImplements($project_checker, $left_type_part->value, 'ArrayAccess')
-                        )
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new InvalidArrayAssignment(
-                                'Cannot assign array value on non-array variable ' .
-                                $array_var_id . ' of type ' . $return_type,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            $stmt->inferredType = Type::getMixed();
-                            break;
-                        }
-                    }
-                }
-            } elseif ($return_type->hasString()) {
-                foreach ($assignment_value_type->types as $value_type) {
-                    if (!$value_type instanceof TString) {
-                        if ($value_type instanceof TMixed) {
-                            if (IssueBuffer::accepts(
-                                new MixedStringOffsetAssignment(
-                                    'Cannot assign a mixed variable to a string offset for ' . $var_id,
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-
-                            continue;
-                        }
-
-                        if (IssueBuffer::accepts(
-                            new InvalidArrayAssignment(
-                                'Cannot assign string offset for  ' . $var_id . ' of type ' . $value_type,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        break;
-                    }
-                }
-            } elseif ($return_type->hasScalarType()) {
-                if (IssueBuffer::accepts(
-                    new InvalidArrayAssignment(
-                        'Cannot assign value on variable ' . $var_id . ' of scalar type ' .
-                            $stmt->var->inferredType,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
+            if ($child_stmt->dim) {
+                if (ExpressionChecker::analyze(
+                    $statements_checker,
+                    $child_stmt->dim,
+                    $context
+                ) === false) {
                     return false;
                 }
+
+                if (!isset($child_stmt->dim->inferredType)) {
+                    return null;
+                }
+
+                if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+                    $var_id_additions[] = '[\'' . $child_stmt->dim->value . '\']';
+                } else {
+                    $var_id_additions[] = '[' . $child_stmt->dim->inferredType . ']';
+                }
             } else {
-                // we want to support multiple array types:
-                // - Dictionaries (which have the type array<string,T>)
-                // - pseudo-objects (which have the type array<string,mixed>)
-                // - typed arrays (which have the type array<int,T>)
-                // and completely freeform arrays
-                //
-                // When making assignments, we generally only know the shape of the array
-                // as it is being created.
-                if ($keyed_array_var_id) {
-                    // when we have a pattern like
-                    // $a = [];
-                    // $a['b']['c']['d'] = 1;
-                    // $a['c'] = 2;
-                    // we need to create each type in turn
-                    // so we get
-                    // typeof $a['b']['c']['d'] => int
-                    // typeof $a['b']['c'] => array{d:int}
-                    // typeof $a['b'] => array{c:array{d:int}}
-                    // typeof $a['c'] => int
-                    // typeof $a => array{b:array{c:array{d:int}},c:int}
-
-                    $context->vars_in_scope[$keyed_array_var_id] = $assignment_value_type;
-
-                    $stmt->inferredType = $assignment_value_type;
-                }
-
-                if (!$nesting) {
-                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike|null */
-                    $array_type = $var_id
-                        && isset($context->vars_in_scope[$var_id]->types['array'])
-                        && ($context->vars_in_scope[$var_id]->types['array'] instanceof Type\Atomic\TArray
-                            || $context->vars_in_scope[$var_id]->types['array'] instanceof Type\Atomic\ObjectLike)
-                        ? $context->vars_in_scope[$var_id]->types['array']
-                        : null;
-
-                    if ($assignment_key_type->hasString()
-                        && $assignment_key_value !== null
-                        && (!$var_id
-                            || !$context->hasVariable($var_id)
-                            || $array_type instanceof Type\Atomic\ObjectLike
-                            || ($array_type instanceof Type\Atomic\TArray
-                                && $array_type->type_params[0]->isEmpty()))
-                    ) {
-                        $new_array_type = new Type\Union([
-                            new Type\Atomic\ObjectLike([
-                                $assignment_key_value => $assignment_value_type,
-                            ]),
-                        ]);
-                    } else {
-                        if ($array_type instanceof Type\Atomic\ObjectLike) {
-                            $assignment_key_type = Type::combineUnionTypes(
-                                Type::getString(),
-                                $assignment_key_type
-                            );
-                        }
-
-                        $new_array_type = new Type\Union([
-                            new Type\Atomic\TArray([
-                                $assignment_key_type,
-                                $assignment_value_type,
-                            ]),
-                        ]);
-                    }
-
-                    //var_dump($new_array_type);
-
-                    if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->var->name)) {
-                        self::analyzePropertyAssignment(
-                            $statements_checker,
-                            $stmt->var,
-                            $stmt->var->name,
-                            null,
-                            $new_array_type,
-                            $context
-                        );
-                    } elseif ($var_id) {
-                        if ($context->hasVariable($var_id)) {
-                            $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                $context->vars_in_scope[$var_id],
-                                $new_array_type
-                            );
-                        } else {
-                            $context->vars_in_scope[$var_id] = $new_array_type;
-                        }
-                    }
-                }
+                $var_id_additions[] = '';
             }
-        } elseif ($var_id) {
-            $context->vars_in_scope[$var_id] = Type::getMixed();
+
+            if (!isset($child_stmt->var->inferredType)) {
+                return null;
+            }
+
+            if ($child_stmt->var->inferredType->isEmpty()) {
+                $child_stmt->var->inferredType = Type::getEmptyArray();
+            }
+
+            $array_var_id = $root_var_id . implode('', $var_id_additions);
+
+            $child_stmt->inferredType = FetchChecker::getArrayAccessTypeGivenOffset(
+                $statements_checker,
+                $child_stmt,
+                $child_stmt->var->inferredType,
+                isset($child_stmt->dim->inferredType) ? $child_stmt->dim->inferredType : Type::getInt(),
+                true,
+                $array_var_id,
+                $child_stmts ? null : $assignment_type
+            );
+
+            $current_type = $child_stmt->inferredType;
+            $current_dim = $child_stmt->dim;
+
+            if ($child_stmt->var->inferredType->isMixed()) {
+                break;
+            }
+        }
+
+        if ($root_var_id) {
+            $array_var_id = $root_var_id . implode('', $var_id_additions);
+            $context->vars_in_scope[$array_var_id] = clone $current_type;
+        }
+
+        // only update as many child stmts are we were able to process above
+        foreach ($reversed_child_stmts as $child_stmt) {
+            if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
+                $string_key_value = $current_dim->value;
+
+                $array_assignment_type = new Type\Union([
+                    new ObjectLike([$string_key_value => $current_type]),
+                ]);
+            } else {
+                $array_assignment_type = new Type\Union([
+                    new TArray([
+                        isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
+                        $current_type,
+                    ]),
+                ]);
+            }
+
+            if (!isset($child_stmt->inferredType)) {
+                throw new \InvalidArgumentException('Should never get here');
+            }
+
+            $child_stmt->inferredType = Type::combineUnionTypes(
+                $child_stmt->inferredType,
+                $array_assignment_type
+            );
+
+            $current_type = $child_stmt->inferredType;
+            $current_dim = $child_stmt->dim;
+
+            array_pop($var_id_additions);
+
+            if ($root_var_id) {
+                $array_var_id = $root_var_id . implode('', $var_id_additions);
+                $context->vars_in_scope[$array_var_id] = clone $child_stmt->inferredType;
+            }
+        }
+
+        if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
+            $string_key_value = $current_dim->value;
+
+            $array_assignment_type = new Type\Union([
+                new ObjectLike([$string_key_value => $current_type]),
+            ]);
+        } else {
+            $array_assignment_type = new Type\Union([
+                new TArray([
+                    isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
+                    $current_type,
+                ]),
+            ]);
+        }
+
+        $root_type = Type::combineUnionTypes(
+            $root_type,
+            $array_assignment_type
+        );
+
+        $root_array_expr->inferredType = $root_type;
+
+        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch && is_string($root_array_expr->name)) {
+            self::analyzePropertyAssignment(
+                $statements_checker,
+                $root_array_expr,
+                $root_array_expr->name,
+                null,
+                $root_type,
+                $context
+            );
+        } elseif ($root_var_id) {
+            if ($context->hasVariable($root_var_id)) {
+                $context->vars_in_scope[$root_var_id] = $root_type;
+            } else {
+                $context->vars_in_scope[$root_var_id] = $root_type;
+            }
         }
 
         return null;
