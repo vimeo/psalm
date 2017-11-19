@@ -618,6 +618,22 @@ class ArrayAssignmentTest extends TestCase
                 ],
                 'error_levels' => ['MixedArrayAssignment', 'MixedArrayAccess', 'MixedArgument'],
             ],
+            'mixedArrayCoercion' => [
+                '<?php
+                    /** @param int[] $arg */
+                    function expect_int_array($arg) : void { }
+                    /** @return array */
+                    function generic_array() { return []; }
+
+                    expect_int_array(generic_array());
+
+                    function expect_int(int $arg) : void {}
+                    /** @return mixed */
+                    function return_mixed() { return 2; }
+                    expect_int(return_mixed());',
+                'assertions' => [],
+                'error_levels' => ['MixedTypeCoercion', 'MixedArgument'],
+            ],
         ];
     }
 
@@ -657,7 +673,7 @@ class ArrayAssignmentTest extends TestCase
                     }
 
                     barBar([1, "2"]);',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'MixedTypeCoercion',
                 'error_level' => ['MixedAssignment'],
             ],
             'arrayPropertyAssignment' => [

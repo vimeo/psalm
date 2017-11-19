@@ -31,6 +31,7 @@ class Config
     protected static $MIXED_ISSUES = [
         'MixedArgument',
         'MixedArrayAccess',
+        'MixedArrayAssignment',
         'MixedArrayOffset',
         'MixedAssignment',
         'MixedInferredReturnType',
@@ -39,6 +40,7 @@ class Config
         'MixedPropertyFetch',
         'MixedPropertyAssignment',
         'MixedStringOffsetAssignment',
+        'MixedTypeCoercion',
     ];
 
     /**

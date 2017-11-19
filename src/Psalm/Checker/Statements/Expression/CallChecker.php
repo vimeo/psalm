@@ -28,6 +28,7 @@ use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\NullArgument;
 use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\NullReference;
@@ -2219,19 +2220,33 @@ class CallChecker
                         false,
                         false,
                         $scalar_type_match_found,
-                        $coerced_type
+                        $coerced_type,
+                        $coerced_type_from_mixed
                     );
 
                     if ($coerced_type) {
-                        if (IssueBuffer::accepts(
-                            new TypeCoercion(
-                                'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                    $closure_param_type . ', parent type ' . $input_type . ' provided',
-                                new CodeLocation($statements_checker->getSource(), $closure_arg)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
+                        if ($coerced_type_from_mixed) {
+                            if (IssueBuffer::accepts(
+                                new MixedTypeCoercion(
+                                    'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                                        $closure_param_type . ', parent type ' . $input_type . ' provided',
+                                    new CodeLocation($statements_checker->getSource(), $closure_arg)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new TypeCoercion(
+                                    'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                                        $closure_param_type . ', parent type ' . $input_type . ' provided',
+                                    new CodeLocation($statements_checker->getSource(), $closure_arg)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
                         }
                     }
 
@@ -2393,19 +2408,33 @@ class CallChecker
             true,
             $scalar_type_match_found,
             $coerced_type,
+            $coerced_type_from_mixed,
             $to_string_cast
         );
 
         if ($coerced_type) {
-            if (IssueBuffer::accepts(
-                new TypeCoercion(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                        ', parent type ' . $input_type . ' provided',
-                    $code_location
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
+            if ($coerced_type_from_mixed) {
+                if (IssueBuffer::accepts(
+                    new MixedTypeCoercion(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
+                            ', parent type ' . $input_type . ' provided',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new TypeCoercion(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
+                            ', parent type ' . $input_type . ' provided',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
             }
         }
 

@@ -139,7 +139,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                     if ($suppressed) {
                         $new_issues = array_diff($suppressed, $this->source->getSuppressedIssues());
-                        /** @psalm-suppress TypeCoercion */
+                        /** @psalm-suppress MixedTypeCoercion */
                         $this->addSuppressedIssues($new_issues);
                     }
                 }
@@ -398,7 +398,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($new_issues) {
-                /** @psalm-suppress TypeCoercion */
+                /** @psalm-suppress MixedTypeCoercion */
                 $this->removeSuppressedIssues($new_issues);
             }
         }

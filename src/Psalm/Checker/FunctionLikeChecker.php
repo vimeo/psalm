@@ -998,7 +998,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $ignore_nullable_issues,
                 false,
                 $has_scalar_match,
-                $type_coerced
+                $type_coerced,
+                $type_coerced_from_mixed
             )) {
                 if ($project_checker->update_docblocks) {
                     if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {

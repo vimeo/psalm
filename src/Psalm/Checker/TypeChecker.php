@@ -397,6 +397,7 @@ class TypeChecker
                     $new_type_part,
                     $scalar_type_match_found,
                     $type_coerced,
+                    $type_coerced_from_mixed,
                     $atomic_to_string_cast
                 )) {
                     $acceptable_atomic_types[] = $existing_var_type_part;
@@ -430,6 +431,7 @@ class TypeChecker
                         $existing_var_type_part,
                         $scalar_type_match_found,
                         $type_coerced,
+                        $type_coerced_from_mixed,
                         $atomic_to_string_cast
                     ) || $type_coerced
                     ) {
@@ -492,6 +494,7 @@ class TypeChecker
      * @param  bool         $ignore_false
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
+     * @param  bool         &$type_coerced_from_mixed
      * @param  bool         &$to_string_cast
      *
      * @return bool
@@ -504,6 +507,7 @@ class TypeChecker
         $ignore_false = false,
         &$has_scalar_match = null,
         &$type_coerced = null,
+        &$type_coerced_from_mixed = null,
         &$to_string_cast = null
     ) {
         $has_scalar_match = true;
@@ -535,6 +539,7 @@ class TypeChecker
                     $container_type_part,
                     $scalar_type_match_found,
                     $type_coerced,
+                    $type_coerced_from_mixed,
                     $atomic_to_string_cast
                 );
 
@@ -551,6 +556,7 @@ class TypeChecker
                             $container_type_part,
                             $scalar_type_match_found,
                             $type_coerced,
+                            $type_coerced_from_mixed,
                             $atomic_to_string_cast
                         );
 
@@ -644,6 +650,7 @@ class TypeChecker
      * @param  ProjectChecker  $project_checker
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
+     * @param  bool         &$type_coerced_from_mixed
      * @param  bool         &$to_string_cast
      *
      * @return bool
@@ -654,9 +661,17 @@ class TypeChecker
         Type\Atomic $container_type_part,
         &$has_scalar_match = null,
         &$type_coerced = null,
+        &$type_coerced_from_mixed = null,
         &$to_string_cast = null
     ) {
         if ($container_type_part instanceof TMixed) {
+            return true;
+        }
+
+        if ($input_type_part instanceof TMixed) {
+            $type_coerced = true;
+            $type_coerced_from_mixed = true;
+
             return true;
         }
 
@@ -718,13 +733,10 @@ class TypeChecker
                             false,
                             false,
                             $has_scalar_match,
-                            $type_coerced
+                            $type_coerced,
+                            $type_coerced_from_mixed
                         )
                     ) {
-                        if (self::isContainedBy($project_checker, $container_param, $input_param)) {
-                            $type_coerced = true;
-                        }
-
                         $all_types_contain = false;
                     }
                 }
@@ -789,7 +801,8 @@ class TypeChecker
                         false,
                         false,
                         $has_scalar_match,
-                        $type_coerced
+                        $type_coerced,
+                        $type_coerced_from_mixed
                     )
                 ) {
                     if (self::isContainedBy($project_checker, $container_property_type, $input_property_type)) {
@@ -1360,6 +1373,7 @@ class TypeChecker
                         $container_type_part,
                         $has_scalar_match,
                         $type_coerced,
+                        $type_coerced_from_mixed,
                         $to_string_cast
                     ) &&
                     !$to_string_cast

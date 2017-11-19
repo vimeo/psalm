@@ -21,6 +21,7 @@ class TypeCombinationTest extends TestCase
             $types[$k] = self::getAtomic($type);
         }
 
+        /** @psalm-suppress PossiblyInvalidArgument */
         $this->assertSame(
             $expected,
             (string) Type::combineTypes($types)
