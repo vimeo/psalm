@@ -148,6 +148,8 @@ class FetchChecker
                 // fall through
             }
 
+            $stmt->inferredType = Type::getMixed();
+
             return null;
         }
 

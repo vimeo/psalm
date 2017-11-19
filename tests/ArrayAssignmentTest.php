@@ -634,6 +634,22 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedTypeCoercion', 'MixedArgument'],
             ],
+            'suppressMixedObjectOffset' => [
+                '<?php
+                    function getThings() : array {
+                      return [];
+                    }
+
+                    $arr = [];
+
+                    foreach (getThings() as $a) {
+                      $arr[$a->id] = $a;
+                    }
+
+                    echo $arr[0];',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment', 'MixedPropertyFetch', 'MixedArrayOffset', 'MixedArgument'],
+            ],
         ];
     }
 
