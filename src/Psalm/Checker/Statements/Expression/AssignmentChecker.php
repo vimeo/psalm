@@ -1224,10 +1224,12 @@ class AssignmentChecker
                 throw new \InvalidArgumentException('Should never get here');
             }
 
-            $child_stmt->inferredType = Type::combineUnionTypes(
-                $child_stmt->inferredType,
-                $array_assignment_type
-            );
+            if (!$child_stmt->inferredType->hasObjectType()) {
+                $child_stmt->inferredType = Type::combineUnionTypes(
+                    $child_stmt->inferredType,
+                    $array_assignment_type
+                );
+            }
 
             $current_type = $child_stmt->inferredType;
             $current_dim = $child_stmt->dim;
@@ -1255,10 +1257,12 @@ class AssignmentChecker
             ]);
         }
 
-        $root_type = Type::combineUnionTypes(
-            $root_type,
-            $array_assignment_type
-        );
+        if (!$root_type->hasObjectType()) {
+            $root_type = Type::combineUnionTypes(
+                $root_type,
+                $array_assignment_type
+            );
+        }
 
         $root_array_expr->inferredType = $root_type;
 
