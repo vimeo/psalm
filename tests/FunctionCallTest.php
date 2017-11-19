@@ -318,6 +318,30 @@ class FunctionCallTest extends TestCase
                         return compact(["val"]);
                     }',
             ],
+            'objectLikeKeyChecksAgainstGeneric' => [
+                '<?php
+                    /**
+                     * @param array<string, string> $b
+                     */
+                    function a($b) : string
+                    {
+                      return $b["a"];
+                    }
+
+                    a(["a" => "hello"]);',
+            ],
+            'objectLikeKeyChecksAgainstObjectLike' => [
+                '<?php
+                    /**
+                     * @param array{a: string} $b
+                     */
+                    function a($b) : string
+                    {
+                      return $b["a"];
+                    }
+
+                    a(["a" => "hello"]);',
+            ],
         ];
     }
 
@@ -442,6 +466,32 @@ class FunctionCallTest extends TestCase
                         [1, 2, 3]
                     );',
                 'error_message' => 'UndefinedFunction',
+            ],
+            'objectLikeKeyChecksAgainstDifferentGeneric' => [
+                '<?php
+                    /**
+                     * @param array<string, int> $b
+                     */
+                    function a($b) : int
+                    {
+                      return $b["a"];
+                    }
+
+                    a(["a" => "hello"]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'objectLikeKeyChecksAgainstDifferentObjectLike' => [
+                '<?php
+                    /**
+                     * @param array{a: int} $b
+                     */
+                    function a($b) : int
+                    {
+                      return $b["a"];
+                    }
+
+                    a(["a" => "hello"]);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

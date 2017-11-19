@@ -690,7 +690,23 @@ class TypeChecker
         ) {
             $all_types_contain = true;
 
-            if ($input_type_part instanceof TArray && $container_type_part instanceof TArray) {
+            if (($input_type_part instanceof TArray || $input_type_part instanceof ObjectLike)
+                && ($container_type_part instanceof TArray || $container_type_part instanceof ObjectLike)
+            ) {
+                if ($container_type_part instanceof ObjectLike) {
+                    $container_type_part = new TArray([
+                        Type::getString(),
+                        $container_type_part->getGenericTypeParam(),
+                    ]);
+                }
+
+                if ($input_type_part instanceof ObjectLike) {
+                    $input_type_part = new TArray([
+                        Type::getString(),
+                        $input_type_part->getGenericTypeParam(),
+                    ]);
+                }
+
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     $container_param = $container_type_part->type_params[$i];
 
@@ -755,8 +771,42 @@ class TypeChecker
             return true;
         }
 
-        if ($container_type_part instanceof TArray && $input_type_part instanceof ObjectLike) {
-            return true;
+        if ($container_type_part instanceof ObjectLike && $input_type_part instanceof ObjectLike) {
+            $all_types_contain = true;
+
+            foreach ($input_type_part->properties as $key => $input_property_type) {
+                if (!isset($container_type_part->properties[$key])) {
+                    return false;
+                }
+
+                $container_property_type = $container_type_part->properties[$key];
+
+                if (!$input_property_type->isEmpty() &&
+                    !self::isContainedBy(
+                        $project_checker,
+                        $input_property_type,
+                        $container_property_type,
+                        false,
+                        false,
+                        $has_scalar_match,
+                        $type_coerced
+                    )
+                ) {
+                    if (self::isContainedBy($project_checker, $container_property_type, $input_property_type)) {
+                        $type_coerced = true;
+                    }
+
+                    $all_types_contain = false;
+                }
+            }
+
+            if ($all_types_contain) {
+                $to_string_cast = false;
+
+                return true;
+            }
+
+            return false;
         }
 
         if ($container_type_part instanceof TNamedObject &&

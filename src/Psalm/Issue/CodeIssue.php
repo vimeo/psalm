@@ -78,7 +78,7 @@ abstract class CodeIssue
     /**
      * @param  string          $severity
      *
-     * @return array{severity: string, line_number: string, type: string, message: string, file_name: string,
+     * @return array{severity: string, line_number: int, type: string, message: string, file_name: string,
      *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column: int}
      */
     public function toArray($severity = Config::REPORT_ERROR)

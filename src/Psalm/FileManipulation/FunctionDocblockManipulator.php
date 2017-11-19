@@ -106,9 +106,11 @@ class FunctionDocblockManipulator
             $parsed_docblock = ['description' => ''];
         }
 
-        $parsed_docblock['specials']['return'] = [$this->new_phpdoc_return_type];
+        if ($this->new_phpdoc_return_type) {
+            $parsed_docblock['specials']['return'] = [$this->new_phpdoc_return_type];
+        }
 
-        if ($this->new_phpdoc_return_type !== $this->new_psalm_return_type) {
+        if ($this->new_phpdoc_return_type !== $this->new_psalm_return_type && $this->new_psalm_return_type) {
             $parsed_docblock['specials']['psalm-return'] = [$this->new_psalm_return_type];
         }
 

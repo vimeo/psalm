@@ -16,7 +16,7 @@ class ClassLikeDocblockComment
     public $template_types = [];
 
     /**
-     * @var array<int, array{name:string, type:string}>
+     * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $properties = [];
 

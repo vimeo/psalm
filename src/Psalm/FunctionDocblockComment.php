@@ -9,7 +9,7 @@ class FunctionDocblockComment
     public $return_type = null;
 
     /**
-     * @var array<int, array{name:string, type:string}>
+     * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $params = [];
 
@@ -48,7 +48,7 @@ class FunctionDocblockComment
     public $template_types = [];
 
     /**
-     * @var array<int, array{template_type: string, param_name: string}>
+     * @var array<int, array{template_type: string, param_name: string, line_number: int}>
      */
     public $template_typeofs = [];
 }

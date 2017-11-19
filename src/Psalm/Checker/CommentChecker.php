@@ -209,7 +209,7 @@ class CommentChecker
                         $info->params[] = [
                             'name' => $line_parts[1],
                             'type' => $line_parts[0],
-                            'line_number' => $line_number,
+                            'line_number' => (int)$line_number,
                         ];
                     }
                 } else {
@@ -340,7 +340,7 @@ class CommentChecker
                         $info->properties[] = [
                             'name' => $line_parts[1],
                             'type' => $line_parts[0],
-                            'line_number' => $line_number,
+                            'line_number' => (int)$line_number,
                         ];
                     }
                 } else {
