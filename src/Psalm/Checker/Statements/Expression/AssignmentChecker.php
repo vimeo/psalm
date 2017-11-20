@@ -1139,6 +1139,8 @@ class AssignmentChecker
 
         $var_id_additions = [];
 
+        $real_var_id = true;
+
         $child_stmt = null;
 
         // First go from the root element up, and go as far as we can to figure out what
@@ -1167,9 +1169,11 @@ class AssignmentChecker
                     $var_id_additions[] = '[\'' . $child_stmt->dim->value . '\']';
                 } else {
                     $var_id_additions[] = '[' . $child_stmt->dim->inferredType . ']';
+                    $real_var_id = false;
                 }
             } else {
                 $var_id_additions[] = '';
+                $real_var_id = false;
             }
 
             if (!isset($child_stmt->var->inferredType)) {
@@ -1204,7 +1208,11 @@ class AssignmentChecker
             }
         }
 
-        if ($root_var_id && isset($child_stmt->var->inferredType) && !$child_stmt->var->inferredType->hasObjectType()) {
+        if ($root_var_id
+            && $real_var_id
+            && isset($child_stmt->var->inferredType)
+            && !$child_stmt->var->inferredType->hasObjectType()
+        ) {
             $array_var_id = $root_var_id . implode('', $var_id_additions);
             $context->vars_in_scope[$array_var_id] = clone $assignment_type;
         }
@@ -1300,7 +1308,7 @@ class AssignmentChecker
             } else {
                 $new_child_type = $root_type; // noop
             }
-        } else {
+        } elseif (array_keys($root_type->types) !== ['string']) {
             $array_assignment_type = new Type\Union([
                 new TArray([
                     isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
@@ -1312,6 +1320,8 @@ class AssignmentChecker
                 $root_type,
                 $array_assignment_type
             );
+        } else {
+            $new_child_type = $root_type;
         }
 
         unset($new_child_type->types['null']);

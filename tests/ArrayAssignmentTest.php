@@ -692,6 +692,14 @@ class ArrayAssignmentTest extends TestCase
                 ],
                 'error_levels' => ['PossiblyNullArrayAssignment'],
             ],
+            'stringAssignment' => [
+                '<?php
+                    $str = "hello";
+                    $str[0] = "i";',
+                'assertions' => [
+                    '$str' => 'string',
+                ],
+            ],
         ];
     }
 
