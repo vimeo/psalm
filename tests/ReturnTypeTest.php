@@ -368,6 +368,16 @@ class ReturnTypeTest extends TestCase
                     function doSomething($res) : void {
                     }',
             ],
+            'returnArrayOfNullable' => [
+                '<?php
+                    /**
+                     * @return array<?stdClass>
+                     */
+                    function getBarWithIsset() {
+                        if (rand() % 2 > 0) return [new stdClass()];
+                        return [null];
+                    }',
+            ],
             'selfReturnNoTypehints' => [
                 '<?php
                     class A {
@@ -533,6 +543,18 @@ class ReturnTypeTest extends TestCase
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass',
+            ],
+            'returnArrayOfNullableInvalid' => [
+                '<?php
+                    /**
+                     * @return array<?stdClass>
+                     */
+                    function getBarWithIsset() {
+                        if (rand() % 2 > 0) return [new stdClass()];
+                        if (rand() % 2 > 0) return [null];
+                        return [2];
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
             'resourceReturnType' => [
                 '<?php
