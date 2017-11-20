@@ -44,7 +44,7 @@ abstract class Type
             throw new TypeParseTreeException('Invalid characters in type');
         }
 
-        $type_string = str_replace('?', 'null|', $type_string);
+        $type_string = preg_replace('/\?(?=[a-zA-Z])/', 'null|', $type_string);
 
         $type_tokens = self::tokenize($type_string);
 

@@ -16,6 +16,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testNullable()
+    {
+        $this->assertSame('null|string', (string) Type::parseString('?string'));
+    }
+
+    /**
+     * @return void
+     */
     public function testArray()
     {
         $this->assertSame('array<int, int>', (string) Type::parseString('array<int, int>'));
