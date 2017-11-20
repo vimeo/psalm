@@ -62,7 +62,9 @@ trait FileCheckerValidCodeParseTestTrait
 
         $actual_vars = [];
         foreach ($assertions as $var => $_) {
-            $actual_vars[$var] = (string)$context->vars_in_scope[$var];
+            if (isset($context->vars_in_scope[$var])) {
+                $actual_vars[$var] = (string)$context->vars_in_scope[$var];
+            }
         }
 
         $this->assertSame($assertions, $actual_vars);
