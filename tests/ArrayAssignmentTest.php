@@ -663,6 +663,27 @@ class ArrayAssignmentTest extends TestCase
                     '$a' => 'array{b:int, d:array{e:int}}',
                 ],
             ],
+            'changeObjectLikeTypeInIf' => [
+                '<?php
+                    $a = [];
+
+                    if (rand(0, 5) > 3) {
+                      $a["b"] = new stdClass;
+                    } else {
+                      $a["b"] = ["e" => "f"];
+                    }
+
+                    if ($a["b"] instanceof stdClass) {
+                      $a["b"] = [];
+                    }
+
+                    $a["b"]["e"] = "d";',
+                'assertions' => [
+                    '$a' => 'array{b:array{e:string}}',
+                    '$a[\'b\']' => 'array{e:string}',
+                    '$a[\'b\'][\'e\']' => 'string',
+                ],
+            ],
         ];
     }
 

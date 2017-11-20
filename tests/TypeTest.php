@@ -579,7 +579,6 @@ class TypeTest extends TestCase
             ],
             'arrayUnionTypeAssertion' => [
                 '<?php
-                    /** @var array|null */
                     $ids = (1 + 1 === 2) ? [] : null;
 
                     if ($ids === null) {
@@ -591,7 +590,6 @@ class TypeTest extends TestCase
             ],
             'arrayUnionTypeAssertionWithIsArray' => [
                 '<?php
-                    /** @var array|null */
                     $ids = (1 + 1 === 2) ? [] : null;
 
                     if (!is_array($ids)) {

@@ -312,7 +312,11 @@ class Union
 
         if ($new_type) {
             foreach ($new_type->types as $key => $new_type_part) {
-                $this->types[$key] = $new_type_part;
+                if (!isset($this->types[$key])) {
+                    $this->types[$key] = $new_type_part;
+                } else {
+                    $this->types[$key] = Type::combineTypes([$new_type_part, $this->types[$key]])->types[$key];
+                }
             }
         } elseif (count($this->types) === 0) {
             $this->types['mixed'] = new Atomic\TMixed();
