@@ -315,7 +315,8 @@ class Union
                 if (!isset($this->types[$key])) {
                     $this->types[$key] = $new_type_part;
                 } else {
-                    $this->types[$key] = Type::combineTypes([$new_type_part, $this->types[$key]])->types[$key];
+                    $combined = Type::combineTypes([$new_type_part, $this->types[$key]]);
+                    $this->types[$key] = array_values($combined->types)[0];
                 }
             }
         } elseif (count($this->types) === 0) {
