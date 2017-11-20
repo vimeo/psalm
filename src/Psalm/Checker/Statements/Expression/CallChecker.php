@@ -1722,6 +1722,8 @@ class CallChecker
                             if ($var_id) {
                                 $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
                             }
+
+                            continue;
                         }
 
                         // noops

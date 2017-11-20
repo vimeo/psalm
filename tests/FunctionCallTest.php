@@ -218,6 +218,17 @@ class FunctionCallTest extends TestCase
                     '$d' => 'array<string, int>',
                 ],
             ],
+            'arrayPopMixed' => [
+                '<?php
+                    /** @var mixed */
+                    $b = ["a" => 5, "c" => 6];
+                    $a = array_pop($b);',
+                'assertions' => [
+                    '$a' => 'mixed',
+                    '$b' => 'mixed',
+                ],
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
             'byRefAfterCallable' => [
                 '<?php
                     /**
