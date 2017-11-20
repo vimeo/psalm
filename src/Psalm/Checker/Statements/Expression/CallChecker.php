@@ -1768,25 +1768,13 @@ class CallChecker
                         ) === false) {
                             return false;
                         }
-
-                        continue;
                     }
-
-                    ExpressionChecker::assignByRefParam(
-                        $statements_checker,
-                        $arg->value,
-                        $by_ref_type,
-                        $context,
-                        $method_id && (strpos($method_id, '::') !== false || !FunctionChecker::inCallMap($method_id))
-                    );
                 } else {
                     if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
                         if (ExpressionChecker::analyzeVariable(
                             $statements_checker,
                             $arg->value,
-                            $context,
-                            $by_ref,
-                            $by_ref_type
+                            $context
                         ) === false) {
                             return false;
                         }
@@ -1922,24 +1910,66 @@ class CallChecker
 
             if ($function_param
                 && $function_param->by_ref
-                && ($arg->value instanceof PhpParser\Node\Scalar
+            ) {
+                if ($arg->value instanceof PhpParser\Node\Scalar
                     || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall
-                )
-            ) {
-                if (IssueBuffer::accepts(
-                    new InvalidPassByReference(
-                        'Parameter ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects a variable',
-                        $code_location
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidPassByReference(
+                            'Parameter ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects a variable',
+                            $code_location
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    continue;
                 }
 
-                break;
+                if (!in_array(
+                    $method_id,
+                    [
+                        'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
+                        'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
+                        'end', 'next', 'prev', 'array_pop', 'array_shift',
+                        'array_push', 'array_unshift',
+                    ],
+                    true
+                )) {
+                    $by_ref_type = null;
+
+                    if ($last_param) {
+                        if ($argument_offset < count($function_params)) {
+                            $by_ref_type = $function_params[$argument_offset]->type;
+                        } else {
+                            $by_ref_type = $last_param->type;
+                        }
+
+                        if ($template_types && $by_ref_type) {
+                            if ($generic_params === null) {
+                                $generic_params = [];
+                            }
+
+                            $by_ref_type = clone $by_ref_type;
+
+                            $by_ref_type->replaceTemplateTypes($template_types, $generic_params);
+                        }
+                    }
+
+                    $by_ref_type = $by_ref_type ?: Type::getMixed();
+
+                    ExpressionChecker::assignByRefParam(
+                        $statements_checker,
+                        $arg->value,
+                        $by_ref_type,
+                        $context,
+                        $method_id && (strpos($method_id, '::') !== false || !FunctionChecker::inCallMap($method_id))
+                    );
+                }
             }
 
             if (isset($arg->value->inferredType)) {
@@ -1948,7 +1978,7 @@ class CallChecker
 
                     if ($function_param->is_variadic) {
                         if (!$param_type->hasArray() || !$param_type->types['array'] instanceof TArray) {
-                            break;
+                            continue;
                         }
 
                         $param_type = clone $param_type->types['array']->type_params[1];

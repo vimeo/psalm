@@ -362,6 +362,27 @@ class TemplateTest extends TestCase
                     '$b' => 'array<int, string>',
                 ],
             ],
+            'genericArrayPop' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     *
+                     * @param array<mixed, TValue> $arr
+                     * @return TValue
+                     */
+                    function my_array_pop(array &$arr) {
+                        return array_pop($arr);
+                    }
+
+                    /** @var mixed */
+                    $b = ["a" => 5, "c" => 6];
+                    $a = my_array_pop($b);',
+                'assertions' => [
+                    '$a' => 'mixed',
+                    '$b' => 'array<mixed, mixed>',
+                ],
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
         ];
     }
 
