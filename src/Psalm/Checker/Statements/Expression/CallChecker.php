@@ -1936,7 +1936,7 @@ class CallChecker
                         'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
                         'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
                         'end', 'next', 'prev', 'array_pop', 'array_shift',
-                        'array_push', 'array_unshift',
+                        'array_push', 'array_unshift', 'socket_select',
                     ],
                     true
                 )) {
