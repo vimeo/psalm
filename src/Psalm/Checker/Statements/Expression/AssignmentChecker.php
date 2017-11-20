@@ -1139,6 +1139,8 @@ class AssignmentChecker
 
         $var_id_additions = [];
 
+        $child_stmt = null;
+
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
         while ($child_stmts) {
@@ -1202,7 +1204,7 @@ class AssignmentChecker
             }
         }
 
-        if ($root_var_id) {
+        if ($root_var_id && isset($child_stmt->var->inferredType) && !$child_stmt->var->inferredType->hasObjectType()) {
             $array_var_id = $root_var_id . implode('', $var_id_additions);
             $context->vars_in_scope[$array_var_id] = clone $assignment_type;
         }

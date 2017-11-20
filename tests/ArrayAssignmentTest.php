@@ -32,38 +32,6 @@ class ArrayAssignmentTest extends TestCase
     }
 
     /**
-     * @return void
-     */
-    public function testImplementsArrayAccess()
-    {
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                class A implements \ArrayAccess {
-                    public function offsetSet($offset, $value) : void {
-                    }
-
-                    public function offsetExists($offset) : bool {
-                        return true;
-                    }
-
-                    public function offsetUnset($offset) : void {
-                    }
-
-                    public function offsetGet($offset) : int {
-                        return 1;
-                    }
-                }
-
-                $a = new A();
-                $a["bar"] = "cool";'
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-    }
-
-    /**
      * @return array
      */
     public function providerFileCheckerValidCodeParse()
@@ -683,6 +651,37 @@ class ArrayAssignmentTest extends TestCase
                     '$a[\'b\']' => 'array{e:string}',
                     '$a[\'b\'][\'e\']' => 'string',
                 ],
+            ],
+            'implementsArrayAccess' => [
+                '<?php
+                    class A implements \ArrayAccess {
+                        /**
+                         * @param  string|int $offset
+                         * @param  mixed $value
+                         */
+                        public function offsetSet($offset, $value) : void {}
+
+                        /** @param string|int $offset */
+                        public function offsetExists($offset) : bool {
+                            return true;
+                        }
+
+                        /** @param string|int $offset */
+                        public function offsetUnset($offset) : void {}
+
+                        /** @return mixed */
+                        public function offsetGet($offset) {
+                            return 1;
+                        }
+                    }
+
+                    $a = new A();
+                    $a["bar"] = "cool";
+                    $a["bar"]->foo();',
+                'assertions' => [
+                    '$a' => 'A',
+                ],
+                'error_levels' => ['MixedMethodCall'],
             ],
         ];
     }
