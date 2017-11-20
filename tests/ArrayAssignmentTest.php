@@ -650,6 +650,17 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedPropertyFetch', 'MixedArrayOffset', 'MixedArgument'],
             ],
+            'changeObjectLikeType' => [
+                '<?php
+                    function takesInt(int $i) : void {}
+
+                    $a = ["b" => "c", "d" => ["e" => "f"]];
+                    $a["b"] = 4;
+                    $a["d"]["e"] = 5;
+
+                    takesInt($a["b"]);
+                    takesInt($a["d"]["e"]);',
+            ],
         ];
     }
 
