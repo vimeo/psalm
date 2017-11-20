@@ -89,7 +89,7 @@ function array_diff_key(array $arr, array $arr2, array $arr3 = null, array $arr4
  * @param array<mixed, TValue> $arr
  * @return TValue
  */
-function array_shift(array $arr) {}
+function array_shift(array &$arr) {}
 
 /**
  * @template TValue
@@ -97,7 +97,7 @@ function array_shift(array $arr) {}
  * @param array<mixed, TValue> $arr
  * @return TValue
  */
-function array_pop(array $arr) {}
+function array_pop(array &$arr) {}
 
 /**
  * @template TKey

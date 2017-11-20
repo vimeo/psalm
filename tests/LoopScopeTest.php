@@ -356,7 +356,14 @@ class LoopScopeTest extends TestCase
 
                         return $merged;
                     }',
-
+            ],
+            'loopWithNoParadox' => [
+                '<?php
+                    $a = ["b", "c", "d"];
+                    while ($a) {
+                      $letter = array_pop($a);
+                      if (!$a) {}
+                    }',
             ],
         ];
     }

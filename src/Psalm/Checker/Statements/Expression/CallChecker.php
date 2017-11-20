@@ -1712,8 +1712,20 @@ class CallChecker
                             return false;
                         }
 
+                        if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
+                            $var_id = ExpressionChecker::getVarId(
+                                $arg->value,
+                                $statements_checker->getFQCLN(),
+                                $statements_checker
+                            );
+
+                            if ($var_id) {
+                                $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
+                            }
+                        }
+
                         // noops
-                        if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'array_pop', 'array_shift'], true)) {
+                        if (in_array($method_id, ['reset', 'end', 'next', 'prev'], true)) {
                             continue;
                         }
 
