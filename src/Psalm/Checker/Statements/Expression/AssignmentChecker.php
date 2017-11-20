@@ -1256,6 +1256,8 @@ class AssignmentChecker
                 );
             }
 
+            unset($new_child_type->types['null']);
+
             if (!$child_stmt->inferredType->hasObjectType()) {
                 $child_stmt->inferredType = $new_child_type;
             }
@@ -1311,6 +1313,8 @@ class AssignmentChecker
                 $array_assignment_type
             );
         }
+
+        unset($new_child_type->types['null']);
 
         if (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;

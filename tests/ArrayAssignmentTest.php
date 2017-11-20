@@ -683,6 +683,15 @@ class ArrayAssignmentTest extends TestCase
                 ],
                 'error_levels' => ['MixedMethodCall'],
             ],
+            'assignToNullDontDie' => [
+                '<?php
+                    $a = null;
+                    $a[0][] = 1;',
+                'assertions' => [
+                    '$a' => 'array<int, array<int, int>>',
+                ],
+                'error_levels' => ['PossiblyNullArrayAssignment'],
+            ],
         ];
     }
 

@@ -34,6 +34,7 @@ use Psalm\Issue\PossiblyInvalidArrayAssignment;
 use Psalm\Issue\PossiblyInvalidArrayOffset;
 use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullArrayAccess;
+use Psalm\Issue\PossiblyNullArrayAssignment;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
@@ -790,6 +791,19 @@ class FetchChecker
                         } else {
                             $array_access_type = clone $replacement_type;
                         }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new PossiblyNullArrayAssignment(
+                                'Cannot access array value on possibly null variable ' . $array_var_id .
+                                    ' of type ' . $array_type,
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+
+                        $array_access_type = new Type\Union([new TEmpty]);
                     }
                 } else {
                     if (IssueBuffer::accepts(
