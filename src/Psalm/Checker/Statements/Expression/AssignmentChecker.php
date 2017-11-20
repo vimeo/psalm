@@ -1223,10 +1223,7 @@ class AssignmentChecker
                         if (isset($type->properties[$string_key_value])) {
                             $has_matching_objectlike_property = true;
 
-                            $type->properties[$string_key_value] = Type::combineUnionTypes(
-                                $type->properties[$string_key_value],
-                                $current_type
-                            );
+                            $type->properties[$string_key_value] = clone $current_type;
                         }
                     }
                 }
@@ -1275,9 +1272,30 @@ class AssignmentChecker
         if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
             $string_key_value = $current_dim->value;
 
-            $array_assignment_type = new Type\Union([
-                new ObjectLike([$string_key_value => $current_type]),
-            ]);
+            $has_matching_objectlike_property = false;
+
+            foreach ($root_type->types as $type) {
+                if ($type instanceof ObjectLike) {
+                    if (isset($type->properties[$string_key_value])) {
+                        $has_matching_objectlike_property = true;
+
+                        $type->properties[$string_key_value] = clone $current_type;
+                    }
+                }
+            }
+
+            if (!$has_matching_objectlike_property) {
+                $array_assignment_type = new Type\Union([
+                    new ObjectLike([$string_key_value => $current_type]),
+                ]);
+
+                $new_child_type = Type::combineUnionTypes(
+                    $root_type,
+                    $array_assignment_type
+                );
+            } else {
+                $new_child_type = $root_type; // noop
+            }
         } else {
             $array_assignment_type = new Type\Union([
                 new TArray([
@@ -1285,13 +1303,15 @@ class AssignmentChecker
                     $current_type,
                 ]),
             ]);
-        }
 
-        if (!$root_type->hasObjectType()) {
-            $root_type = Type::combineUnionTypes(
+            $new_child_type = Type::combineUnionTypes(
                 $root_type,
                 $array_assignment_type
             );
+        }
+
+        if (!$root_type->hasObjectType()) {
+            $root_type = $new_child_type;
         }
 
         $root_array_expr->inferredType = $root_type;

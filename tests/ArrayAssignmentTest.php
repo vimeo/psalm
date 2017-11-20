@@ -652,14 +652,16 @@ class ArrayAssignmentTest extends TestCase
             ],
             'changeObjectLikeType' => [
                 '<?php
-                    function takesInt(int $i) : void {}
-
-                    $a = ["b" => "c", "d" => ["e" => "f"]];
+                    $a = ["b" => "c"];
+                    $a["d"] = ["e" => "f"];
                     $a["b"] = 4;
-                    $a["d"]["e"] = 5;
-
-                    takesInt($a["b"]);
-                    takesInt($a["d"]["e"]);',
+                    $a["d"]["e"] = 5;',
+                'assertions' => [
+                    '$a[\'b\']' => 'int',
+                    '$a[\'d\']' => 'array{e:int}',
+                    '$a[\'d\'][\'e\']' => 'int',
+                    '$a' => 'array{b:int, d:array{e:int}}',
+                ],
             ],
         ];
     }
