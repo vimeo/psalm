@@ -244,6 +244,15 @@ class SwitchChecker
             if ($redefined_vars) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $redefined_vars);
             }
+
+            if ($possibly_redefined_vars) {
+                foreach ($possibly_redefined_vars as $var_id => $type) {
+                    if (!isset($redefined_vars[$var_id]) && !isset($new_vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id]
+                            = Type::combineUnionTypes($type, $context->vars_in_scope[$var_id]);
+                    }
+                }
+            }
         } elseif ($possibly_redefined_vars) {
             foreach ($possibly_redefined_vars as $var_id => $type) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $context->vars_in_scope[$var_id]);
