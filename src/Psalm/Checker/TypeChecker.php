@@ -229,6 +229,20 @@ class TypeChecker
                 return Type::getMixed();
             }
 
+            if ($new_var_type === '!numeric') {
+                $numeric_types = [];
+
+                foreach ($existing_var_type->types as $type) {
+                    if (!$type->isNumericType()) {
+                        $numeric_types[] = $type;
+                    }
+                }
+
+                if ($numeric_types) {
+                    return new Type\Union($numeric_types);
+                }
+            }
+
             if (in_array($new_var_type, ['!falsy', '!null'], true)) {
                 $existing_var_type->removeType('null');
 
