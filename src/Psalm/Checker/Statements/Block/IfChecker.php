@@ -240,7 +240,15 @@ class IfChecker
 
             if ($if_scope->redefined_loop_vars && $loop_context) {
                 foreach ($if_scope->redefined_loop_vars as $var => $type) {
-                    $loop_context->vars_in_scope[$var] = $type;
+                    if (!isset($loop_context->vars_in_scope[$var])) {
+                        $loop_context->vars_in_scope[$var] = $type;
+                    } else {
+                        $loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
+                            $loop_context->vars_in_scope[$var],
+                            $type
+                        );
+                    }
+
                     $updated_loop_vars[$var] = true;
                 }
             }
