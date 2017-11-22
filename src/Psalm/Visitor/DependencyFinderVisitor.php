@@ -704,7 +704,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->aliases
                 );
 
-                if (!in_array(strtolower($return_type_fq_classlike_name), ['self', 'static', 'parent'], true)) {
+                if (!in_array(strtolower($return_type_fq_classlike_name), ['self', 'parent'], true)) {
                     $this->project_checker->queueClassLikeForScanning(
                         $return_type_fq_classlike_name,
                         $this->file_path
@@ -722,8 +722,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 false,
                 FunctionLikeChecker::RETURN_TYPE_REGEX
             );
-
-            $storage->return_type->queueClassLikesForScanning($this->project_checker, $this->file_path);
 
             $storage->signature_return_type = $storage->return_type;
             $storage->signature_return_type_location = $storage->return_type_location;

@@ -355,12 +355,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $storage = $file_storage->functions[$function_id];
 
+            if ($storage->return_type) {
+                $closure_return_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    $storage->return_type,
+                    $context->self,
+                    $this->getMethodId()
+                );
+            } else {
+                $closure_return_type = Type::getMixed();
+            }
+
             /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([
                 new Type\Atomic\Fn(
                     'Closure',
                     $storage->params,
-                    $storage->return_type ?: Type::getMixed()
+                    $closure_return_type
                 ),
             ]);
         }
