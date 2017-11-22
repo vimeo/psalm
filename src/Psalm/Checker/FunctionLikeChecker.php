@@ -921,7 +921,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     new InvalidToString(
                         '__toString methods must return a string, ' . $inferred_return_type . ' returned',
                         $secondary_return_type_location ?: $return_type_location
-                    )
+                    ),
+                    $this->suppressed_issues
                 )) {
                     return false;
                 }
