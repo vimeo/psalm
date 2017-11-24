@@ -4,6 +4,43 @@ namespace Psalm\Tests;
 class ForeachTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\FileCheckerValidCodeParseTestTrait;
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerValidCodeParse()
+    {
+        return [
+            'iteratorAggregateIteration' => [
+                '<?php
+                    class C implements IteratorAggregate
+                    {
+                        public function getIterator(): Iterator
+                        {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    function loopT(Traversable $coll): void
+                    {
+                        foreach ($coll as $item) {}
+                    }
+
+                    function loopI(IteratorAggregate $coll): void
+                    {
+                        foreach ($coll as $item) {}
+                    }
+
+                    loopT(new C);
+                    loopI(new C);',
+                'assignments' => [],
+                'error_levels' => [
+                    'MixedAssignment', 'UndefinedThisPropertyAssignment',
+                ],
+            ],
+        ];
+    }
 
     /**
      * @return array
