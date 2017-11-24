@@ -134,12 +134,10 @@ class SwitchChecker
 
             $statements_checker->analyze($case_stmts, $case_context, $loop_context);
 
-            if ($context->collect_references) {
-                $context->referenced_vars = array_merge(
-                    $context->referenced_vars,
-                    $case_context->referenced_vars
-                );
-            }
+            $context->referenced_var_ids = array_merge(
+                $context->referenced_var_ids,
+                $case_context->referenced_var_ids
+            );
 
             if ($case_exit_type !== 'return_throw') {
                 $vars = array_diff_key(

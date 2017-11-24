@@ -90,12 +90,10 @@ class TryChecker
 
             $statements_checker->analyze($catch->stmts, $catch_context, $loop_context);
 
-            if ($context->collect_references) {
-                $context->referenced_vars = array_merge(
-                    $catch_context->referenced_vars,
-                    $context->referenced_vars
-                );
-            }
+            $context->referenced_var_ids = array_merge(
+                $catch_context->referenced_var_ids,
+                $context->referenced_var_ids
+            );
 
             if (!ScopeChecker::doesAlwaysReturnOrThrow($catch->stmts)) {
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {

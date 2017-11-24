@@ -597,7 +597,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 ) {
                     $original_location = $statements_checker->getFirstAppearance($var_name);
 
-                    if (!isset($context->referenced_vars[$var_name]) && $original_location) {
+                    if (!isset($context->referenced_var_ids[$var_name]) && $original_location) {
                         if (!isset($storage->param_types[substr($var_name, 1)]) ||
                             !$storage instanceof MethodStorage ||
                             $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE

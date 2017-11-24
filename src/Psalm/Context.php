@@ -124,7 +124,7 @@ class Context
      *
      * @var array<string, bool>
      */
-    public $referenced_vars = [];
+    public $referenced_var_ids = [];
 
     /**
      * A list of variables that have been passed by reference (where we know their type)
@@ -313,7 +313,7 @@ class Context
     public function remove($remove_var_id)
     {
         unset(
-            $this->referenced_vars[$remove_var_id],
+            $this->referenced_var_ids[$remove_var_id],
             $this->vars_possibly_in_scope[$remove_var_id]
         );
 
@@ -547,7 +547,7 @@ class Context
             $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
 
             if ($stripped_var[0] === '$' && $stripped_var !== '$this') {
-                $this->referenced_vars[$var_name] = true;
+                $this->referenced_var_ids[$var_name] = true;
             }
 
             return isset($this->vars_in_scope[$var_name]);

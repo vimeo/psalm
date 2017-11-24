@@ -142,12 +142,10 @@ class IfChecker
             $context->vars_possibly_in_scope
         );
 
-        if ($context->collect_references) {
-            $context->referenced_vars = array_merge(
-                $if_context->referenced_vars,
-                $context->referenced_vars
-            );
-        }
+        $context->referenced_var_ids = array_merge(
+            $if_context->referenced_var_ids,
+            $context->referenced_var_ids
+        );
 
         $temp_else_context = clone $original_context;
 
@@ -345,9 +343,9 @@ class IfChecker
         }
 
         if ($outer_context->collect_references) {
-            $outer_context->referenced_vars = array_merge(
-                $outer_context->referenced_vars,
-                $if_context->referenced_vars
+            $outer_context->referenced_var_ids = array_merge(
+                $outer_context->referenced_var_ids,
+                $if_context->referenced_var_ids
             );
         }
 
@@ -777,9 +775,9 @@ class IfChecker
         }
 
         if ($outer_context->collect_references) {
-            $outer_context->referenced_vars = array_merge(
-                $outer_context->referenced_vars,
-                $elseif_context->referenced_vars
+            $outer_context->referenced_var_ids = array_merge(
+                $outer_context->referenced_var_ids,
+                $elseif_context->referenced_var_ids
             );
         }
 
@@ -871,9 +869,9 @@ class IfChecker
         }
 
         if ($outer_context->collect_references) {
-            $outer_context->referenced_vars = array_merge(
-                $outer_context->referenced_vars,
-                $else_context->referenced_vars
+            $outer_context->referenced_var_ids = array_merge(
+                $outer_context->referenced_var_ids,
+                $else_context->referenced_var_ids
             );
         }
 

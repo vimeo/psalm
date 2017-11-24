@@ -843,9 +843,9 @@ class ExpressionChecker
                 return false;
             }
 
-            $context->referenced_vars = array_merge(
-                $op_context->referenced_vars,
-                $context->referenced_vars
+            $context->referenced_var_ids = array_merge(
+                $op_context->referenced_var_ids,
+                $context->referenced_var_ids
             );
 
             foreach ($op_context->vars_in_scope as $var_id => $type) {
@@ -948,9 +948,9 @@ class ExpressionChecker
                 $context->updateChecks($op_context);
             }
 
-            $context->referenced_vars = array_merge(
-                $op_context->referenced_vars,
-                $context->referenced_vars
+            $context->referenced_var_ids = array_merge(
+                $op_context->referenced_var_ids,
+                $context->referenced_var_ids
             );
 
             $context->vars_possibly_in_scope = array_merge(
@@ -1013,12 +1013,10 @@ class ExpressionChecker
                 }
             }
 
-            if ($context->collect_references) {
-                $context->referenced_vars = array_merge(
-                    $context->referenced_vars,
-                    $t_if_context->referenced_vars
-                );
-            }
+            $context->referenced_var_ids = array_merge(
+                $context->referenced_var_ids,
+                $t_if_context->referenced_var_ids
+            );
 
             $t_else_context = clone $context;
 
@@ -1043,12 +1041,10 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($context->collect_references) {
-                $context->referenced_vars = array_merge(
-                    $context->referenced_vars,
-                    $t_else_context->referenced_vars
-                );
-            }
+            $context->referenced_var_ids = array_merge(
+                $context->referenced_var_ids,
+                $t_else_context->referenced_var_ids
+            );
 
             $lhs_type = null;
 
@@ -2037,12 +2033,10 @@ class ExpressionChecker
                 }
             }
 
-            if ($context->collect_references) {
-                $context->referenced_vars = array_merge(
-                    $context->referenced_vars,
-                    $t_if_context->referenced_vars
-                );
-            }
+            $context->referenced_var_ids = array_merge(
+                $context->referenced_var_ids,
+                $t_if_context->referenced_var_ids
+            );
         }
 
         if ($negated_if_types) {
@@ -2072,12 +2066,10 @@ class ExpressionChecker
             }
         }
 
-        if ($context->collect_references) {
-            $context->referenced_vars = array_merge(
-                $context->referenced_vars,
-                $t_else_context->referenced_vars
-            );
-        }
+        $context->referenced_var_ids = array_merge(
+            $context->referenced_var_ids,
+            $t_else_context->referenced_var_ids
+        );
 
         $lhs_type = null;
 
@@ -2236,7 +2228,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
             self::analyzeIssetVar($statements_checker, $stmt->var, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            if ($context->collect_references && is_string($stmt->name)) {
+            if (is_string($stmt->name)) {
                 $context->hasVariable('$' . $stmt->name);
             }
         }

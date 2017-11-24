@@ -73,12 +73,10 @@ class ForChecker
             $context->vars_possibly_in_scope
         );
 
-        if ($context->collect_references) {
-            $context->referenced_vars = array_merge(
-                $for_context->referenced_vars,
-                $context->referenced_vars
-            );
-        }
+        $context->referenced_var_ids = array_merge(
+            $for_context->referenced_var_ids,
+            $context->referenced_var_ids
+        );
 
         return null;
     }

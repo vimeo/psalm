@@ -773,12 +773,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $do_context->vars_possibly_in_scope
         );
 
-        if ($context->collect_references) {
-            $context->referenced_vars = array_merge(
-                $context->referenced_vars,
-                $do_context->referenced_vars
-            );
-        }
+        $context->referenced_var_ids = array_merge(
+            $context->referenced_var_ids,
+            $do_context->referenced_var_ids
+        );
 
         return ExpressionChecker::analyze($this, $stmt->cond, $context);
     }
