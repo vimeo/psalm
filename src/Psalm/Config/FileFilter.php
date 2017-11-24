@@ -34,7 +34,7 @@ class FileFilter
     /**
      * @param  bool             $inclusive
      *
-     * @psalm-suppress FailedTypeResolution
+     * @psalm-suppress RedundantCondition
      */
     public function __construct($inclusive)
     {

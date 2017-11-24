@@ -17,7 +17,7 @@ use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Issue\DeprecatedProperty;
-use Psalm\Issue\FailedTypeResolution;
+use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidScope;
@@ -246,7 +246,9 @@ class AssignmentChecker
                     );
 
                     continue;
-                } elseif (isset($assign_value_type->types['array']) &&
+                }
+
+                if (isset($assign_value_type->types['array']) &&
                     $assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike &&
                     !$assign_var_item->key &&
                     isset($assign_value_type->types['array']->properties[$offset]) // if object-like has int offsets
@@ -356,7 +358,7 @@ class AssignmentChecker
 
         if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
             if (IssueBuffer::accepts(
-                new FailedTypeResolution(
+                new AssignmentToVoid(
                     'Cannot assign ' . $var_id . ' to type void',
                     new CodeLocation($statements_checker->getSource(), $assign_var)
                 ),
@@ -533,6 +535,10 @@ class AssignmentChecker
                 $statements_checker->getFQCLN(),
                 $statements_checker
             );
+
+            if ($var_id) {
+                $context->assigned_var_ids[$var_id] = true;
+            }
 
             if ($lhs_type->isMixed()) {
                 if (IssueBuffer::accepts(

@@ -827,6 +827,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         if ($fq_const_name) {
             $const_name_parts = explode('\\', $fq_const_name);
+            /** @var string */
             $const_name = array_pop($const_name_parts);
             $namespace_name = implode('\\', $const_name_parts);
             $namespace_constants = NamespaceChecker::getConstantsForNamespace(

@@ -6,6 +6,7 @@ use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Issue\ParadoxicalCondition;
+use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 
@@ -183,7 +184,7 @@ class AlgebraChecker
 
     /**
      * This looks to see if there are any clauses in one formula that contradict
-     * clauses in another formula
+     * clauses in another formula, or clauses that duplicate previous clauses
      *
      * e.g.
      * if ($a) { }
@@ -206,6 +207,20 @@ class AlgebraChecker
 
         // remove impossible types
         foreach ($negated_formula2 as $clause_a) {
+            foreach ($clause_a->possibilities as $key => $values) {
+                if (count($values) > 1 && count(array_unique($values)) < count($values)) {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key,
+                            new CodeLocation($statements_checker, $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
             if (!$clause_a->reconcilable || $clause_a->wedge) {
                 continue;
             }

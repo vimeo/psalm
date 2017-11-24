@@ -166,9 +166,7 @@ class Context
     public function __clone()
     {
         foreach ($this->vars_in_scope as &$type) {
-            if ($type) {
-                $type = clone $type;
-            }
+            $type = clone $type;
         }
 
         foreach ($this->clauses as &$clause) {
@@ -264,8 +262,7 @@ class Context
 
         $expr_type = $expr->inferredType;
 
-        if ($expr_type
-            && ($expr_type->isMixed() || (string)$expr_type === (string)$inferred_type)
+        if (($expr_type->isMixed() || (string)$expr_type === (string)$inferred_type)
             && $expr instanceof PhpParser\Node\Expr\Variable
             && is_string($expr->name)
             && !isset($this->assigned_var_ids['$' . $expr->name])
@@ -326,22 +323,40 @@ class Context
     }
 
     /**
-     * @param  string               $remove_var_id
-     * @param  Union|null           $new_type
-     * @param  ?StatementsChecker   $statements_checker
+     * @param  string[]             $changed_var_ids
      *
      * @return void
      */
-    public function removeVarFromConflictingClauses(
+    public function removeReconciledClauses(array $changed_var_ids)
+    {
+        $this->clauses = array_filter(
+            $this->clauses,
+            /** @return bool */
+            function (Clause $c) use ($changed_var_ids) {
+                return count($c->possibilities) > 1
+                    || !in_array(array_keys($c->possibilities)[0], $changed_var_ids);
+            }
+        );
+    }
+
+    /**
+     * @param  string                 $remove_var_id
+     * @param  Clause[]               $clauses
+     * @param  Union|null             $new_type
+     * @param  StatementsChecker|null $statements_checker
+     * @return Clause[]
+     */
+    public static function filterClauses(
         $remove_var_id,
+        array $clauses,
         Union $new_type = null,
         StatementsChecker $statements_checker = null
     ) {
-        $clauses_to_keep = [];
-
         $new_type_string = (string)$new_type;
 
-        foreach ($this->clauses as $clause) {
+        $clauses_to_keep = [];
+
+        foreach ($clauses as $clause) {
             \Psalm\Checker\AlgebraChecker::calculateNegation($clause);
 
             if (!isset($clause->possibilities[$remove_var_id]) ||
@@ -392,7 +407,22 @@ class Context
             }
         }
 
-        $this->clauses = $clauses_to_keep;
+        return $clauses_to_keep;
+    }
+
+    /**
+     * @param  string               $remove_var_id
+     * @param  Union|null           $new_type
+     * @param  ?StatementsChecker   $statements_checker
+     *
+     * @return void
+     */
+    public function removeVarFromConflictingClauses(
+        $remove_var_id,
+        Union $new_type = null,
+        StatementsChecker $statements_checker = null
+    ) {
+        $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_checker);
 
         if ($this->parent_context) {
             $this->parent_context->removeVarFromConflictingClauses($remove_var_id);
@@ -421,11 +451,13 @@ class Context
             return;
         }
 
-        $this->removeVarFromConflictingClauses(
-            $remove_var_id,
-            $existing_type->isMixed() ? null : $new_type,
-            $statements_checker
-        );
+        if ($this->clauses) {
+            $this->removeVarFromConflictingClauses(
+                $remove_var_id,
+                $existing_type->isMixed() ? null : $new_type,
+                $statements_checker
+            );
+        }
 
         if ($existing_type->hasArray() || $existing_type->isMixed()) {
             $vars_to_remove = [];
@@ -536,23 +568,19 @@ class Context
      */
     public function hasVariable($var_name)
     {
-        if ($this->collect_references) {
-            if (!$var_name ||
-                (!isset($this->vars_possibly_in_scope[$var_name]) &&
-                    !isset($this->vars_in_scope[$var_name]))
-            ) {
-                return false;
-            }
-
-            $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
-
-            if ($stripped_var[0] === '$' && $stripped_var !== '$this') {
-                $this->referenced_var_ids[$var_name] = true;
-            }
-
-            return isset($this->vars_in_scope[$var_name]);
+        if (!$var_name ||
+            (!isset($this->vars_possibly_in_scope[$var_name]) &&
+                !isset($this->vars_in_scope[$var_name]))
+        ) {
+            return false;
         }
 
-        return $var_name && isset($this->vars_in_scope[$var_name]);
+        $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
+
+        if ($stripped_var[0] === '$' && $stripped_var !== '$this') {
+            $this->referenced_var_ids[$var_name] = true;
+        }
+
+        return isset($this->vars_in_scope[$var_name]);
     }
 }

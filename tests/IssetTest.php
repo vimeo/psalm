@@ -29,10 +29,10 @@ class IssetTest extends TestCase
             ],
             'nullCoalesceWithGoodVariable' => [
                 '<?php
-                    $b = false;
+                    $b = rand(0, 10) > 5 ? "hello" : null;
                     $a = $b ?? null;',
                 'assertions' => [
-                    '$a' => 'false|null',
+                    '$a' => 'string|null',
                 ],
             ],
             'issetKeyedOffset' => [

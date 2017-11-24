@@ -111,7 +111,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
             ],
-            'twoVarLogicNotNestedWithElseif' => [
+            'twoVarLogicNotNestedWithElseifAndNoNegations' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
                         if ($a) {
@@ -126,7 +126,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
             ],
-            'threeVarLogicNotNested' => [
+            'threeVarLogicNotNestedWithNoRedefinitions' => [
                 '<?php
                     function foo(?string $a, ?string $b, ?string $c) : string {
                         if ($a) {
@@ -144,7 +144,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
             ],
-            'threeVarLogicNotNestedAndOr' => [
+            'threeVarLogicNotNestedAndOrWithNoRedefinitions' => [
                 '<?php
                     function foo(?string $a, ?string $b, ?string $c) : string {
                         if ($a) {
@@ -458,6 +458,34 @@ class TypeAlgebraTest extends TestCase
                       }
                     }',
             ],
+            'nestedCheckWithSingleVarPerLevel' => [
+                '<?php
+                    function foo(?stdClass $a, ?stdClass $b) : void {
+                        if ($a) {
+                            if ($b) {}
+                        }
+                    }',
+            ],
+            'nestedCheckWithTwoVarsPerLevel' => [
+                '<?php
+                    function foo(?stdClass $a, ?stdClass $b, ?stdClass $c, ?stdClass $d) : void {
+                        if ($a && $b) {
+                            if ($c && $d) {}
+                        }
+                    }',
+            ],
+            'nestedCheckWithReturn' => [
+                '<?php
+                    function foo(?stdClass $a, ?stdClass $b) : void {
+                        if ($a === null) {
+                            return;
+                        }
+
+                        if ($b) {
+                            echo "hello";
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -514,13 +542,13 @@ class TypeAlgebraTest extends TestCase
             'invertedTwoVarLogicNotNestedWithVarChange' => [
                 '<?php
                     function foo(?string $a, ?string $b) : string {
-                        if ($a || $b) {
+                        if ($a !== null || $b !== null) {
                             $b = null;
                         } else {
                             return "bad";
                         }
 
-                        if (!$a) return $b;
+                        if ($a !== null) return $b;
                         return $a;
                     }',
                 'error_message' => 'InvalidReturnType',
@@ -553,22 +581,6 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         if (!$a && !$b) return $c;
-                        if (!$a) return $b;
-                        return $a;
-                    }',
-                'error_message' => 'InvalidReturnType',
-            ],
-            'twoVarLogicNotNestedWithElseifNegatedInIf' => [
-                '<?php
-                    function foo(?string $a, ?string $b) : string {
-                        if ($a) {
-                            $a = null;
-                        } elseif ($b) {
-                            // do nothing here
-                        } else {
-                            return "bad";
-                        }
-
                         if (!$a) return $b;
                         return $a;
                     }',

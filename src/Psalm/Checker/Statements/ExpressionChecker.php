@@ -827,6 +827,7 @@ class ExpressionChecker
                 $left_type_assertions,
                 $context->vars_in_scope,
                 $changed_vars,
+                [],
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
@@ -899,6 +900,7 @@ class ExpressionChecker
                 $negated_type_assertions,
                 $context->vars_in_scope,
                 $changed_vars,
+                [],
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
@@ -990,6 +992,7 @@ class ExpressionChecker
                 $reconcilable_if_types,
                 $t_if_context->vars_in_scope,
                 $changed_vars,
+                [],
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt->left),
                 $statements_checker->getSuppressedIssues()
@@ -1025,6 +1028,7 @@ class ExpressionChecker
                     $negated_if_types,
                     $t_else_context->vars_in_scope,
                     $changed_vars,
+                    [],
                     $statements_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt->right),
                     $statements_checker->getSuppressedIssues()
@@ -2010,6 +2014,7 @@ class ExpressionChecker
             $reconcilable_if_types,
             $t_if_context->vars_in_scope,
             $changed_vars,
+            [],
             $statements_checker,
             new CodeLocation($statements_checker->getSource(), $stmt->cond),
             $statements_checker->getSuppressedIssues()
@@ -2044,6 +2049,7 @@ class ExpressionChecker
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
                 $changed_vars,
+                [],
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt->else),
                 $statements_checker->getSuppressedIssues()

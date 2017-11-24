@@ -558,7 +558,7 @@ class TypeReconciliationTest extends TestCase
                 'assertions' => [
                     '$b' => 'null',
                 ],
-                'error_levels' => ['FailedTypeResolution'],
+                'error_levels' => ['RedundantCondition'],
             ],
             'ignoreNullCheckAndMaintainNullableValue' => [
                 '<?php
@@ -755,49 +755,6 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     if (5 === false) { }',
                 'error_message' => 'TypeDoesNotContainType',
-            ],
-            'failedTypeResolution' => [
-                '<?php
-                    class A { }
-
-                    /**
-                     * @return void
-                     */
-                    function fooFoo(A $a) {
-                        if ($a instanceof A) {
-                        }
-                    }',
-                'error_message' => 'FailedTypeResolution',
-            ],
-            'failedTypeResolutionWithDocblock' => [
-                '<?php
-                    class A { }
-
-                    /**
-                     * @param  A $a
-                     * @return void
-                     */
-                    function fooFoo(A $a) {
-                        if ($a instanceof A) {
-                        }
-                    }',
-                'error_message' => 'FailedTypeResolution',
-            ],
-            'typeResolutionFromDocblockAndInstanceof' => [
-                '<?php
-                    class A { }
-
-                    /**
-                     * @param  A $a
-                     * @return void
-                     */
-                    function fooFoo($a) {
-                        if ($a instanceof A) {
-                            if ($a instanceof A) {
-                            }
-                        }
-                    }',
-                'error_message' => 'FailedTypeResolution',
             ],
             'typeTransformation' => [
                 '<?php

@@ -58,6 +58,7 @@ class WhileChecker
                 $reconcilable_while_types,
                 $while_context->vars_in_scope,
                 $changed_vars,
+                [],
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt->cond),
                 $statements_checker->getSuppressedIssues()
@@ -101,6 +102,7 @@ class WhileChecker
                     $negated_while_types,
                     $context->vars_in_scope,
                     $changed_vars,
+                    [],
                     $statements_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt->cond),
                     $statements_checker->getSuppressedIssues()

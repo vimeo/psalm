@@ -103,6 +103,7 @@ class SwitchChecker
                             $reconcilable_if_types,
                             $case_context->vars_in_scope,
                             $changed_vars,
+                            [],
                             $statements_checker,
                             new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
                             $statements_checker->getSuppressedIssues()
