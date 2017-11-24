@@ -1146,6 +1146,7 @@ class AssignmentChecker
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
         while ($child_stmts) {
+            /** @var PhpParser\Node\Expr\ArrayDimFetch */
             $child_stmt = array_shift($child_stmts);
 
             if (count($child_stmts)) {

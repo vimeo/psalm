@@ -1562,11 +1562,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         $class_storage = $project_checker->classlike_storage_provider->get($declaring_property_class);
 
-        $storage = $class_storage->properties[$property_name];
-
-        if (!$storage) {
+        if (!isset($class_storage->properties[$property_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $property_id);
         }
+
+        $storage = $class_storage->properties[$property_name];
 
         switch ($storage->visibility) {
             case self::VISIBILITY_PUBLIC:

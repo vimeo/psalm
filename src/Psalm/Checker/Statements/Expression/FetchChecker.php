@@ -850,7 +850,8 @@ class FetchChecker
                         if (!TypeChecker::isContainedBy(
                             $project_checker,
                             $offset_type,
-                            $type->type_params[0]
+                            $type->type_params[0],
+                            $offset_type->ignore_nullable_issues
                         )) {
                             $invalid_offset_types[] = (string)$type->type_params[0];
                         } else {
@@ -939,7 +940,7 @@ class FetchChecker
                                     $type->properties[$int_key_value]
                                 );
                             }
-                        } elseif ($string_key_value && $in_assignment && $string_key_value) {
+                        } elseif ($string_key_value && $in_assignment) {
                             $type->properties[$string_key_value] = new Type\Union([new TEmpty]);
 
                             if (!$array_access_type) {
@@ -968,7 +969,8 @@ class FetchChecker
                     } elseif (TypeChecker::isContainedBy(
                         $project_checker,
                         $offset_type,
-                        Type::getString()
+                        Type::getString(),
+                        $offset_type->ignore_nullable_issues
                     )) {
                         if ($replacement_type) {
                             $generic_params = Type::combineUnionTypes(

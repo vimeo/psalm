@@ -7606,7 +7606,7 @@ return [
 'ReflectionClass::getModifiers' => ['int'],
 'ReflectionClass::getNamespaceName' => ['string'],
 'ReflectionClass::getName' => ['string'],
-'ReflectionClass::getParentClass' => ['ReflectionClass'],
+'ReflectionClass::getParentClass' => ['?ReflectionClass'],
 'ReflectionClass::getProperties' => ['array', 'filter='=>'int'],
 'ReflectionClass::getProperty' => ['ReflectionProperty', 'name'=>'string'],
 'ReflectionClass::getShortName' => ['string'],

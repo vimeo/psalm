@@ -934,7 +934,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if (!$return_type) {
-            if ($inferred_return_type && !$inferred_return_type->isMixed()) {
+            if (!$inferred_return_type->isMixed()) {
                 $this->addDocblockReturnType($project_checker, $inferred_return_type);
             }
 
@@ -983,7 +983,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             );
         }
 
-        if ($inferred_return_type && !$declared_return_type->isMixed()) {
+        if (!$declared_return_type->isMixed()) {
             if ($inferred_return_type->isVoid() && $declared_return_type->isVoid()) {
                 return null;
             }

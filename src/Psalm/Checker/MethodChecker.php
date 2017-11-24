@@ -39,9 +39,7 @@ class MethodChecker extends FunctionLikeChecker
         if ($method_id = self::getDeclaringMethodId($project_checker, $method_id)) {
             $storage = self::getStorage($project_checker, $method_id);
 
-            if ($storage) {
-                return $storage->params;
-            }
+            return $storage->params;
         }
 
         throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);
@@ -84,10 +82,6 @@ class MethodChecker extends FunctionLikeChecker
 
         $storage = self::getStorage($project_checker, $method_id);
 
-        if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
-        }
-
         if ($storage->return_type) {
             return $storage->return_type;
         }
@@ -97,7 +91,7 @@ class MethodChecker extends FunctionLikeChecker
         foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
             $overridden_storage = self::getStorage($project_checker, $overridden_method_id);
 
-            if ($overridden_storage && $overridden_storage->return_type) {
+            if ($overridden_storage->return_type) {
                 if ($overridden_storage->return_type->isNull()) {
                     return Type::getVoid();
                 }
@@ -128,17 +122,13 @@ class MethodChecker extends FunctionLikeChecker
 
         $storage = self::getStorage($project_checker, $method_id);
 
-        if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
-        }
-
         if (!$storage->return_type_location) {
             $overridden_method_ids = self::getOverriddenMethodIds($project_checker, $method_id);
 
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = self::getStorage($project_checker, $overridden_method_id);
 
-                if ($overridden_storage && $overridden_storage->return_type_location) {
+                if ($overridden_storage->return_type_location) {
                     $defined_location = $overridden_storage->return_type_location;
                     break;
                 }
@@ -261,10 +251,6 @@ class MethodChecker extends FunctionLikeChecker
         $method_id = self::getDeclaringMethodId($project_checker, $method_id);
 
         $storage = self::getStorage($project_checker, $method_id);
-
-        if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null');
-        }
 
         if (!$storage->is_static) {
             if ($self_call) {
@@ -496,10 +482,6 @@ class MethodChecker extends FunctionLikeChecker
 
         $storage = self::getStorage($project_checker, $declaring_method_id);
 
-        if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $declaring_method_id);
-        }
-
         switch ($storage->visibility) {
             case ClassLikeChecker::VISIBILITY_PUBLIC:
                 return true;
@@ -582,10 +564,6 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         $storage = self::getStorage($project_checker, $declaring_method_id);
-
-        if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $declaring_method_id);
-        }
 
         switch ($storage->visibility) {
             case ClassLikeChecker::VISIBILITY_PUBLIC:
@@ -771,10 +749,6 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         $storage = self::getStorage($project_checker, $method_id);
-
-        if (!$storage) {
-            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
-        }
 
         list($fq_class_name) = explode('::', $method_id);
 

@@ -409,6 +409,12 @@ return [
     'phpparser\\node\\expr\\new_' => [
         'args' => 'array<int, PhpParser\Node\Arg>',
     ],
+    'phpparser\node\expr\array_' => [
+        'items' => 'array<int, phpparser\node\expr\arrayitem>',
+    ],
+    'phpparser\node\expr\list_' => [
+        'items' => 'array<int, phpparser\node\expr\arrayitem|null>',
+    ],
     'phpparser\\node\\expr\\methodcall' => [
         'args' => 'array<int, PhpParser\Node\Arg>',
     ],

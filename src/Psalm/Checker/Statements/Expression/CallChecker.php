@@ -171,15 +171,13 @@ class CallChecker
                     if ($var_type_part instanceof Type\Atomic\Fn) {
                         $function_params = $var_type_part->params;
 
-                        if ($var_type_part->return_type) {
-                            if (isset($stmt->inferredType)) {
-                                $stmt->inferredType = Type::combineUnionTypes(
-                                    $stmt->inferredType,
-                                    $var_type_part->return_type
-                                );
-                            } else {
-                                $stmt->inferredType = $var_type_part->return_type;
-                            }
+                        if (isset($stmt->inferredType)) {
+                            $stmt->inferredType = Type::combineUnionTypes(
+                                $stmt->inferredType,
+                                $var_type_part->return_type
+                            );
+                        } else {
+                            $stmt->inferredType = $var_type_part->return_type;
                         }
 
                         $function_exists = true;
@@ -2179,7 +2177,7 @@ class CallChecker
             $array_arg_types[] = $array_arg_type;
         }
 
-        /** @var PhpParser\Node\Arg */
+        /** @var ?PhpParser\Node\Arg */
         $closure_arg = isset($args[$closure_index]) ? $args[$closure_index] : null;
 
         /** @var Type\Union|null */
@@ -2191,7 +2189,7 @@ class CallChecker
 
         $project_checker = $file_checker->project_checker;
 
-        if ($closure_arg_type) {
+        if ($closure_arg && $closure_arg_type) {
             $min_closure_param_count = $max_closure_param_count = count($array_arg_types);
 
             if ($method_id === 'array_filter') {

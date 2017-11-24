@@ -518,8 +518,8 @@ class ReturnTypeTest extends TestCase
             ],
             'mixedInferredReturnType' => [
                 '<?php
-                    function fooFoo() : string {
-                        return array_pop([]);
+                    function fooFoo(array $arr) : string {
+                        return array_pop($arr);
                     }',
                 'error_message' => 'MixedInferredReturnType',
             ],
