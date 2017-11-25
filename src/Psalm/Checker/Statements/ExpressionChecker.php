@@ -869,6 +869,11 @@ class ExpressionChecker
                     $op_context->vars_possibly_in_scope,
                     $context->vars_possibly_in_scope
                 );
+
+                $context->assigned_var_ids = array_merge(
+                    $context->assigned_var_ids,
+                    $op_context->assigned_var_ids
+                );
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr

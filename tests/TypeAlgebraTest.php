@@ -502,6 +502,16 @@ class TypeAlgebraTest extends TestCase
 
                     if ($a->foo === "somestring") {}',
             ],
+            'propertyFetchAfterNotNullCheck' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $foo;
+                    }
+
+                    if (rand(0, 10) > 5) {
+                    } elseif (($a = new A) && $a->foo) {}',
+            ],
         ];
     }
 

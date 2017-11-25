@@ -64,6 +64,8 @@ class IfChecker
         $referenced_var_ids = $context->referenced_var_ids;
         $context->referenced_var_ids = [];
 
+        $pre_assigned_var_ids = $context->assigned_var_ids;
+
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($first_if_cond_expr &&
@@ -113,6 +115,11 @@ class IfChecker
             $first_cond_referenced_var_ids,
             $more_cond_referenced_var_ids
         );
+
+        $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
+
+        // get all the var ids that were referened in the conditional, but not assigned in it
+        $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $new_assigned_var_ids);
 
         $if_context->inside_conditional = false;
 
@@ -579,7 +586,7 @@ class IfChecker
                     /** @return bool */
                     function (Clause $c) use ($changed_var_ids) {
                         return count($c->possibilities) > 1
-                            || !in_array(array_keys($c->possibilities)[0], $changed_var_ids);
+                            || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
                     }
                 );
             }
@@ -588,6 +595,8 @@ class IfChecker
         $pre_conditional_context = clone $elseif_context;
 
         $elseif_context->inside_conditional = true;
+
+        $pre_assigned_var_ids = $elseif_context->assigned_var_ids;
 
         $referenced_var_ids = $elseif_context->referenced_var_ids;
         $elseif_context->referenced_var_ids = [];
@@ -602,6 +611,10 @@ class IfChecker
             $referenced_var_ids,
             $elseif_context->referenced_var_ids
         );
+
+        $new_assigned_var_ids = array_diff_key($elseif_context->assigned_var_ids, $pre_assigned_var_ids);
+
+        $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
 
         $elseif_context->inside_conditional = false;
 

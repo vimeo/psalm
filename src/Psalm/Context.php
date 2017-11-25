@@ -334,7 +334,7 @@ class Context
             /** @return bool */
             function (Clause $c) use ($changed_var_ids) {
                 return count($c->possibilities) > 1
-                    || !in_array(array_keys($c->possibilities)[0], $changed_var_ids);
+                    || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
             }
         );
     }
@@ -344,6 +344,7 @@ class Context
      * @param  Clause[]               $clauses
      * @param  Union|null             $new_type
      * @param  StatementsChecker|null $statements_checker
+     *
      * @return Clause[]
      */
     public static function filterClauses(
