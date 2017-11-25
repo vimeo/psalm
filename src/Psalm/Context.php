@@ -150,7 +150,7 @@ class Context
      *
      * @var array<string, bool>
      */
-    public $assigned_vars = [];
+    public $assigned_var_ids = [];
 
     /**
      * @param string|null $self
@@ -268,7 +268,7 @@ class Context
             && ($expr_type->isMixed() || (string)$expr_type === (string)$inferred_type)
             && $expr instanceof PhpParser\Node\Expr\Variable
             && is_string($expr->name)
-            && !isset($this->assigned_vars['$' . $expr->name])
+            && !isset($this->assigned_var_ids['$' . $expr->name])
             && array_key_exists($expr->name, $function_storage->param_types)
             && !$function_storage->param_types[$expr->name]
         ) {

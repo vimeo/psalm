@@ -214,12 +214,10 @@ class IfChecker
             $if_scope->new_vars_possibly_in_scope
         );
 
-        if ($project_checker->infer_types_from_usage) {
-            $context->assigned_vars = array_merge(
-                $context->assigned_vars,
-                $if_context->assigned_vars
-            );
-        }
+        $context->assigned_var_ids = array_merge(
+            $context->assigned_var_ids,
+            $if_context->assigned_var_ids
+        );
 
         $updated_loop_vars = [];
 
