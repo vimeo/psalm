@@ -456,9 +456,7 @@ class IfChecker
                 foreach ($changed_var_ids as $var_id) {
                     $if_scope->negated_clauses = Context::filterClauses(
                         $var_id,
-                        $if_scope->negated_clauses,
-                        isset($if_context->vars_in_scope[$var_id]) ? $if_context->vars_in_scope[$var_id] : null,
-                        $statements_checker
+                        $if_scope->negated_clauses
                     );
                 }
 
@@ -473,8 +471,6 @@ class IfChecker
             $outer_context->clauses = AlgebraChecker::simplifyCNF(
                 array_merge($outer_context->clauses, $if_scope->negated_clauses)
             );
-
-            //$outer_context->removeReconciledClauses($changed_var_ids);
         }
 
         // update the parent context as necessary, but only if we can safely reason about type negation.

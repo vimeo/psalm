@@ -180,7 +180,6 @@ class FunctionChecker extends FunctionLikeChecker
             }
 
             if ($reflection_function->isUserDefined()) {
-                $docblock_info = null;
                 $doc_comment = $reflection_function->getDocComment();
 
                 if (!$doc_comment) {
@@ -193,7 +192,7 @@ class FunctionChecker extends FunctionLikeChecker
                         0
                     );
                 } catch (\Psalm\Exception\DocblockParseException $e) {
-                    // do nothing
+                    $docblock_info = null;
                 }
 
                 if (!$docblock_info) {
