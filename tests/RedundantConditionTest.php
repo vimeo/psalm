@@ -3,7 +3,37 @@ namespace Psalm\Tests;
 
 class RedundantConditionTest extends TestCase
 {
+    use Traits\FileCheckerValidCodeParseTestTrait;
     use Traits\FileCheckerInvalidCodeParseTestTrait;
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerValidCodeParse()
+    {
+        return [
+            'ignoreIssueAndAssign' => [
+                '<?php
+                    public function foo() : stdClass {
+                        return new stdClass;
+                    }
+
+                    $b = null;
+
+                    foreach ([0, 1] as $i) {
+                        $a = foo();
+
+                        if (!empty($a)) {
+                            $b = $a;
+                        }
+                    }',
+                'assertions' => [
+                    '$b' => 'stdClass|null',
+                ],
+                'error_levels' => ['RedundantCondition'],
+            ],
+        ];
+    }
 
     /**
      * @return array
