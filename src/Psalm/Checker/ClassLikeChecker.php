@@ -11,6 +11,7 @@ use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
+use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\PropertyNotSetInConstructor;
@@ -264,58 +265,33 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     $storage->public_class_constants += $interface_storage->public_class_constants;
 
-                    foreach ($interface_storage->methods as $method_name => $method) {
-                        if ($method->visibility === self::VISIBILITY_PUBLIC) {
-                            $implemented_method_id = $this->fq_class_name . '::' . $method_name;
-                            $mentioned_method_id = $interface_name . '::' . $method_name;
-                            $declaring_method_id = MethodChecker::getDeclaringMethodId(
+                    $code_location = new CodeLocation(
+                        $this,
+                        $this->class,
+                        $class_context ? $class_context->include_location : null,
+                        true
+                    );
+
+                    foreach ($interface_storage->methods as $method_name => $interface_method_storage) {
+                        if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
+                            $implementer_declaring_method_id = MethodChecker::getDeclaringMethodId(
                                 $project_checker,
-                                $implemented_method_id
+                                $this->fq_class_name . '::' . $method_name
                             );
 
-                            $method_storage = $declaring_method_id
-                                ? MethodChecker::getStorage($project_checker, $declaring_method_id)
+                            $implementer_method_storage = $implementer_declaring_method_id
+                                ? MethodChecker::getStorage($project_checker, $implementer_declaring_method_id)
                                 : null;
 
-                            if (!$method_storage) {
-                                $cased_method_id = MethodChecker::getCasedMethodId(
-                                    $project_checker,
-                                    $mentioned_method_id
-                                );
+                            $cased_interface_method_id = $interface_storage->name . '::' .
+                                $interface_method_storage->cased_name;
 
+                            if (!$implementer_method_storage) {
                                 if (IssueBuffer::accepts(
                                     new UnimplementedInterfaceMethod(
-                                        'Method ' . $cased_method_id . ' is not defined on class ' .
-                                        $this->fq_class_name,
-                                        new CodeLocation(
-                                            $this,
-                                            $this->class,
-                                            $class_context ? $class_context->include_location : null,
-                                            true
-                                        )
-                                    ),
-                                    $this->source->getSuppressedIssues()
-                                )) {
-                                    return false;
-                                }
-
-                                return null;
-                            } elseif ($method_storage->visibility !== self::VISIBILITY_PUBLIC) {
-                                $cased_method_id = MethodChecker::getCasedMethodId(
-                                    $project_checker,
-                                    $mentioned_method_id
-                                );
-
-                                if (IssueBuffer::accepts(
-                                    new InaccessibleMethod(
-                                        'Interface-defined method ' . $cased_method_id .
-                                            ' must be public in ' . $this->fq_class_name,
-                                        new CodeLocation(
-                                            $this,
-                                            $this->class,
-                                            $class_context ? $class_context->include_location : null,
-                                            true
-                                        )
+                                        'Method ' . $method_name . ' is not defined on class ' .
+                                        $storage->name,
+                                        $code_location
                                     ),
                                     $this->source->getSuppressedIssues()
                                 )) {
@@ -324,6 +300,31 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                                 return null;
                             }
+
+                            if ($implementer_method_storage->visibility !== self::VISIBILITY_PUBLIC) {
+                                if (IssueBuffer::accepts(
+                                    new InaccessibleMethod(
+                                        'Interface-defined method ' . $implementer_method_storage->cased_name
+                                            . ' must be public in ' . $storage->name,
+                                        $code_location
+                                    ),
+                                    $this->source->getSuppressedIssues()
+                                )) {
+                                    return false;
+                                }
+
+                                return null;
+                            }
+
+                            FunctionLikeChecker::compareMethods(
+                                $project_checker,
+                                $storage,
+                                $interface_storage,
+                                $implementer_method_storage,
+                                $interface_method_storage,
+                                $code_location,
+                                $this->source->getSuppressedIssues()
+                            );
                         }
                     }
                 }
@@ -1070,7 +1071,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @return string
+     * @return ?string
      */
     public function getNamespace()
     {
@@ -1738,6 +1739,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         return isset(self::getPropertyMap()[strtolower($class_name)]);
     }
 
+    /**
+     * @return FileChecker
+     */
     public function getFileChecker()
     {
         return $this->file_checker;

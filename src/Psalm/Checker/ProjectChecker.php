@@ -636,7 +636,9 @@ class ProjectChecker
                     $mentioned_method_id = $implemented_interface . '::' . $method_name;
                     $implemented_method_id = $storage->name . '::' . $method_name;
 
-                    MethodChecker::setOverriddenMethodId($this, $implemented_method_id, $mentioned_method_id);
+                    if ($storage->abstract) {
+                        MethodChecker::setOverriddenMethodId($this, $implemented_method_id, $mentioned_method_id);
+                    }
                 }
             }
         }

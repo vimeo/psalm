@@ -284,6 +284,7 @@ class ReturnTypeTest extends TestCase
                     }
 
                     class B implements A {
+                        /** @return string|null */
                         public function blah() {
                             return rand(0, 10) === 4 ? "blah" : null;
                         }
@@ -305,6 +306,7 @@ class ReturnTypeTest extends TestCase
                     }
 
                     class C extends B {
+                        /** @return string|null */
                         public function blah() {
                             return rand(0, 10) === 4 ? "blahblah" : null;
                         }

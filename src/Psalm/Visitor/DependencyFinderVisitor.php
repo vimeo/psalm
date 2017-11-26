@@ -103,6 +103,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $this->plugins = $this->config->getPlugins();
     }
 
+    /**
+     * @param  PhpParser\Node $node
+     *
+     * @return ?int
+     */
     public function enterNode(PhpParser\Node $node)
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
@@ -424,6 +429,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         }
     }
 
+    /**
+     * @param  PhpParser\Node $node
+     *
+     * @return array<mixed, PhpParser\Node>|null|false|int|PhpParser\Node
+     */
     public function leaveNode(PhpParser\Node $node)
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
@@ -492,6 +502,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
             array_pop($this->functionlike_storages);
         }
+
+        return null;
     }
 
     /**
@@ -688,7 +700,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage->assertions = $var_assertions;
         }
 
-        if ($parser_return_type = $stmt->getReturnType()) {
+        /**
+         * @psalm-suppress MixedAssignment
+         *
+         * @var null|string|PhpParser\Node\Name|PhpParser\Node\NullableType
+         */
+        $parser_return_type = $stmt->getReturnType();
+
+        if ($parser_return_type) {
             $suffix = '';
 
             if ($parser_return_type instanceof PhpParser\Node\NullableType) {

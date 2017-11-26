@@ -40,16 +40,25 @@ class InterfaceTest extends TestCase
 
                     class D implements C
                     {
+                        /**
+                         * @return string
+                         */
                         public function fooFoo()
                         {
                             return "hello";
                         }
 
+                        /**
+                         * @return string
+                         */
                         public function barBar()
                         {
                             return "goodbye";
                         }
 
+                        /**
+                         * @return string
+                         */
                         public function baz()
                         {
                             return "hello again";
@@ -347,6 +356,39 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],
+            'mismatchingReturnTypes' => [
+                '<?php
+                    interface I1 {
+                      public function foo() : string;
+                    }
+                    interface I2 {
+                      public function foo() : int;
+                    }
+                    class A implements I1, I2 {
+                      public function foo() : string {
+                        return "hello";
+                      }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'mismatchingDocblockReturnTypes' => [
+                '<?php
+                    interface I1 {
+                      /** @return string */
+                      public function foo();
+                    }
+                    interface I2 {
+                      /** @return int */
+                      public function foo();
+                    }
+                    class A implements I1, I2 {
+                      /** @return string */
+                      public function foo() {
+                        return "hello";
+                      }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 '<?php
                     interface I {
@@ -380,6 +422,25 @@ class InterfaceTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'MoreSpecificReturnType',
+            ],
+            'interfaceReturnType' => [
+                '<?php
+                    interface A {
+                        /** @return string|null */
+                        public function blah();
+                    }
+
+                    class B implements A {
+                        public function blah() {
+                            return rand(0, 10) === 4 ? "blah" : null;
+                        }
+                    }
+
+                    $blah = (new B())->blah();',
+                'error_message' => 'MixedAssignment',
+                'error_levels' => [
+                    'MissingReturnType',
+                ],
             ],
         ];
     }

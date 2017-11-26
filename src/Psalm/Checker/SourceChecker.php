@@ -190,7 +190,7 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
-     * @return string
+     * @return ?string
      */
     public function getNamespace()
     {

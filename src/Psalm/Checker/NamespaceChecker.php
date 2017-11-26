@@ -180,6 +180,9 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         throw new \InvalidArgumentException('Given $visibility not supported');
     }
 
+    /**
+     * @return FileChecker
+     */
     public function getFileChecker()
     {
         return $this->source;

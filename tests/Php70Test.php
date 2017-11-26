@@ -116,6 +116,7 @@ class Php70Test extends TestCase
 
                     $app = new Application;
                     $app->setLogger(new class implements Logger {
+                        /** @return void */
                         public function log(string $msg) {
                             echo $msg;
                         }

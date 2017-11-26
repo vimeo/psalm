@@ -210,6 +210,36 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'string|null\'',
             ],
+            'mismatchingCovariantReturn' => [
+                '<?php
+                    class A {
+                        function foo(): C {
+                            return new C();
+                        }
+                    }
+                    class B extends A {
+                        function foo(): D {
+                            return new D();
+                        }
+                    }
+                    class C {}
+                    class D extends C {}',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'mismatchingCovariantReturnWithSelf' => [
+                '<?php
+                    class A {
+                        function foo(): self {
+                            return new A();
+                        }
+                    }
+                    class B extends A {
+                        function foo(): self {
+                            return new B();
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }

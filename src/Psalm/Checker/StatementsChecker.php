@@ -1178,6 +1178,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         return isset($this->all_vars[$var_name]) ? $this->all_vars[$var_name] : null;
     }
 
+    /**
+     * @return FileChecker
+     */
     public function getFileChecker()
     {
         return $this->file_checker;

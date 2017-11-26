@@ -18,7 +18,7 @@ class TraitSource implements StatementsSource
     }
 
     /**
-     * @return string|null
+     * @return ?string
      */
     public function getNamespace()
     {

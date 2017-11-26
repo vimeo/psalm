@@ -406,7 +406,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return null
+     * @return ?string
      */
     public function getNamespace()
     {
@@ -486,6 +486,9 @@ class FileChecker extends SourceChecker implements StatementsSource
         return $this->actual_file_path ?: $this->file_path;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getSuppressedIssues()
     {
         return $this->suppressed_issues;
@@ -511,21 +514,33 @@ class FileChecker extends SourceChecker implements StatementsSource
         $this->suppressed_issues = array_diff($this->suppressed_issues, $new_issues);
     }
 
+    /**
+     * @return ?string
+     */
     public function getFQCLN()
     {
         return null;
     }
 
+    /**
+     * @return ?string
+     */
     public function getClassName()
     {
         return null;
     }
 
+    /**
+     * @return bool
+     */
     public function isStatic()
     {
         return false;
     }
 
+    /**
+     * @return FileChecker
+     */
     public function getFileChecker()
     {
         return $this;
