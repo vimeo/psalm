@@ -227,13 +227,13 @@ class TypeChecker
                             // fall through
                         }
                     }
-
-                    $failed_reconciliation = true;
                 }
 
                 if ($non_object_types) {
                     return new Type\Union($non_object_types);
                 }
+
+                $failed_reconciliation = true;
 
                 return Type::getMixed();
             }
@@ -262,13 +262,15 @@ class TypeChecker
                             // fall through
                         }
                     }
-
-                    $failed_reconciliation = true;
                 }
 
                 if ($non_scalar_types) {
                     return new Type\Union($non_scalar_types);
                 }
+
+                $failed_reconciliation = true;
+
+                return Type::getMixed();
             }
 
             if ($new_var_type === '!numeric' && !$existing_var_type->isMixed()) {
@@ -295,13 +297,15 @@ class TypeChecker
                             // fall through
                         }
                     }
-
-                    $failed_reconciliation = true;
                 }
 
                 if ($non_numeric_types) {
                     return new Type\Union($non_numeric_types);
                 }
+
+                $failed_reconciliation = true;
+
+                return Type::getMixed();
             }
 
             if ($new_var_type === '!falsy' && !$existing_var_type->isMixed()) {
@@ -341,11 +345,11 @@ class TypeChecker
                         }
                     }
 
-                    $failed_reconciliation = true;
-
                     if ($existing_var_type->types) {
                         return $existing_var_type;
                     }
+
+                    $failed_reconciliation = true;
 
                     return Type::getMixed();
                 }
@@ -374,11 +378,11 @@ class TypeChecker
                         }
                     }
 
-                    $failed_reconciliation = true;
-
                     if ($existing_var_type->types) {
                         return $existing_var_type;
                     }
+
+                    $failed_reconciliation = true;
 
                     return Type::getMixed();
                 }
@@ -469,13 +473,15 @@ class TypeChecker
                         // fall through
                     }
                 }
-
-                $failed_reconciliation = true;
             }
 
             if ($object_types) {
                 return new Type\Union($object_types);
             }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
         }
 
         if ($new_var_type === 'numeric' && !$existing_var_type->isMixed()) {
@@ -513,13 +519,15 @@ class TypeChecker
                         // fall through
                     }
                 }
-
-                $failed_reconciliation = true;
             }
 
             if ($numeric_types) {
                 return new Type\Union($numeric_types);
             }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
         }
 
         if ($new_var_type === 'scalar' && !$existing_var_type->isMixed()) {
@@ -546,13 +554,15 @@ class TypeChecker
                         // fall through
                     }
                 }
-
-                $failed_reconciliation = true;
             }
 
             if ($scalar_types) {
                 return new Type\Union($scalar_types);
             }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
         }
 
         $new_type = Type::parseString($new_var_type);

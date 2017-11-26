@@ -28,7 +28,7 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$b' => 'stdClass|null',
+                    '$b' => 'null|stdClass',
                 ],
                 'error_levels' => ['RedundantCondition'],
             ],
