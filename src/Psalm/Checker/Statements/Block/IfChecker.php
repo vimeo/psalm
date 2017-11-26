@@ -417,7 +417,7 @@ class IfChecker
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
-                        $if_context->vars_in_scope[$var_id],
+                        isset($if_context->vars_in_scope[$var_id]) ? $if_context->vars_in_scope[$var_id] : null,
                         $statements_checker
                     );
                 }
