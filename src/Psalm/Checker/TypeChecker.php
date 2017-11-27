@@ -33,7 +33,7 @@ class TypeChecker
      *
      * @param  array<string, string>     $new_types
      * @param  array<string, Type\Union> $existing_types
-     * @param  array<string>             $changed_types
+     * @param  array<string>             $changed_var_ids
      * @param  StatementsChecker         $statements_checker
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues
@@ -43,7 +43,7 @@ class TypeChecker
     public static function reconcileKeyedTypes(
         array $new_types,
         array $existing_types,
-        array &$changed_types,
+        array &$changed_var_ids,
         array $referenced_var_ids,
         StatementsChecker $statements_checker,
         CodeLocation $code_location,
@@ -126,7 +126,7 @@ class TypeChecker
             }
 
             if ((string)$result_type !== $before_adjustment) {
-                $changed_types[] = $key;
+                $changed_var_ids[] = $key;
             }
 
             if ($failed_reconciliation) {
