@@ -30,6 +30,7 @@
 
         <MoreSpecificReturnType errorLevel="info" />
         <TypeCoercion errorLevel="info" />
+        <RedundantCondition errorLevel="info" />
 
         <PossiblyNullArgument errorLevel="info" />
         <PossiblyNullArrayAccess errorLevel="info" />
@@ -42,7 +43,6 @@
 
         <!-- level 5 issues - should be avoided at mosts costs... -->
 
-        <RedundantCondition errorLevel="info" />
         <ForbiddenCode errorLevel="info" />
         <ImplicitToStringCast errorLevel="info" />
         <InvalidScalarArgument errorLevel="info" />

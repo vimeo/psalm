@@ -30,6 +30,7 @@
 
         <MoreSpecificReturnType errorLevel="info" />
         <TypeCoercion errorLevel="info" />
+        <RedundantCondition errorLevel="info" />
 
         <PossiblyNullArgument errorLevel="info" />
         <PossiblyNullArrayAccess errorLevel="info" />
