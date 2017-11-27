@@ -279,6 +279,16 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                 $this->fq_class_name . '::' . $method_name
                             );
 
+                            $implementer_fq_class_name = null;
+
+                            if ($implementer_declaring_method_id) {
+                                list($implementer_fq_class_name) = explode('::', $implementer_declaring_method_id);
+                            }
+
+                            $implementer_classlike_storage = $implementer_fq_class_name
+                                ? $classlike_storage_provider->get($implementer_fq_class_name)
+                                : null;
+
                             $implementer_method_storage = $implementer_declaring_method_id
                                 ? MethodChecker::getStorage($project_checker, $implementer_declaring_method_id)
                                 : null;
@@ -318,7 +328,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                             FunctionLikeChecker::compareMethods(
                                 $project_checker,
-                                $storage,
+                                $implementer_classlike_storage ?: $storage,
                                 $interface_storage,
                                 $implementer_method_storage,
                                 $interface_method_storage,

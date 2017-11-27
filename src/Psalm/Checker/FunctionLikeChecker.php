@@ -616,7 +616,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 return null;
             }
-        } elseif ($guide_method_storage->return_type && $implementer_method_storage->return_type) {
+        } elseif ($guide_method_storage->return_type
+            && $implementer_method_storage->return_type
+            && $implementer_classlike_storage->user_defined
+        ) {
             if (!TypeChecker::isContainedBy(
                 $project_checker,
                 $implementer_method_storage->return_type,

@@ -274,6 +274,10 @@ class InterfaceTest extends TestCase
                         return $i;
                     }',
             ],
+            'extendIteratorIterator' => [
+                '<?php
+                    class SomeIterator extends IteratorIterator {}',
+            ],
         ];
     }
 
