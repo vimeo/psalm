@@ -603,6 +603,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 continue;
             }
 
+            if (!isset($loop_context->vars_in_scope[$var_id])) {
+                unset($outer_context->vars_in_scope[$var_id]);
+                continue;
+            }
+
             if ($loop_context->vars_in_scope[$var_id]->isMixed()) {
                 $outer_context->vars_in_scope[$var_id] = $loop_context->vars_in_scope[$var_id];
             }
