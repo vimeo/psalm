@@ -432,8 +432,9 @@ class TypeChecker
                     continue;
                 }
 
-                if ($existing_var_type_part instanceof TNamedObject &&
-                    ClassChecker::classExists($project_checker, $existing_var_type_part->value)
+                if ($existing_var_type_part instanceof TNamedObject
+                    && (ClassChecker::classExists($project_checker, $existing_var_type_part->value)
+                        || InterfaceChecker::interfaceExists($project_checker, $existing_var_type_part->value))
                 ) {
                     $existing_var_type_part->addIntersectionType($new_type_part);
                     $acceptable_atomic_types[] = $existing_var_type_part;
