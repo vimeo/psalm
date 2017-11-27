@@ -552,8 +552,6 @@ class FunctionChecker extends FunctionLikeChecker
                 return Type::getArray();
             }
 
-            $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
-
             if ($first_arg_array instanceof Type\Atomic\TArray) {
                 $inner_type = $first_arg_array->type_params[1];
                 $key_type = clone $first_arg_array->type_params[0];
@@ -587,8 +585,6 @@ class FunctionChecker extends FunctionLikeChecker
             if (!$first_arg_array) {
                 return Type::getMixed();
             }
-
-            $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
             if ($first_arg_array instanceof Type\Atomic\TArray) {
                 $key_type = clone $first_arg_array->type_params[0];

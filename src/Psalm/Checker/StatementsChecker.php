@@ -659,6 +659,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  array<int, Clause>  $pre_condition_clauses
      * @param  Context             $loop_context
      * @param  Context             $outer_context
+     *
      * @return false|null
      */
     private function applyPreConditionToLoopContext(

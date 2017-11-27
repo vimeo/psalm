@@ -5,7 +5,6 @@ use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Context;
-use Psalm\Type;
 
 class ForChecker
 {

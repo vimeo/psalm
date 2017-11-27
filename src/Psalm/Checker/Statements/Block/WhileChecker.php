@@ -2,14 +2,8 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\Checker\AlgebraChecker;
-use Psalm\Checker\ScopeChecker;
-use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\TypeChecker;
-use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
 
 class WhileChecker
 {

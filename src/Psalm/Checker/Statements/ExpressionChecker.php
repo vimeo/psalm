@@ -818,12 +818,18 @@ class ExpressionChecker
             $pre_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = [];
 
+            $pre_assigned_var_ids = $context->assigned_var_ids;
+
             if (self::analyze($statements_checker, $stmt->left, $context) === false) {
                 return false;
             }
 
             $new_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+
+            $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
+
+            $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
 
             $changed_var_ids = [];
 
@@ -906,12 +912,18 @@ class ExpressionChecker
             $pre_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = [];
 
+            $pre_assigned_var_ids = $context->assigned_var_ids;
+
             if (self::analyze($statements_checker, $stmt->left, $context) === false) {
                 return false;
             }
 
             $new_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+
+            $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
+
+            $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
 
             $changed_var_ids = [];
 
@@ -934,6 +946,10 @@ class ExpressionChecker
             $op_context = clone $context;
             $op_context->clauses = $rhs_clauses;
             $op_context->vars_in_scope = $op_vars_in_scope;
+
+            foreach ($changed_var_ids as $changed_var_id) {
+                $op_context->removeReconciledClauses($changed_var_ids);
+            }
 
             if (self::analyze($statements_checker, $stmt->right, $op_context) === false) {
                 return false;
