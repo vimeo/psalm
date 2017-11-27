@@ -264,15 +264,18 @@ class InterfaceTest extends TestCase
                         return $a;
                     }',
             ],
-            'interfaceInstanceof' => [
+            'interfaceInstanceofReturningInitial' => [
                 '<?php
                     interface A {}
                     interface B {}
 
                     class C implements A, B {}
 
+                    function takesB(B $b) : void {}
+
                     function foo(A $i) : A {
                         if ($i instanceof B) {
+                            takesB($i);
                             return $i;
                         }
                         return $i;
@@ -467,6 +470,24 @@ class InterfaceTest extends TestCase
                 'error_levels' => [
                     'MissingReturnType',
                 ],
+            ],
+            'SKIPPED-interfaceInstanceofAndTwoReturns' => [
+                '<?php
+                    interface A {}
+                    interface B {}
+
+                    class C implements A, B {}
+
+                    function foo(A $i) : B {
+                        if ($i instanceof B) {
+                            return $i;
+                        }
+
+                        return $i;
+                    }
+
+                    foo(new C);',
+                'error_message' => 'InvalidReturnTypa',
             ],
         ];
     }

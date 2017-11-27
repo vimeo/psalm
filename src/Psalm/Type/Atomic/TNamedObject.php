@@ -29,7 +29,7 @@ class TNamedObject extends Atomic
 
     public function __toString()
     {
-        return $this->value;
+        return $this->getKey();
     }
 
     /**
@@ -37,6 +37,10 @@ class TNamedObject extends Atomic
      */
     public function getKey()
     {
+        if ($this->extra_types) {
+            return $this->value . '&' . implode('&', $this->extra_types);
+        }
+
         return $this->value;
     }
 

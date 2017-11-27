@@ -295,10 +295,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     }
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\ClassMethod
-            || $node instanceof PhpParser\Node\Stmt\Function_
-            || $node instanceof PhpParser\Node\Expr\Closure
-        ) {
+        } elseif ($node instanceof PhpParser\Node\FunctionLike) {
             $this->registerFunctionLike($node);
 
             if (!$this->scan_deep) {

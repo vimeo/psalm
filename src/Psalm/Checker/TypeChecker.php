@@ -574,26 +574,6 @@ class TypeChecker
 
                 if ($is_atomic_contained_by) {
                     $type_match_found = true;
-                } elseif (!$type_coerced &&
-                    $input_type_part instanceof TNamedObject &&
-                    $intersection_types = $input_type_part->getIntersectionTypes()
-                ) {
-                    foreach ($intersection_types as $intersection_type) {
-                        $is_atomic_contained_by = self::isAtomicContainedBy(
-                            $project_checker,
-                            $intersection_type,
-                            $container_type_part,
-                            $scalar_type_match_found,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $atomic_to_string_cast
-                        );
-
-                        if ($is_atomic_contained_by) {
-                            $type_match_found = true;
-                            break;
-                        }
-                    }
                 }
 
                 if ($atomic_to_string_cast !== true) {
@@ -672,6 +652,54 @@ class TypeChecker
     }
 
     /**
+     * @param  ProjectChecker $project_checker
+     * @param  TNamedObject   $input_type_part
+     * @param  TNamedObject   $container_type_part
+     *
+     * @return bool
+     */
+    private static function isObjectContainedByObject(
+        ProjectChecker $project_checker,
+        TNamedObject $input_type_part,
+        TNamedObject $container_type_part
+    ) {
+        $intersection_input_types = $input_type_part->extra_types ?: [];
+        $intersection_input_types[] = $input_type_part;
+
+        foreach ($intersection_input_types as $intersection_input_type) {
+            if ($intersection_input_type->value === $container_type_part->value) {
+                return true;
+            }
+
+            if (ClassChecker::classExists($project_checker, $intersection_input_type->value)
+                && ClassChecker::classExtendsOrImplements(
+                    $project_checker,
+                    $intersection_input_type->value,
+                    $container_type_part->value
+                )
+            ) {
+                return true;
+            }
+
+            if (InterfaceChecker::interfaceExists($project_checker, $intersection_input_type->value)
+                && InterfaceChecker::interfaceExtends(
+                    $project_checker,
+                    $intersection_input_type->value,
+                    $container_type_part->value
+                )
+            ) {
+                return true;
+            }
+
+            if (ExpressionChecker::isMock($intersection_input_type->value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Does the input param atomic type match the given param atomic type
      *
      * @param  Type\Atomic  $input_type_part
@@ -713,23 +741,7 @@ class TypeChecker
                 $container_is_object &&
                 $input_type_part instanceof TNamedObject &&
                 $container_type_part instanceof TNamedObject &&
-                (
-                    (ClassChecker::classExists($project_checker, $input_type_part->value) &&
-                        ClassChecker::classExtendsOrImplements(
-                            $project_checker,
-                            $input_type_part->value,
-                            $container_type_part->value
-                        )
-                    ) ||
-                    (InterfaceChecker::interfaceExists($project_checker, $input_type_part->value) &&
-                        InterfaceChecker::interfaceExtends(
-                            $project_checker,
-                            $input_type_part->value,
-                            $container_type_part->value
-                        )
-                    ) ||
-                    ExpressionChecker::isMock($input_type_part->value)
-                )
+                self::isObjectContainedByObject($project_checker, $input_type_part, $container_type_part)
             )
         ) {
             $all_types_contain = true;
