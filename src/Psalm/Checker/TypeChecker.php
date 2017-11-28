@@ -332,7 +332,7 @@ class TypeChecker
                     }
                 }
 
-                if (!$did_remove_type || empty($existing_var_type->types)) {
+                if ((!$did_remove_type || empty($existing_var_type->types)) && !$existing_var_type->from_docblock) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
@@ -365,7 +365,7 @@ class TypeChecker
                     $existing_var_type->removeType('null');
                 }
 
-                if (!$did_remove_type || empty($existing_var_type->types)) {
+                if ((!$did_remove_type || empty($existing_var_type->types)) && !$existing_var_type->from_docblock) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
