@@ -192,6 +192,15 @@ class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchCaseExpression' => [
+                '<?php
+                    switch (true) {
+                        case preg_match("/(d)ata/", "some data in subject string", $matches):
+                            return $matches[1];
+                        default:
+                            throw new RuntimeException("none found");
+                    }',
+            ],
         ];
     }
 
@@ -313,6 +322,17 @@ class SwitchTypeTest extends TestCase
 
                         case "integer":
                             testString($a);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'switchBadMethodCallInCase' => [
+                '<?php
+                    function f(string $p) : void { }
+
+                    switch (true) {
+                        case $q = (bool) rand(0,1):
+                            f($q); // this type problem is not detected
+                            break;
                     }',
                 'error_message' => 'InvalidScalarArgument',
             ],

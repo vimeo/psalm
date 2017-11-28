@@ -81,7 +81,7 @@ class SwitchChecker
             $case_context->parent_context = $context;
 
             if ($case->cond) {
-                if (ExpressionChecker::analyze($statements_checker, $case->cond, $context) === false) {
+                if (ExpressionChecker::analyze($statements_checker, $case->cond, $case_context) === false) {
                     return false;
                 }
 
