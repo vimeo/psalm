@@ -47,7 +47,7 @@ if (isset($options['c']) && is_array($options['c'])) {
 }
 
 if (array_key_exists('h', $options)) {
-    echo <<< HELP
+    echo <<<HELP
 Usage:
     psalm [options] [file...]
 
@@ -147,7 +147,7 @@ if (array_key_exists('v', $options)) {
 }
 
 // If XDebug is enabled, restart without it
-(new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
+(new \Composer\XdebugHandler\XdebugHandler())->check();
 
 setlocale(LC_CTYPE, 'C');
 
