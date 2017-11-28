@@ -39,7 +39,9 @@ class EffectsAnalyser
                     $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
                     $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr));
                 } else {
-                    if (isset($stmt->inferredType)) {
+                    if (!$stmt->expr) {
+                        $return_types[] = new Atomic\TVoid();
+                    } elseif (isset($stmt->inferredType)) {
                         $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
 
                         if ($stmt->inferredType->ignore_nullable_issues) {
